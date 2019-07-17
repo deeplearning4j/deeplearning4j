@@ -42,7 +42,7 @@ namespace helpers {
                 auto o = bOut + e * numChannels;
 
                 T h, v_min, v_max;
-                helpers::rgb_to_hv(context, i[0], i[1], i[2], &h, &v_min, &v_max);
+                helpers::rgb_to_hv(i[0], i[1], i[2], &h, &v_min, &v_max);
 
                 h += delta * kChannelRange;
                 while (h < (T) 0.)
@@ -51,7 +51,7 @@ namespace helpers {
                 while (h >= (T) kChannelRange)
                     h -= (T) kChannelRange;
 
-                helpers::hv_to_rgb(context, h, v_min, v_max, o, o + 1, o + 2);
+                helpers::hv_to_rgb(h, v_min, v_max, o, o + 1, o + 2);
             }
         } else {
             auto tadsChannelsIn  = array->allTensorsAlongDimension({0});
@@ -76,7 +76,7 @@ namespace helpers {
                 auto _bo = outputB + e;
 
                 T h, v_min, v_max;
-                helpers::rgb_to_hv(context, _ri[0], _gi[0], _bi[0], &h, &v_min, &v_max);
+                helpers::rgb_to_hv(_ri[0], _gi[0], _bi[0], &h, &v_min, &v_max);
 
                 h += delta * kChannelRange;
                 while (h < (T) 0)
@@ -85,7 +85,7 @@ namespace helpers {
                 while (h >= (T) kChannelRange)
                     h -= (T) kChannelRange;
 
-                helpers::hv_to_rgb(context, h, v_min, v_max, _ro, _go, _bo);
+                helpers::hv_to_rgb(h, v_min, v_max, _ro, _go, _bo);
             }
 
             delete tadsChannelsIn;
