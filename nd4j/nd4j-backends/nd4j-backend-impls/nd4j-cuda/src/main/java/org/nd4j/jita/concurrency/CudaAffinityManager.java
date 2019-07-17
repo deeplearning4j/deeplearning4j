@@ -339,6 +339,10 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public void tagLocation(INDArray array, Location location) {
+        // we can't tag empty arrays.
+        if (array.isEmpty())
+            return;
+
         if (location == Location.HOST)
             AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
         else if (location == Location.DEVICE)
