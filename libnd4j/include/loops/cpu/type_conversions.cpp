@@ -122,7 +122,7 @@ namespace nd4j {
 
             for (int e = start; e < stop; e++) {
                 bool flag_load;
-#pragma omp atomic read
+PRAGMA_OMP_ATOMIC_ARGS(read)
                 flag_load = flag;
                 if (flag_load)
                     break;
@@ -130,11 +130,11 @@ namespace nd4j {
                 T cUpd = x[e];
                 if (cUpd >= tt) {
                     int idx;
-#pragma omp atomic capture
+PRAGMA_OMP_ATOMIC_ARGS(capture)
                     idx = cnt++;
 
                     if (idx >= flimit) {
-#pragma omp atomic write
+PRAGMA_OMP_ATOMIC_ARGS(write)
                         flag = true;
                         break;
                     }
@@ -143,11 +143,11 @@ namespace nd4j {
                     x[e] -= tt;
                 } else if (cUpd <= mtt) {
                     int idx;
-#pragma omp atomic capture
+PRAGMA_OMP_ATOMIC_ARGS(capture)
                     idx = cnt++;
 
                     if (idx >= flimit) {
-#pragma omp atomic write
+PRAGMA_OMP_ATOMIC_ARGS(write)
                         flag = true;
                         break;
                     }

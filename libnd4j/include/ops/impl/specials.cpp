@@ -224,9 +224,9 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             if (i < right){ quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff, descending); }
 
         }else{
-#pragma omp task
+PRAGMA_OMP_TASK
             { quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff, descending); }
-#pragma omp task
+PRAGMA_OMP_TASK
             { quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff, descending); }
         }
     }
@@ -238,7 +238,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
         PRAGMA_OMP_PARALLEL_THREADS(numThreads)
         {
-#pragma omp single nowait
+PRAGMA_OMP_SINGLE_ARGS(nowait)
             {
                 quickSort_parallel_internal(array, xShapeInfo, 0, lenArray-1, cutoff, descending);
             }
@@ -350,7 +350,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
         Nd4jLong retVal = 0L;
 
-#pragma omp parallel for schedule(guided) proc_bind(close) reduction(+:retVal)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVal))
         for (Nd4jLong x = 0; x < N; x += 16) {
 
             int byte = 0;
@@ -451,9 +451,9 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             if (i < right){ quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, i, right, cutoff, descending); }
 
         }else{
-#pragma omp task
+PRAGMA_OMP_TASK
             { quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, left, j, cutoff, descending); }
-#pragma omp task
+PRAGMA_OMP_TASK
             { quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, i, right, cutoff, descending); }
         }
     }
@@ -517,9 +517,9 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             if (i < right){ quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, i, right, cutoff, descending); }
 
         }else{
-#pragma omp task
+PRAGMA_OMP_TASK
             { quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, left, j, cutoff, descending); }
-#pragma omp task
+PRAGMA_OMP_TASK
             { quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, i, right, cutoff, descending); }
         }
     }
@@ -533,7 +533,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
         PRAGMA_OMP_PARALLEL_THREADS(numThreads)
         {
-#pragma omp single nowait
+PRAGMA_OMP_SINGLE_ARGS(nowait)
             {
                 quickSort_parallel_internal_key(array, xShapeInfo, values, yShapeInfo, 0, lenArray-1, cutoff, descending);
             }
@@ -548,7 +548,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
         PRAGMA_OMP_PARALLEL_THREADS(numThreads)
         {
-#pragma omp single nowait
+PRAGMA_OMP_SINGLE_ARGS(nowait)
             {
                 quickSort_parallel_internal_value(array, xShapeInfo, values, yShapeInfo, 0, lenArray-1, cutoff, descending);
             }

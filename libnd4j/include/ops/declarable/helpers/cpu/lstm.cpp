@@ -204,15 +204,15 @@ void lstmBlockCell(const NDArray* xt, const NDArray* cLast, const NDArray* yLast
     }
 
     PRAGMA_OMP_PARALLEL
-    #pragma omp single
+    PRAGMA_OMP_SINGLE
     {
-        #pragma omp task
+        PRAGMA_OMP_TASK
         zz.applyTransform(transform::Tanh, z);      //z = tanh(zz)
 
-        #pragma omp task
+        PRAGMA_OMP_TASK
         zi.applyTransform(transform::Sigmoid, i);   //i = sigmoid(zi)
 
-        #pragma omp task
+        PRAGMA_OMP_TASK
         zf.applyTransform(transform::Sigmoid, f);   //f = sigmoid(zf);
     }
 

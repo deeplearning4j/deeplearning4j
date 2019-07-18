@@ -4761,14 +4761,14 @@ INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffs
     }
     else if(xEws == 1) {
         xOffsets = nullptr;
-        #pragma omp parallel sections
+        PRAGMA_OMP_PARALLEL_SECTIONS
         {
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 yOffsets = new Nd4jLong[len];
                 shape::calcOffsets(yShapeInfo, yOffsets, xOrder);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 zOffsets = new Nd4jLong[len];
                 shape::calcOffsets(zShapeInfo, zOffsets, xOrder);
@@ -4777,14 +4777,14 @@ INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffs
     }
     else if(yEws == 1) {
         yOffsets = nullptr;
-        #pragma omp parallel sections
+        PRAGMA_OMP_PARALLEL_SECTIONS
         {
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 xOffsets = new Nd4jLong[len];
                 shape::calcOffsets(xShapeInfo, xOffsets, yOrder);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 zOffsets = new Nd4jLong[len];
                 shape::calcOffsets(zShapeInfo, zOffsets, yOrder);
@@ -4793,14 +4793,14 @@ INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffs
     }
     else if(zEws == 1) {
         zOffsets = nullptr;
-        #pragma omp parallel sections
+        PRAGMA_OMP_PARALLEL_SECTIONS
         {
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 xOffsets = new Nd4jLong[len];
                 shape::calcOffsets(xShapeInfo, xOffsets, zOrder);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 yOffsets = new Nd4jLong[len];
                 shape::calcOffsets(yShapeInfo, yOffsets, zOrder);
@@ -4813,14 +4813,14 @@ INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffs
         yOffsets = zOffsets = xOffsets;
     }
     else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
-        #pragma omp parallel sections
+        PRAGMA_OMP_PARALLEL_SECTIONS
         {
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 xOffsets = new Nd4jLong[len];
                 shape::calcOffsets(xShapeInfo, xOffsets);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 zOffsets = new Nd4jLong[len];
                 shape::calcOffsets(zShapeInfo, zOffsets);
@@ -4829,14 +4829,14 @@ INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffs
         yOffsets = xOffsets;
     }
     else if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-        #pragma omp parallel sections
+        PRAGMA_OMP_PARALLEL_SECTIONS
         {
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 xOffsets = new Nd4jLong[len];
                 shape::calcOffsets(xShapeInfo, xOffsets);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 yOffsets = new Nd4jLong[len];
                 shape::calcOffsets(yShapeInfo, yOffsets);
@@ -4845,19 +4845,19 @@ INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffs
         zOffsets = xOffsets;
     }
     else {
-        #pragma omp parallel sections
+        PRAGMA_OMP_PARALLEL_SECTIONS
         {
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 xOffsets = new Nd4jLong[len];
                 shape::calcOffsets(xShapeInfo, xOffsets);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 yOffsets = new Nd4jLong[len];
                 shape::calcOffsets(yShapeInfo, yOffsets);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 zOffsets = new Nd4jLong[len];
                 shape::calcOffsets(zShapeInfo, zOffsets);
@@ -4899,14 +4899,14 @@ INLINEDEF _CUDA_HD void calcOffsets(const Nd4jLong *xShapeInfo, Nd4jLong*& xOffs
         yOffsets = xOffsets;
     }
     else {
-        #pragma omp parallel sections
+        PRAGMA_OMP_PARALLEL_SECTIONS
         {
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 xOffsets = new Nd4jLong[len];
                 shape::calcOffsets(xShapeInfo, xOffsets);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
                 yOffsets = new Nd4jLong[len];
                 shape::calcOffsets(yShapeInfo, yOffsets);
