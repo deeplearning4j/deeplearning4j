@@ -28,13 +28,12 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.LossLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.impl.ActivationIdentity;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
@@ -451,10 +450,10 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 //KL divergence: should be a probability distribution for labels??
                 ret[1] = Nd4j.rand(labelsShape);
                 if(labelsShape.length == 2){
-                    Nd4j.getExecutioner().exec(new OldSoftMax(ret[1]));
+                    Nd4j.getExecutioner().exec(new SoftMax(ret[1]));
                 } else if(labelsShape.length == 3) {
                     for (int i = 0; i < labelsShape[2]; i++) {
-                        Nd4j.getExecutioner().exec(new OldSoftMax(ret[1].get(all(), all(), point(i))));
+                        Nd4j.getExecutioner().exec(new SoftMax(ret[1].get(all(), all(), point(i))));
                     }
                 } else {
                     throw new RuntimeException();

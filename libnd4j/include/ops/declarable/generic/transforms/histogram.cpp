@@ -34,6 +34,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(numBins == output->lengthOf(), 0, "Histogram: numBins must match output length")
 
+            output->nullify();
             helpers::histogramHelper(block.launchContext(), *input, *output);
 
             return Status::OK();

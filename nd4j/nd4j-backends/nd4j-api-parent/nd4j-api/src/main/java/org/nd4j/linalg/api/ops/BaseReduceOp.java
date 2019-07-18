@@ -61,7 +61,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
     public BaseReduceOp(SameDiff sameDiff,
                         SDVariable i_v,
                         int[] dimensions, boolean keepDims) {
-        super(sameDiff,new Object[]{dimensions});
+        super(sameDiff, null);
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
                 dimensions = new int[] {Integer.MAX_VALUE};
@@ -86,7 +86,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
                         SDVariable i_v,
                         SDVariable i_v2,
                         int[] dimensions, boolean keepDims) {
-        super(sameDiff,new Object[]{dimensions});
+        super(sameDiff,null);
         if (i_v != null) {
             if(dimensions == null || dimensions.length < 1)
                 dimensions = new int[] {Integer.MAX_VALUE};

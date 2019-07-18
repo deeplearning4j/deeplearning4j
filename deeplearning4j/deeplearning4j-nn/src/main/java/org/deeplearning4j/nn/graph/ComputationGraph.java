@@ -2892,26 +2892,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Get the parameters for the ComputationGraph
-     *
-     * @param backwardOnly If true: backprop parameters only (i.e., no visible layer biases used in layerwise pretraining layers)
+     * @deprecated To be removed. Use {@link #params()}
      */
+    @Deprecated
     public INDArray params(boolean backwardOnly) {
-        if (backwardOnly)
-            return flattenedParams;
-
-        List<INDArray> list = new ArrayList<>(layers.length);
-        for (int i = 0; i < topologicalOrder.length; i++) {
-            if (!vertices[topologicalOrder[i]].hasLayer())
-                continue;
-
-            Layer l = vertices[topologicalOrder[i]].getLayer();
-            INDArray layerParams = l.params();
-            if (layerParams != null)
-                list.add(layerParams); //may be null: subsampling etc layers
-        }
-
-        return Nd4j.toFlattened('f', list);
+        return params();
     }
 
     /**
@@ -3183,7 +3168,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public INDArray params() {
-        return params(true);
+        return flattenedParams;
     }
 
     @Override

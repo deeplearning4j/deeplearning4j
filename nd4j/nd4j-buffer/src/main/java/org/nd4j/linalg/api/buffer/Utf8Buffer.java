@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.buffer;
 
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;
 import org.bytedeco.javacpp.BytePointer;
@@ -42,6 +43,7 @@ public class Utf8Buffer extends BaseDataBuffer {
 
     protected Collection<Pointer> references = new ArrayList<>();
 
+    @Getter
     protected long numWords = 0;
 
     /**
@@ -121,6 +123,7 @@ public class Utf8Buffer extends BaseDataBuffer {
 
     public Utf8Buffer(DataBuffer underlyingBuffer, long length, long offset) {
         super(underlyingBuffer, length, offset);
+        this.numWords = length;
     }
 
     public Utf8Buffer(@NonNull Collection<String> strings) {

@@ -1433,29 +1433,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Returns a 1 x m vector where the vector is composed of a flattened vector of all of the parameters (weights and
-     * biases etc) for all parameters in the network. Note that this method is generally reserved for developer and
-     * internal use - see {@link #getParam(String)} and {@link #paramTable()} for a more useful/interpretable
-     * representation of the parameters.<br>
-     * Note that with backwardsOnly = false the parameter vector is not a copy, and changes to the returned INDArray
-     * will impact the network parameters.
-     *
-     * @param backwardOnly Return a copy of the parameters excluding any parameters used only for unsupervised layers'
-     *                     unsupervised training (such as decoder parameters in an autoencoder layer
-     * @return the params for this neural net
+     * @deprecated To be removed. Use {@link #params()} instead
      */
+    @Deprecated
     public INDArray params(boolean backwardOnly) {
-        if (backwardOnly)
-            return params();
-
-        List<INDArray> params = new ArrayList<>();
-        for (Layer layer : getLayers()) {
-            INDArray layerParams = layer.params();
-            if (layerParams != null)
-                params.add(layerParams); //may be null: subsampling etc layers
-        }
-
-        return Nd4j.toFlattened('f', params);
+        return params();
     }
 
 
