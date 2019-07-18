@@ -34,8 +34,8 @@ namespace nd4j {
 
                 if(outRank == 1) {
 
-// #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-#pragma omp parallel for if(!lock) schedule(guided)
+// PRAGMA_OMP_PARALLEL_FOR_ARGS(if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
+PRAGMA_OMP_PARALLEL_FOR_ARGS(if(!lock) schedule(guided))
                     for(Nd4jLong i = 0; i < indLen; ++i) {
 
                         Nd4jLong idx = indices.e<Nd4jLong>(i);
@@ -53,8 +53,8 @@ namespace nd4j {
                     std::vector<int> dimsToExcludeUpd(sizeOfDims);
                     std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
-// #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided) // causes known openMP asan bug !
-#pragma omp parallel for if(!lock) schedule(guided)
+// PRAGMA_OMP_PARALLEL_FOR_ARGS(if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)) // causes known openMP asan bug !
+PRAGMA_OMP_PARALLEL_FOR_ARGS(if(!lock) schedule(guided))
                     for(Nd4jLong i = 0; i < indLen; ++i) {
 
                         NDArray outSubArr = output(indices.e<Nd4jLong>(i), std::vector<int>({0}));
@@ -75,8 +75,8 @@ namespace nd4j {
 
                 if(outRank == 1) {
 
-// #pragma omp parallel for if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-#pragma omp parallel for if(!lock) schedule(guided)
+// PRAGMA_OMP_PARALLEL_FOR_ARGS(if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
+PRAGMA_OMP_PARALLEL_FOR_ARGS(if(!lock) schedule(guided))
                     for(Nd4jLong i = 0; i < indLen; ++i) {
 
                         Nd4jLong idx = indices.e<Nd4jLong>(i);
@@ -92,8 +92,8 @@ namespace nd4j {
                     std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
                     std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
 
-// #pragma omp parallel for if(indLen/indLastDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangeOut)
-#pragma omp parallel for if(!lock) schedule(guided) firstprivate(idxRangeOut)
+// PRAGMA_OMP_PARALLEL_FOR_ARGS(if(indLen/indLastDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangeOut))
+PRAGMA_OMP_PARALLEL_FOR_ARGS(if(!lock) schedule(guided) firstprivate(idxRangeOut))
                     for(Nd4jLong i = 0; i < indLen/indLastDim; ++i) {
 
                         NDArray indSubArr = indices(i, dimsToExcludeInd);
@@ -124,7 +124,7 @@ namespace nd4j {
                 std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(updates.rankOf(), {-1});
 
                 if(!calcGrad) {
-#pragma omp parallel for schedule(guided)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided))
                     for(Nd4jLong i = 0; i < indicesLen; ++i) {
 
                         auto subArr = updates(i, dimsToExclude);
@@ -132,7 +132,7 @@ namespace nd4j {
                     }
                 }
                 else {
-#pragma omp parallel for schedule(guided)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided))
                     for(Nd4jLong i = 0; i < indicesLen; ++i) {
 
                         auto subArr = updates(i, dimsToExclude);

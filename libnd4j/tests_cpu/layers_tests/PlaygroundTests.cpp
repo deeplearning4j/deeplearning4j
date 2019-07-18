@@ -823,7 +823,7 @@ TEST_F(PlaygroundTests, ScalarTest_2) {
     float * array = reinterpret_cast<float*>(source.buffer());
     for (int e = 0; e < 1000; e++) {
 
-#pragma omp simd
+PRAGMA_OMP_SIMD
         for (int i = 0; i < source.lengthOf(); i++) {
             array[i] = simdOps::Add<float, float, float>::op(array[i], 2.0f);
         }
@@ -1215,7 +1215,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test1) {
     //***********************************
   
     auto timeStart = std::chrono::system_clock::now();
-#pragma omp parallel for schedule(guided) 
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided)) 
     for(Nd4jLong i = 0; i < len; ++i) {
                 
         Nd4jLong offset1 = shape::getIndexOffset(i, x.getShapeInfo(), len);
@@ -1230,7 +1230,7 @@ TEST_F(PlaygroundTests, loopThroughArrs_test1) {
     //***********************************
     
     timeStart = std::chrono::system_clock::now();
-#pragma omp parallel for schedule(guided)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided))
     for(Nd4jLong i = 0; i < len; ++i) {
         
         Nd4jLong offset1 = shape::getIndexOffset(i, x.getShapeInfo(), len);
@@ -1255,7 +1255,7 @@ static void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeI
     int zEws = shape::elementWiseStride(zShapeInfo);
             
     BlockInformation info(len, ELEMENT_THRESHOLD);
-    #pragma omp parallel num_threads(info.threads) if (info.threads > 1) default(shared)
+    PRAGMA_OMP_PARALLEL_ARGS(num_threads(info.threads) if (info.threads > 1))
     {                
         auto i = omp_get_thread_num();            
         Nd4jLong itemsToLoop = (i < info.threads-1) ? info.items : info.items + info.remainder;
@@ -1263,7 +1263,7 @@ static void loopSpan(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeI
         auto xi = x + xEws * index;
         auto yi = y + yEws * index;
         auto zi = z + zEws * index;        
-        #pragma omp simd
+        PRAGMA_OMP_SIMD
         for (Nd4jLong j = 0; j < itemsToLoop; j++) 
             zi[j * zEws] = simdOps::LogPoissonLoss<float, float, float>::op(xi[j * xEws], yi[j * yEws]);
     }
@@ -1278,7 +1278,7 @@ static void loopSimple(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShap
     int threads = 6;
     int span_size = len / threads + 1;
     
-    #pragma omp parallel for simd schedule(static, span_size) if (len > ELEMENT_THRESHOLD) proc_bind(close) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(static, span_size) if (len > ELEMENT_THRESHOLD) proc_bind(close))
     for(Nd4jLong i = 0; i < len; ++i)
         z[i * zEws] = simdOps::LogPoissonLoss<float, float, float>::op(x[i * xEws], y[i * yEws]);
 
@@ -1347,11 +1347,11 @@ static void loop1(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo
     int zEws = shape::elementWiseStride(zShapeInfo);
             
     nd4j::OmpLaunchHelper info(len);
-    #pragma omp parallel num_threads(info._numThreads) default(shared)
+    PRAGMA_OMP_PARALLEL_ARGS(num_threads(info._numThreads))
     {                
         auto threadNum = omp_get_thread_num();
         Nd4jLong threadOffset = info.getThreadOffset(threadNum);        
-        #pragma omp simd
+        PRAGMA_OMP_SIMD
         for (Nd4jLong j = 0; j < info.getItersPerThread(threadNum); j++)  {
             Nd4jLong xOffset = shape::getIndexOffset(j+threadOffset, xShapeInfo, len);
             Nd4jLong yOffset = shape::getIndexOffset(j+threadOffset, yShapeInfo, len);
@@ -1370,7 +1370,7 @@ static void loop2(float* x, Nd4jLong* xShapeInfo, float* y, Nd4jLong* yShapeInfo
     int threads = 6;
     int span_size = len / threads + 1;
     
-    #pragma omp parallel for simd schedule(static) default(shared)
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(static))
     for(Nd4jLong i = 0; i < len; ++i) {
         Nd4jLong xOffset = shape::getIndexOffset(i, xShapeInfo, len);
         Nd4jLong yOffset = shape::getIndexOffset(i, yShapeInfo, len);
@@ -1615,7 +1615,7 @@ TEST_F(PlaygroundTests, test_manual_loop) {
     auto timeStart = std::chrono::system_clock::now();
     for (int i = 0; i < iterations; i++) {
 
-#pragma omp parallel for num_threads(4) schedule(static, 32768)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(4) schedule(static, 32768))
         for (unsigned int e = 0; e < len; e++)
             z[e] = array[e];
     }
@@ -1931,19 +1931,19 @@ TEST_F(PlaygroundTests, loops_2) {
     for (int i = 0; i < N; ++i)
     {
 
-        #pragma omp parallel sections
+        PRAGMA_OMP_PARALLEL_SECTIONS
         {
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
 
                 shape::calcOffsets(3, shape, strides, xOffsets);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
 
                 shape::calcOffsets(3, shape, strides, yOffsets);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
 
                 shape::calcOffsets(3, shape, strides, zOffsets);
@@ -2110,19 +2110,19 @@ TEST_F(PlaygroundTests, loops_3) {
     for (int i = 0; i < N; ++i)
     {
 
-        #pragma omp parallel sections
+        PRAGMA_OMP_PARALLEL_SECTIONS
         {
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
 
                 shape::calcOffsets(3, shape, strides, xOffsets);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
 
                 shape::calcOffsets(3, shape, strides, yOffsets);
             }
-            #pragma omp section
+            PRAGMA_OMP_SECTION
             {
 
                 shape::calcOffsets(3, shape, strides, zOffsets);

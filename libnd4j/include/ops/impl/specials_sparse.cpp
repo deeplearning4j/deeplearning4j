@@ -185,9 +185,9 @@ namespace nd4j {
                 if (i < right){ coo_quickSort_parallel_internal(indices, array, i, right, cutoff, rank); }
 
             }else{
-#pragma omp task
+PRAGMA_OMP_TASK
                 { coo_quickSort_parallel_internal(indices, array, left, j, cutoff, rank); }
-#pragma omp task
+PRAGMA_OMP_TASK
                 { coo_quickSort_parallel_internal(indices, array, i, right, cutoff, rank); }
             }
 
@@ -200,7 +200,7 @@ namespace nd4j {
 
             PRAGMA_OMP_PARALLEL_THREADS(numThreads)
             {
-#pragma omp single nowait
+PRAGMA_OMP_SINGLE_ARGS(nowait)
                 {
                     coo_quickSort_parallel_internal(indices, array, 0, lenArray-1, cutoff, rank);
                 }

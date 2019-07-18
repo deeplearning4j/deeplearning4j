@@ -67,7 +67,7 @@ namespace nd4j {
             auto _infCount = nd4j::math::nd4j_isinf(input->e<double>(0)) ? 1L : 0L;
             auto _nanCount = nd4j::math::nd4j_isnan(input->e<double>(0)) ? 1L : 0L;
 
-#pragma omp parallel for schedule(guided) reduction(+:_nanCount,_infCount,_meanValue,_zeroCount,_positiveCount,_negativeCount) reduction(min:_minValue) reduction(max:_maxValue)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) reduction(+:_nanCount,_infCount,_meanValue,_zeroCount,_positiveCount,_negativeCount) reduction(min:_minValue) reduction(max:_maxValue))
             for (Nd4jLong e = 1; e < input->lengthOf(); e++) {
                 auto current = input->e<double>(e);
                 auto n = e + 1.;
@@ -88,7 +88,7 @@ namespace nd4j {
             }
             *info = {_minValue, _maxValue, _meanValue / input->lengthOf(), _stdDevValue, _zeroCount, _positiveCount, _negativeCount, _infCount, _nanCount};
             _stdDevValue = 0; //math::nd4j_sqrt<double, double>(info->_stdDevValue / (input->lengthOf() - 1));
-#pragma omp parallel for schedule (static) reduction(+:_stdDevValue)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule (static) reduction(+:_stdDevValue))
             for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
                 double current = input->e<double>(e);
                 _stdDevValue += (info->_meanValue - current) * (info->_meanValue - current); //info->_minValue;

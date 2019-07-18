@@ -60,13 +60,13 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
         memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
     } 
     else if (imEWS > 1) {
-#pragma omp parallel for schedule(static) proc_bind(close)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close))
         for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS)
             imBuff[i] = static_cast<T>(0.f);
     } 
     else {        
         const auto len = shape::length(imShapeBuffer);
-#pragma omp parallel for schedule(static) proc_bind(close)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close))
         for (int i = 0; i < len; i++)            
             imBuff[shape::getIndexOffset(i, imShapeBuffer, len)] = static_cast<T>(0.f);
     }
@@ -76,7 +76,7 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
 
     if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
             
-#pragma omp parallel for schedule(static) proc_bind(close) private(col, im, imRow, imCol)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close) private(col, im, imRow, imCol))
     	for (int b = 0; b < bS; b++) {        
       		for (int c = 0; c < iC; ++c) {                    
             	for (int kRow = 0; kRow < kH; ++kRow) {                        
@@ -101,7 +101,7 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
     }
     else {
 
-#pragma omp parallel for schedule(static) proc_bind(close) private(im, col, imRow, imCol)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close) private(im, col, imRow, imCol))
     	for (int b = 0; b < bS; b++) {        
         	for (int colH = 0; colH < oH; ++colH) {
             	for (int colW = 0; colW < oW; ++colW) {

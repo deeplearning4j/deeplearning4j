@@ -39,7 +39,7 @@ namespace helpers {
             auto tadsOut = output->allTensorsAlongDimension({0});
 
             // FIXME: template selector should be moved out of loop
-#pragma omp parallel for
+PRAGMA_OMP_PARALLEL_FOR
             for (int e = 0; e < tadsIn->size(); e++) {
                 BUILD_SINGLE_SELECTOR(xType, _adjust_saturation_single, (tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
             }
