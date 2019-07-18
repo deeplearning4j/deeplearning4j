@@ -305,7 +305,7 @@ public class NDArrayStrings {
                 }
             }
             if (i < l - 1) {
-                if (!summarize || i < 2 || i > l - 3 || (summarize && l == 6)) {
+                if (!summarize || i <= 2 || i >= l - 3 || (summarize && l == 6)) {
                     sb.append(colSep);
                 }
             }

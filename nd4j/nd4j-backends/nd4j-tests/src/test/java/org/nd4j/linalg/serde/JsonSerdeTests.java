@@ -66,7 +66,7 @@ public class JsonSerdeTests extends BaseNd4jTest {
 
                     INDArray arr;
                     if(dt == DataType.UTF8){
-                        arr = Nd4j.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l").reshape('c', 3, 4);
+                        arr = Nd4j.create("aaaaa", "bbbb", "ccc", "dd", "e", "f", "g", "h", "i", "j", "k", "l").reshape('c', 3, 4);
                     } else {
                         arr = in.castTo(dt);
                     }

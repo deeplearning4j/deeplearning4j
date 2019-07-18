@@ -401,6 +401,7 @@ public class CNN3DGradientCheckTest extends BaseDL4JTest {
                             .dataType(DataType.DOUBLE)
                             .updater(new NoOp()).weightInit(WeightInit.LECUN_NORMAL)
                             .dist(new NormalDistribution(0, 1))
+                            .seed(12345)
                             .list()
                             .layer(0, new Convolution3D.Builder().activation(afn).kernelSize(1, 1, 1)
                                     .nIn(convNIn).nOut(convNOut).hasBias(false)

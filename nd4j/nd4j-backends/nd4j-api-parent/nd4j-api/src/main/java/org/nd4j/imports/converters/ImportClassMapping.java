@@ -331,6 +331,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.CheckNumerics.class,
             org.nd4j.linalg.api.ops.impl.transforms.Cholesky.class,
             org.nd4j.linalg.api.ops.impl.transforms.Constant.class,
+            org.nd4j.linalg.api.ops.impl.transforms.Histogram.class,
             org.nd4j.linalg.api.ops.impl.transforms.HistogramFixedWidth.class,
             org.nd4j.linalg.api.ops.impl.transforms.IdentityN.class,
             org.nd4j.linalg.api.ops.impl.transforms.MaxOut.class,

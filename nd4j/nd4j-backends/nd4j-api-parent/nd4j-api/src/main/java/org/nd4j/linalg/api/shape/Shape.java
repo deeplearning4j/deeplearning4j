@@ -2089,7 +2089,9 @@ public class Shape {
         }
 
         // we need to wrap buffer of a current array, to make sure it's properly marked as a View
-        INDArray ret = Nd4j.create(Nd4j.createBuffer(arr.data(), arr.offset(), arr.length()), newShape, newStrides, arr.offset(), isFOrder ? 'f' : 'c');
+        DataBuffer db = arr.data();
+        DataBuffer buffer = Nd4j.createBuffer(db, arr.offset(), arr.length());
+        INDArray ret = Nd4j.create(buffer, newShape, newStrides, arr.offset(), isFOrder ? 'f' : 'c');
         return ret;
     }
 

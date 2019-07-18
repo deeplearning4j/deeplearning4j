@@ -996,10 +996,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         int[] mbSizes = new int[] {1, 3, 10};
         for (int minibatch : mbSizes) {
 
-            INDArray in1 = Nd4j.rand(minibatch, 2);
-            INDArray in2 = Nd4j.rand(minibatch, 2);
+            INDArray in1 = Nd4j.rand(DataType.DOUBLE, minibatch, 2);
+            INDArray in2 = Nd4j.rand(DataType.DOUBLE, minibatch, 2);
 
-            INDArray labels = Nd4j.rand(minibatch, 1);
+            INDArray labels = Nd4j.rand(DataType.DOUBLE, minibatch, 1);
 
             String testName = "testBasicL2() - minibatch = " + minibatch;
 

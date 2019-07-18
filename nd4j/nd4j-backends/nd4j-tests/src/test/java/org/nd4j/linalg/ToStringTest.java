@@ -44,7 +44,7 @@ public class ToStringTest extends BaseNd4jTest {
         assertEquals("[         1,         2,         3]",
                 Nd4j.createFromArray(1, 2, 3).toString());
 
-        assertEquals("[         1,         2,         3  ...         6         7,         8]",
+        assertEquals("[       1,       2,       3,       4,       5,       6,       7,       8]",
                 Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7, 8).toString(1000, false, 2));
 
         assertEquals("[    1.132,    2.644,    3.234]",
@@ -53,9 +53,8 @@ public class ToStringTest extends BaseNd4jTest {
         assertEquals("[               1.132414,             2.64356456,             3.25345234]",
                 Nd4j.createFromArray(1.132414, 2.64356456, 3.25345234).toStringFull());
 
-        assertEquals("[         1,         2,         3  ...         6         7,         8]",
-                Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7, 8).toString(100, true, 1));
-
+        assertEquals("[      1,      2,      3,  ...      6,      7,      8]",
+                Nd4j.createFromArray(1, 2, 3, 4, 5, 6, 7, 8).toString(6, true, 1));
     }
 
     @Override

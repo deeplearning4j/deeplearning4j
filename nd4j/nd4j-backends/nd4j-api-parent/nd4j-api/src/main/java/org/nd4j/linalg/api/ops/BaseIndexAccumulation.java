@@ -48,7 +48,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                                  SDVariable i_v,
                                  boolean keepDims,
                                  int[] dimensions) {
-        super(sameDiff,new Object[]{dimensions});
+        super(sameDiff,null);
         if (i_v != null) {
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
@@ -70,7 +70,7 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
                                  SDVariable i_v2,
                                  boolean keepDims,
                                  int[] dimensions) {
-        super(sameDiff,new Object[]{dimensions});
+        super(sameDiff,null);
         if (i_v != null) {
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);

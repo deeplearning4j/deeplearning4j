@@ -87,6 +87,8 @@ public class DefaultDataBufferFactory implements DataBufferFactory {
             return new BFloat16Buffer(underlyingBuffer, length, offset);
         } else if (underlyingBuffer.dataType() == DataType.HALF) {
             return new HalfBuffer(underlyingBuffer, length, offset);
+        } else if (underlyingBuffer.dataType() == DataType.UTF8) {
+            return new Utf8Buffer(underlyingBuffer, length, offset);
         }
         return null;
     }

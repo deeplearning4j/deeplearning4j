@@ -28,7 +28,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.optimize.api.BaseTrainingListener;
 import org.deeplearning4j.ui.stats.api.*;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsInitializationConfiguration;
 import org.deeplearning4j.ui.stats.impl.DefaultStatsUpdateConfiguration;
@@ -763,11 +762,11 @@ public abstract class BaseStatsListener implements RoutingIterationListener {
 
         for (Map.Entry<String, INDArray> entry : map.entrySet()) {
 
-            org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram hOp =
-                    new org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram(entry.getValue(), nBins);
-            Nd4j.getExecutioner().exec(hOp);
+            org.nd4j.linalg.api.ops.impl.transforms.Histogram hOp =
+                    new org.nd4j.linalg.api.ops.impl.transforms.Histogram(entry.getValue(), nBins);
+            Nd4j.exec(hOp);
 
-            INDArray bins = hOp.z();
+            INDArray bins = hOp.getOutputArgument(0);
             int[] count = new int[nBins];
             for (int i = 0; i < bins.length(); i++) {
                 count[i] = (int) bins.getDouble(i);

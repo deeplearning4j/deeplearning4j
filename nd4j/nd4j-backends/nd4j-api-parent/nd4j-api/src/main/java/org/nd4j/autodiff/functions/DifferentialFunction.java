@@ -663,9 +663,9 @@ public abstract class DifferentialFunction {
                     scope = "";
                 else
                     scope = scope + "/";
-                String varName = scope + sameDiff.generateNewVarName(opName(),argIndex).replace(":", "_");
+                String varName = scope + sameDiff.generateNewVarName(opName(),argIndex);
                 while(sameDiff.functionExists(varName)) {
-                    varName = scope + sameDiff.generateNewVarName(opName(), argIndex).replace(":", "_");
+                    varName = scope + sameDiff.generateNewVarName(opName(), argIndex);
                     argIndex++;
                 }
 

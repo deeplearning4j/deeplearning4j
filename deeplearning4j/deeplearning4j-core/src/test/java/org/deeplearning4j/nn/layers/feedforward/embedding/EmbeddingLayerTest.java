@@ -310,8 +310,8 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
                 .build();
         MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder().activation(Activation.TANH).list()
                 .layer(new DenseLayer.Builder().nIn(nClassesIn).nOut(embeddingDim).build())
-                .layer(new OutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
-                .inputPreProcessor(0, new RnnToFeedForwardPreProcessor())
+                .layer(new RnnOutputLayer.Builder().nIn(embeddingDim).nOut(nOut).activation(Activation.SOFTMAX).build())
+                .setInputType(InputType.recurrent(nClassesIn))
                 .build();
 
         MultiLayerNetwork net = new MultiLayerNetwork(conf);
@@ -324,7 +324,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
         int batchSize = 3;
         INDArray inEmbedding = Nd4j.create(batchSize, 1);
         INDArray inOneHot = Nd4j.create(batchSize, nClassesIn, 1);
-        INDArray outLabels = Nd4j.create(batchSize, 4);
+        INDArray outLabels = Nd4j.create(batchSize, 4, 1);
 
         Random r = new Random(1337);
         for (int i = 0; i < batchSize; i++) {
@@ -333,7 +333,7 @@ public class EmbeddingLayerTest extends BaseDL4JTest {
             inOneHot.putScalar(new int[]{i, classIdx, 0}, 1.0);
 
             int labelIdx = r.nextInt(4);
-            outLabels.putScalar(new int[]{i, labelIdx}, 1.0);
+            outLabels.putScalar(new int[]{i, labelIdx, 0}, 1.0);
         }
 
         net.setInput(inEmbedding);
