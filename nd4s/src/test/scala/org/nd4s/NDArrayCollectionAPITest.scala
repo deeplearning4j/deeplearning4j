@@ -17,6 +17,7 @@ package org.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4s.Implicits._
+import org.nd4s.ops.FunctionalOpExecutioner
 import org.scalatest.{ FlatSpec, Matchers }
 
 class NDArrayCollectionAPITest extends FlatSpec with Matchers {
@@ -186,4 +187,18 @@ class NDArrayCollectionAPITest extends FlatSpec with Matchers {
     assert(false == results)
   }
 
+  "FunctionalOpExecutioner" should "allow debug and verbose" in {
+    val executioner = new FunctionalOpExecutioner
+    executioner.enableDebugMode(true)
+    executioner.enableVerboseMode(true)
+
+    assert(executioner.isDebug)
+    assert(executioner.isVerbose)
+  }
+
+  "FunctionalOpExecutioner" should "provide access to environment information" in {
+    FunctionalOpExecutioner.apply.printEnvironmentInformation()
+    val environment = FunctionalOpExecutioner.apply.getEnvironmentInformation
+    assert(environment != null)
+  }
 }
