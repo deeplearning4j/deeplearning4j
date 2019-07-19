@@ -92,6 +92,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             phMap.put(INPUT_KEY, input);
             if(maskArray != null){
                 phMap.put(MASK_KEY, maskArray);
+            } else {
+                phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
             }
 
             for(String s : paramTable.keySet() ) {
@@ -139,6 +141,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             phMap.put(fn.getGradPlaceholderName(), epsilon);
             if(maskArray != null){
                 phMap.put(MASK_KEY, maskArray);
+            } else {
+                phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
             }
 
             List<String> requiredGrads = new ArrayList<>(paramTable.size() + 1);

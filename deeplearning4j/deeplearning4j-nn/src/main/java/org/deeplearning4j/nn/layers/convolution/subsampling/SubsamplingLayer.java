@@ -18,35 +18,25 @@ package org.deeplearning4j.nn.layers.convolution.subsampling;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
-import org.deeplearning4j.nn.conf.layers.PoolingType;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNSubsamplingHelper;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.Op;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
-import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
-import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.convolution.Convolution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.ArrayUtil;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 import org.nd4j.util.OneTimeLogger;
 
 import java.util.Arrays;
-import java.util.Properties;
 
 
 /**
@@ -128,16 +118,13 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int[] dilation = layerConf().getDilation();
 
         int[] pad;
-        int[] outSize;
-        if (convolutionMode == ConvolutionMode.Same) {
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
+        int[] outSize = new int[]{(int)input.size(2), (int)input.size(3)};    //NCHW
+        boolean same = convolutionMode == ConvolutionMode.Same;
+        if (same) {
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
             pad = layerConf().getPadding();
-            outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
-        int outH = outSize[0];
-        int outW = outSize[1];
 
         if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
             Pair<Gradient, INDArray> ret = null;
@@ -173,116 +160,42 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int inputWidth = (int) input().size(-1);
         Gradient retGradient = new DefaultGradient();
 
-        //Epsilons in shape: [miniBatch, channels, outH, outW]
-        //Epsilons out shape: [miniBatch, channels, inH, inW]
 
-        //Two possibilities here for the epsilons:
-        //(a) Epsilons come from a dense/output layer above, with c order and strides [channels*H*W, H*W, W, 1]
-        //(b) Epsilons come from CNN layer above, with c order and strides [H*W, channels*H*W, W, 1] (i.e., due to permute)
-
-        //We want to reshape epsilons to 1d here, but to do this without a copy: we end up with different orders of
-        // element in the buffer, for the "dense above" and "cnn above" cases.
-        //Fortunately, we can just permute things when we do the im2col reshaping; then, the order of the rows in
-        // col2d will match the order of the 1d epsilons...
-        //With the 1d epsilons order matching the rows order for the 2d im2col: we can just do a muliColumnVector op,
-        // instead of a slower broadcast muli op
-
-        boolean cOrderStrides = false;
-        if (epsilon.ordering() != 'c') {
-            epsilon = epsilon.dup('c');
-            cOrderStrides = true;
-        }
-        if (!cOrderStrides && Shape.strideDescendingCAscendingF(epsilon)) {
-            cOrderStrides = true;
-        } else if (!Arrays.equals(new long[] {outH * outW, inDepth * outH * outW, outW, 1}, epsilon.stride())) {
-            //Unexpected/unusual strides, not either (a) or (b) cases above
-            epsilon = epsilon.dup('c');
-            cOrderStrides = true;
-        }
-
-        INDArray col6d;
-        INDArray col6dPermuted;
-        INDArray epsilon1d;
-        if (cOrderStrides) {
-            //"Dense/Output layer above strides... i.e., standard c-order strides
-            col6d = Nd4j.create(dataType, new long[] {miniBatch, inDepth, outH, outW, kernel[0], kernel[1]}, 'c');
-            col6dPermuted = col6d.permute(0, 1, 4, 5, 2, 3);
-            epsilon1d = epsilon.reshape('c', ArrayUtil.prod(epsilon.length()), 1); //zero copy reshape
-        } else {
-            //"CNN layer above" strides...
-            col6d = Nd4j.create(dataType, new long[] {inDepth, miniBatch, outH, outW, kernel[0], kernel[1]}, 'c');
-            col6dPermuted = col6d.permute(1, 0, 4, 5, 2, 3);
-
-            INDArray epsilonTemp = epsilon.permute(1, 0, 2, 3);
-            epsilon1d = epsilonTemp.reshape('c', new int[] {ArrayUtil.prod(epsilon.length()), 1}); //Should be a zero-copy reshape always
-        }
-
-        INDArray col2d = col6d.reshape('c', miniBatch * inDepth * outH * outW, kernel[0] * kernel[1]);
-
-        switch (layerConf().getPoolingType()) {
+        INDArray epsAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape(), 'c');
+        DynamicCustomOp.DynamicCustomOpsBuilder b;
+        int extra = 0;
+        switch (layerConf().getPoolingType()){
             case MAX:
-                //Execute im2col, then reshape to 2d. Note rows are in a different order for cOrderStrides true vs false cases
-                DynamicCustomOp op = DynamicCustomOp.builder("im2col")
-                        .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                                ArrayUtil.fromBoolean(convolutionMode == ConvolutionMode.Same))
-                        .addFloatingPointArguments(minValue())
-                        .addInputs(input)
-                        .addOutputs(col6dPermuted)
-                        .build();
-                Nd4j.getExecutioner().exec(op);
-
-                INDArray isMax = Nd4j.getExecutioner().exec(new IsMax(col2d, col2d, 1));
-                isMax.muliColumnVector(epsilon1d);
+                b = DynamicCustomOp.builder("maxpool2d_bp");
                 break;
             case AVG:
-                //TODO: We could further optimize this by creating an uninitialized array, and doing a 'putiColumnVector' operation
-                // instead of a zero initialization + an addiColumnVector op
-                col2d.addiColumnVector(epsilon1d);
-                break;
-            case PNORM:
-                int pnorm = layerConf().getPnorm();
-
-                //First: do forward pass to get pNorm array
-                Convolution.im2col(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                        convolutionMode == ConvolutionMode.Same, col6dPermuted);
-                INDArray pNorm = Transforms.abs(col2d, true); //dup as we need col2d again later
-                Transforms.pow(pNorm, pnorm, false);
-                pNorm = pNorm.sum(1).reshape(pNorm.size(0), 1);
-                Transforms.pow(pNorm, (1.0 / pnorm), false);
-
-                //dL/dIn = dL/dOut * dOut/dIn
-                //dOut/dIn = in .* |in|^(p-2) /  ||in||_p^(p-1), where ||in||_p is the output p-norm
-                INDArray numerator;
-                if (pnorm == 2) {
-                    numerator = col2d;
+                b = DynamicCustomOp.builder("maxpool2d_bp");
+                if(layerConf().isAvgPoolIncludePadInDivisor()){
+                    //Mostly this is a legacy case - beta4 and earlier models.
+                    extra = 1;    //Divide by "number present" excluding padding
                 } else {
-                    INDArray absp2 = Transforms.pow(Transforms.abs(col2d, true), pnorm - 2, false);
-                    numerator = col2d.muli(absp2);
+                    //Default behaviour
+                    extra = 0;    //Divide by kH*kW not "number present"
                 }
 
-                INDArray denom = Transforms.pow(pNorm, pnorm - 1, false);
-                double eps = layerConf().getEps();
-                Transforms.max(denom, eps, false); // in case of 0
-                numerator.muliColumnVector(denom.rdivi(epsilon1d));
+                break;
+            case PNORM:
+                b = DynamicCustomOp.builder("pnormpool2d_bp");
+                extra = layerConf().getPnorm();
+                b.addFloatingPointArguments(layerConf().getEps());
                 break;
             default:
-                throw new IllegalStateException("Unknown or unsupported pooling type: " + layerConf().getPoolingType()
-                        + " " + layerId());
+                throw new UnsupportedOperationException("Pooling mode not supported in SubsamplingLayer: " + layerConf().getPoolingType());
         }
 
-        //Finally: we want the output strides for the epsilons to match the strides in the activations from the layer below
-        //Assuming the layer below is a CNN layer (very likely) we want [H*W, channels*H*W, W, 1] instead of the standard
-        // c-order [channels*H*W, H*W, W, 1] strides
-        //To achieve this: [channels, miniBatch, H, W] in c order, then permute to [miniBatch, channels, H, W]
-        //This gives us proper strides of 1 on the muli...
-        INDArray tempEpsilon = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, dataType, new long[] {inDepth, miniBatch, inH, inW}, 'c');
-        INDArray outEpsilon = tempEpsilon.permute(1, 0, 2, 3);
-        Convolution.col2im(col6dPermuted, outEpsilon, strides[0], strides[1], pad[0], pad[1], inputHeight, inputWidth, dilation[0], dilation[1]);
+        b.addInputs(input, epsilon)
+                .addOutputs(epsAtInput)
+                .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
+                        (same ? 1 : 0), extra, 0);  //last 0 = NCHW
 
-        if (layerConf().getPoolingType() == PoolingType.AVG)
-            outEpsilon.divi(ArrayUtil.prod(layerConf().getKernelSize()));
+        Nd4j.exec(b.build());
 
-        return new Pair<>(retGradient, outEpsilon);
+        return new Pair<>(retGradient, epsAtInput);
     }
 
     private static double minValue(){
@@ -326,7 +239,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         int[] dilation = layerConf().getDilation();
         int[] pad;
         int[] outSize;
-        if (convolutionMode == ConvolutionMode.Same) {
+        boolean same = convolutionMode == ConvolutionMode.Same;
+        if (same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {inH, inW}, kernel, strides, dilation);
         } else {
@@ -335,6 +249,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         }
         int outH = outSize[0];
         int outW = outSize[1];
+
 
         if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
             INDArray ret = null;
@@ -358,31 +273,34 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             }
         }
 
-        //Similar to convolution layer forward pass: do im2col, but permute so that pooling can be done with efficient strides...
-        //Current im2col implementation expects input with shape [miniBatch,channels,kH,kW,outH,outW]
+
+
 
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), new long[]{miniBatch, inDepth, outH, outW}, 'c');
-
-        LegacyPooling2D.Pooling2DType pt;
-        double extra = 0.0;
+        DynamicCustomOp.DynamicCustomOpsBuilder b;
+        int extra = 0;
         switch (layerConf().getPoolingType()){
             case MAX:
-                pt = LegacyPooling2D.Pooling2DType.MAX;
+                b = DynamicCustomOp.builder("maxpool2d");
                 break;
             case AVG:
-                pt = LegacyPooling2D.Pooling2DType.AVG;
-                extra = 1.0;    //Divide by kH*kW not "number present" to match backward pass
+                b = DynamicCustomOp.builder("maxpool2d");
+                extra = 1;    //Divide by kH*kW not "number present" to match backward pass     -- TODO change this to support both legacy behaviour (deserialized nets) and "exclude" by default for new nets
                 break;
             case PNORM:
-                pt = LegacyPooling2D.Pooling2DType.PNORM;
+                b = DynamicCustomOp.builder("pnormpool2d");
                 extra = layerConf().getPnorm();
                 break;
             default:
                 throw new UnsupportedOperationException("Not supported: " + layerConf().getPoolingType());
         }
-        Op op = new LegacyPooling2D(input, kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
-                convolutionMode == ConvolutionMode.Same, pt, extra, output);
-        Nd4j.getExecutioner().exec(op);
+
+        b.addInputs(input)
+                .addOutputs(output)
+                .addIntegerArguments(kernel[0], kernel[1], strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
+                        (same ? 1 : 0), extra, 0);  //Last 0: NCHW
+
+        Nd4j.exec(b.build());
 
         return output;
     }
