@@ -3095,7 +3095,7 @@ public class Nd4j {
      * Create a random ndarray with the given shape using
      * the current time as the seed
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int[] shape) {
@@ -3126,7 +3126,7 @@ public class Nd4j {
      * Create a random ndarray with the given shape and array order
      *
      * @param order the order of the ndarray to return
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(char order, int[] shape) {
@@ -3202,7 +3202,7 @@ public class Nd4j {
     /**
      * Create a random ndarray with the given shape using given seed
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param seed  the  seed to use
      * @return the random ndarray with the specified shape
      */
@@ -3228,7 +3228,7 @@ public class Nd4j {
     /**
      * Create a random ndarray with the given shape using the given RandomGenerator
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param rng     the random generator to use
      * @return the random ndarray with the specified shape
      */
@@ -3240,7 +3240,7 @@ public class Nd4j {
     /**
      * Create a random ndarray with the given shape using the given rng
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param dist  distribution to use
      * @return the random ndarray with the specified shape
      */
@@ -3253,7 +3253,7 @@ public class Nd4j {
     /**
      * Create a random ndarray with the given shape using the given rng
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param dist  distribution to use
      * @return the random ndarray with the specified shape
      */
@@ -3333,7 +3333,7 @@ public class Nd4j {
      * Random normal using the current time stamp
      * as the seed
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return new array with random values
      */
     public static INDArray randn(int[] shape) {
@@ -3366,7 +3366,7 @@ public class Nd4j {
      * Random normal N(0,1) with the specified shape and array order
      *
      * @param order order of the output ndarray
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return new array with random values
      */
     public static INDArray randn(char order, int[] shape) {
@@ -3378,7 +3378,7 @@ public class Nd4j {
      * Random normal N(0,1) with the specified shape and array order
      *
      * @param order order of the output ndarray
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return new array with random values
      */
     public static INDArray randn(char order, long[] shape) {
@@ -3398,7 +3398,7 @@ public class Nd4j {
     /**
      * Random normal using the specified seed
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return
      */
     public static INDArray randn(int[] shape, long seed) {
@@ -3459,7 +3459,7 @@ public class Nd4j {
     /**
      * Random normal using the given rng
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param r     the random generator to use
      * @return
      */
@@ -3471,7 +3471,7 @@ public class Nd4j {
     /**
      * Random normal using the given rng
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param r     the random generator to use
      * @return
      */
@@ -4080,7 +4080,7 @@ public class Nd4j {
      * Create an ndrray with the specified shape
      *
      * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the created ndarray
      */
     public static INDArray create(float[] data, int[] shape) {
@@ -4141,7 +4141,7 @@ public class Nd4j {
      * Create an array of the specified shape initialized with values from a java 1d array.
      *
      * @param data  the data to use with tne ndarray
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the created ndarray
      */
     public static INDArray create(double[] data, int[] shape) {
@@ -4468,7 +4468,7 @@ public class Nd4j {
     /**
      * Creates an ndarray with the specified shape
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the instance
      */
     public static INDArray create(int... shape) {
@@ -4479,7 +4479,7 @@ public class Nd4j {
     /**
      * Creates an ndarray with the specified shape
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the instance
      */
     public static INDArray create(long... shape) {
@@ -4823,7 +4823,7 @@ public class Nd4j {
      * Creates an ndarray with the specified shape
      * TODO: unused method.
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the instance
      */
     public static INDArray create(List<INDArray> list, int[] shape, char ordering) {
@@ -4981,7 +4981,7 @@ public class Nd4j {
     /**
      * Creates an ndarray with the specified shape
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param ordering Fortran 'f' or C/C++ 'c' ordering.
      * @return the instance
      */
@@ -4992,11 +4992,13 @@ public class Nd4j {
        return INSTANCE.create(shape, ordering);
     }
 
+    // used  often.
     /**
+     * Create an array with given shape and ordering.
      *
-     * @param shape
-     * @param ordering
-     * @return
+     * @param shape the shape of the array
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created array.
      */
     public static INDArray create(@NonNull long[] shape, char ordering) {
         if(shape.length == 0)
@@ -5004,33 +5006,45 @@ public class Nd4j {
         //ensure shapes that wind up being scalar end up with the write shape
 
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.create(shape, ordering);
-        return ret;
+        return INSTANCE.create(shape, ordering);
     }
 
+    /**
+     * Create an array with given shape, stride  and ordering.
+     *
+     * @param dataType data type.
+     * @param shape the shape of the array
+     * @param strides stride, separation of elements in each dimension.
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created array.
+     */
     public static INDArray create(DataType dataType, @NonNull long[] shape, long[] strides, char ordering) {
         if(shape.length == 0)
             return Nd4j.scalar(dataType, 0.0);
 
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.create(dataType, shape, strides, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(dataType, shape, strides, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    // used often.
+    /**
+     * Create an array with given data type shape and ordering.
+     *
+     * @param dataType data type.
+     * @param shape the shape of the array
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created array.
+     */
     public static INDArray create(@NonNull DataType dataType, @NonNull long[] shape, char ordering) {
         if(shape.length == 0)
             return Nd4j.scalar(dataType, 0.0);
         //ensure shapes that wind up being scalar end up with the write shape
-
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.create(dataType, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(dataType, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
 
+    // TODO: Leaving these until #8028 is fixed.
     /**
      *
      * @param shape
@@ -5043,6 +5057,7 @@ public class Nd4j {
         }
     }
 
+    // TODO: Leaving these until #8028 is fixed.
     /**
      *
      * @param shape
@@ -5073,11 +5088,11 @@ public class Nd4j {
 
 
     /**
-     * Creates an *uninitialized* ndarray with the specified shape and ordering.<br>
+     * Creates an *uninitialized* array with the specified shape and ordering.<br>
      * <b>NOTE</b>: The underlying memory (DataBuffer) will not be initialized. Don't use this unless you know what you are doing.
      *
-     * @param shape the shape of the ndarray
-     * @param ordering the order of the ndarray
+     * @param shape the shape of the array
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
      * @return the instance
      */
     public static INDArray createUninitialized(int[] shape, char ordering) {
@@ -5085,15 +5100,21 @@ public class Nd4j {
             return scalar(dataType(), 0.0);
 
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.createUninitialized(shape, ordering);
-        return ret;
+        return INSTANCE.createUninitialized(shape, ordering);
     }
 
     public static INDArray createUninitialized(DataType type, long... shape) {
         return createUninitialized(type, shape, Nd4j.order());
     }
 
+    /**
+     * Creates an *uninitialized* array with the specified data type, shape and ordering.
+     *
+     * @param type data type
+     * @param shape the shape of the array
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created array.
+     */
     public static INDArray createUninitialized(DataType type, long[] shape, char ordering) {
         if (shape.length == 0) {
             if(type == DataType.UTF8){
@@ -5103,38 +5124,36 @@ public class Nd4j {
         }
 
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.createUninitialized(type, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.createUninitialized(type, shape, ordering, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * Creates an *uninitialized* array with the specified shape and ordering.
+     *
+     * @param shape the shape of the array
+     * @param ordering Fortran 'f' or C/C++ 'c' ordering.
+     * @return the created array.
+     */
     public static INDArray createUninitialized(long[] shape, char ordering) {
         if (shape.length == 0)
             return scalar(dataType(), 0.0);
 
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.createUninitialized(shape, ordering);
-        return ret;
+        return INSTANCE.createUninitialized(shape, ordering);
     }
 
     /**
-     * Cretes uninitialized INDArray detached from any (if any) workspace
-     *
-     * @param shape
-     * @param ordering
-     * @return
+     * @see #createUninitialized(long[], char)
      */
     public static INDArray createUninitializedDetached(int[] shape, char ordering) {
         if (shape.length == 0)
             return scalar(dataType(), 0.0);
 
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.createUninitializedDetached(shape, ordering);
-        return ret;
+        return INSTANCE.createUninitializedDetached(shape, ordering);
     }
 
+    // TODO: unused method. Only used by another unused method).
     /**
      *
      * @param shape
@@ -5146,17 +5165,11 @@ public class Nd4j {
             return scalar(dataType(), 0.0);
 
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.createUninitializedDetached(shape, ordering);
-        return ret;
+        return  INSTANCE.createUninitializedDetached(shape, ordering);
     }
 
     /**
-     * Creates an *uninitialized* ndarray with the specified shape and default ordering.<br>
-     * <b>NOTE</b>: The underlying memory (DataBuffer) will not be initialized. Don't use this unless you know what you are doing.
-     *
-     * @param shape the shape of the ndarray
-     * @return the instance
+     * @see #createUninitialized(long[])
      */
     public static INDArray createUninitialized(int[] shape) {
         if(shape.length == 0)
@@ -5166,12 +5179,20 @@ public class Nd4j {
         return createUninitialized(shape, Nd4j.order());
     }
 
+    /**
+     * Creates an *uninitialized* ndarray with the specified shape and default ordering.<br>
+     * <b>NOTE</b>: The underlying memory (DataBuffer) will not be initialized. Don't use this unless you know what you are doing.
+     *
+     * @param shape the shape of the array
+     * @return the instance
+     */
     public static INDArray createUninitialized(long[] shape) {
         checkShapeValues(shape);
         //ensure shapes that wind up being scalar end up with the write shape
         return createUninitialized(shape, Nd4j.order());
     }
 
+    // TODO: unused method.
     /**
      * Cretes uninitialized INDArray detached from any (if any) workspace
      *
@@ -5182,6 +5203,7 @@ public class Nd4j {
         return createUninitializedDetached(shape, Nd4j.order());
     }
 
+    // TODO: unused method.
     /**
      * Cretes uninitialized INDArray detached from any (if any) workspace
      *
@@ -5193,6 +5215,13 @@ public class Nd4j {
     }
 
     /**
+     * @see #createUninitialized(long)
+     */
+    public static INDArray createUninitialized(int length) {
+        return createUninitialized((long)length);
+    }
+
+    /**
      * This method creates an *uninitialized* ndarray of specified length and default ordering.
      *
      * PLEASE NOTE: Do not use this method unless you're 100% sure why you use it.
@@ -5200,30 +5229,20 @@ public class Nd4j {
      * @param length
      * @return
      */
-    public static INDArray createUninitialized(int length) {
-        return createUninitialized((long)length);
-    }
-
     public static INDArray createUninitialized(long length) {
         long[] shape = new long[] {length};
-
-        INDArray ret = INSTANCE.createUninitialized(shape, order());
-        return ret;
+        return INSTANCE.createUninitialized(shape, order());
     }
 
     /**
-     * Cretes uninitialized INDArray detached from any (if any) workspace
-     *
-     * @param length
-     * @return
+     * @see #createUninitialized(long)
      */
     public static INDArray createUninitializedDetached(int length) {
         long[] shape = new long[] {length};
-
-        INDArray ret = INSTANCE.createUninitializedDetached(shape, order());
-        return ret;
+        return INSTANCE.createUninitializedDetached(shape, order());
     }
 
+    // TODO: unused method.
     /**
      *
      * @param data
@@ -5244,6 +5263,7 @@ public class Nd4j {
         return ret;
     }
 
+    // Todo: This method has zero documentation. Only used from tests.
     /**
      * @param data
      * @param columns
@@ -5258,6 +5278,7 @@ public class Nd4j {
         return matrix;
     }
 
+    // TODO: unused method.
     /**
      * @param data
      * @param columns
@@ -5272,6 +5293,7 @@ public class Nd4j {
         return matrix;
     }
 
+    // TODO: unused method.
     /**
      * @param data
      * @param columns
@@ -5286,6 +5308,9 @@ public class Nd4j {
 
         return matrix;
     }
+
+
+    // Todo: Only used from tests.
     /**
      * @param data
      * @param indices
@@ -5298,6 +5323,7 @@ public class Nd4j {
         return matrix;
     }
 
+    // TODO: unused method.
     /**
      * @param data
      * @param indices
@@ -5310,6 +5336,7 @@ public class Nd4j {
         return matrix;
     }
 
+    // Todo: Only used from tests.
     /**
      * @param data
      * @param indices
@@ -5322,6 +5349,7 @@ public class Nd4j {
         return matrix;
     }
 
+    // TODO: unused method.
     /**
      * @param data
      * @param indices
@@ -5334,6 +5362,7 @@ public class Nd4j {
         return matrix;
     }
 
+    // TODO: unused method.
     /**
      * @param data
      * @param indices
@@ -5346,6 +5375,7 @@ public class Nd4j {
         return matrix;
     }
 
+    //TODO: Only used once, from an unused method.
     /**
      * @param values a DataBuffer with the sparse non-null values
      * @param indices a DataBuffer with the indexes of the values
@@ -5359,6 +5389,7 @@ public class Nd4j {
         return matrix;
     }
 
+    // TODO: unused method.
     /**
      * @param values a DataBuffer with the sparse non-null values
      * @param indices a DataBuffer with the indexes of the values
@@ -5376,37 +5407,47 @@ public class Nd4j {
         return matrix;
     }
 
-
     ////////////////////// OTHER ///////////////////////////////
 
-
-
     /**
-     * Creates a row vector with the specified number of columns
+     * Creates a 2D array with specified number of rows, columns initialized with zero.
      *
-     * @param rows    the rows of the sndarray
-     * @param columns the columns of the ndarray
-     * @return the created ndarray
+     * @param rows    number of rows.
+     * @param columns number of columns.
+     * @return the created array.
      */
     public static INDArray zeros(long rows, long columns) {
-        INDArray ret = INSTANCE.zeros(rows, columns);
-        return ret;
+        return  INSTANCE.zeros(rows, columns);
     }
 
     /**
-     * Creates a row vector with the specified number of columns
+     * Creates a 1D array with the specified number of columns initialized with zero.
      *
-     * @param columns the columns of the ndarray
-     * @return the created ndarray
+     * @param columns number of columns.
+     * @return the created array
      */
     public static INDArray zeros(int columns) {
         return INSTANCE.zeros(columns);
     }
 
+    /**
+     * Creates a 1D array with the specified data tyoe and number of columns initialized with zero.
+     *
+     * @param dataType data type.
+     * @param columns number of columns.
+     * @return the created array.
+     */
     public static INDArray zeros(DataType dataType, int columns) {
         return INSTANCE.create(dataType, new long[]{columns}, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
+    /**
+     * Creates an array with the specified data tyoe and shape initialized with zero.
+     *
+     * @param dataType data type.
+     * @param shape the shape of the array
+     * @return the created array.
+     */
     public static INDArray zeros(DataType dataType, long... shape) {
         return INSTANCE.create(dataType, shape, 'c', Nd4j.getMemoryManager().getCurrentWorkspace());
     }
@@ -5416,7 +5457,7 @@ public class Nd4j {
      * as the  only value in the ndarray.
      * Some people may know this as np.full
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param value the value to assign
      * @return the created ndarray
      */
@@ -5425,16 +5466,14 @@ public class Nd4j {
             return scalar(value);
 
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.valueArrayOf(shape, value);
-        return ret;
+        return INSTANCE.valueArrayOf(shape, value);
     }
 
     /**
      * Creates an ndarray with the specified value as the only value in the FLOAT32 datatype NDArray.
      * Equivalent to Numpy's np.full
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param value the value to assign
      * @return the created ndarray
      */
@@ -5446,7 +5485,7 @@ public class Nd4j {
      * Creates an ndarray with the specified value as the only value in the INTEGER datatype NDArray.
      * Equivalent to Numpy's np.full
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param value the value to assign
      * @return the created ndarray
      */
@@ -5455,24 +5494,26 @@ public class Nd4j {
     }
 
     /**
-     * Creates an ndarray with the specified value
-     * as the  only value in the ndarray.
-     * Some people may know this as np.full
-     *
-     * @param shape the shape of the ndarray
-     * @param value the value to assign
-     * @return the created ndarray
+     * @see #valueArrayOf(long[], double, DataType)
      */
     public static INDArray valueArrayOf(long[] shape, double value) {
         if (shape.length == 0)
             return scalar(value);
 
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.valueArrayOf(shape, value);
-        return ret;
+        return INSTANCE.valueArrayOf(shape, value);
     }
 
+    /**
+     * Creates an ndarray with the specified value
+     * as the  only value in the ndarray.
+     * Some people may know this as np.full
+     *
+     * @param shape the shape of the array
+     * @param value the value to assign
+     * @param type data type
+     * @return the created ndarray
+     */
     public static INDArray valueArrayOf(long[] shape, double value, DataType type) {
         if (shape.length == 0)
             return scalar(type, value);
@@ -5484,6 +5525,9 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * @see #valueArrayOf(long[], double, DataType)
+     */
     public static INDArray valueArrayOf(long[] shape, long value, DataType type) {
         if (shape.length == 0)
             return scalar(type, value);
@@ -5537,6 +5581,14 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * Create a 2D array with the given rows, columns and data type initialised with ones.
+     *
+     * @param dataType data type
+     * @param rows rows of the new array.
+     * @param columns columns of the new arrau.
+     * @return the created array
+     */
     public static INDArray ones(DataType dataType, int rows, int columns) {
         INDArray ret = INSTANCE.createUninitialized(dataType, new long[]{rows, columns}, Nd4j.order(), Nd4j.getMemoryManager().getCurrentWorkspace());
         ret.assign(1);
@@ -5569,7 +5621,6 @@ public class Nd4j {
      * @param shape Shape fo the array
      * @return the created ndarray
      */
-
     public static INDArray ones(DataType dataType, long... shape) {
         if(shape.length == 0)
             return Nd4j.scalar(dataType, 1.0);
@@ -5585,8 +5636,7 @@ public class Nd4j {
      * @param arrs the first matrix to concat
      */
     public static INDArray hstack(INDArray... arrs) {
-        INDArray ret = INSTANCE.hstack(arrs);
-        return ret;
+        return INSTANCE.hstack(arrs);
     }
 
     /**
@@ -5597,8 +5647,7 @@ public class Nd4j {
      */
     public static INDArray hstack(Collection<INDArray> arrs) {
         INDArray[] arrays = arrs.toArray(new INDArray[0]);
-        INDArray ret = INSTANCE.hstack(arrays);
-        return ret;
+        return  INSTANCE.hstack(arrays);
     }
 
     /**
@@ -5613,10 +5662,8 @@ public class Nd4j {
             //Edge case: vstack rank 1 arrays - gives rank 2... vstack([3],[3]) -> [2,3]
             return pile(arrs);
         }
-        INDArray ret = INSTANCE.vstack(arrs);
-        return ret;
+        return  INSTANCE.vstack(arrs);
     }
-
 
     /**
      * Concatenates two matrices vertically. Matrices must have identical numbers of columns.<br>
@@ -5629,6 +5676,7 @@ public class Nd4j {
         return vstack(arrays);
     }
 
+    // TODO: unused method
     /**
      * This method averages input arrays, and returns averaged array.
      * On top of that, averaged array is propagated to all input arrays
@@ -5637,8 +5685,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray averageAndPropagate(INDArray target, INDArray[] arrays) {
-        INDArray ret = INSTANCE.average(target, arrays);
-        return ret;
+        return  INSTANCE.average(target, arrays);
     }
 
     /**
@@ -5649,8 +5696,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray averageAndPropagate(INDArray[] arrays) {
-        INDArray ret = INSTANCE.average(arrays);
-        return ret;
+        return INSTANCE.average(arrays);
     }
 
 
@@ -5662,8 +5708,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray averageAndPropagate(Collection<INDArray> arrays) {
-        INDArray ret = INSTANCE.average(arrays);
-        return ret;
+        return  INSTANCE.average(arrays);
     }
 
     /**
@@ -5674,8 +5719,7 @@ public class Nd4j {
      * @return
      */
     public static INDArray averageAndPropagate(INDArray target, Collection<INDArray> arrays) {
-        INDArray ret = INSTANCE.average(target, arrays);
-        return ret;
+        return INSTANCE.average(target, arrays);
     }
 
 
@@ -5694,6 +5738,7 @@ public class Nd4j {
         }
     }
 
+    // TODO: unused method.
     /**
      * This method sums given arrays and stores them to a new target array
      *
@@ -5728,7 +5773,6 @@ public class Nd4j {
      * @return
      */
     public static INDArray accumulate(INDArray target, Collection<INDArray> arrays) {
-
         return accumulate(target, arrays.toArray(new INDArray[0]));
     }
 
@@ -5863,8 +5907,7 @@ public class Nd4j {
             dimension += toConcat[0].rank();
         }
 
-        INDArray ret = INSTANCE.concat(dimension, toConcat);
-        return ret;
+        return INSTANCE.concat(dimension, toConcat);
     }
 
     /**
@@ -5877,14 +5920,13 @@ public class Nd4j {
      * @return
      */
     public static INDArray specialConcat(int dimension, INDArray... toConcat) {
-        INDArray ret = INSTANCE.specialConcat(dimension, toConcat);
-        return ret;
+        return  INSTANCE.specialConcat(dimension, toConcat);
     }
 
     /**
      * Create an ndarray of zeros
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return an ndarray with ones filled in
      */
     public static INDArray zeros(int[] shape, char order) {
@@ -5894,17 +5936,18 @@ public class Nd4j {
         return ret;
     }
 
+    /**
+     * @see #zeros(int[] , char)
+     */
     public static INDArray zeros(long[] shape, char order) {
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.create(shape, order);
-        return ret;
+        return  INSTANCE.create(shape, order);
     }
 
     /**
      * Create an ndarray of zeros
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return an ndarray with ones filled in
      */
     public static INDArray zeros(int... shape) {
@@ -5915,7 +5958,7 @@ public class Nd4j {
     /**
      * Create an ndarray of zeros
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return an ndarray with ones filled in
      */
     public static INDArray zeros(long... shape) {
@@ -5925,24 +5968,24 @@ public class Nd4j {
     /**
      * Create an ndarray of ones
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return an ndarray with ones filled in
      */
     public static INDArray ones(@NonNull int... shape) {
         if(shape.length == 0)
             return Nd4j.scalar(dataType(), 1.0);
-        INDArray ret = INSTANCE.ones(shape);
-        return ret;
+        return INSTANCE.ones(shape);
     }
 
 
+    /**
+     * @see #ones(int... shape)
+     */
     public static INDArray ones(@NonNull long... shape) {
         if(shape.length == 0)
             return Nd4j.scalar(dataType(), 1.0);
         checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.ones(shape);
-        return ret;
+        return INSTANCE.ones(shape);
     }
 
     /**
@@ -5952,8 +5995,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray scalar(Number value) {
-        INDArray ret = INSTANCE.scalar(value);
-        return ret;
+        return INSTANCE.scalar(value);
     }
 
     /**
@@ -5963,8 +6005,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray scalar(DataType dataType, Number value) {
-        INDArray ret = INSTANCE.trueScalar(dataType, value);
-        return ret;
+        return INSTANCE.trueScalar(dataType, value);
     }
 
     /**
@@ -6020,7 +6061,7 @@ public class Nd4j {
     /**
      * Get the strides for the given order and shape
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param order the order to getScalar the strides for
      * @return the strides for the given shape and order
      */
@@ -6040,7 +6081,7 @@ public class Nd4j {
      * Get the strides based on the shape
      * and NDArrays.order()
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the strides for the given shape
      * and order specified by NDArrays.order()
      */
@@ -6052,7 +6093,7 @@ public class Nd4j {
      * Get the strides based on the shape
      * and NDArrays.order()
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the strides for the given shape
      * and order specified by NDArrays.order()
      */
@@ -6092,7 +6133,7 @@ public class Nd4j {
     /**
      * Get the strides for the given order and shape
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @param order the order to getScalar the strides for
      * @return the strides for the given shape and order
      */
@@ -6112,7 +6153,7 @@ public class Nd4j {
      * Get the strides based on the shape
      * and NDArrays.order()
      *
-     * @param shape the shape of the ndarray
+     * @param shape the shape of the array
      * @return the strides for the given shape
      * and order specified by NDArrays.order()
      */
