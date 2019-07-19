@@ -92,7 +92,6 @@ public class SpaceToDepthLayer extends NoParamLayer {
 
     @Override
     public LayerMemoryReport getMemoryReport(InputType inputType) {
-        InputType.InputTypeConvolutional c = (InputType.InputTypeConvolutional) inputType;
         InputType.InputTypeConvolutional outputType = (InputType.InputTypeConvolutional) getOutputType(-1, inputType);
 
         return new LayerMemoryReport.Builder(layerName, SpaceToDepthLayer.class, inputType, outputType)

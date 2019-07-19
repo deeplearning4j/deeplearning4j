@@ -35,6 +35,7 @@ import org.deeplearning4j.optimize.api.TrainingListener;
 import org.deeplearning4j.util.NetworkUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
@@ -203,6 +204,22 @@ public abstract class AbstractSameDiffLayer extends Layer {
         }
 
         applyGlobalConfigToLayer(b);
+    }
+
+    /**
+     * This method generates an "all ones" mask array for use in the SameDiff model when none is provided.
+     * @param input Input to the layer
+     * @return A mask array - should be same datatype as the input (usually)
+     */
+    public INDArray onesMaskForInput(INDArray input){
+        if(input.rank() == 2){
+            return Nd4j.ones(input.dataType(), input.size(0), 1);
+        } else if(input.rank() == 3){
+            return Nd4j.ones(input.dataType(), input.size(0), input.size(2)); //mask: [mb, length] vs. input [mb, nIn, length]
+        } else {
+            throw new IllegalStateException("When using masking with rank 4+ inputs, the onesMaskForInput method must be implemented, " +
+                    "in order to determine the correct mask shape for this layer");
+        }
     }
 
     @Getter
