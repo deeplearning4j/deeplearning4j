@@ -535,7 +535,7 @@ public class ReductionOpValidation extends BaseOpValidation {
                         name = "norm1";
                         break;
                     case 8:
-                        maxRelError = 1e-4;
+                        maxRelError = 1e-3; //Norm2 can also run into numerical precision issues
                         reduced = sd.norm2("reduced", second, reduceDim);
                         name = "norm2";
                         break;
