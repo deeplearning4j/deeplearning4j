@@ -310,7 +310,7 @@ public class NumpyFormatTests extends BaseNd4jTest {
         INDArray act1 = Nd4j.createFromNpyFile(f);
     }
 
-    @Test
+    @Test(expected = IllegalArgumentException.class)
     public void testAbsentNumpyFile_2() throws Exception {
         val f = new File("c:/develop/batch-x-1.npy");
         INDArray act1 = Nd4j.createFromNpyFile(f);
