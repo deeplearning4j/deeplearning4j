@@ -15,6 +15,7 @@
  ******************************************************************************/
 package org.nd4s
 
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4s.Implicits._
 import org.scalatest.{ FlatSpec, Matchers }
 
@@ -145,4 +146,44 @@ class NDArrayCollectionAPITest extends FlatSpec with Matchers {
     //check if any element in nd meet the criteria.
     assert(ndArray.exists(_ > 8))
   }
+
+  it should "provides existTyped API" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    //check if any element in nd meet the criteria.
+    assert(ndArray.existsTyped[Int](_ > 8)(IntNDArrayEvidence))
+  }
+
+  "CollectionLikeNDArray" should "provides forAll API" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    val resultFalse = ndArray.forall(_ > 3)
+    assert(false == resultFalse)
+
+    val resultTrue = ndArray.forall(_ < 10)
+    assert(true == resultTrue)
+  }
+
+  "CollectionLikeNDArray" should "provides forAllTyped API" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    val results = ndArray.forallTyped[Int](_ > 3)(IntNDArrayEvidence)
+    assert(false == results)
+  }
+
 }

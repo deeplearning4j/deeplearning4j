@@ -214,27 +214,50 @@ object Implicits {
     def toScalar: INDArray = Nd4j.scalar(ev.toDouble(underlying))
   }*/
 
+  // TODO: move ops to single trait
   implicit class Float2Scalar(val underlying: Float) {
+    def +(x: INDArray) = underlying.toScalar + x
+    def *(x: INDArray) = underlying.toScalar * x
+    def /(x: INDArray) = underlying.toScalar / x
+    def \(x: INDArray) = underlying.toScalar \ x
     def toScalar: INDArray = Nd4j.scalar(underlying)
   }
 
   implicit class Double2Scalar(val underlying: Double) {
+    def +(x: INDArray) = underlying.toScalar + x
+    def *(x: INDArray) = underlying.toScalar * x
+    def /(x: INDArray) = underlying.toScalar / x
+    def \(x: INDArray) = underlying.toScalar \ x
     def toScalar: INDArray = Nd4j.scalar(underlying)
   }
 
   implicit class Long2Scalar(val underlying: Long) {
+    def +(x: INDArray) = underlying.toScalar + x
+    def *(x: INDArray) = underlying.toScalar * x
+    def /(x: INDArray) = underlying.toScalar / x
+    def \(x: INDArray) = underlying.toScalar \ x
     def toScalar: INDArray = Nd4j.scalar(underlying)
   }
 
   implicit class Int2Scalar(val underlying: Int) {
+    def +(x: INDArray) = underlying.toScalar + x
+    def *(x: INDArray) = underlying.toScalar * x
+    def /(x: INDArray) = underlying.toScalar / x
+    def \(x: INDArray) = underlying.toScalar \ x
     def toScalar: INDArray = Nd4j.scalar(underlying)
   }
 
   implicit class Byte2Scalar(val underlying: Byte) {
+    def +(x: INDArray) = underlying.toScalar + x
+    def *(x: INDArray) = underlying.toScalar * x
+    def /(x: INDArray) = underlying.toScalar / x
+    def \(x: INDArray) = underlying.toScalar \ x
     def toScalar: INDArray = Nd4j.scalar(underlying)
   }
 
   implicit class Boolean2Scalar(val underlying: Boolean) {
+    def +(x: INDArray) = underlying.toScalar + x
+    def *(x: INDArray) = underlying.toScalar * x
     def toScalar: INDArray = Nd4j.scalar(underlying)
   }
 

@@ -79,7 +79,7 @@ class FunctionalOpExecutioner extends OpExecutioner {
         case DataType.FLOAT  => op.op(op.x.getFloat(i.toLong))
         case DataType.INT    => op.op(op.x.getInt(i))
         case DataType.SHORT  => op.op(op.x.getInt(i))
-        case (DataType.LONG) => op.op(op.x.getLong(i.toLong))
+        case DataType.LONG   => op.op(op.x.getLong(i.toLong))
       }
       retVal.putScalar(i, filtered)
     }
@@ -465,6 +465,12 @@ class FunctionalOpExecutioner extends OpExecutioner {
   def createConstantBuffer(values: Array[Float], desiredType: DataType): DataBuffer = ???
 
   def createConstantBuffer(values: Array[Double], desiredType: DataType): DataBuffer = ???
+
+  def runFullBenchmarkSuit(x: Boolean): String =
+    Nd4j.getExecutioner.runFullBenchmarkSuit(x)
+
+  def runLightBenchmarkSuit(x: Boolean): String =
+    Nd4j.getExecutioner.runLightBenchmarkSuit(x)
 
   @deprecated def scatterUpdate(op: ScatterUpdate.UpdateOp,
                                 array: INDArray,
