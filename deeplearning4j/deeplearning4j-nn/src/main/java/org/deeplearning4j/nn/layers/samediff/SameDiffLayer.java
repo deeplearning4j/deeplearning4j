@@ -166,7 +166,6 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         sameDiff.clearPlaceholders(true);
         sameDiff.clearOpInputs();
 
-        System.out.println(dLdIn);
         return new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
     }
 

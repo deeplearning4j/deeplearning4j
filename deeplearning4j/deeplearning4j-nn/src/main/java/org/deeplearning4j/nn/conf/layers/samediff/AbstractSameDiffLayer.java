@@ -216,8 +216,14 @@ public abstract class AbstractSameDiffLayer extends Layer {
             return Nd4j.ones(input.dataType(), input.size(0), 1);
         } else if(input.rank() == 3){
             return Nd4j.ones(input.dataType(), input.size(0), input.size(2)); //mask: [mb, length] vs. input [mb, nIn, length]
+        } else if(input.rank() == 4){
+            //CNN style - return [mb, 1, 1, 1] for broadcast...
+            return Nd4j.ones(input.dataType(), input.size(0), 1, 1, 1);
+        } else if(input.rank() == 5){
+            //CNN3D style - return [mb, 1, 1, 1, 1] for broadcast...
+            return Nd4j.ones(input.dataType(), input.size(0), 1, 1, 1, 1);
         } else {
-            throw new IllegalStateException("When using masking with rank 4+ inputs, the onesMaskForInput method must be implemented, " +
+            throw new IllegalStateException("When using masking with rank 1 or 6+ inputs, the onesMaskForInput method must be implemented, " +
                     "in order to determine the correct mask shape for this layer");
         }
     }
