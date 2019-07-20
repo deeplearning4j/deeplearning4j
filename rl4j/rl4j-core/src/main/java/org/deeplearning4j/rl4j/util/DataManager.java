@@ -43,7 +43,7 @@ import java.util.zip.ZipOutputStream;
  * the folder for every training and handle every path and model savings
  */
 @Slf4j
-public class DataManager {
+public class DataManager implements IDataManager {
 
     final private String home = System.getProperty("user.home");
     final private ObjectMapper mapper = new ObjectMapper();
@@ -264,16 +264,6 @@ public class DataManager {
         save(getModelDir() + "/" + learning.getStepCounter() + ".training", learning);
         learning.getNeuralNet().save(getModelDir() + "/" + learning.getStepCounter() + ".model");
 
-    }
-
-    //In order for jackson to serialize StatEntry
-    //please use Lombok @Value (see QLStatEntry)
-    public interface StatEntry {
-        int getEpochCounter();
-
-        int getStepCounter();
-
-        double getReward();
     }
 
     @AllArgsConstructor

@@ -29,7 +29,7 @@ import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManager.StatEntry;
+import org.deeplearning4j.rl4j.util.IDataManager.StatEntry;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;

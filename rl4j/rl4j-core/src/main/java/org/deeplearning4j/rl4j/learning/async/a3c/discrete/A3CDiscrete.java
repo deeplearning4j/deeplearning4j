@@ -26,7 +26,7 @@ import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/23/16.
@@ -48,10 +48,10 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
     @Getter
     final private ACPolicy<O> policy;
     @Getter
-    final private DataManager dataManager;
+    final private IDataManager dataManager;
 
     public A3CDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic iActorCritic, A3CConfiguration conf,
-                    DataManager dataManager) {
+                    IDataManager dataManager) {
         super(conf);
         this.iActorCritic = iActorCritic;
         this.mdp = mdp;

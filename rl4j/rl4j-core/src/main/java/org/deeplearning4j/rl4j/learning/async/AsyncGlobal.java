@@ -52,7 +52,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  *
  */
 @Slf4j
-public class AsyncGlobal<NN extends NeuralNet> extends Thread {
+public class AsyncGlobal<NN extends NeuralNet> extends Thread implements IAsyncGlobal<NN> {
 
     @Getter
     final private NN current;

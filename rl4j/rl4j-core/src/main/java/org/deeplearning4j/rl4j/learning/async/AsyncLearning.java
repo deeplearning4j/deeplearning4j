@@ -45,7 +45,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     protected abstract AsyncThread newThread(int i);
 
-    protected abstract AsyncGlobal<NN> getAsyncGlobal();
+    protected abstract IAsyncGlobal<NN> getAsyncGlobal();
 
     protected void startGlobalThread() {
         getAsyncGlobal().start();
