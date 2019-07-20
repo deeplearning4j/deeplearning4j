@@ -1870,7 +1870,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
-    result->printIndexedBuffer("OOOOUUUUTTT");
+//    result->printIndexedBuffer("OOOOUUUUTTT");
 
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
@@ -1881,9 +1881,9 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
 
-    NDArray boxes    = NDArrayFactory::create<float>('c', {6,4}, {0, 0, 1, 1, 0, 0.1f, 1, 1.1f, 0, -0.1f, 1.f, 0.9f,
+    NDArray boxes    = NDArrayFactory::create<double>('c', {6,4}, {0, 0, 1, 1, 0, 0.1f, 1, 1.1f, 0, -0.1f, 1.f, 0.9f,
                                          0, 10, 1, 11, 0, 10.1f, 1.f, 11.1f, 0, 100, 1, 101});
-    NDArray scales = NDArrayFactory::create<float>('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f}); //3, 0, 1, 2, 4, 5
+    NDArray scales = NDArrayFactory::create<double>('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f}); //3, 0, 1, 2, 4, 5
     NDArray expected = NDArrayFactory::create<int>('c', {3}, {3,0,5});
 
     nd4j::ops::non_max_suppression op;
@@ -1892,7 +1892,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
-    result->printBuffer("NonMaxSuppression OUtput2");
+//    result->printBuffer("NonMaxSuppression OUtput2");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -1970,6 +1970,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
 
     delete results;
 }
+
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
 

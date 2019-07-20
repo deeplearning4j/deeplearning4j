@@ -456,6 +456,102 @@ void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArr
     manager.synchronize();
 }
 
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void scatterUpdateCuda(const int opCode, const int numOfInd,
+                                              void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets,
+                                              void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets,
+                                              const int* indexes) {
+
+    __shared__ T *x, *y;
+    __shared__ Nd4jLong arrLenX, arrLenY;
+
+    for (int e = 0; e < numOfInd; e++ ) {
+
+        const auto xIndex = indexes[e];
+        const bool isOwner = xIndex < gridDim.x ? blockIdx.x == xIndex : blockIdx.x == xIndex % gridDim.x;
+
+        if (!isOwner)
+            continue;
+
+        if (threadIdx.x == 0) {
+            x = reinterpret_cast<T*>(vx) + xOffsets[xIndex];
+            y = reinterpret_cast<T*>(vy) + yOffsets[e];
+            arrLenX = shape::length(xShapeInfo);
+            arrLenY = shape::length(yShapeInfo);
+        }
+
+        __syncthreads();
+
+        if (arrLenX != arrLenY)
+            return;
+
+        for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
+
+            const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
+            const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+
+            switch (opCode) {
+                case 0:
+                    x[xOffset] += y[yOffset];
+                    break;
+                case 1:
+                    x[xOffset] -= y[yOffset];
+                    break;
+                case 2:
+                    x[xOffset] *= y[yOffset];
+                    break;
+                case 3:
+                    x[xOffset] /= y[yOffset];
+                    break;
+                case 4:
+                    x[xOffset] = y[yOffset] - x[xOffset];
+                    break;
+                case 5:
+                    x[xOffset] = y[yOffset] / x[xOffset];
+                    break;
+                case 6:
+                    x[xOffset] = y[yOffset];
+                    break;
+                default:
+                    continue;
+            }
+        }
+        __syncthreads();
+    }
+}
+
+template<typename T>
+__host__ static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfInd, void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets, void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets, const int* indexes) {
+
+    scatterUpdateCuda<T><<<512, 256, MAX_NUM_THREADS, *stream>>>(opCode, numOfInd, vx, xShapeInfo, xOffsets, vy, yShapeInfo, yOffsets, indexes);
+}
+
+
+//////////////////////////////////////////////////////////////////////////
+void scatterUpdate(nd4j::LaunchContext* context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
+
+    const int opCode    = (*intArgs)[0];
+    const int numOfDims = (*intArgs)[1];
+    const int numOfInd  = (*intArgs)[2 + numOfDims];
+
+    std::vector<int> tadDimensions(numOfDims);
+    for (int e = 2; e < 2 + numOfDims; e++)
+        tadDimensions[e-2] = (*intArgs)[e];
+
+    auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), tadDimensions);
+    auto packY = ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), tadDimensions);
+
+    NDArray indices(const_cast<int*>(intArgs->data()) + numOfDims + 3, 'c', {numOfInd}, nd4j::DataType::INT32, context);
+
+    PointersManager manager(context, "scatterUpdate");
+
+    NDArray::prepareSpecialUse({&input}, {&input, &updates, &indices});
+    BUILD_SINGLE_SELECTOR(input.dataType(), scatterUpdateCudaLauncher, (context->getCudaStream(), opCode, numOfInd, input.specialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), updates.specialBuffer(), packY.platformShapeInfo(), packY.platformOffsets(), reinterpret_cast<int*>(indices.getSpecialBuffer())), LIBND4J_TYPES);
+    NDArray::registerSpecialUse({&input}, {&input, &updates, &indices});
+
+    manager.synchronize();
+}
 
 
 
@@ -466,17 +562,140 @@ void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArr
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+    template <typename T>
+    static __global__ void swapShuffleKernel(T* input, Nd4jLong* shape, Nd4jLong firstDim, Nd4jLong len, nd4j::graph::RandomGenerator* rng) {
+        auto tid = blockIdx.x * blockDim.x;
+        auto step = blockDim.x * gridDim.x;
+
+        for (int i = firstDim - 1 - tid - threadIdx.x; i > 0; i -= step) {
+            int r = rng->relativeInt(i) % i;
+            if (i != r) {
+                T e0 = input[shape::getIndexOffset(i, shape, len)];
+                T e1 = input[shape::getIndexOffset(r, shape, len)];
+                //math::nd4j_swap<T>(input(i), input(r));
+                input[shape::getIndexOffset(i, shape, len)] = e1;
+                input[shape::getIndexOffset(r, shape, len)] = e0;
+            }
+        }
+    }
+    template <typename T>
+    static __global__ void fillShuffleKernel(T* input, Nd4jLong* inputShape, T* output, Nd4jLong* outputShape, Nd4jLong firstDim, Nd4jLong len, int* indices, nd4j::graph::RandomGenerator* rng) {
+
+//        PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
+        auto tid = blockIdx.x * blockDim.x;
+        auto step = blockDim.x * gridDim.x;
+
+        for(int i = firstDim - 1 - tid - threadIdx.x; i > 0; i -= step) {
+            int r = rng->relativeInt(i) % i;
+            output[shape::getIndexOffset(i, outputShape, len)] = input[shape::getIndexOffset(indices[r], inputShape, len)];
+            if(i != r) {
+                output[shape::getIndexOffset(r, outputShape, len)] = input[shape::getIndexOffset(indices[i], inputShape, len)];
+//                output.p(r, input.e<T>(indices[i]));
+//                math::nd4j_swap<int>(indices[i], indices[r]);
+                atomicExch(&indices[i], indices[r]);
+            }
+        }
+
+    }
     //////////////////////////////////////////////////////////////////////////
     template <typename T>
-    void randomShuffle_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace) {
+    void randomShuffle_(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace) {
+
+        // check edge cases first
+        int temp;
+        const int firstDim = input.sizeAt(0);
+        auto stream = context->getCudaStream();
+        NDArray::prepareSpecialUse({&output}, {&input});
+        if(input.lengthOf() == 1 || firstDim == 1) {
+            if(!isInplace)
+                output.assign(input);
+        }
+        else if (input.isVector() || shape::isLikeVector(input.getShapeInfo(), temp)) {
+
+            // apply Fisher-Yates shuffle
+            nd4j::graph::RandomGenerator* dRandom = nullptr;
+            cudaMalloc(&dRandom, sizeof(nd4j::graph::RandomGenerator));
+            cudaMemcpy(dRandom, &rng, sizeof(nd4j::graph::RandomGenerator), cudaMemcpyHostToDevice);
+            T* inputBuf = reinterpret_cast<T*>(input.specialBuffer());
+            if(isInplace) {
+                swapShuffleKernel<T><<<128, 256, 1024, *stream>>>(inputBuf, input.specialShapeInfo(), firstDim, input.lengthOf(), dRandom);
+            }
+            else {
+                std::vector<int> indices(firstDim);
+                std::iota(indices.begin(), indices.end(), 0);
+                cudaMemcpy(output.specialBuffer(), input.specialBuffer(), sizeof(T), cudaMemcpyDeviceToDevice);
+                //output.p<T>(Nd4jLong(0), input.e<T>(0));
+                PointersManager pointersManager(context, "helper::randomShuffle_");
+                int* indicesDev = reinterpret_cast<int*>(pointersManager.replicatePointer(indices.data(), indices.size() * sizeof(int)));
+                T* outputBuf = reinterpret_cast<T*>(output.specialBuffer());
+                fillShuffleKernel<T><<<128, 256, 1024, *stream>>>(inputBuf, input.specialShapeInfo(), outputBuf, output.specialShapeInfo(), firstDim, input.lengthOf(), indicesDev, dRandom);
+                pointersManager.synchronize();
+            }
+//            rng.rewindH(firstDim - 1);
+            cudaFree(dRandom);
+        }
+        else {
+
+            // evaluate sub-arrays list of input array through all dimensions excluding first one
+            std::vector<int> dimensions = ShapeUtils::evalDimsToExclude(input.rankOf(), {0});
+            auto subArrsListIn = input.allTensorsAlongDimension(dimensions);
+
+            // apply Fisher-Yates shuffle
+            if(isInplace) {
+                PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->elementwiseThreshold())
+                for(int i = firstDim - 1; i > 0; --i) {
+                    int r = rng.relativeInt(i) % i;
+
+                    if(i != r)
+                        subArrsListIn->at(i)->swapUnsafe(*subArrsListIn->at(r));
+                }
+            }
+            else {
+                // evaluate sub-arrays list of output array through all dimensions excluding first one
+                auto subArrsListOut = output.allTensorsAlongDimension(dimensions);
+                std::vector<int> indices(firstDim);
+                std::iota(indices.begin(), indices.end(), 0);
+                bool isZeroShuffled = false;
+                PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
+                for(int i = firstDim - 1; i > 0; --i) {
+                    int r = rng.relativeInt(i) % i;
+                    subArrsListOut->at(i)->assign(subArrsListIn->at(indices[r]));
+                    if(r == 0)
+                        isZeroShuffled = true;
+
+                    if(i != r) {
+                        subArrsListOut->at(r)->assign(subArrsListIn->at(indices[i]));
+                        math::nd4j_swap<int>(indices[i], indices[r]);
+                    }
+                }
+                if(!isZeroShuffled)
+                    subArrsListOut->at(0)->assign(subArrsListIn->at(0));
+                delete subArrsListOut;
+            }
+            rng.rewindH(firstDim-1);
+            delete subArrsListIn;
+        }
+        NDArray::registerSpecialUse({&output}, {&input});
 
     }
 
-    void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace) {
+    void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (context, input, output, rng, isInplace), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace), LIBND4J_TYPES);
 
     ////////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -497,11 +716,6 @@ void eye(nd4j::LaunchContext * context, NDArray& output) {
 
     output.setIdentity();
 }
-
-    //////////////////////////////////////////////////////////////////////////
-    void scatterUpdate(nd4j::LaunchContext * context, NDArray& operand, NDArray& updates, const std::vector<int>* intArgs) {
-
-    }
 
     //////////////////////////////////////////////////////////////////////////
     template <typename T, typename Z>

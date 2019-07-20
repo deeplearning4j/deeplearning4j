@@ -35,82 +35,88 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-void gruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* Wru, const NDArray* Wc,
-             const NDArray* bru, const NDArray* bc,
+void gruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* W, const NDArray* Wc,
+             const NDArray* b, const NDArray* bc,
              NDArray* r, NDArray* u, NDArray* c, NDArray* h) {
 
     //Inputs:
-    // x        input [bS, nIn], nIn - input size
-    // hLast    previous cell output [bS, nUn],  that is at previous time step t-1, nUn - number of units
-    // Wru      RU weights - [nIn+nUn, 2*nUn] - reset and update gates
-    // Wc       C weights - [nIn+nUn, nUn] - cell gate
-    // bru      r and u biases, [2*nUn] - reset and update gates
-    // bc       c biases, [nUn] - cell gate
+    // x        input [bS, iS], iS - input size
+    // hLast    previous cell output [bS, nU],  that is at previous time step t-1, nU - number of units
+    // W        RU weights - [iS+nU, 2*nU] - reset and update gates
+    // Wc       C weights - [iS+nU, nU] - cell gate
+    // b        r and u biases, [2*nU] - reset and update gates
+    // bc       c biases, [nU] - cell gate
 
     //Outputs:
-    // r        Reset gate output [bS, nUn]
-    // u        Update gate output [bS, nUn]
-    // c        Cell gate output [bS, nUn]
-    // h        current cell output [bS, nUn]
+    // r        Reset gate output [bS, nU]
+    // u        Update gate output [bS, nU]
+    // c        Cell gate output [bS, nU]
+    // h        current cell output [bS, nU]
 
     /***************************************************************************************/
     /************************ THIS IS NOT OPTIMAZED CODE ***********************************/
     /** however it is more math-friendly and convenient for backprop formulas derivation) **/
 
     const int bS  = x->sizeAt(0);
-    const int nIn = x->sizeAt(1);
-    const int nUn = hLast->sizeAt(1);
+    const int iS = x->sizeAt(1);
+    const int nU = hLast->sizeAt(1);
 
-    NDArray Wr = (*Wru)({0,nIn,       0,0});       // reset gates weights   [nIn, 2*nUn]
-    NDArray Wu = (*Wru)({nIn,nIn+nUn, 0,0});       // updates gates weights [nUn, 2*nUn]
+    NDArray Wrx = (*W)({0,iS,     0,nU});       // [iS, nU]
+    NDArray Wux = (*W)({0,iS,     nU,2*nU});    // [iS, nU]
+    NDArray Wrh = (*W)({iS,iS+nU, 0,nU});       // [nU, nU]
+    NDArray Wuh = (*W)({iS,iS+nU, nU,2*nU});    // [nU, nU]
 
-    NDArray Wcr = (*Wc)({0,nIn,       0,0});       // reset cell weights    [nIn, nUn]
-    NDArray Wcu = (*Wc)({nIn,nIn+nUn, 0,0});       // updates cell weights  [nUn, nUn]
+    NDArray Wcx = (*Wc)({0,iS,     0,0});       // reset cell weights    [iS, nU]
+    NDArray Wch = (*Wc)({iS,iS+nU, 0,0});       // updates cell weights  [nU, nU]
 
-    // gates = sigmoid(x*Wr + hLast*Wu + br + bu)
-    NDArray gates = mmul(*x, Wr) + mmul(*hLast, Wu) + *bru;    // [bS, nIn] * [nIn, 2*nUn] + [bS, nUn] * [nUn, 2*nUn] + [2*nUn] = [bS, 2*nUn]
-    gates.applyTransform(transform::Sigmoid);
+    NDArray br = (*b)({0,  nU});                // [nU]
+    NDArray bu = (*b)({nU, 2*nU});              // [nU]
+
+    // × means matrix multipication
+    // * means element-wise product or so called Hadamard product
 
     // reset gate
-    r->assign(gates({0,0, 0,nUn}));               // [bS, nUn]
+    r->assign(mmul(*x, Wrx) + mmul(*hLast, Wrh) + br);         // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+    r->applyTransform(transform::Sigmoid);
 
     // update gate
-    u->assign(gates({0,0, nUn,2*nUn}));            // [bS, nUn]
+    u->assign(mmul(*x, Wux) + mmul(*hLast, Wuh) + bu);         // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+    u->applyTransform(transform::Sigmoid);
 
-    // cell gate c = activation(x*Wcr + (r◦hlast)*Wcu + bc)
-    c->assign(mmul(*x, Wcr) + mmul(*r * *hLast, Wcu) + *bc);    // [bS, nIn] * [nIn, nUn] + [bS, nUn] * [nUn, nUn] + [nUn] = [bS, nUn]
+    // cell gate c = activation(x × Wcx + (r * hlast) × Wch + bc)
+    c->assign(mmul(*x, Wcx) + mmul(*r * *hLast, Wch) + *bc);    // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
     c->applyTransform(transform::Tanh);
+
+    NDArray temp = 1.f - *c * *c;
 
     // cell output
     h->assign(*u * *hLast + (1.f - *u) * *c);
 
 
-
-
     /***************************************************************************************/
-    /********************** THIS MORE OPTIMAZED CODE (except concat ) **********************/
+    /*************** THIS IS MORE OPTIMAZED CODE (should think about concat) ***************/
     /***************************************************************************************/
 /*
-    //Concat inputs: x + hLast : [bs, nIn + nUn]
-    NDArray xhConcat(x->ordering(), {bS, nIn + nUn}, x->dataType(), context);  // concat([bs, nIn], [bs, nUn]) -> [bs, nIn + nUn]
+    //Concat inputs: x + hLast : [bs, iS + nU]
+    NDArray xhConcat(x->ordering(), {bS, iS + nU}, x->dataType(), context);  // concat([bs, iS], [bs, nU]) -> [bs, iS + nU]
     helpers::concat(context, {const_cast<NDArray*>(x), const_cast<NDArray*>(hLast)},  xhConcat, {1});
 
-    //mmul for reset and update gates: (x * weight_ux + hLast * weight_xr + b_u)
-    auto m = mmul(xhConcat, *Wru) + *bru ;    // [bs, nIn+nUn] * [nIn+nUn, 2*nUn] = [bs, 2*nUn]
+    //mmul for reset and update gates: (x × weight_ux + hLast × weight_xr + b_u)
+    auto m = mmul(xhConcat, *W) + *b ;    // [bs, iS+nU] * [iS+nU, 2*nU] = [bs, 2*nU]
     // m += *bru;
 
-    sigmoidInplace(m);  //sigmoid(rz) and sigmoid(uz)
+    m.applyTransform(transform::Sigmoid);  //sigmoid(rz) and sigmoid(uz)
 
-    r->assign(m({0,0, 0, nUn}));
-    u->assign(m({0,0, nUn, 2*nUn}));
+    r->assign(m({0,0, 0, nU}));
+    u->assign(m({0,0, nU, 2*nU}));
 
     // hLast = hLast * r
-    xhConcat({0,0, nIn, nIn+nUn}) *= *r;
+    xhConcat({0,0, iS, iS+nU}) *= *r;
 
-    //c = tanh(x * weight_cx + (hLast .* r) * weight_cr + b_c)
+    //c = tanh(x × weight_cx + (hLast * r) × weight_cr + b_c)
     MmulHelper::mmul(&xhConcat, Wc, c, 1.0, 0.0);       //c = 1.0 * xhConcat * Wc + 0.0 * c
     *c += *bc;
-    tanhInplace(*c);
+    c->applyTransform(transform::Tanh);
 
     //Output: h = (1-u).*c + u .* hPrev
     //auto hResult = (*u) * (*hLast) + (1.0f - *u) * (*c); const_cast<NDArray*>(h)->assign(&hResult);
@@ -122,19 +128,19 @@ void gruCell(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLa
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
+void gruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* hLast, const NDArray* Wx, const NDArray* Wh, const NDArray* b, NDArray* h) {
 
     // x   input [time, bS, iS]
-    // h0  initial cell output (at time step = 0) [bS, nUn]
-    // Wx  input-to-hidden  weights, [iS, 3*nUn]
-    // Wh  hidden-to-hidden weights, [nUn, 3*nUn]
-    // b   biases, [3*nUn]
+    // hLast  initial cell output (at time step = 0) [bS, nU]
+    // Wx  input-to-hidden  weights, [iS, 3*nU]
+    // Wh  hidden-to-hidden weights, [nU, 3*nU]
+    // b   biases, [3*nU]
 
-    // h is cell outputs at each time step [time, bS, nUn]
+    // h is cell outputs at each time step [time, bS, nU]
 
     const int time = x->sizeAt(0);
 
-    NDArray ht_1(*h0);
+    NDArray ht_1(*hLast);
 
     // loop through time steps
     for (int t = 0; t < time; ++t) {
@@ -142,111 +148,214 @@ void gruTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray*
         auto xt = (*x)({t,t+1, 0,0, 0,0});
         auto ht = (*h)({t,t+1, 0,0, 0,0});
 
-        //helpers::gruCell(&xt, &ht_1, Wx, Wh, b, &ht);
-        //ht_1.assign(ht);
+        // helpers::gruCell(&xt, &ht_1, Wx, Wh, b, &ht);
+        // ht_1.assign(ht);
     }
 }
 
 //////////////////////////////////////////////////////////////////////////
-void gruCellBP(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* Wx, const NDArray* Wh, const NDArray* b, const NDArray* dLdh, const NDArray* dLdWx0,
-           const NDArray* dLdWh0, const NDArray* dLdb0, NDArray* dLdx, NDArray* dLdh0, NDArray* dLdWx, NDArray* dLdWh, NDArray* dLdb) {
+void gruCellBP(nd4j::LaunchContext* context,
+              const NDArray* x,    const NDArray* hLast,
+              const NDArray* W,    const NDArray* Wc,        const NDArray* b,    const NDArray* bc,
+              const NDArray* dLdr, const NDArray* dLdu,      const NDArray* dLdc, const NDArray* dLdh,
+                    NDArray* dLdx,       NDArray* dLdhLast,
+                    NDArray* dLdW,       NDArray* dLdWc,
+                    NDArray* dLdb,       NDArray* dLdbc) {
 
-    // x                        input [bS, iS]
-    // h0                       previous cell output [bS, nUn],  that is at previous time step t-1
-    // Wx                       input-to-hidden  weights, [iS, 3*nUn]
-    // Wh                       hidden-to-hidden weights, [nUn, 3*nUn]
-    // b                        biases, [3*nUn]
-    // dLdh                     gradient wrt output, [bS,nUn], that is epsilon_next
-    // dLdWx0                   gradient wrt Wx at previous time step, [iS, 3*nUn]
-    // dLdWh0                   gradient wrt Wh at previous time step, [nUn, 3*nUn]
-    // dLdb0                    gradient wrt b at previous time step,  [3*nUn]
+    //Inputs:
+    // x              input [bS, iS]
+    // hLast          previous cell output [bS, nU],  that is at previous time step t-1
+    // W              weights - [iS+nU, 2*nU] - reset and update gates
+    // Wc             C weights - [iS+nU, nU] - cell gate
+    // b              r and u biases, [2*nU] - reset and update gates
+    // bc             c biases, [nU] - cell gate
+    // dLdr           gradient wrt reset gate, [bS, nU]
+    // dLdu           gradient wrt update gate, [bS, nU]
+    // dLdc           gradient wrt cell state, [bS, nU]
+    // dLdh           gradient wrt current cell output, [bS, nU]
 
-    // dLdx                   gradient wrt x,  [bS, iS], that is epsilon
-    // dLdh0                  gradient wrt h0, [bS, nUn]
-    // dLdWx                  gradient wrt Wx, [iS, 3*nUn]
-    // dLdWh                  gradient wrt Wh, [nUn, 3*nUn]
-    // dLdb                   gradient wrt b at previous time step,  [3*nUn]
+    //Outputs:
+    // dLdx           gradient wrt x,  [bS, iS],
+    // dLdhLast       gradient wrt hLast, [bS, nU]
+    // dLdW           gradient wrt W,  [iS+nU, 2*nU]
+    // dLdWc          gradient wrt Wc, [iS+nU, nU]
+    // dLdb           gradient wrt bru [2*nU]
+    // dLdbc          gradient wrt bc  [nU]
 
-    // h is current cell output [bS, nUn], that is at current time step t
+    // * means element-wise product or so called Hadamard product
+    // × means matrix multiplication
 
-    const int nUn = h0->sizeAt(1);
+    /************************************************************************************************/
+    /******************************* THIS IS NOT OPTIMAZED CODE *************************************/
+    /*** aim is to have math-readable code in order to keep track of backprop formulas derivation ***/
+
+    const int bS  = x->sizeAt(0);
+    const int iS = x->sizeAt(1);
+    const int nU = hLast->sizeAt(1);
+
+    NDArray xT     = x->transpose();            // [iS, bS]
+    NDArray hLastT = hLast->transpose();        // [nU, bS]
+
+    NDArray Wrx = (*W)({0,iS,     0,nU});       // [iS, nU]
+    NDArray Wux = (*W)({0,iS,     nU,2*nU});    // [iS, nU]
+    NDArray Wrh = (*W)({iS,iS+nU, 0,nU});       // [nU, nU]
+    NDArray Wuh = (*W)({iS,iS+nU, nU,2*nU});    // [nU, nU]
+
+    NDArray Wcx = (*Wc)({0,iS,     0,0});       // reset cell weights    [iS, nU]
+    NDArray Wch = (*Wc)({iS,iS+nU, 0,0});       // updates cell weights  [nU, nU]
+
+    NDArray br = (*b)({0,  nU});                // [nU]
+    NDArray bu = (*b)({nU, 2*nU});              // [nU]
+
+    NDArray WrxT = Wrx.transpose();             // [nU, iS]
+    NDArray WuxT = Wux.transpose();             // [nU, iS]
+    NDArray WrhT = Wrh.transpose();             // [nU, nU]
+    NDArray WuhT = Wuh.transpose();             // [nU, nU]
+
+    NDArray WcxT = Wcx.transpose();             // [nU, iS]
+    NDArray WchT = Wch.transpose();             // [nU, nU]
+
+    NDArray dLdWrx = (*dLdW)({0,iS,     0,nU});     // [iS, nU]
+    NDArray dLdWux = (*dLdW)({0,iS,     nU,2*nU});  // [iS, nU]
+    NDArray dLdWrh = (*dLdW)({iS,iS+nU, 0,nU});     // [nU, nU]
+    NDArray dLdWuh = (*dLdW)({iS,iS+nU, nU,2*nU});  // [nU, nU]
+
+    NDArray dLdWcx = (*dLdWc)({0,iS,     0,0});     // [iS, nU]
+    NDArray dLdWch = (*dLdWc)({iS,iS+nU, 0,0});     // [nU, nU]
+
+    NDArray dLdbr = (*dLdb)({0,  nU});              // [nU]
+    NDArray dLdbu = (*dLdb)({nU, 2*nU});            // [nU]
+
 
     // ***** feed forward step ***** //
-    // gates = sigmoid(x*Wx + h0*Wh + b)
-    auto gates = sigmoid(mmul(*x, (*Wx)({0,0, 0,2*nUn})) + mmul(*h0, (*Wh)({0,0, 0,2*nUn})) + (*b)({0,2*nUn}));       // [bS, 2*nUn] + [bS, 2*nUn] + [1, 2*nUn] = [bS, 2*nUn]
+
     // reset gate
-    auto r = gates({0,0, 0, nUn});               // [bS, nUn]
+    NDArray r = mmul(*x, Wrx) + mmul(*hLast, Wrh) + br;         // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+    r.applyTransform(transform::Sigmoid);
+
     // update gate
-    auto u = gates({0,0, nUn, 2*nUn});            // [bS, nUn]
-    // ◦ means element-wise product or so called Hadamard product
-    // n = tanh(x*Wx + (r◦h0)*Wh + b)
-    auto n = tanh(mmul(*x, (*Wx)({0,0, 2*nUn,3*nUn})) + mmul((*h0)*r, (*Wh)({0,0, 2*nUn,3*nUn})) + (*b)({2*nUn,3*nUn}));     // [bS, nUn]
+    NDArray u = mmul(*x, Wux) + mmul(*hLast, Wuh) + bu;         // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+    u.applyTransform(transform::Sigmoid);
+
+    // cell gate c = activation(x×Wcx + (r*hlast)×Wcu + bc)
+    NDArray c = mmul(*x, Wcx) + mmul(r * *hLast, Wch) + *bc;    // [bS, iS] × [iS, nU] + [bS, nU] × [nU, nU] + [nU] = [bS, nU]
+    c.applyTransform(transform::Tanh);
+
+    // h = (1 - u) * c + u * hPrev
+
 
     // ***** back prop step ***** //
-    auto Wxr  = (*Wx)({0,0, 0,   nUn});
-    auto Wxu  = (*Wx)({0,0, nUn,  2*nUn});
-    auto Wxn  = (*Wx)({0,0, 2*nUn,3*nUn});
-    auto Whr  = (*Wh)({0,0, 0,   nUn});
-    auto Whu  = (*Wh)({0,0, nUn,  2*nUn});
-    auto Whn  = (*Wh)({0,0, 2*nUn,3*nUn});
-    auto WxrT = Wxr.transpose();
-    auto WxuT = Wxu.transpose();
-    auto WxnT = Wxn.transpose();
-    auto WhrT = Whr.transpose();
-    auto WhuT = Whu.transpose();
-    auto WhnT = Whn.transpose();
-    auto xT   = x->transpose();
-    auto h0T  = h0->transpose();
 
-    auto dLdWxr = (*dLdWx)({0,0, 0,     nUn});
-    auto dLdWxu = (*dLdWx)({0,0, nUn,  2*nUn});
-    auto dLdWxn = (*dLdWx)({0,0, 2*nUn,3*nUn});
+    // notations:
+    // Zr = x × Wrx + hLast × Wrh + br
+    // Zu = x × Wux + hLast × Wuh + bu
+    // Sr = sigmoid(Zr)
+    // Su = sigmoid(Zu)
+    // Zc = x × Wcx + (r * hlast) × Wch + bc
 
-    auto dLdWhr = (*dLdWh)({0,0, 0,     nUn});
-    auto dLdWhu = (*dLdWh)({0,0, nUn,  2*nUn});
-    auto dLdWhn = (*dLdWh)({0,0, 2*nUn,3*nUn});
 
-    auto dLdbr = (*dLdb)({0,     nUn});
-    auto dLdbu = (*dLdb)({nUn,  2*nUn});
-    auto dLdbn = (*dLdb)({2*nUn,3*nUn});
+    // dLdx = dLdh * dhdx = dLdh * (dhdu * dudx + dhdc * dcdx) = (dLdh * dhdu) * dudx + (dLdh * dhdc) * dcdx = dLdu * dudx + dLdc * dcdx
+    //      = dLdx_u + dLdx_c
+    // dLdx_u = dLdu * dudx = dLdu * dudZu * dZudx = |dZudx = ... × WuxT| = (dLdu * dudZu) × WuxT
+    // dLdx_c = dLdc * dcdx = dLdc * dcdZc * (dZcdx + dZcdr * drdx) = dLdc * dcdZc * dZcdx + dLdc * dcdZc * dZcdr * drdx = dLdx_c0 + dLdx_c1
+    // dLdx_c0 = dLdc * dcdZc * dZcdx = |dZcdx = ... × WcxT| = (dLdc * dcdZc) × WcxT
+    // dZcdr = (... * hLast) × WchT
+    // dLdc * dcdZc * dZcdr = dLdr = (dLdc * dcdZc * hLast) × WchT
+    // drdx = drdZr * dZrdx
+    // dZrdx = ... × WrxT
+    // dLdx_c1 = dLdc * dcdZc * dZcdr * drdx = dLdr * drdx = (dLdr * drdZr) × WrxT
+    // finally dLdx = dLdx_u + dLdx_c0 + dLdx_c1 = (dLdu * dudZu) × WuxT + (dLdc * dcdZc) × WcxT + (dLdr * drdZr) × WrxT
 
-    auto dhdu   = *h0  - n;              // [bS, nUn]
-    auto dhdn   = 1.f - u;               // [bS, nUn]
-    auto dSigdu = u * (1.f - u);         // [bS, nUn]
-    auto dSigdr = r * (1.f - r);         // [bS, nUn]
-    auto dActdn = 1.f - n * n;           // [bS, nUn]
-    auto dndr   = mmul(dActdn * (*h0), WhnT);
-    auto drdh0  = mmul(dSigdr, WhrT);
 
-    auto dLdn = (*dLdh) * dhdn;
-    auto dLdu = (*dLdh) * dhdu;
-    auto dLdr = dLdn * dndr;
+    // dLdhLast    = dLdh * (dhdhLast + dhdu * dudhLast + dhdc * dcdhLast) = dLdh * dhdhLast + dLdu * dudhLast + dLdc * dcdhLast
+    //             = dLdhLast_h + dLdhLast_u + dLdhLast_c
+    // dLdhLast_h  = dLdh * dhdhLas = dLdh * u
+    // dLdhLast_u  = dLdu * dudhLast = |dudhLast = dudZu * dZudhLast , dZudhLast = ... × WuhT| = (dLdu * dudZu) × WuhT
+    // dLdhLast_c  = dLdc * dcdhLast  = dLdc * (dcdZc * dZcdhLast + dcdZc * dZcdr * drdhLast) =
+    //             = dLdc * dcdZc * dZcdhLast + dLdc * dcdZc * dZcdr * drdhLast =
+    //             = dLdc * dcdZc * dZcdhLast + dLdr * drdhLast = dLdhLast_c0 + dLdhLast_c1
+    // dLdhLast_c0 = dLdc * dcdZc * dZcdhLast = |dZcdhLast = (... * r) × WchT| = (dLdc * dcdZc * r) × WchT
+    // dLdhLast_c1 = dLdr * drdhLast = |drdhLast  = drdZr * dZrdhLast, dZrdhLast = ... × WrhT| = (dLdr * drdZr) × WrhT
+    // finally dLdhLast = dLdhLast_h + dLdhLast_u + dLdhLast_c0 + dLdhLast_c1 =
+    //                  = dLdh * u + (dLdu * dudZu) × WuhT + (dLdc * dcdZc * r) × WchT + (dLdr * drdZr) × WrhT
 
-    dLdx->assign( mmul(dLdu * dSigdu, WxuT) + mmul(dLdr * dSigdr, WxrT) + mmul(dLdn * dActdn, WxnT) );      // [bS,iS]
-    dLdh0->assign( mmul(dLdu * dSigdu, WhuT) + mmul(dLdn * dActdn * (r + drdh0), WhnT) + (*dLdh)*u );       // [bS,nUn]
 
-    dLdWxr.assign( mmul(xT, dSigdr * dLdr) );                                                               //  [iS,nUn]
-    dLdWhr.assign( mmul(h0T, dSigdr * dLdr) );                                                              //  [nUn,nUn]
+    // dLdWrx = dLdh * dhdWrx = (dLdh * dhdc) * dcdWrx = dLdc * dcdZc * dZcdWrx = dLdc * dcdZc * dZcdr * drdWrx =
+    //        = dLdc * dcdZc * dZcdr * drdZr * dZrdWrx = dLdr * drdZr * dZrdWrx
+    // dZrdWrx = xT × ...
+    // finally dLdWrx = xT × (dLdr * drdZr)
 
-    dLdWxu.assign( mmul(xT, dSigdu * dLdu) );                                                               //  [iS,nUn]
-    dLdWhu.assign( mmul(h0T, dSigdu * dLdu) );                                                              //  [nUn,nUn]
 
-    dLdWxn.assign( mmul(xT, dActdn * dLdn) );                                                               //  [iS,nUn]
-    dLdWhn.assign( mmul((r*(*h0)).transpose(), dActdn * dLdn) );                                               //  [nUn,nUn]
+    // dLdWrh = dLdh * dhdWrh = (dLdh * dhdc) * dcdWrh = dLdc * dcdZc * dZcdWrh = dLdc * dcdZc * dZcdr * drdWrh =
+    //        = dLdc * dcdZc * dZcdr * drdZr * dZrdWrh = dLdr * drdZr * dZrdWrh
+    // dZrdWrh = hLastT × ...
+    // finally dLdWrh = hLastT × (dLdr * drdZr)
 
-    dLdbr.assign( (dSigdr * dLdr).reduceAlongDims(reduce::Sum, {0}));                          // [nUn]
-    dLdbu.assign( (dSigdu * dLdu).reduceAlongDims(reduce::Sum, {0}));                          // [nUn]
-    dLdbn.assign( (dActdn * dLdn).reduceAlongDims(reduce::Sum, {0}));                          // [nUn]
 
-    if(dLdWx0 != nullptr)
-        *dLdWx += *dLdWx0;
+    // dLdWux = dLdh * dhdWux = (dLdh * dhdu) * dudWux = dLdu * dudZu * dZudWux
+    // dZudWux = xT × ...
+    // dLdu * dudZu * dZudWux = xT × (dLdu * dudZu)
 
-    if(dLdWh0 != nullptr)
-        *dLdWh += *dLdWh0;
 
-    if(dLdb0 != nullptr)
-        *dLdb += *dLdb0;
+    // dLdWuh = dLdh * dhdWuh = (dLdh * dhdu) * dudWuh = dLdh * dhdu * dudZu * dZudWuh = dLdu * dudZu * dZudWuh
+    // dZudWuh = hLastT × ...
+    // finally dLdWuh = hLastT × (dLdu * dudZu)
 
+
+    // dLdWcx = dLdh * dhdWcx = dLdh * dhdc * dcdWcx = (dLdh * dhdc) * dcdZc * dZcdWcx = dLdc * dcdZc * dZcdWcx
+    // dZcdWcx = xT × ...
+    // finally dLdWcx = xT × (dLdc * dcdZc)
+
+
+    // dLdWch = dLdh * dhdWch = dLdh * dhdc * dcdWch = (dLdh * dhdc) * dcdZc * dZcdWch = dLdc * dcdZc * dZcdWch
+    // dZcdWch = (r*hLast)^T × ...
+    // finally dLdWch = (r*hLast)^T × (dLdc * dcdZc)
+
+
+    // dLdbr = dLdh * dhdbr = (dLdh * dhdc) * dcdbr = dLdc * dcdbr = dLdc * dcdZc * dZcdbr = dLdc * dcdZc * dZcdr * drdbr =
+    //       = dLdr * drdZr * dZrdbr
+    // dZrdbr = 1
+    // finally dLdbr = dLdr * drdZr
+
+
+    // dLdbu = dLdh * dhdbu = (dLdh * dhdu) * dudbu = dLdu * dudZu * dZudbu
+    // dZudbu = 1
+    // finally dLdbu = dLdu * dudZu
+
+
+    // dLdbc = dLdh * dhdbc = (dLdh * dhdc) * dcdbc = dLdc * dcdZc * dZcdbc
+    // dZcdbc = 1
+    // finally dLdbc = dLdc * dcdZc
+
+    NDArray dhdc  = 1.f - u;           // [bS, nU]
+    NDArray dhdu  = *hLast - c;        // [bS, nU]
+    NDArray dudZu = u * dhdc;          // [bS, nU]
+    NDArray drdZr = r * (1.f - r);     // [bS, nU]
+    NDArray dcdZc = 1.f - c * c;       // [bS, nU]
+    NDArray dLdZc = *dLdc * dcdZc;     // [bS, nU]
+    NDArray dLdZu = *dLdu * dudZu;     // [bS, nU]
+    NDArray dLdZr = *dLdr * drdZr;     // [bS, nU]
+
+    // NDArray dLdc  = *dLdh * dhdc;                       // [bS, nU]
+    // NDArray dLdu  = *dLdh * dhdu;                       // [bS, nU]
+    // NDArray dLdr  = mmul(dLdc * dcdZc * *hLast, WchT);  // [bS, nU]
+
+    dLdx->assign(mmul(dLdZu, WuxT) + mmul(dLdZc, WcxT) + mmul(dLdZr, WrxT));                        // [bS, iS]
+
+    dLdhLast->assign(*dLdh * u + mmul(dLdZu, WuhT) + mmul(dLdZc * r, WchT) + mmul(dLdZr, WrhT));    // [bS, nU]
+
+    dLdWrx.assign(mmul(xT,     dLdZr));     // [iS, bS] × [bS, nU] = [iS, nU]
+    dLdWrh.assign(mmul(hLastT, dLdZr));     // [nU, bS] × [bS, nU] = [nU, nU]
+    dLdWux.assign(mmul(xT,     dLdZu));     // [iS, bS] × [bS, nU] = [iS, nU]
+    dLdWuh.assign(mmul(hLastT, dLdZu));     // [nU, bS] × [bS, nU] = [nU, nU]
+
+    dLdWcx.assign(mmul(xT, dLdZc));                          // [iS, bS] × [bS, nU] = [iS, nU]
+    dLdWch.assign(mmul((r * *hLast).transpose(), dLdZc));    // [nU, bS] × [bS, nU] = [nU, nU]
+
+    dLdbr.assign(dLdZr.reduceAlongDims(reduce::Sum, {0}));  // [nU]
+    dLdbu.assign(dLdZu.reduceAlongDims(reduce::Sum, {0}));  // [nU]
+
+    dLdbc->assign(dLdZc.reduceAlongDims(reduce::Sum, {0})); // [nU]
 }
 
 // //////////////////////////////////////////////////////////////////////////
@@ -255,34 +364,34 @@ void gruCellBP(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h
 // void gruTimeLoopBP(const std::vector<NDArray<T>*>& inArrs, const std::vector<NDArray<T>*>& outArrs) {
 
 //     NDArray<T>* x      = inArrs[0];                   // input [time, bS, iS]
-//     NDArray<T>* hi     = inArrs[1];                   // previous/initial cell output [bS, nUn],  that is at previous time step t-1
-//     NDArray<T>* Wx     = inArrs[2];                   // input-to-hidden  weights, [iS, 3*nUn]
-//     NDArray<T>* Wh     = inArrs[3];                   // hidden-to-hidden weights, [nUn, 3*nUn]
-//     NDArray<T>* b      = inArrs[4];                   // biases, [3*nUn]
-//     NDArray<T>* dLdh   = inArrs[5];                   // gradient wrt output, [time, bS, nUn], that is epsilon_next
+//     NDArray<T>* hi     = inArrs[1];                   // previous/initial cell output [bS, nU],  that is at previous time step t-1
+//     NDArray<T>* Wx     = inArrs[2];                   // input-to-hidden  weights, [iS, 3*nU]
+//     NDArray<T>* Wh     = inArrs[3];                   // hidden-to-hidden weights, [nU, 3*nU]
+//     NDArray<T>* b      = inArrs[4];                   // biases, [3*nU]
+//     NDArray<T>* dLdh   = inArrs[5];                   // gradient wrt output, [time, bS, nU], that is epsilon_next
 
 //     NDArray<T>* dLdx   = outArrs[0];                  // gradient wrt x,  [time, bS, iS], that is epsilon
-//     NDArray<T>* dLdhi  = outArrs[1];                  // gradient wrt hi, [bS, nUn]
-//     NDArray<T>* dLdWx  = outArrs[2];                  // gradient wrt Wx, [iS, 3*nUn]
-//     NDArray<T>* dLdWh  = outArrs[3];                  // gradient wrt Wh, [nUn, 3*nUn]
-//     NDArray<T>* dLdb   = outArrs[4];                  // gradient wrt b,  [3*nUn]
+//     NDArray<T>* dLdhi  = outArrs[1];                  // gradient wrt hi, [bS, nU]
+//     NDArray<T>* dLdWx  = outArrs[2];                  // gradient wrt Wx, [iS, 3*nU]
+//     NDArray<T>* dLdWh  = outArrs[3];                  // gradient wrt Wh, [nU, 3*nU]
+//     NDArray<T>* dLdb   = outArrs[4];                  // gradient wrt b,  [3*nU]
 
 //     const Nd4jLong time = x->sizeAt(0);
 //     const Nd4jLong bS   = x->sizeAt(1);
 //     const Nd4jLong iS   = x->sizeAt(2);
-//     const Nd4jLong nUn   = hi->sizeAt(1);
+//     const Nd4jLong nU   = hi->sizeAt(1);
 
-//     NDArray<T> h(hi->ordering(), {time, bS, nUn});      // feed forward output
+//     NDArray<T> h(hi->ordering(), {time, bS, nU});      // feed forward output
 
 //     // first step, time = 0, feed forward
 //     NDArray<T> x0 = (*x)({{0,1}, {}, {}});
-//     NDArray<T> h0 = h({{0,1}, {}, {}});
-//     helpers::gruCell<T>({&x0, hi, Wx, Wh, b}, &h0);
+//     NDArray<T> hLast = h({{0,1}, {}, {}});
+//     helpers::gruCell<T>({&x0, hi, Wx, Wh, b}, &hLast);
 
 //     // first step, time = 0, back prop
 //     NDArray<T> dLdx0 = (*dLdx)({{0,1}, {}, {}});
-//     NDArray<T> dLdh0 = (*dLdh)({{0,1}, {}, {}});
-//     helpers::gruCellBP<T>({&x0, hi, Wx, Wh, b, &dLdh0, nullptr, nullptr, nullptr}, {&dLdx0, dLdhi, dLdWx, dLdWh, dLdb});
+//     NDArray<T> dLdhLast = (*dLdh)({{0,1}, {}, {}});
+//     helpers::gruCellBP<T>({&x0, hi, Wx, Wh, b, &dLdhLast, nullptr, nullptr, nullptr}, {&dLdx0, dLdhi, dLdWx, dLdWh, dLdb});
 
 //     // loop through the rest time steps
 //     for (Nd4jLong t = time-1; t > 0; --t) {
@@ -310,4 +419,3 @@ void gruCellBP(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h
 }
 }
 }
-

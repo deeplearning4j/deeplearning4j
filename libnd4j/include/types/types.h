@@ -76,6 +76,9 @@
         (nd4j::DataType::FLOAT32, float), \
         (nd4j::DataType::DOUBLE, double)
 
+#define FLOAT_NATIVE \
+        (nd4j::DataType::FLOAT32, float), \
+        (nd4j::DataType::DOUBLE, double)
 
 #define FLOAT_TYPES_0 \
         (nd4j::DataType::HALF, float16)

@@ -402,22 +402,219 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
 
 TEST_F(DeclarableOpsTests13, CellContains_test_1) {
 
-auto corners = NDArrayFactory::create<double>( {0.5384,    0.5640,    0.3449,    0.5257,    0.5505});
-auto width = NDArrayFactory::create<double>({0.4306,    0.3960,    0.4639,    0.5040,    0.4904});
-auto point = NDArrayFactory::create<double>({0.3000,    0.2625,    0.2674,    0.8604,    0.4803});
-//auto exp = NDArrayFactory::create<double>('c', {1, 39}, {15.000000, 0.000000, 0.000000, 65.000000, 60.000000, 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000});
-//    data.linspace(1);
+    auto corners = NDArrayFactory::create<double>( {0.5384,    0.5640,    0.3449,    0.5257,    0.5505});
+    auto width = NDArrayFactory::create<double>({0.4306,    0.3960,    0.4639,    0.5040,    0.4904});
+    auto point = NDArrayFactory::create<double>({0.3000,    0.2625,    0.2674,    0.8604,    0.4803});
+    //auto exp = NDArrayFactory::create<double>('c', {1, 39}, {15.000000, 0.000000, 0.000000, 65.000000, 60.000000, 145.000000, 20.000000, 25.000000, 65.000000, 145.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000});
+    //    data.linspace(1);
 
-//    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
-//    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
-//    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
-nd4j::ops::cell_contains op;
-auto result = op.execute({&corners, &width, &point}, {}, {5});
-ASSERT_EQ(result->status(), Status::OK());
-ASSERT_TRUE(result->at(0)->e<bool>(0));
-//result->at(2)->printBuffer("Symmetrized3");
-//exp.printBuffer("EXPect symm3");
-//    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
-//ASSERT_TRUE(exp.equalsTo(result->at(0)));
-delete result;
+    //    auto y = NDArrayFactory::create<double>('c', {2,3}, {-0.1,-2,3, -4, -0.5, -6});
+    //    auto eps = NDArrayFactory::create<double>('c', {2,3}, {-0.1, 0.2, -0.3, 0.4, -0.5, 0.6});
+    //    auto exp = NDArrayFactory::create<double>('c', {2,3}, {1, 2, 1, 2, 2, 2});
+    nd4j::ops::cell_contains op;
+    auto result = op.execute({&corners, &width, &point}, {}, {5});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_TRUE(result->at(0)->e<bool>(0));
+    //result->at(2)->printBuffer("Symmetrized3");
+    //exp.printBuffer("EXPect symm3");
+    //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
+    //ASSERT_TRUE(exp.equalsTo(result->at(0)));
+    delete result;
 }
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustHue_1) {
+
+    NDArray input('c', {2,2,3}, {0,100,56, 17,220,5,  150,97,230, 255,2,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {2,2,3}, {100,0,44, 208,5,220, 177,230,97,  2,255,244}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_hue op;
+    auto results = op.execute({&input}, {0.5}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustHue_2) {
+
+    NDArray input('c', {2,2,3}, {0,100,56, 17,220,5,  150,97,230,   255,2,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {2,2,3}, {4,100,0,  146,220,5, 97,123.8,230, 255,2,164.8}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_hue op;
+    auto results = op.execute({&input}, {0.9}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustHue_3) {
+
+    NDArray input('c', {2,2,3}, {0,100,56,    17,220,5,          150,97,230,     255,2,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {2,2,3}, {0.,84.,100., 5.,220.,122.0001,  229.8,97.,230., 255.,142.8002,2.}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_hue op;
+    auto results = op.execute({&input}, {-0.9}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustHue_4) {
+
+    NDArray input('c', {2,3,2}, {0,17,   100,220, 56,5,   150,255, 97,2,   230,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {2,3,2}, {100,208, 0,5,   44,220,  177,2,   230,255, 97,244}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_hue op;
+    auto results = op.execute({&input}, {0.5}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustHue_5) {
+
+    NDArray input('c', {3,2,2}, {0,17, 150,255,   100,220, 97,2,  56,5, 230,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {3,2,2}, {100,208, 177,2,  0,5, 230,255,   44,220, 97,244}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_hue op;
+    auto results = op.execute({&input}, {0.5}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustSaturation_1) {
+
+    NDArray input('c', {2,2,3}, {0,100,56,  17,220,5,         150,97,230,    255,2,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {2,2,3}, {50,100,78, 118.5,220,112.5,  190,163.5,230, 255,128.5,134}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_saturation op;
+    auto results = op.execute({&input}, {0.5}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustSaturation_2) {
+
+    NDArray input('c', {2,2,3}, {0,100,56,    17,220,5,          150,97,230,        255,2,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {2,2,3}, {0.,100.,56., 12.279087,220.,0., 91.654228,0.,230., 255.,0.,11.087015}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_saturation op;
+    auto results = op.execute({&input}, {10}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustSaturation_3) {
+
+    NDArray input('c', {2,2,3}, {0,100,56,       17,220,5,       150,97,230,     255,2,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {2,2,3}, {100.,100.,100., 220.,220.,220., 230.,230.,230., 255., 255., 255.}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_saturation op;
+    auto results = op.execute({&input}, {-10}, {2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustSaturation_4) {
+
+    NDArray input('c', {2,3,2}, {0,17,   100,220,  56,5,   150,255,  97,2,   230,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {2,3,2}, {50,118.5, 100,220, 78,112.5,  190,255, 163.5,128.5, 230,134}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_saturation op;
+    auto results = op.execute({&input}, {0.5}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, adjustSaturation_5) {
+
+    NDArray input('c', {3,2,2}, {0,17,     150,255,  100,220,  97,2,        56,5,     230,13}, nd4j::DataType::FLOAT32);
+    NDArray exp  ('c', {3,2,2}, {50,118.5, 190,255,  100,220,  163.5,128.5, 78,112.5, 230,134}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::adjust_saturation op;
+    auto results = op.execute({&input}, {0.5}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+

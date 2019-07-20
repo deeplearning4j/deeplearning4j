@@ -59,13 +59,16 @@ namespace helpers {
             std::vector<Nd4jLong> dims(reduceShape->lengthOf());
 
             bool fit = true;
-
-            for( int i = 0; fit && (i < dims.size()); i++ ) {
-                dims[i] = reduceShape->e<Nd4jLong>(i);
-                for (int e = 0; fit && (e < input->rankOf()); ++e)
-                    if (input->sizeAt(e) % dims[i]) {
-                        fit = false;
-                    }
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(fit))
+            for( int i = 0; i < dims.size(); i++ ) {
+                if (fit) {
+                    dims[i] = reduceShape->e<Nd4jLong>(i);
+                    for (int e = 0; e < input->rankOf(); ++e)
+                        if (fit)
+                        if (input->sizeAt(e) % dims[i]) {
+                            fit = false;
+                        }
+                }
             }
 
             // check dims to fit input

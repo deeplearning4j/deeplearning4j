@@ -1498,16 +1498,6 @@ void NativeOps::specialConcat(
  * This method saves
  */
 nd4j::TadPack* NativeOps::tadOnlyShapeInfo(Nd4jLong *dXShapeInfo, int *dimension, int dimensionLength) {
-	/*shape::TAD tad;
-	tad.init(dXShapeInfo, dimension, dimensionLength);
-	//tad->setOutputBuffer(target);
-	tad.createTadOnlyShapeInfo();
-	tad.createOffsets();
-
-
-	std::memcpy(reinterpret_cast<void *>(target), tad.tadOnlyShapeInfo, shape::shapeInfoByteLength(tad.tadOnlyShapeInfo));
-	std::memcpy(reinterpret_cast<void *>(offsets), tad.tadOffsets, tad.numTads * sizeof(Nd4jLong));
-	*/
 	auto pack = new TadPack();
 	*pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(dXShapeInfo, dimension, dimensionLength);
     return pack;

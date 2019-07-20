@@ -57,16 +57,26 @@ namespace nd4j {
             auto in = inputShape->at(0);
             int outRank = shape::rank(in) + 1;
             auto input = INPUT_VARIABLE(0);
+            auto dtype = DataType::BOOL;
             Nd4jLong maxInd = input->argMax();
-            float max = input->e<float>(maxInd);
+            Nd4jLong max = input->e<Nd4jLong>(maxInd);
+
             if (block.getIArguments()->size() > 0) {
+                if (block.width() < 2) {
                 maxInd = INT_ARG(0);
                 if (maxInd < max)
                     maxInd = static_cast<Nd4jLong>(max);
+                if (block.getIArguments()->size() > 1)
+                    dtype = (DataType)INT_ARG(1);
+                }
+                else {
+                    dtype = (DataType)INT_ARG(0);
+                }
             }
-            else if (block.width() > 1) {
+
+            if (block.width() > 1) {
                 auto maxlen = INPUT_VARIABLE(1);
-                float tmaxlen = maxlen->e<float>(0);
+                Nd4jLong tmaxlen = maxlen->e<Nd4jLong>(0);
                 if (tmaxlen > max)
                     maxInd = static_cast<Nd4jLong>(tmaxlen);
             }
@@ -80,14 +90,14 @@ namespace nd4j {
                 outShapeInfo[i + 1] = shape::sizeAt(in, i);
             outShapeInfo[outRank] = lastDimension;
 
-            ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
+            ShapeUtils::updateStridesAndType(outShapeInfo, dtype, shape::order(in));
 
             return SHAPELIST(CONSTANT(outShapeInfo));
     }
 
         DECLARE_TYPES(sequence_mask) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes({ALL_INTS})
                     ->setAllowedOutputTypes(nd4j::DataType::ANY);
         }
 }

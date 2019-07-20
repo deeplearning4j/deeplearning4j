@@ -391,7 +391,7 @@ static void scatterCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 ///////////////////////////////////////////////////////////////////
 void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& indices, const NDArray& updates, NDArray& output, const bool lock) {
 
-    PointersManager manager(context, "scatterND");
+    PointersManager manager(context, "scatter");
 
     NDArray::prepareSpecialUse({&output}, {&updates, &indices});
 

@@ -22,19 +22,98 @@
 #include <NativeOps.h>
 #include <vector>
 #include <memory>
+#include <cuda_exception.h>
 
 namespace nd4j {
 namespace ops {
 namespace helpers {
 
     template <typename T>
-    static void dropoutSimple(NDArray const* input, NDArray* output, double probValue, int seed) {
+    static __global__ void dropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probVal, int inLen, nd4j::graph::RandomGenerator* nodeRng) {
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = blockDim.x * gridDim.x;
+        __shared__ T const* input;
+        __shared__ T* output;
 
+        if (threadIdx.x == 0) {
+            input = reinterpret_cast<T const*>(inputBuf);
+            output = reinterpret_cast<T*>(outputBuf);
+        }
+
+        for (Nd4jLong e = 0; e < inLen; ++e) {
+            T val = nodeRng->relativeT(e, T(0.f), T(1.f));
+
+            if (double(val) < probVal)
+                output[shape::getIndexOffset(e, outputShape, inLen)] = T(input[shape::getIndexOffset(e, inputShape, inLen)] / probVal);
+        }
     }
-    BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray const* input, NDArray* output, double probValue, int seed), FLOAT_TYPES);
+
+    template <typename T>
+    static void dropoutSimple(nd4j::LaunchContext* context, NDArray const* input, NDArray* output, double probValue, int seed) {
+        nd4j::graph::RandomGenerator nodeRng(3019L, seed);
+        int inLen = input->lengthOf();
+        nd4j::graph::RandomGenerator* dRandom;
+        auto stream = context->getCudaStream();
+        NDArray::prepareSpecialUse({output}, {input});
+
+        auto err = cudaMalloc(&dRandom, sizeof(nd4j::graph::RandomGenerator));
+        if (err) {
+            throw cuda_exception::build("helpers::dropoutSimple: Cannot allocate device memory for random generator.", err);
+        }
+        err = cudaMemcpy(dRandom, &nodeRng, sizeof(nd4j::graph::RandomGenerator), cudaMemcpyHostToDevice);
+        if (err) {
+            throw cuda_exception::build("helpers::dropoutSimple: Cannot set up device memory for random generator.", err);
+        }
+
+        dropoutSimpleKernel<T><<<128, 256, 1024, *stream>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), probValue, inLen, dRandom);
+        err = cudaFree(dRandom);
+        if (err) {
+            throw cuda_exception::build("helpers::dropoutSimple: Cannot deallocate device memory for random generator.", err);
+        }
+        NDArray::registerSpecialUse({output}, {input});
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (nd4j::LaunchContext* context, NDArray const* input, NDArray* output, double probValue, int seed), FLOAT_TYPES);
 
     template <typename T>
     int _dropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
+
+        if (reduceShape == nullptr){
+            dropoutSimple<T>(context.launchContext(), input, output, probValue, seed);
+        }
+        else {
+            REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
+
+            std::vector<Nd4jLong> dims(reduceShape->lengthOf());
+            reduceShape->syncToHost(); // to ensure that follows are actual
+            bool fit = true;
+//            PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(fit))
+            for( int i = 0; i < dims.size(); i++ ) {
+                if (fit) {
+                    dims[i] = reduceShape->e<Nd4jLong>(i);
+                    for (int e = 0; e < input->rankOf(); ++e)
+                        if (fit)
+                            if (input->sizeAt(e) % dims[i]) {
+                                fit = false;
+                            }
+                }
+            }
+
+            // check dims to fit input
+            REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
+            std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), context.launchContext()));
+            chunk->assign(1.f);
+            //chunk->applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
+            //NativeOpExecutioner::execRandom(random::DropOutInverted, rng, chunk->buffer(), chunk->shapeInfo(), chunk->buffer(), chunk->shapeInfo(), &prob);
+            dropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), probValue, seed);
+            // broadcast chunk to full matrix
+            std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
+            dropOutMultiplier->assign(1.f);
+
+            *dropOutMultiplier += *chunk;
+
+            output->assign(*input * *dropOutMultiplier); //input->applyPairwiseTransform(pairwise::Multiply, dropOutMultiplier.get(), output, nullptr);
+        }
 
         return Status::OK();
     }
@@ -49,13 +128,120 @@ namespace helpers {
 
 /////////////////////////////////// backrpopagations ///////////////////////////////////////////////
     template <typename T>
+    static __global__ void dropoutBPKernel(void* outputBuf, Nd4jLong* outputShape, void* gradOutBuf, Nd4jLong* gradOutShape, double probValue) {
+        __shared__ T* output;
+        __shared__ T* input;
+        __shared__ int len;
+
+        if (threadIdx.x == 0) {
+            len = shape::length(outputShape);
+            output = reinterpret_cast<T*>(outputBuf);
+            input = reinterpret_cast<T*>(gradOutBuf);
+        }
+
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = blockDim.x * gridDim.x;
+
+        for (int e = tid; e < len; e += step) {
+            if (output[shape::getIndexOffset(e, outputShape, len)] != T(0.))
+                output[shape::getIndexOffset(e, outputShape, len)] = T(input[shape::getIndexOffset(e, gradOutShape, len)] / probValue);
+
+        }
+    }
+    template <typename T>
     static int dropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
-        return Status::OK();
+        int res = dropOutFunctor(context, input, output, reduceShape, seed, probValue);
+        auto stream = context.launchContext()->getCudaStream();
+
+        if (ND4J_STATUS_OK == res)
+            dropoutBPKernel<T><<<128, 256, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(), probValue);
+
+        return res;
+    }
+
+    template <typename T>
+    static __global__ void alphaDropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probValue, double alpha, double alpha1, double beta, int inLen, nd4j::graph::RandomGenerator* nodeRng) {
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = blockDim.x * gridDim.x;
+        __shared__ T const* input;
+        __shared__ T* output;
+
+        if (threadIdx.x == 0) {
+            input = reinterpret_cast<T const*>(inputBuf);
+            output = reinterpret_cast<T*>(outputBuf);
+        }
+
+        for (auto e = tid; e < inLen; e += step) {
+            T val = nodeRng->relativeT(e, T(0.f), T(1.f));
+            T xVal = input[shape::getIndexOffset(e, inputShape, inLen)];
+            output[shape::getIndexOffset(e, outputShape, inLen)] = (val >= T(probValue) ? T(alpha * beta + alpha1) : T(alpha * (double)xVal + alpha1));
+        }
+    }
+    template <typename T>
+    static void alphaDropoutSimple(nd4j::LaunchContext* context, NDArray const* input, NDArray* output, int seed, double probValue, double alpha, double alpha1, double beta) {
+        nd4j::graph::RandomGenerator nodeRng(3019L, seed), *dRandom;
+        auto stream = context->getCudaStream();
+        auto err = cudaMalloc(&dRandom, sizeof(nd4j::graph::RandomGenerator));
+        NDArray::prepareSpecialUse({output}, {input});
+        if (err) {
+            throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot allocate device memory for random generator.", err);
+        }
+        err = cudaMemcpy(dRandom, &nodeRng, sizeof(nd4j::graph::RandomGenerator), cudaMemcpyHostToDevice);
+        if (err) {
+            throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot set up device memory for random generator.", err);
+        }
+
+        alphaDropoutSimpleKernel<T><<<128, 256, 1024, *stream>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), probValue, alpha, alpha1, beta, output->lengthOf(), dRandom);
+
+        err = cudaFree(dRandom);
+        if (err) {
+            throw cuda_exception::build("helpers::alphaDropoutSimple: Cannot deallocate device memory for random generator.", err);
+        }
+        NDArray::registerSpecialUse({output}, {input});
     }
 
     template <typename T>
     static int alphaDropOutFunctor_(graph::Context& context, NDArray* input, NDArray* output,
                             NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta) {
+
+        if (reduceShape == nullptr){
+            alphaDropoutSimple<T>(context.launchContext(), input, output, seed, probValue, alpha, alpha1, beta);
+        }
+        else {
+            REQUIRE_TRUE(reduceShape->lengthOf() <= input->rankOf(), 0, "dropout: Noise shape should be fittable to input");
+
+            std::vector<Nd4jLong> dims(reduceShape->lengthOf());
+            reduceShape->syncToHost(); // to ensure that follows are actual
+            bool fit = true;
+//            PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(fit))
+            for( int i = 0; i < dims.size(); i++ ) {
+                if (fit) {
+                    dims[i] = reduceShape->e<Nd4jLong>(i);
+                    for (int e = 0; e < input->rankOf(); ++e)
+                        if (fit)
+                            if (input->sizeAt(e) % dims[i]) {
+                                fit = false;
+                            }
+                }
+            }
+
+            // check dims to fit input
+            REQUIRE_TRUE(fit, 0, "alpha_dropout: Noise shape should fit to input rank.");
+            std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), context.launchContext()));
+            chunk->assign(1.f);
+            //chunk->applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
+            //NativeOpExecutioner::execRandom(random::DropOutInverted, rng, chunk->buffer(), chunk->shapeInfo(), chunk->buffer(), chunk->shapeInfo(), &prob);
+            alphaDropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), seed, probValue, alpha, alpha1, beta);
+            // broadcast chunk to full matrix
+            std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
+            dropOutMultiplier->assign(1.f);
+
+            *dropOutMultiplier += *chunk;
+
+            output->assign(*input * *dropOutMultiplier); //input->applyPairwiseTransform(pairwise::Multiply, dropOutMultiplier.get(), output, nullptr);
+        }
+
+
         return Status::OK();
     }
 
@@ -63,7 +249,12 @@ namespace helpers {
     int alphaDropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output,
                               NDArray* reduceShape, int seed, double probValue, double alpha, double alpha1, double beta) {
 
-        return Status::OK();
+        int res = alphaDropOutFunctor(context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta);
+        if (res == ND4J_STATUS_OK) {
+            (*output) *= alpha;
+            (*output) *= (*gradOut); //->applyPairwiseTransform<transform::Multiply>(gradOut, output, nullptr);
+        }
+        return res;
     }
 
     int dropOutFunctorBP(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output, NDArray* reduceShape, int seed, double probValue) {

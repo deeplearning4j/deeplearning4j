@@ -45,13 +45,13 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
 	else if(block.width() == 6) {
         h0 = INPUT_VARIABLE(4);
         maxTimeStep = INPUT_VARIABLE(5);
-    }    
-    
+    }
+
     auto h      =  OUTPUT_VARIABLE(0);           // cell outputs [time x bS x numUnits]
     auto hFinal =  OUTPUT_VARIABLE(1);           // at the end it will store cell final non-zero output [bS x numUnits]
 
 	REQUIRE_TRUE(x->rankOf() == 3, 0, "STATIC_RNN custom operation: input array x must have rank = 3, but got %i instead !", x->rankOf());
-    REQUIRE_TRUE(Wx->rankOf() == 2, 0, "STATIC_RNN custom operation: input-to-hidden weights array must have rank = 2, but got %i instead !", Wx->rankOf());    
+    REQUIRE_TRUE(Wx->rankOf() == 2, 0, "STATIC_RNN custom operation: input-to-hidden weights array must have rank = 2, but got %i instead !", Wx->rankOf());
 
     const int time     = x->sizeAt(0);
     const int bS       = x->sizeAt(1);
@@ -67,25 +67,25 @@ CUSTOM_OP_IMPL(static_rnn, 4, 2, false, 0, 0) {
 
 
     helpers::rnnTimeLoop(block.launchContext(), x, Wx, Wh, b, h0, maxTimeStep,  h, hFinal);
-    
+
     return Status::OK();
 }
 
-        DECLARE_TYPES(static_rnn) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
+DECLARE_TYPES(static_rnn) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedOutputTypes({ALL_FLOATS});
+}
 
 
-DECLARE_SHAPE_FN(static_rnn) {    
+DECLARE_SHAPE_FN(static_rnn) {
 
     auto xShapeInfo  = inputShape->at(0);               // input [time x bS x inSize]
-    auto WxShapeInfo = inputShape->at(1);               // input-to-hidden  weights, [inSize  x numUnits]     
-    auto WhShapeInfo = inputShape->at(2);               // hidden-to-hidden weights, [numUnits x numUnits]         
-    auto bShapeInfo  = inputShape->at(3);               // biases for, [2*numUnits] 
+    auto WxShapeInfo = inputShape->at(1);               // input-to-hidden  weights, [inSize  x numUnits]
+    auto WhShapeInfo = inputShape->at(2);               // hidden-to-hidden weights, [numUnits x numUnits]
+    auto bShapeInfo  = inputShape->at(3);               // biases for, [2*numUnits]
 
-    Nd4jLong* h0ShapeInfo          = nullptr;                // initial cell output (at time step = 0) [bS x numUnits] 
+    Nd4jLong* h0ShapeInfo          = nullptr;                // initial cell output (at time step = 0) [bS x numUnits]
     Nd4jLong* maxTimeStepShapeInfo = nullptr;                // vector [bS] containing integer values within [0,time), each element of this vector set max time step per each input in batch, this means there are no calculations for time >= maxTimeStep
 
     if(block.width() == 5) {
@@ -97,10 +97,10 @@ DECLARE_SHAPE_FN(static_rnn) {
     else if(block.width() == 6) {
         h0ShapeInfo = inputShape->at(4);
         maxTimeStepShapeInfo = inputShape->at(5);
-    }    
+    }
 
     REQUIRE_TRUE(xShapeInfo[0]  == 3, 0, "STATIC_RNN custom operation: input array x must have rank = 3, but got %i instead !", xShapeInfo[0]);
-    REQUIRE_TRUE(WxShapeInfo[0] == 2, 0, "STATIC_RNN custom operation: input-to-hidden weights array must have rank = 2, but got %i instead !", WxShapeInfo[0]);    
+    REQUIRE_TRUE(WxShapeInfo[0] == 2, 0, "STATIC_RNN custom operation: input-to-hidden weights array must have rank = 2, but got %i instead !", WxShapeInfo[0]);
 
     const int inRank   = xShapeInfo[0];
     const int time     = xShapeInfo[1];
@@ -118,7 +118,7 @@ DECLARE_SHAPE_FN(static_rnn) {
     Nd4jLong *hShapeInfo(nullptr), *hPrevShapeInfo(nullptr);
     ALLOCATE(hShapeInfo,     block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
     ALLOCATE(hPrevShapeInfo, block.getWorkspace(), shape::shapeInfoLength(inRank-1), Nd4jLong);
-            
+
     hShapeInfo[0]            = inRank;
     hPrevShapeInfo[0]        = inRank-1;
     hShapeInfo[1]            = time;
@@ -127,9 +127,9 @@ DECLARE_SHAPE_FN(static_rnn) {
 
     ShapeUtils::updateStridesAndType(hShapeInfo, xShapeInfo, shape::order(xShapeInfo));
     ShapeUtils::updateStridesAndType(hPrevShapeInfo, xShapeInfo, shape::order(xShapeInfo));
-         
+
     return SHAPELIST(CONSTANT(hShapeInfo), CONSTANT(hPrevShapeInfo));
-}   
+}
 
 
 

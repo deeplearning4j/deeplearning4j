@@ -143,7 +143,7 @@ namespace helpers {
 
     ///////////////////////////////////////////////////////////////////
     template <typename T>
-    static void _reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
+    static void reverseSequence_(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
         int posOfNonUnityDim = -1;
         seqLengths->syncToHost();
         auto stream = context->getCudaStream();
@@ -193,7 +193,7 @@ namespace helpers {
     }
 
     void reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _reverseSequence, (context, input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), reverseSequence_, (context, input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
     }
 
     //////////////////////////////////////////////////////////////////////////

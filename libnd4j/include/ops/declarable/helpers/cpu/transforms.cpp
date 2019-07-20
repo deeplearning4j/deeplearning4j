@@ -27,6 +27,7 @@
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
 #include <Loops.h>
+#include <graph/RandomGenerator.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -81,7 +82,7 @@ static void trace_(const NDArray& input, NDArray& output) {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
-void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace) {
+void randomShuffle_(NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace) {
 
     // check edge cases first
     int temp;
@@ -95,16 +96,16 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
 
         // apply Fisher-Yates shuffle
         if(isInplace) {
-            PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
+            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
             for(int i = firstDim-1; i > 0; --i) {
-                int r = rng.nextInt(0, i);
+                int r = rng.relativeInt(i) % i;
                 if(i == r)
                     continue;
-                T _e0 = input.e<T>(i);
-                T _e1 = input.e<T>(r);
+                T t0 = input.t<T>(i);
+                T t1 = input.t<T>(r);
                 //math::nd4j_swap<T>(input(i), input(r));
-                input.p<T>(i, _e1);
-                input.p<T>(r, _e0);
+                input.t<T>(i) = t1;
+                input.t<T>(r) = t0;
             }
         }
         else {
@@ -113,12 +114,12 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
             output.p<T>(Nd4jLong(0), input.e<T>(0));
             PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
             for(int i = firstDim-1; i > 0; --i) {
-                int r = rng.nextInt(0, i);
-                output.p(i, input.e<T>(indices[r]));
+                int r = rng.relativeInt(i) % i;
+                output.t<T>(i) = input.t<T>(indices[r]);
                 if(i == r)
                     continue;
 
-                output.p(r, input.e<T>(indices[i]));
+                output.t<T>(r) = input.t<T>(indices[i]);
                 math::nd4j_swap<int>(indices[i], indices[r]);
             }
             rng.rewindH(firstDim-1);
@@ -132,9 +133,10 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
 
         // apply Fisher-Yates shuffle
         if(isInplace) {
-            PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->elementwiseThreshold())
-            for(int i = firstDim-1; i > 0; --i) {
-                int r = rng.nextInt(0, i);
+            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->elementwiseThreshold())
+            for(int i = firstDim - 1; i > 0; --i) {
+                int r = rng.relativeInt(i) % i;
+
                 if(i == r)
                     continue;
                 subArrsListIn->at(i)->swapUnsafe(*subArrsListIn->at(r));
@@ -146,9 +148,9 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
             std::vector<int> indices(firstDim);
             std::iota(indices.begin(), indices.end(), 0);
             bool isZeroShuffled = false;
-            PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
-            for(int i = firstDim-1; i > 0; --i) {
-                int r = rng.nextInt(0, i);
+            //PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
+            for(int i = firstDim - 1; i > 0; --i) {
+                int r = rng.relativeInt(i) % i;
                 subArrsListOut->at(i)->assign(subArrsListIn->at(indices[r]));
                 if(r == 0)
                     isZeroShuffled = true;
@@ -167,11 +169,11 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::random::RandomBuffer&
 
 }
 
-    void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace) {
+    void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (input, output, rng, isInplace), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace), LIBND4J_TYPES);
 
 
 

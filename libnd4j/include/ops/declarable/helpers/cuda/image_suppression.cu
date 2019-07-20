@@ -20,6 +20,8 @@
 
 #include <ops/declarable/helpers/image_suppression.h>
 #include <NDArrayFactory.h>
+#include <NativeOps.h>
+#include <cuda_exception.h>
 
 namespace nd4j {
 namespace ops {
@@ -35,15 +37,16 @@ namespace helpers {
         Nd4jLong next1[] = {nextIndex, 1};
         Nd4jLong next2[] = {nextIndex, 2};
         Nd4jLong next3[] = {nextIndex, 3};
-
-        T minYPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), previous0, 2)], boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), previous2, 2)]);
-        T minXPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), previous1, 2)], boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), previous3, 2)]);
-        T maxYPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), previous0, 2)], boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), previous2, 2)]);
-        T maxXPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), previous1, 2)], boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), previous3, 2)]);
-        T minYNext = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), next0, 2)], boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), next2, 2)]);
-        T minXNext = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), next1, 2)], boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), next3, 2)]);
-        T maxYNext = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), next0, 2)], boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), next2, 2)]);
-        T maxXNext = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), next1, 2)], boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), next3, 2)]);
+        Nd4jLong* shapeOf = shape::shapeOf(boxesShape);
+        Nd4jLong* strideOf = shape::stride(boxesShape);
+        T minYPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shapeOf, strideOf, previous0, 2)], boxes[shape::getOffset(0, shapeOf, strideOf, previous2, 2)]);
+        T minXPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shapeOf, strideOf, previous1, 2)], boxes[shape::getOffset(0, shapeOf, strideOf, previous3, 2)]);
+        T maxYPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shapeOf, strideOf, previous0, 2)], boxes[shape::getOffset(0, shapeOf, strideOf, previous2, 2)]);
+        T maxXPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shapeOf, strideOf, previous1, 2)], boxes[shape::getOffset(0, shapeOf, strideOf, previous3, 2)]);
+        T minYNext = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shapeOf, strideOf, next0, 2)],     boxes[shape::getOffset(0, shapeOf, strideOf, next2, 2)]);
+        T minXNext = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shapeOf, strideOf, next1, 2)],     boxes[shape::getOffset(0, shapeOf, strideOf, next3, 2)]);
+        T maxYNext = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shapeOf, strideOf, next0, 2)],     boxes[shape::getOffset(0, shapeOf, strideOf, next2, 2)]);
+        T maxXNext = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shapeOf, strideOf, next1, 2)],     boxes[shape::getOffset(0, shapeOf, strideOf, next3, 2)]);
 
         T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
         T areaNext = (maxYNext - minYNext) * (maxXNext - minXNext);
@@ -62,149 +65,101 @@ namespace helpers {
     };
 
     template <typename T, typename I>
-    static __global__ void nonMaxSuppressionKernel(T* boxes, Nd4jLong* boxesShape, I* indices, int* selectedIndices, Nd4jLong numBoxes, I* output, Nd4jLong* outputShape, T threshold) {
-        __shared__ Nd4jLong outputLen;
-
+    static __global__ void shouldSelectKernel(T* boxesBuf, Nd4jLong* boxesShape, I* indexBuf, I* selectedIndicesData, double threshold, int numSelected, int i, bool* shouldSelect) {
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = gridDim.x * blockDim.x;
+        __shared__ bool shouldSelectShared;
         if (threadIdx.x == 0) {
-            outputLen = shape::length(outputShape);
+            shouldSelectShared = shouldSelect[0];
         }
         __syncthreads();
-
-        auto numSelected = blockIdx.x;
-        auto start = blockIdx.x * blockDim.x + threadIdx.x;
-        auto step = blockDim.x * gridDim.x;
-//        for (int numSelected = blockIdx.x; numSelected < outputLen; numSelected += gridDim.x) {
-        for (int i = start; i < numBoxes; i += step) {
-                bool shouldSelect = true;
-                for (int j = numSelected - 1; shouldSelect && j >= 0; --j) {
-                    if (needToSuppressWithThreshold<T>(boxes, boxesShape, indices[i], indices[selectedIndices[j]], threshold)) {
-                        shouldSelect = false;
-                    }
-                }
-
-                if (shouldSelect) {
-                    auto zPos = shape::getIndexOffset(numSelected, outputShape, outputLen);
-                    output[zPos] = indices[i];
-                    selectedIndices[numSelected] = i;
-                }
-
+        for (int j = numSelected - 1 - tid; j >= 0; j -= step) {
+            if (shouldSelectShared) {
+                if (needToSuppressWithThreshold(boxesBuf, boxesShape, indexBuf[i],
+                                                                  indexBuf[selectedIndicesData[j]], T(threshold)))
+                    shouldSelectShared = false;
+            }
+        }
+        __syncthreads();
+        if (threadIdx.x == 0) {
+            *shouldSelect = shouldSelectShared;
         }
     }
+    template <typename I>
 
-    template <typename T, typename I>
-    static __global__ void sortIndices(I* indices, Nd4jLong* indexShape, T* scores, Nd4jLong* scoreShape) {
-        __shared__ Nd4jLong len;
-//        __shared__ Nd4jLong* sortedPart;
-//        __shared__ Nd4jLong part;
-//        __shared__ Nd4jLong partSize;
-
+    static __global__ void copyIndices(void* indices,  void* indicesLong, Nd4jLong len) {
+        __shared__ I* indexBuf;
+        __shared__ Nd4jLong* srcBuf;
         if (threadIdx.x == 0) {
-//            blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil
-//            part = blockIdx.x / blocksPerArr;
-
-            len = shape::length(indexShape);
-//            __shared__ Nd4jLong* shmem = shared[];
-//            sortedPart = shmem;
+            indexBuf = reinterpret_cast<I*>(indices);
+            srcBuf = reinterpret_cast<Nd4jLong*>(indicesLong);
         }
+        auto tid = threadIdx.x + blockIdx.x * blockDim.x;
+        auto step = blockDim.x * gridDim.x;
 
-        for (int m = 0; m < len; m++) {
-            if (m % 2 == 0) {
-                for (int tid = threadIdx.x; tid < len; tid += blockDim.x) {
-                    auto top = 2 * tid + 1;
-                    if (top < len) {
-                        auto t0 = shape::getIndexOffset(top - 1, indexShape, len);
-                        auto t1 = shape::getIndexOffset(top, indexShape, len);
-                        auto z0 = shape::getIndexOffset(top - 1, scoreShape, len);
-                        auto z1 = shape::getIndexOffset(top, scoreShape, len);
-
-                        if (scores[t0] < scores[t1]) {
-                            // swap indices first
-                            Nd4jLong di0 = indices[t0];
-                            indices[t0] = indices[t1];
-                            indices[t1] = di0;
-
-                            //swap scores next
-//                            T dz0 = scores[z0];
-//                            scores[z0] = scores[z1];
-//                            scores[z1] = dz0;
-                        }
-                    }
-                }
-            } else {
-                for (int tid = threadIdx.x; tid < len; tid += blockDim.x) {
-                    auto top = 2 * tid + 2;
-                    if (top < len) {
-                        auto t0 = shape::getIndexOffset(top - 1, indexShape, len);
-                        auto t1 = shape::getIndexOffset(top, indexShape, len);
-                        auto z0 = shape::getIndexOffset(top - 1, scoreShape, len);
-                        auto z1 = shape::getIndexOffset(top, scoreShape, len);
-
-                        if (scores[t0] < scores[t1]) {
-                            // swap indices first
-                            Nd4jLong di0 = indices[t0];
-                            indices[t0] = indices[t1];
-                            indices[t1] = di0;
-
-                            //swap scores next
-//                            T dz0 = scores[z0];
-//                            scores[z0] = scores[z1];
-//                            scores[z1] = dz0;
-                        }
-                    }
-                }
-            }
-            __syncthreads();
-        }
+        for (auto i = tid; i < len; i += step)
+            indexBuf[i] = (I)srcBuf[i];
     }
 
     template <typename T, typename I>
     static void nonMaxSuppressionV2_(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {boxes, scales});
-        NDArray* indices = NDArrayFactory::create_<I>('c', {scales->lengthOf()}); // - 1, scales->lengthOf()); //, scales->getContext());
+        std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>('c', {scales->lengthOf()})); // - 1, scales->lengthOf()); //, scales->getContext());
         indices->linspace(0);
+        indices->syncToDevice(); // linspace only on CPU, so sync to Device as well
+
         NDArray scores(*scales);
-        indices->syncToHost(); //linspace(0);
-        I* indexBuf = reinterpret_cast<I*>(indices->specialBuffer());
-        T* scoreBuf = reinterpret_cast<T*>(scores.specialBuffer());
-        sortIndices<T, I><<<1, 32, 128, *stream>>>(indexBuf, indices->specialShapeInfo(), scoreBuf, scores.specialShapeInfo());
+        NativeOps nativeOps;
+
+        Nd4jPointer extras[2] = {nullptr, stream};
+
+        nativeOps.sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
         // TO DO: sort indices using scales as value row
         //std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return scales->e<T>(i) > scales->e<T>(j);});
-        indices->tickWriteDevice();
-        indices->syncToHost();
-        indices->printIndexedBuffer("AFTERSORT OUTPUT");
-        NDArray selected = NDArrayFactory::create<int>({output->lengthOf()});
+        I* indexBuf = reinterpret_cast<I*>(indices->specialBuffer());
 
-        NDArray selectedIndices = NDArrayFactory::create<int>({output->lengthOf()});
+        NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()});
         int numSelected = 0;
         int numBoxes = boxes->sizeAt(0);
         T* boxesBuf = reinterpret_cast<T*>(boxes->specialBuffer());
-//        Nd4jLong* indicesData = reinterpret_cast<Nd4jLong*>(indices->specialBuffer());
-//        int* selectedData = reinterpret_cast<int*>(selected.specialBuffer());
-        int* selectedIndicesData = reinterpret_cast<int*>(selectedIndices.specialBuffer());
+
+        I* selectedIndicesData = reinterpret_cast<I*>(selectedIndices.specialBuffer());
         I* outputBuf = reinterpret_cast<I*>(output->specialBuffer());
-        nonMaxSuppressionKernel<T, I><<<output->lengthOf(), 512, 1024, *stream>>>(boxesBuf, boxes->specialShapeInfo(), indexBuf, selectedIndicesData, numBoxes, outputBuf, output->specialShapeInfo(), T(threshold));
-        NDArray::registerSpecialUse({output}, {boxes, scales});
-//        for (int i = 0; i < boxes->sizeAt(0); ++i) {
-//            if (selected.size() >= output->lengthOf()) break;
-//            bool shouldSelect = true;
-//            // Overlapping boxes are likely to have similar scores,
-//            // therefore we iterate through the selected boxes backwards.
-//            for (int j = numSelected - 1; j >= 0; --j) {
-//                if (needToSuppressWithThreshold(*boxes, indices[i], indices[selectedIndices[j]], T(threshold)) {
-//                    shouldSelect = false;
-//                    break;
-//                }
-//            }
-//            if (shouldSelect) {
-//                selected.push_back(indices[i]);
-//                selectedIndices[numSelected++] = i;
-//            }
-//        }
-//        for (size_t e = 0; e < selected.size(); ++e)
-//            output->p<int>(e, selected[e]);
-//
-        delete indices;
+
+        bool* shouldSelectD;
+        auto err = cudaMalloc(&shouldSelectD, sizeof(bool));
+        if (err) {
+            throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot allocate memory for bool flag", err);
+        }
+        for (I i = 0; i < boxes->sizeAt(0); ++i) {
+            bool shouldSelect = numSelected < output->lengthOf();
+            if (shouldSelect) {
+                err = cudaMemcpy(shouldSelectD, &shouldSelect, sizeof(bool), cudaMemcpyHostToDevice);
+                if (err) {
+                    throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot set up bool flag to device", err);
+                }
+
+                shouldSelectKernel<T> <<< 128, 256, 1024, *stream >>>
+                                                           (boxesBuf, boxes->specialShapeInfo(), indexBuf, selectedIndicesData, threshold, numSelected, i, shouldSelectD);
+                err = cudaMemcpy(&shouldSelect, shouldSelectD, sizeof(bool), cudaMemcpyDeviceToHost);
+                if (err) {
+                    throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot set up bool flag to host", err);
+                }
+            }
+
+            if (shouldSelect) {
+                cudaMemcpy(reinterpret_cast<I*>(output->specialBuffer()) + numSelected, indexBuf + i, sizeof(I), cudaMemcpyDeviceToDevice);
+                cudaMemcpy(selectedIndicesData + numSelected, &i, sizeof(I), cudaMemcpyHostToDevice);
+                numSelected++;
+            }
+        }
+
+        err = cudaFree(shouldSelectD);
+        if (err) {
+            throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot deallocate memory for bool flag", err);
+        }
+
     }
 
     void nonMaxSuppressionV2(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {

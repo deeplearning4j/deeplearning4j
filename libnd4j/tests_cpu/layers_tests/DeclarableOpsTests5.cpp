@@ -1479,6 +1479,27 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test3) {
 
     delete results;
 }
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, random_shuffle_test04) {
+    auto input = NDArrayFactory::create<double>('c', {4});
+    input.linspace(1);
+
+    nd4j::ops::random_shuffle op;
+    //NDArray* output;
+    auto results = op.execute({&input}, {},  {},  {}, true, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), results->status());
+    auto output = &input; //results->at(0);
+    bool haveZeros = false;
+    for(int i = 0; i < output->lengthOf(); ++i)
+        if(output->e<float>(i) == (float)0.)
+            haveZeros = true;
+
+    ASSERT_TRUE(input.isSameShape(output));
+    //ASSERT_TRUE(!input.equalsTo(output));
+    ASSERT_TRUE(!haveZeros);
+
+    delete results;
+}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
@@ -1486,17 +1507,17 @@ TEST_F(DeclarableOpsTests5, random_shuffle_test4) {
     input.linspace(1);
 
     nd4j::ops::random_shuffle op;
-    auto results = op.execute({&input}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    //NDArray* output;
+    auto results = op.execute({&input}, {},  {},  {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), results->status());
     auto output = results->at(0);
-
     bool haveZeros = false;
     for(int i = 0; i < output->lengthOf(); ++i)
         if(output->e<float>(i) == (float)0.)
             haveZeros = true;
 
-    ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(input.isSameShape(output));
-    ASSERT_TRUE(!input.equalsTo(output));
+    //ASSERT_TRUE(!input.equalsTo(output));
     ASSERT_TRUE(!haveZeros);
 
     delete results;

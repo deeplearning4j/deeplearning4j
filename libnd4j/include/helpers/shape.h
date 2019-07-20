@@ -987,9 +987,10 @@ namespace shape {
     // dimsToExclude - should be sorted in increasing order
     ND4J_EXPORT _CUDA_HD int outerArrayIndexes(Nd4jLong* maxIdxs, const Nd4jLong minIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude = nullptr);
 
-    // calculate offsets of max-array, these output offsets correspond to one minIdx index of min-array which is sub-array of max-array
+    // calculate offsets of max-array, these offsets correspond to one minIdx index of min-array which is sub-array of max-array
+    // maxOffsets - will contain calculated offsets of max-array, buffer for maxOffsets should be allocated beforehand
     // dimsToExclude - should be sorted in increasing order
-    // memBuff - auxiliary memory buffer (size = 2 * max_rank) for coordinates and increments storing, should be passed from outside
+    // memBuff - auxiliary memory buffer (size = 2 * max_rank) for coordinates and increments storing, should be allocated beforehand
     ND4J_EXPORT _CUDA_HD int outerArrayOffsets(Nd4jLong* maxOffsets, const Nd4jLong minIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, Nd4jLong* memBuff, const int* dimsToExclude = nullptr);
 
     // calculates offsets for entities (elements or sub-arrays), shape in context of sub-array means dimensions excluded from outer array

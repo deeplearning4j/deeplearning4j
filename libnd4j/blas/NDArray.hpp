@@ -132,9 +132,8 @@ NDArray::NDArray(const NDArray *other, const bool copyStrides, nd4j::LaunchConte
         _buffer = std::make_shared<DataBuffer>(lengthOf() * sizeOfT(), dataType(), getContext()->getWorkspace());
 }
 
-
 ////////////////////////////////////////////////////////////////////////
-NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext * context) {
+NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext * context, const bool isBuffAlloc) {
 
     if (shape.empty())
         throw std::runtime_error("NDArray constructor: input shape is empty !");
@@ -148,7 +147,7 @@ NDArray::NDArray(void* buffer, const char order, const std::vector<Nd4jLong> &sh
 
     setShapeInfo(ShapeDescriptor(dtype, order, shape));
 
-    _buffer = std::make_shared<DataBuffer>(buffer, lengthOf() * sizeOfT(), dataType(), true, getContext()->getWorkspace());
+    _buffer = std::make_shared<DataBuffer>(buffer, lengthOf() * sizeOfT(), dataType(), isBuffAlloc, getContext()->getWorkspace());
 }
 
 ////////////////////////////////////////////////////////////////////////

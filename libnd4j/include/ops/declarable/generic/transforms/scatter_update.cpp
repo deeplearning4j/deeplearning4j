@@ -39,7 +39,7 @@ namespace nd4j {
          * @tparam T
          */
         CONFIGURABLE_OP_IMPL(scatter_update, 2, 1, true, 0, -1) {
-            
+
             auto operand = INPUT_VARIABLE(0);
             auto updates = INPUT_VARIABLE(1);
 

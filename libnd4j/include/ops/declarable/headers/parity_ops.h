@@ -30,7 +30,7 @@ namespace nd4j {
          * Expected input:
          * 0: N-dimensional array
          * 1: optional axis vector
-         * 
+         *
          * Int args:
          * 0: optional axis
          */
@@ -43,7 +43,7 @@ namespace nd4j {
          * Expected input:
          * 0: N-dimensional array
          * 1: optional axis vector
-         * 
+         *
          * Int args:
          * 0: optional axis
          */
@@ -52,21 +52,21 @@ namespace nd4j {
         #endif
 
         /**
-         * This operation provides various normalization modes: 
+         * This operation provides various normalization modes:
          * 0: frobenius
          * 1: euclidean (norm2)
          * 2: norm1
          * 3: norm2
          * 4: inf-norm
          * 5: p-norm
-         * 
+         *
          * Expected arguments:
          * input: N-dimensional array
-         * 
-         * 
+         *
+         *
          * Int args:
          * 0...: axis
-         * 
+         *
          * T args:
          * 0: norm mode
          * 1: p for p-norm
@@ -159,7 +159,7 @@ namespace nd4j {
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
         #if NOT_EXCLUDED(OP_scatter_add)
         DECLARE_OP(scatter_add, 3, 1, true);
@@ -170,7 +170,7 @@ namespace nd4j {
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
         #if NOT_EXCLUDED(OP_scatter_sub)
         DECLARE_OP(scatter_sub, 3, 1, true);
@@ -181,7 +181,7 @@ namespace nd4j {
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
         #if NOT_EXCLUDED(OP_scatter_mul)
         DECLARE_OP(scatter_mul, 3, 1, true);
@@ -192,7 +192,7 @@ namespace nd4j {
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
         #if NOT_EXCLUDED(OP_scatter_div)
         DECLARE_OP(scatter_div, 3, 1, true);
@@ -203,7 +203,7 @@ namespace nd4j {
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
         #if NOT_EXCLUDED(OP_scatter_upd)
         DECLARE_OP(scatter_upd, 3, 1, true);
@@ -214,7 +214,7 @@ namespace nd4j {
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
         #if NOT_EXCLUDED(OP_scatter_max)
         DECLARE_OP(scatter_max, 3, 1, true);
@@ -225,7 +225,7 @@ namespace nd4j {
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
         #if NOT_EXCLUDED(OP_scatter_min)
         DECLARE_OP(scatter_min, 3, 1, true);
@@ -233,7 +233,7 @@ namespace nd4j {
 
         /**
          * This operation scatter "updates" elements into new output array according to given "indices"
-         * Expected arguments:         
+         * Expected arguments:
          * indices: array containing elements/slices indexes of output array to put "updates" elements into, the rest output elements will be zeros
          * updates: array containing elements to be inserted into output array
          * shape: contains shape of output array
@@ -244,8 +244,8 @@ namespace nd4j {
 
         /**
          * This operation scatter "updates" elements into input array along given "indices"
-         * Expected arguments:   
-         * input: array to be updated      
+         * Expected arguments:
+         * input: array to be updated
          * indices: array containing elements/slices indexes of input array to put "updates" elements into
          * updates: array containing elements to be inserted into input array
          */
@@ -258,7 +258,7 @@ namespace nd4j {
          * Expected arguments:
          * input: array to be updated
          * indices: array containing elements/slices indexes of input array to add "updates" elements to
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
         #if NOT_EXCLUDED(OP_scatter_add)
         DECLARE_OP(scatter_nd_add, 3, 1, true);
@@ -269,7 +269,7 @@ namespace nd4j {
          * Expected arguments:
          * input: array to be updated
          * indices: array containing elements/slices indexes of input array to subtract "updates" elements from
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
         #if NOT_EXCLUDED(OP_scatter_sub)
         DECLARE_OP(scatter_nd_sub, 3, 1, true);
@@ -279,7 +279,7 @@ namespace nd4j {
          * This operation takes input's shape, and returns new NDArray filled with specified value
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          * T args:
          * 0: scalar value, used to fill NDArray
          */
@@ -305,7 +305,7 @@ namespace nd4j {
 
         /**
          * This operation returns 3 1D arrays for given 1D array with unique element count and indexes
-         * input: 
+         * input:
          *     0 - 1D array
          *
          * output:
@@ -321,7 +321,7 @@ namespace nd4j {
          * This operation splits input NDArray into multiple TADs along given dimensions
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          * Int args:
          * 0..: TAD axis
          */
@@ -338,7 +338,7 @@ namespace nd4j {
         #endif
 
         /**
-         * This operation extracts a strided (optionally) slice from a tensor, 
+         * This operation extracts a strided (optionally) slice from a tensor,
          */
         #if NOT_EXCLUDED(OP_strided_slice)
         DECLARE_CUSTOM_OP(strided_slice, 1, 1, false, 0, 5); // TODO: new op type needed. that returns VIEW
@@ -347,7 +347,7 @@ namespace nd4j {
 
         /**
          * This operation extracts a slice from a tensor.
-         * 
+         *
          */
         #if NOT_EXCLUDED(OP_slice)
         DECLARE_CUSTOM_OP(slice, 1, 1, false, 0, -2);
@@ -360,12 +360,12 @@ namespace nd4j {
          * start: optional scalar with starting value
          * stop: optional scalar with end value
          * step: optional scalar witn step value
-         * 
+         *
          * Int args: (optional)
          * 0: optional scalar with starting value
          * 1: optional scalar with end value
          * 1: optional scalar witn step value
-         * 
+         *
          * T args: (optional)
          * 0: optional scalar with starting value
          * 1: optional scalar with end value
@@ -379,11 +379,11 @@ namespace nd4j {
          * This operation return one-hot encoded n-dimensional array
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          * T args:
          * 0: 'on' value
          * 1: 'off' value
-         * 
+         *
          * Int args:
          * 0: depth
          * 1: axis
@@ -413,7 +413,7 @@ namespace nd4j {
 		 * This operation stacks a list of rank tensors into one rank-(R+1) tensor.
 		 * Expected arguments:
 		 * 0...: N-Dimensional arrays to stack
-		 * 
+		 *
 		 */
         #if NOT_EXCLUDED(OP_stack)
         DECLARE_CUSTOM_OP(stack, -1, 1, false, 0, 0);
@@ -423,7 +423,7 @@ namespace nd4j {
          * This operation returns length of input array
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          * TODO: make this operation reduction, to allow TAD -> size
          */
         #if NOT_EXCLUDED(OP_size)
@@ -447,7 +447,7 @@ namespace nd4j {
          * This operation takes input's shape, and returns new NDArray filled with zeros
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          */
         #if NOT_EXCLUDED(OP_zeros_as)
         DECLARE_OP(zeros_as, 1, 1, false);
@@ -457,7 +457,7 @@ namespace nd4j {
          * This operation takes input's shape, and returns new NDArray filled with ones
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          */
         #if NOT_EXCLUDED(OP_ones_as)
         DECLARE_OP(ones_as, 1, 1, false);
@@ -512,10 +512,10 @@ namespace nd4j {
          * Input arrays:
          * 0 - shape vector
          * 1 - optional scalar NDArray
-         * 
+         *
          * T arguments:
          * 0 - optional scalar value
-         * 
+         *
          */
         #if NOT_EXCLUDED(OP_fill)
         DECLARE_CUSTOM_OP(fill, 1, 1, false, -2, 0);
@@ -527,10 +527,10 @@ namespace nd4j {
          * 0 - input array
          * 1 - array of sizes
          * 2 - optional axis
-         * 
+         *
          * Integer arguments:
          * 0 - optional axis
-         * 
+         *
          */
         #if NOT_EXCLUDED(OP_split_v)
         DECLARE_CUSTOM_OP(split_v, 2, -1, false, 0, -2);
@@ -540,7 +540,7 @@ namespace nd4j {
          * This operation splits given NDArray into chunks of specific size, along given dimension
          * 0 - input array
          * 1 - optional axis
-         * 
+         *
          * Integer arguments:
          * 0 - number of splits
          * 1 - optional axis
@@ -553,39 +553,37 @@ namespace nd4j {
         /**
          * This operation adjusts image hue by delta
          * Input arrays:
-         * 0 - 1D or 3D input array, must have 3 channels.
-         * 1 - optional scalar, delta value
-         * 
+         * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+         *
          * T arguments:
-         * 0 - optional delta value
-         * 
+         * 0 - delta value
+         *
          * Int arguments:
-         * 0 - optional argument, isNHWC. false by default.
+         * 0 - optional argument, corresponds to dimension with 3 channels
          */
         #if NOT_EXCLUDED(OP_adjust_hue)
-        DECLARE_CONFIGURABLE_OP(adjust_hue, 1, 1, true, -2, -2);
+        DECLARE_CONFIGURABLE_OP(adjust_hue, 1, 1, true, 1, -2);
         #endif
 
         /**
          * This operation adjusts image saturation by delta
          * Input arrays:
-         * 0 - 1D or 3D input array, must have 3 channels.
-         * 1 - optional scalar, delta value
-         * 
+         * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+         *
          * T arguments:
-         * 0 - optional delta value
-         * 
+         * 0 - saturation factor
+         *
          * Int arguments:
-         * 0 - optional argument, isNHWC. false by default.
+         * 0 - optional argument, corresponds to dimension with 3 channels
          */
         #if NOT_EXCLUDED(OP_adjust_saturation)
-        DECLARE_CONFIGURABLE_OP(adjust_saturation, 1, 1, true, -2, -2);
+        DECLARE_CONFIGURABLE_OP(adjust_saturation, 1, 1, true, 1, -2);
         #endif
 
 
         /**
-         * 
-         * 
+         *
+         *
          *
          */
         #if NOT_EXCLUDED(OP_depth_to_space)
@@ -593,8 +591,8 @@ namespace nd4j {
         #endif
 
         /**
-         * 
-         * 
+         *
+         *
          *
          */
         #if NOT_EXCLUDED(OP_space_to_depth)
@@ -612,23 +610,23 @@ namespace nd4j {
         #endif
 
         /**
-         * 
-         * 
+         *
+         *
          */
         #if NOT_EXCLUDED(OP_space_to_batch)
         DECLARE_CUSTOM_OP(space_to_batch, 1, 1, false, 0, -2);
         #endif
 
         /**
-         * 
-         * 
+         *
+         *
          */
         #if NOT_EXCLUDED(OP_batch_to_space)
         DECLARE_CUSTOM_OP(batch_to_space, 1, 1, false, 0, -2);
         #endif
 
         /**
-         * top_k operation returns a vector of k top values for 
+         * top_k operation returns a vector of k top values for
          *  given NDArray as tensor with default boolean (true)
          *  as sort for result index array
          *  will be sorted by the values in descending order.
@@ -641,7 +639,7 @@ namespace nd4j {
         #endif
 
         /**
-         * in_top_k operation returns a vector of k boolean values for 
+         * in_top_k operation returns a vector of k boolean values for
          *  given NDArray as 2D matrix of predicted in the NDArray k top values
          *  The first parameter is a NDArray of predicted values (2d array).
          *  The second is NDArray as vector of indeces k top values will be search.
@@ -655,7 +653,7 @@ namespace nd4j {
          * moments operation calculate a mean and variation for given NDArray
          * with reduce a result according to axis array given.
          * For full axis the result is both mean and variance of all members in array.
-         * Otherwise there are two NDArrays with means and variances for 
+         * Otherwise there are two NDArrays with means and variances for
          * Axes can be put as the second NDArray or as int vector.
          *
          * the optional flag "keep_dims" can be set as T param
@@ -673,13 +671,13 @@ namespace nd4j {
         #endif
 
         /**
-         * dynamic_partition - partition a input tensor onto num_partitions 
+         * dynamic_partition - partition a input tensor onto num_partitions
          * accordingly to index array given.
          *
          * the first param - NDArray to be partitioned.
          * the second param - index array
          * the third param (integer param) - num or partitions.
-         * 
+         *
          * returns a num of NDArrays as output
          */
         #if NOT_EXCLUDED(OP_dynamic_partition)
@@ -691,14 +689,14 @@ namespace nd4j {
         #endif
 
         /**
-         * dynamic_stitch - merge partitions from the second param a input tensor 
+         * dynamic_stitch - merge partitions from the second param a input tensor
          * into a single tensor accordingly to index array given.
          *
          * the first param - index array
          * the second params - tensors to be merged
-         * 
+         *
          * returns a num of NDArrays as output
-         * 
+         *
          * the operation is inversion od dynamic_partition
          */
         #if NOT_EXCLUDED(OP_dynamic_stitch)
@@ -744,7 +742,7 @@ namespace nd4j {
         #endif
 
         /**
-         * normalize_moments operation normalize already calculated mean and variation 
+         * normalize_moments operation normalize already calculated mean and variation
          * accordingly to shift and count.
          * input params:
          *  - count of data
@@ -752,7 +750,7 @@ namespace nd4j {
          *  - tensor with variance (the same shape as before)
          *
          *  - optional floating point param shift.
-         * 
+         *
          *  returns a normalized pair mean and variance with the same shapes as input
          */
         #if NOT_EXCLUDED(OP_normalize_moments)
@@ -766,8 +764,8 @@ namespace nd4j {
          * input params:
          *  - input tensor
          *  - axes vector
-         *  
-         * 
+         *
+         *
          *  - optional floating point param shift.
          *  - optional int (as bool) keep_dimension
          *
@@ -787,7 +785,7 @@ namespace nd4j {
          *  0 - target
          *  1 - input
          *  2 - weights (scalar or vector with same as last dimension)
-         *  
+         *
          *  return value - a tensor with the same shape as target or input
          */
         #if NOT_EXCLUDED(OP_weighted_cross_entropy_with_logits)
@@ -799,7 +797,7 @@ namespace nd4j {
          * Input arguments
          *  0 - input tensor
          *  1 - noise_shape - (vector with shape to reduce) - optional
-         *  
+         *
          *  int parameter - seed for random numbers
          *  T parameter - probability (should be between 0 and 1)
          *  return value - a tensor with the same shape as target or input
@@ -825,13 +823,13 @@ namespace nd4j {
 
         /**
          * bincount operation return a vector with element counted.
-         * 
+         *
          * input params:
          *  - input tensor - only int part are accepted
          *  - weights - the same shape tensor with integer weights for element (optional)
          *  default weight - 1,1,1..,1 for all values in the tensor
-         * 
-         *  optional ints: 
+         *
+         *  optional ints:
          *  - min_length - zero or greater
          *  - max_length - between min_length and max(input) + 1
          *
@@ -852,7 +850,7 @@ namespace nd4j {
          *    1 - the second shape (vector with shape)
          *
          * return value:
-         *    vector with broadcasted shape 
+         *    vector with broadcasted shape
          */
         #if NOT_EXCLUDED(OP_broadcast_dynamic_shape)
         DECLARE_CUSTOM_OP(broadcast_dynamic_shape, 2, 1, false, 0, 0);
@@ -865,7 +863,7 @@ namespace nd4j {
          *    0 - the tensor with dimension (x * y * z * ::: * M * M)
          *
          * return value:
-         *    tensor with dimension (x * y * z * ::: *) with determinant for all 
+         *    tensor with dimension (x * y * z * ::: *) with determinant for all
          * M x M matricies
          */
         #if NOT_EXCLUDED(OP_matrix_determinant)
@@ -901,7 +899,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_logdet)
         DECLARE_CUSTOM_OP(logdet, 1, 1, false, 0, 0);
         #endif
-        
+
         /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
          *
@@ -909,7 +907,7 @@ namespace nd4j {
          *    0 - the tensor with dimension (x * y * z * ::: * M * M)
          *
          * return value:
-         *    tensor with dimension (x * y * z * ::: * M * M) with inverse M x M matricies in it 
+         *    tensor with dimension (x * y * z * ::: * M * M) with inverse M x M matricies in it
          */
         #if NOT_EXCLUDED(OP_matrix_inverse)
         DECLARE_OP(matrix_inverse, 1, 1, true);
@@ -1151,16 +1149,16 @@ namespace nd4j {
 
         /**
          * roll - op porting from numpy (https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.roll.html)
-         * 
+         *
          * input params:
          *    0 - NDArray
-         * 
+         *
          * int params:
          *    0 - shift
          *    1 - axe 1
          *    2 - axe 2
          *    ...
-         *    N - axe N 
+         *    N - axe N
          *
          *    All axes are optional and should be between 0 and input->rankOf(). Of course, all axes can be repeated.
          *
@@ -1173,12 +1171,12 @@ namespace nd4j {
 
         /**
          * lin_space - op porting from TF (https://www.tensorflow.org/api_docs/python/tf/lin_space)
-         * 
+         *
          * input params:
          *    0 - startVal - NDArray scalar (float point)
          *    1 - finishVal - NDArray scalar (float point)
          *    2 - numOfElements - NDArray scalar (integer)
-         * 
+         *
          * output:
          *    0 - 1D NDArray with the same type as input and length as given with numOfElements param.
          */
@@ -1188,10 +1186,10 @@ namespace nd4j {
 
         /**
          * reduction_sum - tf.reduction_sum operation
-         * 
+         *
          * input params:
          *    0 - NDArray
-         * 
+         *
          * T_ARG param (optional):
          * 0 - keep_dims != 0.
          *
@@ -1199,7 +1197,7 @@ namespace nd4j {
          *    0 - axe 1
          *    1 - axe 2
          *    ...
-         *    N-1 axe N 
+         *    N-1 axe N
          *
          *    All axes are optional and should be between 0 and input->rankOf() - 1
          *
@@ -1216,10 +1214,10 @@ namespace nd4j {
 
         /**
          * reduction_prod - tf.reduction_prod operation
-         * 
+         *
          * input params:
          *    0 - NDArray
-         * 
+         *
          * T_ARG param (optional):
          * 0 - keep_dims != 0.
          *
@@ -1227,7 +1225,7 @@ namespace nd4j {
          *    0 - axe 1
          *    1 - axe 2
          *    ...
-         *    N-1 axe N 
+         *    N-1 axe N
          *
          *    All axes are optional and should be between 0 and input->rankOf() - 1
          *
@@ -1246,7 +1244,7 @@ namespace nd4j {
         * This op calculates min of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mins for        
+        *    x: tensor to calculate mins for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -1268,7 +1266,7 @@ namespace nd4j {
         * This op calculates max of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate maxes for        
+        *    x: tensor to calculate maxes for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -1290,7 +1288,7 @@ namespace nd4j {
         * This op calculates norm1 of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate norm1 for        
+        *    x: tensor to calculate norm1 for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -1312,7 +1310,7 @@ namespace nd4j {
         * This op calculates norm2 of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate norm2 for        
+        *    x: tensor to calculate norm2 for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -1335,7 +1333,7 @@ namespace nd4j {
         * This op calculates squared norm of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate squared norm for        
+        *    x: tensor to calculate squared norm for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -1357,7 +1355,7 @@ namespace nd4j {
         * This op calculates norm max of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate norm max for        
+        *    x: tensor to calculate norm max for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -1379,7 +1377,7 @@ namespace nd4j {
         * This op calculates mean of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate mean for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -1401,7 +1399,7 @@ namespace nd4j {
         * This op calculates sample variance of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate mean for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -1420,7 +1418,7 @@ namespace nd4j {
         * This op calculates sample standard deviation of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate mean for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -1439,13 +1437,13 @@ namespace nd4j {
         * This op calculates backprop dot for two tensors along given dimensions
         *
         * input array:
-        *    x: tensor to calculate dot for        
-        *    y: tensor to calculate dot for        
+        *    x: tensor to calculate dot for
+        *    y: tensor to calculate dot for
         *    z: tensor with gradient output of the FF dot for x and y
         *
         * int arguments:
-        *   list of integers - dimensions to calculate dot along, 
-        *   default corresponds to empty list in which case calculation 
+        *   list of integers - dimensions to calculate dot along,
+        *   default corresponds to empty list in which case calculation
         *   is performed for all dimensions and scalar is returned.
         *
         * output array:
@@ -1458,7 +1456,7 @@ namespace nd4j {
         #endif
         /**
          * reduce_logsumexp - tf.reduce_logsumexe operation
-         * 
+         *
          * input params:
          *    0 - NDArray (input)
          *    1 - 1D NDArray (axis) (optional) - integer array
@@ -1470,7 +1468,7 @@ namespace nd4j {
          *    0 - axe 1
          *    1 - axe 2
          *    ...
-         *    N-1 axe N 
+         *    N-1 axe N
          *
          *  CAUTION: All axes are optional and should be between 0 and input->rankOf() - 1
          *  and put either with second param or as integers but not both
@@ -1619,7 +1617,7 @@ namespace nd4j {
         #endif
 /**
          * fake_quant_with_min_max_vals - tf.quantization.fake_quant_with_min_max_vars
-         * 
+         *
          * input params:
          *    0 - NDArray (input)
          *    1 - 0D Tensor - min value

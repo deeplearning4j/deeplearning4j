@@ -20,6 +20,8 @@
 
 #include <ops/declarable/helpers/image_suppression.h>
 //#include <blas/NDArray.h>
+#include <algorithm>
+#include <numeric>
 
 namespace nd4j {
 namespace ops {
@@ -28,9 +30,8 @@ namespace helpers {
     template <typename T>
     static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
         std::vector<Nd4jLong> indices(scales->lengthOf());
+        std::iota(indices.begin(), indices.end(), 0);
 
-        for (size_t i = 0; i < indices.size(); ++i)
-            indices[i] = i;
         std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return scales->e<T>(i) > scales->e<T>(j);});
 
 //        std::vector<int> selected(output->lengthOf());
@@ -62,13 +63,15 @@ namespace helpers {
         };
 //        int numSelected = 0;
         int numBoxes = boxes->sizeAt(0);
+        int numSelected = 0;
 
-        for (int i = 0, numSelected = 0; i < numBoxes && numSelected < output->lengthOf(); ++i) {
-            bool shouldSelect = true;
+        for (int i = 0; i < numBoxes; ++i) {
+            bool shouldSelect = numSelected < output->lengthOf();
+            PRAGMA_OMP_PARALLEL_FOR //_ARGS(firstprivate(numSelected))
             for (int j = numSelected - 1; j >= 0; --j) {
+                if (shouldSelect)
                 if (needToSuppressWithThreshold(*boxes, indices[i], indices[selectedIndices[j]], T(threshold))) {
                     shouldSelect = false;
-                    break;
                 }
             }
             if (shouldSelect) {

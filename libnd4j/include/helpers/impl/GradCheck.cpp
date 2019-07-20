@@ -58,7 +58,7 @@ bool GradCheck::checkGrad(ops::DeclarableOp& opFF, ops::DeclarableOp& opBP, cons
 	const std::vector<NDArray*>& inArrsFF = argsHolderFF.getInArrs();
 	const std::vector<NDArray*>& inArrsBP = argsHolderBP.getInArrs();
 
-	// fill input gradient arrays in accordance to type of loss function
+	// fill input gradient arrays in accordance to kind of loss function
 	fillGradArrays(loss, std::vector<NDArray*>(&inArrsBP[numInArrsFF], &inArrsBP[numInArrsFF + numInGradArrsBP]));
 
 	// beck prop pass

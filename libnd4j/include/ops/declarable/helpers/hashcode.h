@@ -27,37 +27,37 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
             template <typename T>
-            FORCEINLINE Nd4jLong longBytes(T value);
+            FORCEINLINE _CUDA_HD Nd4jLong longBytes(T value);
 
             template <>
-            FORCEINLINE Nd4jLong longBytes(float value) {
+            FORCEINLINE _CUDA_HD Nd4jLong longBytes(float value) {
                 int intie = *(int *)&value;
                 return static_cast<Nd4jLong>(intie);
             }
 
             template <>
-            FORCEINLINE Nd4jLong longBytes(double value) {
+            FORCEINLINE _CUDA_HD Nd4jLong longBytes(double value) {
                 Nd4jLong longie = *(Nd4jLong *)&value;
                 return longie;
             }
 
             template <>
-            FORCEINLINE Nd4jLong longBytes(float16 value) {
+            FORCEINLINE _CUDA_HD Nd4jLong longBytes(float16 value) {
                 return longBytes<float>((float) value);
             }
 
             template <>
-            FORCEINLINE Nd4jLong longBytes(Nd4jLong value) {
+            FORCEINLINE _CUDA_HD Nd4jLong longBytes(Nd4jLong value) {
                 return value;
             }
 
             template <>
-            FORCEINLINE Nd4jLong longBytes(bfloat16 value) {
+            FORCEINLINE _CUDA_HD Nd4jLong longBytes(bfloat16 value) {
                 return longBytes<float>((float) value);
             }
 
             template <typename T>
-            FORCEINLINE Nd4jLong longBytes(T value) {
+            FORCEINLINE _CUDA_HD Nd4jLong longBytes(T value) {
                 return longBytes<Nd4jLong>((Nd4jLong) value);
             }
 
