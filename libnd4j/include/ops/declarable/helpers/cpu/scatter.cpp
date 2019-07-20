@@ -35,10 +35,8 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
 
     if(outRank == 1) {
 
-<<<<<<< HEAD
 // PRAGMA_OMP_PARALLEL_FOR_ARGS(if(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
 PRAGMA_OMP_PARALLEL_FOR_ARGS(if(!lock) schedule(guided))
-    for(Nd4jLong i = 0; i < indLen; ++i) {
         for(Nd4jLong i = 0; i < indLen; ++i) {
 
             Nd4jLong idx = indices.e<Nd4jLong>(i);
@@ -140,4 +138,8 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided))
             subArr.p(ind, subArr.e(ind) - 1.);
         }
     }
+}
+
+}
+}
 }
