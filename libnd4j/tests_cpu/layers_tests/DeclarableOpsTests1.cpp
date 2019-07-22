@@ -472,9 +472,7 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
 /*
     Nd4jLong *buffer = new Nd4jLong[100000];
 
-    NativeOps nativeOps;
-
-    nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
+    nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
 
     if (rng == nullptr)
         throw std::runtime_error("RNG initialization failed");
@@ -496,7 +494,7 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
 
     ASSERT_TRUE(x->sumNumber() > 0.0);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 
     delete variableSpace;
@@ -1450,8 +1448,6 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 
 // //////////////////////////////////////////////////////////////////////
 // TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
-//     NativeOps nativeOps;
-
 //     auto x = NDArrayFactory::create_<float>('c', {10, 10});
 //     x->assign(1.0f);
 
@@ -1483,8 +1479,8 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 //     outputShapes[0] = (Nd4jPointer) z->getShapeInfo();
 
 
-//     //auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
-//     auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+//     //auto status = execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
+//     auto status = execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
 //     ASSERT_EQ(ND4J_STATUS_OK, status);
 //     // z->printIndexedBuffer("Output add");
 //     ASSERT_NEAR(2.0f, y->meanNumber().e<float>(0), 1e-5);
@@ -1503,8 +1499,6 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 
 // //////////////////////////////////////////////////////////////////////
 // TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
-//     NativeOps nativeOps;
-
 //     auto x = NDArrayFactory::create_<float>('c', {10, 10});
 //     x->assign(1.0f);
 
@@ -1532,7 +1526,7 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 //     auto outputBuffers = new Nd4jPointer[1];
 //     auto outputShapes = new Nd4jPointer[1];
 
-//     nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, true);
+//     execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, true);
 
 //     ASSERT_NEAR(2.0, y->meanNumber().e<float>(0), 1e-5);
 //     ASSERT_NEAR(3.0, x->meanNumber().e<float>(0), 1e-5);

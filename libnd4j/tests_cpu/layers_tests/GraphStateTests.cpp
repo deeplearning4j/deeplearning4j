@@ -51,9 +51,7 @@ public:
  */
 
 TEST_F(GraphStateTests, Basic_Tests_1) {
-    NativeOps nativeOps;
-
-    auto state = (GraphState *) nativeOps.getGraphState(117L);
+    auto state = (GraphState *) getGraphState(117L);
     ASSERT_EQ(117L, state->id());
 
     // this call will create scope internally
@@ -72,14 +70,12 @@ TEST_F(GraphStateTests, Basic_Tests_1) {
     ASSERT_TRUE(scope != nullptr);
     ASSERT_EQ(2, scope->size());    
 
-    nativeOps.deleteGraphState(state);
+    deleteGraphState(state);
 }
 
 // just separate case for doubles wrapper in NativeOps, nothing else
 TEST_F(GraphStateTests, Basic_Tests_2) {
-    NativeOps nativeOps;
-
-    auto state = (GraphState *) nativeOps.getGraphState(117L);
+    auto state = (GraphState *) getGraphState(117L);
     ASSERT_EQ(117L, state->id());
 
     // this call will create scope internally
@@ -98,46 +94,40 @@ TEST_F(GraphStateTests, Basic_Tests_2) {
     ASSERT_TRUE(scope != nullptr);
     ASSERT_EQ(2, scope->size());    
 
-    nativeOps.deleteGraphState(state);
+    deleteGraphState(state);
 }
 
 TEST_F(GraphStateTests, Stateful_Execution_1) {
-    NativeOps nativeOps;
-
-    auto state = nativeOps.getGraphState(117L);
+    auto state = getGraphState(117L);
 
     Nd4jLong scopes[] = {22, 33};
-    //auto status = nativeOps.execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
-    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
+    //auto status = execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
+    auto status = execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
 
     ASSERT_EQ(Status::THROW(), status);
 
-    nativeOps.deleteGraphState(state);
+    deleteGraphState(state);
 }
 
 TEST_F(GraphStateTests, Stateful_Execution_2) {
-    NativeOps nativeOps;
-
-    auto state = (GraphState *) nativeOps.getGraphState(117L);
+    auto state = (GraphState *) getGraphState(117L);
 
     state->registerScope(22);
     state->registerScope(33);
 
     Nd4jLong scopes[] = {22, 33};
-    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
+    auto status = execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
     
     // it's no-op: just LogicScope
     ASSERT_EQ(Status::OK(), status);
 
-    nativeOps.deleteGraphState(state);
+    deleteGraphState(state);
 }
 
 /**
  * This test checks WHILE loop
  */
 TEST_F(GraphStateTests, Stateful_Execution_3) {
-    NativeOps nativeOps;
-
     auto var0 = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
     auto var1 = NDArrayFactory::create<float>(11.0f);
     auto var2 = NDArrayFactory::create<float>(2.0f);
@@ -147,7 +137,7 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     auto res2 = NDArrayFactory::create<float>(0.0f);
 
     // registering our GraphState holder
-    auto state = (GraphState *) nativeOps.getGraphState(117L);
+    auto state = (GraphState *) getGraphState(117L);
 
     // we're prepping pointers to input/output buffers
     Nd4jPointer ptrBuffers[] = {(Nd4jPointer) var0.buffer(), (Nd4jPointer) var1.buffer(), (Nd4jPointer)var2.buffer()};
@@ -197,7 +187,7 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     Nd4jLong scopes[] = {22, 33};
 
     // we're executing while loop
-    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 0, scopes, 2, ptrBuffers, ptrShapes, 3, outBuffers, outShapes, 3);
+    auto status = execCustomOpWithScope(nullptr, state, 0, scopes, 2, ptrBuffers, ptrShapes, 3, outBuffers, outShapes, 3);
     ASSERT_EQ(Status::OK(), status);
 
     // now we check provided result array
@@ -211,7 +201,7 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
 
     // nd4j_printf("0 ------------------\n","");
 
-    nativeOps.deleteGraphState(state);
+    deleteGraphState(state);
 
     // nd4j_printf("1 ------------------\n","");
 }
@@ -220,8 +210,6 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
  * This test checks CONDITIONAL execution for FALSE
  */
 TEST_F(GraphStateTests, Stateful_Execution_4) {
-    NativeOps nativeOps;
-
     auto var0 = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
     auto var1 = NDArrayFactory::create<float>(5.0f);
 
@@ -232,7 +220,7 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
 
 
     // registering our GraphState holder
-    auto state = (GraphState *) nativeOps.getGraphState(117L);
+    auto state = (GraphState *) getGraphState(117L);
 
     // we're prepping pointers to input/output buffers
     Nd4jPointer ptrBuffers[] = {(Nd4jPointer) var0.buffer(), (Nd4jPointer) var1.buffer()};
@@ -283,14 +271,14 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
     Nd4jLong scopes[] = {22, 33, 44};
 
     // we're executing conditional op
-    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
+    auto status = execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.isSameShape(&res0));
     ASSERT_TRUE(exp.equalsTo(&res0));
 
 
-    nativeOps.deleteGraphState(state);
+    deleteGraphState(state);
 }
 
 
@@ -298,8 +286,6 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
  * This test checks CONDITIONAL execution for TRUE
  */
 TEST_F(GraphStateTests, Stateful_Execution_5) {
-    NativeOps nativeOps;
-
     auto var0 = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
     auto var1 = NDArrayFactory::create<float>(5.0f);
 
@@ -310,7 +296,7 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
 
 
     // registering our GraphState holder
-    auto state = (GraphState *) nativeOps.getGraphState(117L);
+    auto state = (GraphState *) getGraphState(117L);
 
     // we're prepping pointers to input/output buffers
     Nd4jPointer ptrBuffers[] = {(Nd4jPointer) var0.buffer(), (Nd4jPointer) var1.buffer()};
@@ -361,12 +347,11 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
     Nd4jLong scopes[] = {22, 33, 44};
 
     // we're executing conditional op
-    auto status = nativeOps.execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
+    auto status = execCustomOpWithScope(nullptr, state, 20, scopes, 3, ptrBuffers, ptrShapes, 2, outBuffers, outShapes, 2);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.isSameShape(&res0));
     ASSERT_TRUE(exp.equalsTo(&res0));
 
-
-    nativeOps.deleteGraphState(state);
+    deleteGraphState(state);
 }

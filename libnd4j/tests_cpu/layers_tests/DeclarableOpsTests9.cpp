@@ -110,8 +110,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     double extraParams[] = {lambda};
 
     Nd4jLong *buffer = new Nd4jLong[N];
-    NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
 
@@ -122,7 +121,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 
 }
@@ -142,8 +141,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
 
 
     Nd4jLong *buffer = new Nd4jLong[N];
-    NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test2: RNG initialization failed !");
 
@@ -155,7 +153,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 
 }
@@ -172,8 +170,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     double extraParams[] = {lambda};
 
     Nd4jLong *buffer = new Nd4jLong[N];
-    NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test1: RNG initialization failed !");
 
@@ -184,7 +181,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 }
 */
@@ -206,14 +203,13 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
     Nd4jLong *buffer = new Nd4jLong[N];
    // Nd4jPointer extra[2];
 #ifndef __CUDABLAS__
-    NativeOps nativeOps;
-    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
 
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
 #endif
     const double actualMean = x.meanNumber().e<double>(0);
     const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
@@ -1005,12 +1001,10 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     x0.linspace(1);
     x1.linspace(1);
 /*
-    NativeOps nativeOps;
-
     float prob[] = {0.5f};
     Nd4jLong* _bufferA = new Nd4jLong[100000];
     long _seed = 119L;
-    auto _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+    auto _rngA = (nd4j::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
 
     x0. applyTransform(random::DropOutInverted, &x0, prob);
 //    x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
@@ -1026,7 +1020,7 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
 //    ASSERT_FALSE(x0.equalsTo(nexp0));
 //    ASSERT_FALSE(x0.equalsTo(nexp1));
 //    ASSERT_FALSE(x0.equalsTo(nexp2));
-    nativeOps.destroyRandom(_rngA);
+    destroyRandom(_rngA);
     delete [] _bufferA;
 */
     nd4j::ops::dropout op;

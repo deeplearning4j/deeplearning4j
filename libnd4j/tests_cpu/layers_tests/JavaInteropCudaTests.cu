@@ -42,7 +42,6 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_1) {
     e.assign(2.f);
 
     nd4j::ops::add op;
-    NativeOps nativeOps;
     Context context(1);
 
     context.setCudaContext(LaunchContext::defaultContext()->getCudaStream(), LaunchContext::defaultContext()->getReductionPointer(), LaunchContext::defaultContext()->getAllocationPointer());
@@ -53,7 +52,7 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_1) {
 
     nd4j_printf("Starting execution...\n","");
     PointersManager pm(LaunchContext::defaultContext(), "test_DeclarableOp_execution_1");
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), &context);
+    execCustomOp2(nullptr, op.getOpHash(), &context);
 
     pm.synchronize();
 
@@ -71,7 +70,6 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_2) {
     e.assign(false);
 
     nd4j::ops::equals op;
-    NativeOps nativeOps;
     Context context(1);
 
     context.setCudaContext(LaunchContext::defaultContext()->getCudaStream(), LaunchContext::defaultContext()->getReductionPointer(), LaunchContext::defaultContext()->getAllocationPointer());
@@ -82,7 +80,7 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_2) {
 
     nd4j_printf("Starting execution...\n","");
     PointersManager pm(LaunchContext::defaultContext(), "test_DeclarableOp_execution_2");
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), &context);
+    execCustomOp2(nullptr, op.getOpHash(), &context);
 
     pm.synchronize();
 

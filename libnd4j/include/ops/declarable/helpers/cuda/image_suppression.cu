@@ -110,11 +110,9 @@ namespace helpers {
         indices->syncToDevice(); // linspace only on CPU, so sync to Device as well
 
         NDArray scores(*scales);
-        NativeOps nativeOps;
-
         Nd4jPointer extras[2] = {nullptr, stream};
 
-        nativeOps.sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
+        sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
         // TO DO: sort indices using scales as value row
         //std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return scales->e<T>(i) > scales->e<T>(j);});
         I* indexBuf = reinterpret_cast<I*>(indices->specialBuffer());

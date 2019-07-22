@@ -876,14 +876,13 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
     auto xTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
     auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
 
-    NativeOps op;
     Nd4jPointer nativeStart[2];
 
 #ifdef __CUDABLAS__
     nativeStart[1] = *(x.getContext()->getCudaStream());
 #endif
 
-    op.pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
+    pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
                          z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                          4, pidx,
                          xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),
@@ -912,12 +911,11 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
     auto xTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
     auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
 
-    NativeOps op;
     Nd4jPointer nativeStart[2];
 #ifdef __CUDABLAS__
     nativeStart[1] = *(x.getContext()->getCudaStream());
 #endif
-    op.pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+    pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                          z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                          4, pidx,
                          xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),

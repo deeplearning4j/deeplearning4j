@@ -42,8 +42,7 @@ TEST_F(SortCudaTests, test_linear_sort_by_key_1) {
 
     Nd4jPointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
-    NativeOps nativeOps;
-    nativeOps.sortByKey(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), false);
+    sortByKey(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), false);
     k.tickWriteDevice();
     v.tickWriteDevice();
 
@@ -60,8 +59,7 @@ TEST_F(SortCudaTests, test_linear_sort_by_val_1) {
 
     Nd4jPointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
-    NativeOps nativeOps;
-    nativeOps.sortByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), false);
+    sortByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), false);
     k.tickWriteDevice();
     v.tickWriteDevice();
 
@@ -78,8 +76,7 @@ TEST_F(SortCudaTests, test_linear_sort_by_val_2) {
 
     Nd4jPointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
-    NativeOps nativeOps;
-    nativeOps.sortByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), true);
+    sortByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), true);
     k.tickWriteDevice();
     v.tickWriteDevice();
     k.printIndexedBuffer("KEYS");
@@ -97,8 +94,7 @@ TEST_F(SortCudaTests, test_tad_sort_by_key_1) {
     Nd4jPointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
     int axis = 1;
-    NativeOps nativeOps;
-    nativeOps.sortTadByKey(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
+    sortTadByKey(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
     k.tickWriteDevice();
     v.tickWriteDevice();
 
@@ -119,8 +115,7 @@ TEST_F(SortCudaTests, test_tad_sort_by_val_1) {
     Nd4jPointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
     int axis = 1;
-    NativeOps nativeOps;
-    nativeOps.sortTadByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
+    sortTadByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), &axis, 1, false);
     k.tickWriteDevice();
     v.tickWriteDevice();
 
