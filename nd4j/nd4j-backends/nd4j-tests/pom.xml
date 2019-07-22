@@ -193,6 +193,8 @@
                             <!--
                                 Maximum heap size was set to 8g, as a minimum required value for tests run.
                                 Depending on a build machine, default value is not always enough.
+
+                                For testing large zoo models, this may not be enough (so comment it out).
                             -->
                             <argLine>-Ddtype=float -Xmx8g</argLine>
                         </configuration>
