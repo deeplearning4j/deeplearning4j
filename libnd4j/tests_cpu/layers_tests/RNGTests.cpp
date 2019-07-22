@@ -29,7 +29,6 @@ using namespace nd4j;
 
 class RNGTests : public testing::Test {
 private:
-    NativeOps nativeOps;
     //Nd4jLong *_bufferA;
     //Nd4jLong *_bufferB;
 
@@ -47,8 +46,8 @@ public:
     RNGTests() {
         //_bufferA = new Nd4jLong[100000];
         //_bufferB = new Nd4jLong[100000];
-        //_rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
-        //_rngB = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferB);
+        //_rngA = (nd4j::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+        //_rngB = (nd4j::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferB);
         _rngA.setStates(_seed, _seed);
         _rngB.setStates(_seed, _seed);
         nexp0->assign(-1.0f);
@@ -57,8 +56,8 @@ public:
     }
 
     ~RNGTests() {
-        //nativeOps.destroyRandom(_rngA);
-        //nativeOps.destroyRandom(_rngB);
+        //destroyRandom(_rngA);
+        //destroyRandom(_rngB);
         //delete[] _bufferA;
         //delete[] _bufferB;
 
@@ -791,14 +790,13 @@ namespace nd4j {
 }
 
 TEST_F(RNGTests, Test_Reproducibility_9) { 
-    NativeOps ops;
     Nd4jLong seed = 123;
 
     std::vector<Nd4jLong> shape = {32, 3, 28, 28};
     const int bufferSize = 10000;
     int64_t buffer[bufferSize];
 
-    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, seed, bufferSize, buffer);
 
     const int length = 4000000;
     int *arrayE = new int[length];
@@ -809,7 +807,7 @@ TEST_F(RNGTests, Test_Reproducibility_9) {
 
     rng->rewindH(static_cast<Nd4jLong>(length));
 
-    ops.refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
+    refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
 
     for (int e = 0; e < length; e++)
         arrayT[e] = rng->relativeInt(e);
@@ -825,18 +823,17 @@ TEST_F(RNGTests, Test_Reproducibility_9) {
     delete[] arrayE;
     delete[] arrayT;
 
-    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+    destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
 
 TEST_F(RNGTests, Test_Reproducibility_8) { 
-    NativeOps ops;
     Nd4jLong seed = 123;
 
     std::vector<int> shape = {32, 3, 28, 28};
     const int bufferSize = 10000;
     int64_t buffer[bufferSize];
 
-    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, seed, bufferSize, buffer);
 
     const int length = 4000000;
     int *arrayE = new int[length];
@@ -847,7 +844,7 @@ TEST_F(RNGTests, Test_Reproducibility_8) {
 
     rng->rewindH(static_cast<Nd4jLong>(length));
 
-    ops.refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
+    refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
 
     for (int e = 0; e < length; e++)
         arrayT[e] = static_cast<int>(rng->relativeT<float>(e));
@@ -863,29 +860,27 @@ TEST_F(RNGTests, Test_Reproducibility_8) {
     delete[] arrayE;
     delete[] arrayT;
 
-    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+    destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
 
 TEST_F(RNGTests, Test_RandomBuffer_Half_1) {
-    NativeOps ops;
     Nd4jLong seed = 123;
 
     std::vector<Nd4jLong> shape = {32, 3, 28, 28};
     const int bufferSize = 10000;
     int64_t buffer[bufferSize];
 
-    auto rng = (nd4j::random::RandomBuffer *) ops.initRandom(nullptr, seed, bufferSize, buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, seed, bufferSize, buffer);
 
     auto r0 = rng->relativeT<float16>(12L);
     auto r1 = rng->relativeT<float16>(13L);
 
     ASSERT_NE(r0, r1);
 
-    ops.destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
+    destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
 
 TEST_F(RNGTests, Test_Reproducibility_1) {
-    NativeOps ops;
     Nd4jLong seed = 123;
 
     std::vector<Nd4jLong> shape = {32, 3, 28, 28};
@@ -918,7 +913,6 @@ TEST_F(RNGTests, Test_Reproducibility_1) {
 
 #ifndef DEBUG_BUILD
 TEST_F(RNGTests, Test_Reproducibility_2) {
-    NativeOps ops;
     Nd4jLong seed = 123;
 
     std::vector<Nd4jLong> shape = {32, 3, 64, 64};

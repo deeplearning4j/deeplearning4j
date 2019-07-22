@@ -501,8 +501,7 @@ TEST_F(LegacyOpsTests, Reduce3_2) {
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
 
-    NativeOps nativeOps;
-    nativeOps.execReduce3(nullptr, reduce3::CosineSimilarity, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+    execReduce3Tad(nullptr, reduce3::CosineSimilarity, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
                           nullptr, nullptr, nullptr, nullptr);
 }
 
@@ -517,9 +516,8 @@ TEST_F(LegacyOpsTests, Reduce3_3) {
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
 
-    NativeOps nativeOps;
 
-    nativeOps.execReduce3(nullptr, reduce3::CosineDistance, 
+    execReduce3Tad(nullptr, reduce3::CosineDistance, 
                         x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
                         nullptr, 
                         y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
@@ -543,9 +541,8 @@ TEST_F(LegacyOpsTests, Reduce3_4) {
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
 
-    NativeOps nativeOps;
 
-    nativeOps.execReduce3(nullptr, reduce3::CosineDistance,
+    execReduce3Tad(nullptr, reduce3::CosineDistance,
                           x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                           nullptr,
                           y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
@@ -569,9 +566,8 @@ TEST_F(LegacyOpsTests, Reduce3_5) {
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
 
-    NativeOps nativeOps;
 
-    nativeOps.execReduce3(nullptr, reduce3::CosineDistance,
+    execReduce3Tad(nullptr, reduce3::CosineDistance,
                           x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                           nullptr,
                           y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
@@ -593,8 +589,7 @@ TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
     auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), -1);
     auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), -1);
 
-    NativeOps ops;
-    ops.execReduce3All(nullptr, reduce3::EuclideanDistance, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+    execReduce3All(nullptr, reduce3::EuclideanDistance, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                        nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                        dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),

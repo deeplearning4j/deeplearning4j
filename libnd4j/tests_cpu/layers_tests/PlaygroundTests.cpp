@@ -313,12 +313,10 @@ TEST_F(PlaygroundTests, test_reduce_3) {
     Nd4jLong max = 0L;
     Nd4jLong min = DataTypeUtils::max<Nd4jLong>();
 
-    NativeOps nativeOps;
-
     for (int e = 0; e < iterations; e++) {
         auto timeStart = std::chrono::system_clock::now();
 
-        nativeOps.execReduce3(nullptr, reduce3::CosineDistance, x.buffer(), x.shapeInfo(), x.specialBuffer(),
+        execReduce3Tad(nullptr, reduce3::CosineDistance, x.buffer(), x.shapeInfo(), x.specialBuffer(),
                               x.specialShapeInfo(), nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(),
                               y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                               dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(), nullptr,
@@ -964,8 +962,6 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto legacyPermTime = std::chrono::duration_cast<std::chrono::microseconds> (legacyPermEnd - legacyPermStart).count();
 
 
-    NativeOps nativeOps;
-
     Nd4jLong iArgs[] = {kH, kW, sH, sW, pH, pW, dH, dW, 0};
     Nd4jPointer inputBuffers[] = {input.buffer()};
     Nd4jPointer inputShapes[] = {input.shapeInfo()};
@@ -976,7 +972,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
     auto javaStart = std::chrono::system_clock::now();
 
     for (int e = 0; e < iterations; e++) {
-        nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputBuffers, outputShapes, 1, nullptr, 0, iArgs, 9, nullptr, 0, false);
+        execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputBuffers, outputShapes, 1, nullptr, 0, iArgs, 9, nullptr, 0, false);
     }
 
     auto javaEnd = std::chrono::system_clock::now();
@@ -990,7 +986,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_1) {
 
 
     for (int e = 0; e < iterations; e++) {
-        nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, nullptr, 0, false);
+        execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, nullptr, 0, false);
     }
 
     auto javaPermEnd = std::chrono::system_clock::now();
@@ -1020,9 +1016,7 @@ TEST_F(PlaygroundTests, Test_Im2Col_2) {
     Nd4jPointer outputPermBuffers[] = {outputPermuted.buffer()};
     Nd4jPointer outputPermShapes[] = {outputPermuted.shapeInfo()};
 
-    NativeOps nativeOps;
-
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, nullptr, 0, false);
+    execCustomOp(nullptr, op.getOpHash(), inputBuffers, inputShapes, 1, outputPermBuffers, outputPermShapes, 1, nullptr, 0, iArgs, 9, nullptr, 0, false);
 }
 
 TEST_F(PlaygroundTests, Test_Col2Im_1) {
@@ -1140,8 +1134,6 @@ TEST_F(PlaygroundTests, loop_test_1) {
     int length = (int) array->lengthOf();
     int span = (int) (array->lengthOf() / 6) + 8;
 
-    NativeOps ops;
-
     auto t = new int[1000000];
 
 
@@ -1150,7 +1142,7 @@ TEST_F(PlaygroundTests, loop_test_1) {
     FloatBits fb;
     float threshold = 0.99f;
     fb.f_ = threshold;
-    int le = ops.estimateThreshold(nullptr, reinterpret_cast<void *>(array->buffer()), array->shapeInfo(), static_cast<int>(array->lengthOf()), threshold);
+    int le = estimateThreshold(nullptr, reinterpret_cast<void *>(array->buffer()), array->shapeInfo(), static_cast<int>(array->lengthOf()), threshold);
 
     t[0] = le;
     t[1] = length;
@@ -1162,7 +1154,7 @@ TEST_F(PlaygroundTests, loop_test_1) {
 
     for (int x = 0; x < iterations; x++) {
         auto permStart = std::chrono::system_clock::now();
-        ops.estimateThreshold(nullptr, reinterpret_cast<void *>(array->buffer()), array->shapeInfo(), static_cast<int>(array->lengthOf()), threshold);
+        estimateThreshold(nullptr, reinterpret_cast<void *>(array->buffer()), array->shapeInfo(), static_cast<int>(array->lengthOf()), threshold);
         TypeCast::convertToThreshold<float>(nullptr, buffer, array->lengthOf(), t);
 
         auto permEnd = std::chrono::system_clock::now();

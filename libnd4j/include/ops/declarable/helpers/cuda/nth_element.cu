@@ -60,8 +60,7 @@ namespace helpers {
         params[1] = context->getCudaStream();
 
         if (input->isVector()) {
-            NativeOps ops;
-            ops.sort(params, nullptr, sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), reverse);
+            sort(params, nullptr, sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), reverse);
 
             cudaMemcpy(reinterpret_cast<T*>(output->specialBuffer()), reinterpret_cast<T*>(sortedVals.specialBuffer()) + n, sizeof(T), cudaMemcpyDeviceToDevice);
         }
@@ -74,8 +73,7 @@ namespace helpers {
             auto pTadShapeH = packX.primaryShapeInfo();
             auto pTadOffsets = packX.specialOffsets();
 //            auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
-            NativeOps ops;
-            ops.sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, reverse);
+            sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, reverse);
 //            manager.synchronize();
             sortedVals.tickWriteDevice();
             sortedVals.syncToHost();

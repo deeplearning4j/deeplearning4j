@@ -41,8 +41,7 @@ namespace nd4j {
             }
 
             // FIXME: this approach isn't really good for cuda, since it'll assume that CUDA might get nullptr instead of stream
-            NativeOps nativeOps;
-            nativeOps.refreshBuffer(nullptr, seed, (Nd4jPointer) rng);
+            refreshBuffer(nullptr, seed, (Nd4jPointer) rng);
 
             return Status::OK();
         }

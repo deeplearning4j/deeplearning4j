@@ -53,8 +53,7 @@ TEST_F(LegacyOpsCudaTests, test_sortTad_1) {
     Nd4jPointer extras[2] = {nullptr, LaunchContext::defaultContext()->getCudaStream()};
 
     x.syncToDevice();
-    NativeOps nativeOps;
-    nativeOps.sortTad(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), &axis, 1, packX.platformShapeInfo(), packX.platformOffsets(), false);
+    sortTad(extras, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), &axis, 1, packX.platformShapeInfo(), packX.platformOffsets(), false);
     x.tickWriteDevice();
 
     ASSERT_EQ(e, x);
