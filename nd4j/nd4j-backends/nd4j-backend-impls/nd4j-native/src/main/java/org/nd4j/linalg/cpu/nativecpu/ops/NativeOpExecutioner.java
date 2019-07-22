@@ -2162,7 +2162,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
         val dbf = (Nd4jCpu.ConstantDataBuffer) loop.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
 
-        return new LongBuffer(dbf.primary(), Shape.shapeInfoLength(shape.length));
+        val result = new LongBuffer(dbf.primary(), Shape.shapeInfoLength(shape.length));
+
+        loop.deleteShapeBuffer(dbf);
+
+        return result;
     }
 
     @Override

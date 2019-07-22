@@ -2700,6 +2700,11 @@ nd4j::ConstantDataBuffer* NativeOps::shapeBuffer(int rank, Nd4jLong *shape, Nd4j
     return buffer;
 }
 
+void NativeOps::deleteShapeBuffer(Nd4jPointer ptr) {
+    auto buffer = reinterpret_cast<nd4j::ConstantDataBuffer*>(ptr);
+    delete buffer;
+}
+
 nd4j::ConstantDataBuffer* NativeOps::constantBuffer(nd4j::DataType dtype, Nd4jLong *data, int length) {
     return nullptr;
 }

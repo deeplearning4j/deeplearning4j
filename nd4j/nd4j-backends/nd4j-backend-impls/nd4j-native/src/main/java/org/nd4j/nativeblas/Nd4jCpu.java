@@ -3047,6 +3047,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, double[] data, int length);
     public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, ConstantDescriptor descriptor);
 
+    public native void deleteShapeBuffer(@Cast("Nd4jPointer") Pointer ptr);
 
     public native @Cast("char*") String runLightBenchmarkSuit(@Cast("bool") boolean printOut);
     public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean printOut);
@@ -3698,18 +3699,18 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
         private native void allocate(byte order, @Cast("Nd4jLong*") @StdVector long[] shape, @StdVector double[] data);
 
         /**
-        *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
+        *  this constructor creates new array using given buffer (without memory allocation) and shape information stored in shape
         */
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
+        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
         public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongPointer shape,  @Cast("nd4j::DataType") int dtype);
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
+        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
         public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector LongBuffer shape,  @Cast("nd4j::DataType") int dtype);
-        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context); }
-        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/);
+        public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/) { super((Pointer)null); allocate(buffer, order, shape, dtype, context, isBuffAlloc); }
+        private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype, LaunchContext context/*=nd4j::LaunchContext::defaultContext()*/, @Cast("const bool") boolean isBuffAlloc/*=false*/);
         public NDArray(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype) { super((Pointer)null); allocate(buffer, order, shape, dtype); }
         private native void allocate(Pointer buffer, byte order, @Cast("Nd4jLong*") @StdVector long[] shape,  @Cast("nd4j::DataType") int dtype);
 
@@ -8034,9 +8035,10 @@ public static final int PREALLOC_SIZE = 33554432;
     @Namespace("shape") public static native int outerArrayIndexes(@Cast("Nd4jLong*") long[] maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo, @Const int[] dimsToExclude/*=nullptr*/);
     @Namespace("shape") public static native int outerArrayIndexes(@Cast("Nd4jLong*") long[] maxIdxs, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") long[] maxShapeInfo, @Cast("const Nd4jLong*") long[] minShapeInfo);
 
-    // calculate offsets of max-array, these output offsets correspond to one minIdx index of min-array which is sub-array of max-array
+    // calculate offsets of max-array, these offsets correspond to one minIdx index of min-array which is sub-array of max-array
+    // maxOffsets - will contain calculated offsets of max-array, buffer for maxOffsets should be allocated beforehand
     // dimsToExclude - should be sorted in increasing order
-    // memBuff - auxiliary memory buffer (size = 2 * max_rank) for coordinates and increments storing, should be passed from outside
+    // memBuff - auxiliary memory buffer (size = 2 * max_rank) for coordinates and increments storing, should be allocated beforehand
     @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongPointer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Cast("Nd4jLong*") LongPointer memBuff, @Const IntPointer dimsToExclude/*=nullptr*/);
     @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongPointer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongPointer maxShapeInfo, @Cast("const Nd4jLong*") LongPointer minShapeInfo, @Cast("Nd4jLong*") LongPointer memBuff);
     @Namespace("shape") public static native int outerArrayOffsets(@Cast("Nd4jLong*") LongBuffer maxOffsets, @Cast("const Nd4jLong") long minIdx, @Cast("const Nd4jLong*") LongBuffer maxShapeInfo, @Cast("const Nd4jLong*") LongBuffer minShapeInfo, @Cast("Nd4jLong*") LongBuffer memBuff, @Const IntBuffer dimsToExclude/*=nullptr*/);
@@ -8945,6 +8947,7 @@ public static final int PREALLOC_SIZE = 33554432;
 
 
 // #endif /* SHAPE_H_ */
+
 
 // Parsed from helpers/OpArgsHolder.h
 
@@ -15368,7 +15371,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifndef LIBND4J_HEADERS_RECURRENT_H
 // #define LIBND4J_HEADERS_RECURRENT_H
 
-// #include <ops/declarable/headers/common.h> 
+// #include <ops/declarable/headers/common.h>
 
     //////////////////////////////////////////////////////////////////////////
     /**
@@ -15406,15 +15409,15 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation for Simple Recurrent Unit (bidirectional case): "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
+       *
+       * Input arrays:
        *    0: input 3d tensor with shape [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [2K x 6K]
        *    2: row of biases with twice length [1 x 4K]
        *    3: 2d tensor of previous cell state [bS x 2K]
        *    4: optional, 2d tensor of dropout mask [bS x 2K]
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: 3d tensor of cell output [N x bS x 2K]
        *    1: 3d tensor of cell state [N x bS x 2K]
        */
@@ -15440,8 +15443,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation for back propagation in Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
+       *
+       * Input arrays:
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
        *    2: row of biases with twice length [1 x 2K]
@@ -15450,8 +15453,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    5: 2d tensor of cell state gradients [bS x K]
        *    6: 3d tensor of state output gradients [bS x K x N]
        *    7: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: 3d tensor of input gradients [bS x K x N]
        *    1: 3d tensor of weights gradients [bS x 3K x K]
        *    2: 2d, row of biases gradients [1 x 2K]
@@ -15478,8 +15481,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation for back propagation in Simple Recurrent Unit (bidirectional case): "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
+       *
+       * Input arrays:
        *    0: input 3d tensor with shape [N x bS x 2K], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [2K x 6K]
        *    2: row of biases with twice length [1 x 4K]
@@ -15488,13 +15491,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    5: 2d tensor of cell state gradients [bS x 2K]
        *    6: 3d tensor of state output gradients [N x bS x 2K]
        *    7: optional, 2d tensor of dropout mask [bS x 2K]
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: 3d tensor of input gradients [N x bS x 2K]
        *    1: 3d tensor of weights gradients [N x 2K x 6K]
        *    2: 2d, row of biases gradients [1 x 4K]
        *    3: 2d, tensor of state gradients [bS x 2K]
-       */                  
+       */
 //         #if NOT_EXCLUDED(OP_sru_bi)
         @Namespace("nd4j::ops") public static class sru_bi_bp extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -15518,20 +15521,20 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     /**
        * Implementation of operation for LSTM cell with peep hole connections:
        *    S. Hochreiter and J. Schmidhuber. "Long Short-Term Memory". Neural Computation
-       *    and 
+       *    and
        *    https://research.google.com/pubs/archive/43905.pdf
-       *    Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014. 
+       *    Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014.
        *
-       * Input arrays: 
+       * Input arrays:
        *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
-       *    1: previous cell output [batchSize x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!! 
-       *    2: previous cell state  [batchSize x numUnits], that is at previous time step t-1   
-       *    3: input-to-hidden  weights, [inSize  x 4*numUnits] 
-       *    4: hidden-to-hidden weights, [numProj x 4*numUnits] 
-       *    5: diagonal weights for peephole connections [3*numUnits] 
-       *    6: projection weights [numUnits x numProj] 
-       *    7: biases, [4*numUnits] 
-       * 
+       *    1: previous cell output [batchSize x numProj],  that is at previous time step t-1, in case of projection=false -> numProj=numUnits!!!
+       *    2: previous cell state  [batchSize x numUnits], that is at previous time step t-1
+       *    3: input-to-hidden  weights, [inSize  x 4*numUnits]
+       *    4: hidden-to-hidden weights, [numProj x 4*numUnits]
+       *    5: diagonal weights for peephole connections [3*numUnits]
+       *    6: projection weights [numUnits x numProj]
+       *    7: biases, [4*numUnits]
+       *
        *  Input integer arguments:
        *    0: if not zero, provide peephole connections
        *    1: if not zero, then projection is performed, if zero then numProj==numUnits is mandatory!
@@ -15540,11 +15543,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    0: clipping value for cell state, if it is not equal to zero, then cell state is clipped
        *    1: clipping value for projected cell output, if it is not equal to zero, then projected cell output is clipped
        *    2: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: current cell output [batchSize x numProj], that is at current time step t
        *    1: current cell state  [batchSize x numUnits], that is at current time step t
-       */                  
+       */
 //         #if NOT_EXCLUDED(OP_lstmCell)
         @Namespace("nd4j::ops") public static class lstmCell extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -15568,12 +15571,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     /**
        * Implementation of operation for LSTM cell with optional peep hole connections:
        *    S. Hochreiter and J. Schmidhuber. "Long Short-Term Memory". Neural Computation
-       *    and 
+       *    and
        *    https://research.google.com/pubs/archive/43905.pdf
        *    Hasim Sak, Andrew Senior, and Francoise Beaufays. "Long short-term memory recurrent neural network architectures for large scale acoustic modeling." INTERSPEECH, 2014.
 	   * See also: https://arxiv.org/pdf/1503.04069.pdf
        *
-       * Input arrays: 
+       * Input arrays:
        *    0: input [bS, inSize] at time t
        *    1: previous cell state  [bS, numUnits], time t-1
        *    2: previous output [bS, numUnits], time t-1
@@ -15582,15 +15585,15 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    5: weights - cell peephole (t-1) connections to forget gate, [numUnits]
        *    6: weights - cell peephole (t) connections to output gate, [numUnits]
        *    7: biases, shape [4*numUnits]
-       * 
+       *
        *  Input integer arguments:
        *    0: if not zero, provide peephole connections
        *
        *  Input float arguments:
        *    0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
 	   *    1: clipping value for cell state, if it is not equal to zero, then cell state is clipped
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: i      - Input modulation gate activations [bS, numUnits]
        *    1: c (cs) - Cell state (pre tanh) [bs, numUnits] (cs)
        *    2: f      - Output - forget gate activations [bs, numUnits]
@@ -15598,7 +15601,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    4: z (ci) - Output - block input [bs, numUnits]
        *    5: h (co) - Cell state, post tanh [bs, numUnits]
        *    6: y (h)  - Current cell output [bS, numUnits], time t
-       */                  
+       */
 //         #if NOT_EXCLUDED(OP_lstmBlockCell)
         @Namespace("nd4j::ops") public static class lstmBlockCell extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -15672,21 +15675,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
-		
+
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operations for Simple Recurrent Unit cell: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
        *
-       * Input arrays: 
+       * Input arrays:
        *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
        *    1: previous cell state [batchSize x inSize], that is at previous time step t-1
        *    2: weights [inSize x 3*inSize]
        *    3: biases [1 x 2*inSize]
-       * 
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: current cell output [batchSize x inSize], that is at current time step t
        *    1: current cell state  [batchSize x inSize], that is at current time step t
-       */                  
+       */
 //         #if NOT_EXCLUDED(OP_sruCell)
         @Namespace("nd4j::ops") public static class sruCell extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -15709,23 +15712,23 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of gated Recurrent Unit cell:
-       *    Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio       
+       *    Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio
        *    "Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation"
        *
-       * Input arrays: 
+       * Input arrays:
        *    0: input with shape [batchSize x inSize], batchSize - batch size, inSize - number of features
        *    1: previous cell output [batchSize x numUnits],  that is at previous time step t-1
-       *    2: RU weights - [(nIn+nOut), 2*numUnits] - reset and update gates (input/recurrent weights)
-       *    3: C weights - [(nIn+nOut), numUnits] - cell gate (input/recurrent weights)
+       *    2: RU weights - [(inSize+numUnits), 2*numUnits] - reset and update gates (input/recurrent weights)
+       *    3: C weights - [(inSize+numUnits), numUnits] - cell gate (input/recurrent weights)
        *    4: reset and update biases, [2*numUnits] - reset and update gates
        *    5: cell biases, [numUnits]
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: Reset gate output [bS, numUnits]
        *    1: Update gate output [bS, numUnits]
        *    2: Cell gate output [bS, numUnits]
        *    3: Current cell output [bS, numUnits]
-       */                  
+       */
 //         #if NOT_EXCLUDED(OP_gruCell)
         @Namespace("nd4j::ops") public static class gruCell extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -15766,16 +15769,16 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     /**
        * Implementation of operation "LSTM time sequences" with peep hole connections:
        *
-       * Input arrays: 
+       * Input arrays:
        *    0: input with shape [time x batchSize x inSize], time - number of time steps, batchSize - batch size, inSize - number of features
-       *    1: initial cell output [batchSize x numProj],  that is at time step = 0, in case of projection=false -> numProj=numUnits!!! 
-       *    2: initial cell state  [batchSize x numUnits], that is at time step = 0   
-       *    3: input-to-hidden  weights, [inSize  x 4*numUnits] 
-       *    4: hidden-to-hidden weights, [numProj x 4*numUnits] 
-       *    5: diagonal weights for peephole connections [3*numUnits] 
-       *    6: projection weights [numUnits x numProj] 
-       *    7: biases, [4*numUnits] 
-       * 
+       *    1: initial cell output [batchSize x numProj],  that is at time step = 0, in case of projection=false -> numProj=numUnits!!!
+       *    2: initial cell state  [batchSize x numUnits], that is at time step = 0
+       *    3: input-to-hidden  weights, [inSize  x 4*numUnits]
+       *    4: hidden-to-hidden weights, [numProj x 4*numUnits]
+       *    5: diagonal weights for peephole connections [3*numUnits]
+       *    6: projection weights [numUnits x numProj]
+       *    7: biases, [4*numUnits]
+       *
        *  Input integer arguments:
        *    0: if not zero, provide peephole connections
        *    1: if not zero, then projection is performed, if zero then numProj==numUnits is mandatory!
@@ -15784,11 +15787,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
        *    0: clipping value for cell state, if it is not equal to zero, then cell state is clipped
        *    1: clipping value for projected cell output, if it is not equal to zero, then projected cell output is clipped
        *    2: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: cell outputs [time x batchSize x numProj], that is per each time step
        *    1: cell states  [time x batchSize x numUnits], that is per each time step
-       */                  
+       */
 //         #if NOT_EXCLUDED(OP_lstm)
         @Namespace("nd4j::ops") public static class lstm extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -15811,16 +15814,16 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     /**
        * Implementation of gated Recurrent Unit:
        *
-       * Input arrays: 
+       * Input arrays:
        *    0: input with shape [time x batchSize x inSize], time - number of time steps, batchSize - batch size, inSize - number of features
        *    1: initial cell output [batchSize x numUnits],  that is at time step = 0
-       *    2: input-to-hidden  weights, [inSize   x 3*numUnits] 
-       *    3: hidden-to-hidden weights, [numUnits x 3*numUnits] 
-       *    4: biases, [3*numUnits]        
-       *  
-       * Output arrays: 
-       *    0: cell outputs [time x batchSize x numUnits], that is per each time step    
-       */                  
+       *    2: input-to-hidden  weights, [inSize   x 3*numUnits]
+       *    3: hidden-to-hidden weights, [numUnits x 3*numUnits]
+       *    4: biases, [3*numUnits]
+       *
+       * Output arrays:
+       *    0: cell outputs [time x batchSize x numUnits], that is per each time step
+       */
 //         #if NOT_EXCLUDED(OP_gru)
         @Namespace("nd4j::ops") public static class gru extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -16811,7 +16814,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected input:
          * 0: N-dimensional array
          * 1: optional axis vector
-         * 
+         *
          * Int args:
          * 0: optional axis
          */
@@ -16838,7 +16841,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected input:
          * 0: N-dimensional array
          * 1: optional axis vector
-         * 
+         *
          * Int args:
          * 0: optional axis
          */
@@ -16861,21 +16864,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * This operation provides various normalization modes: 
+         * This operation provides various normalization modes:
          * 0: frobenius
          * 1: euclidean (norm2)
          * 2: norm1
          * 3: norm2
          * 4: inf-norm
          * 5: p-norm
-         * 
+         *
          * Expected arguments:
          * input: N-dimensional array
-         * 
-         * 
+         *
+         *
          * Int args:
          * 0...: axis
-         * 
+         *
          * T args:
          * 0: norm mode
          * 1: p for p-norm
@@ -17107,7 +17110,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
 //         #if NOT_EXCLUDED(OP_scatter_add)
         @Namespace("nd4j::ops") public static class scatter_add extends DeclarableOp {
@@ -17132,7 +17135,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
 //         #if NOT_EXCLUDED(OP_scatter_sub)
         @Namespace("nd4j::ops") public static class scatter_sub extends DeclarableOp {
@@ -17157,7 +17160,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
 //         #if NOT_EXCLUDED(OP_scatter_mul)
         @Namespace("nd4j::ops") public static class scatter_mul extends DeclarableOp {
@@ -17182,7 +17185,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
 //         #if NOT_EXCLUDED(OP_scatter_div)
         @Namespace("nd4j::ops") public static class scatter_div extends DeclarableOp {
@@ -17207,7 +17210,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
 //         #if NOT_EXCLUDED(OP_scatter_upd)
         @Namespace("nd4j::ops") public static class scatter_upd extends DeclarableOp {
@@ -17232,7 +17235,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
 //         #if NOT_EXCLUDED(OP_scatter_max)
         @Namespace("nd4j::ops") public static class scatter_max extends DeclarableOp {
@@ -17257,7 +17260,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected arguments:
          * input: array to be updated
          * indices: array containing indexes for first dimension of input
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
 //         #if NOT_EXCLUDED(OP_scatter_min)
         @Namespace("nd4j::ops") public static class scatter_min extends DeclarableOp {
@@ -17279,7 +17282,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * This operation scatter "updates" elements into new output array according to given "indices"
-         * Expected arguments:         
+         * Expected arguments:
          * indices: array containing elements/slices indexes of output array to put "updates" elements into, the rest output elements will be zeros
          * updates: array containing elements to be inserted into output array
          * shape: contains shape of output array
@@ -17304,8 +17307,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * This operation scatter "updates" elements into input array along given "indices"
-         * Expected arguments:   
-         * input: array to be updated      
+         * Expected arguments:
+         * input: array to be updated
          * indices: array containing elements/slices indexes of input array to put "updates" elements into
          * updates: array containing elements to be inserted into input array
          */
@@ -17332,7 +17335,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected arguments:
          * input: array to be updated
          * indices: array containing elements/slices indexes of input array to add "updates" elements to
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
 //         #if NOT_EXCLUDED(OP_scatter_add)
         @Namespace("nd4j::ops") public static class scatter_nd_add extends DeclarableOp {
@@ -17357,7 +17360,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Expected arguments:
          * input: array to be updated
          * indices: array containing elements/slices indexes of input array to subtract "updates" elements from
-         * updates: array containing elements to be interfered with input 
+         * updates: array containing elements to be interfered with input
          */
 //         #if NOT_EXCLUDED(OP_scatter_sub)
         @Namespace("nd4j::ops") public static class scatter_nd_sub extends DeclarableOp {
@@ -17381,7 +17384,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation takes input's shape, and returns new NDArray filled with specified value
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          * T args:
          * 0: scalar value, used to fill NDArray
          */
@@ -17449,7 +17452,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * This operation returns 3 1D arrays for given 1D array with unique element count and indexes
-         * input: 
+         * input:
          *     0 - 1D array
          *
          * output:
@@ -17479,7 +17482,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation splits input NDArray into multiple TADs along given dimensions
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          * Int args:
          * 0..: TAD axis
          */
@@ -17524,7 +17527,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * This operation extracts a strided (optionally) slice from a tensor, 
+         * This operation extracts a strided (optionally) slice from a tensor,
          */
 //         #if NOT_EXCLUDED(OP_strided_slice)
         @Namespace("nd4j::ops") public static class strided_slice extends DeclarableCustomOp {
@@ -17561,7 +17564,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * This operation extracts a slice from a tensor.
-         * 
+         *
          */
 //         #if NOT_EXCLUDED(OP_slice)
         @Namespace("nd4j::ops") public static class slice extends DeclarableCustomOp {
@@ -17602,12 +17605,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * start: optional scalar with starting value
          * stop: optional scalar with end value
          * step: optional scalar witn step value
-         * 
+         *
          * Int args: (optional)
          * 0: optional scalar with starting value
          * 1: optional scalar with end value
          * 1: optional scalar witn step value
-         * 
+         *
          * T args: (optional)
          * 0: optional scalar with starting value
          * 1: optional scalar with end value
@@ -17635,11 +17638,11 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation return one-hot encoded n-dimensional array
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          * T args:
          * 0: 'on' value
          * 1: 'off' value
-         * 
+         *
          * Int args:
          * 0: depth
          * 1: axis
@@ -17697,7 +17700,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 		 * This operation stacks a list of rank tensors into one rank-(R+1) tensor.
 		 * Expected arguments:
 		 * 0...: N-Dimensional arrays to stack
-		 * 
+		 *
 		 */
 //         #if NOT_EXCLUDED(OP_stack)
         @Namespace("nd4j::ops") public static class stack extends DeclarableCustomOp {
@@ -17721,7 +17724,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation returns length of input array
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          * TODO: make this operation reduction, to allow TAD -> size
          */
 //         #if NOT_EXCLUDED(OP_size)
@@ -17787,7 +17790,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation takes input's shape, and returns new NDArray filled with zeros
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          */
 //         #if NOT_EXCLUDED(OP_zeros_as)
         @Namespace("nd4j::ops") public static class zeros_as extends DeclarableOp {
@@ -17811,7 +17814,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation takes input's shape, and returns new NDArray filled with ones
          * Expected arguments:
          * input: N-dimensional array
-         * 
+         *
          */
 //         #if NOT_EXCLUDED(OP_ones_as)
         @Namespace("nd4j::ops") public static class ones_as extends DeclarableOp {
@@ -17922,10 +17925,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Input arrays:
          * 0 - shape vector
          * 1 - optional scalar NDArray
-         * 
+         *
          * T arguments:
          * 0 - optional scalar value
-         * 
+         *
          */
 //         #if NOT_EXCLUDED(OP_fill)
         @Namespace("nd4j::ops") public static class fill extends DeclarableCustomOp {
@@ -17951,10 +17954,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * 0 - input array
          * 1 - array of sizes
          * 2 - optional axis
-         * 
+         *
          * Integer arguments:
          * 0 - optional axis
-         * 
+         *
          */
 //         #if NOT_EXCLUDED(OP_split_v)
         @Namespace("nd4j::ops") public static class split_v extends DeclarableCustomOp {
@@ -17978,7 +17981,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * This operation splits given NDArray into chunks of specific size, along given dimension
          * 0 - input array
          * 1 - optional axis
-         * 
+         *
          * Integer arguments:
          * 0 - number of splits
          * 1 - optional axis
@@ -18005,14 +18008,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         /**
          * This operation adjusts image hue by delta
          * Input arrays:
-         * 0 - 1D or 3D input array, must have 3 channels.
-         * 1 - optional scalar, delta value
-         * 
+         * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+         *
          * T arguments:
-         * 0 - optional delta value
-         * 
+         * 0 - delta value
+         *
          * Int arguments:
-         * 0 - optional argument, isNHWC. false by default.
+         * 0 - optional argument, corresponds to dimension with 3 channels
          */
 //         #if NOT_EXCLUDED(OP_adjust_hue)
         @Namespace("nd4j::ops") public static class adjust_hue extends DeclarableOp {
@@ -18035,14 +18037,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         /**
          * This operation adjusts image saturation by delta
          * Input arrays:
-         * 0 - 1D or 3D input array, must have 3 channels.
-         * 1 - optional scalar, delta value
-         * 
+         * 0 - input array with rank >= 3, must have at least one dimension equal 3, that is dimension containing channels.
+         *
          * T arguments:
-         * 0 - optional delta value
-         * 
+         * 0 - saturation factor
+         *
          * Int arguments:
-         * 0 - optional argument, isNHWC. false by default.
+         * 0 - optional argument, corresponds to dimension with 3 channels
          */
 //         #if NOT_EXCLUDED(OP_adjust_saturation)
         @Namespace("nd4j::ops") public static class adjust_saturation extends DeclarableOp {
@@ -18064,8 +18065,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
         /**
-         * 
-         * 
+         *
+         *
          *
          */
 //         #if NOT_EXCLUDED(OP_depth_to_space)
@@ -18087,8 +18088,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * 
-         * 
+         *
+         *
          *
          */
 //         #if NOT_EXCLUDED(OP_space_to_depth)
@@ -18134,8 +18135,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * 
-         * 
+         *
+         *
          */
 //         #if NOT_EXCLUDED(OP_space_to_batch)
         @Namespace("nd4j::ops") public static class space_to_batch extends DeclarableCustomOp {
@@ -18156,8 +18157,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * 
-         * 
+         *
+         *
          */
 //         #if NOT_EXCLUDED(OP_batch_to_space)
         @Namespace("nd4j::ops") public static class batch_to_space extends DeclarableCustomOp {
@@ -18178,7 +18179,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * top_k operation returns a vector of k top values for 
+         * top_k operation returns a vector of k top values for
          *  given NDArray as tensor with default boolean (true)
          *  as sort for result index array
          *  will be sorted by the values in descending order.
@@ -18205,7 +18206,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * in_top_k operation returns a vector of k boolean values for 
+         * in_top_k operation returns a vector of k boolean values for
          *  given NDArray as 2D matrix of predicted in the NDArray k top values
          *  The first parameter is a NDArray of predicted values (2d array).
          *  The second is NDArray as vector of indeces k top values will be search.
@@ -18233,7 +18234,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * moments operation calculate a mean and variation for given NDArray
          * with reduce a result according to axis array given.
          * For full axis the result is both mean and variance of all members in array.
-         * Otherwise there are two NDArrays with means and variances for 
+         * Otherwise there are two NDArrays with means and variances for
          * Axes can be put as the second NDArray or as int vector.
          *
          * the optional flag "keep_dims" can be set as T param
@@ -18279,13 +18280,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * dynamic_partition - partition a input tensor onto num_partitions 
+         * dynamic_partition - partition a input tensor onto num_partitions
          * accordingly to index array given.
          *
          * the first param - NDArray to be partitioned.
          * the second param - index array
          * the third param (integer param) - num or partitions.
-         * 
+         *
          * returns a num of NDArrays as output
          */
 //         #if NOT_EXCLUDED(OP_dynamic_partition)
@@ -18325,14 +18326,14 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * dynamic_stitch - merge partitions from the second param a input tensor 
+         * dynamic_stitch - merge partitions from the second param a input tensor
          * into a single tensor accordingly to index array given.
          *
          * the first param - index array
          * the second params - tensors to be merged
-         * 
+         *
          * returns a num of NDArrays as output
-         * 
+         *
          * the operation is inversion od dynamic_partition
          */
 //         #if NOT_EXCLUDED(OP_dynamic_stitch)
@@ -18448,7 +18449,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * normalize_moments operation normalize already calculated mean and variation 
+         * normalize_moments operation normalize already calculated mean and variation
          * accordingly to shift and count.
          * input params:
          *  - count of data
@@ -18456,7 +18457,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *  - tensor with variance (the same shape as before)
          *
          *  - optional floating point param shift.
-         * 
+         *
          *  returns a normalized pair mean and variance with the same shapes as input
          */
 //         #if NOT_EXCLUDED(OP_normalize_moments)
@@ -18484,8 +18485,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * input params:
          *  - input tensor
          *  - axes vector
-         *  
-         * 
+         *
+         *
          *  - optional floating point param shift.
          *  - optional int (as bool) keep_dimension
          *
@@ -18519,7 +18520,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *  0 - target
          *  1 - input
          *  2 - weights (scalar or vector with same as last dimension)
-         *  
+         *
          *  return value - a tensor with the same shape as target or input
          */
 //         #if NOT_EXCLUDED(OP_weighted_cross_entropy_with_logits)
@@ -18545,7 +18546,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * Input arguments
          *  0 - input tensor
          *  1 - noise_shape - (vector with shape to reduce) - optional
-         *  
+         *
          *  int parameter - seed for random numbers
          *  T parameter - probability (should be between 0 and 1)
          *  return value - a tensor with the same shape as target or input
@@ -18613,13 +18614,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * bincount operation return a vector with element counted.
-         * 
+         *
          * input params:
          *  - input tensor - only int part are accepted
          *  - weights - the same shape tensor with integer weights for element (optional)
          *  default weight - 1,1,1..,1 for all values in the tensor
-         * 
-         *  optional ints: 
+         *
+         *  optional ints:
          *  - min_length - zero or greater
          *  - max_length - between min_length and max(input) + 1
          *
@@ -18654,7 +18655,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *    1 - the second shape (vector with shape)
          *
          * return value:
-         *    vector with broadcasted shape 
+         *    vector with broadcasted shape
          */
 //         #if NOT_EXCLUDED(OP_broadcast_dynamic_shape)
         @Namespace("nd4j::ops") public static class broadcast_dynamic_shape extends DeclarableCustomOp {
@@ -18681,7 +18682,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *    0 - the tensor with dimension (x * y * z * ::: * M * M)
          *
          * return value:
-         *    tensor with dimension (x * y * z * ::: *) with determinant for all 
+         *    tensor with dimension (x * y * z * ::: *) with determinant for all
          * M x M matricies
          */
 //         #if NOT_EXCLUDED(OP_matrix_determinant)
@@ -18759,7 +18760,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
-        
+
         /**
          * matrix_inverse op. - make inverse for all 2D square matricies found in the input tensor
          *
@@ -18767,7 +18768,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *    0 - the tensor with dimension (x * y * z * ::: * M * M)
          *
          * return value:
-         *    tensor with dimension (x * y * z * ::: * M * M) with inverse M x M matricies in it 
+         *    tensor with dimension (x * y * z * ::: * M * M) with inverse M x M matricies in it
          */
 //         #if NOT_EXCLUDED(OP_matrix_inverse)
         @Namespace("nd4j::ops") public static class matrix_inverse extends DeclarableOp {
@@ -19359,16 +19360,16 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * roll - op porting from numpy (https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.roll.html)
-         * 
+         *
          * input params:
          *    0 - NDArray
-         * 
+         *
          * int params:
          *    0 - shift
          *    1 - axe 1
          *    2 - axe 2
          *    ...
-         *    N - axe N 
+         *    N - axe N
          *
          *    All axes are optional and should be between 0 and input->rankOf(). Of course, all axes can be repeated.
          *
@@ -19395,12 +19396,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * lin_space - op porting from TF (https://www.tensorflow.org/api_docs/python/tf/lin_space)
-         * 
+         *
          * input params:
          *    0 - startVal - NDArray scalar (float point)
          *    1 - finishVal - NDArray scalar (float point)
          *    2 - numOfElements - NDArray scalar (integer)
-         * 
+         *
          * output:
          *    0 - 1D NDArray with the same type as input and length as given with numOfElements param.
          */
@@ -19424,10 +19425,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * reduction_sum - tf.reduction_sum operation
-         * 
+         *
          * input params:
          *    0 - NDArray
-         * 
+         *
          * T_ARG param (optional):
          * 0 - keep_dims != 0.
          *
@@ -19435,7 +19436,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *    0 - axe 1
          *    1 - axe 2
          *    ...
-         *    N-1 axe N 
+         *    N-1 axe N
          *
          *    All axes are optional and should be between 0 and input->rankOf() - 1
          *
@@ -19480,10 +19481,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * reduction_prod - tf.reduction_prod operation
-         * 
+         *
          * input params:
          *    0 - NDArray
-         * 
+         *
          * T_ARG param (optional):
          * 0 - keep_dims != 0.
          *
@@ -19491,7 +19492,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *    0 - axe 1
          *    1 - axe 2
          *    ...
-         *    N-1 axe N 
+         *    N-1 axe N
          *
          *    All axes are optional and should be between 0 and input->rankOf() - 1
          *
@@ -19538,7 +19539,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates min of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mins for        
+        *    x: tensor to calculate mins for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -19588,7 +19589,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates max of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate maxes for        
+        *    x: tensor to calculate maxes for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -19638,7 +19639,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates norm1 of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate norm1 for        
+        *    x: tensor to calculate norm1 for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -19688,7 +19689,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates norm2 of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate norm2 for        
+        *    x: tensor to calculate norm2 for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -19739,7 +19740,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates squared norm of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate squared norm for        
+        *    x: tensor to calculate squared norm for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -19789,7 +19790,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates norm max of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate norm max for        
+        *    x: tensor to calculate norm max for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -19839,7 +19840,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates mean of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate mean for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -19889,7 +19890,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates sample variance of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate mean for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -19935,7 +19936,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates sample standard deviation of elements along given dimensions
         *
         * input array:
-        *    x: tensor to calculate mean for        
+        *    x: tensor to calculate mean for
         *
         * float arguments:
         *   keepDims: if non zero, then keep reduced dimensions with length = 1, default value is zero
@@ -19981,13 +19982,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * This op calculates backprop dot for two tensors along given dimensions
         *
         * input array:
-        *    x: tensor to calculate dot for        
-        *    y: tensor to calculate dot for        
+        *    x: tensor to calculate dot for
+        *    y: tensor to calculate dot for
         *    z: tensor with gradient output of the FF dot for x and y
         *
         * int arguments:
-        *   list of integers - dimensions to calculate dot along, 
-        *   default corresponds to empty list in which case calculation 
+        *   list of integers - dimensions to calculate dot along,
+        *   default corresponds to empty list in which case calculation
         *   is performed for all dimensions and scalar is returned.
         *
         * output array:
@@ -20014,7 +20015,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
         /**
          * reduce_logsumexp - tf.reduce_logsumexe operation
-         * 
+         *
          * input params:
          *    0 - NDArray (input)
          *    1 - 1D NDArray (axis) (optional) - integer array
@@ -20026,7 +20027,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *    0 - axe 1
          *    1 - axe 2
          *    ...
-         *    N-1 axe N 
+         *    N-1 axe N
          *
          *  CAUTION: All axes are optional and should be between 0 and input->rankOf() - 1
          *  and put either with second param or as integers but not both
@@ -20315,7 +20316,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 /**
          * fake_quant_with_min_max_vals - tf.quantization.fake_quant_with_min_max_vars
-         * 
+         *
          * input params:
          *    0 - NDArray (input)
          *    1 - 0D Tensor - min value

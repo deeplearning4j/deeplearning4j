@@ -1120,6 +1120,8 @@ public abstract class NativeOps extends Pointer {
     // GraphState creation
     public abstract Pointer getGraphState(long id);
 
+    public abstract void deleteShapeBuffer(Pointer state);
+
     public abstract void deleteGraphState(Pointer state);
 
     public abstract int estimateThreshold(PointerPointer extraPointers, Pointer x, LongPointer xShapeInfo, int N, float threshold);
