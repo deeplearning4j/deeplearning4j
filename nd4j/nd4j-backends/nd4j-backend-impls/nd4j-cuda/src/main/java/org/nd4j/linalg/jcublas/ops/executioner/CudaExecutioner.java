@@ -2600,6 +2600,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val tadShape = new CudaLongDataBuffer(pack.primaryShapeInfo(), pack.specialShapeInfo(), pack.shapeInfoLength());
         val tadOffsets = new CudaLongDataBuffer(pack.primaryOffsets(), pack.specialOffsets(), pack.numberOfTads());
 
+        nativeOps.deleteTadPack(pack);
+
         return new TadPack(tadShape, tadOffsets);
     }
 

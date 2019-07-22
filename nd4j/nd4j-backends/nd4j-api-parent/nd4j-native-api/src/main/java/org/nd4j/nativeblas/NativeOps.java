@@ -1122,6 +1122,8 @@ public abstract class NativeOps extends Pointer {
 
     public abstract void deleteShapeBuffer(Pointer state);
 
+    public abstract void deleteTadPack(Pointer pointer);
+
     public abstract void deleteGraphState(Pointer state);
 
     public abstract int estimateThreshold(PointerPointer extraPointers, Pointer x, LongPointer xShapeInfo, int N, float threshold);

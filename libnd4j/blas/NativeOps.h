@@ -1700,6 +1700,7 @@ public:
     nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, nd4j::ConstantDescriptor *descriptor);
 
     void deleteShapeBuffer(Nd4jPointer ptr);
+    void deleteTadPack(Nd4jPointer ptr);
 
     const char* runLightBenchmarkSuit(bool printOut);
     const char* runFullBenchmarkSuit(bool printOut);

@@ -3246,6 +3246,11 @@ void NativeOps::deleteShapeBuffer(Nd4jPointer ptr) {
     delete buffer;
 }
 
+void NativeOps::deleteTadPack(Nd4jPointer ptr) {
+    auto buffer = reinterpret_cast<nd4j::TadPack*>(ptr);
+    delete buffer;
+}
+
 nd4j::ConstantDataBuffer* NativeOps::constantBuffer(nd4j::DataType dtype, Nd4jLong *data, int length) {
     return nd4j::ConstantHelper::getInstance()->constantBuffer(ConstantDescriptor(data, length), dtype);
 }

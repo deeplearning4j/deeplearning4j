@@ -2176,6 +2176,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         val tadShape = new LongBuffer(pack.primaryShapeInfo(), pack.shapeInfoLength());
         val tadOffsets = new LongBuffer(pack.primaryOffsets(), pack.numberOfTads());
 
+        loop.deleteTadPack(pack);
+
         return new TadPack(tadShape, tadOffsets);
     }
 

@@ -3048,6 +3048,7 @@ public static class NativeOps extends org.nd4j.nativeblas.NativeOps {
     public native ConstantDataBuffer constantBuffer(@Cast("nd4j::DataType") int dtype, ConstantDescriptor descriptor);
 
     public native void deleteShapeBuffer(@Cast("Nd4jPointer") Pointer ptr);
+    public native void deleteTadPack(@Cast("Nd4jPointer") Pointer ptr);
 
     public native @Cast("char*") String runLightBenchmarkSuit(@Cast("bool") boolean printOut);
     public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean printOut);
