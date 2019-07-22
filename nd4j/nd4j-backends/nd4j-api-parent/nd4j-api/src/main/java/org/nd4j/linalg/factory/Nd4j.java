@@ -209,7 +209,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #pad(INDArray, int[][], PadMode)
+     * @see #pad(INDArray, int[][], List, PadMode) with zero padding. (zeros for constantValues).
      */
     public static INDArray pad(INDArray toPad, int[][] padWidth, PadMode padMode) {
         return pad(toPad, padWidth, ArrayUtil.zerosMatrix(toPad.shape()), padMode);
@@ -264,7 +264,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #pad(INDArray, int[][], PadMode)
+     * @see #pad(INDArray, int[][], List, PadMode) with a 1D int[] for padWidth.
      */
     public static INDArray pad(INDArray toPad, int[] padWidth, List<double[]> constantValues, PadMode padMode) {
         switch (padMode) {
@@ -299,17 +299,15 @@ public class Nd4j {
                     ret = Nd4j.append(ret, padAfter, afterVal, i);
 
                 }
-
                 return ret;
 
             default:
                 throw new UnsupportedOperationException();
-
         }
     }
 
     /**
-     * @see #pad(INDArray, int[][], PadMode)
+     * @see #pad(INDArray, int[][], List, PadMode) with a 1D int[] for padWidth and zero padding.
      */
     public static INDArray pad(INDArray toPad, int[] padWidth, PadMode padMode) {
         return pad(toPad, padWidth, ArrayUtil.zerosMatrix(padWidth), padMode);
