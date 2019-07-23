@@ -4129,6 +4129,19 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     return shape::getIndexOffset(i, _shapeInfo, lengthOf());
 }
 
+NDArray NDArray::like() {
+    NDArray res(this->shapeInfo(), this->dataType(), false, this->getContext());
+
+    return res;
+}
+
+NDArray NDArray::ulike() {
+    // FIXME: it should be non-memset array
+    NDArray res(this->shapeInfo(), this->dataType(), false, this->getContext());
+
+    return res;
+}
+
 ////////////////////////////////////////////////////////////////////////
 NDArray* NDArray::diagonal(const char type) const {
 

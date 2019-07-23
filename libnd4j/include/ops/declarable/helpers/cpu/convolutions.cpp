@@ -990,8 +990,9 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                 if(gradB->rankOf() == 2)
                     gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
                 gradO->reduceAlongDimension(reduce::Sum, gradBR, {0,indOoH,indOoH+1});                      // sum over bS, oH, oW
+
                 if(gradBR != gradB)
-                    delete gradB;
+                    delete gradBR;
             }
 
             //----- calculation of gradI -----//

@@ -212,6 +212,20 @@ namespace nd4j {
         */
         NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
 
+
+        /**
+        * This method returns new array with the same shape & data type
+        * @return
+        */
+        NDArray like();
+
+        /**
+         * This method returns new uninitialized array with the same shape & data type
+         * @return
+         */
+        NDArray ulike();
+
+
         /**
         *  this constructor creates new NDArray with shape matching "other" array,
         *  doesn't copy "other" elements into new array !!!
