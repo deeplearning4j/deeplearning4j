@@ -318,7 +318,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else {
-                    nativeOps.execSummaryStats(xShapeInfoHostPointer, op.opNum(),
+                    nativeOps.execSummaryStatsTad(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             extraArgs,
                             null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
@@ -360,7 +360,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context));
                     AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
                 } else {
-                    nativeOps.execReduce3(xShapeInfoHostPointer, op.opNum(),
+                    nativeOps.execReduce3Tad(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             extraArgs,
                             null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
@@ -408,7 +408,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 } else {
                     switch (op.getOpType()) {
                         case REDUCE_FLOAT:
-                            nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(),
+                            nativeOps.execReduceFloat2(xShapeInfoHostPointer, op.opNum(),
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
@@ -418,7 +418,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null);
                             break;
                         case REDUCE_BOOL:
-                            nativeOps.execReduceBool(xShapeInfoHostPointer, op.opNum(),
+                            nativeOps.execReduceBool2(xShapeInfoHostPointer, op.opNum(),
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
@@ -428,7 +428,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null);
                             break;
                         case REDUCE_SAME:
-                            nativeOps.execReduceSame(xShapeInfoHostPointer, op.opNum(),
+                            nativeOps.execReduceSame2(xShapeInfoHostPointer, op.opNum(),
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
@@ -438,7 +438,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null);
                             break;
                         case REDUCE_LONG:
-                            nativeOps.execReduceLong(xShapeInfoHostPointer, op.opNum(),
+                            nativeOps.execReduceLong2(xShapeInfoHostPointer, op.opNum(),
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
@@ -1027,7 +1027,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (op.y() != null) {
                 val y = AtomicAllocator.getInstance().getPointer(op.y(), context);
                 val yShapeInfo = AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context);
-                nativeOps.execReduce3(xShapeInfoHostPointer, op.opNum(),
+                nativeOps.execReduce3Tad(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                             extraArgs,
                             null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
@@ -1037,7 +1037,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         dimensionPointer, null, (LongPointer) devTadShapeInfo, (LongPointer) devTadOffsets, (LongPointer) yDevTadShapeInfo, (LongPointer) yDevTadOffsets);
             } else {
                 if (op instanceof Variance) {
-                    nativeOps.execSummaryStats(xShapeInfoHostPointer, op.opNum(),
+                    nativeOps.execSummaryStatsTad(xShapeInfoHostPointer, op.opNum(),
                              null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                 extraArgs,
                                null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
@@ -1051,7 +1051,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 } else {
                     switch (op.getOpType()) {
                         case REDUCE_FLOAT:
-                            nativeOps.execReduceFloat(xShapeInfoHostPointer, op.opNum(),
+                            nativeOps.execReduceFloat2(xShapeInfoHostPointer, op.opNum(),
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
@@ -1061,7 +1061,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null);
                             break;
                         case REDUCE_SAME:
-                            nativeOps.execReduceSame(xShapeInfoHostPointer, op.opNum(),
+                            nativeOps.execReduceSame2(xShapeInfoHostPointer, op.opNum(),
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
@@ -1071,7 +1071,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null);
                             break;
                         case REDUCE_BOOL:
-                            nativeOps.execReduceBool(xShapeInfoHostPointer, op.opNum(),
+                            nativeOps.execReduceBool2(xShapeInfoHostPointer, op.opNum(),
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
@@ -1081,7 +1081,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                                     null);
                             break;
                         case REDUCE_LONG:
-                            nativeOps.execReduceLong(xShapeInfoHostPointer, op.opNum(),
+                            nativeOps.execReduceLong2(xShapeInfoHostPointer, op.opNum(),
                                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                                     extraArgs,
                                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
@@ -1159,7 +1159,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         switch (op.getOpType()) {
             case SCALAR:
-                nativeOps.execScalar(extraPointers, op.opNum(),
+                nativeOps.execScalarTad(extraPointers, op.opNum(),
                         null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                        null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                         null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
@@ -1172,7 +1172,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         (LongPointer) devTadShapeInfoZ, (LongPointer) devTadOffsetsZ);
                 break;
             case SCALAR_BOOL:
-                nativeOps.execScalarBool(extraPointers, op.opNum(),
+                nativeOps.execScalarBoolTad(extraPointers, op.opNum(),
                         null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                         null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                         null, (LongPointer) hostYShapeInfo, y, (LongPointer) yShapeInfo,
@@ -1777,7 +1777,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (op.x() != null && op.y() != null && op.z() != null) {
             // triple arg call
-            nativeOps.execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
+            nativeOps.execRandom3(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         null, (LongPointer) hostXShapeInfo, AtomicAllocator.getInstance().getPointer(op.x(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context),
                         null, (LongPointer) hostYShapeInfo, AtomicAllocator.getInstance().getPointer(op.y(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.y().shapeInfoDataBuffer(), context),
                         null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
@@ -1785,7 +1785,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         } else if (op.x() != null && op.z() != null) {
             //double arg call
-            nativeOps.execRandom(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
+            nativeOps.execRandom2(extraZZ, op.opNum(), rng.getStatePointer(), // rng state ptr
                         null, (LongPointer) hostXShapeInfo, AtomicAllocator.getInstance().getPointer(op.x(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.x().shapeInfoDataBuffer(), context),
                         null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                         AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()),context));
@@ -2208,7 +2208,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         for (val t: op.tArgs())
             tArgs.put(cnt++, (float) t);
 
-        val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapes(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments());
+        val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapes2(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments());
 
         if (ptrptr == null)
             throw new RuntimeException();
@@ -2539,7 +2539,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
         ((CudaOpContext) context).setCudaStream(ctx.getOldStream(), ctx.getBufferReduction(), ctx.getBufferAllocation());
 
-        nativeOps.execCustomOp(null, op.opHash(), context.contextPointer());
+        nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());
 
         if (context.getOutputArrays().isEmpty())
             return new INDArray[0];
@@ -2601,7 +2601,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
-        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.constantBuffer(desiredType.toInt(), new LongPointer(values), values.length);
+        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.constantBufferLong(desiredType.toInt(), new LongPointer(values), values.length);
 
         val buffer = Nd4j.createBuffer(dbf.primary(), dbf.special(), values.length, desiredType);
         buffer.setConstant(true);
@@ -2611,7 +2611,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
-        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.constantBuffer(desiredType.toInt(), new DoublePointer(values), values.length);
+        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.constantBufferDouble(desiredType.toInt(), new DoublePointer(values), values.length);
 
         val buffer = Nd4j.createBuffer(dbf.primary(), dbf.special(), values.length, desiredType);
         buffer.setConstant(true);

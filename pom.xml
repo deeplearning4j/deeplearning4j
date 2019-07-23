@@ -288,7 +288,7 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.5.1</javacpp.version>
+        <javacpp.version>1.5.2-SNAPSHOT</javacpp.version>
         <javacpp-presets.version>1.5.1</javacpp-presets.version>
         <javacv.version>1.5.1</javacv.version>
 
@@ -298,7 +298,7 @@
         <openblas.version>0.3.6</openblas.version>
         <mkl.version>2019.4</mkl.version>
         <mkl-dnn.version>0.20</mkl-dnn.version>
-        <mkl-dnn.javacpp.version>${mkl-dnn.version}-${javacpp.version}</mkl-dnn.javacpp.version>
+        <mkl-dnn.javacpp.version>${mkl-dnn.version}-${javacpp-presets.version}</mkl-dnn.javacpp.version>
         <opencv.version>4.1.0</opencv.version>
         <ffmpeg.version>4.1.3</ffmpeg.version>
         <leptonica.version>1.78.0</leptonica.version>

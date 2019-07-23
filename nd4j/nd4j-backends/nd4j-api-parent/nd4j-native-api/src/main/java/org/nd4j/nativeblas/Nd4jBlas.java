@@ -48,7 +48,7 @@ public abstract class Nd4jBlas implements Blas {
                 if (cores > 0 && chips > 0)
                     numThreads = Math.max(1, cores / chips);
                 else
-                    numThreads = NativeOps.getCores(Runtime.getRuntime().availableProcessors());
+                    numThreads = NativeOpsHolder.getCores(Runtime.getRuntime().availableProcessors());
                 setMaxThreads(numThreads);
             }
             log.info("Number of threads used for BLAS: {}", getMaxThreads());
