@@ -479,7 +479,7 @@ void   execReduceLong(Nd4jPointer *extraPointers,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execReduceBool(Nd4jPointer *extraPointers,
+void execReduceBool2(Nd4jPointer *extraPointers,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
                             void *dX, Nd4jLong *dXShapeInfo,
@@ -1000,7 +1000,7 @@ int setDevice(int deviceId) {
 	return 1;
 }
 
-Nd4jLong getDeviceFreeMemory() {
+Nd4jLong getDeviceFreeMemoryDefault() {
     size_t memFree = 0;
     size_t memTotal = 0;
 
@@ -1820,7 +1820,7 @@ void execScalarBool(Nd4jPointer *extraPointers,
 }
 
 ////////////////////////////////////////////////////////////////////////
-void execScalarBool(Nd4jPointer *extraPointers,
+void execScalarBoolTad(Nd4jPointer *extraPointers,
 						   int opNum,
 						   void *hX, Nd4jLong *hXShapeInfo,
 						   void *dX, Nd4jLong *dXShapeInfo,
@@ -3247,11 +3247,11 @@ void deleteTadPack(Nd4jPointer ptr) {
     delete buffer;
 }
 
-nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, Nd4jLong *data, int length) {
+nd4j::ConstantDataBuffer* constantBufferLong(nd4j::DataType dtype, Nd4jLong *data, int length) {
     return nd4j::ConstantHelper::getInstance()->constantBuffer(ConstantDescriptor(data, length), dtype);
 }
 
-nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, double *data, int length) {
+nd4j::ConstantDataBuffer* constantBufferDouble(nd4j::DataType dtype, double *data, int length) {
     return nd4j::ConstantHelper::getInstance()->constantBuffer(ConstantDescriptor(data, length), dtype);
 }
 
