@@ -2,7 +2,6 @@ package org.datavec.audio.mfcc;
 
 
 import org.datavec.audio.dsp.FastFourierTransform;
-import org.datavec.audio.mfcc.EndPointDetection;
 
 /**
  * https://arxiv.org/ftp/arxiv/papers/1003/1003.4083.pdf
@@ -10,9 +9,7 @@ import org.datavec.audio.mfcc.EndPointDetection;
  * @author wangfeng
  */
 public class AudioFeatures {
-    private double sampleRate = 0;
-    private double framerate = 0;
-    private double samplePercentageFrame = 0;
+
 
     //0: endpoint-detection
     public double[] endPointDetection(double[] amplitudes, int samplingRate) {
@@ -164,7 +161,6 @@ public class AudioFeatures {
                 sum += mfccFeature[i][j];// ith coeff of all frame
             }
             mean = sum / mfccFeature[i].length;
-            // subtract
             for (int j = 0; j < mfccFeature[i].length; j++) {
                 mfccFeature[i][j] = mfccFeature[i][j] - mean;
             }
