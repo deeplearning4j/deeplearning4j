@@ -29,9 +29,6 @@
 #include <ops/declarable/OpDescriptor.h>
 #include <dll.h>
 
-using namespace nd4j::ops;
-using namespace nd4j::graph;
-
 namespace nd4j {
     class ND4J_EXPORT OpTracker {
     private:
@@ -40,7 +37,7 @@ namespace nd4j {
         std::string _export;
 
         int _operations = 0;
-        std::map<OpType, std::vector<OpDescriptor>> _map;
+        std::map<nd4j::graph::OpType, std::vector<nd4j::ops::OpDescriptor>> _map;
 
         OpTracker() = default;
         ~OpTracker() = default;
@@ -53,7 +50,7 @@ namespace nd4j {
         int totalGroups();
         int totalOperations();
 
-        void storeOperation(nd4j::graph::OpType opType, const OpDescriptor& descriptor);
+        void storeOperation(nd4j::graph::OpType opType, const nd4j::ops::OpDescriptor& descriptor);
         void storeOperation(nd4j::graph::OpType opType, const char* opName, const Nd4jLong opNum);
 
         const char* exportOperations();
