@@ -1107,12 +1107,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         List<INDArray> out = new ArrayList<>();
         out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Probably unnecessary usually
 
+        boolean traceLog = log.isTraceEnabled();
+
         for( int i=0; i<=layerIndex; i++ ){
             try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
                 if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
                     input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
                     //Validation: Exception if invalid (bad preprocessor implementation)
                     validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (training)");
+                }
+
+                if(traceLog){
+                    log.trace("About to forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
                 if(fwdPassType == FwdPassType.STANDARD){
@@ -1142,6 +1148,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 validateArrayWorkspaces(workspaceMgr, layers[i].input(), ArrayType.INPUT, i, false, "Feed forward to layer (training)");
 
                 out.add(input);
+
+                if(traceLog){
+                    log.trace("Completed forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
+                }
             }
         }
 
@@ -1228,9 +1238,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         MemoryWorkspace wsActCloseNext = null;
         MemoryWorkspace temp = null;
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        boolean traceLog = log.isTraceEnabled();
+
         try {
             for (int i = 0; i <= layerIndex; i++) {
                 LayerWorkspaceMgr mgr = (i % 2 == 0 ? mgrEven : mgrOdd);
+
+                if(traceLog){
+                    log.trace("About to forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
+                }
 
                 //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
                 //Hence: put inputs in working memory
@@ -1298,6 +1315,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     }
                     wsActCloseNext = temp;
                     temp = null;
+                }
+
+                if(traceLog){
+                    log.trace("Completed forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
                 //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
@@ -1846,10 +1867,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         MemoryWorkspace wsActGradCloseNext = null;
         MemoryWorkspace wsActGradTemp = null;
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        boolean traceLog = log.isTraceEnabled();
+
         try {
             for (int i = layers.length - 1; i >= 0; i--) {
                 if (layers[i] instanceof FrozenLayer) {
                     break;
+                }
+
+                if(traceLog){
+                    log.trace("About to backprop: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
                 LayerWorkspaceMgr workspaceMgr = (i % 2 == 0 ? mgrEven : mgrOdd);
@@ -1926,6 +1954,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     }
                     wsActGradCloseNext = wsActGradTemp;
                     wsActGradTemp = null;
+                }
+
+                if(traceLog){
+                    log.trace("Completed backprop: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
             }
         } finally {
