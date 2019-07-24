@@ -113,6 +113,14 @@ public class Nd4jCudaPresets implements InfoMapper {
         infoMap.put(new Info("thread_local", "ND4J_EXPORT", "INLINEDEF", "CUBLASWINAPI", "FORCEINLINE",
                              "_CUDA_H", "_CUDA_D", "_CUDA_G", "_CUDA_HD", "LIBND4J_ALL_OPS", "NOT_EXCLUDED").cppTypes().annotations())
                 .put(new Info("NativeOps.h").objectify())
+                .put(new Info("OpaqueTadPack").pointerTypes("OpaqueTadPack"))
+                .put(new Info("OpaqueResultWrapper").pointerTypes("OpaqueResultWrapper"))
+                .put(new Info("OpaqueShapeList").pointerTypes("OpaqueShapeList"))
+                .put(new Info("OpaqueVariableSet").pointerTypes("OpaqueVariableSet"))
+                .put(new Info("OpaqueVariable").pointerTypes("OpaqueVariable"))
+                .put(new Info("OpaqueConstantDataBuffer").pointerTypes("OpaqueConstantDataBuffer"))
+                .put(new Info("OpaqueContext").pointerTypes("OpaqueContext"))
+                .put(new Info("OpaqueRandomGenerator").pointerTypes("OpaqueRandomGenerator"))
                 .put(new Info("const char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",
                         "@Cast(\"char*\") BytePointer"))
                 .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") BytePointer",

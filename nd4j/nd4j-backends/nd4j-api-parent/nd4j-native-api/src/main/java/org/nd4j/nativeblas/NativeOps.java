@@ -697,7 +697,14 @@ public interface NativeOps {
 
     void setGridLimit(int gridSize);
 
-    Pointer tadOnlyShapeInfo(@Cast("Nd4jLong *") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+    OpaqueTadPack tadOnlyShapeInfo(LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+
+    LongPointer getPrimaryShapeInfo(OpaqueTadPack pack);
+    LongPointer getPrimaryOffsets(OpaqueTadPack pack);
+    LongPointer getSpecialShapeInfo(OpaqueTadPack pack);
+    LongPointer getSpecialOffsets(OpaqueTadPack pack);
+    long getNumberOfTads(OpaqueTadPack pack);
+    int getShapeInfoLength(OpaqueTadPack pack);
 
     ///////////////
 
@@ -1037,7 +1044,10 @@ public interface NativeOps {
 
     void munmapFile(PointerPointer extraPointers, LongPointer ptrMap, long length);
 
-    ResultWrapperAbstraction executeFlatGraph(PointerPointer extraPointers, Pointer flatBufferPointer);
+    OpaqueResultWrapper executeFlatGraph(PointerPointer extraPointers, Pointer flatBufferPointer);
+
+    long getResultWrapperSize(OpaqueResultWrapper ptr);
+    Pointer getResultWrapperPointer(OpaqueResultWrapper ptr);
 
     String getAllCustomOps();
 
@@ -1047,13 +1057,25 @@ public interface NativeOps {
 
     int execCustomOp(PointerPointer extraPointers, long opHashCode, PointerPointer inputBuffers, PointerPointer inputShapes, int numInput, PointerPointer outputBuffers, PointerPointer outputShapes, int numOutputs, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs, boolean isInplace);
 
-    Pointer calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
+    OpaqueShapeList calculateOutputShapes(PointerPointer extraPointers, long hash, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs);
 
-    Pointer calculateOutputShapes2(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs);
+    OpaqueShapeList calculateOutputShapes2(PointerPointer extraPointers, long hash, PointerPointer inputBunffers, PointerPointer inputShapes, int numInputShapes, DoublePointer tArgs, int numTArgs, @Cast("Nd4jLong *") LongPointer iArgs, int numIArgs, @Cast("bool *") BooleanPointer bArgs, int numBArgs);
+
+    long getShapeListSize(OpaqueShapeList list);
+    LongPointer getShape(OpaqueShapeList list, long i);
 
     int registerGraph(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
 
-    Pointer executeStoredGraph(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    OpaqueVariableSet executeStoredGraph(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+
+    long getVariableSetSize(OpaqueVariableSet set);
+    int getVariableSetStatus(OpaqueVariableSet set);
+    OpaqueVariable getVariable(OpaqueVariableSet set, long i);
+    int getVariableId(OpaqueVariable variable);
+    int getVariableIndex(OpaqueVariable variable);
+    String getVariableName(OpaqueVariable variable);
+    LongPointer getVariableShape(OpaqueVariable variable);
+    Pointer getVariableBuffer(OpaqueVariable variable);
 
     void deleteResultWrapper(Pointer ptr);
 
@@ -1071,7 +1093,7 @@ public interface NativeOps {
 
     void deleteNPArrayMap(Pointer pointer);
 
-    void deleteVariablesSet(Pointer pointer);
+    void deleteVariablesSet(OpaqueVariableSet pointer);
 
     // GraphState creation
     Pointer getGraphState(long id);
@@ -1092,6 +1114,8 @@ public interface NativeOps {
 
     //void fillUtf8String(PointerPointer extraPointers, String[] string, int numStrings, Pointer buffer);
     Pointer createUtf8String(PointerPointer extraPointers, String string, int length);
+    long getUtf8StringLength(PointerPointer extraPointers, Pointer ptr);
+    BytePointer getUtf8StringBuffer(PointerPointer extraPointers, Pointer ptr);
     void deleteUtf8String(PointerPointer extraPointers, Pointer ptr);
 
 
@@ -1112,11 +1136,35 @@ public interface NativeOps {
      */
     int dataTypeFromNpyHeader(Pointer numpyHeader);
 
-    Pointer shapeBuffer(int rank, @Cast("Nd4jLong *") LongPointer shape, @Cast("Nd4jLong *") LongPointer strides, int dtype, char order, long ews, boolean empty);
+    OpaqueConstantDataBuffer shapeBuffer(int rank, LongPointer shape, LongPointer strides, int dtype, char order, long ews, boolean empty);
 
-    Pointer constantBufferDouble(int dtype, DoublePointer data, int length);
+    OpaqueConstantDataBuffer constantBufferDouble(int dtype, DoublePointer data, int length);
 
-    Pointer constantBufferLong(int dtype, @Cast("Nd4jLong *") LongPointer data, int length);
+    OpaqueConstantDataBuffer constantBufferLong(int dtype, LongPointer data, int length);
+
+    Pointer getConstantDataBufferPrimary(OpaqueConstantDataBuffer dbf);
+    Pointer getConstantDataBufferSpecial(OpaqueConstantDataBuffer dbf);
+    long getConstantDataBufferLength(OpaqueConstantDataBuffer dbf);
+    long getConstantDataBufferSizeOf(OpaqueConstantDataBuffer dbf);
+
+    OpaqueContext createGraphContext(int nodeId);
+    OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext ptr);
+    void markGraphContextInplace(OpaqueContext ptr, boolean reallyInplace);
+    void setGraphContextCudaContext(OpaqueContext ptr, Pointer stream, Pointer reductionPointer, Pointer allocationPointer);
+    void setGraphContextInputArray(OpaqueContext ptr, int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+    void setGraphContextOutputArray(OpaqueContext ptr, int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
+    void setGraphContextTArguments(OpaqueContext ptr, DoublePointer arguments, int numberOfArguments);
+    void setGraphContextIArguments(OpaqueContext ptr, LongPointer arguments, int numberOfArguments);
+    void setGraphContextBArguments(OpaqueContext ptr, BooleanPointer arguments, int numberOfArguments);
+    void deleteGraphContext(OpaqueContext ptr);
+
+    OpaqueRandomGenerator createRandomGenerator(long rootSeed, long nodeSeed);
+    long getRandomGeneratorRootState(OpaqueRandomGenerator ptr);
+    long getRandomGeneratorNodeState(OpaqueRandomGenerator ptr);
+    void setRandomGeneratorStates(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long rootSeed/*=0*/, @Cast("Nd4jLong") long nodeSeed/*=0*/);
+    int getRandomGeneratorRelativeInt(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
+    long getRandomGeneratorRelativeLong(OpaqueRandomGenerator ptr, @Cast("Nd4jLong") long index);
+    void deleteRandomGenerator(OpaqueRandomGenerator ptr);
 
     String runLightBenchmarkSuit(boolean printOut);
 

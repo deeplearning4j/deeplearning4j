@@ -38,8 +38,9 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.ResultWrapperAbstraction;
+import org.nd4j.nativeblas.OpaqueResultWrapper;
 
 import java.io.File;
 import java.nio.ByteBuffer;
@@ -100,11 +101,12 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         log.info("Buffer length: {}", buffer.limit());
 
-        val res  = NativeOpsHolder.getInstance().getDeviceNativeOps().executeFlatGraph(null, bPtr);
+        NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+        OpaqueResultWrapper res = nativeOps.executeFlatGraph(null, bPtr);
         if (res == null)
             throw new ND4JIllegalStateException("Graph execution failed");
 
-        PagedPointer pagedPointer = new PagedPointer(res.pointer(),res.size());
+        PagedPointer pagedPointer = new PagedPointer(nativeOps.getResultWrapperPointer(res), nativeOps.getResultWrapperSize(res));
         FlatResult fr = FlatResult.getRootAsFlatResult(pagedPointer.asBytePointer().asByteBuffer());
 
         log.info("VarMap: {}", sd.variableMap());
@@ -132,7 +134,7 @@ public class NativeGraphExecutioner implements GraphExecutioner {
         }
 
         // now we need to release native memory
-        NativeOpsHolder.getInstance().getDeviceNativeOps().deleteResultWrapper(res);
+        nativeOps.deleteResultWrapper(res);
 
         return results;
     }

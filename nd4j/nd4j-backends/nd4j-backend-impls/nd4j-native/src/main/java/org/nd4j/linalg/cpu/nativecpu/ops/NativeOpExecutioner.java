@@ -70,9 +70,13 @@ import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jCpu;
+import org.nd4j.nativeblas.OpaqueConstantDataBuffer;
+import org.nd4j.nativeblas.OpaqueShapeList;
+import org.nd4j.nativeblas.OpaqueTadPack;
+import org.nd4j.nativeblas.OpaqueVariable;
+import org.nd4j.nativeblas.OpaqueVariableSet;
 
 import java.util.*;
-
 
 /**
  *
@@ -1641,23 +1645,22 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         }
 
         val name = op.opName();
-        val context = buildContext();
+        try (val context = buildContext()) {
 
-        context.markInplace(op.isInplaceCall());
+            context.markInplace(op.isInplaceCall());
 
-        // transferring rng state
-        context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
+            // transferring rng state
+            context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
 
-        //transferring input/output arrays
-        context.setInputArrays(op.inputArguments());
-        context.setOutputArrays(op.outputArguments());
+            //transferring input/output arrays
+            context.setInputArrays(op.inputArguments());
+            context.setOutputArrays(op.outputArguments());
 
-        // transferring static args
-        context.setBArguments(op.bArgs());
-        context.setIArguments(op.iArgs());
-        context.setTArguments(op.tArgs());
+            // transferring static args
+            context.setBArguments(op.bArgs());
+            context.setIArguments(op.iArgs());
+            context.setTArguments(op.tArgs());
 
-        try {
             val result = exec(op, context);
             val states = context.getRngStates();
 
@@ -1860,9 +1863,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             for (val t: tArgs1)
                 tArgs.put(cnt++, t);
 
-            Nd4jCpu.ShapeList ptrptr;
+            OpaqueShapeList ptrptr;
             try {
-                ptrptr = (Nd4jCpu.ShapeList) loop.calculateOutputShapes2(null,
+                ptrptr = loop.calculateOutputShapes2(null,
                         hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
                         op.numTArguments(), iArgs, op.numIArguments(), bArgs, op.numBArguments());
             } catch (Throwable t){
@@ -1891,8 +1894,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             if (ptrptr == null)
                 throw new RuntimeException();
 
-            for (int e = 0; e < ptrptr.size(); e++ )
-                result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asLongPointer()));
+            for (int e = 0; e < loop.getShapeListSize(ptrptr); e++ )
+                result.add(getShapeFromPointer(new PagedPointer(loop.getShape(ptrptr, e)).asLongPointer()));
 
 
             loop.deleteShapeList(ptrptr);
@@ -1947,19 +1950,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val newMap = new LinkedHashMap<String, INDArray>();
 
-            val result = (Nd4jCpu.VariablesSet) loop.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+            OpaqueVariableSet result = loop.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
-            val status = OpStatus.byNumber(result.status());
+            OpStatus status = OpStatus.byNumber(loop.getVariableSetStatus(result));
 
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
 
-            for (int e = 0; e < result.size(); e++) {
-                val var = result.at(e);
-                val nodeId = var.id();
-                val index = var.index();
-                val shapeInfo = var.getNDArray().shapeInfo();
-                val buffer = var.getNDArray().buffer();
+            for (int e = 0; e < loop.getVariableSetSize(result); e++) {
+                OpaqueVariable var = loop.getVariable(result, e);
+                int nodeId = loop.getVariableId(var);
+                int index = loop.getVariableIndex(var);
+                LongPointer shapeInfo = loop.getVariableShape(var);
+                Pointer buffer = loop.getVariableBuffer(var);
 
                 val rank = (int) shapeInfo.get(0);
                 val jshape = new long[rank * 2 + 4];
@@ -1979,7 +1982,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, Shape.lengthOf(shapeOf) * Nd4j.sizeOfDataType(array.dataType()), MemcpyDirection.HOST_TO_HOST);
 
                 //newMap.put(keySet.get(nodeId), array);
-                val nodeName = var.getName().getString();
+                String nodeName = loop.getVariableName(var);
                 newMap.put(nodeName, array);
             }
 
@@ -2160,17 +2163,17 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
-        val dbf = (Nd4jCpu.ConstantDataBuffer) loop.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
+        OpaqueConstantDataBuffer dbf = loop.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
 
-        return new LongBuffer(dbf.primary(), Shape.shapeInfoLength(shape.length));
+        return new LongBuffer(loop.getConstantDataBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
     }
 
     @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
-        val pack = (Nd4jCpu.TadPack) loop.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new IntPointer(dimension), dimension.length);
+        OpaqueTadPack pack = loop.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new IntPointer(dimension), dimension.length);
 
-        val tadShape = new LongBuffer(pack.primaryShapeInfo(), pack.shapeInfoLength());
-        val tadOffsets = new LongBuffer(pack.primaryOffsets(), pack.numberOfTads());
+        val tadShape = new LongBuffer(loop.getPrimaryShapeInfo(pack), loop.getShapeInfoLength(pack));
+        val tadOffsets = new LongBuffer(loop.getPrimaryOffsets(pack), loop.getNumberOfTads(pack));
 
         return new TadPack(tadShape, tadOffsets);
     }
