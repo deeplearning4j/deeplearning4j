@@ -25,6 +25,7 @@
 #include <ops/declarable/CustomOperations.h>
 
 using namespace nd4j;
+using namespace nd4j::ops;
 using namespace nd4j::graph;
 
 class OpTrackerTests : public testing::Test {

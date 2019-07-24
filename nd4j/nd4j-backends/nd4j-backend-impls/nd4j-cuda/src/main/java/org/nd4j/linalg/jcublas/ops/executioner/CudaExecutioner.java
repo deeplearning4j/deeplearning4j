@@ -72,6 +72,11 @@ import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 import org.nd4j.nativeblas.Nd4jCuda;
+import org.nd4j.nativeblas.OpaqueConstantDataBuffer;
+import org.nd4j.nativeblas.OpaqueShapeList;
+import org.nd4j.nativeblas.OpaqueTadPack;
+import org.nd4j.nativeblas.OpaqueVariable;
+import org.nd4j.nativeblas.OpaqueVariableSet;
 
 import java.util.*;
 
@@ -2208,13 +2213,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         for (val t: op.tArgs())
             tArgs.put(cnt++, (float) t);
 
-        val ptrptr = (Nd4jCuda.ShapeList) nativeOps.calculateOutputShapes2(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments());
+        OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments());
 
         if (ptrptr == null)
             throw new RuntimeException();
 
-        for (int e = 0; e < ptrptr.size(); e++ )
-            result.add(getShapeFromPointer(new PagedPointer(ptrptr.at(e)).asLongPointer()));
+        for (int e = 0; e < nativeOps.getShapeListSize(ptrptr); e++ )
+            result.add(getShapeFromPointer(new PagedPointer(nativeOps.getShape(ptrptr, e)).asLongPointer()));
 
         nativeOps.deleteShapeList(ptrptr);
 
@@ -2251,28 +2256,32 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
-        val context = (CudaOpContext) buildContext();
-        context.markInplace(op.isInplaceCall());
+        val name = op.opName();
+        try (val context = (CudaOpContext) buildContext()) {
+            context.markInplace(op.isInplaceCall());
 
-        // transferring rng state
-        context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
+            // transferring rng state
+            context.setRngStates(Nd4j.getRandom().rootState(), Nd4j.getRandom().nodeState());
 
-        //transferring input/output arrays
-        context.setInputArrays(op.inputArguments());
-        context.setOutputArrays(op.outputArguments());
+            //transferring input/output arrays
+            context.setInputArrays(op.inputArguments());
+            context.setOutputArrays(op.outputArguments());
 
-        // transferring static args
-        context.setBArguments(op.bArgs());
-        context.setIArguments(op.iArgs());
-        context.setTArguments(op.tArgs());
+            // transferring static args
+            context.setBArguments(op.bArgs());
+            context.setIArguments(op.iArgs());
+            context.setTArguments(op.tArgs());
 
-        val result = exec(op, context);
-        val states = context.getRngStates();
+            val result = exec(op, context);
+            val states = context.getRngStates();
 
-        // pulling states back
-        Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
+            // pulling states back
+            Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
 
-        return result;
+            return result;
+        } catch (Exception e) {
+            throw new RuntimeException("Op [" + name + "] execution failed", e);
+        }
 
         /*
         long st = profilingConfigurableHookIn(op);
@@ -2418,19 +2427,19 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val newMap = new LinkedHashMap<String, INDArray>();
 
-        val result = (Nd4jCuda.VariablesSet) nativeOps.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+        OpaqueVariableSet result = nativeOps.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
-        val status = OpStatus.byNumber(result.status());
+        OpStatus status = OpStatus.byNumber(nativeOps.getVariableSetStatus(result));
 
         if (status != OpStatus.ND4J_STATUS_OK)
             throw new ND4JIllegalStateException("Op execution failed: " + status);
 
-        for (int e = 0; e < result.size(); e++) {
-            val var = result.at(e);
-            val nodeId = var.id();
-            val index = var.index();
-            val shapeInfo = var.getNDArray().shapeInfo();
-            val buffer = var.getNDArray().buffer();
+        for (int e = 0; e < nativeOps.getVariableSetSize(result); e++) {
+            OpaqueVariable var = nativeOps.getVariable(result, e);
+            int nodeId = nativeOps.getVariableId(var);
+            int index = nativeOps.getVariableIndex(var);
+            LongPointer shapeInfo = nativeOps.getVariableShape(var);
+            Pointer buffer = nativeOps.getVariableBuffer(var);
 
             val rank = (int) shapeInfo.get(0);
             val jshape = new long[rank * 2 + 4];
@@ -2446,7 +2455,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             Pointer.memcpy(AtomicAllocator.getInstance().getHostPointer(array), buffer, ArrayUtil.prod(shapeOf) * Nd4j.sizeOfDataType());
             AtomicAllocator.getInstance().getAllocationPoint(array).tickHostWrite();
 
-            val nodeName = var.getName().getString();
+            String nodeName = nativeOps.getVariableName(var);
             newMap.put(nodeName, array);
         }
 
@@ -2584,9 +2593,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
-        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
+        OpaqueConstantDataBuffer dbf = nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
 
-        val result = new CudaLongDataBuffer(dbf.primary(), dbf.special(), Shape.shapeInfoLength(shape.length));
+        val result = new CudaLongDataBuffer(nativeOps.getConstantDataBufferPrimary(dbf), nativeOps.getConstantDataBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
         nativeOps.deleteShapeBuffer(dbf);
 
@@ -2595,10 +2604,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
-        val pack = (Nd4jCuda.TadPack) nativeOps.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new IntPointer(dimension), dimension.length);
+        OpaqueTadPack pack = nativeOps.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new IntPointer(dimension), dimension.length);
 
-        val tadShape = new CudaLongDataBuffer(pack.primaryShapeInfo(), pack.specialShapeInfo(), pack.shapeInfoLength());
-        val tadOffsets = new CudaLongDataBuffer(pack.primaryOffsets(), pack.specialOffsets(), pack.numberOfTads());
+        val tadShape = new CudaLongDataBuffer(nativeOps.getPrimaryShapeInfo(pack), nativeOps.getSpecialShapeInfo(pack), nativeOps.getShapeInfoLength(pack));
+        val tadOffsets = new CudaLongDataBuffer(nativeOps.getPrimaryOffsets(pack), nativeOps.getSpecialOffsets(pack), nativeOps.getNumberOfTads(pack));
 
         nativeOps.deleteTadPack(pack);
 
@@ -2607,9 +2616,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
-        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.constantBufferLong(desiredType.toInt(), new LongPointer(values), values.length);
+        OpaqueConstantDataBuffer dbf = nativeOps.constantBufferLong(desiredType.toInt(), new LongPointer(values), values.length);
 
-        val buffer = Nd4j.createBuffer(dbf.primary(), dbf.special(), values.length, desiredType);
+        val buffer = Nd4j.createBuffer(nativeOps.getConstantDataBufferPrimary(dbf), nativeOps.getConstantDataBufferSpecial(dbf), values.length, desiredType);
         buffer.setConstant(true);
 
         return buffer;
@@ -2617,9 +2626,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
-        val dbf = (Nd4jCuda.ConstantDataBuffer) nativeOps.constantBufferDouble(desiredType.toInt(), new DoublePointer(values), values.length);
+        OpaqueConstantDataBuffer dbf = nativeOps.constantBufferDouble(desiredType.toInt(), new DoublePointer(values), values.length);
 
-        val buffer = Nd4j.createBuffer(dbf.primary(), dbf.special(), values.length, desiredType);
+        val buffer = Nd4j.createBuffer(nativeOps.getConstantDataBufferPrimary(dbf), nativeOps.getConstantDataBufferSpecial(dbf), values.length, desiredType);
         buffer.setConstant(true);
 
         return buffer;

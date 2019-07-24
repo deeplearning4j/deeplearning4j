@@ -882,6 +882,8 @@ ND4J_EXPORT void enableVerboseMode(bool reallyEnable);
  */
 ND4J_EXPORT void setGridLimit(int gridSize);
 
+typedef nd4j::TadPack OpaqueTadPack;
+
 /**
  *
  * @param xShapeInfo
@@ -890,9 +892,18 @@ ND4J_EXPORT void setGridLimit(int gridSize);
  * @param targetBuffer
  * @param offsetsBuffer
  */
-ND4J_EXPORT nd4j::TadPack* tadOnlyShapeInfo(Nd4jLong *xShapeInfo,
+ND4J_EXPORT OpaqueTadPack* tadOnlyShapeInfo(Nd4jLong *xShapeInfo,
                       int *dimension,
                       int dimensionLength);
+
+ND4J_EXPORT Nd4jLong* getPrimaryShapeInfo(OpaqueTadPack* pack);
+ND4J_EXPORT Nd4jLong* getPrimaryOffsets(OpaqueTadPack* pack);
+ND4J_EXPORT Nd4jLong* getSpecialShapeInfo(OpaqueTadPack* pack);
+ND4J_EXPORT Nd4jLong* getSpecialOffsets(OpaqueTadPack* pack);
+ND4J_EXPORT Nd4jLong getNumberOfTads(OpaqueTadPack* pack);
+ND4J_EXPORT int getShapeInfoLength(OpaqueTadPack* pack);
+
+ND4J_EXPORT void deleteTadPack(OpaqueTadPack* ptr);
 
 /*
  * PullRow special op
@@ -1639,10 +1650,13 @@ ND4J_EXPORT Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName,
 
 ND4J_EXPORT void munmapFile(Nd4jPointer *extraPointers, Nd4jLong* ptrMap, Nd4jLong length);
 
+typedef nd4j::graph::ResultWrapper OpaqueResultWrapper;
 
 // flatbuffers execution
-ND4J_EXPORT nd4j::graph::ResultWrapper* executeFlatGraph(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
+ND4J_EXPORT OpaqueResultWrapper* executeFlatGraph(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer);
 
+ND4J_EXPORT Nd4jLong getResultWrapperSize(OpaqueResultWrapper* ptr);
+ND4J_EXPORT Nd4jPointer getResultWrapperPointer(OpaqueResultWrapper* ptr);
 
 ND4J_EXPORT const char* getAllCustomOps();
 
@@ -1652,14 +1666,31 @@ ND4J_EXPORT const char* getAllOperations();
 ND4J_EXPORT int execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace);
 ND4J_EXPORT int execCustomOp2(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer opContext);
 
-ND4J_EXPORT nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs);
-ND4J_EXPORT nd4j::ShapeList* calculateOutputShapes2(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool *bArgs, int numBArgs);
+typedef nd4j::ShapeList OpaqueShapeList;
+
+ND4J_EXPORT OpaqueShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs);
+ND4J_EXPORT OpaqueShapeList* calculateOutputShapes2(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool *bArgs, int numBArgs);
+
+ND4J_EXPORT Nd4jLong getShapeListSize(OpaqueShapeList* list);
+ND4J_EXPORT Nd4jLong* getShape(OpaqueShapeList* list, Nd4jLong i);
 
 ND4J_EXPORT void deleteShapeList(Nd4jPointer shapeList);
 
 ND4J_EXPORT int registerGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer flatBufferPointer);
 
-ND4J_EXPORT nd4j::graph::VariablesSet *executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs);
+typedef nd4j::graph::VariablesSet OpaqueVariableSet;
+typedef nd4j::graph::Variable OpaqueVariable;
+
+ND4J_EXPORT OpaqueVariableSet *executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs);
+
+ND4J_EXPORT Nd4jLong getVariableSetSize(OpaqueVariableSet* set);
+ND4J_EXPORT Nd4jStatus getVariableSetStatus(OpaqueVariableSet* set);
+ND4J_EXPORT OpaqueVariable* getVariable(OpaqueVariableSet* set, Nd4jLong i);
+ND4J_EXPORT int getVariableId(OpaqueVariable* variable);
+ND4J_EXPORT int getVariableIndex(OpaqueVariable* variable);
+ND4J_EXPORT const char* getVariableName(OpaqueVariable* variable);
+ND4J_EXPORT Nd4jLong* getVariableShape(OpaqueVariable* variable);
+ND4J_EXPORT void* getVariableBuffer(OpaqueVariable* variable);
 
 ND4J_EXPORT int unregisterGraph(Nd4jPointer *extraPointers, Nd4jLong graphId);
 
@@ -1668,7 +1699,7 @@ ND4J_EXPORT void deleteIntArray(Nd4jPointer pointer);
 ND4J_EXPORT void deleteLongArray(Nd4jPointer pointer);
 ND4J_EXPORT void deletePointerArray(Nd4jPointer pointer);
 
-ND4J_EXPORT void deleteVariablesSet(Nd4jPointer pointer);
+ND4J_EXPORT void deleteVariablesSet(OpaqueVariableSet pointer);
 
 // GraphState creation
 ND4J_EXPORT Nd4jPointer getGraphState(Nd4jLong id);
@@ -1684,7 +1715,9 @@ ND4J_EXPORT Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, Nd4jPoi
 
 //void fillUtf8String(Nd4jPointer *extraPointers, const char **string, int numStrings, Nd4jPointer buffer);
 ND4J_EXPORT Nd4jPointer createUtf8String(Nd4jPointer *extraPointers, const char *string, int length);
-void deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr);
+ND4J_EXPORT Nd4jLong getUtf8StringLength(Nd4jPointer *extraPointers, Nd4jPointer ptr);
+ND4J_EXPORT char* getUtf8StringBuffer(Nd4jPointer *extraPointers, Nd4jPointer ptr);
+ND4J_EXPORT void deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr);
 
 ND4J_EXPORT void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
                   void* hX, Nd4jLong* hXShapeInfo, Nd4jLong* hXOffsets,
@@ -1693,18 +1726,45 @@ ND4J_EXPORT void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOf
                   void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
                   int* hIindexes, int* dIindexes);
 
-ND4J_EXPORT void deleteShapeBuffer(Nd4jPointer ptr);
-ND4J_EXPORT void deleteTadPack(Nd4jPointer ptr);
-
 ND4J_EXPORT void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo);
 
 
-ND4J_EXPORT nd4j::ConstantDataBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, nd4j::DataType dtype, char order, Nd4jLong ews, bool empty);
+typedef nd4j::ConstantDataBuffer OpaqueConstantDataBuffer;
 
-ND4J_EXPORT nd4j::ConstantDataBuffer* constantBufferLong(nd4j::DataType dtype, Nd4jLong *data, int length);
-ND4J_EXPORT nd4j::ConstantDataBuffer* constantBufferDouble(nd4j::DataType dtype, double *data, int length);
-ND4J_EXPORT nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, nd4j::ConstantDescriptor *descriptor);
+ND4J_EXPORT OpaqueConstantDataBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, nd4j::DataType dtype, char order, Nd4jLong ews, bool empty);
 
+ND4J_EXPORT OpaqueConstantDataBuffer* constantBufferLong(nd4j::DataType dtype, Nd4jLong *data, int length);
+ND4J_EXPORT OpaqueConstantDataBuffer* constantBufferDouble(nd4j::DataType dtype, double *data, int length);
+ND4J_EXPORT OpaqueConstantDataBuffer* constantBuffer(nd4j::DataType dtype, nd4j::ConstantDescriptor *descriptor);
+
+ND4J_EXPORT Nd4jPointer getConstantDataBufferPrimary(OpaqueConstantDataBuffer* dbf);
+ND4J_EXPORT Nd4jPointer getConstantDataBufferSpecial(OpaqueConstantDataBuffer* dbf);
+ND4J_EXPORT Nd4jLong getConstantDataBufferLength(OpaqueConstantDataBuffer* dbf);
+ND4J_EXPORT Nd4jLong getConstantDataBufferSizeOf(OpaqueConstantDataBuffer* dbf);
+
+ND4J_EXPORT void deleteShapeBuffer(OpaqueConstantDataBuffer* ptr);
+
+typedef nd4j::graph::Context OpaqueContext;
+typedef nd4j::graph::RandomGenerator OpaqueRandomGenerator;
+
+ND4J_EXPORT OpaqueContext* createGraphContext(int nodeId);
+ND4J_EXPORT OpaqueRandomGenerator* getGraphContextRandomGenerator(OpaqueContext* ptr);
+ND4J_EXPORT void markGraphContextInplace(OpaqueContext* ptr, bool reallyInplace);
+ND4J_EXPORT void setGraphContextCudaContext(OpaqueContext* ptr, void *stream, void *reductionPointer, void *allocationPointer);
+ND4J_EXPORT void setGraphContextInputArray(OpaqueContext* ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+ND4J_EXPORT void setGraphContextOutputArray(OpaqueContext* ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+ND4J_EXPORT void setGraphContextTArguments(OpaqueContext* ptr, double *arguments, int numberOfArguments);
+ND4J_EXPORT void setGraphContextIArguments(OpaqueContext* ptr, Nd4jLong *arguments, int numberOfArguments);
+ND4J_EXPORT void setGraphContextBArguments(OpaqueContext* ptr, bool *arguments, int numberOfArguments);
+ND4J_EXPORT void deleteGraphContext(OpaqueContext* ptr);
+
+ND4J_EXPORT OpaqueRandomGenerator* createRandomGenerator(Nd4jLong rootSeed = 0, Nd4jLong nodeSeed = 0);
+ND4J_EXPORT Nd4jLong getRandomGeneratorRootState(OpaqueRandomGenerator* ptr);
+ND4J_EXPORT Nd4jLong getRandomGeneratorNodeState(OpaqueRandomGenerator* ptr);
+ND4J_EXPORT void setRandomGeneratorStates(OpaqueRandomGenerator* ptr, Nd4jLong rootSeed = 0, Nd4jLong nodeSeed = 0);
+ND4J_EXPORT int getRandomGeneratorRelativeInt(OpaqueRandomGenerator* ptr, Nd4jLong index);
+ND4J_EXPORT Nd4jLong getRandomGeneratorRelativeLong(OpaqueRandomGenerator* ptr, Nd4jLong index);
+ND4J_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator* ptr);
 
 ND4J_EXPORT const char* runLightBenchmarkSuit(bool printOut);
 ND4J_EXPORT const char* runFullBenchmarkSuit(bool printOut);

@@ -1328,6 +1328,25 @@ nd4j::TadPack* tadOnlyShapeInfo(Nd4jLong *hXShapeInfo, int *dimension, int dimen
     return pack;
 }
 
+Nd4jLong* getPrimaryShapeInfo(nd4j::TadPack* pack) {
+    return pack->primaryShapeInfo();
+}
+Nd4jLong* getPrimaryOffsets(nd4j::TadPack* pack) {
+    return pack->primaryOffsets();
+}
+Nd4jLong* getSpecialShapeInfo(nd4j::TadPack* pack) {
+    return pack->specialShapeInfo();
+}
+Nd4jLong* getSpecialOffsets(nd4j::TadPack* pack) {
+    return pack->specialOffsets();
+}
+Nd4jLong getNumberOfTads(nd4j::TadPack* pack) {
+    return pack->numberOfTads();
+}
+int getShapeInfoLength(nd4j::TadPack* pack) {
+    return pack->shapeInfoLength();
+}
+
 int memcpyConstantAsync(Nd4jLong dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4jPointer reserved) {
     // no-op
     return 0L;
@@ -2005,6 +2024,13 @@ nd4j::graph::ResultWrapper* executeFlatGraph(Nd4jPointer *extraPointers, Nd4jPoi
     return nd4j::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
 }
 
+Nd4jLong getResultWrapperSize(nd4j::graph::ResultWrapper* ptr) {
+    return ptr->size();
+}
+Nd4jPointer getResultWrapperPointer(nd4j::graph::ResultWrapper* ptr) {
+    return ptr->pointer();
+}
+
 const char* getAllCustomOps() {
     return nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
 }
@@ -2041,7 +2067,13 @@ int estimateThreshold(Nd4jPointer *extraPointers, Nd4jPointer hX, Nd4jLong *hXSh
     BUILD_SINGLE_SELECTOR(xType, return estimateThresholdGeneric, (extraPointers, hX, N, threshold), FLOAT_TYPES);
 }
 
+Nd4jLong getShapeListSize(nd4j::ShapeList* list) {
+    return list->size();
+}
 
+Nd4jLong* getShape(nd4j::ShapeList* list, Nd4jLong i) {
+    return list->at(i);
+}
 
 void deleteShapeList(Nd4jPointer shapeList) {
     auto list = reinterpret_cast<nd4j::ShapeList*>(shapeList);
@@ -2303,6 +2335,38 @@ static VariablesSet* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong gr
 
 nd4j::graph::VariablesSet* executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
     return nullptr;
+}
+
+Nd4jLong getVariableSetSize(nd4j::graph::VariablesSet* set) {
+    return set->size();
+}
+
+Nd4jStatus getVariableSetStatus(nd4j::graph::VariablesSet* set) {
+    return set->status();
+}
+
+nd4j::graph::Variable* getVariable(nd4j::graph::VariablesSet* set, Nd4jLong i) {
+    return set->at(i);
+}
+
+int getVariableId(nd4j::graph::Variable* variable) {
+    return variable->id();
+}
+
+int getVariableIndex(nd4j::graph::Variable* variable) {
+    return variable->index();
+}
+
+const char* getVariableName(nd4j::graph::Variable* variable) {
+    return variable->getName()->c_str();
+}
+
+Nd4jLong* getVariableShape(nd4j::graph::Variable* variable) {
+    return variable->getNDArray()->shapeInfo();
+}
+
+void* getVariableBuffer(nd4j::graph::Variable* variable) {
+    return variable->getNDArray()->buffer();
 }
 
 int unregisterGraph(Nd4jPointer *extraPointers, Nd4jLong graphId) {
@@ -2628,6 +2692,13 @@ Nd4jPointer createUtf8String(Nd4jPointer *extraPointers, const char *string, int
     return reinterpret_cast<Nd4jPointer>(u);
 }
 
+Nd4jLong getUtf8StringLength(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
+    return reinterpret_cast<nd4j::utf8string*>(ptr)->_length;
+}
+char* getUtf8StringBuffer(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
+    return reinterpret_cast<nd4j::utf8string*>(ptr)->_buffer;
+}
+
 void deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
     delete(reinterpret_cast<nd4j::utf8string*>(ptr));
 }
@@ -2710,14 +2781,12 @@ nd4j::ConstantDataBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strid
     return buffer;
 }
 
-void deleteShapeBuffer(Nd4jPointer ptr) {
-    auto buffer = reinterpret_cast<nd4j::ConstantDataBuffer*>(ptr);
-    delete buffer;
+void deleteShapeBuffer(nd4j::ConstantDataBuffer* ptr) {
+    delete ptr;
 }
 
-void deleteTadPack(Nd4jPointer ptr) {
-    auto buffer = reinterpret_cast<nd4j::TadPack*>(ptr);
-    delete buffer;
+void deleteTadPack(nd4j::TadPack* ptr) {
+    delete ptr;
 }
 
 nd4j::ConstantDataBuffer* constantBufferLong(nd4j::DataType dtype, Nd4jLong *data, int length) {
@@ -2732,6 +2801,78 @@ nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, nd4j::ConstantDes
     return nd4j::ConstantHelper::getInstance()->constantBuffer(*descriptor, dtype);
 }
 
+Nd4jPointer getConstantDataBufferPrimary(nd4j::ConstantDataBuffer* dbf) {
+    return dbf->primary();
+}
+Nd4jPointer getConstantDataBufferSpecial(nd4j::ConstantDataBuffer* dbf) {
+    return dbf->special();
+}
+Nd4jLong getConstantDataBufferLength(nd4j::ConstantDataBuffer* dbf) {
+    return dbf->length();
+}
+Nd4jLong getConstantDataBufferSizeOf(nd4j::ConstantDataBuffer* dbf) {
+    return dbf->sizeOf();
+}
+
+
+nd4j::graph::Context* createGraphContext(int nodeId) {
+    return new nd4j::graph::Context(nodeId);
+}
+nd4j::graph::RandomGenerator* getGraphContextRandomGenerator(nd4j::graph::Context* ptr) {
+    return &ptr->randomGenerator();
+}
+void markGraphContextInplace(nd4j::graph::Context* ptr, bool reallyInplace) {
+    ptr->markInplace(reallyInplace);
+}
+void setGraphContextCudaContext(nd4j::graph::Context* ptr, void *stream, void *reductionPointer, void *allocationPointer) {
+}
+void setGraphContextInputArray(nd4j::graph::Context* ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
+    ptr->setInputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);
+}
+void setGraphContextOutputArray(nd4j::graph::Context* ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo) {
+    ptr->setOutputArray(index, buffer, shapeInfo, specialBuffer, specialShapeInfo);
+}
+void setGraphContextTArguments(nd4j::graph::Context* ptr, double *arguments, int numberOfArguments) {
+    ptr->setTArguments(arguments, numberOfArguments);
+}
+void setGraphContextIArguments(nd4j::graph::Context* ptr, Nd4jLong *arguments, int numberOfArguments) {
+    ptr->setIArguments(arguments, numberOfArguments);
+}
+void setGraphContextBArguments(nd4j::graph::Context* ptr, bool *arguments, int numberOfArguments) {
+    ptr->setBArguments(arguments, numberOfArguments);
+}
+void deleteGraphContext(nd4j::graph::Context* ptr) {
+    delete ptr;
+}
+
+
+nd4j::graph::RandomGenerator* createRandomGenerator(Nd4jLong rootSeed, Nd4jLong nodeSeed) {
+    return new nd4j::graph::RandomGenerator(rootSeed, nodeSeed);
+}
+
+Nd4jLong getRandomGeneratorRootState(nd4j::graph::RandomGenerator* ptr) {
+    return ptr->rootState();
+}
+
+Nd4jLong getRandomGeneratorNodeState(nd4j::graph::RandomGenerator* ptr) {
+    return ptr->nodeState();
+}
+
+void setRandomGeneratorStates(nd4j::graph::RandomGenerator* ptr, Nd4jLong rootSeed, Nd4jLong nodeSeed) {
+    ptr->setStates(rootSeed, nodeSeed);
+}
+
+int getRandomGeneratorRelativeInt(nd4j::graph::RandomGenerator* ptr, Nd4jLong index) {
+    return ptr->relativeInt(index);
+}
+
+Nd4jLong getRandomGeneratorRelativeLong(nd4j::graph::RandomGenerator* ptr, Nd4jLong index) {
+    return ptr->relativeLong(index);
+}
+
+void deleteRandomGenerator(nd4j::graph::RandomGenerator* ptr) {
+    delete ptr;
+}
 
 
 int dataTypeFromNpyHeader(void *header) {
