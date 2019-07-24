@@ -1362,7 +1362,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
             gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
         gradO->reduceAlongDimension(reduce::Sum, gradBR, {0,indOoH,indOoH+1});                      // sum over bS, oH, oW
         if(gradBR != gradB)
-            delete gradB;
+            delete gradBR;
     }
 
     //----- calculation of gradI -----//
