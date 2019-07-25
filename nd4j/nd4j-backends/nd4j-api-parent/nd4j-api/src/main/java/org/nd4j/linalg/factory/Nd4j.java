@@ -209,7 +209,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #pad(INDArray, int[][], List, PadMode) with zero padding. (zeros for constantValues).
+     * See {@link #pad(INDArray, int[][], List, PadMode)} with zero padding. (zeros for constantValues).
      */
     public static INDArray pad(INDArray toPad, int[][] padWidth, PadMode padMode) {
         return pad(toPad, padWidth, ArrayUtil.zerosMatrix(toPad.shape()), padMode);
@@ -264,7 +264,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #pad(INDArray, int[][], List, PadMode) with a 1D int[] for padWidth.
+     * See {@link #pad(INDArray, int[][], List, PadMode)} with a 1D int[] for padWidth.
      */
     public static INDArray pad(INDArray toPad, int[] padWidth, List<double[]> constantValues, PadMode padMode) {
         switch (padMode) {
@@ -307,7 +307,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #pad(INDArray, int[][], List, PadMode) with a 1D int[] for padWidth and zero padding.
+     * See {@link #pad(INDArray, int[][], List, PadMode)} with a 1D int[] for padWidth and zero padding.
      */
     public static INDArray pad(INDArray toPad, int[] padWidth, PadMode padMode) {
         return pad(toPad, padWidth, ArrayUtil.zerosMatrix(padWidth), padMode);
@@ -327,12 +327,15 @@ public class Nd4j {
     }
 
     /**
-     * @see #append(INDArray, int, double, int)
+     * See {@link #append(INDArray, int, double, int)}. This function calls the implementation with appendFlag = false
+     * to prepend.
      */
     public static INDArray prepend(INDArray arr, int padAmount, double val, int axis) {
         return appendImpl(arr, padAmount, val, axis, false);
     }
 
+    // For this function we actually want the 'See also' tag. (Private methods do not generate javadoc, This Javadoc for
+    // maintaining the code.)
     /**
      * Append / Prepend shared implementation.
      * @param appendFlag flag to determine Append / Prepend.
@@ -563,7 +566,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(LongShapeDescriptor)
+     * See {@link #create(LongShapeDescriptor, boolean)} with initialize set to true.
      */
     public static INDArray create(LongShapeDescriptor descriptor) {
         return create(descriptor, true);
@@ -586,7 +589,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(int[], float[]...)
+     * See {@link #create(int[], float[]...)}
      */
     public static INDArray create(int[] sliceShape, double[]... arrays) {
         int slices = arrays.length;
@@ -652,7 +655,7 @@ public class Nd4j {
     }
 
     /**
-     * Get the maximum (argmax) or minimum (argmin) values for a dimension.
+     * Get the maximum  values for a dimension.
      * @param arr input array.
      * @param dimension the dimension along which to get the maximum
      * @return array of maximum values.
@@ -663,7 +666,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #argMax(INDArray, int...)
+     * See {@link #argMax(INDArray, int...)} but return minimum values.
      */
     public static INDArray argMin(INDArray arr, @NonNull int... dimension) {
         IMin imin = new IMin(arr, dimension);
@@ -893,9 +896,9 @@ public class Nd4j {
     }
 
     /**
-     * Matrix multiplication/dot product
+     * Matrix multiplication/dot product.<br>
      *
-     * @see #matmul(INDArray, INDArray, INDArray, boolean, boolean, boolean)
+     * See {@link #matmul(INDArray, INDArray, INDArray, boolean, boolean, boolean)}
      */
     public static INDArray matmul(INDArray a, INDArray b, INDArray result){
         final Mmul op = new Mmul(a, b, result, null);
@@ -903,9 +906,9 @@ public class Nd4j {
     }
 
     /**
-     * Matrix multiplication/dot product
+     * Matrix multiplication/dot product.<br>
      *
-     * @see #matmul(INDArray, INDArray, INDArray, boolean, boolean, boolean)
+     * See {@link #matmul(INDArray, INDArray, INDArray, boolean, boolean, boolean)}
      */
     public static INDArray matmul(INDArray a, INDArray b, boolean transposeA, boolean transposeB, boolean transposeResult){
        return matmul(a, b, null, transposeA, transposeB, transposeResult);
@@ -914,7 +917,7 @@ public class Nd4j {
     /**
      * Matrix multiplication/dot product
      *
-     * @see #matmul(INDArray, INDArray, INDArray, boolean, boolean, boolean)
+     * See {@link #matmul(INDArray, INDArray, INDArray, boolean, boolean, boolean)}
      */
     public static INDArray matmul(INDArray a, INDArray b){
         return matmul(a,b, null);
@@ -960,156 +963,157 @@ public class Nd4j {
         return SPARSE_INSTANCE;
     }
 
-    // TODO: We forward the following methods with a default dimension argument. Doc should say something about that.
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#cumsum(int)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#cumsum(int)} with Integer.MAX_VALUE for full array reduction.
+     *
+     * @return scalar ndarray.
      */
     public static INDArray cumsum(INDArray compute) {
         return compute.cumsum(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#max(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#max(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray max(INDArray compute) {
         return compute.max(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#min(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#min(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray min(INDArray compute) {
         return compute.min(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#prod(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#prod(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray prod(INDArray compute) {
         return compute.prod(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#normmax(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#normmax(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray normmax(INDArray compute) {
         return compute.normmax(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#norm2(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#norm2(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm2(INDArray compute) {
         return compute.norm2(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#norm1(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#norm1(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm1(INDArray compute) {
         return compute.norm1(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#std(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#std(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray std(INDArray compute) {
         return compute.std(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#var(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#var(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray var(INDArray compute) {
         return compute.var(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#sum(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#sum(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray sum(INDArray compute) {
         return compute.sum(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#mean(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#mean(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray mean(INDArray compute) {
         return compute.mean(Integer.MAX_VALUE);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#cumsum(int)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#cumsum(int)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray cumsum(INDArray compute, int dimension) {
         return compute.cumsum(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#max(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#max(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray max(INDArray compute, int dimension) {
         return compute.max(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#min(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#min(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray min(INDArray compute, int dimension) {
         return compute.min(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#prod(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#prod(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray prod(INDArray compute, int dimension) {
         return compute.prod(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#normmax(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#normmax(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray normmax(INDArray compute, int dimension) {
         return compute.normmax(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#norm2(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#norm2(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm2(INDArray compute, int dimension) {
         return compute.norm2(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#norm1(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#norm1(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray norm1(INDArray compute, int dimension) {
         return compute.norm1(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#std(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#std(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray std(INDArray compute, int dimension) {
         return compute.std(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#var(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#var(int...)} with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray var(INDArray compute, int dimension) {
         return compute.var(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#sum(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#sum(int...)}with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray sum(INDArray compute, int dimension) {
         return compute.sum(dimension);
     }
 
     /**
-     * @see org.nd4j.linalg.api.ndarray.INDArray#mean(int...)
+     * See {@link org.nd4j.linalg.api.ndarray.INDArray#mean(int...)}with Integer.MAX_VALUE for full array reduction.
      */
     public static INDArray mean(INDArray compute, int dimension) {
         return compute.mean(dimension);
@@ -1386,7 +1390,8 @@ public class Nd4j {
     }
 
     /**
-     * Create a buffer equal of length prod(shape)
+     * Create a buffer equal of length prod(shape). The buffer is 'detached': Not in any memory workspace even if a
+     * workspace is currently open.
      *
      * @param shape the shape of the buffer to create
      * @param type the opType to create
@@ -1430,7 +1435,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createBuffer(int[], DataType)
+     * See {@link  #createBuffer(int[], DataType)}
      */
     public static DataBuffer createBuffer(long[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
@@ -1472,7 +1477,7 @@ public class Nd4j {
 
 
     /**
-     * @see #createBufferDetached(int[], DataType)
+     * See {@link  #createBufferDetached(int[], DataType)}
      */
     public static DataBuffer createBufferDetached(long[] shape, DataType type) {
         long length = ArrayUtil.prodLong(shape);
@@ -1630,7 +1635,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createBuffer(DataType dataType, long length, boolean initialize)
+     * See {@link  #createBuffer(DataType dataType, long length, boolean initialize) with default datatype.
      */
     public static DataBuffer createBuffer(long length, boolean initialize) {
         DataBuffer ret = createBuffer(Nd4j.dataType(), length, initialize);
@@ -1680,14 +1685,14 @@ public class Nd4j {
     }
 
     /**
-     * @see #createBufferDetached(float[])
+     * See {@link #createBufferDetached(float[])}
      */
     public static DataBuffer createBufferDetached(double[] data) {
         return DATA_BUFFER_FACTORY_INSTANCE.createDouble(data);
     }
 
     /**
-     * @see #createBuffer(float[])
+     * See {@link #createBuffer(float[])}
      */
     public static DataBuffer createBuffer(double[] data) {
         return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createDouble(data) : DATA_BUFFER_FACTORY_INSTANCE.createDouble(data, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1706,7 +1711,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType)
+     * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(float[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1715,7 +1720,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType)
+     * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(int[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1724,7 +1729,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType)
+     * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1733,7 +1738,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType)
+     * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(short[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1742,7 +1747,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType)
+     * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(byte[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1751,7 +1756,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType)
+     * See {@link #createTypedBuffer(float[], DataType)}
      */
     public static DataBuffer createTypedBuffer(boolean[] data, DataType dataType) {
         val buffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -1773,7 +1778,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     * See {@link #createTypedBuffer(float[], DataType, MemoryWorkspace)}
      */
     public static DataBuffer createTypedBuffer(float[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
@@ -1782,7 +1787,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     * See {@link #createTypedBuffer(float[], DataType, MemoryWorkspace)}
      */
     public static DataBuffer createTypedBuffer(int[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
@@ -1791,7 +1796,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     * See {@link #createTypedBuffer(float[], DataType, MemoryWorkspace)}
      */
     public static DataBuffer createTypedBuffer(long[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
@@ -1800,7 +1805,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     * See {@link #createTypedBuffer(float[], DataType, MemoryWorkspace)}
      */
     public static DataBuffer createTypedBuffer(short[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
@@ -1809,7 +1814,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     * See {@link #createTypedBuffer(float[], DataType, MemoryWorkspace)}
      */
     public static DataBuffer createTypedBuffer(byte[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
@@ -1818,7 +1823,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBuffer(float[], DataType, MemoryWorkspace)
+     * See {@link #createTypedBuffer(float[], DataType, MemoryWorkspace)}
      */
     public static DataBuffer createTypedBuffer(boolean[] data, DataType dataType, MemoryWorkspace workspace) {
         val buffer = workspace == null ? DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false) : DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false, workspace);
@@ -1839,7 +1844,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBufferDetached(double[], DataType)
+     * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(float[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
@@ -1848,7 +1853,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBufferDetached(double[], DataType)
+     * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(int[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
@@ -1857,7 +1862,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBufferDetached(double[], DataType)
+     * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(long[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
@@ -1866,7 +1871,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBufferDetached(double[], DataType)
+     * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(short[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
@@ -1875,7 +1880,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBufferDetached(double[], DataType)
+     * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(byte[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
@@ -1884,7 +1889,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createTypedBufferDetached(double[], DataType)
+     * See {@link #createTypedBufferDetached(double[], DataType)}
      */
     public static DataBuffer createTypedBufferDetached(boolean[] data, DataType dataType) {
         val buffer = DATA_BUFFER_FACTORY_INSTANCE.create(dataType, data.length, false);
@@ -2669,9 +2674,9 @@ public class Nd4j {
     }
 
     /**
-     * Read array via input stream using standard UTF-8 encoding.
+     * Read array via input stream.
      *
-     * @see #readNumpy(DataType, InputStream, String , Charset)
+     * See {@link #readNumpy(DataType, InputStream, String , Charset)} using standard UTF-8 encoding
      */
     public static INDArray readNumpy(DataType dataType, String filePath, String split) throws IOException {
         try(InputStream is = new FileInputStream(filePath)) {
@@ -2690,9 +2695,9 @@ public class Nd4j {
     }
 
     /**
-     * Read array with default split and UTF-8 encoding.
+     * Read array.<br>
      *
-     * @see #readNumpy(DataType, InputStream, String , Charset)
+     * See {@link #readNumpy(DataType, InputStream, String , Charset)} with default split and UTF-8 encoding.
      */
     public static INDArray readNumpy(DataType dataType, String filePath) throws IOException {
         return readNumpy(dataType, filePath, " ");
@@ -2701,7 +2706,7 @@ public class Nd4j {
     /**
      * Raad an ndarray from an input stream
      *
-     * @see #read(DataInputStream)
+     * See {@link #read(DataInputStream)}
      */
     public static INDArray read(InputStream reader) throws IOException {
         return read(new DataInputStream(reader));
@@ -3019,7 +3024,7 @@ public class Nd4j {
      * Create a 1D array of evenly spaced values between {@code begin} (inclusive) and {@code end} (exclusive)
      * with a step size of 1
      *
-     * @see #arange(double, double, double)
+     * See {@link #arange(double, double, double)} with step size 1.
      */
     public static INDArray arange(double begin, double end) {
         INDArray ret = INSTANCE.arange(begin, end, 1);
@@ -3030,7 +3035,7 @@ public class Nd4j {
      * Create a 1D array of evenly spaced values between 0 (inclusive) and {@code end} (exclusive)
      * with a step size of 1
      *
-     * @see #arange(double, double, double)
+     * See {@link #arange(double, double, double)} with begin = 0 and step size 1.
      */
     public static INDArray arange(double end) {
         return arange(0, end);
@@ -3096,6 +3101,7 @@ public class Nd4j {
         return Nd4j.getExecutioner().exec(new Choice(source, probs, target), rng);
     }
 
+    // @see tag works well here.
     /**
      * This method samples value from Source array to Target,the default random number generator.
      *
@@ -3114,6 +3120,7 @@ public class Nd4j {
      * @return
      */
 
+    // @see tag works well here.
     /**
      * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs.
      *
@@ -3128,6 +3135,7 @@ public class Nd4j {
         return choice(source, probs, createUninitialized(numSamples), rng);
     }
 
+    // @see tag works well here.
     /**
      * This method returns new INDArray instance, sampled from Source array with probabilities given in Probs
      * using the default random number generator.
@@ -3170,7 +3178,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #rand(int[])
+     * See {@link #rand(int[])}
      */
     public static INDArray rand(@NonNull long... shape) {
         INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, Nd4j.getRandom());
@@ -4031,42 +4039,42 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(int[], long[], DataType)
+     * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(long[] data, long[] shape, DataType type) {
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], DataType)
+     * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(double[] data, long[] shape, DataType type) {
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], DataType)
+     * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(float[] data, long[] shape, DataType type) {
         return  INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], DataType)
+     * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(short[] data, long[] shape, DataType type) {
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], DataType)
+     * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(byte[] data, long[] shape, DataType type) {
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], DataType)
+     * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(boolean[] data, long[] shape, DataType type) {
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -4089,42 +4097,42 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(int[], long[], long[], char, DataType)
+     * See {@link #create(int[], long[], long[], char, DataType)}
      */
     public static INDArray create(long[] data, long[] shape, long[]strides, char order, DataType type) {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], long[], char, DataType)
+     * See {@link #create(int[], long[], long[], char, DataType)}
      */
     public static INDArray create(double[] data, long[] shape, long[]strides, char order, DataType type) {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], long[], char, DataType)
+     * See {@link #create(int[], long[], long[], char, DataType)}
      */
     public static INDArray create(float[] data, long[] shape, long[]strides, char order, DataType type) {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], long[], char, DataType)
+     * See {@link #create(int[], long[], long[], char, DataType)}
      */
     public static INDArray create(short[] data, long[] shape, long[]strides, char order, DataType type) {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], long[], char, DataType)
+     * See {@link #create(int[], long[], long[], char, DataType)}
      */
     public static INDArray create(byte[] data, long[] shape, long[]strides, char order, DataType type) {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
-     * @see #create(int[], long[], long[], char, DataType)
+     * See {@link #create(int[], long[], long[], char, DataType)}
      */
     public static INDArray create(boolean[] data, long[] shape, long[]strides, char order, DataType type) {
         return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -4237,7 +4245,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(float[], int[])
+     * See {@link #create(float[], int[])}
      */
     public static INDArray create(float[] data, long... shape) {
         if (shape.length == 0 && data.length == 1) {
@@ -4256,7 +4264,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(float[], int[])
+     * See {@link #create(float[], int[])}
      */
     public static INDArray create(double[] data, long... shape) {
         if (shape.length == 0 && data.length == 1) {
@@ -4439,7 +4447,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(double[], int[], long, char )
+     * See {@link #create(double[], int[], long, char )}
      */
     public static INDArray create(double[] data, long[] shape, long offset, char ordering) {
         if (shape.length == 1) {
@@ -4491,7 +4499,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(List, int[])
+     * See {@link #create(List, int[])}
      */
     public static INDArray create(List<INDArray> list, long... shape) {
         checkShapeValues(shape);
@@ -4517,7 +4525,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(int , int , int[] , long )
+     * See {@link #create(int , int , int[] , long )}
      */
     public static INDArray zeros(int rows, int columns, int[] stride, long offset) {
         return create(rows, columns, stride, offset);
@@ -4540,7 +4548,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(int[] , int[] , long )
+     * See {@link #create(int[] , int[] , long )}
      */
     public static INDArray zeros(int[] shape, int[] stride, long offset) {
         return create(shape, stride, offset);
@@ -4559,7 +4567,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(int, int, int[], char)
+     * See {@link @see #create(int, int, int[], char)}
      */
     public static INDArray zeros(int rows, int columns, int[] stride) {
         return create(rows, columns, stride, order());
@@ -4577,7 +4585,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(int[], int[])
+     * See {@link #create(int[], int[])}
      */
     public static INDArray create(long[] shape, long[] stride) {
         return create(shape, stride, order());
@@ -4585,7 +4593,7 @@ public class Nd4j {
 
 
     /**
-     * @see #create(int[], int[])
+     * See {@link #create(int[], int[])}
      */
     public static INDArray zeros(int[] shape, int[] stride) {
         return create(shape, stride);
@@ -4705,7 +4713,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(DataBuffer, int[], int[], long)
+     * See {@link #create(DataBuffer, int[], int[], long)}
      */
     public static INDArray create(DataBuffer data, long[] shape, long[] strides, long offset) {
         checkShapeValues(shape);
@@ -4713,9 +4721,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(DataBuffer, int[], int[], long)
-     *
-     * Uses default strides based on shape.
+     * See {@link #create(DataBuffer, int[], int[], long)}. Uses default strides based on shape.
      */
     public static INDArray create(DataBuffer data, int[] shape, long offset) {
         checkShapeValues(shape);
@@ -4723,7 +4729,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(DataBuffer data, long[], long[], long, long, char )
+     * See {@link #create(DataBuffer data, long[], long[], long, long, char )}
      */
     public static INDArray create(DataBuffer data, int[] newShape, int[] newStride, long offset, char ordering) {
         checkShapeValues(newShape);
@@ -4731,7 +4737,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(DataBuffer data, long[], long[], long, long, char )
+     * See {@link #create(DataBuffer data, long[], long[], long, long, char )}
      */
     public static INDArray create(DataBuffer data, long[] newShape, long[] newStride, long offset, char ordering) {
         checkShapeValues(newShape);
@@ -4784,7 +4790,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(DataBuffer, int[])
+     * See {@link #create(DataBuffer, int[])}
      */
     public static INDArray create(DataBuffer data, long... shape) {
         checkShapeValues(shape);
@@ -4886,7 +4892,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(double[], int[], char)
+     * See {@link #create(double[], int[], char)}
      */
     public static INDArray create(float[] data, int[] shape, char ordering) {
         if (shape.length == 1) {
@@ -4900,7 +4906,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(double[], int[], char)
+     * See {@link  #create(double[], int[], char)}
      */
     public static INDArray create(float[] data, long[] shape, char ordering) {
         checkShapeValues(data.length, shape);
@@ -4908,7 +4914,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(double[], int[], char)
+     * See {@link #create(double[], int[], char)}
      */
     public static INDArray create(double[] data, long[] shape, char ordering) {
         checkShapeValues(data.length, shape);
@@ -5070,7 +5076,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #create(int[], int[], char)
+     * See {@link #create(int[], int[], char)}
      */
     public static INDArray create(long[] shape, long[] stride, char ordering) {
         if(shape.length == 0)
@@ -5280,7 +5286,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createUninitialized(long[], char)
+     * See {@link #createUninitialized(long[], char)}
      */
     public static INDArray createUninitializedDetached(int[] shape, char ordering) {
         if (shape.length == 0)
@@ -5306,7 +5312,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createUninitialized(long[])
+     * See {@link #createUninitialized(long[])}
      */
     public static INDArray createUninitialized(int... shape) {
         if(shape.length == 0)
@@ -5352,7 +5358,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createUninitialized(long)
+     * See {@link #createUninitialized(long)}
      */
     public static INDArray createUninitialized(int length) {
         return createUninitialized((long)length);
@@ -5372,7 +5378,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #createUninitialized(long)
+     * See {@link #createUninitialized(long)}
      */
     public static INDArray createUninitializedDetached(int length) {
         long[] shape = new long[] {length};
@@ -5631,7 +5637,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #valueArrayOf(long[], double, DataType)
+     * See {@link #valueArrayOf(long[], double, DataType)}
      */
     public static INDArray valueArrayOf(long[] shape, double value) {
         if (shape.length == 0)
@@ -5663,7 +5669,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #valueArrayOf(long[], double, DataType)
+     * See {@link #valueArrayOf(long[], double, DataType)}
      */
     public static INDArray valueArrayOf(long[] shape, long value, DataType type) {
         if (shape.length == 0)
@@ -6076,7 +6082,7 @@ public class Nd4j {
     }
 
     /**
-     * @see #zeros(int[] , char)
+     * See {@link #zeros(int[] , char)}
      */
     public static INDArray zeros(long[] shape, char order) {
         checkShapeValues(shape);
@@ -6118,7 +6124,7 @@ public class Nd4j {
 
 
     /**
-     * @see #ones(int... shape)
+     * See {@link #ones(int... shape)}
      */
     public static INDArray ones(@NonNull long... shape) {
         if(shape.length == 0)
