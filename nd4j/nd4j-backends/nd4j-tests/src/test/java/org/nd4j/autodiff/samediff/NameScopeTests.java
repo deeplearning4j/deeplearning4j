@@ -144,7 +144,7 @@ public class NameScopeTests extends BaseNd4jTest {
 
         scope.close();
 
-        assertTrue("Var with name test/imax_1 exists", SD.variableMap().containsKey("test/imax_1"));
+        assertTrue("Var with name test/imax exists", SD.variableMap().containsKey("test/imax"));
     }
 
     @Test

@@ -471,7 +471,10 @@ public class OpValidation {
             backpropSeen.add(df.getClass());
         }
         for (Class c : backpropSeen) {
-            gradCheckCoverageCountPerClass.put(c, gradCheckCoverageCountPerClass.get(c) + 1);
+            if(gradCheckCoverageCountPerClass.containsKey(c))
+                gradCheckCoverageCountPerClass.put(c, gradCheckCoverageCountPerClass.get(c) + 1);
+            else
+                gradCheckCoverageCountPerClass.put(c, 1);
         }
 
         //Collect coverage information for forward pass (expected outputs)
@@ -491,15 +494,23 @@ public class OpValidation {
 
         if (seen != null) {
             for (Class c : seen) {
-                fwdPassCoverageCountPerClass.put(c, fwdPassCoverageCountPerClass.get(c) + 1);
+                if(fwdPassCoverageCountPerClass.containsKey(c)) {
+                    fwdPassCoverageCountPerClass.put(c, fwdPassCoverageCountPerClass.get(c) + 1);
+                } else {
+                    fwdPassCoverageCountPerClass.put(c, 1);
+                }
             }
         }
     }
 
     private static void collectCoverageInformation(OpTestCase testCase) {
         //TODO we're basically assuming subtypes of DynamicCustomOp here, for coverage... not DCO itself
-        singleOpTestCountPerClass.put(testCase.op().getClass(),
-                singleOpTestCountPerClass.get(testCase.op().getClass()) + 1);
+        if(singleOpTestCountPerClass.containsKey(testCase.op().getClass())) {
+            singleOpTestCountPerClass.put(testCase.op().getClass(),
+                    singleOpTestCountPerClass.get(testCase.op().getClass()) + 1);
+        } else {
+            singleOpTestCountPerClass.put(testCase.op().getClass(), 1);
+        }
     }
 
 

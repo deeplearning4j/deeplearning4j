@@ -657,19 +657,7 @@ public abstract class DifferentialFunction {
             if(sameDiff == null)
                 this.ownName = UUID.randomUUID().toString();
             else {
-                int argIndex = 0;
-                String scope = sameDiff.currentNameScope();
-                if(scope == null)
-                    scope = "";
-                else
-                    scope = scope + "/";
-                String varName = scope + sameDiff.generateNewVarName(opName(),argIndex);
-                while(sameDiff.functionExists(varName)) {
-                    varName = scope + sameDiff.generateNewVarName(opName(), argIndex);
-                    argIndex++;
-                }
-
-                this.ownName = varName;
+                this.ownName = sameDiff.getOpName(opName());
             }
 
             if(sameDiff != null && !(this instanceof SDVariable))

@@ -22,6 +22,8 @@ import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.rits.cloning.Cloner;
 import com.rits.cloning.IFastCloner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -43,6 +45,7 @@ import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.graph.*;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
@@ -97,6 +100,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
+import org.tensorflow.framework.GraphDef;
 
 /**
  * SameDiff is the entrypoint for ND4J's automatic differentiation functionality.
@@ -2498,9 +2502,14 @@ public class SameDiff extends SDBaseOps {
     //TODO only allowing null datatype for TF import (it's fixed in a later step) - don't want this in the public API!
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
                              org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
-        String withScope = nameWithScope(name);
 
-        if (variables.containsKey(withScope)) {
+
+        if (name == null || name.length() < 1)
+            name = getNewVarName();
+        else
+            name = generateNewVarName(name, 0);
+
+        if (variables.containsKey(name)) {
             if(nameScopes.isEmpty()){
                 throw new IllegalArgumentException("Another variable with the name " + name + " already exists (current name scope: \""
                         + currentNameScope() + "\"");
@@ -2508,9 +2517,6 @@ public class SameDiff extends SDBaseOps {
                 throw new IllegalArgumentException("Another variable with the name " + name + " already exists.");
             }
         }
-
-        if (name == null || name.length() < 1)
-            name = getNewVarName();
 
 
         SDVariable ret = new SDVariable(name, variableType, this, shape, dataType, weightInitScheme);
@@ -2647,12 +2653,7 @@ public class SameDiff extends SDBaseOps {
     }
 
     private String getNewVarName() {
-        String varName = "sd_var_" + String.valueOf(variableId);
-        while (variables.containsKey(varName)) {
-            variableId++;
-            varName = "sd_var_" + String.valueOf(variableId);
-        }
-        return varName;
+        return generateNewVarName("sd_var", 0, false);
     }
 
     /**
@@ -3443,37 +3444,6 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Generate a new variable name based on the uniqueness of the base name and arg index<br>
-     * For example, if baseName = "X" will return:<br>
-     * "X" if "X" does not already exist, or "X:argIndex" if argIndex > 0<br>
-     * "X_1" if "X" already exists, or "X_1:argIndex" if argIndex > 0<br>
-     * "X_2" if "X" and "X_1" already exists, or "X_2:argIndex" if argIndex > 0<br>
-     * And so on, until an unused name is found
-     *
-     * @param baseName the base name to use (use function.opName() where function is a {@link DifferentialFunction}
-     * @param argIndex the arg index
-     * @return the new generated name
-     */
-    public String generateNewVarName(String baseName, int argIndex) {
-        if (!variables.containsKey(baseName) && argIndex == 0) {
-            return baseName;
-        }
-
-        //need to find a new name
-        int count = 0;
-        String name = baseName + (count == 0 ? "" : "_" + count) + (argIndex > 0 ? ":" + argIndex : "");
-        while (getVariable(name) != null) {
-            name = baseName + "_" + (++count) + (argIndex > 0 ? ":" + argIndex : "");
-        }
-
-        if (getVariable(name) != null) {
-            throw new ND4JIllegalStateException("Converged on already generated variable!");
-        }
-        return name;
-    }
-
-
-    /**
      * Generate the variables based on the given input op and return the output variable names.
      *
      * @param function the function to generate the output
@@ -3485,6 +3455,9 @@ public class SameDiff extends SDBaseOps {
         //if there is already a base name defined, use that
         if (baseName == null || baseName.isEmpty() && getBaseNameForFunction(function) != null)
             baseName = getBaseNameForFunction(function);
+
+        if (baseName == null)
+            baseName = function.getOwnName();
 
         if (baseName == null)
             baseName = function.opName();
@@ -3594,7 +3567,8 @@ public class SameDiff extends SDBaseOps {
      * @return the set of names generated for each output of the function.
      */
     public SDVariable[] generateOutputVariableForOp(DifferentialFunction function) {
-        return generateOutputVariableForOp(function, function.opName(), false);
+        return generateOutputVariableForOp(function,
+                function.getOwnName() != null ? function.getOwnName() : function.opName(), false);
     }
 
     /**
@@ -4391,11 +4365,21 @@ public class SameDiff extends SDBaseOps {
             throw new NullPointerException("Null input: No variable found for updating!");
         }
 
+        if(newVarName != null) {
+            String nameScope = currentNameScope();
+            if (nameScope != null) {
+                if (!newVarName.startsWith(nameScope + "/")) {
+                    newVarName = nameScope + "/" + newVarName;
+                }
+            }
+        }
+
         if(newVarName != null && variables.containsKey(newVarName) && varToUpdate != variables.get(newVarName).getVariable()){
             throw new IllegalStateException("Variable name \"" + newVarName + "\" already exists for a different SDVariable");
         }
 
-        if (newVarName == null && variables.containsKey(varToUpdate.getVarName())) {
+        if (newVarName == null && variables.containsKey(varToUpdate.getVarName())
+                && variables.get(varToUpdate.getVarName()).getVariable() != varToUpdate) {
             //Edge case: suppose we do m1=sd.mean(in), m2=sd.mean(m1) -> both initially have the name
             // "mean" and consequently a new variable name needs to be generated
             newVarName = generateNewVarName(varToUpdate.getVarName(), 0);
@@ -4403,13 +4387,6 @@ public class SameDiff extends SDBaseOps {
 
         if (newVarName == null || varToUpdate.getVarName().equals(newVarName)) {
             return varToUpdate;
-        }
-
-        String nameScope = currentNameScope();
-        if(nameScope != null){
-            if(!newVarName.startsWith(nameScope)){
-                newVarName = nameScope + "/" + newVarName;
-            }
         }
 
         val oldVarName = varToUpdate.getVarName();
@@ -5680,4 +5657,130 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
+    /**
+     * Import a frozen Tensorflow graph to a new SameDiff graph.
+     *
+     * @param graphFile The text or binary file containing the graph
+     * @return The imported graph
+     */
+    public static SameDiff importFrozenTF(File graphFile){
+        return TFGraphMapper.getInstance().importGraph(graphFile);
+    }
+
+    /**
+     * See {@link #importFrozenTF(File)}
+     */
+    public static SameDiff importFrozenTF(GraphDef graphDef){
+        return TFGraphMapper.getInstance().importGraph(graphDef);
+    }
+
+
+    /**
+     * See {@link #importFrozenTF(File)}
+     *
+     * Again, the input can be text or binary.
+     */
+    public static SameDiff importFrozenTF(InputStream graph){
+        return TFGraphMapper.getInstance().importGraph(graph);
+    }
+
+
+    /**
+     * Generate a new, distinct op name of the form &lt;base&gt;_#.
+     *
+     * Applies name scope if active.
+     *
+     * @param base The base name to use
+     * @param force Whether to force the result name to be the same as base.
+     */
+    public String getOpName(String base, boolean force){
+
+        base = nameWithScope(base);
+
+        if(force && ops.containsKey(base))
+            throw new IllegalArgumentException("Op with name \"" + base + "\" already exists");
+        else if(force)
+            return base;
+
+        int start = 1;
+
+        // if we already have a name like "op_2", start from trying "op_3"
+        if(base.contains("_")){
+            // extract number used to generate base
+            Matcher num = Pattern.compile("(.*)_(\\d+)").matcher(base);
+            // extract argIndex used to generate base
+            if(num.find()) {
+                start = Integer.parseInt(num.group(2));
+                base = num.group(1);
+            }
+        }
+
+        String name = base;
+        for(int i = start ; true ; i++) {
+
+            // ensure that there are no variables that look like they are outputs of this op
+            boolean varWithName = false;
+            for(String varName : variables.keySet())
+                if(varName.startsWith(name + ":") || varName.equals(name))
+                    varWithName = true;
+
+            if(!ops.containsKey(name) && !varWithName)
+                break;
+
+            name = base + "_" + i;
+        }
+        return name;
+    }
+
+    /**
+     * See {@link #getOpName(String, boolean)}
+     * force is false
+     */
+    public String getOpName(String base){
+        return getOpName(base, false);
+    }
+
+    /**
+     * Generate a new, distinct variable name of the form &lt;base&gt;_#[:#].
+     *
+     * Applies name scopes if active.
+     *
+     * @param base The base of the name.
+     * @param argIndex The argument index, used in the ":#".  A value of 0 (or negative) does not include the ":#" part.
+     * @param existingOp Whether to generate an distinct operation name from base (if false), or just use base (if true).
+     */
+    public String generateNewVarName(String base, int argIndex, boolean existingOp){
+
+        base = nameWithScope(base);
+
+        if(argIndex > 0 && base.contains(":")){
+            Matcher num = Pattern.compile("(.*):(\\d+)").matcher(base);
+            // extract argIndex used to generate base
+            if(num.find()) {
+                argIndex = Integer.parseInt(num.group(2)) + 1;
+                base = num.group(1);
+            }
+        }
+
+        if(!existingOp)
+            base = getOpName(base);
+
+        if(argIndex > 0)
+            base += ":" + argIndex;
+
+        if(variables.containsKey(base))
+            throw new IllegalArgumentException("Variable with name \"" + base + "\" already exists");
+
+        return base;
+    }
+
+    /**
+     *
+     * See {@link #generateNewVarName(String, int, boolean)}
+     * existingOp is true.
+     */
+    @Override
+    public String generateNewVarName(String base, int argIndex){
+        return generateNewVarName(base, argIndex, true);
+    }
 }

@@ -91,7 +91,7 @@ public class FailingSameDiffTests extends BaseNd4jTest {
         }, new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = variableInputs[1].addi(1.0);
+                SDVariable ret = variableInputs[1].add(1.0);
                 return new SDVariable[]{variableInputs[0], ret};
             }
         }, new SDVariable[]{
@@ -116,7 +116,7 @@ public class FailingSameDiffTests extends BaseNd4jTest {
         }, new SameDiffFunctionDefinition() {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = variableInputs[1].addi(1.0);
+                SDVariable ret = variableInputs[1].add(1.0);
                 return new SDVariable[]{variableInputs[0], ret};
             }
         }, new SDVariable[]{
@@ -197,7 +197,7 @@ public class FailingSameDiffTests extends BaseNd4jTest {
         SDVariable w = sd.var("w", Nd4j.linspace(1,20,20, DataType.DOUBLE).reshape(4,5));
         SDVariable b = sd.var("b", Nd4j.linspace(1,5,5, DataType.DOUBLE).reshape(1,5));
 
-        SDVariable mmul = sd.mmul(in,w).addi(b);
+        SDVariable mmul = sd.mmul(in,w).add(b);
         INDArray exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
 
         INDArray out = sd.execAndEndResult();
