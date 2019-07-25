@@ -3172,7 +3172,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
         if(solver != null) {
-            return solver.getOptimizer().getUpdater();
+            return solver.getOptimizer().getUpdater(initializeIfReq);
         }
         return null;
     }

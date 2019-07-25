@@ -67,18 +67,36 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
+        boolean ncdhw = layerConf().getDataFormat() == org.deeplearning4j.nn.conf.layers.Convolution3D.DataFormat.NCDHW;
         // FIXME: int cast
         // Assumes NCDHW order
         int miniBatch = (int) input.size(0);
-        int inChannels = (int) input.size(1);
-        int inD = (int) input.size(2);
-        int inH = (int) input.size(3);
-        int inW = (int) input.size(4);
+        int inChannels, inD, inH, inW;
+        int[] intArgs;
+        if(ncdhw){
+            inChannels = (int) input.size(1);
+            inD = (int) input.size(2);
+            inH = (int) input.size(3);
+            inW = (int) input.size(4);
+            intArgs = new int[] {1}; // 1 is channels first
+        } else {
+            inD = (int) input.size(1);
+            inH = (int) input.size(2);
+            inW = (int) input.size(3);
+            inChannels = (int) input.size(4);
+            intArgs = new int[] {0}; // 0 is channels last
+        }
 
-        int[] intArgs = new int[] {1}; // 1 is channels first
 
-        INDArray reshapedEpsilon = workspaceMgr.createUninitialized(
-                ArrayType.ACTIVATION_GRAD, epsilon.dataType(), new long[]{miniBatch, inChannels, inD, inH, inW}, 'c');
+
+        INDArray epsOut;
+        if(ncdhw){
+            epsOut = workspaceMgr.createUninitialized(
+                    ArrayType.ACTIVATION_GRAD, epsilon.dataType(), new long[]{miniBatch, inChannels, inD, inH, inW}, 'c');
+        } else {
+            epsOut = workspaceMgr.createUninitialized(
+                    ArrayType.ACTIVATION_GRAD, epsilon.dataType(), new long[]{miniBatch, inD, inH, inW, inChannels}, 'c');
+        }
 
 
         Gradient gradient = new DefaultGradient();
@@ -86,13 +104,13 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         CustomOp op = DynamicCustomOp.builder("upsampling3d_bp")
                 .addIntegerArguments(intArgs)
                 .addInputs(input, epsilon)
-                .addOutputs(reshapedEpsilon)
+                .addOutputs(epsOut)
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(op);
 
-        reshapedEpsilon = backpropDropOutIfPresent(reshapedEpsilon);
-        return new Pair<>(gradient, reshapedEpsilon);
+        epsOut = backpropDropOutIfPresent(epsOut);
+        return new Pair<>(gradient, epsOut);
     }
 
     protected int[] getSize() {
@@ -115,32 +133,51 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
-        long miniBatch = (int) input.size(0);
-        long inChannels = (int) input.size(1);
-        long inD = (int) input.size(2);
-        long inH = (int) input.size(3);
-        long inW = (int) input.size(4);
-
+        boolean ncdhw = layerConf().getDataFormat() == org.deeplearning4j.nn.conf.layers.Convolution3D.DataFormat.NCDHW;
+        // FIXME: int cast
+        int miniBatch = (int) input.size(0);
+        int inChannels, inD, inH, inW;
+        int[] intArgs;
         int[] size = getSize();
+        if(ncdhw){
+            inChannels = (int) input.size(1);
+            inD = (int) input.size(2);
+            inH = (int) input.size(3);
+            inW = (int) input.size(4);
+            intArgs = new int[] {size[0], size[1], size[2], 1}; // 1 is channels first
+        } else {
+            inD = (int) input.size(1);
+            inH = (int) input.size(2);
+            inW = (int) input.size(3);
+            inChannels = (int) input.size(4);
+            intArgs = new int[] {size[0], size[1], size[2], 0}; // 0 is channels last
+        }
+
+
         long outD = inD * size[0];
         long outH = inH * size[1];
         long outW = inW * size[2];
 
-        int[] intArgs = new int[] {size[0], size[1], size[2], 1}; // 1 is channels first
+        INDArray output;
+        if(ncdhw){
+            output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
+                    input.dataType(), new long[]{miniBatch, inChannels, outD, outH, outW}, 'c');
+        } else {
+            output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
+                    input.dataType(), new long[]{miniBatch, outD, outH, outW, inChannels}, 'c');
+        }
 
-        INDArray reshapedOutput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS,
-                input.dataType(), new long[]{miniBatch, inChannels, outD, outH, outW}, 'c');
 
 
         CustomOp upsampling = DynamicCustomOp.builder("upsampling3d")
                 .addIntegerArguments(intArgs)
                 .addInputs(input)
-                .addOutputs(reshapedOutput)
+                .addOutputs(output)
                 .callInplace(false)
                 .build();
         Nd4j.getExecutioner().exec(upsampling);
 
-        return reshapedOutput;
+        return output;
     }
 
     @Override

@@ -45,10 +45,14 @@ import java.util.Map;
 public class Upsampling3D extends BaseUpsamplingLayer {
 
     protected int[] size;
+    protected Convolution3D.DataFormat dataFormat = Convolution3D.DataFormat.NCDHW; //Default to NCDHW for 1.0.0-beta4 and earlier, when no config existed (NCDHW only)
 
-    protected Upsampling3D(UpsamplingBuilder builder) {
+
+
+    protected Upsampling3D(Builder builder) {
         super(builder);
         this.size = builder.size;
+        this.dataFormat = builder.dataFormat;
     }
 
     @Override
@@ -124,8 +128,30 @@ public class Upsampling3D extends BaseUpsamplingLayer {
     @NoArgsConstructor
     public static class Builder extends UpsamplingBuilder<Builder> {
 
+        protected Convolution3D.DataFormat dataFormat = Convolution3D.DataFormat.NCDHW;
+
+        /**
+         * @param size Upsampling layer size (most common value: 2)
+         */
         public Builder(int size) {
             super(new int[] {size, size, size});
+        }
+
+        /**
+         * @param dataFormat Data format - see {@link Convolution3D.DataFormat} for more details
+         * @param size Upsampling layer size (most common value: 2)
+         */
+        public Builder(@NonNull Convolution3D.DataFormat dataFormat, int size){
+            super(new int[]{size, size, size});
+            this.dataFormat = dataFormat;
+        }
+
+        /**
+         * Sets the DataFormat. See {@link Convolution3D.DataFormat} for more details
+         */
+        public Builder dataFormat(@NonNull Convolution3D.DataFormat dataFormat){
+            this.dataFormat = dataFormat;
+            return this;
         }
 
         /**

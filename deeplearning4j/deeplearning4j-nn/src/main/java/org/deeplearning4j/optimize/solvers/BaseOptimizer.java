@@ -115,7 +115,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public Updater getUpdater() {
-        if (updater == null) {
+        return getUpdater(true);
+    }
+
+    @Override
+    public Updater getUpdater(boolean initializeIfReq) {
+        if (updater == null && initializeIfReq) {
             updater = UpdaterCreator.getUpdater(model);
         }
         return updater;
@@ -130,7 +135,12 @@ public abstract class BaseOptimizer implements ConvexOptimizer {
 
     @Override
     public ComputationGraphUpdater getComputationGraphUpdater() {
-        if (computationGraphUpdater == null && model instanceof ComputationGraph) {
+        return getComputationGraphUpdater(true);
+    }
+
+    @Override
+    public ComputationGraphUpdater getComputationGraphUpdater(boolean initializIfReq) {
+        if (computationGraphUpdater == null && model instanceof ComputationGraph && initializIfReq) {
             computationGraphUpdater = new ComputationGraphUpdater((ComputationGraph) model);
         }
         return computationGraphUpdater;

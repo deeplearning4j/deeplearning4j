@@ -2896,7 +2896,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             solver.getOptimizer().setUpdaterComputationGraph(new ComputationGraphUpdater(this));
         }
         if(solver != null) {
-            return solver.getOptimizer().getComputationGraphUpdater();
+            return solver.getOptimizer().getComputationGraphUpdater(initializeIfAbsent);
         }
         return null;
     }
