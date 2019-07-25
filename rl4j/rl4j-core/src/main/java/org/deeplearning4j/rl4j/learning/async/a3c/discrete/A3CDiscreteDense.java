@@ -20,7 +20,7 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.*;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/8/16.
@@ -34,31 +34,31 @@ import org.deeplearning4j.rl4j.util.DataManager;
 public class A3CDiscreteDense<O extends Encodable> extends A3CDiscrete<O> {
 
     public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic IActorCritic, A3CConfiguration conf,
-                    DataManager dataManager) {
+                    IDataManager dataManager) {
         super(mdp, IActorCritic, conf, dataManager);
     }
 
     public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactorySeparate factory,
-                    A3CConfiguration conf, DataManager dataManager) {
+                    A3CConfiguration conf, IDataManager dataManager) {
         this(mdp, factory.buildActorCritic(mdp.getObservationSpace().getShape(), mdp.getActionSpace().getSize()), conf,
                         dataManager);
     }
 
     public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp,
                     ActorCriticFactorySeparateStdDense.Configuration netConf, A3CConfiguration conf,
-                    DataManager dataManager) {
+                    IDataManager dataManager) {
         this(mdp, new ActorCriticFactorySeparateStdDense(netConf), conf, dataManager);
     }
 
     public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryCompGraph factory,
-                    A3CConfiguration conf, DataManager dataManager) {
+                    A3CConfiguration conf, IDataManager dataManager) {
         this(mdp, factory.buildActorCritic(mdp.getObservationSpace().getShape(), mdp.getActionSpace().getSize()), conf,
                         dataManager);
     }
 
     public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp,
                     ActorCriticFactoryCompGraphStdDense.Configuration netConf, A3CConfiguration conf,
-                    DataManager dataManager) {
+                    IDataManager dataManager) {
         this(mdp, new ActorCriticFactoryCompGraphStdDense(netConf), conf, dataManager);
     }
 

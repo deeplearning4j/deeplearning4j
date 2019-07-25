@@ -30,7 +30,7 @@ import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.Constants;
-import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.util.IDataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -53,7 +53,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     @Getter
     final private QLConfiguration configuration;
     @Getter
-    final private DataManager dataManager;
+    final private IDataManager dataManager;
     @Getter
     final private MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
@@ -72,7 +72,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
 
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
-                    DataManager dataManager, int epsilonNbStep) {
+                    IDataManager dataManager, int epsilonNbStep) {
         super(conf);
         this.configuration = conf;
         this.mdp = mdp;

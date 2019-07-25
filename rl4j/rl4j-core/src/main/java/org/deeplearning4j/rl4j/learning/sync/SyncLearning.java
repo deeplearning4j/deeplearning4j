@@ -22,7 +22,7 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.Constants;
-import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/3/16.
@@ -51,7 +51,7 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
 
             while (getStepCounter() < getConfiguration().getMaxStep()) {
                 preEpoch();
-                DataManager.StatEntry statEntry = trainEpoch();
+                IDataManager.StatEntry statEntry = trainEpoch();
                 postEpoch();
 
                 incrementEpoch();
@@ -79,6 +79,6 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
 
     protected abstract void postEpoch();
 
-    protected abstract DataManager.StatEntry trainEpoch();
+    protected abstract IDataManager.StatEntry trainEpoch();
 
 }
