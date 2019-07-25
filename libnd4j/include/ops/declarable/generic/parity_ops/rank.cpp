@@ -31,7 +31,6 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
-//            output->assign(static_cast<Nd4jLong>(input->rankOf()));
             output->assign(input->rankOf());
 
             return Status::OK();
