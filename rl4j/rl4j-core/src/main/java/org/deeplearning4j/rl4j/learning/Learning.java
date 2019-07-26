@@ -125,8 +125,6 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         return nshape;
     }
 
-    protected abstract IDataManager getDataManager();
-
     public abstract NN getNeuralNet();
 
     public int incrementStep() {
