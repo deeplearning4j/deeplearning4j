@@ -1935,6 +1935,19 @@ void execAggregate(Nd4jPointer *extraPointers,
     nd4j::DebugHelper::checkErrorCode(stream, "execAggregateFloat(...) failed");
 }
 
+void batchExecutor(Nd4jPointer *extraPointers,
+                               int numAggregates,
+                               int opNum,
+                               int maxArgs,
+                               int maxShapes,
+                               int maxIntArrays,
+                               int maxIntArraySize,
+                               int maxIdx,
+                               int maxReals,
+                               void *ptrToArguments,
+                               nd4j::DataType dtype) {
+}
+
 void execAggregateBatch(Nd4jPointer *extraPointers,
 									int numAggregates, int opNum,
 									int maxArgs, int maxShapes,
@@ -2808,11 +2821,11 @@ VariablesSet* executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, N
 	return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
 }
 
-Nd4jLong getVariableSetSize(nd4j::graph::VariablesSet* set) {
+Nd4jLong getVariablesSetSize(nd4j::graph::VariablesSet* set) {
     return set->size();
 }
 
-Nd4jStatus getVariableSetStatus(nd4j::graph::VariablesSet* set) {
+Nd4jStatus getVariablesSetStatus(nd4j::graph::VariablesSet* set) {
     return set->status();
 }
 
@@ -2867,14 +2880,8 @@ void deleteLongArray(Nd4jPointer pointer) {
 	delete[] ptr;
 }
 
-template <typename T>
-static void deleteVariablesSetT(Nd4jPointer pointer) {
-	nd4j::graph::VariablesSet* ptr = reinterpret_cast<nd4j::graph::VariablesSet*>(pointer);
-	delete ptr;
-}
-
-void deleteVariablesSet(Nd4jPointer pointer) {
-	deleteVariablesSetT<double>(pointer);
+void deleteVariablesSet(nd4j::graph::VariablesSet* pointer) {
+	delete pointer;
 }
 
 void deleteShapeList(Nd4jPointer shapeList) {

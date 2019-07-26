@@ -1068,11 +1068,11 @@ public interface NativeOps {
 
     int registerGraph(PointerPointer extraPointers, long graphId, Pointer flatBufferPointer);
 
-    OpaqueVariableSet executeStoredGraph(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+    OpaqueVariablesSet executeStoredGraph(PointerPointer extraPointers, long graphId, PointerPointer inputBuffers, PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
 
-    long getVariableSetSize(OpaqueVariableSet set);
-    int getVariableSetStatus(OpaqueVariableSet set);
-    OpaqueVariable getVariable(OpaqueVariableSet set, long i);
+    long getVariablesSetSize(OpaqueVariablesSet set);
+    int getVariablesSetStatus(OpaqueVariablesSet set);
+    OpaqueVariable getVariable(OpaqueVariablesSet set, long i);
     int getVariableId(OpaqueVariable variable);
     int getVariableIndex(OpaqueVariable variable);
     String getVariableName(OpaqueVariable variable);
@@ -1095,7 +1095,7 @@ public interface NativeOps {
 
     void deleteNPArrayMap(Pointer pointer);
 
-    void deleteVariablesSet(OpaqueVariableSet pointer);
+    void deleteVariablesSet(OpaqueVariablesSet pointer);
 
     // GraphState creation
     Pointer getGraphState(long id);

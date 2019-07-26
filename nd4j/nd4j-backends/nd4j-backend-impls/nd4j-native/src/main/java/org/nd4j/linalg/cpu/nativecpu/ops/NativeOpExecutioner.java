@@ -74,7 +74,7 @@ import org.nd4j.nativeblas.OpaqueConstantDataBuffer;
 import org.nd4j.nativeblas.OpaqueShapeList;
 import org.nd4j.nativeblas.OpaqueTadPack;
 import org.nd4j.nativeblas.OpaqueVariable;
-import org.nd4j.nativeblas.OpaqueVariableSet;
+import org.nd4j.nativeblas.OpaqueVariablesSet;
 
 import java.util.*;
 
@@ -1950,14 +1950,14 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val newMap = new LinkedHashMap<String, INDArray>();
 
-            OpaqueVariableSet result = loop.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+            OpaqueVariablesSet result = loop.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
-            OpStatus status = OpStatus.byNumber(loop.getVariableSetStatus(result));
+            OpStatus status = OpStatus.byNumber(loop.getVariablesSetStatus(result));
 
             if (status != OpStatus.ND4J_STATUS_OK)
                 throw new ND4JIllegalStateException("Op execution failed: " + status);
 
-            for (int e = 0; e < loop.getVariableSetSize(result); e++) {
+            for (int e = 0; e < loop.getVariablesSetSize(result); e++) {
                 OpaqueVariable var = loop.getVariable(result, e);
                 int nodeId = loop.getVariableId(var);
                 int index = loop.getVariableIndex(var);

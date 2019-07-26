@@ -2337,11 +2337,11 @@ nd4j::graph::VariablesSet* executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLo
     return nullptr;
 }
 
-Nd4jLong getVariableSetSize(nd4j::graph::VariablesSet* set) {
+Nd4jLong getVariablesSetSize(nd4j::graph::VariablesSet* set) {
     return set->size();
 }
 
-Nd4jStatus getVariableSetStatus(nd4j::graph::VariablesSet* set) {
+Nd4jStatus getVariablesSetStatus(nd4j::graph::VariablesSet* set) {
     return set->status();
 }
 
@@ -2396,14 +2396,8 @@ void deleteLongArray(Nd4jPointer pointer) {
     delete[] ptr;
 }
 
-template <typename T>
-static void deleteVariablesSetT(Nd4jPointer pointer) {
-    auto ptr = reinterpret_cast<nd4j::graph::VariablesSet*>(pointer);
-    delete ptr;
-}
-
-void deleteVariablesSet(Nd4jPointer pointer) {
-    deleteVariablesSetT<double>(pointer);
+void deleteVariablesSet(nd4j::graph::VariablesSet* pointer) {
+    delete pointer;
 }
 
 const char* getAllOperations() {

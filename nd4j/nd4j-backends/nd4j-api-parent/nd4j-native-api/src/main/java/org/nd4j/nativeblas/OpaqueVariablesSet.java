@@ -22,6 +22,6 @@ import org.bytedeco.javacpp.Pointer;
  *
  * @author saudet
  */
-public class OpaqueVariableSet extends Pointer {
-    public OpaqueVariableSet(Pointer p) { super(p); }
+public class OpaqueVariablesSet extends Pointer {
+    public OpaqueVariablesSet(Pointer p) { super(p); }
 }

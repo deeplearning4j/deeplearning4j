@@ -76,7 +76,7 @@ import org.nd4j.nativeblas.OpaqueConstantDataBuffer;
 import org.nd4j.nativeblas.OpaqueShapeList;
 import org.nd4j.nativeblas.OpaqueTadPack;
 import org.nd4j.nativeblas.OpaqueVariable;
-import org.nd4j.nativeblas.OpaqueVariableSet;
+import org.nd4j.nativeblas.OpaqueVariablesSet;
 
 import java.util.*;
 
@@ -2427,14 +2427,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val newMap = new LinkedHashMap<String, INDArray>();
 
-        OpaqueVariableSet result = nativeOps.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+        OpaqueVariablesSet result = nativeOps.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
 
-        OpStatus status = OpStatus.byNumber(nativeOps.getVariableSetStatus(result));
+        OpStatus status = OpStatus.byNumber(nativeOps.getVariablesSetStatus(result));
 
         if (status != OpStatus.ND4J_STATUS_OK)
             throw new ND4JIllegalStateException("Op execution failed: " + status);
 
-        for (int e = 0; e < nativeOps.getVariableSetSize(result); e++) {
+        for (int e = 0; e < nativeOps.getVariablesSetSize(result); e++) {
             OpaqueVariable var = nativeOps.getVariable(result, e);
             int nodeId = nativeOps.getVariableId(var);
             int index = nativeOps.getVariableIndex(var);

@@ -1678,14 +1678,14 @@ ND4J_EXPORT void deleteShapeList(Nd4jPointer shapeList);
 
 ND4J_EXPORT int registerGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer flatBufferPointer);
 
-typedef nd4j::graph::VariablesSet OpaqueVariableSet;
+typedef nd4j::graph::VariablesSet OpaqueVariablesSet;
 typedef nd4j::graph::Variable OpaqueVariable;
 
-ND4J_EXPORT OpaqueVariableSet *executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs);
+ND4J_EXPORT OpaqueVariablesSet *executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs);
 
-ND4J_EXPORT Nd4jLong getVariableSetSize(OpaqueVariableSet* set);
-ND4J_EXPORT Nd4jStatus getVariableSetStatus(OpaqueVariableSet* set);
-ND4J_EXPORT OpaqueVariable* getVariable(OpaqueVariableSet* set, Nd4jLong i);
+ND4J_EXPORT Nd4jLong getVariablesSetSize(OpaqueVariablesSet* set);
+ND4J_EXPORT Nd4jStatus getVariablesSetStatus(OpaqueVariablesSet* set);
+ND4J_EXPORT OpaqueVariable* getVariable(OpaqueVariablesSet* set, Nd4jLong i);
 ND4J_EXPORT int getVariableId(OpaqueVariable* variable);
 ND4J_EXPORT int getVariableIndex(OpaqueVariable* variable);
 ND4J_EXPORT const char* getVariableName(OpaqueVariable* variable);
@@ -1699,7 +1699,7 @@ ND4J_EXPORT void deleteIntArray(Nd4jPointer pointer);
 ND4J_EXPORT void deleteLongArray(Nd4jPointer pointer);
 ND4J_EXPORT void deletePointerArray(Nd4jPointer pointer);
 
-ND4J_EXPORT void deleteVariablesSet(OpaqueVariableSet pointer);
+ND4J_EXPORT void deleteVariablesSet(OpaqueVariablesSet* pointer);
 
 // GraphState creation
 ND4J_EXPORT Nd4jPointer getGraphState(Nd4jLong id);

@@ -2988,13 +2988,13 @@ public native void deleteShapeList(@Cast("Nd4jPointer") Pointer shapeList);
 
 public native int registerGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer") Pointer flatBufferPointer);
 
-public native OpaqueVariableSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
-public native OpaqueVariableSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
-public native OpaqueVariableSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
+public native OpaqueVariablesSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntPointer inputIndices, int numInputs);
+public native OpaqueVariablesSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, IntBuffer inputIndices, int numInputs);
+public native OpaqueVariablesSet executeStoredGraph(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jLong") long graphId, @Cast("Nd4jPointer*") PointerPointer inputBuffers, @Cast("Nd4jPointer*") PointerPointer inputShapes, int[] inputIndices, int numInputs);
 
-public native @Cast("Nd4jLong") long getVariableSetSize(OpaqueVariableSet set);
-public native @Cast("Nd4jStatus") int getVariableSetStatus(OpaqueVariableSet set);
-public native OpaqueVariable getVariable(OpaqueVariableSet set, @Cast("Nd4jLong") long i);
+public native @Cast("Nd4jLong") long getVariablesSetSize(OpaqueVariablesSet set);
+public native @Cast("Nd4jStatus") int getVariablesSetStatus(OpaqueVariablesSet set);
+public native OpaqueVariable getVariable(OpaqueVariablesSet set, @Cast("Nd4jLong") long i);
 public native int getVariableId(OpaqueVariable variable);
 public native int getVariableIndex(OpaqueVariable variable);
 public native @Cast("char*") String getVariableName(OpaqueVariable variable);
@@ -3008,7 +3008,7 @@ public native void deleteIntArray(@Cast("Nd4jPointer") Pointer pointer);
 public native void deleteLongArray(@Cast("Nd4jPointer") Pointer pointer);
 public native void deletePointerArray(@Cast("Nd4jPointer") Pointer pointer);
 
-public native void deleteVariablesSet(@ByVal OpaqueVariableSet pointer);
+public native void deleteVariablesSet(OpaqueVariablesSet pointer);
 
 // GraphState creation
 public native @Cast("Nd4jPointer") Pointer getGraphState(@Cast("Nd4jLong") long id);
