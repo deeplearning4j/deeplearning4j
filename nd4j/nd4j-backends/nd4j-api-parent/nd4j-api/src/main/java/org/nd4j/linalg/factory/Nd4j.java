@@ -1390,51 +1390,6 @@ public class Nd4j {
     }
 
     /**
-     * Create a buffer equal of length prod(shape). The buffer is 'detached': Not in any memory workspace even if a
-     * workspace is currently open.
-     *
-     * @param shape the shape of the buffer to create
-     * @param type the opType to create
-     * @return
-     */
-    public static DataBuffer createBufferDetached(int[] shape, DataType type) {
-        long length = ArrayUtil.prodLong(shape);
-        switch (type){
-            case DOUBLE:
-                return DATA_BUFFER_FACTORY_INSTANCE.createDouble(length);
-            case FLOAT:
-                return DATA_BUFFER_FACTORY_INSTANCE.createFloat(length);
-            case HALF:
-                return DATA_BUFFER_FACTORY_INSTANCE.createHalf(length);
-            case BFLOAT16:
-                return DATA_BUFFER_FACTORY_INSTANCE.createBFloat16(length);
-            case UINT64:
-                return DATA_BUFFER_FACTORY_INSTANCE.createULong(length);
-            case LONG:
-                return DATA_BUFFER_FACTORY_INSTANCE.createLong(length);
-            case UINT32:
-                return DATA_BUFFER_FACTORY_INSTANCE.createUInt(length);
-            case INT:
-                return DATA_BUFFER_FACTORY_INSTANCE.createInt(length);
-            case UINT16:
-                return DATA_BUFFER_FACTORY_INSTANCE.createUShort(length);
-            case SHORT:
-                return DATA_BUFFER_FACTORY_INSTANCE.createShort(length);
-            case UBYTE:
-                return DATA_BUFFER_FACTORY_INSTANCE.createUByte(length);
-            case BYTE:
-                return DATA_BUFFER_FACTORY_INSTANCE.createByte(length);
-            case BOOL:
-                return DATA_BUFFER_FACTORY_INSTANCE.createBool(length);
-            case UTF8:
-            case COMPRESSED:
-            case UNKNOWN:
-            default:
-                throw new UnsupportedOperationException("Cannot create type: " + type);
-        }
-    }
-
-    /**
      * See {@link  #createBuffer(int[], DataType)}
      */
     public static DataBuffer createBuffer(long[] shape, DataType type) {
@@ -1475,12 +1430,27 @@ public class Nd4j {
         }
     }
 
+    /**
+     * Create a buffer equal of length prod(shape). The buffer is 'detached': Not in any memory workspace even if a
+     * workspace is currently open.
+     *
+     * @param shape the shape of the buffer to create
+     * @param type the opType to create
+     * @return
+     */
+    public static DataBuffer createBufferDetached(int[] shape, DataType type) {
+        return createBufferDetachedImpl( ArrayUtil.prodLong(shape), type);
+    }
 
     /**
      * See {@link  #createBufferDetached(int[], DataType)}
      */
     public static DataBuffer createBufferDetached(long[] shape, DataType type) {
-        long length = ArrayUtil.prodLong(shape);
+        return createBufferDetachedImpl( ArrayUtil.prodLong(shape), type);
+    }
+
+    // used by createBufferDetached(long[] DataType) and createBufferDetached(int[] , DataType)
+    private static DataBuffer createBufferDetachedImpl(long length, DataType type){
         switch (type){
 
             case DOUBLE:
