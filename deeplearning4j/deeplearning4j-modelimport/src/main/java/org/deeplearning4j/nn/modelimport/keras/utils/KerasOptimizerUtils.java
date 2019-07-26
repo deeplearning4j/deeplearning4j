@@ -75,7 +75,7 @@ public class KerasOptimizerUtils {
                 dl4jOptimizer = new Adam.Builder()
                         .beta1(beta1).beta2(beta2)
                         .epsilon(epsilon).learningRate(lr)
-                        .learningRateSchedule(new InverseSchedule(ScheduleType.ITERATION, 1, decay, 1))
+						.learningRateSchedule(decay == 0 ? null : new InverseSchedule(ScheduleType.ITERATION, lr, decay, 1))
                         .build();
                 break;
             }
@@ -96,7 +96,7 @@ public class KerasOptimizerUtils {
 
                 dl4jOptimizer = new AdaGrad.Builder()
                         .epsilon(epsilon).learningRate(lr)
-                        .learningRateSchedule(new InverseSchedule(ScheduleType.ITERATION, 1, decay, 1))
+						.learningRateSchedule(decay == 0 ? null : new InverseSchedule(ScheduleType.ITERATION, lr, decay, 1))
                         .build();
                 break;
             }
@@ -119,8 +119,8 @@ public class KerasOptimizerUtils {
                 dl4jOptimizer = new Nadam.Builder()
                         .beta1(beta1).beta2(beta2)
                         .epsilon(epsilon).learningRate(lr)
-                        .learningRateSchedule(new InverseSchedule(ScheduleType.ITERATION, 1,
-                                scheduleDecay, 1))
+						.learningRateSchedule(scheduleDecay == 0 ? null : new InverseSchedule(ScheduleType.ITERATION, lr, 
+								scheduleDecay, 1))
                         .build();
                 break;
             }
@@ -132,7 +132,7 @@ public class KerasOptimizerUtils {
 
                 dl4jOptimizer = new Nesterovs.Builder()
                         .momentum(momentum).learningRate(lr)
-                        .learningRateSchedule(new InverseSchedule(ScheduleType.ITERATION, 1, decay, 1))
+						.learningRateSchedule(decay == 0 ? null : new InverseSchedule(ScheduleType.ITERATION, lr, decay, 1))
                         .build();
                 break;
             }
@@ -144,7 +144,7 @@ public class KerasOptimizerUtils {
 
                 dl4jOptimizer = new RmsProp.Builder()
                         .epsilon(epsilon).rmsDecay(rho).learningRate(lr)
-                        .learningRateSchedule(new InverseSchedule(ScheduleType.ITERATION, 1, decay, 1))
+						.learningRateSchedule(decay == 0 ? null : new InverseSchedule(ScheduleType.ITERATION, lr, decay, 1))
                         .build();
                 break;
             }
