@@ -16,6 +16,9 @@
 
 package org.nd4j.autodiff.samediff;
 
+import static org.nd4j.autodiff.util.TrainingUtils.getSingleOutput;
+import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
+
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.common.primitives.Ints;
@@ -73,6 +76,7 @@ import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.exception.ND4JException;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
@@ -109,7 +113,7 @@ import org.tensorflow.framework.GraphDef;
  * <p>
  * That graph accumulates operations.
  * <p>
- * In order to execute the graph, you run one of the execution methods, such as {@link #exec(Map, String...)}
+ * In order to execute the graph, you run one of the execution methods, such as {@link #output(Map, String...)}
  */
 @AllArgsConstructor
 @Builder
@@ -2262,7 +2266,7 @@ public class SameDiff extends SDBaseOps {
             MultiDataSet ds = iterator.next();
             Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
 
-            Map<String,INDArray> m = exec(placeholderMap, reqVars);
+            Map<String,INDArray> m = output(placeholderMap, reqVars);
 
             for(Map.Entry<String,List<IEvaluation>> e : variableEvals.entrySet()){
                 INDArray prediction = m.get(e.getKey());
@@ -2288,7 +2292,15 @@ public class SameDiff extends SDBaseOps {
      * @param outputs        The variables to evaluate
      */
     public Map<String, INDArray> output(DataSet dataSet, String... outputs){
-        return output(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), outputs).get(0);
+        return outputBatches(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), outputs).get(0);
+    }
+
+    /**
+     * Single output inference.
+     * See {@link #output(DataSet, String...)}
+     */
+    public INDArray outputSingle(DataSet dataSet, String output){
+        return output(dataSet, output).get(output);
     }
 
     /**
@@ -2299,11 +2311,38 @@ public class SameDiff extends SDBaseOps {
      * sameDiff.output(iterator, "softmax");}
      * </pre>
      *
+     * Uses concatenation on the outputs of {@link #outputBatches(DataSetIterator, String...)} which may cause issues with some inputs.
+     * RNNs with variable time series length and CNNs with variable image sizes will most likely have issues.
+     *
      * @param iterator       Iterator as source of data to evaluate
      * @param outputs        The variables to evaluate
      */
-    public List<Map<String, INDArray>> output(DataSetIterator iterator, String... outputs){
+    public Map<String, INDArray> output(DataSetIterator iterator, String... outputs){
         return output(new MultiDataSetIteratorAdapter(iterator), outputs);
+    }
+
+    /**
+     * See {@link #output(DataSetIterator, String...)}, but without the concatenation of batches.
+     *
+     */
+    public List<Map<String, INDArray>> outputBatches(DataSetIterator iterator, String... outputs){
+        return outputBatches(new MultiDataSetIteratorAdapter(iterator), outputs);
+    }
+
+    /**
+     * Single output inference.
+     * See {@link #output(DataSetIterator, String...)}
+     */
+    public INDArray outputSingle(DataSetIterator dataSet, String output){
+        return output(dataSet, output).get(output);
+    }
+
+    /**
+     * Single batched output inference.
+     * See {@link #output(DataSetIterator, String...)}
+     */
+    public List<INDArray> outputSingleBatches(DataSetIterator dataSet, String output){
+        return getSingleOutput(outputBatches(dataSet, output), output);
     }
 
     /**
@@ -2321,10 +2360,20 @@ public class SameDiff extends SDBaseOps {
      * }
      * </pre>
      *
+     * Uses concatenation on the outputs of {@link #outputBatches(MultiDataSetIterator, String...)} which may cause issues with some inputs.
+     * RNNs with variable time series length and CNNs with variable image sizes will most likely have issues.
+     *
      * @param iterator  The iterator - the source of the data for inference
      * @param outputs   The set of outputs to report.  If null, defaults to all outputs of this SameDiff.
      */
-    public List<Map<String, INDArray>> output(MultiDataSetIterator iterator, String... outputs){
+    public Map<String, INDArray> output(MultiDataSetIterator iterator, String... outputs){
+        return stackOutputs(outputBatches(iterator, outputs));
+    }
+
+    /**
+     * See {@link #output(MultiDataSetIterator, String...)}, but without the concatenation of batches.
+     */
+    public List<Map<String, INDArray>> outputBatches(MultiDataSetIterator iterator, String... outputs){
         Preconditions.checkState(trainingConfig != null, "Training config has not been set");
 
         List<String> reqVars;
@@ -2344,12 +2393,114 @@ public class SameDiff extends SDBaseOps {
             MultiDataSet ds = iterator.next();
             Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
 
-            predictions.add(exec(placeholderMap, reqVars));
+            predictions.add(output(placeholderMap, reqVars));
         }
 
         return predictions;
     }
 
+    /**
+     * Single output inference.
+     * See {@link #output(MultiDataSetIterator, String...)}
+     */
+    public INDArray outputSingle(MultiDataSetIterator dataSet, String output){
+        return output(dataSet, output).get(output);
+    }
+
+    /**
+     * Single batched output inference.
+     * See {@link #output(MultiDataSetIterator, String...)}
+     */
+    public List<INDArray> outputSingleBatches(MultiDataSetIterator dataSet, String output){
+        return getSingleOutput(outputBatches(dataSet, output), output);
+    }
+
+    /**
+     * @deprecated See {@link #outputAll(Map)}
+     */
+    @Deprecated
+    public Map<String,INDArray> execAll(Map<String,INDArray> placeholders){
+        return outputAll(placeholders);
+    }
+
+    /**
+     * Do inference for all variables for a single batch
+     */
+    public Map<String,INDArray> outputAll(Map<String,INDArray> placeholders){
+        List<String> allVars = new ArrayList<>();
+        for(Variable v : variables.values()){
+            allVars.add(v.getName());
+        }
+        return output(placeholders, allVars.toArray(new String[0]));
+    }
+    /**
+     * @deprecated See {@link #outputSingle(Map, String)}
+     */
+    @Deprecated
+    public INDArray execSingle(Map<String,INDArray> placeholders, String output){
+        return outputSingle(placeholders, output);
+    }
+
+    /**
+     * Do inference for a single variable for a single batch
+     */
+    public INDArray outputSingle(Map<String,INDArray> placeholders, String output){
+        return output(placeholders, output).get(output);
+    }
+    /**
+     * @deprecated See {@link #output(Map, List)}
+     */
+    @Deprecated
+    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, List<String> outputs){
+        return output(placeholders, outputs);
+    }
+
+    /**
+     * Do inference for the given variables for a single batch
+     */
+    public Map<String,INDArray> output(Map<String,INDArray> placeholders, List<String> outputs){
+        return output(placeholders, outputs.toArray(new String[outputs.size()]));
+    }
+
+    /**
+     * @deprecated See {@link #output(Map, String...)}
+     */
+    @Deprecated
+    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs) {
+        return output(placeholders, outputs);
+    }
+
+
+    /**
+     * Do inference for the given variables for a single batch
+     */
+    public Map<String,INDArray> output(Map<String,INDArray> placeholders, String... outputs) {
+        return output(placeholders, false, null, outputs);
+    }
+
+    /**
+     * Do inference for the given variables for a single batch, with training information
+     */
+    protected Map<String,INDArray> output(Map<String,INDArray> placeholders, boolean training, At at, String... outputs){
+        Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
+        long threadId = Thread.currentThread().getId();
+        if(!sessions.containsKey(threadId)){
+            log.info("Creating new InferenceSession for thread {}", threadId);
+            sessions.put(threadId, new InferenceSession(this));
+        }
+
+        List<String> phNames = inputs();
+        if(placeholders == null && phNames != null){
+            //Maybe user set placeholders before calling exec method?
+            placeholders = placeholdersPerThread.get(Thread.currentThread().getId());
+        }
+
+        //Placeholder validation is performed in InferenceSession
+
+        InferenceSession is = sessions.get(threadId);
+        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders, listeners, training, at);
+        return ret;
+    }
 
     public SDVariable one(String name, int... shape){
         return one(name, Nd4j.defaultFloatingPointType(), shape);
@@ -3779,7 +3930,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         //TODO is this 'train' flag the best approach?
-        sd.exec(placeholders, trainingConfig != null, at, variableGradNamesList.toArray(new String[variableGradNamesList.size()]));
+        sd.output(placeholders, trainingConfig != null, at, variableGradNamesList.toArray(new String[variableGradNamesList.size()]));
     }
 
     /**
@@ -4457,47 +4608,6 @@ public class SameDiff extends SDBaseOps {
                 }
             }
         }
-    }
-
-    public Map<String,INDArray> execAll(Map<String,INDArray> placeholders){
-        List<String> allVars = new ArrayList<>();
-        for(Variable v : variables.values()){
-            allVars.add(v.getName());
-        }
-        return exec(placeholders, allVars.toArray(new String[allVars.size()]));
-    }
-
-    public INDArray execSingle(Map<String,INDArray> placeholders, String output){
-        return exec(placeholders, output).get(output);
-    }
-
-    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, List<String> outputs){
-        return exec(placeholders, outputs.toArray(new String[outputs.size()]));
-    }
-
-    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs) {
-        return exec(placeholders, false, null, outputs);
-    }
-
-    protected Map<String,INDArray> exec(Map<String,INDArray> placeholders, boolean training, At at, String... outputs){
-        Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
-        long threadId = Thread.currentThread().getId();
-        if(!sessions.containsKey(threadId)){
-            log.info("Creating new InferenceSession for thread {}", threadId);
-            sessions.put(threadId, new InferenceSession(this));
-        }
-
-        List<String> phNames = inputs();
-        if(placeholders == null && phNames != null){
-            //Maybe user set placeholders before calling exec method?
-            placeholders = placeholdersPerThread.get(Thread.currentThread().getId());
-        }
-
-        //Placeholder validation is performed in InferenceSession
-
-        InferenceSession is = sessions.get(threadId);
-        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders, listeners, training, at);
-        return ret;
     }
 
 

@@ -915,7 +915,6 @@ public class OpValidation {
                 Conv2DDerivative.class,
                 Conv3DDerivative.class,
                 DeConv2DDerivative.class,
-                FullConv3DDerivative.class,
                 LocalResponseNormalizationDerivative.class,
                 Pooling2DDerivative.class,
                 Pooling3DDerivative.class,

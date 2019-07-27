@@ -16,23 +16,22 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
-import lombok.AllArgsConstructor;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D.Pooling3DType;
+import org.nd4j.linalg.util.ConvConfigUtil;
 
 @Data
 @Builder
-@AllArgsConstructor
 @NoArgsConstructor
 public class Pooling3DConfig extends BaseConvolutionConfig {
-    private long kD, kW, kH; // kernel
-    private long sD, sW, sH; // strides
-    private long pD, pW, pH; // padding
+    @Builder.Default private long kD = -1, kW = -1, kH = -1; // kernel
+    @Builder.Default private long sD = 1, sW = 1, sH = 1; // strides
+    @Builder.Default private long pD = 0, pW = 0, pH = 0; // padding
     // dilation
     @Builder.Default
     private long dD = 1;
@@ -40,10 +39,33 @@ public class Pooling3DConfig extends BaseConvolutionConfig {
     private long dW = 1;
     @Builder.Default
     private long dH = 1;
-    private Pooling3D.Pooling3DType type;
+    @Builder.Default
+    private Pooling3D.Pooling3DType type = Pooling3DType.MAX;
     private boolean isSameMode;
     @Builder.Default private boolean isNCDHW = true;
 
+    public Pooling3DConfig(long kD, long kW, long kH, long sD, long sW, long sH, long pD, long pW, long pH, long dD,
+            long dW, long dH, Pooling3DType type, boolean isSameMode, boolean isNCDHW) {
+        this.kD = kD;
+        this.kW = kW;
+        this.kH = kH;
+        this.sD = sD;
+        this.sW = sW;
+        this.sH = sH;
+        this.pD = pD;
+        this.pW = pW;
+        this.pH = pH;
+        this.dD = dD;
+        this.dW = dW;
+        this.dH = dH;
+        this.type = type;
+        this.isSameMode = isSameMode;
+        this.isNCDHW = isNCDHW;
+
+        validate();
+    }
+
+    @Override
     public Map<String, Object> toProperties() {
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("kD", kD);
@@ -62,5 +84,12 @@ public class Pooling3DConfig extends BaseConvolutionConfig {
         ret.put("isSameMode", isSameMode);
         return ret;
 
+    }
+
+    @Override
+    protected void validate() {
+        ConvConfigUtil.validate3D(kH, kW, kD, sH, sW, sD, pH, pW, pD, dH, dW, dD);
+
+        //TODO check other args
     }
 }

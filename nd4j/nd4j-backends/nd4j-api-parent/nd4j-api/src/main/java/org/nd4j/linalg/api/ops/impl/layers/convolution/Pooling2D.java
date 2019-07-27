@@ -174,8 +174,6 @@ public class Pooling2D extends DynamicCustomOp {
                 .kW(kW.intValue())
                 .pH(padding.get(0).intValue())
                 .pW(padding.get(1).intValue())
-                .virtualWidth(1)
-                .virtualHeight(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();
@@ -200,8 +198,6 @@ public class Pooling2D extends DynamicCustomOp {
                 .kW(kernelShape.get(1).intValue())
                 .pH(padding.get(0).intValue())
                 .pW(padding.get(1).intValue())
-                .virtualHeight(1)
-                .virtualWidth(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();

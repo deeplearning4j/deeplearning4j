@@ -72,7 +72,6 @@ public class DifferentialFunctionClassHolder {
         add(AvgPooling2D.class.getName());
         add(Conv2D.class.getName());
         add(Conv3D.class.getName());
-        add(FullConv3D.class.getName());
         add(LocalResponseNormalization.class.getName());
         add(MaxPooling2D.class.getName());
         add(Pooling2D.class.getName());

@@ -187,12 +187,6 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(pnormpool2d_bp, 2, 1, false, 1, 10);
         #endif
 
-        #if NOT_EXCLUDED(OP_fullconv3d)
-        DECLARE_CUSTOM_OP(fullconv3d, 5, 1, false, 0, 13);
-        DECLARE_CUSTOM_OP(fullconv3d_bp, 5, 1, false, 0, 13);
-        DECLARE_CUSTOM_OP(fullconv3d_grad, 4, 2, false, 1, 13);
-        #endif
-
         /**
          * This op implements im2col algorithm, widely used in convolution neural networks
          * Input: 4D input expected

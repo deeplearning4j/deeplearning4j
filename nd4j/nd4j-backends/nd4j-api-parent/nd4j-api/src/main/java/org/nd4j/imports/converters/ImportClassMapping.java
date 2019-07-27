@@ -117,8 +117,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DDerivative.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.DepthwiseConv2D.class,
-            org.nd4j.linalg.api.ops.impl.layers.convolution.FullConv3D.class,
-            org.nd4j.linalg.api.ops.impl.layers.convolution.FullConv3DDerivative.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Im2colBp.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D.class,

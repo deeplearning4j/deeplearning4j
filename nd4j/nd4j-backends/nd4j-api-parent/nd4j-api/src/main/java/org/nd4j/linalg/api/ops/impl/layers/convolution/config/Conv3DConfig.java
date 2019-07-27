@@ -17,30 +17,28 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
 
-import lombok.AllArgsConstructor;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.base.Preconditions;
-
-import java.util.LinkedHashMap;
-import java.util.Map;
+import org.nd4j.linalg.util.ConvConfigUtil;
 
 @Data
 @Builder
 @NoArgsConstructor
-@AllArgsConstructor
 public class Conv3DConfig extends BaseConvolutionConfig {
     public static final String NDHWC = "NDHWC";
     public static final String NCDHW = "NCDHW";
 
     //kernel
     @Builder.Default
-    private long kD = 1;
+    private long kD = -1;
     @Builder.Default
-    private long kW = 1;
+    private long kW = -1;
     @Builder.Default
-    private long kH = 1;
+    private long kH = -1;
 
     //strides
     @Builder.Default
@@ -66,20 +64,33 @@ public class Conv3DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private long dH = 1;
 
-    //output padding
-    @Builder.Default
-    private long aD = 0;
-    @Builder.Default
-    private long aW = 0;
-    @Builder.Default
-    private long aH = 0;
-
     @Builder.Default
     private boolean biasUsed = false;
     private boolean isSameMode;
 
     @Builder.Default
     private String dataFormat = NDHWC;
+
+    public Conv3DConfig(long kD, long kW, long kH, long sD, long sW, long sH, long pD, long pW, long pH, long dD,
+            long dW, long dH, boolean biasUsed, boolean isSameMode, String dataFormat) {
+        this.kD = kD;
+        this.kW = kW;
+        this.kH = kH;
+        this.sD = sD;
+        this.sW = sW;
+        this.sH = sH;
+        this.pD = pD;
+        this.pW = pW;
+        this.pH = pH;
+        this.dD = dD;
+        this.dW = dW;
+        this.dH = dH;
+        this.biasUsed = biasUsed;
+        this.isSameMode = isSameMode;
+        this.dataFormat = dataFormat;
+
+        validate();
+    }
 
     public boolean isNCDHW(){
         Preconditions.checkState(dataFormat.equalsIgnoreCase(NCDHW) || dataFormat.equalsIgnoreCase(NDHWC),
@@ -95,6 +106,7 @@ public class Conv3DConfig extends BaseConvolutionConfig {
         }
     }
 
+    @Override
     public Map<String, Object> toProperties() {
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("kD", kD);
@@ -109,14 +121,17 @@ public class Conv3DConfig extends BaseConvolutionConfig {
         ret.put("dD", dD);
         ret.put("dW", dW);
         ret.put("dH", dH);
-        ret.put("aD", aD);
-        ret.put("aW", aW);
-        ret.put("aH", aH);
         ret.put("biasUsed", biasUsed);
         ret.put("dataFormat", dataFormat);
         ret.put("isSameMode", isSameMode);
 
         return ret;
+    }
+
+    @Override
+    protected void validate() {
+        ConvConfigUtil.validate3D(kH, kW, kD, sH, sW, sD, pH, pW, pD, dH, dW, dD);
+        Preconditions.checkArgument(dataFormat != null, "Data format can't be null");
     }
 
 

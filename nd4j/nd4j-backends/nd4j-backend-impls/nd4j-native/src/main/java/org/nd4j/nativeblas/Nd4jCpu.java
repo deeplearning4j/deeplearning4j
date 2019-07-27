@@ -14662,54 +14662,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-//         #if NOT_EXCLUDED(OP_fullconv3d)
-        @Namespace("nd4j::ops") public static class fullconv3d extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public fullconv3d(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public fullconv3d(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public fullconv3d position(long position) {
-                return (fullconv3d)super.position(position);
-            }
-        
-                                                                                    public fullconv3d() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-        @Namespace("nd4j::ops") public static class fullconv3d_bp extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public fullconv3d_bp(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public fullconv3d_bp(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public fullconv3d_bp position(long position) {
-                return (fullconv3d_bp)super.position(position);
-            }
-        
-                                                                                    public fullconv3d_bp() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-        @Namespace("nd4j::ops") public static class fullconv3d_grad extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public fullconv3d_grad(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public fullconv3d_grad(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public fullconv3d_grad position(long position) {
-                return (fullconv3d_grad)super.position(position);
-            }
-        
-                                                                                    public fullconv3d_grad() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
         /**
          * This op implements im2col algorithm, widely used in convolution neural networks
          * Input: 4D input expected

@@ -204,8 +204,6 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .kW(kW)
                 .pH(pH)
                 .pW(pW)
-                .virtualHeight(1)
-                .virtualWidth(1)
                 .isNHWC(data_format.equalsIgnoreCase("nhwc"))
                 .extra(1.0) // averaging only for non-padded values
                 .build();
@@ -230,8 +228,6 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .kW(kernelShape.size() < 2 ? kernelShape.get(0).intValue() : kernelShape.get(1).intValue())
                 .pH(padding.get(0).intValue())
                 .pW(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
-                .virtualHeight(1)
-                .virtualWidth(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();

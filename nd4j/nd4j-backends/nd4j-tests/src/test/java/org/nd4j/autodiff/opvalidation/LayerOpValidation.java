@@ -1124,7 +1124,7 @@ public class LayerOpValidation extends BaseOpValidation {
         assertNull(err, err);
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void exceptionThrown_WhenConv1DConfigInvalid() {
         int nIn = 3;
         int nOut = 4;
@@ -1150,7 +1150,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void exceptionThrown_WhenConv2DConfigInvalid() {
 
         Nd4j.getRandom().setSeed(12345);
@@ -1171,7 +1171,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .build());
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = IllegalArgumentException.class)
     public void exceptionThrown_WhenConf3DInvalid() {
         Nd4j.getRandom().setSeed(12345);
 
