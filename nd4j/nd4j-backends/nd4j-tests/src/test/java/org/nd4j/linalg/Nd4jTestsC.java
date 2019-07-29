@@ -2699,6 +2699,21 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(expected, actual);
     }
 
+    @Test
+    public void testBroadcastDiv2(){
+        INDArray arr = Nd4j.ones(DataType.DOUBLE, 1, 64, 125, 125).muli(2);
+        INDArray vec = Nd4j.ones(DataType.DOUBLE, 64).muli(2);
+
+        INDArray exp = Nd4j.ones(DataType.DOUBLE, 1, 64, 125, 125);
+        INDArray out = arr.like();
+
+        for( int i=0; i<10; i++ ) {
+            out.assign(0.0);
+            Nd4j.getExecutioner().exec(new BroadcastDivOp(arr, vec, out, 1));
+            assertEquals(exp, out);
+        }
+    }
+
 
     @Test
     public void testBroadcastMult() {
@@ -7417,7 +7432,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray arr1a = Nd4j.create(new long[]{2,3}, 'c').get(NDArrayIndex.all(), NDArrayIndex.interval(0,2));
         INDArray arr3 = arr1a.reshape('c', false, 4,1);
-        assertFalse(arr3.isView());     //Should be copy
+        boolean isView = arr3.isView();
+        assertFalse(isView);     //Should be copy
 
         try{
             INDArray arr4 = arr1a.reshape('c', true, 4,1);
@@ -7861,6 +7877,54 @@ public class Nd4jTestsC extends BaseNd4jTest {
         final INDArray arr2 = arr1.reshape(3,1);
         assertEquals("Incorrect type!", DataType.FLOAT, arr1.mmul(arr2).dataType());
     }
+
+
+    @Test
+    public void testCreateDtypes() {
+        int[] sliceShape = new int[] {9};
+        float[] arrays = new float[] {1.0f, 2.0f, 3.0f, 4.0f, 5.0f, 6.0f, 7.0f, 8.0f, 9.0f};
+        double [] arrays_double = new double[] {1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0};
+
+        INDArray x = Nd4j.create( sliceShape, arrays, arrays );
+        assertEquals(DataType.FLOAT, x.dataType());
+
+        INDArray xd = Nd4j.create( sliceShape, arrays_double, arrays_double  );
+        assertEquals(DataType.DOUBLE, xd.dataType());
+    }
+
+
+    @Test
+    public void testCreateShapeValidation(){
+        try {
+            Nd4j.create(new double[]{1, 2, 3}, new int[]{1, 1});
+            fail();
+        } catch (Exception t){
+            assertTrue(t.getMessage().contains("length"));
+        }
+
+        try {
+            Nd4j.create(new float[]{1, 2, 3}, new int[]{1, 1});
+            fail();
+        } catch (Exception t){
+            assertTrue(t.getMessage().contains("length"));
+        }
+
+        try {
+            Nd4j.create(new byte[]{1, 2, 3}, new long[]{1, 1}, DataType.BYTE);
+            fail();
+        } catch (Exception t){
+            assertTrue(t.getMessage().contains("length"));
+        }
+
+        try {
+            Nd4j.create(new double[]{1, 2, 3}, new int[]{1, 1}, 'c');
+            fail();
+        } catch (Exception t){
+            assertTrue(t.getMessage().contains("length"));
+        }
+    }
+
+
     ///////////////////////////////////////////////////////
     protected static void fillJvmArray3D(float[][][] arr) {
         int cnt = 1;

@@ -2476,6 +2476,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // length/data.length can be different in case of Threshold conversion
         if(isEmpty() || isS())
             return false;
+
         return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
                 || (length() < data().length() && data.dataType() != DataType.INT)
                 || data().originalDataBuffer() != null;
@@ -4577,7 +4578,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return ret;
         } else {
             INDArray ret = this.dup(order);
-            return ret.reshape(order, shape);
+            return Nd4j.create(ret.data(), shape);
         }
     }
 

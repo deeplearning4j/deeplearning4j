@@ -27,14 +27,19 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldSubOp;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+
+import java.util.Arrays;
 
 /** An ElementWiseVertex is used to combine the activations of two or more layer in an element-wise manner<br>
  * For example, the activations may be combined by addition, subtraction or multiplication or by selecting the maximum.
@@ -80,17 +85,44 @@ public class ElementWiseVertex extends BaseGraphVertex {
         if (inputs.length == 1)
             return workspaceMgr.dup(ArrayType.ACTIVATIONS, inputs[0]);
 
+        boolean isBc = false;
+        for(int i=1; i<inputs.length; i++ ){
+            if(!inputs[0].equalShapes(inputs[i])){
+                isBc = true;
+                break;
+            }
+        }
+
+        long[] outShape;
+        if(!isBc){
+            outShape = inputs[0].shape();
+        } else {
+            outShape = Shape.broadcastOutputShape(inputs[0].shape(), inputs[1].shape());
+            for( int i=2; i<inputs.length; i++ ){
+                outShape = Shape.broadcastOutputShape(outShape, inputs[i].shape());
+            }
+        }
+
         switch (op) {
             case Add:
-                INDArray sum =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, inputs[0].shape());
-                sum.assign(inputs[0]);
+                INDArray sum =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, outShape);
+                if(isBc && !Arrays.equals(outShape, inputs[0].shape())){
+                    Nd4j.exec(new BroadcastTo(inputs[0], outShape, sum));
+                } else {
+                    sum.assign(inputs[0]);
+                }
+
                 for (int i = 1; i < inputs.length; i++) {
                     sum.addi(inputs[i].castTo(dataType));
                 }
                 return sum;
             case Average:
-                INDArray average =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, inputs[0].shape());
-                average.assign(inputs[0]);
+                INDArray average =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, outShape);
+                if(isBc && !Arrays.equals(outShape, inputs[0].shape())){
+                    Nd4j.exec(new BroadcastTo(inputs[0], outShape, average));
+                } else {
+                    average.assign(inputs[0]);
+                }
                 for (int i = 1; i < inputs.length; i++) {
                     average.addi(inputs[i].castTo(dataType));
                 }
@@ -98,23 +130,49 @@ public class ElementWiseVertex extends BaseGraphVertex {
             case Subtract:
                 if (inputs.length != 2)
                     throw new IllegalArgumentException("ElementWise subtraction only supports 2 inputs");
-                return Nd4j.getExecutioner().exec(new OldSubOp(inputs[0], inputs[1], workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].dataType(), inputs[0].shape())));
+                return Nd4j.exec(new SubOp(inputs, new INDArray[]{workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].dataType(), outShape)}))[0];
             case Product:
-                INDArray product =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, inputs[0].shape());
-                product.assign(inputs[0]);
+                INDArray product =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, dataType, outShape);
+
+                if(isBc && !Arrays.equals(outShape, inputs[0].shape())){
+                    Nd4j.exec(new BroadcastTo(inputs[0], outShape, product));
+                } else {
+                    product.assign(inputs[0]);
+                }
+
                 for (int i = 1; i < inputs.length; i++) {
                     product.muli(inputs[i].castTo(dataType));
                 }
                 return product;
             case Max:
-                INDArray max =  workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].dataType(), inputs[0].shape(), inputs[0].ordering());
-                CustomOp op = DynamicCustomOp.builder("mergemax")
-                        .addInputs(inputs)
-                        .addOutputs(max)
-                        .callInplace(false)
-                        .build();
-                Nd4j.getExecutioner().exec(op);
-                return max;
+                boolean isBroadcast = false;
+                for(int i=1; i<inputs.length; i++ ){
+                    isBroadcast |= !inputs[0].equalShapes(inputs[i]);
+                    if(isBroadcast)
+                        break;
+                }
+                if(!isBroadcast) {
+                    INDArray max = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, inputs[0].dataType(), inputs[0].shape(), inputs[0].ordering());
+                    CustomOp op = DynamicCustomOp.builder("mergemax")
+                            .addInputs(inputs)
+                            .addOutputs(max)
+                            .callInplace(false)
+                            .build();
+                    Nd4j.getExecutioner().exec(op);
+                    return max;
+                } else {
+                    //AB 20190729 mergemax doesn't support broadcast at this point
+                    if(inputs.length == 1){
+                        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, inputs[0]);
+                    } else {
+                        INDArray max = Transforms.max(inputs[0], inputs[1], true);
+                        for( int i=2; i<inputs.length; i++ ){
+                            max = Transforms.max(max, inputs[i], false);
+                        }
+                        return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, max);
+                    }
+                }
+
             default:
                 throw new UnsupportedOperationException("Unknown op: " + this.op);
         }
@@ -128,40 +186,119 @@ public class ElementWiseVertex extends BaseGraphVertex {
         if (nInForwardPass == 1)
             return new Pair<>(null, new INDArray[] {workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon)});
 
+        boolean broadcastCase = false;
+        for( int i=1; i<nInForwardPass; i++ ){
+            broadcastCase |= !inputs[0].equalShapes(inputs[i]);
+        }
+
         switch (op) {
             case Add:
                 //If x=sum_i a_i then dL/da_i = dL/dx * dx/da_i = dL/dx
                 INDArray[] out = new INDArray[nInForwardPass];
-                for (int i = 0; i < nInForwardPass; i++)
-                    out[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
+                for (int i = 0; i < nInForwardPass; i++) {
+                    if(!broadcastCase) {
+                        //Standard case
+                        out[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
+                    } else {
+                        //For broadcast case, we need to sum along the broadcast dimensions
+                        //So if [mb,3]+[mb,1] -> input 0 backprops epsilon, input 1 backprops epsilon.sum(1,keepDim=true)
+                        if(inputs[i].equalShapes(epsilon)){
+                            out[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
+                        } else {
+                            int[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
+                            try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
+                                out[i] = epsilon.sum(true, bcDim);
+                            }
+                        }
+                    }
+                }
                 return new Pair<>(null, out);
             case Average:
                 INDArray[] outAverage = new INDArray[nInForwardPass];
                 try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)){
-                    for (int i = 0; i < nInForwardPass; i++)
-                        outAverage[i] = epsilon.div(nInForwardPass);
+                    for (int i = 0; i < nInForwardPass; i++) {
+                        if(inputs[i].equalShapes(epsilon)){
+                            outAverage[i] = epsilon.div(nInForwardPass);
+                        } else {
+                            int[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
+                            outAverage[i] = epsilon.div(nInForwardPass).sum(true, bcDim);
+                        }
+                    }
                 }
                 return new Pair<>(null, outAverage);
             case Subtract:
                 INDArray[] out2 = new INDArray[2];
-                out2[0] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
-                out2[1] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon).negi();
+                if(!broadcastCase){
+                    out2[0] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
+                    out2[1] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon).negi();
+                } else {
+                    if(inputs[0].equalShapes(epsilon)){
+                        //Second input is smaller/broadcast
+                        out2[0] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
+                        int[] bcDim = Shape.getBroadcastDimensions(inputs[1].shape(), epsilon.shape());
+                        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
+                            out2[1] = epsilon.sum(true, bcDim).negi();
+                        }
+                    } else {
+                        //First input is smaller/broadcast
+                        int[] bcDim = Shape.getBroadcastDimensions(inputs[0].shape(), epsilon.shape());
+                        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
+                            out2[0] = epsilon.sum(true, bcDim);
+                        }
+                        out2[1] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon).negi();
+                    }
+                }
                 return new Pair<>(null, out2);
             case Product:
                 INDArray[] out_product = new INDArray[nInForwardPass];
+                INDArray[] inBc = inputs;
+                if(broadcastCase){
+                    inBc = new INDArray[inputs.length];
+                    for( int i=0; i<inputs.length; i++ ){
+                        if(inputs[i].equalShapes(epsilon)){
+                            inBc[i] = inputs[i];
+                        } else {
+                            inBc[i] = epsilon.ulike();
+                            Nd4j.exec(new BroadcastTo(inputs[i], epsilon.shape(), inBc[i]));
+                        }
+                    }
+                }
+
                 for (int i = 0; i < nInForwardPass; i++) {
                     out_product[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, epsilon);
                     for (int j = 0; j < nInForwardPass; ++j) {
                         if (i != j)
-                            out_product[i].muli(inputs[j]);
+                            out_product[i].muli(inBc[j]);
+                    }
+
+                    if(!inputs[i].equalShapes(epsilon)){
+                        int[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
+                        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
+                            out_product[i] = out_product[i].sum(true, bcDim);
+                        }
                     }
                 }
                 return new Pair<>(null, out_product);
             case Max:
                 INDArray[] outMax = new INDArray[nInForwardPass];
                 INDArray maxIndices = workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, DataType.INT, epsilon.shape(), epsilon.ordering());
+
+                INDArray[] bcIn = inputs;
+                if(broadcastCase){
+                    //Broadcast to right shape...
+                    bcIn = new INDArray[inputs.length];
+                    for( int i=0; i<inputs.length; i++ ){
+                        if(inputs[i].equalShapes(epsilon)){
+                            bcIn[i] = inputs[i];
+                        } else {
+                            bcIn[i] = epsilon.ulike();
+                            Nd4j.exec(new BroadcastTo(inputs[i], epsilon.shape(), bcIn[i]));
+                        }
+                    }
+                }
+
                 CustomOp op = DynamicCustomOp.builder("mergemaxindex")
-                        .addInputs(inputs)
+                        .addInputs(bcIn)
                         .addOutputs(maxIndices)
                         .callInplace(false)
                         .build();
@@ -172,7 +309,17 @@ public class ElementWiseVertex extends BaseGraphVertex {
                     //generate a mask with 1s and 0s in the right places and muli with epsilon
                     MatchConditionTransform nd4jop = new MatchConditionTransform(maxIndices, outMax[i], Conditions.equals(i));
                     Nd4j.getExecutioner().exec(nd4jop);
-                    outMax[i] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, outMax[i].castTo(Nd4j.defaultFloatingPointType())).muli(epsilon);
+                    if(broadcastCase && !epsilon.equalShapes(inputs[i])){
+                        //Broadcast  for ths input
+                        outMax[i] = outMax[i].castTo(epsilon.dataType()).mul(epsilon);
+                        int[] bcDim = Shape.getBroadcastDimensions(inputs[i].shape(), epsilon.shape());
+                        try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATION_GRAD)) {
+                            outMax[i] = outMax[i].sum(true, bcDim);
+                        }
+                    } else {
+                        //Standard case
+                        outMax[i] = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, outMax[i].castTo(epsilon.dataType()).muli(epsilon));
+                    }
                 }
                 return new Pair<>(null, outMax);
             default:

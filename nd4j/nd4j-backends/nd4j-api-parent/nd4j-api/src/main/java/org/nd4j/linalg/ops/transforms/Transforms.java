@@ -45,9 +45,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
 import org.nd4j.linalg.api.ops.impl.transforms.same.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -858,11 +860,11 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray first, INDArray second, boolean dup) {
-        INDArray result = first;
-        if (dup) {
-            result = first.ulike();
-        }
-        return exec(new OldMax(first, second, result));
+        long[] outShape = broadcastResultShape(first, second);   //Also validates
+        Preconditions.checkState(dup || Arrays.equals(outShape, first.shape()), "Cannot do inplace max operation when first input is not equal to result shape (%ndShape vs. result %s)",
+                first, outShape);
+        INDArray out = dup ? Nd4j.create(first.dataType(), outShape) : first;
+        return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(first, second, out))[0];
     }
 
     /**
@@ -908,10 +910,11 @@ public class Transforms {
      * @return
      */
     public static INDArray min(INDArray first, INDArray second, boolean dup) {
-        if (dup) {
-            first = first.dup();
-        }
-        return exec(new OldMin(second, first, first));
+        long[] outShape = broadcastResultShape(first, second);   //Also validates
+        Preconditions.checkState(dup || Arrays.equals(outShape, first.shape()), "Cannot do inplace min operation when first input is not equal to result shape (%ndShape vs. result %s)",
+                first, outShape);
+        INDArray out = dup ? Nd4j.create(first.dataType(), outShape) : first;
+        return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(first, second, out))[0];
     }
 
     /**
@@ -1179,4 +1182,15 @@ public class Transforms {
         }
     }
 
+
+    protected static long[] broadcastResultShape(INDArray first, INDArray second){
+        if(first.equalShapes(second)){
+            return first.shape();
+        } else if(Shape.areShapesBroadcastable(first.shape(), second.shape())){
+            return Shape.broadcastOutputShape(first.shape(), second.shape());
+        } else {
+            throw new IllegalStateException("Array shapes are not broadcastable: " + Arrays.toString(first.shape()) +
+                    " vs. " + Arrays.toString(second.shape()));
+        }
+    }
 }

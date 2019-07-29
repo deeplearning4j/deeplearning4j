@@ -538,7 +538,7 @@ public class Nd4j {
     public static INDArray create(int[] sliceShape, float[]... arrays) {
         //TODO: Remove duplicate code.
         int slices = arrays.length;
-        INDArray ret = Nd4j.create(ArrayUtil.combine(new int[] {slices}, sliceShape));
+        INDArray ret = Nd4j.createUninitialized(DataType.FLOAT, ArrayUtil.toLongArray(ArrayUtil.combine(new int[] {slices}, sliceShape)));
         for (int i = 0; i < ret.slices(); i++)
             ret.putSlice(i, Nd4j.create(arrays[i]).reshape(ArrayUtil.toLongArray(sliceShape)));
         return ret;
@@ -572,7 +572,7 @@ public class Nd4j {
      */
     public static INDArray create(int[] sliceShape, double[]... arrays) {
         int slices = arrays.length;
-        INDArray ret = Nd4j.create(ArrayUtil.combine(new int[] {slices}, sliceShape));
+        INDArray ret = Nd4j.createUninitialized(DataType.DOUBLE, ArrayUtil.toLongArray(ArrayUtil.combine(new int[] {slices}, sliceShape)));
         for (int i = 0; i < ret.slices(); i++)
             ret.putSlice(i, Nd4j.create(arrays[i]).reshape(ArrayUtil.toLongArray(sliceShape)));
         return ret;
@@ -3984,6 +3984,7 @@ public class Nd4j {
      * @return the created ndarray.
      */
     public static INDArray create(int[] data, long[] shape, DataType type) {
+        checkShapeValues(data.length, shape);
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -3991,6 +3992,7 @@ public class Nd4j {
      * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(long[] data, long[] shape, DataType type) {
+        checkShapeValues(data.length, shape);
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -3998,6 +4000,7 @@ public class Nd4j {
      * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(double[] data, long[] shape, DataType type) {
+        checkShapeValues(data.length, shape);
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -4005,6 +4008,7 @@ public class Nd4j {
      * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(float[] data, long[] shape, DataType type) {
+        checkShapeValues(data.length, shape);
         return  INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -4012,6 +4016,7 @@ public class Nd4j {
      * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(short[] data, long[] shape, DataType type) {
+        checkShapeValues(data.length, shape);
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -4019,6 +4024,7 @@ public class Nd4j {
      * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(byte[] data, long[] shape, DataType type) {
+        checkShapeValues(data.length, shape);
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -4026,6 +4032,7 @@ public class Nd4j {
      * See {@link #create(int[], long[], DataType)}
      */
     public static INDArray create(boolean[] data, long[] shape, DataType type) {
+        checkShapeValues(data.length, shape);
         return INSTANCE.create(data, shape, Nd4j.getStrides(shape), type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
@@ -5165,17 +5172,17 @@ public class Nd4j {
     protected static void checkShapeValues(int length, int... shape) {
         checkShapeValues(shape);
 
-        if (ArrayUtil.prodLong(shape) > length)
+        if (ArrayUtil.prodLong(shape) != length && !(length == 1 && shape.length == 0))
             throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                    + " doesn't match data length: " + length);
+                    + " doesn't match data length: " + length + " - prod(shape) must equal the number of values provided");
     }
 
     protected static void checkShapeValues(int length, long... shape) {
         checkShapeValues(shape);
 
-        if (ArrayUtil.prodLong(shape) > length)
+        if (ArrayUtil.prodLong(shape) != length && !(length == 1 && shape.length == 0))
             throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                    + " doesn't match data length: " + length);
+                    + " doesn't match data length: " + length + " - prod(shape) must equal the number of values provided");
     }
 
 
