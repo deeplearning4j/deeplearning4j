@@ -470,16 +470,6 @@ public class Nd4j {
         return DISTRIBUTION_FACTORY;
     }
 
-    // TODO: unused, uncommented method.
-    public static void setNdArrayFactoryClazz(Class<? extends NDArrayFactory> clazz) {
-        ndArrayFactoryClazz = clazz;
-    }
-
-    // TODO: unused, uncommented method.
-    public static void setSparseNDArrayClazz(Class<? extends NDArrayFactory> clazz) {
-        sparseNDArrayClazz = clazz;
-    }
-
     /**
      * Get the current random generator
      *
@@ -4978,57 +4968,6 @@ public class Nd4j {
     public static INDArray createUninitializedDetached(int length) {
         long[] shape = new long[] {length};
         return INSTANCE.createUninitializedDetached(shape, order());
-    }
-
-    // Todo: This method has zero documentation.
-    /**
-     * @param data
-     * @param columns
-     * @param pointerB
-     * @param pointerE
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        return SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
-    }
-
-    /**
-     * @param data
-     * @param indices
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCOO(double[] data, int[][] indices, long[] shape) {
-        return SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
-    }
-
-    /**
-     * @param data
-     * @param indices
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCOO(double[] data, long[][] indices, long[] shape) {
-        return SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
-    }
-    
-    // TODO: unused method.
-    /**
-     * @param values a DataBuffer with the sparse non-null values
-     * @param indices a DataBuffer with the indexes of the values
-     * @param sparseOffsets the sparse
-     * @param flags an array that define the inactive dimension
-     * @param shape
-     * @param hiddenDimensions an array containing the position of the hidden dimensions
-     * @param underlyingRank the rank of the original ndarray
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags,
-                                           long[] shape, int[] hiddenDimensions, int underlyingRank) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseOffsets, flags, hiddenDimensions,
-                underlyingRank, shape);
-        return matrix;
     }
 
     ////////////////////// OTHER ///////////////////////////////
