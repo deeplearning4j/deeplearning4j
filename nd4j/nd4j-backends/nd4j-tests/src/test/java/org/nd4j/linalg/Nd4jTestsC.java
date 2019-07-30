@@ -2204,8 +2204,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray assertion2 = Nd4j.create(
                 new double[] {3., 3., 3., 3., 3., 3., 3., 3., 7., 7., 7., 7., 7., 7., 7., 7., 3., 3., 3., 3.,
                         3., 3., 3., 3., 7., 7., 7., 7., 7., 7., 7., 7.},
-                new long[] {1, 4, 4, 2}, new long[] {16, 8, 2, 1}, 0, 'f');
-        //        assertion2.setOrder('f');
+                new long[] {1, 4, 4, 2}, new long[] {16, 8, 2, 1}, 'f', DataType.DOUBLE);
+
         assertEquals(assertion2, test);
     }
 

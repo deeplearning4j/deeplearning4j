@@ -4259,127 +4259,6 @@ public class Nd4j {
     }
 
     /**
-     * Creates an ndarray with the specified shape
-     *
-     * TODO: No usages found, candidate for deletion/depreciation.
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(double[] data, int[] shape, int[] stride, long offset) {
-        if (shape.length == 1) {
-            if (shape[0] != data.length)
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                        + " doesn't match data length: " + data.length);
-        }
-
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
-    }
-
-
-    /**
-     * * Creates an ndarray
-     *
-     *TODO: used in one test. has unused paratmeter. Candidate for deletion/depreciation.
-     *
-     * @param data
-     * @param shape
-     * @param stride
-     * @param offset
-     * @param order
-     * @return
-     */
-    public static INDArray create(double[] data, long[] shape, long[] stride, long offset, char order) {
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, stride, order, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * TODO: No usages found, candidate for deletion/depreciation.
-     *
-     * @param data    the data to use with the ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(float[] data, int rows, int columns, int[] stride, long offset) {
-        if (rows < 1 || columns < 1)
-            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
-
-        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * TODO: No usages found, candidate for deletion/depreciation.
-     *
-     * @param data    the data to use with tne ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(double[] data, int rows, int columns, int[] stride, long offset) {
-        if (rows < 1 || columns < 1)
-            throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
-
-        INDArray ret = INSTANCE.create(data, rows, columns, stride, offset);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     *
-     * TODO: No usages found, candidate for deletion/depreciation.
-     *
-     * @param shape  the shape of the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(float[] data, int[] shape, long offset) {
-        if (shape.length == 1) {
-            if (shape[0] != data.length)
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                        + " doesn't match data length: " + data.length);
-        }
-
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, offset, Nd4j.order());
-        return ret;
-    }
-
-    /**
-     * TODO: No usages found, candidate for deletion/depreciation.
-     */
-    public static INDArray create(float[] data, long[] shape, long offset) {
-        if (shape.length == 1) {
-            if (shape[0] != data.length)
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                        + " doesn't match data length: " + data.length);
-        }
-
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, offset, Nd4j.order());
-        return ret;
-    }
-
-    /**
      * Create an array.
      * Use specified shape and ordering initialized with values from a java 1d array starting at offset.
      *
@@ -4599,62 +4478,6 @@ public class Nd4j {
     }
 
     /**
-     * TODO: No usages found, candidate for deletion/depreciation.
-     * @param data
-     * @param shape
-     * @param stride
-     * @param ordering
-     * @param offset
-     * @return
-     */
-    public static INDArray create(float[] data, int[] shape, int[] stride, char ordering, long offset) {
-        if (shape.length == 1) {
-            if (shape[0] != data.length)
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                        + " doesn't match data length: " + data.length);
-        }
-
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
-        return ret;
-    }
-
-    /**
-     * TODO: No usages found, candidate for deletion/depreciation.
-     * @param data
-     * @param shape
-     * @param ordering
-     * @param offset
-     * @return
-     */
-    public static INDArray create(float[] data, int[] shape, char ordering, long offset) {
-        if (shape.length == 1) {
-            if (shape[0] != data.length)
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape) + " doesn't match data length: " + data.length);
-        }
-
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, getStrides(shape, ordering), offset, ordering);
-        return ret;
-    }
-
-
-    // TODO: No usages found, candidate for deletion/depreciation.
-    public static INDArray create(double[] data, int[] shape, char ordering, long offset) {
-        if (shape.length == 1) {
-            if (shape[0] != data.length)
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape) + " doesn't match data length: " + data.length);
-        }
-
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, getStrides(shape, ordering), offset, ordering);
-        return ret;
-    }
-
-    /**
      * Create an array based on the data buffer with given shape, stride and offset.
      *
      * @param data data buffer used for initialisation. . Must have at least the number of elements required.
@@ -4765,25 +4588,6 @@ public class Nd4j {
     }
 
     /**
-     * Creates an ndarray with the specified shape
-     * TODO: unused method.
-     *
-     * @param data    the data to use with the ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(float[] data, int rows, int columns, int[] stride, long offset, char ordering) {
-        int[] shape = new int[] {rows, columns};
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
-        return ret;
-    }
-
-    /**
      * Create an array of given shape and data type.
      * @param shape desired shape of new array.
      * @param dataType data type.
@@ -4799,31 +4603,6 @@ public class Nd4j {
      */
     public static INDArray zeros(int[] shape, DataType dataType) {
         return create(shape, dataType);
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     * TODO: unused method.
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(double[] data, int[] shape, int[] stride, long offset, char ordering) {
-        if (data.length == 1 && shape.length == 0)
-            return scalar(data[0]);
-
-        if (shape.length == 1) {
-            if (shape[0] != data.length)
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                        + " doesn't match data length: " + data.length);
-        }
-
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
-        return ret;
     }
 
     // This method gets it own javadoc and not a @see because it is used  often.
@@ -4879,61 +4658,6 @@ public class Nd4j {
 
     /**
      * Creates an ndarray with the specified shape
-     * TODO: unused method.
-     *
-     * @param data    the data to use with tne ndarray
-     * @param rows    the rows of the ndarray
-     * @param columns the columns of the ndarray
-     * @param stride  the stride for the ndarray
-     * @param offset  the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(double[] data, int rows, int columns, int[] stride, long offset, char ordering) {
-        int[] shape = new int[]{rows,columns};
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(Nd4j.createBuffer(data), shape, stride, offset, ordering);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     * TODO: unused method.
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(float[] data, int[] shape, int[] stride, long offset, char ordering) {
-        if (shape.length == 1) {
-            if (shape[0] != data.length)
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                        + " doesn't match data length: " + data.length);
-        }
-
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, stride, offset, ordering);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     * TODO: unused method.
-     *
-     * @param shape the shape of the array
-     * @return the instance
-     */
-    public static INDArray create(List<INDArray> list, int[] shape, char ordering) {
-        checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.create(list, shape, ordering);
-        return ret;
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
      * TODO: unused method. (only used by the zeros method in this class)
      *
      * @param rows    the rows of the ndarray
@@ -4946,33 +4670,6 @@ public class Nd4j {
         int[] shape = new int[]{rows, columns};
         checkShapeValues(shape);
         return INSTANCE.create(shape, stride, offset, ordering);
-    }
-
-    /**
-     * TODO: unused method.
-     */
-    public static INDArray zeros(int rows, int columns, int[] stride, long offset, char ordering) {
-        return create(rows, columns, stride, offset, ordering);
-    }
-
-    /**
-     * Creates an ndarray with the specified shape
-     * TODO: unused method. (only used by the zeros method in this class)
-     *
-     * @param shape  the shape of the ndarray
-     * @param stride the stride for the ndarray
-     * @param offset the offset of the ndarray
-     * @return the instance
-     */
-    public static INDArray create(int[] shape, int[] stride, long offset, char ordering) {
-        if(shape.length == 0)
-            return Nd4j.scalar(0.0);
-
-        checkShapeValues(shape);
-
-        INDArray ret = INSTANCE.create(shape, stride, offset, ordering);
-        return ret;
-
     }
 
     /**
@@ -4991,11 +4688,6 @@ public class Nd4j {
         return INSTANCE.create(shape, stride, offset, ordering);
     }
 
-    // TODO: unused method.
-    public static INDArray zeros(int[] shape, int[] stride, long offset, char ordering) {
-        return create(shape, stride, offset, ordering);
-    }
-
     /**
      * Create a 2D array with given rows, columns, stride and ordering.
      * @param rows number of rows.
@@ -5008,11 +4700,6 @@ public class Nd4j {
         int[] shape = new int[]{rows, columns};
         checkShapeValues(shape);
         return INSTANCE.create(shape, stride, 0, ordering);
-    }
-
-    // TODO: unused method.
-    public static INDArray zeros(int rows, int columns, int[] stride, char ordering) {
-        return create(rows, columns, stride, ordering);
     }
 
     /**
@@ -5040,17 +4727,6 @@ public class Nd4j {
 
         checkShapeValues(shape);
         return INSTANCE.create(shape, stride, 0, ordering);
-    }
-
-    /**
-     * TODO: unused method.
-     * @param shape
-     * @param stride
-     * @param ordering
-     * @return
-     */
-    public static INDArray zeros(int[] shape, int[] stride, char ordering) {
-        return create(shape, stride, ordering);
     }
 
     /**
@@ -5252,21 +4928,6 @@ public class Nd4j {
         return INSTANCE.createUninitializedDetached(shape, ordering);
     }
 
-    // TODO: unused method. Only used by another unused method).
-    /**
-     *
-     * @param shape
-     * @param ordering
-     * @return
-     */
-    public static INDArray createUninitializedDetached(long[] shape, char ordering) {
-        if (shape.length == 0)
-            return scalar(dataType(), 0.0);
-
-        checkShapeValues(shape);
-        return  INSTANCE.createUninitializedDetached(shape, ordering);
-    }
-
     /**
      * See {@link #createUninitialized(long[])}
      */
@@ -5289,28 +4950,6 @@ public class Nd4j {
         checkShapeValues(shape);
         //ensure shapes that wind up being scalar end up with the write shape
         return createUninitialized(shape, Nd4j.order());
-    }
-
-    // TODO: unused method.
-    /**
-     * Cretes uninitialized INDArray detached from any (if any) workspace
-     *
-     * @param shape
-     * @return
-     */
-    public static INDArray createUninitializedDetached(int... shape) {
-        return createUninitializedDetached(shape, Nd4j.order());
-    }
-
-    // TODO: unused method.
-    /**
-     * Cretes uninitialized INDArray detached from any (if any) workspace
-     *
-     * @param shape
-     * @return
-     */
-    public static INDArray createUninitializedDetached(long... shape) {
-        return createUninitializedDetached(shape, Nd4j.order());
     }
 
     /**
@@ -5341,28 +4980,7 @@ public class Nd4j {
         return INSTANCE.createUninitializedDetached(shape, order());
     }
 
-    // TODO: unused method.
-    /**
-     *
-     * @param data
-     * @param shape
-     * @param offset
-     * @return
-     */
-    public static INDArray create(double[] data, int[] shape, long offset) {
-        if (shape.length == 1) {
-            if (shape[0] != data.length)
-                throw new ND4JIllegalStateException("Shape of the new array " + Arrays.toString(shape)
-                        + " doesn't match data length: " + data.length);
-        }
-
-        checkShapeValues(data.length, shape);
-
-        INDArray ret = INSTANCE.create(data, shape, offset);
-        return ret;
-    }
-
-    // Todo: This method has zero documentation. Only used from tests.
+    // Todo: This method has zero documentation.
     /**
      * @param data
      * @param columns
@@ -5372,44 +4990,9 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
-
-        return matrix;
+        return SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
     }
 
-    // TODO: unused method.
-    /**
-     * @param data
-     * @param columns
-     * @param pointerB
-     * @param pointerE
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
-
-        return matrix;
-    }
-
-    // TODO: unused method.
-    /**
-     * @param data
-     * @param columns
-     * @param pointerB
-     * @param pointerE
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE,
-                                           long[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCSR(data, columns, pointerB, pointerE, shape);
-
-        return matrix;
-    }
-
-
-    // Todo: Only used from tests.
     /**
      * @param data
      * @param indices
@@ -5417,25 +5000,9 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCOO(double[] data, int[][] indices, long[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
-
-        return matrix;
+        return SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
     }
 
-    // TODO: unused method.
-    /**
-     * @param data
-     * @param indices
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCOO(float[] data, int[][] indices, long[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
-
-        return matrix;
-    }
-
-    // Todo: Only used from tests.
     /**
      * @param data
      * @param indices
@@ -5443,51 +5010,9 @@ public class Nd4j {
      * @return a INDArray
      * */
     public static INDArray createSparseCOO(double[] data, long[][] indices, long[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
-
-        return matrix;
+        return SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
     }
-
-    // TODO: unused method.
-    /**
-     * @param data
-     * @param indices
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCOO(float[] data, long[][] indices, long[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
-
-        return matrix;
-    }
-
-    // TODO: unused method.
-    /**
-     * @param data
-     * @param indices
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCOO(DataBuffer data, DataBuffer indices, long[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(data, indices, shape);
-
-        return matrix;
-    }
-
-    //TODO: Only used once, from an unused method.
-    /**
-     * @param values a DataBuffer with the sparse non-null values
-     * @param indices a DataBuffer with the indexes of the values
-     * @param sparseInformation a DataBuffer containing the sparse information (flags, offsets and hidden dimensions)
-     * @param shape
-     * @return a INDArray
-     * */
-    public static INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation,
-                                           long[] shape) {
-        INDArray matrix = SPARSE_INSTANCE.createSparseCOO(values, indices, sparseInformation, shape);
-        return matrix;
-    }
-
+    
     // TODO: unused method.
     /**
      * @param values a DataBuffer with the sparse non-null values
@@ -5836,20 +5361,6 @@ public class Nd4j {
             long[] shape = Shape.squeeze(toStrip.shape());
             return toStrip.reshape(shape);
         }
-    }
-
-    // TODO: unused method.
-    /**
-     * This method sums given arrays and stores them to a new target array
-     *
-     * @param arrays
-     * @return
-     */
-    public static INDArray accumulate(Collection<INDArray> arrays) {
-        if (arrays == null|| arrays.size() == 0)
-            throw new ND4JIllegalStateException("Input for accumulation is null or empty");
-
-        return accumulate(arrays.toArray(new INDArray[0]));
     }
 
     /**
