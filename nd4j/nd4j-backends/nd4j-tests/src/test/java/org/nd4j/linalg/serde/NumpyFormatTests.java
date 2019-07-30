@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -315,6 +316,14 @@ public class NumpyFormatTests extends BaseNd4jTest {
         val f = new File("c:/develop/batch-x-1.npy");
         INDArray act1 = Nd4j.createFromNpyFile(f);
         log.info("Array shape: {}; sum: {};", act1.shape(), act1.sumNumber().doubleValue());
+    }
+
+    @Ignore
+    @Test
+    public void testNumpyBoolean() {
+        INDArray out = Nd4j.createFromNpyFile(new File("c:/Users/raver/Downloads/error2.npy"));
+        System.out.println(ArrayUtil.toList(ArrayUtil.toInts(out.shape())));
+        System.out.println(out);
     }
 
     @Override

@@ -119,6 +119,8 @@ nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
     const auto s = data[si];
 
     switch (t) {
+        case 'b':
+            return nd4j::DataType::BOOL;
         case 'i':
             switch (s) {
                 case '1': return nd4j::DataType::INT8;
@@ -128,7 +130,6 @@ nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
                 default:
                     throw std::runtime_error("Only data sizes of [1, 2, 4, 8] are supported for Integer data types import");
             }
-            break;
         case 'f':
             switch (s) {
                 case '1': return nd4j::DataType::FLOAT8;
@@ -138,7 +139,6 @@ nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
                 default:
                     throw std::runtime_error("Only data sizes of [1, 2, 4, 8] are supported for Float data types import");
             }
-            break;
         case 'u':
             switch (s) {
                 case '1': return nd4j::DataType::UINT8;
@@ -148,14 +148,11 @@ nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
                 default:
                     throw std::runtime_error("Only data sizes of [1, 2, 4, 8] are supported for Unsigned data types import");
             }
-            break;
         case 'c':
             throw std::runtime_error("Import of complex data types isn't supported yet");
         default:
             throw std::runtime_error("Unknown type marker");
     }
-
-    return nd4j::DataType::INHERIT;
 }
 
 template <typename T>
