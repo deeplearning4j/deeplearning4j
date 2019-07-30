@@ -45,8 +45,11 @@ import java.util.List;
 public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
                 extends SyncLearning<O, A, AS, IDQN> {
 
-    @Getter
-    final private IExpReplay<A> expReplay;
+    // FIXME Changed for refac
+    // @Getter
+    // final private IExpReplay<A> expReplay;
+    @Getter @Setter
+    private IExpReplay<A> expReplay;
 
     public QLearning(QLConfiguration conf) {
         super(conf);
