@@ -14,34 +14,12 @@ overview of the available operations, let us list some of their common propertie
 
 ## Common properties of operations
 
-- All operations should return a new `SDVariable`. Thus, a standalone operation like ```x.mul(2);``` will not work; one 
-needs to have something like
-```java
-SDVariable _2x = x.mul(2);
-``` 
-- All variables in an operation have to belong to the same instance of `SamdeDiff` (see the [variables](./samediff/variables)
-section on how variables are added to a `SameDiff` instance). In other words, the following code will also produce an 
-exception 
-```java
-SDVariable x = sameDiff0.var(DataType.FLOAT, 1);
-SDVariable y = sameDiff1.placeHolder(DataType.FLOAT, 1);
-//The following code produces exception, because SameDiff instances are different
-SDVariable z = x.add(y);
-```
-- Operations **may not** be used to redefine variables that were already introduced. The following code will produce an 
-exception
-```java
-SDVariable z = x.add(y);
-//The following code produces an exception!!!
-x = z.mul(y);
-``` 
-To learn more why it is made like that, see our section on [graph](./samediff/graph).
 - Variables of any *variable type* may be used in any operation, as long as their *data types* match those that are 
 required by the operation (again, see our [variables](./samediff/variables) section for what variable types are). Most
 often an operation will require its `SDVariable` to have a floating point data type.
 - Variables created by operations have `ARRAY` variable type.
 - For all operations, you may define a `String` name of your resulting variable, although for most operations this
-is not obligatory. The name goes as the first (optional) argument in each operation, like so:
+is not obligatory. The name goes as the first argument in each operation, like so:
 ```java
 SDVariable linear = weights.mmul("matrix_product", input).add(bias); 
 SDVariable output = sameDiff.nn.sigmoid("output", linear);
@@ -49,16 +27,19 @@ SDVariable output = sameDiff.nn.sigmoid("output", linear);
 Named variables may be accessed from outside using a `SameDiff` method `getVariable(String name)`. For the code above, 
 this method will allow you to infer the value of both `output` as well as the result of `mmul` operation. Note that we 
 haven't even explicitly defined this result as a separate `SDVariable`, and yet a corresponding `SDVariable` will be 
-created internally and added to our instance of `SameDiff` under the `String` name `"matrix_product"`.
-- All operations are ultimately produced by our [differential function factory](./samediff/function-factory).
+created internally and added to our instance of `SameDiff` under the `String` name `"matrix_product"`. In fact, a unique
+`String` name is given to every `SDVariable` you produce by operations: if you don't give a name explicitly, it is 
+assigned to the resulting `SDVariable` automatically based on the operation's name. 
+
 
 ## Overview of operations
-The number of currently available operations totals many dozens, they range in complexity from simple additions and 
-multiplications via producing outputs of convolutional layers to creation of dedicated recurrent neural network 
-modules, and much more. The sheer number of operations would've made it cumbersome to list them all on a single page. 
-So, if you are already looking for something specific, you'll be better off checking our 
-[javadoc](https://deeplearning4j.org/api/latest/) or browsing through autocompletion suggestions if your IDE supports 
-that. Here we rather try to give you an idea of what operations you may expect to find and where to seek for them.
+The number of currently available operations, including overloads totals several hundreds, they range in complexity from s
+imple additions and multiplications via producing outputs of convolutional layers to creation of dedicated recurrent 
+neural network modules, and much more. The sheer number of operations would've made it cumbersome to list them all on a 
+single page. So, if you are already looking for something specific, you'll be better off checking our 
+[javadoc](https://deeplearning4j.org/api/latest/), which already contains a detailed information on each operation, or 
+by simply browsing through autocompletion suggestions (if your IDE supports that). Here we rather try to give you an 
+idea of what operations you may expect to find and where to seek for them.
 
 All operations may be split into two major branches: those which are methods of `SDVariable` and those of `SameDiff` 
 classes. Let us have a closer look at each:
@@ -99,6 +80,10 @@ In order to use a particular operation, you need to call one of these 6 objects 
 an operation itself, like that:
 ```java
 SDVariable y = sameDiff.math.sin(x);
+```
+or 
+```java
+SDVariable y = samediff.math().sin(x);
 ```
 The distribution of operations among the auxiliary objects has no structural bearing beyond organizing things in a more 
 intuitive way. So, for instance, if you're not sure whether to seek for, say, `tanh` operation in `math` or in `nn`, 
@@ -146,7 +131,13 @@ to create a variable that will add a Gaussian noise to entries of the MNIST data
 double mean = 0.;
 double deviation = 0.05;
 long[] shape = new long[28, 28];
-SDVariable noise = sameDiff.random.normal("normal", mean, deviation, shape);
+SDVariable noise_mnist = sameDiff.random.normal("noise_mnist", mean, deviation, shape);
+```
+The shape of you random variable may vary. Suppose, for instance, that you have audio signals of varying length, and you
+want to add noise to them. Then, you need to specify an `SDVariable`, say, `windowShape` with an integer 
+[data type](./samediff/variabeles/datatype!!!), and proceed like that
+```java
+SDVariabel noise_audio = sameDiff.random.normal("noise_audio", mean, deviation, windowShape);
 ```
 
 ### `nn` - general neural network tools
@@ -177,7 +168,7 @@ SDVariable output = sameDiff.nn.softmax(linear);
 ``` 
 
 ### `cnn` - convolutional neural networks tools
-The `cnn` module contains linear and reshaping operations that are characteristic for convolutional neural networks - 
+The `cnn` module contains layers and operations typically used in convolutional neural networks - 
 different activations may be picked up from the `nn` module. Among `cnn` operations we currently have creation of:
 - linear convolution layers, currently for tensors of dimension up to 3 (minibatch not included): `conv1d`, `conv2d`, 
 `conv3d`, `depthWiseConv2d`, `separableConv2D`/`sconv2d`; 
@@ -192,11 +183,7 @@ dilation, having or not having bias etc.. To facilitate the creation process, we
 easily constructable and alterable configuration objects. Desired activations may be borrowed from the `nn` module. So, 
 for example, if we want to create a 3x3 convolutional layer with `relu` activation, we may proceed as follows:
 ```java
-Conv2DConfig config2d = new Conv2DConfig()
-    .kW(3)
-    .kH(3)
-    .pW(2)
-    .pH(2);
+Conv2DConfig config2d = new Conv2DConfig().builder().kW(3).kH(3).pW(2).pH(2).build();
 SDVariable convolution2dLinear = sameDiff.cnn.conv2d(input, weights, config2d);
 SDVariable convolution2dOutput = sameDiff.nn.relu(convolution2dLinear);
 ``` 
@@ -216,8 +203,8 @@ This module contains arguably the most sophisticated methods in the framework. C
 - LSTM units, using `lstmCell`, `lstmBlockCell` and `lstmLayer`;
 - Graves LSTM units, using `gru` methods.
 
-Like convolution-type operations, recurrent operations require special configuration objects as input. Now, however, you 
-actually need to pack all the variables that will be used in a unit into the configuration object. For instance, to 
+As of now, recurrent operations require special configuration objects as input, in which you need to pack all the 
+variables that will be used in a unit. This is subject to change in the later versions. For instance, to 
 create a simple recurrent unit, you need to proceed like that:
 ```java
 SRUConfiguration sruConfig = new SRUConfiguration(input, weights, bias, init);
@@ -233,11 +220,56 @@ SDVariable logLoss = sameDiff.loss.logLoss("logLoss", label, predictions);
 ```
 where `labels` and `predictions` are `SDVariable`'s. A `String` name is a mandatory parameter in most `loss` methods, 
 yet it may be set to `null` - in this case, the name will be generated automatically. You may also create weighted loss
-functions by adding another `SDVariable` parameters containing weights, as well as specify a reduction method for the 
-loss over the minibatch. Thus, a full-fledged `logLoss` operation may 
+functions by adding another `SDVariable` parameters containing weights, as well as specify a reduction method (see below) 
+for the loss over the minibatch. Thus, a full-fledged `logLoss` operation may 
 look like:
 ```java
 SDVariable wLogLossMean = sameDiff.loss.logLoss("wLogLossMean", label, predictions, weights, LossReduce.MEAN_BY_WEIGHT);
 ```
 Some loss operations may allow/require further arguments, depending on their type: e.g. a dimension along which the 
 loss is to be computed (as in `cosineLoss`), or some real-valued parameters.  
+
+As for reduction methods, over the minibatch, there are currently 4 of them available. Thus, initially loss values for 
+each sample of the minibatch are computed, then they are multiplied by weights (if specified), and finally one of the 
+following routines takes place: 
+- `NONE` - leaving the resulting (weighted)loss values as-is; the result is an `INDArray` with the length of the 
+minibatch: `sum_loss = sum(weights * loss_per_sample)`.
+- `SUM` - summing the values, producing a scalar result.
+- `MEAN_BY_WEIGHT` - first computes the sum as above, and then divides it by the sum of all weights, producing a scalar 
+value: `mean_loss = sum(weights * loss_per_sample) / sum(weights)`. If weights are not
+specified, they all are set to `1.0` and this reduction is equivalent to getting mean loss value over the minibatch.  
+- `MEAN_BY_NONZERO_WEIGHT_COUNT` - divides the weighted sum by the number of nonzero weight, producing a scalar: 
+`mean_count_loss = sum(weights * loss_per_sample) / count(weights != 0)`. Useful e.g. when you want to compute the mean
+only over a subset of *valid* samples, setting weights by either `0.` or `1.`. When weights are not given, it just 
+produces mean, and thus equivalent to `MEAN_BY_WEIGHT`.
+ 
+
+## The *don'ts* of operations 
+
+In order for `SameDiff` operations to work properly, several main rules are to be upheld. Failing to do so may result in
+an exception or, worse even, to a working code producing undesired results. All the things we mention in the current 
+section describe what **you better not** do.
+
+- All variables in an operation have to belong to the same instance of `SamdeDiff` (see the [variables](./samediff/variables)
+section on how variables are added to a `SameDiff` instance). In other words, **you better not** 
+```java
+SDVariable x = sameDiff0.var(DataType.FLOAT, 1);
+SDVariable y = sameDiff1.placeHolder(DataType.FLOAT, 1);
+SDVariable z = x.add(y);
+```
+- At best, a new variable is to be created for a result of an operation or a chain of operations. In other words, **you 
+better not** redefine existing variables **and better not** leave operations returning no result. In other words, try to 
+**avoid** the code like this:
+```java
+SDVariable z = x.add(y);
+//DON'T!!!
+z.mul(2);
+x = z.mul(y);
+``` 
+A properly working version of the above code (if we've desired to obtain 2xy+2y<sup>2</sup> in an unusual way) will be
+```java
+SDVariable z = x.add(y);
+SDVariable _2z = z.mul(2);
+w = _2z.mul(y);
+```
+ To learn more why it functions like that, see our [graph section](./samediff/graph).
