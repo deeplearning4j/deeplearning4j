@@ -30,36 +30,58 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/3/16.
- * @author Alexandre Boulanger
- *
  * Mother class and useful factorisations for all training methods that
  * are not asynchronous.
  *
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/3/16.
+ * @author Alexandre Boulanger
  */
 @Slf4j
 public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-                extends Learning<O, A, AS, NN> {
+        extends Learning<O, A, AS, NN> {
+
+    private List<SyncTrainingListener> listeners = new ArrayList<>();
 
     public SyncLearning(LConfiguration conf) {
         super(conf);
     }
 
-    private List<SyncTrainingListener> listeners = new ArrayList<>();
+    /**
+     * Add a listener at the end of the listener list.
+     *
+     * @param listener
+     */
     public void addListener(SyncTrainingListener listener) {
         listeners.add(listener);
     }
 
+    /**
+     * This method will train the model<p>
+     * The training stop when:<br>
+     * - the number of steps reaches the maximum defined in the configuration (see {@link LConfiguration#getMaxStep() LConfiguration.getMaxStep()})<br>
+     * OR<br>
+     * - a listener explicitly stops it<br>
+     * <p>
+     * Listeners<br>
+     * For a given event, the listeners are called sequentially in same the order as they were added. If one listener
+     * returns {@link SyncTrainingListener.ListenerResponse SyncTrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
+     * Events:
+     * <ul>
+     *   <li>{@link SyncTrainingListener#onTrainingStart(SyncTrainingEvent) onTrainingStart()} is called once when the training starts.</li>
+     *   <li>{@link SyncTrainingListener#onEpochStart(SyncTrainingEvent) onEpochStart()} and {@link SyncTrainingListener#onEpochEnd(SyncTrainingEpochEndEvent) onEpochEnd()} are called for every epoch. onEpochEnd will not be called if onEpochStart stops the training</li>
+     *   <li>{@link SyncTrainingListener#onTrainingEnd() onTrainingEnd()} is always called at the end of the training, even if the training was cancelled by a listener.</li>
+     * </ul>
+     */
     public void train() {
 
         log.info("training starting.");
 
         boolean canContinue = notifyTrainingStarted();
-        if(canContinue) {
+        if (canContinue) {
             while (getStepCounter() < getConfiguration().getMaxStep()) {
                 preEpoch();
                 canContinue = notifyEpochStarted();
-                if(!canContinue) {
+                if (!canContinue) {
                     break;
                 }
 
@@ -67,7 +89,7 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
 
                 postEpoch();
                 canContinue = notifyEpochFinished(statEntry);
-                if(!canContinue) {
+                if (!canContinue) {
                     break;
                 }
 
@@ -82,10 +104,8 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
 
     private boolean notifyTrainingStarted() {
         SyncTrainingEvent event = new SyncTrainingEvent(this);
-        for(SyncTrainingListener listener : listeners) {
-            listener.onTrainingStart(event);
-
-            if(!event.getCanContinue()) {
+        for (SyncTrainingListener listener : listeners) {
+            if (listener.onTrainingStart(event) == SyncTrainingListener.ListenerResponse.STOP) {
                 return false;
             }
         }
@@ -94,17 +114,15 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
     }
 
     private void notifyTrainingFinished() {
-        for(SyncTrainingListener listener : listeners) {
+        for (SyncTrainingListener listener : listeners) {
             listener.onTrainingEnd();
         }
     }
 
     private boolean notifyEpochStarted() {
         SyncTrainingEvent event = new SyncTrainingEvent(this);
-        for(SyncTrainingListener listener : listeners) {
-            listener.onEpochStart(event);
-
-            if(!event.getCanContinue()) {
+        for (SyncTrainingListener listener : listeners) {
+            if (listener.onEpochStart(event) == SyncTrainingListener.ListenerResponse.STOP) {
                 return false;
             }
         }
@@ -114,10 +132,8 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
 
     private boolean notifyEpochFinished(IDataManager.StatEntry statEntry) {
         SyncTrainingEpochEndEvent event = new SyncTrainingEpochEndEvent(this, statEntry);
-        for(SyncTrainingListener listener : listeners) {
-            listener.onEpochEnd(event);
-
-            if(!event.getCanContinue()) {
+        for (SyncTrainingListener listener : listeners) {
+            if (listener.onEpochEnd(event) == SyncTrainingListener.ListenerResponse.STOP) {
                 return false;
             }
         }

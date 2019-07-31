@@ -68,8 +68,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     private double accuReward = 0;
 
     /**
-     * Obsolete. Use QLearningDiscrete(MDP, IDQN, QLConfiguration, int) with addListener() instead.
+     * @deprecated
+     * Use QLearningDiscrete(MDP, IDQN, QLConfiguration, int) and add the required listeners with addListener() instead.
      */
+    @Deprecated
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
                     IDataManager dataManager, int epsilonNbStep) {
         this(mdp, dqn, conf, epsilonNbStep);

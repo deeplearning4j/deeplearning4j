@@ -15,31 +15,6 @@ import static org.junit.Assert.assertEquals;
 
 public class SyncLearningTest {
 
-    // Test to help refac -- will be removed
-    @Test
-    public void refac_checkDataManagerCallsRemainTheSame() {
-        // Arrange
-        QLearning.QLConfiguration lconfig = QLearning.QLConfiguration.builder().maxStep(10).build();
-        MockDataManager dataManager = new MockDataManager(false);
-        MockSyncLearning sut = new MockSyncLearning(lconfig, dataManager);
-
-        // Act
-        sut.train();
-
-        assertEquals(10, dataManager.statEntries.size());
-        for(int i = 0; i < 10; ++i) {
-            IDataManager.StatEntry entry = dataManager.statEntries.get(i);
-            assertEquals(i, entry.getEpochCounter());
-            assertEquals(i+1, entry.getStepCounter());
-            assertEquals(1.0, entry.getReward(), 0.0);
-
-        }
-        assertEquals(0, dataManager.isSaveDataCallCount);
-        assertEquals(0, dataManager.getVideoDirCallCount);
-        assertEquals(11, dataManager.writeInfoCallCount);
-        assertEquals(1, dataManager.saveCallCount);
-    }
-
     @Test
     public void when_training_expect_listenersToBeCalled() {
         // Arrange

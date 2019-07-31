@@ -16,9 +16,9 @@ public class MockSyncTrainingListener implements SyncTrainingListener {
     public int nbStepsEpochEndCanContinue = Integer.MAX_VALUE;
 
     @Override
-    public void onTrainingStart(SyncTrainingEvent event) {
+    public ListenerResponse onTrainingStart(SyncTrainingEvent event) {
         ++onTrainingStartCallCount;
-        event.setCanContinue(trainingStartCanContinue);
+        return trainingStartCanContinue ? ListenerResponse.CONTINUE : ListenerResponse.STOP;
     }
 
     @Override
@@ -27,18 +27,20 @@ public class MockSyncTrainingListener implements SyncTrainingListener {
     }
 
     @Override
-    public void onEpochStart(SyncTrainingEvent event) {
+    public ListenerResponse onEpochStart(SyncTrainingEvent event) {
         ++onEpochStartCallCount;
         if(onEpochStartCallCount >= nbStepsEpochStartCanContinue) {
-            event.setCanContinue(false);
+            return ListenerResponse.STOP;
         }
+        return ListenerResponse.CONTINUE;
     }
 
     @Override
-    public void onEpochEnd(SyncTrainingEpochEndEvent event) {
+    public ListenerResponse onEpochEnd(SyncTrainingEpochEndEvent event) {
         ++onEpochEndStartCallCount;
         if(onEpochEndStartCallCount >= nbStepsEpochEndCanContinue) {
-            event.setCanContinue(false);
+            return ListenerResponse.STOP;
         }
+        return ListenerResponse.CONTINUE;
     }
 }
