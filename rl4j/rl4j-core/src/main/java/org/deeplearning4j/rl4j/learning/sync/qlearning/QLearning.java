@@ -48,7 +48,8 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     // FIXME Changed for refac
     // @Getter
     // final private IExpReplay<A> expReplay;
-    @Getter @Setter
+    @Getter
+    @Setter(AccessLevel.PACKAGE)
     private IExpReplay<A> expReplay;
 
     public QLearning(QLConfiguration conf) {
