@@ -1,0 +1,16 @@
+# This file configures the package exports and versions for the
+# shaded jackson implementation. Normally annotations would be
+# used, but there is no source code for a shaded jar.
+
+# We export everything which is a bad practice, but it's
+# unclear which packages are actually needed by nd4j.
+# In future this can be improved by making a more restrictive
+# list of exported backages 
+Export-Package: org.nd4j.shade.jackson.*;version=${jackson.version}
+
+# Exclude the import for the jackson jaxb module which isn't
+# provided by ND4J and isn't used. This helps to keep the
+# module behaviour consistent and clean, as well as avoiding
+# an unversioned import (an error-prone bad practice)
+Import-Package: !org.nd4j.shade.jackson.module.jaxb,\
+  *

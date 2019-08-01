@@ -30,6 +30,7 @@
 
     <properties>
         <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
+        <osgi.bundle.symbolic.name>org.nd4j.shade.jackson</osgi.bundle.symbolic.name>
     </properties>
 
     <profiles>
@@ -157,6 +158,11 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <configuration>
                     <forceCreation>true</forceCreation>
+                    <!-- Required to make the maven-jar-plugin pick up the bnd 
+                      generated manifest. Also avoid packaging empty Jars -->
+                    <archive>
+                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+                    </archive>
                 </configuration>
                 <executions>
                     <execution>
@@ -211,6 +217,18 @@
                   </configuration>
                 </execution>
               </executions>
+            </plugin>
+            <plugin>
+                <groupId>biz.aQute.bnd</groupId>
+                <artifactId>bnd-maven-plugin</artifactId>
+                <version>4.2.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>bnd-process</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
