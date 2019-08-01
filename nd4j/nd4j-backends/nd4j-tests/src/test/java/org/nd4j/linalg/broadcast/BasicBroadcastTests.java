@@ -30,6 +30,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * @author raver119@gmail.com
@@ -122,42 +123,42 @@ public class BasicBroadcastTests extends BaseNd4jTest {
         assertEquals(e, z);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void basicBroadcastFailureTest_1() {
         val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
         val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
         val z = x.subi(y);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void basicBroadcastFailureTest_2() {
         val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
         val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
         val z = x.divi(y);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void basicBroadcastFailureTest_3() {
         val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
         val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
         val z = x.muli(y);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void basicBroadcastFailureTest_4() {
         val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
         val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
         val z = x.addi(y);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void basicBroadcastFailureTest_5() {
         val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
         val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
         val z = x.rsubi(y);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void basicBroadcastFailureTest_6() {
         val x = Nd4j.create(DataType.FLOAT, 3, 1, 2).assign(4.f);
         val y = Nd4j.createFromArray(new float[]{2.f, 2.f, 2.f, 2.f}).reshape(2, 2);
@@ -206,7 +207,7 @@ public class BasicBroadcastTests extends BaseNd4jTest {
         assertEquals(y, z);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = IllegalStateException.class)
     public void emptyBroadcastTest_2() {
         val x = Nd4j.create(DataType.FLOAT, 1, 2);
         val y = Nd4j.create(DataType.FLOAT, 0, 2);
@@ -224,6 +225,67 @@ public class BasicBroadcastTests extends BaseNd4jTest {
         val z = Nd4j.exec(op)[0];
 
         assertEquals(y, z);
+    }
+
+
+    @Test
+    public void testValidInvalidBroadcast(){
+        INDArray x = Nd4j.rand(3,1);
+        INDArray y = Nd4j.create(3, 4);
+
+        x.add(y);
+        y.addi(x);
+        try {
+            x.addi(y);
+        } catch (Exception e){
+            String s = e.getMessage();
+            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+        }
+
+        x.sub(y);
+        y.subi(x);
+        try {
+            x.subi(y);
+        } catch (Exception e){
+            String s = e.getMessage();
+            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+        }
+
+        x.mul(y);
+        y.muli(x);
+        try {
+            x.muli(y);
+        } catch (Exception e){
+            String s = e.getMessage();
+            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+        }
+
+        x.div(y);
+        y.divi(x);
+        try {
+            x.divi(y);
+        } catch (Exception e){
+            String s = e.getMessage();
+            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+        }
+
+        x.rsub(y);
+        y.rsubi(x);
+        try {
+            x.rsubi(y);
+        } catch (Exception e){
+            String s = e.getMessage();
+            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+        }
+
+        x.rdiv(y);
+        y.rdivi(x);
+        try {
+            x.rdivi(y);
+        } catch (Exception e){
+            String s = e.getMessage();
+            assertTrue(s, s.contains("broadcast") && s.contains("shape"));
+        }
     }
 
     @Override

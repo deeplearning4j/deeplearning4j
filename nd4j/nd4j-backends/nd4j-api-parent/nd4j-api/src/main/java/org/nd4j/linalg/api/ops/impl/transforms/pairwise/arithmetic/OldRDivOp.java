@@ -28,10 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * OldReverse Division operation
- *
- * @author Adam Gibson
+ * @deprecated Use {@link RDivOp}
  */
+@Deprecated
 public class OldRDivOp extends BaseTransformAnyOp {
     public OldRDivOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

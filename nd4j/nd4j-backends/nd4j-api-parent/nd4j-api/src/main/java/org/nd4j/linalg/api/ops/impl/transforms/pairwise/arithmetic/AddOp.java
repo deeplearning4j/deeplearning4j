@@ -38,6 +38,10 @@ public class AddOp extends BaseDynamicTransformOp {
         super(sameDiff, args, inPlace);
     }
 
+    public AddOp(INDArray first, INDArray second, INDArray result){
+        this(new INDArray[]{first, second}, result == null ? null : new INDArray[]{result});
+    }
+
     public AddOp(INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }

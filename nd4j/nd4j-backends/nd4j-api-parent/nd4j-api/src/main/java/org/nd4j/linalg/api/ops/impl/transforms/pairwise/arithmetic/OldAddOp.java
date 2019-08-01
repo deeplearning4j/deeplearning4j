@@ -28,10 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Add operation for two operands
- *
- * @author Adam Gibson
+ * @deprecated Use {@link AddOp}
  */
+@Deprecated
 public class OldAddOp extends BaseTransformAnyOp {
     public OldAddOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

@@ -7,8 +7,7 @@ import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class CropAndResizeDataSetPreProcessorTest {
 
@@ -93,10 +92,7 @@ public class CropAndResizeDataSetPreProcessorTest {
         // Assert
         INDArray results = ds.getFeatures();
         long[] shape = results.shape();
-        assertEquals(1, shape[0]);
-        assertEquals(4, shape[1]);
-        assertEquals(3, shape[2]);
-        assertEquals(3, shape[3]);
+        assertArrayEquals(new long[]{1, 4, 3, 3}, shape);
 
         // Test a few values
         assertEquals(55.0, results.getDouble(0, 0, 0, 0), 0.0);

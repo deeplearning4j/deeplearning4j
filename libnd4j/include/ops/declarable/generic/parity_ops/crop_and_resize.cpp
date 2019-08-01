@@ -56,7 +56,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(crop_and_resize) {
-            auto in = inputShape->at(1);
+            auto in = inputShape->at(0);
 
             Nd4jLong outputShape[4];
 

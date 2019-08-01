@@ -3692,7 +3692,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray divi(INDArray other) {
-        validateNumericalArray("divi", false);
         return divi(other, this);
     }
 
@@ -3706,30 +3705,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray divi(INDArray other, INDArray result) {
         validateNumericalArray("divi", false);
-        if (other.isScalar()) {
-            return divi(other.getDouble(0), result);
-        }
-
-        if (isScalar()) {
-            return other.rdivi(getDouble(0), result);
-        }
-
-        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
-            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
-
-            Nd4j.exec(new DivOp(new INDArray[]{this, other}, new INDArray[]{result}));
-
-            return result;
-        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
-            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            Nd4j.getExecutioner().exec(new BroadcastDivOp(this,other,result,broadcastDimensions));
-            return result;
-        }
-
-
-        LinAlgExceptions.assertSameShape(other, result);
-        Nd4j.getExecutioner().exec(new OldDivOp(this, other, result));
+        Shape.assertBroadcastable("divi", this, other, result);
+        Nd4j.exec(new DivOp(this, other, result));
         return result;
     }
 
@@ -3741,7 +3718,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray muli(INDArray other) {
-        validateNumericalArray("muli", false);
         return muli(other, this);
     }
 
@@ -3755,29 +3731,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray muli(INDArray other, INDArray result) {
         validateNumericalArray("muli", false);
-        if (other.isScalar()) {
-            return muli(other.getDouble(0), result);
-        }
-        if (isScalar()) {
-            return other.muli(getDouble(0), result);
-        }
-
-        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
-            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
-
-            Nd4j.exec(new MulOp(new INDArray[]{this, other}, new INDArray[]{result}));
-
-            return result;
-        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
-            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(this,other,result,broadcastDimensions));
-            return result;
-        }
-
-        LinAlgExceptions.assertSameShape(other, result);
-
-        Nd4j.getExecutioner().exec(new OldMulOp(this, other, result));
+        Shape.assertBroadcastable("muli", this, other, result);
+        Nd4j.exec(new MulOp(this, other, result));
         return result;
     }
 
@@ -3802,31 +3757,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray subi(INDArray other, INDArray result) {
         validateNumericalArray("subi", false);
-        if (other.isScalar()) {
-            return subi(other.getDouble(0), result);
-        }
-        if (isScalar()) {
-            return other.rsubi(getDouble(0), result);
-        }
-
-        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
-            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
-
-            Nd4j.exec(new SubOp(new INDArray[]{this, other}, new INDArray[]{result}));
-
-            return result;
-        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
-            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            Nd4j.getExecutioner().exec(new BroadcastSubOp(this,other,result,broadcastDimensions));
-            return result;
-        }
-
-
-        LinAlgExceptions.assertSameShape(other, result);
-
-
-        Nd4j.getExecutioner().exec(new OldSubOp(this, other,result));
+        Shape.assertBroadcastable("subi", this, other, result);
+        Nd4j.exec(new SubOp(this, other, result));
         return result;
     }
 
@@ -3851,33 +3783,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray addi(INDArray other, INDArray result) {
         validateNumericalArray("addi", false);
-        if (other.isScalar()) {
-            return this.addi(other.getDouble(0), result);
-        }
-
-        if (isScalar()) {
-            return other.addi(getDouble(0), result);
-        }
-
-        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
-            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
-
-            Nd4j.exec(new AddOp(new INDArray[]{this, other}, new INDArray[]{result}));
-
-            return result;
-        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
-            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            result = Nd4j.createUninitialized(this.dataType(), Shape.broadcastOutputShape(this.shape(),other.shape()));
-            Nd4j.getExecutioner().exec(new BroadcastAddOp(this,other,result,broadcastDimensions));
-            return result;
-        } else {
-
-            LinAlgExceptions.assertSameShape(this, other, result);
-
-            Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
-            return result;
-        }
+        Shape.assertBroadcastable("addi", this, other, result);
+        Nd4j.exec(new AddOp(this, other, result));
+        return result;
     }
 
     /**
@@ -3954,7 +3862,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rdivi(INDArray other, INDArray result) {
         validateNumericalArray("rdivi", false);
-        return other.divi(this, result);
+        Shape.assertBroadcastable("rdivi", this, other, result);
+        Nd4j.exec(new RDivOp(this, other, result));
+        return result;
     }
 
     /**
@@ -4003,33 +3913,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rsubi(INDArray other, INDArray result) {
         validateNumericalArray("rsubi", false);
-        if (other.isScalar()) {
-            return this.rsubi(other.getDouble(0), result);
-        }
-
-        if (isScalar()) {
-            return other.rsubi(getDouble(0), result);
-        }
-
-        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
-            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
-
-            Nd4j.exec(new RSubOp(new INDArray[]{this, other}, new INDArray[]{result}));
-
-            return result;
-        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
-            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            result = Nd4j.createUninitialized(this.dataType(), Shape.broadcastOutputShape(this.shape(),other.shape()));
-            Nd4j.getExecutioner().exec(new BroadcastRSubOp(this,other,result,broadcastDimensions));
-            return result;
-        } else {
-
-            LinAlgExceptions.assertSameShape(this, other, result);
-
-            Nd4j.getExecutioner().exec(new OldRSubOp(this, other, result));
-            return result;
-        }
+        Shape.assertBroadcastable("rsubi", this, other, result);
+        Nd4j.exec(new RSubOp(this, other, result));
+        return result;
     }
 
     /**
@@ -6795,6 +6681,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!allowEmpty && isEmpty())
             throw new IllegalStateException("Cannot perform operation " + opName + " on empty array with datatype " + dataType());
     }
+
+
 
     @Override
     public boolean closeable() {

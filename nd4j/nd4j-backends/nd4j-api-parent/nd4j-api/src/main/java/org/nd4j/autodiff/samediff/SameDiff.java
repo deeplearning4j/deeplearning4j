@@ -16,22 +16,15 @@
 
 package org.nd4j.autodiff.samediff;
 
-import static org.nd4j.autodiff.util.TrainingUtils.getSingleOutput;
-import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
-
 import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.Table;
 import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import com.rits.cloning.Cloner;
 import com.rits.cloning.IFastCloner;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
@@ -49,7 +42,6 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.graph.*;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -59,7 +51,6 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
@@ -76,7 +67,6 @@ import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
-import org.nd4j.linalg.exception.ND4JException;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.exception.ND4UnresolvedOutputVariables;
@@ -89,11 +79,11 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.nd4j.linalg.util.ND4JFileUtils;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.GraphDef;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -101,10 +91,11 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
-import org.tensorflow.framework.GraphDef;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.nd4j.autodiff.util.TrainingUtils.getSingleOutput;
+import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
 
 /**
  * SameDiff is the entrypoint for ND4J's automatic differentiation functionality.

@@ -28,10 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Division operation
- *
- * @author Adam Gibson
+ * @deprecated Use {@link SubOp}
  */
+@Deprecated
 public class OldSubOp extends BaseTransformAnyOp {
     public OldSubOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

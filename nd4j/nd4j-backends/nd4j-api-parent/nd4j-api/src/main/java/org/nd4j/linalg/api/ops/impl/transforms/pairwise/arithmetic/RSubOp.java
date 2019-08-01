@@ -45,6 +45,10 @@ public class RSubOp extends BaseDynamicTransformOp {
         this(sameDiff, new SDVariable[]{i_v1, i_v2}, inPlace);
     }
 
+    public RSubOp(INDArray first, INDArray second, INDArray result){
+        this(new INDArray[]{first, second}, result == null ? null : new INDArray[]{result});
+    }
+
     public RSubOp() {}
 
     @Override

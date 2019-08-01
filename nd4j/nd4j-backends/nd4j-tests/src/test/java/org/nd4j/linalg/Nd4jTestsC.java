@@ -80,6 +80,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Sign;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -6222,7 +6223,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         assertEquals(expected, b.rdiv(2));
         assertEquals(expected2, d.rdivColumnVector(c));
 
-        assertEquals(expected, b.rdiv(Nd4j.scalar(2)));
+        assertEquals(expected, b.rdiv(Nd4j.scalar(2.0)));
         assertEquals(expected, b.rdivColumnVector(Nd4j.scalar(2)));
     }
 
@@ -7958,7 +7959,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
         c.addOutputArgument(out);
         Nd4j.getExecutioner().exec(c);
 
-        assertEquals(Nd4j.createFromArray(1f, 3f, 4f), out);
+        List<LongShapeDescriptor> l = c.calculateOutputShape();
+
+        System.out.println(Arrays.toString(l.get(0).getShape()));
+
+        //from [4,4,3] to [2,4,6] then crop to [2,4,5]
     }
 
 

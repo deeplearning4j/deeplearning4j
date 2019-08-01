@@ -2014,7 +2014,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
                                 for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                                     for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                        pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f);
+                                        pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(pIn[kh + kw]);
                             }
                         }
                     }

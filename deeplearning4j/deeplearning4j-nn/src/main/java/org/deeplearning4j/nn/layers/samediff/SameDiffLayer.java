@@ -159,7 +159,14 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
                 g.gradientForVariable().put(s, dl4jGrad);
             }
 
-            dLdIn = sameDiff.grad(INPUT_KEY).getArr();
+            SDVariable v = sameDiff.grad(INPUT_KEY);
+            dLdIn = v.getArr();
+
+            if(dLdIn == null && fn.getGradPlaceholderName().equals(v.getVarName())){
+                //Edge case with lambda layers like identity: SameDiff doesn't store the placeholders
+                // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
+                dLdIn = epsilon;
+            }
         }
 
         //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
