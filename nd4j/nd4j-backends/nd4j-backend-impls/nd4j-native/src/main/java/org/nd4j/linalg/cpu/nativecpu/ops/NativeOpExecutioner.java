@@ -60,6 +60,7 @@ import org.nd4j.linalg.cpu.nativecpu.CpuTADManager;
 import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.memory.MemcpyDirection;
 import org.nd4j.linalg.primitives.AtomicBoolean;
@@ -1628,7 +1629,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
      */
     @Override
     public INDArray[] exec(@NonNull CustomOp op) {
-        long st = profilingConfigurableHookIn(op);
 
         if (op.numOutputArguments() == 0 && !op.isInplaceCall()) {
             try {
@@ -1668,6 +1668,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
 
             return result;
+        } catch (ND4JOpProfilerException e){
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
         }
@@ -2062,6 +2064,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, @NonNull OpContext context) {
+        long st = profilingConfigurableHookIn(op);
         boolean mklOverride = false;
         try {
             if (Nd4jCpu.Environment.getInstance().isUseMKLDNN()) {
@@ -2072,6 +2075,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
                 }
             }
+
 
             loop.execCustomOp2(null, op.opHash(), context.contextPointer());
 
@@ -2139,6 +2143,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } finally {
             if (mklOverride)
                 Nd4jCpu.Environment.getInstance().setUseMKLDNN(true);
+            profilingConfigurableHookOut(op, st);
         }
     }
 

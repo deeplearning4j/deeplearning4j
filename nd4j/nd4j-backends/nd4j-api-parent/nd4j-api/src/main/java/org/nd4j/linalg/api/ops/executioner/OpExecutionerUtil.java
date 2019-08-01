@@ -26,8 +26,11 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Conditions;
+import org.nd4j.linalg.profiler.OpProfiler;
+import org.nd4j.linalg.profiler.ProfilerConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.Arrays;
@@ -41,8 +44,7 @@ public class OpExecutionerUtil {
     private OpExecutionerUtil() {}
 
     public static void checkForNaN(INDArray z) {
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC
-                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+        if (!OpProfiler.getInstance().getConfig().isCheckForNAN())
             return;
 
         if(z.isEmpty() || !z.dataType().isFPType())
@@ -63,7 +65,7 @@ public class OpExecutionerUtil {
         }
 
         if (match > 0)
-            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s): ");
+            throw new ND4JOpProfilerException("P.A.N.I.C.! Op.Z() contains " + match + " NaN value(s): ");
     }
 
     public static void checkForAny(INDArray z) {
@@ -72,8 +74,7 @@ public class OpExecutionerUtil {
     }
 
     public static void checkForInf(INDArray z) {
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC
-                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+        if (!OpProfiler.getInstance().getConfig().isCheckForINF())
             return;
 
         if(z.isEmpty() || !z.dataType().isFPType())
@@ -94,13 +95,12 @@ public class OpExecutionerUtil {
         }
 
         if (match > 0)
-            throw new ND4JIllegalStateException("P.A.N.I.C.! Op.Z() contains " + match + " Inf value(s)");
+            throw new ND4JOpProfilerException("P.A.N.I.C.! Op.Z() contains " + match + " Inf value(s)");
 
     }
 
     public static void checkForNaN(Op op) {
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC
-                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+        if (!OpProfiler.getInstance().getConfig().isCheckForNAN())
             return;
 
         if (op.z() != null && !(op instanceof MatchCondition)) {
@@ -109,8 +109,7 @@ public class OpExecutionerUtil {
     }
 
     public static void checkForInf(Op op) {
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC
-                        && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+        if (!OpProfiler.getInstance().getConfig().isCheckForINF())
             return;
 
         if (op.z() != null && !(op instanceof MatchCondition)) {
@@ -119,8 +118,7 @@ public class OpExecutionerUtil {
     }
 
     public static void checkForInf(CustomOp op) {
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.INF_PANIC
-                && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+        if (!OpProfiler.getInstance().getConfig().isCheckForINF())
             return;
 
         for (val input: op.inputArguments())
@@ -132,8 +130,7 @@ public class OpExecutionerUtil {
 
 
     public static void checkForNaN(CustomOp op) {
-        if (Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.NAN_PANIC
-                && Nd4j.getExecutioner().getProfilingMode() != OpExecutioner.ProfilingMode.ANY_PANIC)
+        if (!OpProfiler.getInstance().getConfig().isCheckForNAN())
             return;
 
         for (val input: op.inputArguments())
