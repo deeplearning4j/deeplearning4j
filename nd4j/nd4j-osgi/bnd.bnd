@@ -1,0 +1,62 @@
+# This file is used to configure the bnd-maven-plugin and to generate OSGi
+# metadata for the "frontend" bundle
+
+Bundle-SymbolicName: org.nd4j.frontend
+
+# Export all the packages from ND4J, except the ones with "impl" in the package name
+api.package.names: ${filterout;${packages;NAMED;org.nd4j.*|onnx|org.tensorflow.*|tensorflow*};impl}
+
+# For now, all the API packages use the same version, taken from the maven version.
+# Ideally the package versions would be maintained individually using annotations 
+api.version: ${maven_version;${project.version}}
+
+# Assemble the full export string containing all the packages, versions, and directives
+# Note that the suffix prevents the API packages from being substitutably imported
+api.export.string: ${replace;${api.package.names};$;\\;version=${api.version}\\;-noimport:=true}
+
+
+# We export all of the ND4J API, plus any third party API that we contain which is exposed
+# through the ND4J API. Note that exposing third party API through your API constitutes
+# tight coupling and is evidence of a leaky abstraction. It may be that too many packages
+# from ND4J are being considered API and that they should be kept private. This would allow
+# the third party package exports to be removed.
+# 
+# JavaCPP is exposed in lots of places, NeoIterTools is exposed via
+# org.nd4j.linalg.indexing. The shaded Protobuf is also exposed through several parts of 
+# the ND4J API.
+# Take care with these dependencies as there are no variables for some of the versions.
+
+-exportcontents: \
+ ${api.export.string},\
+ com.github.os72.protobuf351;version=0.9,\
+ org.bytedeco.javacpp;version=${javacpp.version},\
+ org.bytedeco.javacpp.annotation;version=${javacpp.version},\
+ org.bytedeco.javacpp.indexer;version=${javacpp.version},\
+ org.bytedeco.javacpp.tools;version=${javacpp.version},\
+ net.ericaro.neoitertools;version=1.0.0
+
+# Embed the frontend jar files produced by ND4J. These must be delivered together
+# due to split packages between the various jar files
+-includeresource: \
+ @nd4j-common-${project.version}.jar,\
+ @nd4j-context-${project.version}.jar,\
+ @nd4j-buffer-${project.version}.jar,\
+ @nd4j-api-${project.version}.jar,\
+ @nd4j-native-api-${project.version}.jar
+ 
+ # These are non-OSGi packaged dependencies which we therefore merge
+ # into this OSGi bundle as private copies
+ -conditionalpackage: \
+  com.github.os72.protobuf351.*,\
+  com.jakewharton.byteunits.*,\
+  org.bytedeco.javacpp.*,\
+  net.ericaro.neoitertools.*,\
+  oshi.*
+ 
+ # These dependencies must be customised to remove them or make them
+ # optional. The code paths that use them are not exercised by ND4J 
+ Import-Package: \
+  !android.content,\
+  !org.apache.maven.*,\
+  sun.misc;resolution:=optional,\
+  *

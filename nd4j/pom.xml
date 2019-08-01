@@ -61,6 +61,7 @@
         <module>nd4j-backends</module>
         <module>nd4j-parameter-server-parent</module>
         <module>nd4j-uberjar</module>
+        <module>nd4j-osgi</module>
         <module>nd4j-tensorflow</module>
     </modules>
 
