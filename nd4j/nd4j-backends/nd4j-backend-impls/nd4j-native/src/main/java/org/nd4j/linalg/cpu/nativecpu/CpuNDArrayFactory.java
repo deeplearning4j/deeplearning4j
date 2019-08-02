@@ -199,19 +199,10 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray createUninitializedDetached(int[] shape, char ordering) {
+    public INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape){
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
-        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
-        return ret;
-    }
-
-    @Override
-    public INDArray createUninitializedDetached(long[] shape, char ordering) {
-        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-        Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+        INDArray ret = new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
         return ret;
     }

@@ -4908,17 +4908,6 @@ public class Nd4j {
     }
 
     /**
-     * See {@link #createUninitialized(long[], char)}
-     */
-    public static INDArray createUninitializedDetached(int[] shape, char ordering) {
-        if (shape.length == 0)
-            return scalar(dataType(), 0.0);
-
-        checkShapeValues(shape);
-        return INSTANCE.createUninitializedDetached(shape, ordering);
-    }
-
-    /**
      * See {@link #createUninitialized(long[])}
      */
     public static INDArray createUninitialized(int... shape) {
@@ -4963,12 +4952,23 @@ public class Nd4j {
     }
 
     /**
-     * See {@link #createUninitialized(long)}
+     * Create an uninitialized ndArray. Detached from workspace.
+     * @param dataType data type. Exceptions will be thrown for UTF8, COMPRESSED and UNKNOWN data types.
+     * @param ordering  Fortran 'f' or C/C++ 'c' ordering.
+     * @param shape the shape of the array.
+     * @return the created detached array.
      */
-    public static INDArray createUninitializedDetached(int length) {
-        long[] shape = new long[] {length};
-        return INSTANCE.createUninitializedDetached(shape, order());
+    public static INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape){
+        return INSTANCE.createUninitializedDetached(dataType, ordering, shape);
     }
+
+    /**
+     * See {@link #createUninitializedDetached(DataType, char, long...)} with default ordering.
+     */
+    public static INDArray createUninitializedDetached(DataType dataType, long... shape){
+        return createUninitializedDetached(dataType, order(), shape);
+    }
+
 
     ////////////////////// OTHER ///////////////////////////////
 

@@ -135,7 +135,7 @@ public class OCNNOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.
         if(conf.getLastEpochSinceRUpdated() == 0 && epochCount == 0) {
             INDArray currentR = doOutput(false,workspaceMgr);
             if(window == null) {
-                window = Nd4j.createUninitializedDetached(conf.getWindowSize()).assign(0.0);
+                window = Nd4j.createUninitializedDetached(preOut.dataType(), conf.getWindowSize()).assign(0.0);
             }
 
             if(batchWindowSizeIndex < window.length() - currentR.length()) {
