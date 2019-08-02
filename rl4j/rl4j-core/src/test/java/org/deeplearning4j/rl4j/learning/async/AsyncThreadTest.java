@@ -1,17 +1,16 @@
 package org.deeplearning4j.rl4j.learning.async;
 
-import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
-import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.space.ObservationSpace;
 import org.deeplearning4j.rl4j.support.MockDataManager;
 import org.deeplearning4j.rl4j.support.MockHistoryProcessor;
+import org.deeplearning4j.rl4j.support.MockMDP;
+import org.deeplearning4j.rl4j.support.MockObservationSpace;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -93,7 +92,7 @@ public class AsyncThreadTest {
             IDataManager.StatEntry entry = dataManager.statEntries.get(i);
             assertEquals(i + 1, entry.getStepCounter());
             assertEquals(i, entry.getEpochCounter());
-            assertEquals(1.0, entry.getReward(), 0.0);
+            assertEquals(79.0, entry.getReward(), 0.0);
         }
 
         assertEquals(10, dataManager.isSaveDataCallCount);
@@ -128,7 +127,7 @@ public class AsyncThreadTest {
             IDataManager.StatEntry entry = dataManager.statEntries.get(i);
             assertEquals(i + 1, entry.getStepCounter());
             assertEquals(i, entry.getEpochCounter());
-            assertEquals(1.0, entry.getReward(), 0.0);
+            assertEquals(79.0, entry.getReward(), 0.0);
         }
 
         assertEquals(1, dataManager.isSaveDataCallCount);
@@ -305,91 +304,6 @@ public class AsyncThreadTest {
         @Override
         public void save(String filename) throws IOException {
 
-        }
-    }
-
-    public static class MockEncodable implements Encodable {
-
-        private final int value;
-
-        public MockEncodable(int value) {
-
-            this.value = value;
-        }
-
-        @Override
-        public double[] toArray() {
-            return new double[] { value };
-        }
-    }
-
-    public static class MockObservationSpace implements ObservationSpace {
-
-        @Override
-        public String getName() {
-            return null;
-        }
-
-        @Override
-        public int[] getShape() {
-            return new int[] { 1 };
-        }
-
-        @Override
-        public INDArray getLow() {
-            return null;
-        }
-
-        @Override
-        public INDArray getHigh() {
-            return null;
-        }
-    }
-
-    public static class MockMDP implements MDP<MockEncodable, Integer, DiscreteSpace> {
-
-        private final DiscreteSpace actionSpace;
-        private int currentObsValue = 0;
-        private final ObservationSpace observationSpace;
-
-        public MockMDP(ObservationSpace observationSpace) {
-            actionSpace = new DiscreteSpace(5);
-            this.observationSpace = observationSpace;
-        }
-
-        @Override
-        public ObservationSpace getObservationSpace() {
-            return observationSpace;
-        }
-
-        @Override
-        public DiscreteSpace getActionSpace() {
-            return actionSpace;
-        }
-
-        @Override
-        public MockEncodable reset() {
-            return new MockEncodable(++currentObsValue);
-        }
-
-        @Override
-        public void close() {
-
-        }
-
-        @Override
-        public StepReply<MockEncodable> step(Integer obs) {
-            return new StepReply<MockEncodable>(new MockEncodable(obs), (double)obs, isDone(), null);
-        }
-
-        @Override
-        public boolean isDone() {
-            return false;
-        }
-
-        @Override
-        public MDP newInstance() {
-            return null;
         }
     }
 
