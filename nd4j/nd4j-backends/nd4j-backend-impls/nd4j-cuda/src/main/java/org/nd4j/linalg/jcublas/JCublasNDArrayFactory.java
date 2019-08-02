@@ -168,15 +168,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray createUninitializedDetached(int[] shape, char ordering) {
-        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-        Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new JCublasNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
-        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
-        return ret;
-    }
-
-    @Override
     public INDArray create(DataBuffer data, int[] newShape, int[] newStride, long offset, char ordering) {
         return new JCublasNDArray(data, newShape, newStride, offset, ordering);
     }
@@ -1676,12 +1667,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray createUninitializedDetached(long[] shape, char ordering) {
-        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-        Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new JCublasNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
-        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
-        return ret;
+    public INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape) {
+        return new JCublasNDArray(Nd4j.createBufferDetached(shape, dataType), shape, Nd4j.getStrides(shape, order), order, dataType);
     }
 
     @Override
