@@ -87,6 +87,9 @@ TEST_F(CudaBasicsTests1, TestPairwise_1) {
 	cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
 	auto stream = reinterpret_cast<cudaStream_t *>(&nativeStream);
 
+    x.dataBuffer()->allocatePrimary();
+    x.syncToHost();
+
 	cudaMemcpyAsync(devBufferPtrX, x.buffer(), x.lengthOf() * x.sizeOfT(), cudaMemcpyHostToDevice, *stream);
 	cudaMemcpyAsync(devShapePtrX, x.shapeInfo(), shape::shapeInfoByteLength(x.shapeInfo()), cudaMemcpyHostToDevice, *stream);
 	
@@ -95,6 +98,8 @@ TEST_F(CudaBasicsTests1, TestPairwise_1) {
 	res = cudaStreamSynchronize(*stream);
 	ASSERT_EQ(0, res);
 
+	z.dataBuffer()->allocatePrimary();
+
 	cudaMemcpyAsync(z.buffer(), devBufferPtrZ, z.lengthOf() * x.sizeOfT(), cudaMemcpyDeviceToHost, *stream);
 	res = cudaStreamSynchronize(*stream);
 	ASSERT_EQ(0, res);
@@ -102,6 +107,9 @@ TEST_F(CudaBasicsTests1, TestPairwise_1) {
 	cudaFree(devBufferPtrX);
 	cudaFree(devBufferPtrZ);
 	cudaFree(devShapePtrX);
+
+	// needed due to memcpy
+    z.tickWriteHost();
 
 	for (int e = 0; e < z.lengthOf(); e++) {
 		ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
@@ -116,11 +124,11 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
     NDArray x2('c', {2,2}, {0.5, 1.5, -4.5, 3.5}, nd4j::DataType::BFLOAT16);    
     NDArray x3('c', {2,2}, {0, -1, 0, 1}, nd4j::DataType::BOOL);
     
-    NDArray scalar('c', {0}, {0}, nd4j::DataType::INT64);
+    NDArray scalar('c', {}, {0}, nd4j::DataType::INT64);
 
-    NDArray exp1('c', {0}, {3}, nd4j::DataType::INT64);
-    NDArray exp2('c', {0}, {2}, nd4j::DataType::INT64);
-    NDArray exp3('c', {0}, {1}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, {3}, nd4j::DataType::INT64);
+    NDArray exp2('c', {}, {2}, nd4j::DataType::INT64);
+    NDArray exp3('c', {}, {1}, nd4j::DataType::INT64);
 
     void *dX1, *dX2, *dX3, *dZ; 
     Nd4jLong *dX1ShapeInfo, *dX2ShapeInfo, *dX3ShapeInfo, *dZShapeInfo;
@@ -139,6 +147,11 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
     cudaStream_t stream;
 	cudaResult = cudaStreamCreate(&stream); 
 	ASSERT_EQ(0, cudaResult);
+
+	x1.syncToHost();
+	x2.syncToHost();
+	x3.syncToHost();
+	scalar.syncToHost();
 	
 	cudaMemcpyAsync(dX1, x1.buffer(), x1.lengthOf() * x1.sizeOfT(), cudaMemcpyHostToDevice, stream);
 	cudaMemcpyAsync(dX2, x2.buffer(), x2.lengthOf() * x2.sizeOfT(), cudaMemcpyHostToDevice, stream);
@@ -152,11 +165,11 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
 	cudaResult = cudaMalloc(reinterpret_cast<void **>(&reductionPointer), 1024*1024);
 	ASSERT_EQ(0, cudaResult);
 
-	LaunchContext lc(&stream, reductionPointer);
+	LaunchContext lc(&stream, LaunchContext::defaultContext()->getReductionPointer(), LaunchContext::defaultContext()->getScalarPointer(), LaunchContext::defaultContext()->getAllocationPointer());
 
 	/***************************************/
 	
-    NativeOpExecutioner::execIndexReduceScalar(&lc, 
+    NativeOpExecutioner::execIndexReduceScalar(&lc,
     											nd4j::indexreduce::IndexAbsoluteMax, 
     											x1.buffer(), x1.getShapeInfo(),
     	                                       	dX1, dX1ShapeInfo, 
@@ -171,6 +184,8 @@ TEST_F(CudaBasicsTests1, execIndexReduceScalar_1) {
 
     cudaResult = cudaStreamSynchronize(stream); 
     ASSERT_EQ(0, cudaResult);
+
+    scalar.tickWriteHost();
 
 	ASSERT_NEAR(exp1.e<float>(0), scalar.e<float>(0), 1e-5);
 
@@ -236,11 +251,12 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
     NDArray x2('c', {2,2}, {-1,-2,-3,-4}, nd4j::DataType::INT32);
     NDArray x3('c', {2,2}, {1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {2,2}, {1,2,3,4}, nd4j::DataType::DOUBLE);
-    NDArray exp1('c', {0}, {-30}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {0}, {15}, nd4j::DataType::DOUBLE);
+
+    NDArray exp1('c', {}, {-30.f}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {}, {15.}, nd4j::DataType::DOUBLE);
     
-	NDArray scalar1('c', {0}, {100}, nd4j::DataType::FLOAT32);
-    NDArray scalar2('c', {0}, {100}, nd4j::DataType::DOUBLE);    
+	NDArray scalar1('c', {}, {100.f}, nd4j::DataType::FLOAT32);
+    NDArray scalar2('c', {}, {100.}, nd4j::DataType::DOUBLE);
 
     void *dX1, *dX2, *dX3, *dX4, *dZ1, *dZ2; 
     Nd4jLong *dX1ShapeInfo, *dX3ShapeInfo, *dZ1ShapeInfo, *dZ2ShapeInfo;
@@ -261,6 +277,13 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
     cudaStream_t stream;
 	cudaResult = cudaStreamCreate(&stream); 
 	ASSERT_EQ(0, cudaResult);
+
+	x1.syncToHost();
+	x2.syncToHost();
+	x3.syncToHost();
+	x4.syncToHost();
+	scalar1.syncToHost();
+	scalar2.syncToHost();
 	
 	cudaMemcpyAsync(dX1, x1.buffer(), x1.lengthOf() * x1.sizeOfT(), cudaMemcpyHostToDevice, stream);
 	cudaMemcpyAsync(dX2, x2.buffer(), x2.lengthOf() * x2.sizeOfT(), cudaMemcpyHostToDevice, stream);
@@ -287,6 +310,9 @@ TEST_F(CudaBasicsTests1, execReduce3Scalar_1) {
 
     cudaResult = cudaStreamSynchronize(stream);     
     ASSERT_EQ(0, cudaResult);
+
+    scalar1.tickWriteHost();
+    scalar2.tickWriteHost();
 
     cudaMemcpyAsync(scalar1.buffer(), dZ1, scalar1.lengthOf() * scalar1.sizeOfT(), cudaMemcpyDeviceToHost, stream);
 
@@ -327,10 +353,15 @@ TEST_F(CudaBasicsTests1, execReduce3_1) {
     NDArray x('c', {2,2}, {1,2,3,4}, nd4j::DataType::INT32);
     NDArray y('c', {2,2}, {-1,-2,-3,-4}, nd4j::DataType::INT32);
 
-    NDArray exp('c', {0}, {-30}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {0}, {100},  nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, {-30.f}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, {100.f},  nd4j::DataType::FLOAT32);
 
     std::vector<int> dimensions = {0, 1};
+
+    x.syncToHost();
+    y.syncToHost();
+    z.syncToHost();
+
     
     std::vector<std::pair<void*,size_t>> hostData;    	
 	hostData.emplace_back(dimensions.data(), dimensions.size() * sizeof(int));						// 0 -- dimensions	
@@ -354,7 +385,7 @@ TEST_F(CudaBasicsTests1, execReduce3_1) {
 								nullptr, nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -374,8 +405,8 @@ TEST_F(CudaBasicsTests1, execReduce3_2) {
 	NDArray x('c', {2,2}, {1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray y('c', {2,2}, {1,2,3,4}, nd4j::DataType::DOUBLE);
 
-    NDArray exp('c', {0}, {15}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {0}, {100},  nd4j::DataType::DOUBLE);
+    NDArray exp('c', {}, {15.}, nd4j::DataType::DOUBLE);
+    NDArray z('c', {}, {100.},  nd4j::DataType::DOUBLE);
    
     std::vector<int> dimensions = {0, 1};   
 
@@ -404,7 +435,7 @@ TEST_F(CudaBasicsTests1, execReduce3_2) {
 
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -470,7 +501,7 @@ TEST_F(CudaBasicsTests1, execReduce3_3) {
 								(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-	z.syncToHost();
+	z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -536,7 +567,7 @@ TEST_F(CudaBasicsTests1, execReduce3_4) {
 								(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -602,7 +633,7 @@ TEST_F(CudaBasicsTests1, execReduce3_5) {
 								(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -668,7 +699,7 @@ TEST_F(CudaBasicsTests1, execReduce3All_1) {
 										(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-	z.syncToHost();    
+	z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -734,7 +765,7 @@ TEST_F(CudaBasicsTests1, execReduce3All_2) {
 										(Nd4jLong*)devicePtrs[3], (Nd4jLong*)devicePtrs[4]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -789,7 +820,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_1) {
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -851,7 +882,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_2) {
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -912,7 +943,7 @@ TEST_F(CudaBasicsTests1, execIndexReduce_3) {
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -934,7 +965,7 @@ TEST_F(CudaBasicsTests1, execScalar_1) {
     	
     NDArray x('c', {2,3},  {0,1,2,3,4,5}, nd4j::DataType::INT64); 
     NDArray exp('c',{2,3}, {0,0,1,1,2,2}, nd4j::DataType::INT64);
-    NDArray scalar('c',{0}, {2}, nd4j::DataType::FLOAT32);
+    NDArray scalar('c',{}, {2.f}, nd4j::DataType::FLOAT32);
     NDArray z('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::INT64);
     
 	// create cuda stream and LaunchContext
@@ -951,7 +982,7 @@ TEST_F(CudaBasicsTests1, execScalar_1) {
 									nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -969,7 +1000,7 @@ TEST_F(CudaBasicsTests1, execScalar_2) {
     	
     NDArray x('c', {2,3},  {-1,-2,-3,-4,-5,-6}, nd4j::DataType::INT64); 
     NDArray exp('c',{2,3}, {10,10,10,10,10,10}, nd4j::DataType::FLOAT32);
-    NDArray scalar('c',{0}, {10}, nd4j::DataType::FLOAT32);
+    NDArray scalar('c',{}, {10.f}, nd4j::DataType::FLOAT32);
     NDArray z('c', {2,3}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
     
 	// create cuda stream and LaunchContext
@@ -986,7 +1017,7 @@ TEST_F(CudaBasicsTests1, execScalar_2) {
 									nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1044,7 +1075,7 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
 									nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1062,7 +1093,7 @@ TEST_F(CudaBasicsTests1, execScalar_3) {
 TEST_F(CudaBasicsTests1, execScalarBool_1) {
     	
     NDArray x('c', {2,3},  {-1,-2,0,1,2,3}, nd4j::DataType::BFLOAT16); 
-    NDArray scalar('c',{0}, {0}, nd4j::DataType::BFLOAT16);
+    NDArray scalar('c',{}, {0}, nd4j::DataType::BFLOAT16);
     NDArray exp('c',{2,3}, {0,0,0,1,1,1}, nd4j::DataType::BOOL);    
     NDArray z('c', {2,3}, {100,100,100,100,100,100,}, nd4j::DataType::BOOL);    
 	
@@ -1081,7 +1112,7 @@ TEST_F(CudaBasicsTests1, execScalarBool_1) {
 									nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1134,7 +1165,7 @@ TEST_F(CudaBasicsTests1, execScalarBool_2) {
 									nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1194,7 +1225,7 @@ TEST_F(CudaBasicsTests1, execBroadcast_1) {
 										nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1254,7 +1285,7 @@ TEST_F(CudaBasicsTests1, execBroadcast_2) {
 										nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1311,7 +1342,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_1) {
 										nullptr, nullptr);	
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1369,7 +1400,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_2) {
 										nullptr, nullptr);	
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
  	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1410,7 +1441,7 @@ TEST_F(CudaBasicsTests1, execPairwiseTransform_1) {
 												nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1444,7 +1475,7 @@ TEST_F(CudaBasicsTests1, execPairwiseBoolTransform_1) {
 													nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1477,7 +1508,7 @@ TEST_F(CudaBasicsTests1, execTransformFloat_1) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1507,7 +1538,7 @@ TEST_F(CudaBasicsTests1, execTransformFloat_2) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1524,7 +1555,6 @@ TEST_F(CudaBasicsTests1, execTransformAny_1) {
     NDArray z('c', {4,1}, {100,100,100,100}, nd4j::DataType::INT32);	
 	NDArray exp('c', {4,1}, {0, 2, 6, 12}, nd4j::DataType::INT32);
 	x.permutei({1,0});
-	x.syncShape();
         
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1539,7 +1569,7 @@ TEST_F(CudaBasicsTests1, execTransformAny_1) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1569,7 +1599,7 @@ TEST_F(CudaBasicsTests1, execTransformAny_2) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1586,7 +1616,6 @@ TEST_F(CudaBasicsTests1, execTransformStrict_1) {
     NDArray z('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::DOUBLE);	
 	NDArray exp('c', {3,2}, {0, 3, 12, 27, 48, 75}, nd4j::DataType::DOUBLE);
 	x.permutei({1,0});
-	x.syncShape();
 	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1601,7 +1630,7 @@ TEST_F(CudaBasicsTests1, execTransformStrict_1) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1631,7 +1660,7 @@ TEST_F(CudaBasicsTests1, execTransformStrict_2) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-	z.syncToHost();
+	z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1648,7 +1677,6 @@ TEST_F(CudaBasicsTests1, execTransformSame_1) {
     NDArray z('c', {1,6}, {100,100,100,100,100,100}, nd4j::DataType::DOUBLE);	
 	NDArray exp('c', {1,6}, {0,2.25,6.25,12.25,20.25,30.25}, nd4j::DataType::DOUBLE);
 	x.permutei({1,0});
-	x.syncShape();
     	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1663,7 +1691,7 @@ TEST_F(CudaBasicsTests1, execTransformSame_1) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
         
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1693,7 +1721,7 @@ TEST_F(CudaBasicsTests1, execTransformSame_2) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1710,7 +1738,6 @@ TEST_F(CudaBasicsTests1, execTransformBool_1) {
     NDArray z('c', {1,6}, {100,100,100,100,100,100}, nd4j::DataType::BOOL);	    
 	NDArray exp('c', {1,6}, {0,0,1,0,1,0}, nd4j::DataType::BOOL);
 	x.permutei({1,0});
-	x.syncShape();
     
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -1725,7 +1752,7 @@ TEST_F(CudaBasicsTests1, execTransformBool_1) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
          	
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1755,7 +1782,7 @@ TEST_F(CudaBasicsTests1, execTransformBool_2) {
 		nullptr, nullptr, nullptr);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
     
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -1772,7 +1799,6 @@ TEST_F(CudaBasicsTests1, execReduceFloat_1) {
     NDArray z('c', {3}, {100,100,100}, nd4j::DataType::FLOAT32);
     NDArray exp('c', {3}, {2.5, 6.5, 10.5}, nd4j::DataType::FLOAT32);
     x.permutei({2,1,0});
-    x.syncShape();    
     
     std::vector<int> dimensions = {0,2};
 
@@ -1807,7 +1833,7 @@ TEST_F(CudaBasicsTests1, execReduceFloat_1) {
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -1861,7 +1887,7 @@ TEST_F(CudaBasicsTests1, execReduceFloat_2) {
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -1882,7 +1908,6 @@ TEST_F(CudaBasicsTests1, execReduceSame_1) {
     NDArray z('c', {3}, {100,100,100}, nd4j::DataType::INT32);
     NDArray exp('c', {3}, {20, 52, 84}, nd4j::DataType::INT32);
     x.permutei({2,1,0});
-    x.syncShape();    
     
     std::vector<int> dimensions = {0,2};
 
@@ -1917,7 +1942,7 @@ TEST_F(CudaBasicsTests1, execReduceSame_1) {
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -1971,7 +1996,7 @@ TEST_F(CudaBasicsTests1, execReduceSame_2) {
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -1992,7 +2017,7 @@ TEST_F(CudaBasicsTests1, execReduceBool_1) {
     NDArray z('c', {3}, {100,100,100}, nd4j::DataType::BOOL);
     NDArray exp('c', {3}, {0, 1, 1}, nd4j::DataType::BOOL);
     x.permutei({2,1,0});
-    x.syncShape();    
+
     
     std::vector<int> dimensions = {0,2};
 
@@ -2027,7 +2052,7 @@ TEST_F(CudaBasicsTests1, execReduceBool_1) {
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2081,7 +2106,7 @@ TEST_F(CudaBasicsTests1, execReduceBool_2) {
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2102,7 +2127,6 @@ TEST_F(CudaBasicsTests1, execReduceLong_1) {
     NDArray z('c', {3}, {100,100,100}, nd4j::DataType::INT64);
     NDArray exp('c', {3}, {5,6,6}, nd4j::DataType::INT64);
     x.permutei({2,1,0});
-    x.syncShape();    
     
     std::vector<int> dimensions = {0,2};
 
@@ -2137,7 +2161,7 @@ TEST_F(CudaBasicsTests1, execReduceLong_1) {
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2191,7 +2215,7 @@ TEST_F(CudaBasicsTests1, execReduceLong_2) {
 					(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2209,10 +2233,9 @@ TEST_F(CudaBasicsTests1, execReduceLong_2) {
 TEST_F(CudaBasicsTests1, execReduceFloatScalar_1) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {0}, {100}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {0}, {6.5}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, {100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, {6.5}, nd4j::DataType::FLOAT32);
     x.permutei({2,1,0});
-    x.syncShape();    
        
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2233,7 +2256,7 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_1) {
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 	
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2247,8 +2270,8 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_1) {
 TEST_F(CudaBasicsTests1, execReduceFloatScalar_2) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {0}, {100}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {0}, {6.5}, nd4j::DataType::DOUBLE);        
+    NDArray z('c', {}, {100}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {}, {6.5}, nd4j::DataType::DOUBLE);
 	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2269,7 +2292,7 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_2) {
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2283,10 +2306,9 @@ TEST_F(CudaBasicsTests1, execReduceFloatScalar_2) {
 TEST_F(CudaBasicsTests1, execReduceSameScalar_1) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::INT32);
-    NDArray z('c', {0}, {100}, nd4j::DataType::INT32);
-    NDArray exp('c', {0}, {156}, nd4j::DataType::INT32);
+    NDArray z('c', {}, {100}, nd4j::DataType::INT32);
+    NDArray exp('c', {}, {156}, nd4j::DataType::INT32);
     x.permutei({2,1,0});
-    x.syncShape();    
        
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2307,7 +2329,7 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_1) {
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 	
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2321,8 +2343,8 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_1) {
 TEST_F(CudaBasicsTests1, execReduceSameScalar_2) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {0}, {100}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {0}, {156}, nd4j::DataType::DOUBLE);        
+    NDArray z('c', {}, {100}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {}, {156}, nd4j::DataType::DOUBLE);
 	
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2343,7 +2365,7 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_2) {
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2357,8 +2379,8 @@ TEST_F(CudaBasicsTests1, execReduceSameScalar_2) {
 TEST_F(CudaBasicsTests1, execReduceBoolScalar_1) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::INT32);
-    NDArray z('c', {0}, {100}, nd4j::DataType::BOOL);
-    NDArray exp('c', {0}, {1}, nd4j::DataType::BOOL);
+    NDArray z('c', {}, {100}, nd4j::DataType::BOOL);
+    NDArray exp('c', {}, {1}, nd4j::DataType::BOOL);
     x.permutei({2,1,0});
     x.syncShape();    
        
@@ -2381,7 +2403,7 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_1) {
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 	
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2395,8 +2417,8 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_1) {
 TEST_F(CudaBasicsTests1, execReduceBoolScalar_2) {
     	   	
     NDArray x('c', {2,3,4}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {0}, {100}, nd4j::DataType::BOOL);
-    NDArray exp('c', {0}, {1}, nd4j::DataType::BOOL);
+    NDArray z('c', {}, {100}, nd4j::DataType::BOOL);
+    NDArray exp('c', {}, {1}, nd4j::DataType::BOOL);
     
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2417,7 +2439,7 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_2) {
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2431,8 +2453,8 @@ TEST_F(CudaBasicsTests1, execReduceBoolScalar_2) {
 TEST_F(CudaBasicsTests1, execReduceLongScalar_1) {
     	   	
     NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::INT32);
-    NDArray z('c', {0}, {100}, nd4j::DataType::INT64);
-    NDArray exp('c', {0}, {17}, nd4j::DataType::INT64);
+    NDArray z('c', {}, {100}, nd4j::DataType::INT64);
+    NDArray exp('c', {}, {17}, nd4j::DataType::INT64);
     x.permutei({2,1,0});
     x.syncShape();    
        
@@ -2455,7 +2477,7 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_1) {
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 	
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2469,8 +2491,8 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_1) {
 TEST_F(CudaBasicsTests1, execReduceLongScalar_2) {
     	   	
     NDArray x('c', {2,3,4}, {-5,0,-3,0,-1,0,1,2,3,4,5,6,7,0,9,10,11,0,13,14,0,16,0,18}, nd4j::DataType::DOUBLE);
-    NDArray z('c', {0}, {100}, nd4j::DataType::INT64);
-    NDArray exp('c', {0}, {17}, nd4j::DataType::INT64);
+    NDArray z('c', {}, {100}, nd4j::DataType::INT64);
+    NDArray exp('c', {}, {17}, nd4j::DataType::INT64);
     
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2491,7 +2513,7 @@ TEST_F(CudaBasicsTests1, execReduceLongScalar_2) {
 					nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++)  		
@@ -2533,6 +2555,9 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_1) {
 	// allocate required amount of global device memory and copy host data to it 		
 
 	cudaResult = allocateDeviceMem(lc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
+
+	x.syncToDevice();
+	y.syncToDevice();
 		
 	// call cuda kernel which calculates result
 	NativeOpExecutioner::execReduce3TAD(&lc, nd4j::reduce3::Dot,
@@ -2544,7 +2569,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_1) {
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -2600,7 +2625,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_2) {
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -2656,7 +2681,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_3) {
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -2674,8 +2699,8 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
     	
     NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
     NDArray y('c', {2,2,3}, {10,20,30,40,50,60,70,80,90,100,110,120}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {0}, {1820}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {0}, {100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, {1820}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, {100}, nd4j::DataType::FLOAT32);
 
     std::vector<int> dimensions = {0,1,2};
 
@@ -2711,7 +2736,7 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
 								(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], (Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -2728,8 +2753,8 @@ TEST_F(CudaBasicsTests1, execReduce3TAD_4) {
 TEST_F(CudaBasicsTests1, execSummaryStats_1) {
     	
     NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::INT64);    
-    NDArray exp('c', {0}, {3.605551}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {0}, {100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, {3.605551}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, {100}, nd4j::DataType::FLOAT32);
 
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2748,7 +2773,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_1) {
 								true);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -2799,7 +2824,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_2) {
 								true);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -2853,7 +2878,7 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
 								true);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -2870,8 +2895,8 @@ TEST_F(CudaBasicsTests1, execSummaryStats_3) {
 TEST_F(CudaBasicsTests1, execSummaryStatsScalar_1) {
     	
     NDArray x('c', {2,2,3}, {-5,-4,-3,-2,-1,0,1,2,3,4,5,6}, nd4j::DataType::INT64);
-    NDArray exp('c', {0}, {3.605551}, nd4j::DataType::FLOAT32);
-    NDArray z('c', {0}, {100}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {}, {3.605551}, nd4j::DataType::FLOAT32);
+    NDArray z('c', {}, {100}, nd4j::DataType::FLOAT32);
 
 	// create cuda stream and LaunchContext
 	cudaError_t cudaResult;
@@ -2890,7 +2915,7 @@ TEST_F(CudaBasicsTests1, execSummaryStatsScalar_1) {
 								true);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -2932,7 +2957,7 @@ TEST_F(CudaBasicsTests1, execRandom_1) {
 								devicePtrs[0]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -2977,7 +3002,7 @@ TEST_F(CudaBasicsTests1, execRandom_2) {
 								devicePtrs[0]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -3020,7 +3045,7 @@ TEST_F(CudaBasicsTests1, execRandom_3) {
 								devicePtrs[0]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost(); 	
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 
@@ -3064,7 +3089,7 @@ TEST_F(CudaBasicsTests1, execRandom_4) {
 								devicePtrs[0]);
 
 	cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
-    z.syncToHost();
+    z.tickWriteDevice();
 
  	// verify results
  	for (int e = 0; e < z.lengthOf(); e++) 

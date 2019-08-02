@@ -98,7 +98,6 @@ void __host__ PairWiseTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cud
 														void *vextraParams){
 
 	pairwiseSimpleShaped<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams);
-	nd4j::DebugHelper::checkErrorCode(stream, "PWT (...) failed");
 }
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -70,7 +70,7 @@ namespace helpers {
     template <typename T>
     static void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
-            return x >= (T)0.f? T(1.f) : T(0.f);
+            return x >= (T)0.f? y : T(0.f);
         };
 
         input->applyPairwiseLambda<T>(epsilon, functor, output);

@@ -84,6 +84,7 @@ namespace nd4j {
             this->_offsetSecondary = 0;
             this->_cycleAllocations = 0;
             this->_spillsSize = 0;
+            this->_spillsSizeSecondary = 0;
         }
 
         void Workspace::init(Nd4jLong primaryBytes, Nd4jLong secondaryBytes) {

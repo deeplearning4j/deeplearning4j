@@ -38,7 +38,7 @@ public:
         Environment::getInstance()->setVerbose(false);
     }
 };
-
+/*
 TEST_F(ServerRelatedTests, Basic_Output_Test_1) {
     flatbuffers::FlatBufferBuilder builder(4096);
 
@@ -80,6 +80,7 @@ TEST_F(ServerRelatedTests, Basic_Output_Test_1) {
     ASSERT_EQ(*array2, *restored.byId("second")->getNDArray());
     ASSERT_EQ(*array3, *restored.byId("second indexed")->getNDArray());
 }
+*/
 #if GRAPH_FILES_OK
 TEST_F(ServerRelatedTests, Basic_Execution_Test_1) {
     flatbuffers::FlatBufferBuilder builder(4096);

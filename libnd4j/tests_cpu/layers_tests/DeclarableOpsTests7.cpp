@@ -3645,38 +3645,6 @@ TEST_F(DeclarableOpsTests7, fill_test3) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests7, clipbynorm_test3) {
-
-    auto x = NDArrayFactory::create<double>('c', {3, 5});
-    auto unities = NDArrayFactory::create<double>('c', {3, 1}, {1., 1., 1.});
-    auto scale = NDArrayFactory::create<double>('c', {3, 1}, {1.1, 1., 0.9});
-
-    x.linspace(100.);
-
-    auto xNorm1 = x.reduceAlongDims(reduce::Norm2, {1}, true);
-    x /= xNorm1;
-    xNorm1 = x.reduceAlongDims(reduce::Norm2,{1}, true);
-
-    ASSERT_TRUE(unities.isSameShape(xNorm1));
-    ASSERT_TRUE(unities.equalsTo(xNorm1));
-
-    x *= scale;
-    xNorm1 = x.reduceAlongDims(reduce::Norm2, {1}, true);
-
-    nd4j::ops::clipbynorm op;
-    auto result = op.execute({&x}, {1.0}, {1}, {}, false, nd4j::DataType::DOUBLE);
-    auto z = result->at(0);
-
-    auto zNorm1 = z->reduceAlongDims(reduce::Norm2, {1}, true);
-    auto exp = NDArrayFactory::create<double>('c', {3, 1}, {1., 1., xNorm1.e<double>(2)});
-
-    ASSERT_TRUE(exp.isSameShape(&zNorm1));
-    ASSERT_TRUE(exp.equalsTo(&zNorm1));
-
-    delete result;
-}
-
-////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, mirrorPad_test1) {
 
     auto input = NDArrayFactory::create<double>('c', {2, 3},    {1., 2., 3., 4., 5., 6.});

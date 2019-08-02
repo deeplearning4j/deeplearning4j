@@ -1996,6 +1996,30 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_5) {
+
+    NDArray images('c', {1, 100, 100, 3});
+    NDArray boxes('c', {1,4}, {0,0,1,1}, nd4j::DataType::FLOAT32);
+    NDArray boxI('c', {2}, {1,1}, nd4j::DataType::INT32);
+    NDArray cropSize = NDArrayFactory::create<int>({10, 10});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray expected('c', {1, 10, 10,3}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::crop_and_resize op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printShapeInfo("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    //ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
 
     NDArray x('c', {2,3}, {-63.80f, -63.75f, -63.70f, -63.5f, 0.0f, 0.1f}, nd4j::DataType::FLOAT32);

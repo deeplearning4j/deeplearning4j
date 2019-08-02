@@ -72,9 +72,9 @@ TEST_F(DeclarableOpsTests15, Test_Half_assign_1) {
 }
 
 TEST_F(DeclarableOpsTests15, test_avgpooling_edge_1) {
-    int inOutH = 35;
-    int inOutW = 35;
-    int inOutC = 192;
+    int inOutH = 5;// 35;
+    int inOutW = 5;// 35;
+    int inOutC = 10;// 192;
 
     auto x = NDArrayFactory::create<double>('c', {1, inOutH, inOutW, inOutC});
     x.linspace(1.0);
@@ -273,10 +273,12 @@ TEST_F(DeclarableOpsTests15, test_hashCode_1) {
     y.linspace(2.);
 
     nd4j::ops::hashcode op;
-    auto resultA0 = op.execute({&x}, {}, {});
-    auto resultA1 = op.execute({&x}, {}, {});
-    auto resultB0 = op.execute({&y}, {}, {});
-
+    auto resultA0 = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::INT64);
+    auto resultA1 = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::INT64);
+    auto resultB0 = op.execute({&y}, {}, {}, {}, false, nd4j::DataType::INT64);
+//    resultA0->at(0)->printIndexedBuffer("A0");
+//    resultA1->at(0)->printIndexedBuffer("A1");
+//    resultB0->at(0)->printIndexedBuffer("B0");
     ASSERT_EQ(*resultA0->at(0), *resultA1->at(0));
     ASSERT_NE(*resultA0->at(0), *resultB0->at(0));
 
@@ -293,9 +295,13 @@ TEST_F(DeclarableOpsTests15, test_hashCode_2) {
     y.linspace(2.);
 
     nd4j::ops::hashcode op;
-    auto resultA0 = op.execute({&x}, {}, {});
-    auto resultA1 = op.execute({&x}, {}, {});
-    auto resultB0 = op.execute({&y}, {}, {});
+    auto resultA0 = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::INT64);
+    auto resultA1 = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::INT64);
+    auto resultB0 = op.execute({&y}, {}, {}, {}, false, nd4j::DataType::INT64);
+
+//    resultA0->at(0)->printIndexedBuffer("A0");
+//    resultA1->at(0)->printIndexedBuffer("A1");
+//    resultB0->at(0)->printIndexedBuffer("B0");
 
     ASSERT_EQ(*resultA0->at(0), *resultA1->at(0));
     ASSERT_NE(*resultA0->at(0), *resultB0->at(0));
@@ -374,25 +380,25 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_1) {
 
     auto z = result->at(0);
 
-    z->printIndexedBuffer("Z");
+    // z->printIndexedBuffer("Z");
 
     delete result;
 }
 
 TEST_F(DeclarableOpsTests15, test_lstmBlock_2) {
-    int seqLength = 32;
-    int m = 64;
-    int n = 32;
+    int seqLen = 32;
+    int bS = 64;
+    int nIn = 32;
 
     auto x0 = NDArrayFactory::create<Nd4jLong>(5);
-    auto x1 = NDArrayFactory::create<float>('f', {m, n, seqLength});
-    auto x2 = NDArrayFactory::create<float>('f', {m, n});
-    auto x3 = NDArrayFactory::create<float>('f', {m, n});
-    auto x4 = NDArrayFactory::create<float>('f', {2 * n, 4 * n});
-    auto x5 = NDArrayFactory::create<float>('f', {n});
-    auto x6 = NDArrayFactory::create<float>('f', {n});
-    auto x7 = NDArrayFactory::create<float>('f', {n});
-    auto x8 = NDArrayFactory::create<float>('f', {4 * n});
+    auto x1 = NDArrayFactory::create<float>('f', {bS, nIn, seqLen});
+    auto x2 = NDArrayFactory::create<float>('f', {bS, nIn});    // nIn == nOut
+    auto x3 = NDArrayFactory::create<float>('f', {bS, nIn});
+    auto x4 = NDArrayFactory::create<float>('f', {2 * nIn, 4 * nIn});
+    auto x5 = NDArrayFactory::create<float>('f', {nIn});
+    auto x6 = NDArrayFactory::create<float>('f', {nIn});
+    auto x7 = NDArrayFactory::create<float>('f', {nIn});
+    auto x8 = NDArrayFactory::create<float>('f', {4 * nIn});
 
     nd4j::ops::lstmBlock op;
     auto result = op.execute({&x0, &x1, &x2, &x3, &x4, &x5, &x6, &x7, &x8}, {1.0, 0.0}, {0, 1});
@@ -401,4 +407,30 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_2) {
     auto z = result->at(0);
 
     delete result;
+}
+
+TEST_F(DeclarableOpsTests15, test_lstmBlock_3) {
+
+    int seqLen = 3;
+    int bS = 2;
+    int nIn = 4;
+
+    NDArray f('f', {bS, nIn, seqLen}, nd4j::DataType::FLOAT32);
+    NDArray cLast('f', {bS, nIn}, nd4j::DataType::FLOAT32);
+
+    f = 2;
+    cLast = 3;
+
+    for (int t = 0; t < seqLen; ++t) {
+
+        //section 1
+        //auto ft = f({0,0, 0,0, t,t+1});
+        //auto temp = ft * cLast;
+
+
+        // section 2
+        auto ft = f({0,0, 0,0, t,t+1});
+        auto temp1 = ft.reshape('f', {bS, nIn});
+        auto temp2 = temp1 * cLast;
+    }
 }

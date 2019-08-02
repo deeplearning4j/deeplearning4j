@@ -33,7 +33,6 @@ public:
 TEST_F(ArrayOptionsTests, TestShape_Basic_0) {
     shape[5] = 1;
 
-
     ASSERT_TRUE(ArrayOptions::isNewFormat(shape));
     ASSERT_FALSE(ArrayOptions::isSparseArray(shape));
 }

@@ -31,18 +31,18 @@ namespace ops  {
 CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
 	auto input  = INPUT_VARIABLE(0);
 	auto output = OUTPUT_VARIABLE(0);
-	
-	// check whether shapes of all input array are the same				
+
+	// check whether shapes of all input array are the same
 	for (int i = 0; i < (int) block.width() - 1; ++i)
 		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "PARALLEL_STACK op: the shapes of all input arrays must be the same !");
- 	 	
- 	std::vector<NDArray*> inArrs(block.width());
+
+ 	std::vector<const NDArray*> inArrs(block.width());
  	for(int i = 0; i < block.width(); ++i)
 		inArrs[i] = INPUT_VARIABLE(i);
-	
+
 	const int dim = 0;
 	helpers::stack(block.launchContext(), inArrs, output, dim);
-	 	
+
   	return Status::OK();
 }
 
@@ -53,7 +53,7 @@ CUSTOM_OP_IMPL(parallel_stack, -1, 1, false, 0, 0) {
 	}
 
 DECLARE_SHAPE_FN(parallel_stack) {
-	
+
 	auto inShapeInfo = inputShape->at(0);
 	int rank = inShapeInfo[0];
 
@@ -64,9 +64,9 @@ DECLARE_SHAPE_FN(parallel_stack) {
 	outShapeInfo[1] = block.width();
 	for(int i = 1; i <= rank; ++i)
 		outShapeInfo[i+1] = inShapeInfo[i];
-	
+
 	ShapeUtils::updateStridesAndType(outShapeInfo, inShapeInfo, shape::order(inShapeInfo));
-  	
+
   	return SHAPELIST(CONSTANT(outShapeInfo));
 }
 

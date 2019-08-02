@@ -805,6 +805,8 @@ namespace helpers {
 
         if(!inplace)
             output->assign(tempOutput.get());
+        else
+            input->assign(tempOutput.get());
 
         NDArray::registerSpecialUse({output}, {input});
         return Status::OK();
@@ -812,6 +814,7 @@ namespace helpers {
 
 //    template <typename T>
     int cholesky_(LaunchContext* context, NDArray* input, NDArray* output, bool inplace) {
+        NDArray::prepareSpecialUse({output}, {input});
         if (input->dataType() == DataType::DOUBLE)
             cholesky__<double>(context, input, output, inplace);
         else if (input->dataType() == DataType::FLOAT32)
@@ -822,6 +825,7 @@ namespace helpers {
             cholesky__<float>(context, tempOutput.get(), tempOutput.get(), true);
             output->assign(tempOutput.get());
         }
+        NDArray::registerSpecialUse({output}, {input});
         return Status::OK();
     }
 
@@ -832,23 +836,23 @@ namespace helpers {
 //    BUILD_SINGLE_TEMPLATE(template int cholesky_, (LaunchContext* context, NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
     BUILD_SINGLE_TEMPLATE(template int inverse_, (nd4j::LaunchContext* context, NDArray* input, NDArray* output), FLOAT_NATIVE);
 
-    __global__ void logDetKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong batchNum, Nd4jLong* tadShape, Nd4jLong* tadOffsets, void* outputBuf, Nd4jLong* outputShape) {
-        __shared__ double* output;
-        __shared__ double* input;
-        __shared__ int n2;
+    __global__ void logDetKernel(double* inputBuf, Nd4jLong* inputShape, Nd4jLong batchNum, Nd4jLong* tadShape, Nd4jLong* tadOffsets, double* outputBuf, Nd4jLong* outputShape) {
+
+        __shared__ int n;
         if (threadIdx.x == 0) {
-            output = reinterpret_cast<double*>(outputBuf);
-            input = reinterpret_cast<double*>(inputBuf);
-            n2 = shape::sizeAt(inputShape, -1) * shape::sizeAt(inputShape, -1);
+            n = shape::sizeAt(inputShape, -1); // * shape::sizeAt(inputShape, -1);
         }
         __syncthreads();
 
-        for (Nd4jLong i = blockIdx.x; i < batchNum; i += gridDim.x) {
+        double* output = outputBuf;
+        double* input = inputBuf;
+
+        for (auto i = blockIdx.x; i < batchNum; i += gridDim.x) {
             double* current = input + tadOffsets[i];
             Nd4jLong* shapeOf = shape::shapeOf(tadShape);
             Nd4jLong* strideOf = shape::stride(tadShape);
             auto zIndex = shape::getIndexOffset(i, outputShape, batchNum);
-            for (Nd4jLong e = threadIdx.x; e < n2; e += blockDim.x) {
+            for (auto e = threadIdx.x; e < n; e += blockDim.x) {
                 Nd4jLong diag[] = {e, e};
                 auto xIndex = shape::getOffset(0, shapeOf, strideOf, diag, 2);
                 math::atomics::nd4j_atomicAdd(&output[zIndex], math::nd4j_log<double,double>(current[xIndex] * current[xIndex]));
@@ -858,17 +862,27 @@ namespace helpers {
 
     int logdetFunctor(nd4j::LaunchContext* context, NDArray* input, NDArray* output) {
         NDArray::prepareSpecialUse({output}, {input});
-        auto tempOutput = input->dup('c');
         auto n2 = input->sizeAt(-1) * input->sizeAt(-2);
         auto stream = context->getCudaStream();
-        cholesky(context, tempOutput, tempOutput, true);
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput->getShapeInfo(), {tempOutput->rankOf() - 2, tempOutput->rankOf() - 1});
-        //for (Nd4jLong e = 0; e < output->lengthOf(); e++) {
-        auto outputBuf = reinterpret_cast<double*>(output->specialBuffer()); // + e * n2;
-        logDetKernel<<<packX.numberOfTads(), n2, 128, *stream>>>(tempOutput->specialBuffer(), tempOutput->specialShapeInfo(), packX.numberOfTads(), packX.specialShapeInfo(), packX.specialOffsets(), outputBuf, output->specialShapeInfo());
-        //}
+        std::unique_ptr<NDArray> tempOutput(input->dup());
+//        auto inputs = tempOutput->allTensorsAlongDimension({input->rankOf() - 2, input->rankOf() - 1});
+//        for (Nd4jLong e = 0; e < packX.numberOfTads(); e++) {
+//            auto subArray = inputs->at(e);
+//            cholesky(context, subArray, subArray, true);
+//        }
+//        delete inputs;
+        cholesky(context, input, tempOutput.get(), false);
+        tempOutput->syncToHost();
+        tempOutput->printIndexedBuffer("Cholesky res!!!");
+        auto outputBuf = reinterpret_cast<double*>(output->specialBuffer()); // + e * n2; // + e * n2;
+        auto inputBuf = reinterpret_cast<double*>(tempOutput->specialBuffer());
+        output->assign(0);
+        output->syncToDevice();
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(tempOutput->getShapeInfo(), {input->rankOf() - 2, input->rankOf() - 1});
+        logDetKernel<<<packX.numberOfTads(), n2, 128, *stream>>>(inputBuf, tempOutput->specialShapeInfo(), packX.numberOfTads(), packX.specialShapeInfo(), packX.specialOffsets(), outputBuf, output->specialShapeInfo());
+//        }
         NDArray::registerSpecialUse({output}, {input});
-        delete tempOutput;
+        //delete tempOutput;
         return Status::OK();
     }
 }

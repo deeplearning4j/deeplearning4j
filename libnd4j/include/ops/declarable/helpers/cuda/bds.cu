@@ -42,9 +42,10 @@ namespace helpers {
             xLen = shape::length(inputXshape);
             yLen = shape::length(inputYshape);
             outputLen = shape::length(outputShape);
-            speedWay = speedWay && shape::elementWiseStride(inputXshape) == 1;
-            speedWay = speedWay && shape::elementWiseStride(inputYshape) == 1;
-            speedWay = speedWay && shape::elementWiseStride(outputShape) == 1;
+            speedWay = true;
+            speedWay = speedWay && (shape::elementWiseStride(inputXshape) == 1);
+            speedWay = speedWay && (shape::elementWiseStride(inputYshape) == 1);
+            speedWay = speedWay && (shape::elementWiseStride(outputShape) == 1);
 
         }
         __syncthreads();
@@ -71,27 +72,38 @@ namespace helpers {
             }
         }
     }
+
     template <typename T>
     static void bdsLoopH(cudaStream_t* stream, void const* inputX, Nd4jLong const* inputXshape, void const* inputY, Nd4jLong const* inputYshape, void* output, Nd4jLong* outputShape) {
-        bdsLoopKernel<T><<<128, 256, 512, *stream>>>(inputX, inputXshape, inputY, inputYshape, output, outputShape);
+        bdsLoopKernel<T><<<1, 256, 512, *stream>>>(inputX, inputXshape, inputY, inputYshape, output, outputShape);
 
     }
 
     Nd4jStatus bdsFunctor(nd4j::LaunchContext * context, NDArray* x_shape, NDArray* y_shape, NDArray* output) {
         //int e = 0, x = 0, y = 0;
-
+        NDArray::prepareSpecialUse({output}, {x_shape, y_shape});
         if (x_shape->lengthOf() == 1 || y_shape->lengthOf() == 1) {// except case
-            auto lesser = (x_shape->lengthOf() == 1 ? x_shape: y_shape);
-            auto greater = (x_shape->lengthOf() == 1 ? y_shape: x_shape);
-            output->assign(greater);
-            output->syncToHost();
-            output->p(output->lengthOf() - 1, *lesser);
-            output->syncToDevice();
+            x_shape->syncToHost(); y_shape->syncToHost();
+            if (x_shape->lengthOf() == y_shape->lengthOf()) {
+                auto greater = (x_shape->e<Nd4jLong>(0) < y_shape->e<Nd4jLong>(0) ? y_shape : x_shape);
+                output->assign(greater);
+            }
+            else {
+                auto lesser = (x_shape->lengthOf() == 1 ? x_shape : y_shape);
+                auto greater = (x_shape->lengthOf() == 1 ? y_shape : x_shape);
+                output->assign(greater);
+                auto lastG = greater->lengthOf() - 1;
+                auto lastL = lesser->lengthOf() - 1;
+                if (greater->e<Nd4jLong>(lastG) < lesser->e<Nd4jLong>(lastL))
+                    output->p(lastG, lesser->e(lastL));
+                output->syncToDevice();
+            }
         }
         else {
             //bdsLoopH(context->getCudaStream(), x->getSpecialBuffer(), x->getSpecialShapeInfo(), y->getSpecialBuffer(), y->getSpecialShape(), output->specialBuffer(), output->specialShapeInfo())
             BUILD_SINGLE_SELECTOR(output->dataType(), bdsLoopH, (context->getCudaStream(), x_shape->getSpecialBuffer(), x_shape->getSpecialShapeInfo(), y_shape->getSpecialBuffer(), y_shape->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()), NUMERIC_TYPES);
         }
+        NDArray::registerSpecialUse({output}, {x_shape, y_shape});
         return Status::OK();
         return Status::OK();
     }

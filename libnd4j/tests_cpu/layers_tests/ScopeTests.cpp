@@ -60,7 +60,7 @@ TEST_F(ScopeTests, BasicTests_1) {
     ASSERT_EQ(1, graph.totalNodes());
 
 }
-
+/*
 TEST_F(ScopeTests, RealTests_1) {
     Graph graph;
 
@@ -162,3 +162,4 @@ TEST_F(ScopeTests, RealTests_1) {
     w->printShapeInfo("w shape");
     ASSERT_NEAR(12.f, w->sumNumber().e<float>(0), 1e-5f);
 }
+*/

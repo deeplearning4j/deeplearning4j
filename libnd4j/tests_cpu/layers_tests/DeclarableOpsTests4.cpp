@@ -298,6 +298,86 @@ TEST_F(DeclarableOpsTests4, Test_Fill_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests4, Test_FirasSparce_1) {
+    auto x = NDArrayFactory::create<double>('c', {1, 81});
+    auto exp = NDArrayFactory::create<double>('c', {1, 2}, {0, 1});
+
+    x.p(51, 1);
+    x.p(52, 0);
+    x.p(60, 1);
+    x.p(61, 0);
+    nd4j::ops::firas_sparse op;
+    auto result = op.execute({&x}, {}, {0, 1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("FIRAS");
+//    z->printShapeInfo("OUTSHAPE");
+//    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, Test_FlattenTests_1) {
+    auto x = NDArrayFactory::create<double>('c', {3, 3, 3, 3});
+    auto exp = NDArrayFactory::create<double>('c', {81});
+
+    x.linspace(1);
+    exp.linspace(1);
+    nd4j::ops::flatten op;
+    auto result = op.execute({&x}, {}, {'c'});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Flatten1");
+//    z->printShapeInfo("Flatten1 shape");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, Test_FlattenTests_2) {
+    auto x = NDArrayFactory::create<double>('c', {3, 3, 3, 3});
+    auto y = NDArrayFactory::create<double>('c', {3, 3});
+    auto exp = NDArrayFactory::create<double>('c', {90});
+
+    x.linspace(1);
+    y.linspace(82);
+    exp.linspace(1);
+    nd4j::ops::flatten op;
+    auto result = op.execute({&x, &y}, {}, {'c'});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Flatten2");
+//    z->printShapeInfo("Flatten2 shape");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, Test_FloorTests_1) {
+    auto x = NDArrayFactory::create<double>('c', {3, 3}, {1.5, 2.3, 3.4, 4.3, 5.9, 6.1, 7.2, 8.9, 9.7});
+    auto exp = NDArrayFactory::create<double>('c', {3,3});
+
+    exp.linspace(1);
+    nd4j::ops::Floor op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Flatten1");
+//    z->printShapeInfo("Flatten1 shape");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests4, Test_Reshape_Again) {
     auto x = NDArrayFactory::create<double>('c', {4, 3});
     auto exp = NDArrayFactory::create<double>('c', {4, 3});

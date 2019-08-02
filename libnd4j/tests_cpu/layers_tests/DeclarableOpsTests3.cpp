@@ -298,8 +298,6 @@ TEST_F(DeclarableOpsTests3, Test_ClipByNorm_1) {
     auto result = op.execute({&x}, {4.0}, {});
 
     auto z = result->at(0);
-    z->printIndexedBuffer("CBN1");
-    exp.printIndexedBuffer("EXP1");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -315,10 +313,41 @@ TEST_F(DeclarableOpsTests3, Test_ClipByNorm_2) {
     auto result = op.execute({&x}, {6.0}, {});
 
     auto z = result->at(0);
-    z->printIndexedBuffer("CBN2");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, Test_ClipByNorm_3) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 5});
+    auto unities = NDArrayFactory::create<double>('c', {3, 1}, {1., 1., 1.});
+    auto scale = NDArrayFactory::create<double>('c', {3, 1}, {1.1, 1., 0.9});
+
+    x.linspace(100.);
+
+    auto xNorm1 = x.reduceAlongDims(reduce::Norm2, {1}, true);
+    x /= xNorm1;
+    xNorm1 = x.reduceAlongDims(reduce::Norm2,{1}, true);
+
+    ASSERT_TRUE(unities.isSameShape(xNorm1));
+    ASSERT_TRUE(unities.equalsTo(xNorm1));
+
+    x *= scale;
+    xNorm1 = x.reduceAlongDims(reduce::Norm2, {1}, true);
+
+    nd4j::ops::clipbynorm op;
+    auto result = op.execute({&x}, {1.0}, {1}, {}, false, nd4j::DataType::DOUBLE);
+    auto z = result->at(0);
+
+    auto zNorm1 = z->reduceAlongDims(reduce::Norm2, {1}, true);
+    auto exp = NDArrayFactory::create<double>('c', {3, 1}, {1., 1., xNorm1.e<double>(2)});
+
+    ASSERT_TRUE(exp.isSameShape(&zNorm1));
+    ASSERT_TRUE(exp.equalsTo(&zNorm1));
 
     delete result;
 }
@@ -337,6 +366,9 @@ TEST_F(DeclarableOpsTests3, Test_ListDiff_1) {
 
     auto z0 = result->at(0);
     auto z1 = result->at(1);
+
+    z0->getDataBuffer()->syncToSpecial(true);   // force sync
+    z1->getDataBuffer()->syncToSpecial(true);   // force sync
 
     ASSERT_TRUE(exp0.isSameShape(z0));
     ASSERT_TRUE(exp0.equalsTo(z0));
@@ -2746,12 +2778,277 @@ TEST_F(DeclarableOpsTests3, svd_test11) {
     delete results;
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, elu_test1) {
 
+    auto x = NDArrayFactory::create<double>('c', {3,3}, {0.1, .2, .3, -.4,-.5,-.6, .7, .8, .9});
+//    auto expS = NDArrayFactory::create<double>('c', {3});
+//    auto expU = NDArrayFactory::create<double>('c', {3,3});
+    auto exp = NDArrayFactory::create<double>('c', {3,3}, {.1, .2, .3, -0.32968, -0.393469, -0.451188, .7, .8, .9});
 
+    nd4j::ops::elu op;
+    auto results = op.execute({&x}, {}, {});
 
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
+    auto s = results->at(0);
+//    auto u = results->at(1);
+//    auto v = results->at(2);
+//    s->printIndexedBuffer("ELU");
+    ASSERT_TRUE(exp.equalsTo(s));
 
+    delete results;
+}
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, elu_test2) {
 
+        auto x = NDArrayFactory::create<double>('c', {3, 3}, {0.1, .2, .3, -.4, -.5, -.6, .7, .8, .9});
+        auto eps = NDArrayFactory::create<double>('c', {3,3});
+        eps.assign(2.);
+//    auto expU = NDArrayFactory::create<double>('c', {3,3});
+        auto exp = NDArrayFactory::create<double>('c', {3, 3}, {2, 2, 2, 1.34064, 1.213061, 1.097623, 2, 2, 2});
 
+        nd4j::ops::elu_bp op;
+        auto results = op.execute({ &x, &eps }, {}, {});
 
+        ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+        auto s = results->at(0);
+//    auto u = results->at(1);
+//    auto v = results->at(2);
+//     s->printIndexedBuffer("ELU_BP");
+        ASSERT_TRUE(exp.equalsTo(s));
+
+        delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, lrelu_test1) {
+
+    auto x = NDArrayFactory::create<double>('c', {3,3}, {1, 2, 3, -4,-5,-6, 7, 8, 9});
+//    auto expS = NDArrayFactory::create<double>('c', {3});
+//    auto expU = NDArrayFactory::create<double>('c', {3,3});
+    auto exp = NDArrayFactory::create<double>('c', {3,3}, {1, 2, 3, -0.8, -1., -1.2, 7, 8, 9});
+
+    nd4j::ops::lrelu op;
+    auto results = op.execute({&x}, {0.2}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto s = results->at(0);
+//    auto u = results->at(1);
+//    auto v = results->at(2);
+//    s->printIndexedBuffer("LRELU");
+    ASSERT_TRUE(exp.equalsTo(s));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests3, lrelu_test2) {
+
+    auto x = NDArrayFactory::create<double>('c', {3,3}, {1, 2, 3, -4,-5,-6, 7, 8, 9});
+//    auto expS = NDArrayFactory::create<double>('c', {3});
+    auto eps = NDArrayFactory::create<double>('c', {3,3}, {2,2,2,2,2,2,2, 2,2});
+    auto exp = NDArrayFactory::create<double>('c', {3,3}, {2, 2, 2, 0, 0, 0, 2, 2, 2});
+
+    nd4j::ops::lrelu_bp op;
+    auto results = op.execute({&x, &eps}, {0.2}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto s = results->at(0);
+//    auto u = results->at(1);
+//    auto v = results->at(2);
+//    s->printIndexedBuffer("LRELU_BP");
+    ASSERT_TRUE(exp.equalsTo(s));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests3, selu_test1) {
+
+    auto x = NDArrayFactory::create<double>('c', {3,3}, {1, 2, 3, -4,-5,-6, 7, 8, 9});
+//    auto expS = NDArrayFactory::create<double>('c', {3});
+//    auto expU = NDArrayFactory::create<double>('c', {3,3});
+    auto exp = NDArrayFactory::create<double>('c', {3,3}, {1.050701, 2.101402, 3.152103, -1.725899, -1.746253, -1.753742, 7.354907, 8.405608, 9.456309});
+
+    nd4j::ops::selu op;
+    auto results = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto s = results->at(0);
+//    s->printIndexedBuffer("SELU");
+    ASSERT_TRUE(exp.equalsTo(s));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests3, selu_test2) {
+
+    auto x = NDArrayFactory::create<double>('c', {3,3}, {1, 2, 3, -4,-5,-6, 7, 8, 9});
+//    auto expS = NDArrayFactory::create<double>('c', {3});
+    auto eps = NDArrayFactory::create<double>('c', {3,3}, {2,2,2,2,2,2,2, 2,2});
+    auto exp = NDArrayFactory::create<double>('c', {3,3}, {2.101401, 2.101402, 2.101402, 0.064401, 0.023692, 0.008716, 2.101402, 2.101402, 2.101402});
+
+    nd4j::ops::selu_bp op;
+    auto results = op.execute({&x, &eps}, {0.2}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto s = results->at(0);
+//    auto u = results->at(1);
+//    auto v = results->at(2);
+//    s->printIndexedBuffer("SELU_BP");
+    ASSERT_TRUE(exp.equalsTo(s));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests3, EQScalarTests_1) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(1.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::eq_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_TRUE(res);
+
+}
+
+TEST_F(DeclarableOpsTests3, EQScalarTests_2) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(2.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::eq_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_FALSE(res);
+}
+
+TEST_F(DeclarableOpsTests3, GTScalarTests_1) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(1.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::gt_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_FALSE(res);
+}
+
+TEST_F(DeclarableOpsTests3, GTScalarTests_2) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(2.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::gt_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_TRUE(res);
+}
+
+TEST_F(DeclarableOpsTests3, GTEScalarTests_1) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(1.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::gte_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_TRUE(res);
+}
+
+TEST_F(DeclarableOpsTests3, GTEScalarTests_2) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(2.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::gte_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_TRUE(res);
+}
+
+TEST_F(DeclarableOpsTests3, GTEScalarTests_3) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(1.0f);
+    auto scalar = NDArrayFactory::create(2.0f);
+
+    nd4j::ops::gte_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_FALSE(res);
+}
+
+TEST_F(DeclarableOpsTests3, LTEScalarTests_1) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(1.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::lte_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_TRUE(res);
+}
+
+TEST_F(DeclarableOpsTests3, LTEScalarTests_2) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(2.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::lte_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_FALSE(res);
+}
+
+TEST_F(DeclarableOpsTests3, LTEScalarTests_3) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(1.0f);
+    auto scalar = NDArrayFactory::create(2.0f);
+
+    nd4j::ops::lte_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_TRUE(res);
+}
+
+TEST_F(DeclarableOpsTests3, NEQScalarTests_1) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(1.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::neq_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_FALSE(res);
+
+}
+
+TEST_F(DeclarableOpsTests3, NEQScalarTests_2) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(2.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::neq_scalar op;
+    auto res = op.evaluate({&x, &scalar});
+    ASSERT_TRUE(res);
+}
+
+TEST_F(DeclarableOpsTests3, NOOPTests_1) {
+    Graph graph;
+
+    auto x  =     NDArrayFactory::create(2.0f);
+    auto scalar = NDArrayFactory::create(1.0f);
+
+    nd4j::ops::noop op;
+    auto res = op.execute({&x, &scalar}, {}, {});
+    ASSERT_TRUE(res->status() == nd4j::Status::OK());
+    delete res;
+}

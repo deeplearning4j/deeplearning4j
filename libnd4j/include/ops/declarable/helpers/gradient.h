@@ -15,25 +15,23 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 02.02.2018
+//  @author sgazeos@gmail.com
 //
-
-#ifndef LIBND4J_STACK_H
-#define LIBND4J_STACK_H
-
-#include <ops/declarable/helpers/helpers.h>
+#ifndef __GRADIENT_H_HELPERS__
+#define __GRADIENT_H_HELPERS__
+#include <op_boilerplate.h>
 #include <NDArray.h>
 
-namespace nd4j    {
-namespace ops     {
+namespace nd4j {
+namespace ops {
 namespace helpers {
 
-void stack(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim);
-
+    /*
+     * applyGradientDescent: calculate z = x - y * w.
+     * */
+    void applyGradientDescent(nd4j::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output);
 
 }
 }
 }
-
-
-#endif //LIBND4J_STACK_H
+#endif

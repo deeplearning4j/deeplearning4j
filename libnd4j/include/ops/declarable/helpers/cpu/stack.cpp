@@ -30,14 +30,14 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 template <typename T>
-static void stack_(const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
+static void stack_(const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
 
 	if(inArrs[0]->rankOf() == 0) {
 	    int inSize = inArrs.size();
 
         PRAGMA_OMP_PARALLEL_FOR_IF(inSize > Environment::getInstance()->tadThreshold())
 		for(int i=0; i < inSize; ++i)
-			outArr->p(i, inArrs[i]->e<T>(0));
+			outArr->p<T>(i, inArrs[i]->t<T>(0));
 	}
 	else {
 
@@ -48,16 +48,16 @@ static void stack_(const std::vector<NDArray*>& inArrs, NDArray* outArr, const i
         PRAGMA_OMP_PARALLEL_FOR_IF(listSize > Environment::getInstance()->tadThreshold())
 		for(int i=0; i<listSize; ++i)
 			list->at(i)->assign(inArrs[i]);
-		
+
 		delete list;
 	}
 }
 
-	void stack(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
+	void stack(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
 		BUILD_SINGLE_SELECTOR(outArr->dataType(), stack_, (inArrs, outArr, dim), LIBND4J_TYPES);
 	}
 
-	BUILD_SINGLE_TEMPLATE(template void stack_ , (const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim), LIBND4J_TYPES);
+	BUILD_SINGLE_TEMPLATE(template void stack_ , (const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim), LIBND4J_TYPES);
 
 }
 }

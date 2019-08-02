@@ -279,58 +279,6 @@ TEST_F(DeclarableOpsTests6, Test_gatherNd_Edge_1) {
     delete result;
 }
 
-
-
-TEST_F(DeclarableOpsTests6, Test_StB_1) {
-    auto x = NDArrayFactory::create<double>('c', {4, 64, 64, 4});
-    auto blocks = NDArrayFactory::create<double>('c', {2}, {8, 8});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {12, 12, 16, 16});
-
-    x.assign(1.0f);
-
-    nd4j::ops::space_to_batch op;
-    auto result = op.execute({&x, &blocks, &paddings}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    //nd4j_printf("Mean: %f\n", z->meanNumber());
-
-    delete result;
-
-}
-
-TEST_F(DeclarableOpsTests6, Test_StB_2) {
-    auto x = NDArrayFactory::create<double>('c', {2, 6, 6, 2});
-    auto blocks = NDArrayFactory::create<double>('c', {2}, {2, 2});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {2, 2, 2, 2});
-
-    x.assign(1.0f);
-
-    nd4j::ops::space_to_batch op;
-    auto result = op.execute({&x, &blocks, &paddings}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    delete result;
-
-}
-
-TEST_F(DeclarableOpsTests6, Test_BtS_1) {
-    auto x = NDArrayFactory::create<double>('f', {256, 8, 8, 2});
-    auto blocks = NDArrayFactory::create<double>('c',{2}, {8, 8});
-    auto crops = NDArrayFactory::create<double>('c', {2, 2});
-
-    nd4j::ops::batch_to_space op;
-    auto result = op.execute({&x, &blocks, &crops}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests6, Test_Order_1) {
     auto x = NDArrayFactory::create<double>('f', {2, 3});
     auto exp = NDArrayFactory::create<double>('c', {2, 3});
@@ -1532,8 +1480,8 @@ TEST_F(DeclarableOpsTests6, LogDet_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    //z->printIndexedBuffer("Output ");
-    //exp.printIndexedBuffer("Expected ");
+    z->printIndexedBuffer("LogDet Output1 ");
+    exp.printIndexedBuffer("LogDet Expected1 ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1554,9 +1502,32 @@ TEST_F(DeclarableOpsTests6, LogDet_2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-//    z->printIndexedBuffer("Output ");
+    z->printIndexedBuffer("LogDet Output2 ");
 //    z->printShapeInfo("Shape");
-    //exp.printIndexedBuffer("Expected ");
+    exp.printIndexedBuffer("LogDet Expected2 ");
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests6, LogDet_3) {
+
+    auto x = NDArrayFactory::create<double>('c', {3, 3}, {4,12,-16,12,37,-43,-16,-43,98});
+    auto exp = NDArrayFactory::create<double>( 3.5835189);
+
+    //x.printIndexedBuffer("Input");
+    nd4j::ops::logdet op;
+    auto result = op.execute({&x}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("LogDet Output3 ");
+//    z->printShapeInfo("Shape");
+    exp.printIndexedBuffer("LogDet Expected3 ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

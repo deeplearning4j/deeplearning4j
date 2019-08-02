@@ -154,6 +154,78 @@ TEST_F(DeclarableOpsTests1, BasicInitialization2) {
     ASSERT_EQ(1, op->getOpDescriptor()->getNumberOfOutputs());
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ApplyGradientDescent_1) {
+    auto x = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto y = NDArrayFactory::create<double>('c', {3,4}, {0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2});
+    auto exp = NDArrayFactory::create<double>('c', {3,4});
+    exp.linspace(0.9, 0.9);
+    nd4j::ops::apply_sgd op;
+    auto result = op.execute({&x, &y}, {1.}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto z = result->at(0);
+//    result->at(0)->printIndexedBuffer("OUTPUT");
+//    result->at(0)->printShapeInfo("OUTPUT Shape");
+//    exp.printIndexedBuffer("EXPECT");
+    ASSERT_TRUE(z->equalsTo(exp));
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, AssignBroadcastTest_1) {
+    auto x = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto y = NDArrayFactory::create<double>('c', {1,4}, {0.1,0.2,0.3,0.4});
+    auto exp = NDArrayFactory::create<double>('c', {3,4}, {0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.4});
+    nd4j::ops::assign op;
+    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto z = result->at(0);
+//    result->at(0)->printIndexedBuffer("OUTPUT");
+//    result->at(0)->printShapeInfo("OUTPUT Shape");
+//    exp.printIndexedBuffer("EXPECT");
+    ASSERT_TRUE(z->equalsTo(exp));
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, AssignBroadcastTest_2) {
+    auto x = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto y = NDArrayFactory::create<double>('c', {1,4}, {0.1,0.2,0.3,0.4});
+    auto eps = NDArrayFactory::create<double>('c', {3,4}, {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4});
+    auto exp1 = NDArrayFactory::create<double>('c', {3,4}); // zero
+    auto exp2 = NDArrayFactory::create<double>('c', {1,4}, {3, 6, 9, 12});
+    nd4j::ops::assign_bp op;
+    auto result = op.execute({&x, &y, &eps}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto z1 = result->at(0);
+    auto z2 = result->at(1);
+//    z1->printIndexedBuffer("OUTPUT");
+//    z2->printIndexedBuffer("OUTPUT");
+//
+//    exp1.printIndexedBuffer("EXPECT");
+//    exp2.printIndexedBuffer("EXPECT");
+
+    ASSERT_TRUE(z1->equalsTo(exp1));
+    ASSERT_TRUE(z2->equalsTo(exp2));
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, AXpY_Test_1) {
+    auto x = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto y = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto exp = NDArrayFactory::create<double>('c', {3,4});
+    exp.linspace(3, 3);
+    nd4j::ops::axpy op;
+    auto result = op.execute({&x, &y}, {2.}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto z = result->at(0);
+//    result->at(0)->printIndexedBuffer("OUTPUT");
+//    result->at(0)->printShapeInfo("OUTPUT Shape");
+//    exp.printIndexedBuffer("EXPECT");
+    ASSERT_TRUE(z->equalsTo(exp));
+    delete result;
+}
 
 TEST_F(DeclarableOpsTests1, BasicInitialization3) {
     auto op1 = nd4j::ops::OpRegistrator::getInstance()->getOperation("concat");

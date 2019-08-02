@@ -879,7 +879,7 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
     Nd4jPointer nativeStart[2];
 
 #ifdef __CUDABLAS__
-    nativeStart[1] = *(x.getContext()->getCudaStream());
+    nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
 
     pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
@@ -913,7 +913,7 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
 
     Nd4jPointer nativeStart[2];
 #ifdef __CUDABLAS__
-    nativeStart[1] = *(x.getContext()->getCudaStream());
+    nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
     pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                          z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),

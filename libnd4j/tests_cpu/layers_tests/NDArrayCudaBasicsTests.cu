@@ -70,7 +70,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_1) {
     auto y = NDArrayFactory::create<int>('c', {5}, {5, 4, 3, 2, 1});
 
     ASSERT_TRUE(x.isActualOnDeviceSide());
-    ASSERT_TRUE(x.isActualOnHostSide());
+    ASSERT_FALSE(x.isActualOnHostSide());
 }
 
 TEST_F(NDArrayCudaBasicsTests, Test_Registration_2) {
@@ -86,7 +86,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_3) {
     auto y = NDArrayFactory::create<int>('c', {5}, {5, 4, 3, 2, 1});
 
     ASSERT_TRUE(x.isActualOnDeviceSide());
-    ASSERT_TRUE(x.isActualOnHostSide());
+    ASSERT_FALSE(x.isActualOnHostSide());
 
     NDArray::registerSpecialUse({&x}, {&y});
 
@@ -94,7 +94,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_3) {
     ASSERT_FALSE(x.isActualOnHostSide());
 
     ASSERT_TRUE(y.isActualOnDeviceSide());
-    ASSERT_TRUE(y.isActualOnHostSide());
+    ASSERT_FALSE(y.isActualOnHostSide());
 }
 
 TEST_F(NDArrayCudaBasicsTests, Test_Registration_01) {
@@ -102,7 +102,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_01) {
     auto y = NDArrayFactory::create_<int>('c', {5}, {5, 4, 3, 2, 1});
 
     ASSERT_TRUE(x->isActualOnDeviceSide());
-    ASSERT_TRUE(x->isActualOnHostSide());
+    ASSERT_FALSE(x->isActualOnHostSide());
     delete x;
     delete y;
 }
@@ -122,7 +122,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_Registration_03) {
     auto y = NDArrayFactory::create_<int>('c', {5}, {5, 4, 3, 2, 1});
 
     ASSERT_TRUE(x->isActualOnDeviceSide());
-    ASSERT_TRUE(x->isActualOnHostSide());
+    ASSERT_FALSE(x->isActualOnHostSide());
 
     NDArray::registerSpecialUse({y}, {x});
     x->applyTransform(transform::Neg, y, nullptr);
@@ -142,7 +142,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_Cosine_1) {
     auto y = NDArrayFactory::create_<double>('c', {5}, {5, 4, 3, 2, 1});
 
     ASSERT_TRUE(x->isActualOnDeviceSide());
-    ASSERT_TRUE(x->isActualOnHostSide());
+    ASSERT_FALSE(x->isActualOnHostSide());
 
     NDArray::registerSpecialUse({y}, {x});
     x->applyTransform(transform::Cosine, y, nullptr);
@@ -552,7 +552,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveNeg_2) {
     auto y = NDArrayFactory::create<double>('c', {5});
 
     ASSERT_TRUE(x.isActualOnDeviceSide());
-    ASSERT_TRUE(x.isActualOnHostSide());
+    ASSERT_FALSE(x.isActualOnHostSide());
 
     x.applyTransform(transform::Neg, &y, nullptr);
     //ASSERT_TRUE(x->isActualOnDeviceSide());
@@ -572,7 +572,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveSqrt_1) { // strict
     auto y = NDArrayFactory::create<double>('c', {5});
     auto exp = NDArrayFactory::create<double>({1.000000, 1.414214, 1.732051, 2.000000, 2.236068});
     ASSERT_TRUE(x.isActualOnDeviceSide());
-    ASSERT_TRUE(x.isActualOnHostSide());
+    ASSERT_FALSE(x.isActualOnHostSide());
 
     x.applyTransform(transform::Sqrt, &y, nullptr);
     //ASSERT_TRUE(x->isActualOnDeviceSide());
@@ -619,7 +619,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_1) { // strict
     auto exp = NDArrayFactory::create<double>('c', {5}, {0.540302, -0.416147, -0.989992, -0.653644, 0.283662});
 
     ASSERT_TRUE(x.isActualOnDeviceSide());
-    ASSERT_TRUE(x.isActualOnHostSide());
+    ASSERT_FALSE(x.isActualOnHostSide());
 
     x.applyTransform(transform::Cosine, &y, nullptr);
     //ASSERT_TRUE(x->isActualOnDeviceSide());
@@ -642,7 +642,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_2) {
     auto exp = NDArrayFactory::create<double>('c', {5}, {0.540302, -0.416147, -0.989992, -0.653644, 0.283662});
 
     ASSERT_TRUE(x.isActualOnDeviceSide());
-    ASSERT_TRUE(x.isActualOnHostSide());
+    ASSERT_FALSE(x.isActualOnHostSide());
     x.applyTransform(transform::Cosine, &y, nullptr);
     //ASSERT_TRUE(x->isActualOnDeviceSide());
     //ASSERT_FALSE(x->isActualOnHostSide());
@@ -671,7 +671,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_PrimitiveCosine_3) {
     auto exp = NDArrayFactory::create<double>({0.540302, -0.416147, -0.989992, -0.653644, 0.283662});
 
     ASSERT_TRUE(x.isActualOnDeviceSide());
-    ASSERT_TRUE(x.isActualOnHostSide());
+    ASSERT_FALSE(x.isActualOnHostSide());
     x.applyTransform(transform::Cosine, &y, nullptr);
     //ASSERT_TRUE(x->isActualOnDeviceSide());
     //ASSERT_FALSE(x->isActualOnHostSide());
@@ -1263,8 +1263,8 @@ TEST_F(NDArrayCudaBasicsTests, applyReduce3_3) {
     NDArray x3('c', {3,2}, {1.5,1.5,1.5,1.5,1.5,1.5}, nd4j::DataType::DOUBLE);
     NDArray x4('c', {3,2}, {1,2,3,4,5,6}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {0}, {-204}, nd4j::DataType::FLOAT32);
-    NDArray exp2('c', {0}, {31.5}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, {-204}, nd4j::DataType::FLOAT32);
+    NDArray exp2('c', {}, {31.5}, nd4j::DataType::DOUBLE);
 
 
     auto z = x1.applyReduce3(reduce3::Dot, &x2);
@@ -1340,15 +1340,15 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test1) {
 
     NDArray x('c', {2,3}, {0, 10, 1, 2, 2.5,-4}, nd4j::DataType::DOUBLE);
 
-    NDArray scalar('c', {0}, {100}, nd4j::DataType::INT64);
+    NDArray scalar('c', {}, {100}, nd4j::DataType::INT64);
     NDArray vec1('c', {2}, {100,100}, nd4j::DataType::INT64);
     NDArray vec2('c', {3}, {100,100,100}, nd4j::DataType::INT64);
 
-    NDArray exp1('c', {0}, {1}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, {1}, nd4j::DataType::INT64);
     NDArray exp2('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,0,0}, nd4j::DataType::INT64);
 
-    NDArray exp4('c', {0}, {2}, nd4j::DataType::INT64);
+    NDArray exp4('c', {}, {2}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp6('c', {3}, {1,0,0}, nd4j::DataType::INT64);
 
@@ -1379,11 +1379,11 @@ TEST_F(NDArrayCudaBasicsTests, applyIndexReduce_test2) {
 
     NDArray x('c', {2,3}, {0, 10, 1, 2, 2.5,-4}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {0}, {1}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, {1}, nd4j::DataType::INT64);
     NDArray exp2('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,0,0}, nd4j::DataType::INT64);
 
-    NDArray exp4('c', {0}, {2}, nd4j::DataType::INT64);
+    NDArray exp4('c', {}, {2}, nd4j::DataType::INT64);
     NDArray exp5('c', {2}, {1,1}, nd4j::DataType::INT64);
     NDArray exp6('c', {3}, {1,0,0}, nd4j::DataType::INT64);
 
@@ -1419,13 +1419,13 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test1) {
 
     NDArray x('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::INT32);
 
-    NDArray z1('c', {0}, {100}, nd4j::DataType::DOUBLE);
+    NDArray z1('c', {}, {100}, nd4j::DataType::DOUBLE);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::DOUBLE);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {0}, {2.166667}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, {2.166667}, nd4j::DataType::DOUBLE);
     NDArray exp2('c', {2,2}, {3,4,1,0.666667}, nd4j::DataType::FLOAT32);
     NDArray exp3('c', {3}, {4.5,1,1}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {3,2}, {4,5,1,1,1,1}, nd4j::DataType::FLOAT32);
@@ -1457,7 +1457,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_float_test2) {
 
     NDArray x('c', {2,3,2}, {1,2,3,4,5,6,7,8,-1,-2,-3,-4,}, nd4j::DataType::DOUBLE);
 
-    NDArray exp1('c', {0}, {2.166667}, nd4j::DataType::DOUBLE);
+    NDArray exp1('c', {}, {2.166667}, nd4j::DataType::DOUBLE);
     NDArray exp2('c', {2,2}, {3,4,1,0.666667}, nd4j::DataType::DOUBLE);
     NDArray exp3('c', {3}, {4.5,1,1}, nd4j::DataType::DOUBLE);
     NDArray exp4('c', {3,2}, {4,5,1,1,1,1}, nd4j::DataType::DOUBLE);
@@ -1535,13 +1535,13 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test1) {
 
     NDArray x('c', {2,3,2}, {1.5,2,3,4,5,6,7.5,8,-1,-2,-3.5,-4,}, nd4j::DataType::FLOAT32);
 
-    NDArray z1('c', {0}, {100}, nd4j::DataType::FLOAT32);
+    NDArray z1('c', {}, {100}, nd4j::DataType::FLOAT32);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::FLOAT32);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::FLOAT32);
 
-    NDArray exp1('c', {0}, {26.5}, nd4j::DataType::FLOAT32);
+    NDArray exp1('c', {}, {26.5}, nd4j::DataType::FLOAT32);
     NDArray exp2('c', {2,2}, {9.5,12,3,2}, nd4j::DataType::FLOAT32);
     NDArray exp3('c', {3}, {19,4,3.5}, nd4j::DataType::FLOAT32);
     NDArray exp4('c', {3,2}, {9,10,2,2,1.5,2}, nd4j::DataType::FLOAT32);
@@ -1573,7 +1573,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_same_test2) {
 
     NDArray x('c', {2,3,2}, {1.5,2,3,4,5,6,7.5,8,-1,-2,-3.5,-4,}, nd4j::DataType::INT64);
 
-    NDArray exp1('c', {0}, {26}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, {26}, nd4j::DataType::INT64);
     NDArray exp2('c', {2,2}, {9,12,3,2}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {18,4,4}, nd4j::DataType::INT64);
     NDArray exp4('c', {3,2}, {8,10,2,2,2,2}, nd4j::DataType::INT64);
@@ -1605,13 +1605,13 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test1) {
 
     NDArray x('c', {2,3,2}, {0.5,2,3,-4,5,6,-7.5,8,-1,-0.5,-3.5,4}, nd4j::DataType::DOUBLE);
 
-    NDArray z1('c', {0}, {100}, nd4j::DataType::BOOL);
+    NDArray z1('c', {}, {100}, nd4j::DataType::BOOL);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::BOOL);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::BOOL);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::BOOL);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::BOOL);
 
-    NDArray exp1('c', {0}, {1}, nd4j::DataType::BOOL);
+    NDArray exp1('c', {}, {1}, nd4j::DataType::BOOL);
     NDArray exp2('c', {2,2}, {1,1,0,1}, nd4j::DataType::BOOL);
     NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::BOOL);
     NDArray exp4('c', {3,2}, {1,1,1,0,1,1}, nd4j::DataType::BOOL);
@@ -1643,7 +1643,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_bool_test2) {
 
     NDArray x('c', {2,3,2}, {0.5,2,3,-4,5,6,-7.5,8,-1,-0.5,-3.5,4}, nd4j::DataType::INT32);
 
-    NDArray exp1('c', {0}, {1}, nd4j::DataType::BOOL);
+    NDArray exp1('c', {}, {1}, nd4j::DataType::BOOL);
     NDArray exp2('c', {2,2}, {1,1,0,1}, nd4j::DataType::BOOL);
     NDArray exp3('c', {3}, {1,1,1}, nd4j::DataType::BOOL);
     NDArray exp4('c', {3,2}, {0,1,1,0,1,1}, nd4j::DataType::BOOL);
@@ -1675,13 +1675,13 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test1) {
 
     NDArray x('c', {2,3,2}, {0.5,2,3,-0,5,6,-7.5,0,-1,-0.5,-3.5,4}, nd4j::DataType::FLOAT32);
 
-    NDArray z1('c', {0}, {100}, nd4j::DataType::INT64);
+    NDArray z1('c', {}, {100}, nd4j::DataType::INT64);
     NDArray z2('c', {2,2}, {100,100,100,100}, nd4j::DataType::INT64);
     NDArray z3('c', {3}, {100,100,100}, nd4j::DataType::INT64);
     NDArray z4('c', {3,2}, {100,100,100,100,100,100}, nd4j::DataType::INT64);
     NDArray z5('c', {2}, {100,100}, nd4j::DataType::INT64);
 
-    NDArray exp1('c', {0}, {2}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, {2}, nd4j::DataType::INT64);
     NDArray exp2('c', {2,2}, {0,1,0,1}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {1,1,0}, nd4j::DataType::INT64);
     NDArray exp4('c', {3,2}, {0,1,0,1,0,0}, nd4j::DataType::INT64);
@@ -1713,7 +1713,7 @@ TEST_F(NDArrayCudaBasicsTests, reduceAlongDimension_long_test2) {
 
     NDArray x('c', {2,3,2}, {0.5,2,3,-0,5,6,-7.5,0,-1,-0.5,-3.5,4}, nd4j::DataType::INT32);
 
-    NDArray exp1('c', {0}, {4}, nd4j::DataType::INT64);
+    NDArray exp1('c', {}, {4}, nd4j::DataType::INT64);
     NDArray exp2('c', {2,2}, {1,1,0,2}, nd4j::DataType::INT64);
     NDArray exp3('c', {3}, {2,2,0}, nd4j::DataType::INT64);
     NDArray exp4('c', {3,2}, {1,1,0,2,0,0}, nd4j::DataType::INT64);
@@ -1792,8 +1792,8 @@ TEST_F(NDArrayCudaBasicsTests, TestFloat16_1) {
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestFloat16_2) {
-    auto x = NDArrayFactory::create<float16>('c', {9}, {1,2,3,4,5,7,8,9});
-    auto y = NDArrayFactory::create<float16>('c', {9}, {1,2,3,4,5,7,8,9});
+    auto x = NDArrayFactory::create<float16>('c', {9}, {1,2,3,4,5,6,7,8,9});
+    auto y = NDArrayFactory::create<float16>('c', {9}, {1,2,3,4,5,6,7,8,9});
     ASSERT_TRUE(x.equalsTo(y));
     //for (int e = 0; e < x.lengthOf(); e++)
     //    ASSERT_NEAR(x.e<float16>(e), y.e<float16>(e), 1.e-5f);
@@ -1812,14 +1812,14 @@ TEST_F(NDArrayCudaBasicsTests, TestFloat_4) {
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestFloat_5) {
-    auto x = NDArrayFactory::create<float>('c', {3,3}, {1,2,3,4,5,7,8,9});
-    auto y = NDArrayFactory::create<float>('c', {3,3}, {2,4,5,5,6,7,8,9});
+    auto x = NDArrayFactory::create<float>('c', {3,3}, {1,2,3,4,5,6,7,8,9});
+    auto y = NDArrayFactory::create<float>('c', {3,3}, {2,4,5,5,6,7,8,9, 10});
     ASSERT_FALSE(x.equalsTo(&y));
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestFloat_6) {
-    auto x = NDArrayFactory::create<float>('f', {3,3}, {1,2,3,4,5,7,8,9});
-    auto y = NDArrayFactory::create<float>('f', {3,3}, {2,4,5,5,6,7,8,9});
+    auto x = NDArrayFactory::create<float>('f', {3,3}, {1,2,3,4,5,6,7,8,9});
+    auto y = NDArrayFactory::create<float>('f', {3,3}, {2,4,5,5,6,7,8,9,10});
     ASSERT_FALSE(x.equalsTo(&y));
 }
 
@@ -2257,9 +2257,12 @@ TEST_F(NDArrayCudaBasicsTests, Test_Empty_4) {
 //     cudaStreamSynchronize(*stream);
 
 TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_1) {
+
     auto x = NDArrayFactory::create<float>('c', {5,2}, {0,1,2,3,4,5,6,7,8,9});
+    x.syncToHost();
     auto z = NDArrayFactory::create<float>('c', {5, 8});
-    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+    z.syncToHost();
+
     std::vector<void*> buffers(4);
     std::vector<Nd4jLong*> shapes(4);
     std::vector<Nd4jLong*> hostShapes(4);
@@ -2270,193 +2273,166 @@ TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_1) {
         hostShapes[i] = x.shapeInfo();
     }
     Nd4jPointer extra[2];
-    extra[1] = *stream;
+    extra[1] = x.getContext()->getCudaStream();
     ::concat(extra, 1, 4, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
-    z.syncToHost();
-    z.printIndexedBuffer("Concat result");
-    z.printBuffer("C Concat result linear");
-
 }
 
 TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_2) {
+
     auto x = NDArrayFactory::create<float>('c', {5,2}, {0,1,2,3,4,5,6,7,8,9});
     auto z = NDArrayFactory::create<float>('f', {5, 8});
-    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+
     std::vector<void*> buffers(4);
     std::vector<Nd4jLong*> shapes(4);
     std::vector<Nd4jLong*> hostShapes(4);
+
+    x.syncToHost();
+    z.syncToHost();
 
     for (size_t i = 0; i < buffers.size(); i++) {
         buffers[i] = x.specialBuffer();
         shapes[i] = x.specialShapeInfo();
         hostShapes[i] = x.shapeInfo();
     }
-    Nd4jPointer extra[2];
-    extra[1] = *stream;
-    ::concat(extra, 1, 4, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
-    z.syncToHost();
-    z.printIndexedBuffer("Concat result");
-    z.printBuffer("F Concat result linear");
 
+    Nd4jPointer extra[2];
+    extra[1] = x.getContext()->getCudaStream();
+
+    ::concat(extra, 1, 4, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
 }
+
 TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_3) {
+
     auto x = NDArrayFactory::create<float>('c', {2,3}, {1,2,3,4,5,6});
     auto y = NDArrayFactory::create<float>('c', {1,3}, {7,8,9});
     auto z = NDArrayFactory::create<float>('f', {3, 3});
-    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+
+
     std::vector<void*> buffers(2);
     std::vector<Nd4jLong*> shapes(2);
     std::vector<Nd4jLong*> hostShapes(2);
 
-    //for (size_t i = 0; i < buffers.size(); i++) {
-        buffers[0] = x.specialBuffer();
-        shapes[0] = x.specialShapeInfo();
-        hostShapes[0] = x.shapeInfo();
-    buffers[1] = y.specialBuffer();
-    shapes[1] = y.specialShapeInfo();
-    hostShapes[1] = y.shapeInfo();
-    //}
-    Nd4jPointer extra[2];
-    extra[1] = *stream;
-    ::concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
+    x.syncToHost();
+    y.syncToHost();
     z.syncToHost();
-    z.printIndexedBuffer("Concat result");
-    z.printBuffer("F Concat result linear");
 
+    buffers[0] = x.specialBuffer(); shapes[0] = x.specialShapeInfo(); hostShapes[0] = x.shapeInfo();
+    buffers[1] = y.specialBuffer(); shapes[1] = y.specialShapeInfo(); hostShapes[1] = y.shapeInfo();
+
+    Nd4jPointer extra[2];
+    extra[1] = x.getContext()->getCudaStream();
+
+    ::concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
 }
 
 TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_4) {
+
     auto x = NDArrayFactory::create<float>('c', {2,3}, {1,2,3,4,5,6});
     auto y = NDArrayFactory::create<float>('c', {1,3}, {7,8,9});
     auto z = NDArrayFactory::create<float>('c', {3, 3});
-    auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+
+    x.syncToHost();
+    y.syncToHost();
+    z.syncToHost();
+
     std::vector<void*> buffers(2);
     std::vector<Nd4jLong*> shapes(2);
     std::vector<Nd4jLong*> hostShapes(2);
 
-    //for (size_t i = 0; i < buffers.size(); i++) {
-    buffers[0] = x.specialBuffer();
-    shapes[0] = x.specialShapeInfo();
-    hostShapes[0] = x.shapeInfo();
-    buffers[1] = y.specialBuffer();
-    shapes[1] = y.specialShapeInfo();
-    hostShapes[1] = y.shapeInfo();
-    //}
-    Nd4jPointer extra[2];
-    extra[1] = *stream;
-    ::concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
-    z.syncToHost();
-    z.printIndexedBuffer("Concat result");
-    z.printBuffer("C Concat result linear");
+    buffers[0] = x.specialBuffer(); shapes[0] = x.specialShapeInfo(); hostShapes[0] = x.shapeInfo();
+    buffers[1] = y.specialBuffer(); shapes[1] = y.specialShapeInfo(); hostShapes[1] = y.shapeInfo();
 
+    Nd4jPointer extra[2];
+    extra[1] = x.getContext()->getCudaStream();
+
+    ::concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
 }
 
 TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_5) {
+
     auto x = NDArrayFactory::create<float>('c', {1,2,3}, {1,2,3,4,5,6});
     auto y = NDArrayFactory::create<float>('c', {1,2,3}, {7,8,9,10,11, 12});
+
     auto z = NDArrayFactory::create<float>('c', {2, 2, 3});
     auto stream = x.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
     std::vector<void*> buffers(2);
     std::vector<Nd4jLong*> shapes(2);
     std::vector<Nd4jLong*> hostShapes(2);
 
-    //for (size_t i = 0; i < buffers.size(); i++) {
-    buffers[0] = x.specialBuffer();
-    shapes[0] = x.specialShapeInfo();
-    hostShapes[0] = x.shapeInfo();
-    buffers[1] = y.specialBuffer();
-    shapes[1] = y.specialShapeInfo();
-    hostShapes[1] = y.shapeInfo();
-    //}
-    Nd4jPointer extra[2];
-    extra[1] = *stream;
-    ::concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
-    z.syncToHost();
-    z.printIndexedBuffer("Concat result");
-    z.printBuffer("C Concat result linear");
+    buffers[0] = x.specialBuffer(); shapes[0] = x.specialShapeInfo(); hostShapes[0] = x.shapeInfo();
+    buffers[1] = y.specialBuffer(); shapes[1] = y.specialShapeInfo(); hostShapes[1] = y.shapeInfo();
 
+    Nd4jPointer extra[2];
+    extra[1] = x.getContext()->getCudaStream();
+
+    ::concat(extra, 0, 2, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
 }
+
 TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_6) {
+
     auto x1 = NDArrayFactory::create<float>('c', {2,2,3}, {1,2,3,4,5,6,7,8, 9, 10,11,12});
     auto x2 = NDArrayFactory::create<float>('c', {1,2,3}, {13,14,15,16,17, 18});
     auto x3 = NDArrayFactory::create<float>('c', {1,2,3}, {19,20,21,22,23, 24});
+
+    x1.syncToHost();
+    x2.syncToHost();
+    x3.syncToHost();
+
     auto z = NDArrayFactory::create<float>('c', {4, 2, 3});
-    auto stream = x1.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+
     std::vector<void*> buffers(3);
     std::vector<Nd4jLong*> shapes(3);
     std::vector<Nd4jLong*> hostShapes(3);
 
-    //for (size_t i = 0; i < buffers.size(); i++) {
-    buffers[0] = x1.specialBuffer();
-    shapes[0] = x1.specialShapeInfo();
-    hostShapes[0] = x1.shapeInfo();
-    buffers[1] = x2.specialBuffer();
-    shapes[1] = x2.specialShapeInfo();
-    hostShapes[1] = x2.shapeInfo();
-    buffers[2] = x3.specialBuffer();
-    shapes[2] = x3.specialShapeInfo();
-    hostShapes[2] = x3.shapeInfo();
-    //}
-    printf("The third array is %p\n", buffers[2]);
-    Nd4jPointer extra[2];
-    extra[1] = *stream;
-    ::concat(extra, 0, 3, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
-    z.syncToHost();
-    z.printIndexedBuffer("Concat result");
-    z.printBuffer("C Concat3D result linear");
+    buffers[0] = x1.specialBuffer(); shapes[0] = x1.specialShapeInfo(); hostShapes[0] = x1.shapeInfo();
+    buffers[1] = x2.specialBuffer(); shapes[1] = x2.specialShapeInfo(); hostShapes[1] = x2.shapeInfo();
+    buffers[2] = x3.specialBuffer(); shapes[2] = x3.specialShapeInfo(); hostShapes[2] = x3.shapeInfo();
 
+    Nd4jPointer extra[2];
+    extra[1] = x1.getContext()->getCudaStream();
+
+    ::concat(extra, 0, 3, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
 }
 
 TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_7) {
+
     auto x1 = NDArrayFactory::create<float>(1);
     auto x2 = NDArrayFactory::create<float>(2);
     auto x3 = NDArrayFactory::create<float>(3);
+
     auto z = NDArrayFactory::create<float>('c', {3}, {1,2,3});
-    auto stream = x1.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+
+    x1.syncToHost();
+    x2.syncToHost();
+    x3.syncToHost();
+
     std::vector<void*> buffers(3);
     std::vector<Nd4jLong*> shapes(3);
     std::vector<Nd4jLong*> hostShapes(3);
 
-    //for (size_t i = 0; i < buffers.size(); i++) {
-    buffers[0] = x1.specialBuffer();
-    shapes[0] = x1.specialShapeInfo();
-    hostShapes[0] = x1.shapeInfo();
-    buffers[1] = x2.specialBuffer();
-    shapes[1] = x2.specialShapeInfo();
-    hostShapes[1] = x2.shapeInfo();
-    buffers[2] = x3.specialBuffer();
-    shapes[2] = x3.specialShapeInfo();
-    hostShapes[2] = x3.shapeInfo();
-    //}
-    printf("The third array is %p\n", buffers[2]);
-    Nd4jPointer extra[2];
-    extra[1] = *stream;
-    ::concat(extra, 0, 3, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
-    z.syncToHost();
-    z.printIndexedBuffer("Concat result");
-    z.printBuffer("C Concat scalar result linear");
+    buffers[0] = x1.specialBuffer(); shapes[0] = x1.specialShapeInfo(); hostShapes[0] = x1.shapeInfo();
+    buffers[1] = x2.specialBuffer(); shapes[1] = x2.specialShapeInfo(); hostShapes[1] = x2.shapeInfo();
+    buffers[2] = x3.specialBuffer(); shapes[2] = x3.specialShapeInfo(); hostShapes[2] = x3.shapeInfo();
 
+    Nd4jPointer extra[2];
+    extra[1] = x1.getContext()->getCudaStream();
+
+    ::concat(extra, 0, 3, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
 }
 
 TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_8) {
-//    public void testLargeConcat() {
-//        val list = new ArrayList<INDArray>();
-//
-//        for (int e = 0; e < 100000; e++)
-//            list.add(Nd4j.create(1, 300));
-//
-//        val result = Nd4j.concat(0, list.toArray(new INDArray[list.size()]));
-//    }
+
     auto totalCount = 1000;
     auto width = 300;
-    std::vector<NDArray> lx;//(totalCount);
+    std::vector<NDArray> lx(totalCount);
     for (int i = 0; i < totalCount; i++) {
-        lx.emplace_back(NDArrayFactory::create<float>('c', {1, width}));
+        lx[i] = NDArrayFactory::create<float>('c', {1, width});
         lx[i].assign(i);
+        lx[i].syncToHost();
     }
 
     auto z = NDArrayFactory::create<float>('c', {totalCount, width});
-    auto stream = nd4j::LaunchContext ::defaultContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
+
     std::vector<void*> buffers(totalCount);
     std::vector<Nd4jLong*> shapes(totalCount);
     std::vector<Nd4jLong*> hostShapes(totalCount);
@@ -2467,16 +2443,10 @@ TEST_F(NDArrayCudaBasicsTests, Test_ConcatNative_8) {
         hostShapes[i] = lx[i].shapeInfo();
     }
 
-    printf("The third array is %p\n", buffers[2]);
     Nd4jPointer extra[2];
-    extra[1] = *stream;
+    extra[1] = nd4j::LaunchContext::defaultContext()->getCudaStream();
+
     ::concat(extra, 0, totalCount, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
-    z.syncToHost();
-    nd4j_printf("%f %f %f\n", z.e<float>(0), z.e<float>(width * totalCount / 2), z.e<float>(width * (totalCount - 1)));
-    //z.printIndexedBuffer("Concat result");
-    //z.printBuffer("C Concat scalar result linear");
-
-
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestTear_1) {
@@ -2489,9 +2459,8 @@ TEST_F(NDArrayCudaBasicsTests, TestTear_1) {
     }
     auto z = NDArrayFactory::create<float>('c', {total, 10, 10});
 
-    auto stream = input.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
-    Nd4jPointer extra[2];
-    extra[1] = *stream;
+    Nd4jPointer extra[1];
+    extra[1] = input.getContext()->getCudaStream();
 
     std::vector<void*> buffers(total);
     std::vector<Nd4jLong*> shapes(total);
@@ -2520,17 +2489,20 @@ TEST_F(NDArrayCudaBasicsTests, TestTear_1) {
 }
 
 TEST_F(NDArrayCudaBasicsTests, TestTear_2) {
+
     auto input = NDArrayFactory::create<float>('c', {1, 10, 10});
+
     std::vector<NDArray> arrays; // = {NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10}), NDArrayFactory::create<float>('c', {1, 10, 10})};
     for (int e = 0; e < 10; e++) {
         input.assign(e);
         arrays.emplace_back(input);
+        arrays[e].syncToHost();
     }
+
     auto z = NDArrayFactory::create<float>('c', {10, 10, 10});
 
-    auto stream = input.getContext()->getCudaStream();//reinterpret_cast<cudaStream_t *>(&nativeStream);
     Nd4jPointer extra[2];
-    extra[1] = *stream;
+    extra[1] = input.getContext()->getCudaStream();
 
     std::vector<void*> buffers(10);
     std::vector<Nd4jLong*> shapes(10);
@@ -2541,12 +2513,12 @@ TEST_F(NDArrayCudaBasicsTests, TestTear_2) {
         shapes[i] = arrays[i].specialShapeInfo();
         hostShapes[i] = arrays[i].shapeInfo();
     }
+
     std::vector<int> dimsToExclude({1,2});
+
+
     ::concat(extra, 0, 10, nullptr, (Nd4jPointer*)hostShapes.data(), (Nd4jPointer*)buffers.data(), (Nd4jPointer*)shapes.data(), nullptr, z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), nullptr, nullptr);
-//    z.syncToHost();
-//    z.printBuffer("Pile OK");
-//    z.printIndexedBuffer("Pile 10x10");
-//    z.printIndexedBuffer("Pile 10x10");
+
     auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimsToExclude);
     //std::vector<void*> arraysData(arrays.size());
     Nd4jPointer* arraysData;
@@ -2561,7 +2533,7 @@ TEST_F(NDArrayCudaBasicsTests, TestTear_2) {
     }
     ::tear(extra, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), arraysData, input.specialShapeInfo(), packX.specialShapeInfo(), packX.specialOffsets());
 //    auto result = op.execute({&z}, {}, {1, 2});
-//    nd4j_printf("Result count is %lu\n", result->size());
+
     //ASSERT_EQ(10, result->size());
     err = cudaFree(arraysData);
     if (err != 0) {
@@ -2569,11 +2541,6 @@ TEST_F(NDArrayCudaBasicsTests, TestTear_2) {
         ASSERT_TRUE(false);
     }
 
-  for (size_t e = 0; e < arrays.size(); e++) {
-        arrays[e].syncToHost();
-        arrays[e].printBuffer("Output list at");
-        //result->at(e)->printBuffer("OUtput TEAR at");
-    }
 //        ASSERT_TRUE(tads->at(e)->equalsTo(result->at(e)));
 
 //    delete result;

@@ -84,7 +84,7 @@ TEST_F(FlatBuffersTest, BasicTest1) {
     delete gB;
 }
 
-
+/*
 TEST_F(FlatBuffersTest, FlatGraphTest1) {
     flatbuffers::FlatBufferBuilder builder(4096);
 
@@ -205,7 +205,7 @@ TEST_F(FlatBuffersTest, FlatGraphTest1) {
     delete var0;
     delete resultWrapper;
 }
-
+*/
 TEST_F(FlatBuffersTest, ExecutionTest1) {
     auto gA = new Node(OpType_TRANSFORM_SAME);
 

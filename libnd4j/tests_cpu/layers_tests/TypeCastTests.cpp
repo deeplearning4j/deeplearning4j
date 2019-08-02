@@ -54,6 +54,9 @@ TEST_F(TypeCastTests, Test_Cast_1) {
 }
 
 TEST_F(TypeCastTests, Test_ConvertDtype_1) {
+
+    #ifndef __CUDABLAS__
+
     float src[] = {1.0f, 2.0f, 3.0f, 4.0f, 5.0f};
     float16 dst[5];
     float16 exp[] = {(float16) 1.0f, (float16) 2.0f, (float16) 3.0f, (float16) 4.0f, (float16) 5.0f};
@@ -62,4 +65,6 @@ TEST_F(TypeCastTests, Test_ConvertDtype_1) {
 
     for (int e = 0; e < 5; e++)
         ASSERT_NEAR(exp[e], dst[e], (float16) 0.01f);
+
+    #endif
 }

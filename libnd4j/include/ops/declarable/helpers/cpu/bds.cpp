@@ -61,13 +61,6 @@ namespace helpers {
                     val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(xLen - 1), y_shape->e<Nd4jLong>(e));
                 }
 
-//                if (e)
-//                    if (val != output->e<Nd4jLong>(e - 1)) {
-//                        nd4j_printf(
-//                                "broadcast_dynamic_shape: Input shapes should be compatible, but %lld and %lld were given.\n",
-//                                val, output->e<Nd4jLong>(e - 1));
-//                        return Status::CODE(ND4J_STATUS_VALIDATION, "broadcast_dynamic_shape: BDS validation failed!");
-//                    }
                 output->p(e, val);
             }
         }

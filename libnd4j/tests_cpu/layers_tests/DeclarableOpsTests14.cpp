@@ -265,8 +265,7 @@ TEST_F(DeclarableOpsTests14, test_empty_stack_1) {
     auto res2 = sumOp.execute({&e}, {1.}, {1});
     ASSERT_EQ(res2->status(), Status::OK());
     auto out = res2->at(0);
-    out->printShapeInfo("ReduceSum empty shape with keep dims");
-    out->printIndexedBuffer("ReduceSum scalar");
+
     ASSERT_EQ(out->e<float>(0), DataTypeUtils::infOrMax<float>());
     delete res2;
     delete result;

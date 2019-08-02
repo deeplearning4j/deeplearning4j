@@ -15,25 +15,28 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 02.02.2018
+//  @author sgazeos@gmail.com
 //
 
-#ifndef LIBND4J_STACK_H
-#define LIBND4J_STACK_H
+#include <ops/declarable/helpers/axis.h>
+#include <op_boilerplate.h>
 
-#include <ops/declarable/helpers/helpers.h>
-#include <NDArray.h>
-
-namespace nd4j    {
-namespace ops     {
+namespace nd4j {
+namespace ops {
 namespace helpers {
+template <typename T>
+static void applyGradientDescent_(NDArray* input, NDArray* step, double weight, NDArray* output) {
+    auto lambda = LAMBDA_TT(_x, _y, weight) {
+        return _x - (_y * weight);
+    };
 
-void stack(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim);
+    input->applyPairwiseLambda<T>(step, lambda, output);
+}
 
-
+void applyGradientDescent(nd4j::LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
+    BUILD_SINGLE_SELECTOR(input->dataType(), applyGradientDescent_, (input, step, weight, output), FLOAT_TYPES);
+}
+BUILD_SINGLE_TEMPLATE(template void applyGradientDescent_, (NDArray* input, NDArray* step, double weight, NDArray* output), FLOAT_TYPES);
 }
 }
 }
-
-
-#endif //LIBND4J_STACK_H

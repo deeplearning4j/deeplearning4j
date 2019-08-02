@@ -1895,33 +1895,31 @@ void execRandom2(Nd4jPointer *extraPointers,
 }
 
 Nd4jPointer initRandom(Nd4jPointer *extraPointers, long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
-    auto ptrBuf = reinterpret_cast<long *>(ptrToBuffer);
-    auto buffer = new nd4j::random::RandomBuffer(seed, bufferSize, reinterpret_cast<uint64_t *>(ptrBuf));
-
-    nd4j::random::Xoroshiro128 generator(buffer);
-    generator.refreshBuffer();
-
-    return (Nd4jPointer) buffer;
+    graph::RandomGenerator* generator = new graph::RandomGenerator(seed, seed);
+//    auto ptrBuf = reinterpret_cast<long *>(ptrToBuffer);
+//    auto buffer = new nd4j::random::RandomBuffer(seed, bufferSize, reinterpret_cast<uint64_t *>(ptrBuf));
+//
+//    nd4j::random::Xoroshiro128 generator(buffer);
+//    generator.refreshBuffer();
+//
+    return (Nd4jPointer) generator;
 }
 
 void refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {
-    auto buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
+    auto generator = reinterpret_cast<nd4j::graph::RandomGenerator*> (ptrRandom);
 
-    buffer->setSeed(seed);
-    buffer->setOffset(0);
-    nd4j::random::Xoroshiro128 generator(buffer);
-    generator.refreshBuffer();
+    generator->setStates(seed);
 }
 
 void reSeedBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {
-    auto buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (ptrRandom);
+    auto generator = reinterpret_cast<nd4j::graph::RandomGenerator *> (ptrRandom);
 
-    buffer->reSeed(seed);
+    generator->setStates(seed);
 }
 
 
 void destroyRandom(Nd4jPointer ptrBuffer) {
-    auto buffer = reinterpret_cast<nd4j::random::RandomBuffer *>(ptrBuffer);
+    auto buffer = reinterpret_cast<nd4j::graph::RandomGenerator*>(ptrBuffer);
     delete buffer;
 }
 

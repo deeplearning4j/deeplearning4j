@@ -31,26 +31,26 @@ namespace ops  {
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(lstmBlock, 9, 7, false, 2, 2) {
     auto maxTSLength = INPUT_VARIABLE(0);
-    auto x     = INPUT_VARIABLE(1);                   // input [seqLen, bS, inSize] at time t
-    auto cLast = INPUT_VARIABLE(2);                   // previous cell state  [bS, numUnits], time t-1
-    auto yLast = INPUT_VARIABLE(3);                   // previous output [bS, numUnits], time t-1
+    auto x     = INPUT_VARIABLE(1);                   // input [seqLen, bS, nIn] at time t
+    auto cLast = INPUT_VARIABLE(2);                   // previous cell state  [bS, nOut], time t-1
+    auto yLast = INPUT_VARIABLE(3);                   // previous output [bS, nOut], time t-1
 
-    auto W    = INPUT_VARIABLE(4);                    // Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(inSize+numUnits), 4*numUnits]
-    auto Wci  = INPUT_VARIABLE(5);                    // weights - cell peephole (t-1) connections to input modulation gate, [numUnits]
-    auto Wcf  = INPUT_VARIABLE(6);                    // weights - cell peephole (t-1) connections to forget gate, [numUnits]
-    auto Wco  = INPUT_VARIABLE(7);                    // weights - cell peephole (t) connections to output gate, [numUnits]
-    auto b    = INPUT_VARIABLE(8);                    // biases, [4*numUnits]
+    auto W    = INPUT_VARIABLE(4);                    // Weights - concatenated (input-to-hidden, hidden-to-hidden weights)  weights, [(nIn+nOut), 4*nOut]
+    auto Wci  = INPUT_VARIABLE(5);                    // weights - cell peephole (t-1) connections to input modulation gate, [nOut]
+    auto Wcf  = INPUT_VARIABLE(6);                    // weights - cell peephole (t-1) connections to forget gate, [nOut]
+    auto Wco  = INPUT_VARIABLE(7);                    // weights - cell peephole (t) connections to output gate, [nOut]
+    auto b    = INPUT_VARIABLE(8);                    // biases, [4*nOut]
 
-    auto i   =  OUTPUT_VARIABLE(0);                   // Output - input modulation gate activations [seqLen, bS, numUnits]
-    auto c   =  OUTPUT_VARIABLE(1);                   // Activations, cell state (pre tanh) [seqLen, bs, numUnits]
-    auto f   =  OUTPUT_VARIABLE(2);                   // Output - forget gate activations [seqLen, bs, numUnits]
-    auto o   =  OUTPUT_VARIABLE(3);                   // Output - output gate activations [seqLen, bs, numUnits]
-    auto z   =  OUTPUT_VARIABLE(4);                   // Output - input gate activations [seqLen, bs, numUnits]
-    auto h   =  OUTPUT_VARIABLE(5);                   // Cell state, post tanh [seqLen, bs, numUnits]
+    auto i   =  OUTPUT_VARIABLE(0);                   // Output - input modulation gate activations [seqLen, bS, nOut]
+    auto c   =  OUTPUT_VARIABLE(1);                   // Activations, cell state (pre tanh) [seqLen, bs, nOut]
+    auto f   =  OUTPUT_VARIABLE(2);                   // Output - forget gate activations [seqLen, bs, nOut]
+    auto o   =  OUTPUT_VARIABLE(3);                   // Output - output gate activations [seqLen, bs, nOut]
+    auto z   =  OUTPUT_VARIABLE(4);                   // Output - input gate activations [seqLen, bs, nOut]
+    auto h   =  OUTPUT_VARIABLE(5);                   // Cell state, post tanh [seqLen, bs, nOut]
     auto y   =  OUTPUT_VARIABLE(6);                   // current cell output [seqLen, bS, numProj], time t
 
-    const int peephole   = INT_ARG(0);                     // if 1, provide peephole connections
-    const int dataFormat = INT_ARG(1);                     // 0=TNS=[seqLen,mb,size]; 1=NST=[mb,size,seqLen]; 2=NTS=[mb,seqLen,size]
+    const int peephole   = INT_ARG(0);                // if 1, provide peephole connections
+    const int dataFormat = INT_ARG(1);                // 0=TNS=[seqLen,bS,nIn]; 1=NST=[bS,nIn,seqLen]; 2=NTS=[bS,seqLen,nIn]
     const double forgetBias   = T_ARG(0);
     const double clippingCellValue  = T_ARG(1);       // clipping value for ct, if it is not equal to zero, then cell state is clipped
 
@@ -86,7 +86,7 @@ DECLARE_SHAPE_FN(lstmBlock) {
     REQUIRE_TRUE(shape::rank(b)==1, 0, "lstmBlock: Biases must be rank 1");
 
 
-    const int dataFormat = INT_ARG(1);                     // 0=TNS=[seqLen,mb,size]; 1=NST=[mb,size,seqLen]; 2=NTS=[mb,seqLen,size]
+    const int dataFormat = INT_ARG(1);                     // 0=TNS=[seqLen,bS,size]; 1=NST=[bS,size,seqLen]; 2=NTS=[bS,seqLen,size]
     int bs;
     int t;
     int nOut = cLast[2];    //rank, bs, nOut, ...]

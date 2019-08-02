@@ -70,6 +70,7 @@ __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t 
 
     concatCuda<T><<<512, 256, 1024, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
 }
+BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher,  (const int numOfArrs, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 // x - input, y - paddings, z - output
@@ -167,6 +168,7 @@ static void padCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, 
 
     padCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(mode, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, padVal);
 }
+BUILD_DOUBLE_TEMPLATE(template void padCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const int mode, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo, const void* vPadVal), LIBND4J_TYPES, INTEGER_TYPES);
 
 ///////////////////////////////////////////////////////////////////
 void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, const NDArray& padValue) {
@@ -553,6 +555,396 @@ void scatterUpdate(nd4j::LaunchContext* context, NDArray& input, NDArray& update
     manager.synchronize();
 }
 
+///////////////////////////////////////////////////////////////////
+// x - input, y - indices, z - output
+template<typename X, typename Y>
+__global__ static void gatherNDCuda(const void *vx, const Nd4jLong *xShapeInfo,
+                                    const void *vy, const Nd4jLong *yShapeInfo,
+                                          void *vz, const Nd4jLong *zShapeInfo) {
+
+    const auto x = reinterpret_cast<const X*>(vx);
+    const auto y = reinterpret_cast<const Y*>(vy);
+          auto z = reinterpret_cast<X*>(vz);
+
+    __shared__ int xRank, yRank, zRank, maxRank, yLastDim;
+    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
+
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+
+        xRank   = shape::rank(xShapeInfo);
+        yRank   = shape::rank(yShapeInfo);
+        zRank   = shape::rank(zShapeInfo);
+        maxRank = nd4j::math::nd4j_max<int>(yRank, nd4j::math::nd4j_max<int>(xRank, zRank));
+
+        zLen     = shape::length(zShapeInfo);
+        yLastDim = yShapeInfo[yRank];
+
+        totalThreads = gridDim.x * blockDim.x;
+    }
+
+    __syncthreads();
+
+    auto coord = sharedMem + threadIdx.x * maxRank;
+
+    Nd4jLong *zCoordStart, *xCoordStart;
+
+    if(yLastDim == xRank) {
+        zCoordStart = coord;
+        xCoordStart = coord;
+    }
+    if(zRank >= xRank) {
+        zCoordStart = coord;
+        xCoordStart = coord + zRank - xRank;
+    }
+    else {
+        zCoordStart = coord + xRank - zRank;
+        xCoordStart = coord;
+    }
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
+
+        shape::index2coords(zRank, zShapeInfo + 1, i, zLen, zCoordStart);
+
+        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + zRank + 1, zCoordStart, zRank);
+
+        // last y coordinate
+        int coordToRestore;
+        if(yLastDim != xRank)
+            coordToRestore = static_cast<int>(zCoordStart[yRank - 1]);
+
+        zCoordStart[yRank - 1] = 0; // last y coordinate
+        const auto yOffset = shape::getOffset(0, yShapeInfo + 1, yShapeInfo + yRank + 1, zCoordStart, yRank);
+
+        //restore z coordinate
+        if(yLastDim != xRank)
+            zCoordStart[yRank - 1] = coordToRestore;
+
+        // construct coordinates for x
+        for(uint j = 0; j < yLastDim; ++j)
+            xCoordStart[j] = y[yOffset + j * yShapeInfo[2 * yRank]];   // last stride
+
+        const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xRank + 1, xCoordStart, xRank);
+
+        z[zOffset] = x[xOffset];
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename X, typename Y>
+static void gatherNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
+                                 const void *vx, const Nd4jLong *xShapeInfo,
+                                 const void *vy, const Nd4jLong *yShapeInfo,
+                                       void *vz, const Nd4jLong *zShapeInfo) {
+
+    gatherNDCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
+}
+BUILD_DOUBLE_TEMPLATE(template void gatherNDCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo), LIBND4J_TYPES, INTEGER_TYPES);
+
+///////////////////////////////////////////////////////////////////
+void gatherND(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
+
+    const int maxRank = nd4j::math::nd4j_max<int>(indices.rankOf(), nd4j::math::nd4j_max<int>(input.rankOf(), output.rankOf()));
+
+    const int threadsPerBlock = MAX_NUM_THREADS;
+    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = 8 * threadsPerBlock * maxRank + 128;
+
+    const auto xType = input.dataType();
+    const auto yType = indices.dataType();
+
+    PointersManager manager(context, "gatherND");
+
+    NDArray::prepareSpecialUse({&output}, {&input, &indices});
+    BUILD_DOUBLE_SELECTOR(xType, yType, gatherNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), indices.getSpecialBuffer(), indices.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo()), LIBND4J_TYPES, INTEGER_TYPES);
+    NDArray::registerSpecialUse({&output}, {&input, &indices});
+
+    manager.synchronize();
+}
+
+//////////////////////////////////////////////////////////////////////////
+// x - input, y - gradO, z - gradI
+template<typename X, typename Z>
+__global__ static void clipByNormBPWholeArrCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, void* vreducBuff, const Z clipNormVal) {
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(tid >= shape::length(zShapeInfo))
+        return;
+
+    const auto x = reinterpret_cast<const X*>(vx);
+    const auto y = reinterpret_cast<const Z*>(vy);
+          auto z = reinterpret_cast<Z*>(vz);
+
+    auto reducBuff = reinterpret_cast<Z*>(vreducBuff);
+    uint* count    = reinterpret_cast<uint*>(vreducBuff) + 16384;
+
+    __shared__ Z* shMem;
+    __shared__ Nd4jLong len;
+    __shared__ bool amIinLastBlock;
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        shMem = reinterpret_cast<Z*>(shmem);
+
+        len = shape::length(zShapeInfo);   // xLen = yLen = zLen
+    }
+    __syncthreads();
+
+    // fill shared memory with array elements
+    const auto xVal = x[shape::getIndexOffset(tid, xShapeInfo, len)];
+    const auto yVal = y[shape::getIndexOffset(tid, yShapeInfo, len)];
+
+    shMem[2*threadIdx.x]     = static_cast<Z>(xVal * xVal);   // for norm
+    shMem[2*threadIdx.x + 1] = static_cast<Z>(xVal * yVal);   // for input * gradO
+
+    __syncthreads();
+
+    // accumulate sum per block
+    for (int activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+
+        if (threadIdx.x < activeThreads && tid + activeThreads < len) {
+
+            shMem[2*threadIdx.x]     += shMem[2*(threadIdx.x + activeThreads)];
+            shMem[2*threadIdx.x + 1] += shMem[2*(threadIdx.x + activeThreads) + 1];
+        }
+        __syncthreads();
+    }
+
+    // store accumulated sums in reduction buffer (reducBuff)
+    if (threadIdx.x == 0) {
+
+        reducBuff[2*blockIdx.x]     = shMem[0];
+        reducBuff[2*blockIdx.x + 1] = shMem[1];
+
+        __threadfence();
+
+        amIinLastBlock = gridDim.x == 1 || (atomicInc(count, gridDim.x) == gridDim.x - 1);
+    }
+    __syncthreads();
+
+    // shared memory of last block is used for final summation of values stored in reduction buffer
+    if (amIinLastBlock) {
+
+        for (int i = threadIdx.x; i < gridDim.x; i += blockDim.x) {
+
+            shMem[2*threadIdx.x]     = (i == threadIdx.x ) ? reducBuff[2*i]     : reducBuff[2*i]     + shMem[2*threadIdx.x];
+            shMem[2*threadIdx.x + 1] = (i == threadIdx.x ) ? reducBuff[2*i + 1] : reducBuff[2*i + 1] + shMem[2*threadIdx.x + 1];
+        }
+        __syncthreads();
+
+        // accumulate sum
+        for (int activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+
+            if (threadIdx.x < activeThreads && threadIdx.x + activeThreads < gridDim.x) {
+                shMem[2*threadIdx.x]     += shMem[2*(threadIdx.x + activeThreads)];
+                shMem[2*threadIdx.x + 1] += shMem[2*(threadIdx.x + activeThreads) + 1];
+            }
+            __syncthreads();
+        }
+
+        if (threadIdx.x == 0) {
+
+            reducBuff[0] = math::nd4j_sqrt<Z,Z>(shMem[0]);
+            reducBuff[1] = shMem[1];
+            count = 0;
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// x - input, y - gradO, z - gradI
+template<typename X, typename Z>
+__global__ static void clipByNormBPCalcGradCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, void* vreducBuff, const Z clipNormVal) {
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    const Nd4jLong len = shape::length(zShapeInfo);     // xLen = yLen = zLen
+
+    if(tid >= len)
+        return;
+
+    const auto x = reinterpret_cast<const X*>(vx);
+    const auto y = reinterpret_cast<const Z*>(vy);
+          auto z = reinterpret_cast<Z*>(vz);
+
+    __shared__ Z norm, sumOfProd;
+
+    if (threadIdx.x == 0) {
+
+        norm = reinterpret_cast<Z*>(vreducBuff)[0];
+        sumOfProd = reinterpret_cast<Z*>(vreducBuff)[1];
+    }
+    __syncthreads();
+
+    const auto yOffset = shape::getIndexOffset(tid, yShapeInfo, len);
+    const auto zOffset = shape::getIndexOffset(tid, zShapeInfo, len);
+
+   if(norm > clipNormVal) {
+
+        const auto xOffset = shape::getIndexOffset(tid, xShapeInfo, len);
+
+        const Z factor1 = static_cast<Z>(1) / norm;             // 1 / norm
+        const Z factor2 = factor1 / (norm * norm);              // 1 / (norm * norm * norm)
+
+        z[zOffset] = clipNormVal * (factor1 * y[yOffset] - factor2 * sumOfProd * x[xOffset]);
+    }
+    else {
+        z[zOffset] = y[yOffset];
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+// x - input, y - gradO, z - gradI
+template<typename X, typename Z>
+__global__ static void clipByNormBPTadsCuda(const void* vx, const Nd4jLong* xTadShapeInfo, const Nd4jLong* xTadOffsets, const void* vy, const Nd4jLong* yTadShapeInfo, const Nd4jLong* yTadOffsets, void* vz, const Nd4jLong* zTadShapeInfo, const Nd4jLong* zTadOffsets, const Z clipNormVal) {
+
+    const auto x = reinterpret_cast<const X*>(vx);
+    const auto y = reinterpret_cast<const Z*>(vy);
+          auto z = reinterpret_cast<Z*>(vz);
+
+    __shared__ Z* shMem;
+    __shared__ Nd4jLong tadLen;
+
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        shMem = reinterpret_cast<Z*>(shmem);
+        tadLen = shape::length(zTadShapeInfo);                  // xTadLen = yTadLen = zTadLen
+    }
+    __syncthreads();
+
+    const auto* xTad = x + xTadOffsets[blockIdx.x];
+    const auto* yTad = y + yTadOffsets[blockIdx.x];
+          auto* zTad = z + zTadOffsets[blockIdx.x];
+
+    // *** FIRST STAGE - ACCUMULATE REQUIRED SUMS *** //
+
+    Z norm = 0;
+    Z sumOfProd = 0;
+
+    for (uint i = threadIdx.x; i < tadLen; i += blockDim.x) {
+
+        const auto xOffset = shape::getIndexOffset(i, xTadShapeInfo, tadLen);
+        const auto yOffset = shape::getIndexOffset(i, yTadShapeInfo, tadLen);
+
+        shMem[2*threadIdx.x]     = static_cast<Z>(xTad[xOffset] * xTad[xOffset]);   // for norm
+        shMem[2*threadIdx.x + 1] = static_cast<Z>(xTad[xOffset] * yTad[yOffset]);   // for input * gradO
+
+        __syncthreads();
+
+        // accumulate sum per block
+        for (uint activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
+
+            if (threadIdx.x < activeThreads && i + activeThreads < tadLen) {
+
+                shMem[2*threadIdx.x]     += shMem[2*(threadIdx.x + activeThreads)];
+                shMem[2*threadIdx.x + 1] += shMem[2*(threadIdx.x + activeThreads) + 1];
+            }
+            __syncthreads();
+        }
+
+        norm      += shMem[0];
+        sumOfProd += shMem[1];
+    }
+
+    // *** SECOND STAGE - GRADIENT CALCULATION *** //
+
+    norm = math::nd4j_sqrt<Z,Z>(norm);
+
+    for (uint i = threadIdx.x; i < tadLen; i += blockDim.x) {
+
+        const auto yOffset = shape::getIndexOffset(i, yTadShapeInfo, tadLen);
+        const auto zOffset = shape::getIndexOffset(i, zTadShapeInfo, tadLen);
+
+        if(norm > clipNormVal) {
+
+            const auto xOffset = shape::getIndexOffset(i, xTadShapeInfo, tadLen);
+
+            const Z factor1 = static_cast<Z>(1) / norm;             // 1 / norm
+            const Z factor2 = factor1 / (norm * norm);              // 1 / (norm * norm * norm)
+
+            zTad[zOffset] = clipNormVal * (factor1 * yTad[yOffset] - factor2 * sumOfProd * xTad[xOffset]);
+        }
+        else {
+            zTad[zOffset] = yTad[yOffset];
+        }
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template<typename X, typename Z>
+static void clipByNormBPCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
+                                    const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets,
+                                    const void* vy, const Nd4jLong* yShapeInfo, const Nd4jLong* yTadOffsets,
+                                          void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zTadOffsets,
+                                    void* vreducBuff, const double clipNormVal) {
+
+    if(xTadOffsets == nullptr) {  // means whole array
+        clipByNormBPWholeArrCuda<X,Z><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vreducBuff, static_cast<Z>(clipNormVal));
+        clipByNormBPCalcGradCuda<X,Z><<<blocksPerGrid, threadsPerBlock, 256,       *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vreducBuff, static_cast<Z>(clipNormVal));
+    }
+    else                        // means tads using
+        clipByNormBPTadsCuda<X,Z><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, xTadOffsets, vy, yShapeInfo, yTadOffsets, vz, zShapeInfo, zTadOffsets, static_cast<Z>(clipNormVal));
+}
+BUILD_DOUBLE_TEMPLATE(template void clipByNormBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const Nd4jLong* xTadOffsets, const void *vy, const Nd4jLong *yShapeInfo, const Nd4jLong* yTadOffsets, void *vz, const Nd4jLong *zShapeInfo, const Nd4jLong* zTadOffsets, void* vreducBuff, const double clipNormVal), LIBND4J_TYPES, FLOAT_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
+
+    PointersManager manager(context, "clipByNormBP");
+
+    const double clipNormVal = clipNorm.e<double>(0);
+
+    const auto xType = input.dataType();
+    const auto zType = gradI.dataType();
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int sharedMem = threadsPerBlock * 2 * input.sizeOfT() + 128;
+
+    NDArray::prepareSpecialUse({&gradI}, {&input, &gradO});
+
+
+    if(dimensions.empty() || dimensions.size() == input.rankOf()) {  // means whole array
+
+        const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+        BUILD_DOUBLE_SELECTOR(xType, zType, clipByNormBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), nullptr, gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), nullptr, gradI.getSpecialBuffer(), gradI.getSpecialShapeInfo(), nullptr, context->getReductionPointer(), clipNormVal), LIBND4J_TYPES, FLOAT_TYPES);
+    }
+    else {  // means tads using
+
+        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimensions);
+        auto packY = ConstantTadHelper::getInstance()->tadForDimensions(gradO.getShapeInfo(), dimensions);
+        auto packZ = ConstantTadHelper::getInstance()->tadForDimensions(gradI.getShapeInfo(), dimensions);
+
+        const int blocksPerGrid = packX.numberOfTads();
+        BUILD_DOUBLE_SELECTOR(xType, zType, clipByNormBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), gradO.getSpecialBuffer(), packY.platformShapeInfo(), packY.platformOffsets(), gradI.getSpecialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), nullptr, clipNormVal), LIBND4J_TYPES, FLOAT_TYPES);
+    }
+
+    NDArray::registerSpecialUse({&gradI}, {&input, &gradO});
+
+    manager.synchronize();
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -696,18 +1088,6 @@ void scatterUpdate(nd4j::LaunchContext* context, NDArray& input, NDArray& update
     }
 
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace), LIBND4J_TYPES);
-
-    ////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    static void gatherND_(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
-
-    }
-
-    void gatherND(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(input.dataType(), gatherND_, (context, input, indices, output), LIBND4J_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void gatherND_, (nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output), LIBND4J_TYPES);
 
 
 
@@ -1037,18 +1417,6 @@ void eye(nd4j::LaunchContext * context, NDArray& output) {
 
     BUILD_SINGLE_TEMPLATE(template void clipByGlobalNorm_, (nd4j::LaunchContext * context, std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace), FLOAT_TYPES);
 
-    //////////////////////////////////////////////////////////////////////////
-    template<typename T>
-    static void clipByNormBP_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
-
-    }
-
-    void clipByNormBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm) {
-        BUILD_SINGLE_SELECTOR(gradI.dataType(), clipByNormBP_, (context, input, gradO, gradI, dimensions, clipNorm), FLOAT_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void clipByNormBP_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI /*output*/, const std::vector<int>& dimensions, const NDArray& clipNorm), FLOAT_TYPES);
-
 
     //////////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -1374,8 +1742,7 @@ void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, 
     }
 
 
-BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher,  (const int numOfArrs, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void padCudaLauncher,     (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const int mode, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo, const void* vPadVal), LIBND4J_TYPES, INTEGER_TYPES);
+
 
 }
 }

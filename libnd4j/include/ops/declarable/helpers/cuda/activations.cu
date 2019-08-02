@@ -363,7 +363,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 	temp = 0;
 
 	// ************ evaluate value of exp(x[offset] - max) per each element, store it to shared memory shmem ************ //
-	// at the same evaluate sum of exponents, sum will be stored in shmem[0]
+	// at the same time evaluate sum of exponents, sum will be stored in shmem[0]
 	for (int i = 0; i < numOfIters; ++i) {
 
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;

@@ -184,7 +184,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 }
-*/
+
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
@@ -221,6 +221,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
 
     delete[] buffer;
 }
+*/
 
 TEST_F(DeclarableOpsTests9, ScalarOpTest_MixedOrders_1) {
     auto x = NDArrayFactory::create<double>('f', {2, 2}, {1.0, 3.0, 2.0, 4.0});
@@ -1586,7 +1587,6 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
 
     const int bS   = 2;
     const int nOut = 3;
-    const int axis = 0;
     const double clip = 0.7;
 
     auto x = NDArrayFactory::create<double>('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]

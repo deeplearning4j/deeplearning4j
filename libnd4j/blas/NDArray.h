@@ -266,11 +266,11 @@ namespace nd4j {
          * @param writeList
          * @param readList
          */
-        static void registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList);
-        static void prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables = false);
+        static void registerSpecialUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList);
+        static void prepareSpecialUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList, bool synchronizeWritables = false);
 
-        static void registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList);
-        static void preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables = false);
+        static void registerPrimaryUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList);
+        static void preparePrimaryUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList, bool synchronizeWritables = false);
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
@@ -495,29 +495,29 @@ namespace nd4j {
         /**
         *  this method assigns values of given array to this one
         */
-        void assign(const NDArray* other);
+        void assign(const NDArray* other, bool allowParallelism = true);
 
         /**
         *  this method assigns values of given array to this one
         */
-        void assign(const NDArray& other);
+        void assign(const NDArray& other, bool allowParallelism = true);
 
         /**
         *  this method assigns given value to all elements in array
         */
-        void assign(const double value);
-        void assign(const float value);
-        void assign(const float16 value);
-        void assign(const bfloat16& value);
-        void assign(const Nd4jLong value);
-        void assign(const int value);
-        void assign(const int16_t value);
-        void assign(const uint8_t value);
-        void assign(const uint16_t value);
-        void assign(const uint32_t value);
-        void assign(const uint64_t value);
-        void assign(const int8_t value);
-        void assign(const bool value);
+        void assign(const double value, bool allowParallelism = true);
+        void assign(const float value, bool allowParallelism = true);
+        void assign(const float16 value, bool allowParallelism = true);
+        void assign(const bfloat16& value, bool allowParallelism = true);
+        void assign(const Nd4jLong value, bool allowParallelism = true);
+        void assign(const int value, bool allowParallelism = true);
+        void assign(const int16_t value, bool allowParallelism = true);
+        void assign(const uint8_t value, bool allowParallelism = true);
+        void assign(const uint16_t value, bool allowParallelism = true);
+        void assign(const uint32_t value, bool allowParallelism = true);
+        void assign(const uint64_t value, bool allowParallelism = true);
+        void assign(const int8_t value, bool allowParallelism = true);
+        void assign(const bool value, bool allowParallelism = true);
 
         /**
         *  returns new copy of this array, optionally in different order

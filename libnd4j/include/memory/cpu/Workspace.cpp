@@ -62,6 +62,8 @@ namespace nd4j {
 
             this->_initialSize = initialSize;
             this->_currentSize = initialSize;
+            this->_currentSizeSecondary = 0;
+            this->_spillsSizeSecondary = 0;
             this->_offset = 0;
             this->_offsetSecondary = 0;
             this->_cycleAllocations = 0;

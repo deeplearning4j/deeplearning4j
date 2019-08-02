@@ -559,68 +559,73 @@ void invertPermutation(nd4j::LaunchContext * context, const NDArray& input, NDAr
 }
 
 ////////////////////////////////////////////////////////////////////////
-template<typename T>
+template<typename X, typename Y>
 static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
-    if (input.ordering() != 'c')
-        input.streamline('c');
+    const X* x = reinterpret_cast<X*>(input.getBuffer());
+    const Y* y = reinterpret_cast<Y*>(indices.getBuffer());
+          X* z = reinterpret_cast<X*>(output.getBuffer());
 
-    if (indices.ordering() != 'c')
-        indices.streamline('c');
+    const int xRank    = input.rankOf();
+    const int yRank    = indices.rankOf();
+    const int zRank    = output.rankOf();
+    const int maxRank  = nd4j::math::nd4j_max<int>(yRank, nd4j::math::nd4j_max<int>(xRank, zRank));
 
-    const int rankIn     = input.rankOf();
-    const int rankInd    = indices.rankOf();
-    const int lastIndDim = indices.sizeAt(-1);
+    const Nd4jLong zLen = output.lengthOf();
 
-    std::vector<int> tadDims(rankIn - lastIndDim);
-    std::iota(tadDims.begin(), tadDims.end(), rankInd-1);
-    auto innerMostOut = output.allTensorsAlongDimension(tadDims);
+    const int yLastDim = indices.sizeAt(-1);
 
-    auto innerMostInd = indices.allTensorsAlongDimension({rankInd-1});
+    std::vector<Nd4jLong> coords(maxRank);
 
-    std::iota(tadDims.begin(), tadDims.end(), lastIndDim);
-    auto innerMostIn = input.allTensorsAlongDimension(tadDims);
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(if(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
+    for (Nd4jLong i = 0; i < zLen; ++i) {
 
-    Nd4jLong* outerShapeInfo = nullptr;
-    ALLOCATE(outerShapeInfo, input.getContext()->getWorkspace(), shape::shapeInfoLength(lastIndDim), Nd4jLong);
-    outerShapeInfo[0] = lastIndDim;
-    for(int i = 1; i <= lastIndDim; ++i)
-        outerShapeInfo[i] = input.sizeAt(i-1);
-    shape::updateStrides(outerShapeInfo, input.ordering());
+        Nd4jLong *zCoordStart, *xCoordStart;
 
-    Nd4jLong idx[MAX_RANK];
-
-    for(int i = 0; i < innerMostInd->size(); ++i) {
-
-        auto idxSubArr = innerMostInd->at(i);
-
-        for(int j = 0; j < lastIndDim; ++j) {
-            if(idxSubArr->e<Nd4jLong>(j) >= input.sizeAt(j))
-                throw std::runtime_error("helpers::gatherND function: indices array contains wrong elements, each element must be smaller than corresponding dimension of input array !");
-            idx[j] = idxSubArr->e<Nd4jLong>(j);
+        if(yLastDim == xRank) {
+            zCoordStart = coords.data();
+            xCoordStart = coords.data();
+        }
+        else if(zRank >= xRank) {
+            zCoordStart = coords.data();
+            xCoordStart = coords.data() + zRank - xRank;
+        }
+        else {
+            zCoordStart = coords.data() + xRank - zRank;
+            xCoordStart = coords.data();
         }
 
-        auto currentInd0 = shape::getOffset(0, shape::shapeOf(outerShapeInfo), shape::stride(outerShapeInfo), idx, lastIndDim);
+        shape::index2coords(zRank, output.shapeOf(), i, zLen, zCoordStart);
 
-        if(rankIn != lastIndDim) {
-            auto outSubArr = innerMostOut->at(i);
-            outSubArr->assign(innerMostIn->at(currentInd0));
-        }
-        else
-            output.p(i, input.e<T>(currentInd0));
+        const auto zOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), zCoordStart, zRank);
+
+        // last y coordinate
+        uint coordToRestore;
+        if(yLastDim != xRank)
+            coordToRestore = static_cast<uint>(zCoordStart[yRank - 1]);
+
+        zCoordStart[yRank - 1] = 0;
+        const auto yOffset = shape::getOffset(0, indices.shapeOf(), indices.stridesOf(), zCoordStart, yRank);
+
+        //restore z coordinate
+        if(yLastDim != xRank)
+            zCoordStart[yRank - 1] = coordToRestore;
+
+        // construct coordinates for x
+        for(uint j = 0; j < yLastDim; ++j)
+            xCoordStart[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];   // last stride
+
+        const auto xOffset = shape::getOffset(0, input.shapeOf(), input.stridesOf(), xCoordStart, xRank);
+
+        z[zOffset] = x[xOffset];
     }
-
-    delete innerMostInd;
-    delete innerMostIn;
-    delete innerMostOut;
-    RELEASE(outerShapeInfo, input.getContext()->getWorkspace());
 }
 
-    void gatherND(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(input.dataType(), gatherND_, (input, indices, output), LIBND4J_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void gatherND_, (NDArray& input, NDArray& indices, NDArray& output), LIBND4J_TYPES);
+////////////////////////////////////////////////////////////////////////
+void gatherND(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
+    BUILD_DOUBLE_SELECTOR(input.dataType(), indices.dataType(), gatherND_, (input, indices, output), LIBND4J_TYPES, INTEGER_TYPES);
+}
+BUILD_DOUBLE_TEMPLATE(template void gatherND_, (NDArray& input, NDArray& indices, NDArray& output), LIBND4J_TYPES, INTEGER_TYPES);
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -900,65 +905,84 @@ template<typename T>
 static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
 
     const int rank = input.rankOf();
-   auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
+    const auto norm2 = input.reduceAlongDims(reduce::Norm2, dimensions);
+
+    const T normActual = norm2.e<T>(0);
+    const T normClip   = clipNorm.e<T>(0);
 
     if (isInplace) {
+
         if(norm2.lengthOf() == 1) {
 
-            if(norm2.e<T>(0) > clipNorm.e<T>(0))
-                input *= (clipNorm.e<T>(0) / norm2.e<T>(0));
+            if(normActual > normClip)
+                input *= (normClip / normActual);
         }
         else {
 
-            std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
+            auto listOfInSubArrs = input.allTensorsAlongDimension(dimensions);
 
             PRAGMA_OMP_PARALLEL_FOR
-            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-                if (norm2.e<T>(i) > clipNorm.e<T>(0)) {
+            for(Nd4jLong i = 0; i < listOfInSubArrs->size(); ++i) {
 
-                    auto inputSubArr  = input(i, dimsToExclude);
-                    inputSubArr *= (clipNorm.e<T>(0) / norm2.e<T>(i));
-                }
+                const T iNormActual = norm2.e<T>(i);
+
+                if (iNormActual > normClip)
+                    *listOfInSubArrs->at(i) *= normClip / iNormActual;
             }
+            delete listOfInSubArrs;
         }
     }
     else {
 
         if(norm2.lengthOf() == 1) {
 
-            if(norm2.e<T>(0) > clipNorm.e<T>(0))
-                output.assign( input * (clipNorm / norm2.e<T>(0)));
+            if(normActual > normClip)
+                output.assign(input * (normClip / normActual));
             else
-                output.assign( input );
+                output.assign(input);
         }
         else {
 
-            std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
-            const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-            std::vector<Nd4jLong> idxRanges(rank * 2);
+            auto listOfInSubArrs  = input.allTensorsAlongDimension(dimensions);
+            auto listOfOutSubArrs = output.allTensorsAlongDimension(dimensions);
 
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(idxRanges))
-            for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+            PRAGMA_OMP_PARALLEL_FOR
+            for(Nd4jLong i = 0; i < listOfInSubArrs->size(); ++i) {
 
-                ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
+                auto inputSubArr  = listOfInSubArrs->at(i);
+                auto outputSubArr = listOfOutSubArrs->at(i);
+                outputSubArr->assign(inputSubArr);
 
-                auto outputSubArr = output(idxRanges);
-                auto inputSubArr  = input(idxRanges);
-                outputSubArr.assign(inputSubArr);
+                const T iNormActual = norm2.e<T>(i);
 
-                if (norm2.e<T>(i) > clipNorm.e<T>(0))
-                    outputSubArr *= clipNorm / norm2.e<T>(i);
+                if (iNormActual > clipNorm.e<T>(0))
+                    *outputSubArr *= clipNorm / iNormActual;
             }
+
+            delete listOfInSubArrs;
+            delete listOfOutSubArrs;
         }
     }
 }
 
-    void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
-        BUILD_SINGLE_SELECTOR(output.dataType(), clipByNorm_, (input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
-    }
+//////////////////////////////////////////////////////////////////////////
+void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
+    BUILD_SINGLE_SELECTOR(output.dataType(), clipByNorm_, (input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
+}
 
-    BUILD_SINGLE_TEMPLATE(template void clipByNorm_, (NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
+BUILD_SINGLE_TEMPLATE(template void clipByNorm_, (NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
+
+
+
+
+
+
+
+
+
+
+
+
 
     template <typename T>
     static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
@@ -1013,7 +1037,7 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
 
             const T sumOfProd = (input * gradO).reduceNumber(reduce::Sum).e<T>(0);    // reduce to scalar
             const T factor1 = static_cast<T>(1.f) / N;
-            const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
+            const T factor3 = factor1 / (N * N);                                            // 1 / (N*N*N)
 
             auto lambda = LAMBDA_TT(elem1, elem2, cn, sumOfProd, factor1, factor3) {
                 return cn * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
@@ -1026,37 +1050,41 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
     }
     else {
 
-        std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rank, dimensions);
-        const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(input.getShapeInfo(), dimsToExclude);
-        std::vector<Nd4jLong> idxRanges(rank * 2);
+        const auto gradISubArrs = gradI.allTensorsAlongDimension({dimensions});
+        const auto gradOSubArrs = gradO.allTensorsAlongDimension({dimensions});
+        const auto inputSubArrs = input.allTensorsAlongDimension({dimensions});
 
-        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(idxRanges))
-        for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
+        auto cn = clipNorm.e<T>(0);
 
-            ShapeUtils::evalIdxRangesForSubArr(i, input.getShapeInfo(), dimsToExclude, idxRanges.data());
+        PRAGMA_OMP_PARALLEL_FOR
+        for(Nd4jLong i = 0; i < gradISubArrs->size(); ++i) {
+
             T N = norm2.e<T>(i);
 
-            auto gradOSubArr = gradO(idxRanges);
-            auto gradISubArr = gradI(idxRanges);
-
-            auto cn = clipNorm.e<T>(0);
+            auto gradOSubArr = gradOSubArrs->at(i);
+            auto gradISubArr = gradISubArrs->at(i);
 
             if (N > cn) {
 
-                auto inputSubArr = input(idxRanges);
+                auto inputSubArr = inputSubArrs->at(i);
 
-                const T sumOfProd = (inputSubArr * gradOSubArr).reduceNumber(reduce::Sum).e<T>(0);    // reduce to scalar
+                const T sumOfProd = (*inputSubArr * *gradOSubArr).reduceNumber(reduce::Sum).e<T>(0);    // reduce to scalar
                 const T factor1 = static_cast<T>(1.f) / N;
                 const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
 
                 auto lambda = LAMBDA_TT(elem1, elem2, cn, sumOfProd, factor1, factor3) {
                     return cn * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
                 };
-                inputSubArr.applyPairwiseLambda<T>(&gradOSubArr, lambda, &gradISubArr);
+
+                inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
             }
             else
-                gradISubArr.assign(gradOSubArr);
+                gradISubArr->assign(gradOSubArr);
         }
+
+        delete gradISubArrs;
+        delete gradOSubArrs;
+        delete inputSubArrs;
     }
 }
 

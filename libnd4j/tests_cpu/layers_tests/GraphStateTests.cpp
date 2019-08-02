@@ -46,7 +46,7 @@ public:
  * Create GraphState
  * Register Scope
  * Add few Ops to it
- * Call conditional, that refers to scopes 
+ * Call conditional, that refers to scopes
  * Check results
  */
 
@@ -68,7 +68,7 @@ TEST_F(GraphStateTests, Basic_Tests_1) {
 
     auto scope = state->getScope(119);
     ASSERT_TRUE(scope != nullptr);
-    ASSERT_EQ(2, scope->size());    
+    ASSERT_EQ(2, scope->size());
 
     deleteGraphState(state);
 }
@@ -92,11 +92,12 @@ TEST_F(GraphStateTests, Basic_Tests_2) {
 
     auto scope = state->getScope(119);
     ASSERT_TRUE(scope != nullptr);
-    ASSERT_EQ(2, scope->size());    
+    ASSERT_EQ(2, scope->size());
 
     deleteGraphState(state);
 }
 
+/*
 TEST_F(GraphStateTests, Stateful_Execution_1) {
     auto state = getGraphState(117L);
 
@@ -117,16 +118,13 @@ TEST_F(GraphStateTests, Stateful_Execution_2) {
 
     Nd4jLong scopes[] = {22, 33};
     auto status = execCustomOpWithScope(nullptr, state, 10, scopes, 2, nullptr, nullptr, 0, nullptr, nullptr, 0);
-    
     // it's no-op: just LogicScope
     ASSERT_EQ(Status::OK(), status);
 
     deleteGraphState(state);
 }
 
-/**
- * This test checks WHILE loop
- */
+// This test checks WHILE loop
 TEST_F(GraphStateTests, Stateful_Execution_3) {
     auto var0 = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
     auto var1 = NDArrayFactory::create<float>(11.0f);
@@ -193,10 +191,7 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     // now we check provided result array
     float sum = res0.reduceNumber(reduce::Sum).e<float>(0);
 
-    /*
-     * Expected result is {1, 2, 3, 4} + {2} elementwise + {2} elementwise, which gives { 5, 6, 7, 8}, and sum should be 26
-     *
-     */
+    // Expected result is {1, 2, 3, 4} + {2} elementwise + {2} elementwise, which gives { 5, 6, 7, 8}, and sum should be 26
     ASSERT_NEAR(26.0f, sum, 1e-5);
 
     // nd4j_printf("0 ------------------\n","");
@@ -206,9 +201,7 @@ TEST_F(GraphStateTests, Stateful_Execution_3) {
     // nd4j_printf("1 ------------------\n","");
 }
 
-/**
- * This test checks CONDITIONAL execution for FALSE
- */
+// This test checks CONDITIONAL execution for FALSE
 TEST_F(GraphStateTests, Stateful_Execution_4) {
     auto var0 = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
     auto var1 = NDArrayFactory::create<float>(5.0f);
@@ -282,9 +275,7 @@ TEST_F(GraphStateTests, Stateful_Execution_4) {
 }
 
 
-/**
- * This test checks CONDITIONAL execution for TRUE
- */
+// This test checks CONDITIONAL execution for TRUE
 TEST_F(GraphStateTests, Stateful_Execution_5) {
     auto var0 = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
     auto var1 = NDArrayFactory::create<float>(5.0f);
@@ -355,3 +346,4 @@ TEST_F(GraphStateTests, Stateful_Execution_5) {
 
     deleteGraphState(state);
 }
+*/

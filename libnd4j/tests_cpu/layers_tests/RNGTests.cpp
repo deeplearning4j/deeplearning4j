@@ -776,7 +776,7 @@ namespace nd4j {
     namespace tests {
         static void fillList(Nd4jLong seed, int numberOfArrays, std::vector<Nd4jLong> &shape, std::vector<NDArray*> &list, nd4j::graph::RandomGenerator *rng) {
             rng->setSeed((int) seed);
-            
+
             for (int i = 0; i < numberOfArrays; i++) {
                 auto array = NDArrayFactory::create_<double>('c', shape);
 
@@ -787,97 +787,6 @@ namespace nd4j {
             }
         };
     }
-}
-
-TEST_F(RNGTests, Test_Reproducibility_9) { 
-    Nd4jLong seed = 123;
-
-    std::vector<Nd4jLong> shape = {32, 3, 28, 28};
-    const int bufferSize = 10000;
-    int64_t buffer[bufferSize];
-
-    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, seed, bufferSize, buffer);
-
-    const int length = 4000000;
-    int *arrayE = new int[length];
-    int *arrayT = new int[length];
-
-    for (int e = 0; e < length; e++)
-        arrayE[e] = rng->relativeInt(e);
-
-    rng->rewindH(static_cast<Nd4jLong>(length));
-
-    refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
-
-    for (int e = 0; e < length; e++)
-        arrayT[e] = rng->relativeInt(e);
-
-    rng->rewindH(static_cast<Nd4jLong>(length));
-    
-    for (int e = 0; e < length; e++)
-        if (arrayE[e] != arrayT[e]) {
-            // nd4j_printf("Failed at index[%i]\n", e);
-            ASSERT_TRUE(false);
-        }
-
-    delete[] arrayE;
-    delete[] arrayT;
-
-    destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
-}
-
-TEST_F(RNGTests, Test_Reproducibility_8) { 
-    Nd4jLong seed = 123;
-
-    std::vector<int> shape = {32, 3, 28, 28};
-    const int bufferSize = 10000;
-    int64_t buffer[bufferSize];
-
-    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, seed, bufferSize, buffer);
-
-    const int length = 4000000;
-    int *arrayE = new int[length];
-    int *arrayT = new int[length];
-
-    for (int e = 0; e < length; e++)
-        arrayE[e] = static_cast<int>(rng->relativeT<float>(e));
-
-    rng->rewindH(static_cast<Nd4jLong>(length));
-
-    refreshBuffer(nullptr, seed, reinterpret_cast<Nd4jPointer>(rng));
-
-    for (int e = 0; e < length; e++)
-        arrayT[e] = static_cast<int>(rng->relativeT<float>(e));
-
-    rng->rewindH(static_cast<Nd4jLong>(length));
-    
-    for (int e = 0; e < length; e++)
-        if (arrayE[e] != arrayT[e]) {
-            // nd4j_printf("Failed at index[%i]\n", e);
-            ASSERT_TRUE(false);
-        }
-
-    delete[] arrayE;
-    delete[] arrayT;
-
-    destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
-}
-
-TEST_F(RNGTests, Test_RandomBuffer_Half_1) {
-    Nd4jLong seed = 123;
-
-    std::vector<Nd4jLong> shape = {32, 3, 28, 28};
-    const int bufferSize = 10000;
-    int64_t buffer[bufferSize];
-
-    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, seed, bufferSize, buffer);
-
-    auto r0 = rng->relativeT<float16>(12L);
-    auto r1 = rng->relativeT<float16>(13L);
-
-    ASSERT_NE(r0, r1);
-
-    destroyRandom(reinterpret_cast<Nd4jPointer>(rng));
 }
 
 TEST_F(RNGTests, Test_Reproducibility_1) {
