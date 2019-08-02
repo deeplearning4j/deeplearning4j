@@ -18,7 +18,6 @@ package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
 import lombok.Getter;
 import lombok.Setter;
-import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
@@ -29,12 +28,13 @@ import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.Constants;
+import org.deeplearning4j.rl4j.util.DataManagerSyncTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -53,8 +53,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     @Getter
     final private QLConfiguration configuration;
     @Getter
-    final private IDataManager dataManager;
-    @Getter
     final private MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
     final private IDQN currentDQN;
@@ -68,23 +66,30 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     private int lastAction;
     private INDArray history[] = null;
     private double accuReward = 0;
-    private int lastMonitor = -Constants.MONITOR_FREQ;
 
-
+    /**
+     * @deprecated
+     * Use QLearningDiscrete(MDP, IDQN, QLConfiguration, int) and add the required listeners with addListener() instead.
+     */
+    @Deprecated
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
                     IDataManager dataManager, int epsilonNbStep) {
+        this(mdp, dqn, conf, epsilonNbStep);
+        addListener(DataManagerSyncTrainingListener.builder(dataManager).build());
+    }
+
+    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
+                             int epsilonNbStep) {
         super(conf);
         this.configuration = conf;
         this.mdp = mdp;
-        this.dataManager = dataManager;
         currentDQN = dqn;
         targetDQN = dqn.clone();
         policy = new DQNPolicy(getCurrentDQN());
         egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), epsilonNbStep, getRandom(), conf.getMinEpsilon(),
-                        this);
+                this);
         mdp.getActionSpace().setSeed(conf.getSeed());
     }
-
 
     public void postEpoch() {
 
@@ -97,14 +102,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         history = null;
         lastAction = 0;
         accuReward = 0;
-
-        if (getStepCounter() - lastMonitor >= Constants.MONITOR_FREQ && getHistoryProcessor() != null
-                        && getDataManager().isSaveData()) {
-            lastMonitor = getStepCounter();
-            int[] shape = getMdp().getObservationSpace().getShape();
-            getHistoryProcessor().startMonitor(getDataManager().getVideoDir() + "/video-" + getEpochCounter() + "-"
-                            + getStepCounter() + ".mp4", shape);
-        }
     }
 
     /**
