@@ -181,6 +181,8 @@ void NDArray::swapUnsafe(NDArray& other) {
 void NDArray::synchronize(const char* msg) const {
     // no-op
 }
+
+#ifndef __JAVACPP_HACK__ && !defined(_JNI_IMPLEMENTATION_)
 void NDArray::prepareSpecialUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
     // no-op
 }
@@ -193,6 +195,9 @@ void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList, co
 void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList) {
     // no-op
 }
+
+#endif
+
 void NDArray::syncShape() const {
     // no-op
 }

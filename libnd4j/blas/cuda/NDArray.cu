@@ -230,6 +230,8 @@ void NDArray::synchronize(const char* msg) const {
     if (res != 0)
         throw std::runtime_error(msg + std::string(": synchronization failed !"));
 }
+#ifndef __JAVACPP_HACK__ && !defined(_JNI_IMPLEMENTATION_)
+
 ////////////////////////////////////////////////////////////////////////
 void NDArray::prepareSpecialUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
 
@@ -285,6 +287,8 @@ void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList, c
         if (p != nullptr)
             p->tickWriteHost();
 }
+
+#endif
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::syncShape() const {

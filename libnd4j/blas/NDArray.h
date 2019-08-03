@@ -261,6 +261,7 @@ namespace nd4j {
         void syncToDevice() const;
         void syncShape() const;
 
+#ifndef __JAVACPP_HACK__ && !defined(_JNI_IMPLEMENTATION_)
         /**
          * This method can be used on architectures that use special buffers
          * @param writeList
@@ -271,6 +272,8 @@ namespace nd4j {
 
         static void registerPrimaryUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList);
         static void preparePrimaryUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList, bool synchronizeWritables = false);
+
+#endif
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
