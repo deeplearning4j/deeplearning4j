@@ -230,10 +230,9 @@ void NDArray::synchronize(const char* msg) const {
     if (res != 0)
         throw std::runtime_error(msg + std::string(": synchronization failed !"));
 }
-#if !defined(__JAVACPP_HACK__) && !defined(_JNI_IMPLEMENTATION_)
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::prepareSpecialUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
+void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
 
     for (const auto& a : readList)
         if(a != nullptr)
@@ -249,7 +248,7 @@ void NDArray::prepareSpecialUse(const std::vector<const NDArray*>& writeList, co
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::registerSpecialUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList) {
+void NDArray::registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
 
     for (const auto& p : readList)
         if(p != nullptr)
@@ -261,7 +260,7 @@ void NDArray::registerSpecialUse(const std::vector<const NDArray*>& writeList, c
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList, bool synchronizeWritables) {
+void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
 
     for (const auto& a : readList)
         if(a != nullptr)
@@ -277,7 +276,7 @@ void NDArray::preparePrimaryUse(const std::vector<const NDArray*>& writeList, co
 }
 
 ////////////////////////////////////////////////////////////////////////
-void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList, const std::vector<const NDArray*>& readList) {
+void NDArray::registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
 
     for (const auto& p : readList)
         if(p != nullptr)
@@ -287,8 +286,6 @@ void NDArray::registerPrimaryUse(const std::vector<const NDArray*>& writeList, c
         if (p != nullptr)
             p->tickWriteHost();
 }
-
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::syncShape() const {
