@@ -33,6 +33,8 @@ import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
+import java.io.IOException;
+
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
  *
@@ -87,39 +89,23 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     @Override
     public void run() {
-
+        RunContext<O> context = new RunContext<>();
 
         try {
             log.info("ThreadNum-" + threadNumber + " Started!");
-            getCurrent().reset();
-            Learning.InitMdp<O> initMdp = Learning.initMdp(getMdp(), historyProcessor);
-            O obs = initMdp.getLastObs();
-            double rewards = initMdp.getReward();
-            int length = initMdp.getSteps();
 
+            startNewEpoch(context);
             preEpoch();
+
             while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
-                int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - length);
-                SubEpochReturn<O> subEpochReturn = trainSubEpoch(obs, maxSteps);
-                obs = subEpochReturn.getLastObs();
-                stepCounter += subEpochReturn.getSteps();
-                length += subEpochReturn.getSteps();
-                rewards += subEpochReturn.getReward();
-                double score = subEpochReturn.getScore();
-                if (length >= getConf().getMaxEpochStep() || getMdp().isDone()) {
-                    postEpoch();
+                handleTraining(context);
+                if (context.length >= getConf().getMaxEpochStep() || getMdp().isDone()) {
+                    endEpoch(context);
 
-                    IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score);
-                    getDataManager().appendStat(statEntry);
-                    log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
+                    log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + context.rewards);
 
-                    getCurrent().reset();
-                    initMdp = Learning.initMdp(getMdp(), historyProcessor);
-                    obs = initMdp.getLastObs();
-                    rewards = initMdp.getReward();
-                    length = initMdp.getSteps();
+                    startNewEpoch(context);
                     epochCounter++;
-
                     preEpoch();
                 }
             }
@@ -130,6 +116,31 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         } finally {
             postEpoch();
         }
+    }
+
+    private void startNewEpoch(RunContext context) {
+        getCurrent().reset();
+        Learning.InitMdp<O>  initMdp = Learning.initMdp(getMdp(), historyProcessor);
+        context.obs = initMdp.getLastObs();
+        context.rewards = initMdp.getReward();
+        context.length = initMdp.getSteps();
+    }
+
+    private void handleTraining(RunContext<O> context) {
+        int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - context.length);
+        SubEpochReturn<O> subEpochReturn = trainSubEpoch(context.obs, maxSteps);
+        context.obs = subEpochReturn.getLastObs();
+        stepCounter += subEpochReturn.getSteps();
+        context.length += subEpochReturn.getSteps();
+        context.rewards += subEpochReturn.getReward();
+        context.score = subEpochReturn.getScore();
+    }
+
+    private void endEpoch(RunContext context) throws IOException { // FIXME: throws
+        postEpoch();
+
+        IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, context.rewards, context.length, context.score);
+        getDataManager().appendStat(statEntry);
     }
 
     protected abstract NN getCurrent();
@@ -165,6 +176,13 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         double reward;
         int episodeLength;
         double score;
+    }
+
+    private static class RunContext<O extends Encodable> {
+        private O obs;
+        private double rewards;
+        private int length;
+        private double score;
     }
 
 }
