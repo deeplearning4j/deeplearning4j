@@ -261,7 +261,7 @@ namespace nd4j {
         void syncToDevice() const;
         void syncShape() const;
 
-#ifndef __JAVACPP_HACK__ && !defined(_JNI_IMPLEMENTATION_)
+#if !defined(__JAVACPP_HACK__) && !defined(_JNI_IMPLEMENTATION_)
         /**
          * This method can be used on architectures that use special buffers
          * @param writeList
