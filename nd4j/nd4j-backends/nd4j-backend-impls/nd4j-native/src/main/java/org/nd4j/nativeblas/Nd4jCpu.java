@@ -3814,11 +3814,9 @@ public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean p
         public native void syncToDevice();
         public native void syncShape();
 
-        /**
-         * This method can be used on architectures that use special buffers
-         * @param writeList
-         * @param readList
-         */
+// #ifndef __JAVACPP_HACK__
+
+// #endif
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
@@ -4056,6 +4054,7 @@ public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean p
         /**
         *  this method assigns values of given array to this one
         */
+        public native void assign(@Const NDArray other, @Cast("bool") boolean allowParallelism/*=true*/);
         public native void assign(@Const NDArray other);
 
         /**
@@ -4065,12 +4064,19 @@ public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean p
         /**
         *  this method assigns given value to all elements in array
         */
+        public native void assign(double value, @Cast("bool") boolean allowParallelism/*=true*/);
         public native void assign(double value);
+        public native void assign(float value, @Cast("bool") boolean allowParallelism/*=true*/);
         public native void assign(float value);
+        public native void assign(@Cast("const float16") short value, @Cast("bool") boolean allowParallelism/*=true*/);
         public native void assign(@Cast("const float16") short value);
+        public native void assign(@Cast("const Nd4jLong") long value, @Cast("bool") boolean allowParallelism/*=true*/);
         public native void assign(@Cast("const Nd4jLong") long value);
+        public native void assign(int value, @Cast("bool") boolean allowParallelism/*=true*/);
         public native void assign(int value);
+        public native void assign(@Cast("const uint8_t") byte value, @Cast("bool") boolean allowParallelism/*=true*/);
         public native void assign(@Cast("const uint8_t") byte value);
+        public native void assign(@Cast("const bool") boolean value, @Cast("bool") boolean allowParallelism/*=true*/);
         public native void assign(@Cast("const bool") boolean value);
 
         /**
@@ -20153,7 +20159,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         * CAUTION: either size tensor or a pair of int params should be provided.
         */
 
-//         #if NOT_EXCLUDED(OP_resize_bilinear)
+//         #if NOT_EXCLUDED(OP_resize_nearest_neighbor)
         @Namespace("nd4j::ops") public static class resize_nearest_neighbor extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -20982,7 +20988,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
-//         #if NOT_EXCLUDED(OP_batchnorm)
+//         #if NOT_EXCLUDED(OP_batchnorm_new)
         @Namespace("nd4j::ops") public static class batchnorm_new extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */

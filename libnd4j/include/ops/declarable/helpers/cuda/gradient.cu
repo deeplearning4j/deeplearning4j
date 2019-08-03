@@ -25,7 +25,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 template <typename T>
-static void applyGradientDescent_(LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
+void applyGradientDescent_(LaunchContext* context, NDArray* input, NDArray* step, double weight, NDArray* output) {
     auto lambda = LAMBDA_TT(_x, _y, weight) {
         return _x - (_y * weight);
     };
