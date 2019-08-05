@@ -17,11 +17,13 @@
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -40,6 +42,10 @@ public class BiasAdd extends DynamicCustomOp {
 
     public BiasAdd(SameDiff sameDiff, SDVariable input, SDVariable bias) {
         super(null, sameDiff, new SDVariable[] {input, bias}, false);
+    }
+
+    public BiasAdd(@NonNull INDArray input, @NonNull INDArray bias, INDArray output){
+        super(new INDArray[]{input, bias}, wrapOrNull(output));
     }
 
     @Override

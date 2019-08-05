@@ -33,7 +33,6 @@ import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
-import org.nd4j.linalg.api.ops.DefaultOpConverter;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
 import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
@@ -838,7 +837,6 @@ public class OpValidation {
                 //Exclude misc
                 DynamicCustomOp.class,
                 GradientBackwardsMarker.class,
-                DefaultOpConverter.class,
                 EqualsWithEps.class,
                 FreeGridOp.class,
                 MergeSum.class, //Redundant; we use MergeAdd in samediff instead

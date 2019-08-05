@@ -41,7 +41,6 @@ public class ImportClassMapping {
     private static final Map<String, DifferentialFunction> ONNX_OP_NAME_MAP = new HashMap<>();
 
     private static final List<Class<?>> fnClasses = Arrays.<Class<?>>asList(
-            org.nd4j.linalg.api.ops.DefaultOpConverter.class,
             org.nd4j.linalg.api.ops.DynamicCustomOp.class,
             org.nd4j.linalg.api.ops.NoOp.class,
             org.nd4j.linalg.api.ops.custom.BarnesEdgeForces.class,

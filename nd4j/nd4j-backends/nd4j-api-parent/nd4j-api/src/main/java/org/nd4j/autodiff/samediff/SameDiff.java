@@ -167,6 +167,8 @@ public class SameDiff extends SDBaseOps {
     public final SDRNN rnn = new SDRNN(this);
     /** Op creator object for loss function operations */
     public final SDLoss loss = new SDLoss(this);
+    /** Op creator object for image operations */
+    public final SDImage image = new SDImage(this);
 
     /** Op creator object for math operations */
     public SDMath math(){
@@ -198,6 +200,10 @@ public class SameDiff extends SDBaseOps {
         return loss;
     }
 
+    /** Op creator object for image operations */
+    public SDImage image(){
+        return image;
+    }
 
 
     /**
