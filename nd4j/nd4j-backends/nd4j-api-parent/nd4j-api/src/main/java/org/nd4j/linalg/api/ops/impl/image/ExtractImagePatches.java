@@ -22,6 +22,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -54,8 +55,26 @@ public class ExtractImagePatches extends DynamicCustomOp {
         Preconditions.checkState(kSizes.length == 2, "Expected exactly 2 kernel sizes, got %s", kSizes);
         Preconditions.checkState(strides.length == 2, "Expected exactly 2 strides, got %s", strides);
         Preconditions.checkState(rates.length == 2, "Expected exactly 2 rate values, got %s", rates);
+        this.kSizes = kSizes;
+        this.strides = strides;
+        this.rates = rates;
         this.isSameMode = sameMode;
+        addArgs();
     }
+
+    public ExtractImagePatches(@NonNull INDArray input, @NonNull int[] kSizes,
+                               @NonNull int[] strides, @NonNull int[] rates, boolean sameMode){
+        super(new INDArray[]{input}, null);
+        Preconditions.checkState(kSizes.length == 2, "Expected exactly 2 kernel sizes, got %s", kSizes);
+        Preconditions.checkState(strides.length == 2, "Expected exactly 2 strides, got %s", strides);
+        Preconditions.checkState(rates.length == 2, "Expected exactly 2 rate values, got %s", rates);
+        this.kSizes = kSizes;
+        this.strides = strides;
+        this.rates = rates;
+        this.isSameMode = sameMode;
+        addArgs();
+    }
+
 
     @Override
     public String opName() {

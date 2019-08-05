@@ -70,8 +70,6 @@ public class OpConstructorTests extends BaseNd4jTest {
             if(ignored)
                 continue;
 
-//            System.out.println(c.getName());
-
             Constructor<?>[] constructors = c.getConstructors();
             boolean foundINDArray = false;
             for( int i=0; i<constructors.length; i++ ){
@@ -84,8 +82,6 @@ public class OpConstructorTests extends BaseNd4jTest {
             }
 
             if(!foundINDArray){
-//                System.out.println("No INDArray constructor: " + c.getName());
-//                count++;
                 classes.add(c);
             }
         }
