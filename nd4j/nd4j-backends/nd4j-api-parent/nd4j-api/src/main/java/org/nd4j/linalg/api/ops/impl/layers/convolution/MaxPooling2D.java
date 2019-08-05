@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.OnnxProto3;
@@ -66,6 +67,14 @@ public class MaxPooling2D extends DynamicCustomOp {
         this.config = config;
         this.sameDiff = sameDiff;
 
+        addArgs();
+    }
+
+    public MaxPooling2D(INDArray input, INDArray output, @NonNull Pooling2DConfig config){
+        super(null, new INDArray[]{input}, output == null ? null : new INDArray[]{output});
+        config.setType(Pooling2D.Pooling2DType.MAX);
+
+        this.config = config;
         addArgs();
     }
 
