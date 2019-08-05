@@ -135,14 +135,23 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         bArguments = new ArrayList<>();
     }
 
+    /**
+     * Initialize this operation for execution (pre created ndarrays)
+     *
+     * @param inputs  the inputs
+     * @param outputs the outputs of the op, may be null
+     */
+    public DynamicCustomOp(INDArray[] inputs, INDArray[] outputs) {
+        this(null, inputs, outputs);
+    }
+
 
     /**
      * Initialize this operation for execution (pre created ndarrays)
      *
-     * @param opName  the operation opName to use
-     *                for invocation
+     * @param opName  the operation opName to use for invocation
      * @param inputs  the inputs
-     * @param outputs the outputs of the op
+     * @param outputs the outputs of the op, may be null
      */
     public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs) {
         this(opName, inputs, outputs, Lists.<Double>newArrayList(), Lists.<Integer>newArrayList());
@@ -598,6 +607,10 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
 
+    }
+
+    protected static INDArray[] wrapOrNull(INDArray in){
+        return in == null ? null : new INDArray[]{in};
     }
 
     public static class DynamicCustomOpsBuilder {

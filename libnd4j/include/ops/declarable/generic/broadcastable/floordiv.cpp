@@ -67,14 +67,9 @@ namespace nd4j {
             auto gradX = OUTPUT_VARIABLE(0);
             auto gradY = OUTPUT_VARIABLE(1);
 
-            gradY->assign(x);
-            std::unique_ptr<NDArray> ySq(y->dup());
-            ySq->applyTransform(transform::Square, nullptr);
-            gradY->applyPairwiseTransform(pairwise::FloorDiv, ySq.get(), gradY, nullptr);
-            gradY->applyPairwiseTransform(pairwise::Multiply, epsNext, gradY, nullptr);
-            gradY->applyTransform(transform::Neg, nullptr);
-            gradX->assign(epsNext);
-            //gradX->applyPairwiseTransform(pairwise::FloorDiv, y, gradX, nullptr);
+            gradY->assign(0.0f);
+            gradX->assign(0.0f);
+
             return Status::OK();
         }
 

@@ -4,6 +4,7 @@ import org.junit.Test;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.ops.NoOp;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.reflections.Reflections;
@@ -14,7 +15,7 @@ import org.reflections.util.FilterBuilder;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Modifier;
-import java.util.Set;
+import java.util.*;
 
 import static org.junit.Assert.assertEquals;
 
@@ -23,6 +24,18 @@ public class OpConstructorTests extends BaseNd4jTest {
     public OpConstructorTests(Nd4jBackend backend) {
         super(backend);
     }
+
+    //Ignore individual classes
+    protected Set<Class<?>> exclude = new HashSet<>(
+            Arrays.asList(
+                    NoOp.class
+            )
+    );
+
+    //Ignore whole sets of classes based on regex
+    protected String[] ignoreRegexes = new String[]{
+            "org\\.nd4j\\.linalg\\.api\\.ops\\.impl\\.controlflow\\..*"
+    };
 
     @Test
     public void checkForINDArrayConstructors() throws Exception {
@@ -38,11 +51,24 @@ public class OpConstructorTests extends BaseNd4jTest {
         Set<Class<? extends DifferentialFunction>> classSet = f.getSubTypesOf(DifferentialFunction.class);
 
         int count = 0;
+        List<Class<?>> classes = new ArrayList<>();
         for(Class<?> c : classSet){
             if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers()) || c == SDVariable.class || ILossFunction.class.isAssignableFrom(c))
                 continue;
 
-//            System.out.println(c.getName());
+            if(exclude.contains(c))
+                continue;
+
+            String cn = c.getName();
+            boolean ignored = false;
+            for(String s : ignoreRegexes ){
+                if(cn.matches(s)){
+                    ignored = true;
+                    break;
+                }
+            }
+            if(ignored)
+                continue;
 
             Constructor<?>[] constructors = c.getConstructors();
             boolean foundINDArray = false;
@@ -56,12 +82,22 @@ public class OpConstructorTests extends BaseNd4jTest {
             }
 
             if(!foundINDArray){
-                System.out.println("No INDArray constructor: " + c.getName());
-                count++;
+                classes.add(c);
             }
         }
 
-        assertEquals(0, count);
+        if(!classes.isEmpty()){
+            Collections.sort(classes, new Comparator<Class<?>>() {
+                @Override
+                public int compare(Class<?> o1, Class<?> o2) {
+                    return o1.getName().compareTo(o2.getName());
+                }
+            });
+            for(Class<?> c : classes){
+                System.out.println("No INDArray constructor: " + c.getName());
+            }
+        }
+        assertEquals("Found " + classes.size() + " (non-ignored) op classes with no INDArray/INDArray[] constructors", 0, classes.size());
 
     }
 
