@@ -1,0 +1,53 @@
+# This file configures the Manifest for the native backend bundle
+
+Bundle-SymbolicName: org.nd4j.backend.native
+
+# A safe version to use in dependency matching
+safe.version: ${maven_version;${project.version}}
+
+Bundle-Version: ${safe.version}
+
+# Java CPP requires that the JNI classes and the Java CPP library are loaded from
+# the same classloader. JavaCPP is packaged in with the frontend, so we attach as
+# a fragment to ensure we have a single flat class space. Ideally JavaCPP wouldn't
+# require this and then the backend could be a totally separate module.
+
+Fragment-Host: org.nd4j.frontend;bundle-version="[${safe.version},${safe.version}]"
+
+# These packages are needed by the generated code
+-conditionalpackage: \
+ org.bytedeco.mkl.*,\
+ org.bytedeco.openblas.*
+ 
+# We slurp in the java code, and the native libraries needed by openblas and mkl
+-includeresource: \
+ @nd4j-native-api-${project.version}.jar,\
+ @nd4j-native-${project.version}.jar,\
+ @nd4j-native-${project.version}-${javacpp.platform}${javacpp.platform.extension}.jar,\
+ @openblas-${openblas.version}-${javacpp-presets.version}-${dependency.platform}.jar!/!META-INF/versions/*,\
+ @mkl-${mkl.version}-${javacpp-presets.version}-${dependency.platform2}.jar!/!META-INF/versions/*,\
+ @mkl-dnn-${mkl-dnn.javacpp.version}-${dependency.platform2}.jar!/!META-INF/versions/*
+ 
+
+# Set the native code location and requirements                            
+Bundle-NativeCode: \
+ org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/libnd4jcpu.${os.lib.extension};\
+ org/nd4j/nativeblas/${javacpp.platform}${javacpp.platform.extension}/libjnind4jcpu.${os.lib.extension};\
+ org/bytedeco/openblas/${dependency.platform}/libjniopenblas_nolapack.${os.lib.extension};\
+ org/bytedeco/openblas/${dependency.platform}/libjniopenblas.${os.lib.extension};\
+ org/bytedeco/openblas/${dependency.platform}/libopenblas.${os.lib.extension};\
+ org/bytedeco/mkl/${dependency.platform2}/libjnimkl_rt.${os.lib.extension};\
+ org/bytedeco/mkldnn/${dependency.platform2}/libgcc_s.1.${os.lib.extension};\
+ org/bytedeco/mkldnn/${dependency.platform2}/libgomp.1.${os.lib.extension};\
+ org/bytedeco/mkldnn/${dependency.platform2}/libiomp5.${os.lib.extension};\
+ org/bytedeco/mkldnn/${dependency.platform2}/libjnimkldnn.${os.lib.extension};\
+ org/bytedeco/mkldnn/${dependency.platform2}/libjnimklml.${os.lib.extension};\
+ org/bytedeco/mkldnn/${dependency.platform2}/libmkldnn.0.${os.lib.extension};\
+ org/bytedeco/mkldnn/${dependency.platform2}/libmklml.${os.lib.extension};\
+ org/bytedeco/mkldnn/${dependency.platform2}/libstdc++.6.${os.lib.extension};\
+ osname=${os.name};\
+ processor=${os.arch} 
+ 
+
+# Advertise that we provide a backend for ND4J
+Provide-Capability: org.nd4j.backend; backend.type="cpu"; version:Version="${safe.version}"

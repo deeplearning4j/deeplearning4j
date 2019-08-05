@@ -3,12 +3,17 @@
 
 Bundle-SymbolicName: org.nd4j.frontend
 
+# A safe version to use in dependency matching
+safe.version: ${maven_version;${project.version}}
+
+Bundle-Version: ${safe.version}
+
 # Export all the packages from ND4J, except the ones with "impl" in the package name
 api.package.names: ${filterout;${packages;NAMED;org.nd4j.*|onnx|org.tensorflow.*|tensorflow*};impl}
 
 # For now, all the API packages use the same version, taken from the maven version.
 # Ideally the package versions would be maintained individually using annotations 
-api.version: ${maven_version;${project.version}}
+api.version: ${safe.version}
 
 # Assemble the full export string containing all the packages, versions, and directives
 # Note that the suffix prevents the API packages from being substitutably imported
@@ -36,13 +41,15 @@ api.export.string: ${replace;${api.package.names};$;\\;version=${api.version}\\;
  net.ericaro.neoitertools;version=1.0.0
 
 # Embed the frontend jar files produced by ND4J. These must be delivered together
-# due to split packages between the various jar files
+# due to split packages between the various jar files. We also embed JavaCPP here
+# because it contains critical non-class file resources in the properties package
 -includeresource: \
  @nd4j-common-${project.version}.jar,\
  @nd4j-context-${project.version}.jar,\
  @nd4j-buffer-${project.version}.jar,\
  @nd4j-api-${project.version}.jar,\
- @nd4j-native-api-${project.version}.jar
+ @nd4j-native-api-${project.version}.jar,\
+ @javacpp-${javacpp.version}.jar!/!META-INF/*
  
  # These are non-OSGi packaged dependencies which we therefore merge
  # into this OSGi bundle as private copies
@@ -52,11 +59,16 @@ api.export.string: ${replace;${api.package.names};$;\\;version=${api.version}\\;
   org.bytedeco.javacpp.*,\
   net.ericaro.neoitertools.*,\
   oshi.*
+
  
  # These dependencies must be customised to remove them or make them
  # optional. The code paths that use them are not exercised by ND4J 
  Import-Package: \
   !android.content,\
   !org.apache.maven.*,\
+  com.sun.management;resolution:=optional,\
   sun.misc;resolution:=optional,\
   *
+  
+# The ND4J API always requires a backend implementation
+Require-Capability: org.nd4j.backend; filter:="(version=${api.version})"; cardinality:=multiple

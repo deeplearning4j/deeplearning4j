@@ -33,6 +33,7 @@
         <module>nd4j-backend-impls</module>
         <module>nd4j-api-parent</module>
         <module>nd4j-tests-tensorflow</module>
+        <module>nd4j-tests-osgi</module>
     </modules>
 
     <profiles>

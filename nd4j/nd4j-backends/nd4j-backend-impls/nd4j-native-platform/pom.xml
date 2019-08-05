@@ -27,6 +27,7 @@
 
     <properties>
         <nd4j.backend>nd4j-native</nd4j.backend>
+        <nd4j.backend.osgi>nd4j-native-osgi</nd4j.backend.osgi>
     </properties>
 
     <dependencies>
@@ -113,6 +114,72 @@
         <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.linux-armhf}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.android-arm}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.android-arm64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.android-x86}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.android-x86_64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.ios-arm64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.ios-x86_64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.linux-x86_64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.macosx-x86_64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.windows-x86_64}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
+            <version>${project.version}</version>
+            <classifier>${javacpp.platform.linux-ppc64le}</classifier>
+        </dependency>
+        <dependency>
+            <groupId>${project.groupId}</groupId>
+            <artifactId>${nd4j.backend.osgi}</artifactId>
             <version>${project.version}</version>
             <classifier>${javacpp.platform.linux-armhf}</classifier>
         </dependency>

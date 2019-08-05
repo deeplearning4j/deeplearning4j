@@ -184,6 +184,7 @@
             </activation>
             <modules>
                 <module>nd4j-native</module>
+                <module>nd4j-native-osgi</module>
                 <module>nd4j-native-platform</module>
             </modules>
         </profile>

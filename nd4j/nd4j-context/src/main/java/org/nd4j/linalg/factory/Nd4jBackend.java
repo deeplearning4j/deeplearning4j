@@ -21,8 +21,14 @@ import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.io.Resource;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Iterators;
 
 import java.io.File;
 import java.io.IOException;
@@ -153,10 +159,8 @@ public abstract class Nd4jBackend {
     public static Nd4jBackend load() throws NoAvailableBackendException {
 
         List<Nd4jBackend> backends = new ArrayList<>(1);
-        ServiceLoader<Nd4jBackend> loader = ServiceLoader.load(Nd4jBackend.class);
+        Iterator<Nd4jBackend> backendIterator = getServices();
         try {
-
-            Iterator<Nd4jBackend> backendIterator = loader.iterator();
             while (backendIterator.hasNext())
                 backends.add(backendIterator.next());
 
@@ -221,6 +225,35 @@ public abstract class Nd4jBackend {
 
         return load();
     }
+
+	private static Iterator<Nd4jBackend> getServices() {
+		
+		Iterator<Nd4jBackend> discoveredBackends = ServiceLoader.load(Nd4jBackend.class).iterator();
+
+		try {
+			Bundle bundle = FrameworkUtil.getBundle(Nd4jBackend.class);
+			
+			
+			if(bundle != null) {
+				BundleWiring wiring = bundle.adapt(BundleWiring.class);
+				List<BundleWire> requiredWires = wiring.getRequiredWires("org.nd4j.backend");
+				
+				if(requiredWires != null) {
+					for(BundleWire wire : requiredWires) {
+						ClassLoader providerClassLoader = wire.getProviderWiring().getClassLoader();
+						discoveredBackends = Iterators.concat(discoveredBackends, 
+								ServiceLoader.load(Nd4jBackend.class, providerClassLoader).iterator());
+					}
+				}
+				
+			}
+			
+		} catch (NoClassDefFoundError e) {
+			// We're not running in OSGi
+		}
+		
+		return discoveredBackends;
+	}
 
 
     /**

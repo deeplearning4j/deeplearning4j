@@ -33,6 +33,11 @@
             <artifactId>nd4j-common</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <!-- Used to enable back-end discovery when running in OSGi -->
+        <dependency>
+            <groupId>org.osgi</groupId>
+            <artifactId>osgi.core</artifactId>
+        </dependency>
     </dependencies>
 
     <properties>

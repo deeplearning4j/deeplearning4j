@@ -23,7 +23,20 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
+import org.osgi.framework.Bundle;
+import org.osgi.framework.FrameworkUtil;
+import org.osgi.framework.namespace.PackageNamespace;
+import org.osgi.framework.wiring.BundleWire;
+import org.osgi.framework.wiring.BundleWiring;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Iterators;
+
+import static org.osgi.framework.namespace.PackageNamespace.PACKAGE_NAMESPACE;
+
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
@@ -49,9 +62,12 @@ public class BasicNDArrayCompressor {
             We scan classpath for NDArrayCompressor implementations and add them one by one to codecs map
          */
         codecs = new ConcurrentHashMap<>();
+        
+    		
+    	Iterable<NDArrayCompressor> discoveredCompressors = serviceLoaderDiscovery(NDArrayCompressor.class);
+    		
 
-        ServiceLoader<NDArrayCompressor> loader = ServiceLoader.load(NDArrayCompressor.class);
-        for (NDArrayCompressor compressor : loader) {
+        for (NDArrayCompressor compressor : discoveredCompressors) {
             codecs.put(compressor.getDescriptor().toUpperCase(), compressor);
         }
 
@@ -64,6 +80,45 @@ public class BasicNDArrayCompressor {
             throw new RuntimeException(msg);
         }
     }
+
+	private static <T> Iterable<T> serviceLoaderDiscovery(Class<T> iface) {
+		
+		// Always use the default service loader behaviour (TCCL)
+		Iterable<T> services = ServiceLoader.load(iface);
+
+		try {
+			Bundle bundle = FrameworkUtil.getBundle(iface);
+			
+			if(bundle != null) {
+				// This ND4J is running in an OSGi framework, make sure we search
+				// 1. The API bundle (to pick up any default handlers)
+				// 2. Any other bundles that import the service API package
+				
+				services = Iterables.concat(services, ServiceLoader.load(iface, iface.getClassLoader()));
+				
+				BundleWiring wiring = bundle.adapt(BundleWiring.class);
+				List<BundleWire> packageConsumers = wiring.getProvidedWires(PACKAGE_NAMESPACE);
+				
+				if(packageConsumers != null) {
+					for(BundleWire wire : packageConsumers) {
+						if(!NDArrayCompressor.class.getPackage().getName().equals(
+								wire.getCapability().getAttributes().get(PACKAGE_NAMESPACE))) {
+							continue;
+						}
+						
+						ClassLoader providerClassLoader = wire.getRequirerWiring().getClassLoader();
+						services = Iterables.concat(services, 
+								ServiceLoader.load(iface, providerClassLoader));
+					}
+				}
+				
+			}
+			
+		} catch (NoClassDefFoundError e) {
+			// We're not running in OSGi
+		}
+		return services;
+	}
 
     /**
      * Get the set of available codecs for

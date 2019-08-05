@@ -5492,46 +5492,50 @@ public class Nd4j {
                 DataTypeUtil.setDTypeForContext(dtype);
             }
 
+            ClassLoader backendLoader = backend.getClass().getClassLoader();
+            
             compressDebug = pp.toBoolean(COMPRESSION_DEBUG);
             char ORDER = pp.toChar(ORDER_KEY, NDArrayFactory.C);
 
+
+            // These types have no default and must be loaded from the plugin classloader
             Class<? extends BasicAffinityManager> affinityManagerClazz = (Class<? extends BasicAffinityManager>) Class
-                    .forName(pp.toString(AFFINITY_MANAGER));
+                    .forName(pp.toString(AFFINITY_MANAGER), true, backendLoader);
             affinityManager = affinityManagerClazz.newInstance();
             Class<? extends NDArrayFactory> ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
-                    pp.toString(NDARRAY_FACTORY_CLASS));
+                    pp.toString(NDARRAY_FACTORY_CLASS), true, backendLoader);
             Class<? extends NDArrayFactory> sparseNDArrayClazz = (Class<? extends NDArrayFactory>) Class.forName(
-                    pp.toString(SPARSE_NDARRAY_FACTORY_CLASS));
-            Class<? extends ConvolutionInstance> convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class
-                    .forName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
-            String defaultName = pp.toString(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
-            Class<? extends DataBufferFactory> dataBufferFactoryClazz = (Class<? extends DataBufferFactory>) Class
-                    .forName(pp.toString(DATA_BUFFER_OPS, defaultName));
+                    pp.toString(SPARSE_NDARRAY_FACTORY_CLASS), true, backendLoader);
             Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class
-                    .forName(pp.toString(SHAPEINFO_PROVIDER));
+            		.forName(pp.toString(SHAPEINFO_PROVIDER), true, backendLoader);
             Class<? extends BaseSparseInfoProvider> sparseInfoProviderClazz = (Class<? extends BaseSparseInfoProvider>) Class.forName(
-                    pp.toString(SPARSEINFO_PROVIDER));
-
+            		pp.toString(SPARSEINFO_PROVIDER), true, backendLoader);
             Class<? extends BasicConstantHandler> constantProviderClazz = (Class<? extends BasicConstantHandler>) Class
-                    .forName(pp.toString(CONSTANT_PROVIDER));
-
+            		.forName(pp.toString(CONSTANT_PROVIDER), true, backendLoader);
             Class<? extends BasicMemoryManager> memoryManagerClazz = (Class<? extends BasicMemoryManager>) Class
-                    .forName(pp.toString(MEMORY_MANAGER));
+            		.forName(pp.toString(MEMORY_MANAGER), true, backendLoader);
+            Class<? extends MemoryWorkspaceManager> workspaceManagerClazz = (Class<? extends MemoryWorkspaceManager>) Class
+            		.forName(pp.toString(WORKSPACE_MANAGER), true, backendLoader);
+            Class<? extends BlasWrapper> blasWrapperClazz = (Class<? extends BlasWrapper>) Class
+            		.forName(pp.toString(BLAS_OPS), true, backendLoader);
+            Class<? extends BlasWrapper> sparseBlasWrapperClazz = (Class<? extends BlasWrapper>) Class
+            		.forName(pp.toString(SPARSE_BLAS_OPS), true, backendLoader);
+            
+            // These types have defaults and so we use the getPluginClass method
+            Class<? extends ConvolutionInstance> convolutionInstanceClazz = getPluginClass(pp, CONVOLUTION_OPS, 
+            		DefaultConvolutionInstance.class, backendLoader);
+            Class<? extends DataBufferFactory> dataBufferFactoryClazz = getPluginClass(pp, DATA_BUFFER_OPS, 
+            		DefaultDataBufferFactory.class, backendLoader);
+
 
             allowsOrder = backend.allowsOrder();
-            String rand = pp.toString(RANDOM_PROVIDER, DefaultRandom.class.getName());
-            Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz = (Class<? extends org.nd4j.linalg.api.rng.Random>) Class.forName(rand);
+            Class<? extends org.nd4j.linalg.api.rng.Random> randomClazz = getPluginClass(pp, RANDOM_PROVIDER,
+            		DefaultRandom.class, backendLoader);
             randomFactory = new RandomFactory(randomClazz);
 
-            Class<? extends MemoryWorkspaceManager> workspaceManagerClazz = (Class<? extends MemoryWorkspaceManager>) Class
-                    .forName(pp.toString(WORKSPACE_MANAGER));
 
-            Class<? extends BlasWrapper> blasWrapperClazz = (Class<? extends BlasWrapper>) Class
-                    .forName(pp.toString(BLAS_OPS));
-            Class<? extends BlasWrapper> sparseBlasWrapperClazz = (Class<? extends BlasWrapper>) Class
-                    .forName(pp.toString(SPARSE_BLAS_OPS));
-            String clazzName = pp.toString(DISTRIBUTION, DefaultDistributionFactory.class.getName());
-            Class<? extends DistributionFactory> distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
+            Class<? extends DistributionFactory> distributionFactoryClazz = getPluginClass(pp, DISTRIBUTION, 
+            		DefaultDistributionFactory.class, backendLoader);
 
 
             memoryManager = memoryManagerClazz.newInstance();
@@ -5540,8 +5544,8 @@ public class Nd4j {
             sparseInfoProvider = sparseInfoProviderClazz.newInstance();
             workspaceManager = workspaceManagerClazz.newInstance();
 
-            Class<? extends OpExecutioner> opExecutionerClazz = (Class<? extends OpExecutioner>) Class
-                    .forName(pp.toString(OP_EXECUTIONER, DefaultOpExecutioner.class.getName()));
+            Class<? extends OpExecutioner> opExecutionerClazz = getPluginClass(pp, OP_EXECUTIONER, 
+            		DefaultOpExecutioner.class, backendLoader);
 
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
@@ -5589,6 +5593,17 @@ public class Nd4j {
         }
 
     }
+
+	private <T> Class<? extends T> getPluginClass(PropertyParser pp, String key, 
+			Class<? extends T> defaultClass, ClassLoader pluginClassLoader) throws ClassNotFoundException {
+		String className = pp.getProperties().getProperty(key);
+		
+		if(className == null) {
+			return defaultClass;
+		} else {
+			return (Class<? extends T>) Class.forName(className, true, pluginClassLoader);
+		}
+	}
 
     private static boolean isSupportedPlatform() {
         return (System.getProperty("java.vm.name").equalsIgnoreCase("Dalvik")
