@@ -104,7 +104,7 @@ public class DataBufferTests extends BaseNd4jTest {
                 assertEquals(useWs, i.isAttached());
                 testDBOps(i);
 
-                i = Nd4j.createBuffer(new int[]{1, 2, 3}, 0);
+                i = Nd4j.createBuffer(new int[]{1, 2, 3});
                 checkTypes(DataType.INT, i, 3);
                 assertEquals(useWs, i.isAttached());
                 testDBOps(i);

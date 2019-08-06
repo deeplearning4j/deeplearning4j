@@ -703,15 +703,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return buffer;
     }
 
-    protected static DataBuffer internalCreateBuffer(int[] data, long offset) {
-        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
-
-        val buffer = Nd4j.createBuffer(data, offset);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
-
-        return buffer;
-    }
-
     /**
      *
      * @param floatBuffer
@@ -6086,7 +6077,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected void read(ObjectInputStream s) {
         val headerShape = BaseDataBuffer.readHeader(s);
 
-        shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank())], 0);
+        shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank())]);
         shapeInformation.read(s, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getRight());
 
         setShapeInformation(Pair.create(shapeInformation, shapeInformation.asLong()));

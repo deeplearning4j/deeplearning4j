@@ -1050,18 +1050,7 @@ public class Nd4j {
             ret = DATA_BUFFER_FACTORY_INSTANCE.createFloat(offset, data, length);
         return ret;
     }
-
-    /**
-     * Create a buffer equal of length prod(shape)
-     *
-     * @param data the shape of the buffer to create
-     * @return the created buffer
-     */
-    public static DataBuffer createBuffer(int[] data, long offset) {
-        DataBuffer ret = createTypedBuffer(data, DataType.INT, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
-    }
-
+    
     /**
      * Creates a buffer of the specified length based on the data opType
      *
@@ -1408,9 +1397,7 @@ public class Nd4j {
      * @return the created buffer
      */
     public static DataBuffer createBuffer(int[] data) {
-        DataBuffer ret;
-        ret = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(data) : DATA_BUFFER_FACTORY_INSTANCE.createInt(data, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return Nd4j.getMemoryManager().getCurrentWorkspace() == null ? DATA_BUFFER_FACTORY_INSTANCE.createInt(data) : DATA_BUFFER_FACTORY_INSTANCE.createInt(data, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
