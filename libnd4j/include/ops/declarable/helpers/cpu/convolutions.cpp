@@ -1863,17 +1863,25 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 #endif
             nd4j_debug("MKL-DNN is not used for pooling2d_bp!\n", 0);
 
-            const Nd4jLong iStride0 = gradI.stridesOf()[0];
-            const Nd4jLong iStride1 = gradI.stridesOf()[1];
-            const Nd4jLong iStride2 = gradI.stridesOf()[2];
-            const Nd4jLong iStride3 = gradI.stridesOf()[3];
-            const Nd4jLong oStride0 = gradO.stridesOf()[0];
-            const Nd4jLong oStride1 = gradO.stridesOf()[1];
-            const Nd4jLong oStride2 = gradO.stridesOf()[2];
-            const Nd4jLong oStride3 = gradO.stridesOf()[3];
-            const Nd4jLong iStep2   = dH*iStride2;
-            const Nd4jLong iStep3   = dW*iStride3;
-            const int      kProd    = kH*kW;
+            const Nd4jLong iStride0  = input.stridesOf()[0];
+            const Nd4jLong iStride1  = input.stridesOf()[1];
+            const Nd4jLong iStride2  = input.stridesOf()[2];
+            const Nd4jLong iStride3  = input.stridesOf()[3];
+            const Nd4jLong gIStride0 = gradI.stridesOf()[0];
+            const Nd4jLong gIStride1 = gradI.stridesOf()[1];
+            const Nd4jLong gIStride2 = gradI.stridesOf()[2];
+            const Nd4jLong gIStride3 = gradI.stridesOf()[3];
+            const Nd4jLong oStride0  = gradO.stridesOf()[0];
+            const Nd4jLong oStride1  = gradO.stridesOf()[1];
+            const Nd4jLong oStride2  = gradO.stridesOf()[2];
+            const Nd4jLong oStride3  = gradO.stridesOf()[3];
+            const Nd4jLong iStep2    = dH*iStride2;
+            const Nd4jLong iStep3    = dW*iStride3;
+            const Nd4jLong gIStep2   = dH*gIStride2;
+            const Nd4jLong gIStep3   = dW*gIStride3;
+            const int      kProd     = kH*kW;
+
+            const bool sameStrides = iStride0 == gIStride0 && iStride1 == gIStride1 && iStride2 == gIStride2 && iStride3 == gIStride3;
 
             Nd4jLong hstart, wstart,hend, wend, maxKH, maxKW;
             T sum, valO, *pIn, *pgI;
@@ -1901,28 +1909,48 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                 if(wend > iW)
                                     wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                hstart *= iStride2;
-                                hend   *= iStride2;
-                                wstart *= iStride3;
-                                wend   *= iStride3;
-
                                 sum = -DataTypeUtils::max<T>();
                                 valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
 
-                                // we set these to default values
-                                maxKH = hstart;
-                                maxKW = wstart;
+                                if(sameStrides) {
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
-                                        T valIn = pIn[kh + kw];
-                                        if (valIn > sum) {
-                                            sum = valIn;
-                                            maxKH = kh;
-                                            maxKW = kw;
+                                    hstart *= iStride2;
+                                    hend   *= iStride2;
+                                    wstart *= iStride3;
+                                    wend   *= iStride3;
+
+                                    // we set these to default values
+                                    maxKH = hstart;
+                                    maxKW = wstart;
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
+                                            T valIn = pIn[kh + kw];
+                                            if (valIn > sum) {
+                                                sum = valIn;
+                                                maxKH = kh;
+                                                maxKW = kw;
+                                            }
                                         }
-                                    }
-                                gI[pIn - in + maxKH + maxKW] += valO;
+                                    gI[pIn - in + maxKH + maxKW] += valO;
+                                }
+                                else {
+
+                                    // we set these to default values
+                                    maxKH = hstart;
+                                    maxKW = wstart;
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                            T valIn = pIn[kh * iStride2 + kw * iStride3];
+                                            if (valIn > sum) {
+                                                sum = valIn;
+                                                maxKH = kh;
+                                                maxKW = kw;
+                                            }
+                                        }
+                                    gI[b * gIStride0 + c * gIStride1 + maxKH * gIStride2 + maxKW * gIStride3] += valO;
+                                }
                             }
                         }
                     }
@@ -1936,7 +1964,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                         for(int oh = 0; oh < oH; ++oh) {
                             for(int ow = 0; ow < oW; ++ow) {
 
-                                pgI  = gI + b * iStride0 + c * iStride1;
+                                pgI  = gI + b * gIStride0 + c * gIStride1;
 
                                 hstart = oh * sH - pH;
                                 wstart = ow * sW - pW;
@@ -1952,20 +1980,20 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                 if(wend > iW)
                                     wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                hstart *= iStride2;
-                                hend   *= iStride2;
-                                wstart *= iStride3;
-                                wend   *= iStride3;
+                                hstart *= gIStride2;
+                                hend   *= gIStride2;
+                                wstart *= gIStride3;
+                                wend   *= gIStride3;
 
                                 valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
 
                                 if ((int) extraParam0 == 0)         //Exclude padding
-                                    valO /= static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
+                                    valO /= static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(gIStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(gIStep3)));   //Accounts for dilation
                                 else if ((int) extraParam0 == 1)    //Include padding
                                     valO /= kProd;
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                for (Nd4jLong kh = hstart; kh < hend; kh += gIStep2)
+                                    for (Nd4jLong kw = wstart; kw < wend; kw += gIStep3)
                                         pgI[kh + kw] += valO;
                             }
                         }
@@ -1981,7 +2009,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                             for(int ow = 0; ow < oW; ++ow) {
 
                                 pIn  = in + b * iStride0 + c * iStride1;
-                                pgI  = gI + (pIn - in);
+                                pgI  = sameStrides ? gI + (pIn - in) : gI + b * gIStride0 + c * gIStride1;
 
                                 hstart = oh * sH - pH;
                                 wstart = ow * sW - pW;
@@ -1997,24 +2025,41 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                 if(wend > iW)
                                     wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-
-                                hstart *= iStride2;
-                                hend   *= iStride2;
-                                wstart *= iStride3;
-                                wend   *= iStride3;
-
                                 sum = static_cast<T>(0.f);
                                 valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                        sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                if(sameStrides) {
 
-                                valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1. - extraParam0) / extraParam0);
+                                    hstart *= iStride2;
+                                    hend   *= iStride2;
+                                    wstart *= iStride3;
+                                    wend   *= iStride3;
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                        pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(pIn[kh + kw]);
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                            sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+
+                                    valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1. - extraParam0) / extraParam0);
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                            pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(pIn[kh + kw]);
+                                }
+                                else {
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += dW)
+                                            sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh * iStride2 + kw * iStride3]), extraParam0);
+
+                                    valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1. - extraParam0) / extraParam0);
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += dH) {
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                            const auto inVal = pIn[kh * iStride2 + kw * iStride3];
+                                            pgI[kh * gIStride2 + kw * gIStride3] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(inVal), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(inVal);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -2144,11 +2189,16 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 #endif
             nd4j_debug("MKL-DNN is not used for pooling3d_bp!\n", 0);
 
-            const Nd4jLong iStride0 = gradI.stridesOf()[0];
-            const Nd4jLong iStride1 = gradI.stridesOf()[1];
-            const Nd4jLong iStride2 = gradI.stridesOf()[2];
-            const Nd4jLong iStride3 = gradI.stridesOf()[3];
-            const Nd4jLong iStride4 = gradI.stridesOf()[4];
+            const Nd4jLong iStride0  = input.stridesOf()[0];
+            const Nd4jLong iStride1  = input.stridesOf()[1];
+            const Nd4jLong iStride2  = input.stridesOf()[2];
+            const Nd4jLong iStride3  = input.stridesOf()[3];
+            const Nd4jLong iStride4  = input.stridesOf()[4];
+            const Nd4jLong gIStride0 = gradI.stridesOf()[0];
+            const Nd4jLong gIStride1 = gradI.stridesOf()[1];
+            const Nd4jLong gIStride2 = gradI.stridesOf()[2];
+            const Nd4jLong gIStride3 = gradI.stridesOf()[3];
+            const Nd4jLong gIStride4 = gradI.stridesOf()[4];
             const Nd4jLong oStride0 = gradO.stridesOf()[0];
             const Nd4jLong oStride1 = gradO.stridesOf()[1];
             const Nd4jLong oStride2 = gradO.stridesOf()[2];
@@ -2157,7 +2207,12 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             const Nd4jLong iStep2   = dD*iStride2;
             const Nd4jLong iStep3   = dH*iStride3;
             const Nd4jLong iStep4   = dW*iStride4;
+            const Nd4jLong gIStep2  = dD*gIStride2;
+            const Nd4jLong gIStep3  = dH*gIStride3;
+            const Nd4jLong gIStep4  = dW*gIStride4;
             const int      kProd    = kD*kH*kW;
+
+            const bool sameStrides = iStride0 == gIStride0 && iStride1 == gIStride1 && iStride2 == gIStride2 && iStride3 == gIStride3 && iStride4 == gIStride4;
 
             Nd4jLong dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW;
             T sum, valO, *pIn, *pgI;
@@ -2192,32 +2247,55 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                     if(wend > iW)
                                         wend -= dW * ((wend-iW + dW - 1) / dW);
 
-                                    dstart *= iStride2;
-                                    dend   *= iStride2;
-                                    hstart *= iStride3;
-                                    hend   *= iStride3;
-                                    wstart *= iStride4;
-                                    wend   *= iStride4;
-
-                                    maxKD = dstart;
-                                    maxKH = hstart;
-                                    maxKW = wstart;
-
                                     sum = -DataTypeUtils::max<T>();
                                     valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4) {
-                                                T valIn = pIn[kd + kh + kw];
-                                                if (valIn > sum) {
-                                                    sum = valIn;
-                                                    maxKD = kd;
-                                                    maxKH = kh;
-                                                    maxKW = kw;
+                                    if(sameStrides) {
+
+                                        dstart *= iStride2;
+                                        dend   *= iStride2;
+                                        hstart *= iStride3;
+                                        hend   *= iStride3;
+                                        wstart *= iStride4;
+                                        wend   *= iStride4;
+
+                                        maxKD = dstart;
+                                        maxKH = hstart;
+                                        maxKW = wstart;
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4) {
+                                                    T valIn = pIn[kd + kh + kw];
+                                                    if (valIn > sum) {
+                                                        sum = valIn;
+                                                        maxKD = kd;
+                                                        maxKH = kh;
+                                                        maxKW = kw;
+                                                    }
                                                 }
-                                            }
-                                    gI[pIn - in + maxKD + maxKH + maxKW] += valO;
+                                        gI[pIn - in + maxKD + maxKH + maxKW] += valO;
+                                    }
+                                    else {
+
+                                        // we set these to default values
+                                        maxKH = hstart;
+                                        maxKW = wstart;
+                                        maxKD = dstart;
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += dD)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                                    T valIn = pIn[kd * iStride2 + kh * iStride3 + kw * iStride4];
+                                                    if (valIn > sum) {
+                                                        sum = valIn;
+                                                        maxKD = kd;
+                                                        maxKH = kh;
+                                                        maxKW = kw;
+                                                    }
+                                                }
+                                        gI[b * gIStride0 + c * gIStride1 + maxKD * gIStride2 + maxKH * gIStride3 + maxKW * gIStride4] += valO;
+                                    }
                                 }
                             }
                         }
@@ -2233,7 +2311,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                             for(int oh = 0; oh < oH; ++oh) {
                                 for(int ow = 0; ow < oW; ++ow) {
 
-                                    pgI  = gI + b * iStride0 + c * iStride1;
+                                    pgI  = gI + b * gIStride0 + c * gIStride1;
 
                                     dstart = od * sD - pD;
                                     hstart = oh * sH - pH;
@@ -2255,23 +2333,23 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                     if(wend > iW)
                                         wend -= dW * ((wend-iW + dW - 1) / dW);
 
-                                    dstart *= iStride2;
-                                    dend   *= iStride2;
-                                    hstart *= iStride3;
-                                    hend   *= iStride3;
-                                    wstart *= iStride4;
-                                    wend   *= iStride4;
+                                    dstart *= gIStride2;
+                                    dend   *= gIStride2;
+                                    hstart *= gIStride3;
+                                    hend   *= gIStride3;
+                                    wstart *= gIStride4;
+                                    wend   *= gIStride4;
 
                                     valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
 
                                     if (extraParam0 == 0)         //Exclude padding
-                                        valO /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(iStep2)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep3)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(iStep4));   //Accounts for dilation
+                                        valO /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(gIStep2)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(gIStep3)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(gIStep4));   //Accounts for dilation
                                     else if (extraParam0 == 1)    //Include padding
                                         valO /= kProd;
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                    for (Nd4jLong kd = dstart; kd < dend; kd += gIStep2)
+                                        for (Nd4jLong kh = hstart; kh < hend; kh += gIStep3)
+                                            for (Nd4jLong kw = wstart; kw < wend; kw += gIStep4)
                                                 pgI[kd + kh + kw] += valO;
                                 }
                             }
@@ -2311,27 +2389,46 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                     if(wend > iW)
                                         wend -= dW * ((wend-iW + dW - 1) / dW);
 
-                                    dstart *= iStride2;
-                                    dend   *= iStride2;
-                                    hstart *= iStride3;
-                                    hend   *= iStride3;
-                                    wstart *= iStride4;
-                                    wend   *= iStride4;
-
                                     sum = static_cast<T>(0.);
                                     valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
+                                    if(sameStrides) {
 
-                                    valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+                                        dstart *= iStride2;
+                                        dend   *= iStride2;
+                                        hstart *= iStride3;
+                                        hend   *= iStride3;
+                                        wstart *= iStride4;
+                                        wend   *= iStride4;
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f);
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                                    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
+
+                                        valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                                    pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f);
+                                    }
+                                    else {
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += dD)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += dW)
+                                                    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd * iStride2 + kh * iStride3 + kw * iStride4]), extraParam0);
+
+                                        valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += dD)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                                    const auto inVal = pIn[kD * iStride2 + kh * iStride3 + kw * iStride4];
+                                                    pgI[kd * gIStride2 + kh * gIStride3 + kw * gIStride4] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(inVal), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(inVal);
+                                                }
+                                    }
                                 }
                             }
                         }
