@@ -235,7 +235,18 @@ public class DifferentialFunctionClassHolder {
         //log.debug("Missing " + set.size() + " ops!");
 
         countTotalTfOps = tensorflowOpDescriptors.size();
-        countTotalMappedOps = nodeConverters.size();
+
+        //Work out total number of TF ops mapped
+        Set<String> tfMappedOps = new HashSet<>();
+        for(DifferentialFunction df : nodeConverters.values()){
+            try{
+                String[] tfNames = df.tensorflowNames();
+                Collections.addAll(tfMappedOps, tfNames);
+            } catch (NoOpNameFoundException e){
+                //Ignore
+            }
+        }
+        countTotalMappedOps = tfMappedOps.size();
 
         //Get custom ops - map from hash to class
         Map<String,CustomOpDescriptor> descriptorMap = Nd4j.getExecutioner().getCustomOperations();

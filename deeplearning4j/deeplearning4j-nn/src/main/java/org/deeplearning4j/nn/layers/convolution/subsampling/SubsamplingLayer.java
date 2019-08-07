@@ -32,6 +32,7 @@ import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.util.OneTimeLogger;
@@ -131,6 +132,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             try{
                 ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
                         layerConf().getPoolingType(), convolutionMode, dilation, workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Exception e){
                 if(e.getMessage() != null && e.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation
@@ -256,6 +259,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             try {
                 ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
                         convolutionMode, dilation, workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Exception e){
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
