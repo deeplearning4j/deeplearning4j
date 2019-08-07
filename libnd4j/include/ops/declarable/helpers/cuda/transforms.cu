@@ -38,37 +38,39 @@ template<typename T>
 __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
 
     __shared__ int arrIdx, blocksPerArr;
-    __shared__ T *x, *z;
-    __shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenPerBlock, start, end;
 
     if (threadIdx.x == 0) {
 
         blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil
         arrIdx = blockIdx.x / blocksPerArr;
-
-        x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[arrIdx]);
-        z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);
-        xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
-        zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
-        arrLen = shape::length(xShapeInfo);
-
-        arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
-
-        start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
-        end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
     }
 
     __syncthreads();
 
-    for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x)
-        z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+    for(int j = arrIdx; j < numOfArrs; j += gridDim.x) {
+
+        const auto* x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[j]);
+              auto* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[j]);
+        const auto* xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[j];
+        const auto* zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[j];
+
+        const auto arrLen = shape::length(xShapeInfo);
+
+        const auto arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
+
+        const auto start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
+        const auto end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
+
+        for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x)
+            z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
+    }
 }
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>
 __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
 
-    concatCuda<T><<<512, 256, 1024, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
+    concatCuda<T><<<512, 512, 512, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
 }
 BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher,  (const int numOfArrs, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
 
