@@ -1049,7 +1049,8 @@ TEST_F(NativeOpsTests, ConcatTest_1) {
     //y.assign(2.);
     x.syncToDevice();
     z.syncToDevice();
-    auto dimension = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    int d = 0;
+    auto dimension = NDArrayFactory::create<int>('c', {1}, {d});
     auto dimensions = reinterpret_cast<int*>(dimension.buffer());
     //auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
     auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
@@ -1087,7 +1088,8 @@ TEST_F(NativeOpsTests, ConcatTest_2) {
     //y.assign(2.);
     x.syncToDevice();
     z.syncToDevice();
-    auto dimension = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    int d = 0;
+    auto dimension = NDArrayFactory::create<int>('c', {1}, {d});
     auto dimensions = reinterpret_cast<int*>(dimension.buffer());
     //auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), dimensions, dimension.lengthOf());
     auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.shapeInfo(), dimensions, dimension.lengthOf());
