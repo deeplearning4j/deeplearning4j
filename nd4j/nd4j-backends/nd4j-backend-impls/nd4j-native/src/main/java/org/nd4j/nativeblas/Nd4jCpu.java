@@ -3814,9 +3814,12 @@ public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean p
         public native void syncToDevice();
         public native void syncShape();
 
-// #ifndef __JAVACPP_HACK__
+        /**
+         * This method can be used on architectures that use special buffers
+         * @param writeList
+         * @param readList
+         */
 
-// #endif
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
@@ -5107,11 +5110,15 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 ////////////////////////////////////////////////////////////////////////
 
 
-////////////////////////////////////////////////////////////////////////
 
 
 ////////////////////////////////////////////////////////////////////////
 
+
+////////////////////////////////////////////////////////////////////////
+
+
+    
 
 // #ifndef __JAVACPP_HACK__
 // #endif
