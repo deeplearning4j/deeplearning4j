@@ -189,7 +189,7 @@ namespace functions {
             auto dx = static_cast<T*>(vdx);
             auto extraParams = static_cast<T*>(vextraParams);
             auto reductionBuffer = static_cast<T*>(vreductionBuffer);
-
+            auto order = shape::order(xShapeInfo);
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
             __shared__ volatile int resultScalar;
 
@@ -293,7 +293,7 @@ namespace functions {
                 auto n = shape::length(xShapeInfo);
                 auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
-                if(xElementWiseStride >= 1) {
+                if(xElementWiseStride >= 1 && order == 'c') {
                     for(Nd4jLong i = tid;i < n; i += (blockDim.x * gridDim.x)) {
                         IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
                         reduction = OpType::update(reduction, indexVal, extraParams);

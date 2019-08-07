@@ -1101,9 +1101,9 @@ void NDArray::printBuffer(const char* msg, Nd4jLong limit, const bool sync) cons
         printf("[");
     if (this->isR()) {
         for (Nd4jLong e = 0; e < limit; e++) {
-            printf("%f", this->e<float>(e));
-            if (e < limit - 1)
+            if (e)
                 printf(", ");
+            printf("%f", this->e<float>(e));
         }
     }
     else if (this->isZ()) {

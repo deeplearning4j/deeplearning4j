@@ -52,91 +52,32 @@ namespace helpers {
         for (Nd4jLong batch = 0; batch < batchCount; batch++) {
             auto patch = listOfMatricies->at(batch);
             auto outMatrix = listOfOutputs->at(batch);
-            //auto patchBorder = patch->sizeAt(0);
-            if (theSame) { // SAME case
-                for (Nd4jLong i = 0; i < outRowDim; i++) {
-                    for (Nd4jLong j = 0; j < outColDim; j++) {
-                        Nd4jLong pos = 0;
-                        //for (Nd4jLong k = 0; k < outputLastDim; k++) {
-                        auto rowStart = i * strideRow - rowCast;
-                        auto colStart = j * strideCol - colCast;
-                        auto rowEnd = rowStart + sizeRow * rateRow;
-                        auto colEnd = colStart + sizeCol * rateCol;
-                        auto pixel = 0LL;
-                        for (auto row = rowStart; row < rowEnd; row += rateRow)
-                            for (auto col = colStart; col < colEnd; col += rateCol)
-                                for (auto pixel = 0; pixel < lastDim; pixel++) {
-                                    if (row >=0 && col >= 0 && row < rowDim && col < colDim)
-                                    outMatrix->p<T>(i, j, pos, patch->e<T>(row, col, pixel));
-                                    pos++;
-                                }
-                        //}
-                    }
-                }
 
-            } else { // VALID case
-                for (Nd4jLong i = 0; i < outRowDim; i++) {
-                    for (Nd4jLong j = 0; j < outColDim; j++) {
-                        Nd4jLong pos = 0;
-                        //for (Nd4jLong k = 0; k < outputLastDim; k++) {
-                            auto rowStart = i * strideRow;
-                            auto colStart = j * strideCol;
-                            auto rowEnd = math::nd4j_min(rowStart + sizeRow * rateRow, rowDim);
-                            auto colEnd = math::nd4j_min(colStart + sizeCol * rateCol, colDim);
-                            auto pixel = 0LL;
-                            for (auto row = rowStart; row < rowEnd; row += rateRow)
-                                for (auto col = colStart; col < colEnd; col += rateCol)
-                                    for (auto pixel = 0; pixel < lastDim; pixel++)
-                                        outMatrix->p<T>(i,j,pos++, patch->e<T>(row, col, pixel));
-                        //}
+            for (Nd4jLong i = 0; i < outRowDim; i++) {
+                for (Nd4jLong j = 0; j < outColDim; j++) {
+                    Nd4jLong pos = 0;
+                    //for (Nd4jLong k = 0; k < outputLastDim; k++) {
+                    auto rowStart = i * strideRow - (theSame?rowCast:0);
+                    auto colStart = j * strideCol - (theSame?colCast:0);
+                    auto rowEnd = rowStart + sizeRow * rateRow;
+                    auto colEnd = colStart + sizeCol * rateCol;
+                    if (!theSame) {
+                        rowEnd = math::nd4j_min(rowStart + sizeRow * rateRow, rowDim);
+                        colEnd = math::nd4j_min(colStart + sizeCol * rateCol, colDim);
                     }
+                    //auto pixel = 0LL;
+                    for (auto row = rowStart; row < rowEnd; row += rateRow)
+                        for (auto col = colStart; col < colEnd; col += rateCol)
+                            for (auto pixel = 0; pixel < lastDim; pixel++) {
+                                bool setUp = (theSame && row >= 0 && col >= 0 && row < rowDim && col < colDim) || (!theSame);
+                                if (setUp) {
+                                    outMatrix->t<T>(i, j, pos) = patch->e<T>(row, col, pixel);
+                                }
+                                pos++;
+                            }
                 }
             }
         }
-////#pragma omp parallel for
-//        for (Nd4jLong e = 0; e < batchCount; ++e) {
-//            auto patch = listOfMatricies->at(e);
-//            auto outMatrix = listOfOutputs->at(e);
-//            auto patchBorder = patch->sizeAt(0);
-//            //int startRow = 0;
-//            //int startCol = 0;
-//            Nd4jLong pos = 0;
-//            for (int i = 0; i < rowDim; i += stradeRow)
-//            for (int j = 0; j < colDim; j += stradeCol)
-//                for (int l = 0; l < ksizeRowsEffective; l++)
-//                for (int m = 0; m < ksizeColsEffective; m++) {
-//                    //for (Nd4jLong pos = 0; pos < outputLastDim; pos++)
-//                for (Nd4jLong k = 0; k < lastDim; ++k) {
-//                    if (theSame) {
-//                        if (j + m * rateCol < colDim &&
-//                            i + l * rateRow < rowDim)
-//                            outMatrix->p<T>(i, j, pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-////                        pos ++; //= ksize;
-//                        if (pos >= outLastDim) {
-//                            pos = 0;
-//                            //break;
-//                        }
-//                    }
-//                    else {
-////                    if (l + i < rowDim  && m + j < colDim && i + rateRow * l < patchBorder) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
-////                        outMatrix->p<T>(i, j, pos, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-//                        if (j + m * rateCol < colDim &&
-//                            i + l * rateRow < rowDim) // && i + rateRow * l < sizeRow && j + m * rateCol < sizeCol
-//                            outMatrix->p<T>(pos++, patch->e<T>(i + rateRow * l, j + m * rateCol, k));
-//                        //pos++;
-////                    if (pos >= outLastDim)
-////                        pos = 0;
-//                        if (pos >= outMatrix->lengthOf()) { // stop looping and try next batch
-//                            k = lastDim;
-//                            m = sizeCol;
-//                            l = sizeRow;
-//                            j = colDim;
-//                            i = rowDim;
-//                        }
-//                    }
-//                }
-//            }
-//        }
     }
 
 

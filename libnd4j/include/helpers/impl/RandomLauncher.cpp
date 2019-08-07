@@ -22,7 +22,7 @@
 #include <dll.h>
 #include <helpers/RandomLauncher.h>
 #include <graph/RandomGenerator.h>
-#include <ops/declarable/CustomOperations.h>
+//#include <ops/declarable/CustomOperations.h>
 #include <helpers/PointersManager.h>
 
 namespace nd4j {

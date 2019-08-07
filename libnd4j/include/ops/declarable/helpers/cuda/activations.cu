@@ -565,7 +565,9 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 
 	template <typename T>
 	linkage void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
+        auto derivative = LAMBDA_TT(_x, grO, theta) {if (_x > theta) return grO; else return static_cast<T>(0); };
 
+        input->applyPairwiseLambda(dLdO, derivative, output);
 	}
 
 	void thresholdReluDerivative(nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {

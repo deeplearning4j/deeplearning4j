@@ -1225,6 +1225,8 @@ namespace nd4j {
 
         template<typename T>
         FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j);
+        template<typename T>
+        FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
 
         /**
         *  returns array element with given index
@@ -1235,6 +1237,8 @@ namespace nd4j {
 
         template<typename T>
         FORCEINLINE T t(const Nd4jLong i, const Nd4jLong j) const;
+        template<typename T>
+        FORCEINLINE T t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
 
 
         /**
@@ -2040,6 +2044,23 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
 
+template <typename T>
+T& NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
+
+    if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
+        throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=2 !");
+    if (DataTypeUtils::fromT<T>() != _dataType)
+        throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+
+    if(!isActualOnHostSide())
+        syncToHost();
+
+    Nd4jLong coords[3] = {i, j, k};
+    auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    tickWriteHost();
+    return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+}
+
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 T NDArray::t(const Nd4jLong i) const {
@@ -2073,6 +2094,23 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
     tickReadHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
+
+    template <typename T>
+    T NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
+
+        if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
+            throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=2 !");
+        if (DataTypeUtils::fromT<T>() != _dataType)
+            throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+
+        if(!isActualOnHostSide())
+            syncToHost();
+
+        Nd4jLong coords[3] = {i, j, k};
+        auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        tickReadHost();
+        return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+    }
 
 #ifndef __JAVACPP_HACK__
 ////////////////////////////////////////////////////////////////////////
