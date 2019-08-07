@@ -17,7 +17,7 @@
 package org.deeplearning4j.rl4j.learning;
 
 import org.deeplearning4j.rl4j.mdp.MDP;
-import org.deeplearning4j.rl4j.policy.Policy;
+import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 
@@ -28,7 +28,7 @@ import org.deeplearning4j.rl4j.space.Encodable;
  */
 public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> extends StepCountable {
 
-    Policy<O, A> getPolicy();
+    IPolicy<O, A> getPolicy();
 
     void train();
 

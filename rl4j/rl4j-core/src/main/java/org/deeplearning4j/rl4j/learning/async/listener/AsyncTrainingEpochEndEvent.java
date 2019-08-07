@@ -1,16 +1,22 @@
-package org.deeplearning4j.rl4j.learning.sync.listener;
+package org.deeplearning4j.rl4j.learning.async.listener;
 
 import lombok.Getter;
-import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.async.AsyncThread;
 import org.deeplearning4j.rl4j.learning.listener.TrainingEpochEndEvent;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
  * The definition of the event sent by {@link TrainingListenerList#notifyEpochFinished(TrainingEpochEndEvent)}
- * in the context of sync training
+ * in the context of async training
  */
-public class SyncTrainingEpochEndEvent extends SyncTrainingEvent implements TrainingEpochEndEvent {
+public class AsyncTrainingEpochEndEvent implements TrainingEpochEndEvent {
+
+    /**
+     * The source of the event
+     */
+    @Getter
+    private final AsyncThread asyncThread;
 
     /**
      * The stats of the epoch training
@@ -19,11 +25,11 @@ public class SyncTrainingEpochEndEvent extends SyncTrainingEvent implements Trai
     private final IDataManager.StatEntry statEntry;
 
     /**
-     * @param learning The source of the event
+     * @param asyncThread The source of the event
      * @param statEntry The stats of the epoch training
      */
-    public SyncTrainingEpochEndEvent(Learning learning, IDataManager.StatEntry statEntry) {
-        super(learning);
+    public AsyncTrainingEpochEndEvent(AsyncThread asyncThread, IDataManager.StatEntry statEntry) {
+        this.asyncThread = asyncThread;
         this.statEntry = statEntry;
     }
 }

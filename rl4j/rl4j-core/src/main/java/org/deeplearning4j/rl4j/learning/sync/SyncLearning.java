@@ -18,16 +18,17 @@ package org.deeplearning4j.rl4j.learning.sync;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.Learning;
+import org.deeplearning4j.rl4j.learning.listener.TrainingEpochEndEvent;
+import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
 import org.deeplearning4j.rl4j.learning.sync.listener.SyncTrainingEpochEndEvent;
 import org.deeplearning4j.rl4j.learning.sync.listener.SyncTrainingEvent;
 import org.deeplearning4j.rl4j.learning.sync.listener.SyncTrainingListener;
+import org.deeplearning4j.rl4j.learning.sync.listener.SyncTrainingListenerList;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager;
-
-import java.util.ArrayList;
-import java.util.List;
 
 /**
  * Mother class and useful factorisations for all training methods that
@@ -40,7 +41,7 @@ import java.util.List;
 public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
         extends Learning<O, A, AS, NN> {
 
-    private List<SyncTrainingListener> listeners = new ArrayList<>();
+    private SyncTrainingListenerList listeners = new SyncTrainingListenerList();
 
     public SyncLearning(LConfiguration conf) {
         super(conf);
@@ -67,20 +68,20 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
      * returns {@link SyncTrainingListener.ListenerResponse SyncTrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
      * Events:
      * <ul>
-     *   <li>{@link SyncTrainingListener#onTrainingStart(SyncTrainingEvent) onTrainingStart()} is called once when the training starts.</li>
-     *   <li>{@link SyncTrainingListener#onEpochStart(SyncTrainingEvent) onEpochStart()} and {@link SyncTrainingListener#onEpochEnd(SyncTrainingEpochEndEvent) onEpochEnd()} are called for every epoch. onEpochEnd will not be called if onEpochStart stops the training</li>
-     *   <li>{@link SyncTrainingListener#onTrainingEnd() onTrainingEnd()} is always called at the end of the training, even if the training was cancelled by a listener.</li>
+     *   <li>{@link TrainingListener#onTrainingStart(TrainingEvent) onTrainingStart()} is called once when the training starts.</li>
+     *   <li>{@link TrainingListener#onEpochStart(TrainingEvent) onEpochStart()} and {@link TrainingListener#onEpochEnd(TrainingEpochEndEvent) onEpochEnd()} are called for every epoch. onEpochEnd will not be called if onEpochStart stops the training</li>
+     *   <li>{@link TrainingListener#onTrainingEnd() onTrainingEnd()} is always called at the end of the training, even if the training was cancelled by a listener.</li>
      * </ul>
      */
     public void train() {
 
         log.info("training starting.");
 
-        boolean canContinue = notifyTrainingStarted();
+        boolean canContinue = listeners.notifyTrainingStarted(buildEvent());
         if (canContinue) {
             while (getStepCounter() < getConfiguration().getMaxStep()) {
                 preEpoch();
-                canContinue = notifyEpochStarted();
+                canContinue = listeners.notifyEpochStarted(buildEvent());
                 if (!canContinue) {
                     break;
                 }
@@ -88,7 +89,7 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
                 IDataManager.StatEntry statEntry = trainEpoch();
 
                 postEpoch();
-                canContinue = notifyEpochFinished(statEntry);
+                canContinue = listeners.notifyEpochFinished(buildEndEvent(statEntry));
                 if (!canContinue) {
                     break;
                 }
@@ -99,46 +100,15 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
             }
         }
 
-        notifyTrainingFinished();
+        listeners.notifyTrainingFinished();
     }
 
-    private boolean notifyTrainingStarted() {
-        SyncTrainingEvent event = new SyncTrainingEvent(this);
-        for (SyncTrainingListener listener : listeners) {
-            if (listener.onTrainingStart(event) == SyncTrainingListener.ListenerResponse.STOP) {
-                return false;
-            }
-        }
-
-        return true;
+    private SyncTrainingEvent buildEvent() {
+        return new SyncTrainingEvent(this);
     }
 
-    private void notifyTrainingFinished() {
-        for (SyncTrainingListener listener : listeners) {
-            listener.onTrainingEnd();
-        }
-    }
-
-    private boolean notifyEpochStarted() {
-        SyncTrainingEvent event = new SyncTrainingEvent(this);
-        for (SyncTrainingListener listener : listeners) {
-            if (listener.onEpochStart(event) == SyncTrainingListener.ListenerResponse.STOP) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    private boolean notifyEpochFinished(IDataManager.StatEntry statEntry) {
-        SyncTrainingEpochEndEvent event = new SyncTrainingEpochEndEvent(this, statEntry);
-        for (SyncTrainingListener listener : listeners) {
-            if (listener.onEpochEnd(event) == SyncTrainingListener.ListenerResponse.STOP) {
-                return false;
-            }
-        }
-
-        return true;
+    private SyncTrainingEpochEndEvent buildEndEvent(IDataManager.StatEntry statEntry) {
+        return new SyncTrainingEpochEndEvent(this, statEntry);
     }
 
     protected abstract void preEpoch();

@@ -5,8 +5,7 @@ import org.deeplearning4j.rl4j.learning.sync.support.MockStatEntry;
 import org.deeplearning4j.rl4j.learning.sync.support.MockSyncTrainingListener;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.policy.Policy;
-import org.deeplearning4j.rl4j.support.MockDataManager;
+import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.util.DataManagerSyncTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
@@ -119,7 +118,7 @@ public class SyncLearningTest {
         }
 
         @Override
-        public Policy getPolicy() {
+        public IPolicy getPolicy() {
             return null;
         }
 

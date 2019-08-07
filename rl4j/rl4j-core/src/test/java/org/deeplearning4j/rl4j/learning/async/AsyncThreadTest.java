@@ -1,206 +1,135 @@
 package org.deeplearning4j.rl4j.learning.async;
 
-import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.gradient.Gradient;
-import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
+import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.support.MockDataManager;
-import org.deeplearning4j.rl4j.support.MockHistoryProcessor;
-import org.deeplearning4j.rl4j.support.MockMDP;
-import org.deeplearning4j.rl4j.support.MockObservationSpace;
+import org.deeplearning4j.rl4j.support.*;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
 public class AsyncThreadTest {
 
     @Test
-    public void refac_withoutHistoryProcessor_checkDataManagerCallsRemainTheSame() {
+    public void when_newEpochStarted_expect_neuralNetworkReset() {
         // Arrange
-        MockDataManager dataManager = new MockDataManager(false);
-        MockAsyncGlobal asyncGlobal = new MockAsyncGlobal(10);
-        MockNeuralNet neuralNet = new MockNeuralNet();
-        MockObservationSpace observationSpace = new MockObservationSpace();
-        MockMDP mdp = new MockMDP(observationSpace);
-        MockAsyncConfiguration config = new MockAsyncConfiguration(10, 2);
-        MockAsyncThread sut = new MockAsyncThread(asyncGlobal, 0, neuralNet, mdp, config, dataManager);
+        TestContext context = new TestContext();
+        context.listener.setRemainingEpochStartCallCount(5);
 
         // Act
-        sut.run();
+        context.sut.run();
 
         // Assert
-        assertEquals(4, dataManager.statEntries.size());
-
-        IDataManager.StatEntry entry = dataManager.statEntries.get(0);
-        assertEquals(2, entry.getStepCounter());
-        assertEquals(0, entry.getEpochCounter());
-        assertEquals(2.0, entry.getReward(), 0.0);
-
-        entry = dataManager.statEntries.get(1);
-        assertEquals(4, entry.getStepCounter());
-        assertEquals(1, entry.getEpochCounter());
-        assertEquals(2.0, entry.getReward(), 0.0);
-
-        entry = dataManager.statEntries.get(2);
-        assertEquals(6, entry.getStepCounter());
-        assertEquals(2, entry.getEpochCounter());
-        assertEquals(2.0, entry.getReward(), 0.0);
-
-        entry = dataManager.statEntries.get(3);
-        assertEquals(8, entry.getStepCounter());
-        assertEquals(3, entry.getEpochCounter());
-        assertEquals(2.0, entry.getReward(), 0.0);
-
-        assertEquals(0, dataManager.isSaveDataCallCount);
-        assertEquals(0, dataManager.getVideoDirCallCount);
+        assertEquals(5, context.neuralNet.resetCallCount);
     }
 
     @Test
-    public void refac_withHistoryProcessor_isSaveFalse_checkDataManagerCallsRemainTheSame() {
+    public void when_epochStartedReturnsStop_expect_threadStopped() {
         // Arrange
-        MockDataManager dataManager = new MockDataManager(false);
-        MockAsyncGlobal asyncGlobal = new MockAsyncGlobal(10);
-        MockNeuralNet neuralNet = new MockNeuralNet();
-        MockObservationSpace observationSpace = new MockObservationSpace();
-        MockMDP mdp = new MockMDP(observationSpace);
-        MockAsyncConfiguration asyncConfig = new MockAsyncConfiguration(10, 2);
-
-        IHistoryProcessor.Configuration hpConfig = IHistoryProcessor.Configuration.builder()
-            .build();
-        MockHistoryProcessor hp = new MockHistoryProcessor(hpConfig);
-
-
-        MockAsyncThread sut = new MockAsyncThread(asyncGlobal, 0, neuralNet, mdp, asyncConfig, dataManager);
-        sut.setHistoryProcessor(hp);
+        TestContext context = new TestContext();
+        context.listener.setRemainingEpochStartCallCount(1);
 
         // Act
-        sut.run();
+        context.sut.run();
 
         // Assert
-        assertEquals(9, dataManager.statEntries.size());
-
-        for(int i = 0; i < 9; ++i) {
-            IDataManager.StatEntry entry = dataManager.statEntries.get(i);
-            assertEquals(i + 1, entry.getStepCounter());
-            assertEquals(i, entry.getEpochCounter());
-            assertEquals(79.0, entry.getReward(), 0.0);
-        }
-
-        assertEquals(10, dataManager.isSaveDataCallCount);
-        assertEquals(0, dataManager.getVideoDirCallCount);
+        assertEquals(2, context.listener.onEpochStartCallCount);
+        assertEquals(1, context.listener.onEpochEndCallCount);
     }
 
     @Test
-    public void refac_withHistoryProcessor_isSaveTrue_checkDataManagerCallsRemainTheSame() {
+    public void when_epochEndReturnsStop_expect_threadStopped() {
         // Arrange
-        MockDataManager dataManager = new MockDataManager(true);
-        MockAsyncGlobal asyncGlobal = new MockAsyncGlobal(10);
-        MockNeuralNet neuralNet = new MockNeuralNet();
-        MockObservationSpace observationSpace = new MockObservationSpace();
-        MockMDP mdp = new MockMDP(observationSpace);
-        MockAsyncConfiguration asyncConfig = new MockAsyncConfiguration(10, 2);
-
-        IHistoryProcessor.Configuration hpConfig = IHistoryProcessor.Configuration.builder()
-                .build();
-        MockHistoryProcessor hp = new MockHistoryProcessor(hpConfig);
-
-
-        MockAsyncThread sut = new MockAsyncThread(asyncGlobal, 0, neuralNet, mdp, asyncConfig, dataManager);
-        sut.setHistoryProcessor(hp);
+        TestContext context = new TestContext();
+        context.listener.setRemainingEpochEndCallCount(1);
 
         // Act
-        sut.run();
+        context.sut.run();
 
         // Assert
-        assertEquals(9, dataManager.statEntries.size());
-
-        for(int i = 0; i < 9; ++i) {
-            IDataManager.StatEntry entry = dataManager.statEntries.get(i);
-            assertEquals(i + 1, entry.getStepCounter());
-            assertEquals(i, entry.getEpochCounter());
-            assertEquals(79.0, entry.getReward(), 0.0);
-        }
-
-        assertEquals(1, dataManager.isSaveDataCallCount);
-        assertEquals(1, dataManager.getVideoDirCallCount);
+        assertEquals(2, context.listener.onEpochStartCallCount);
+        assertEquals(2, context.listener.onEpochEndCallCount);
     }
 
-    public static class MockAsyncGlobal implements IAsyncGlobal {
+    @Test
+    public void when_run_expect_preAndPostEpochCalled() {
+        // Arrange
+        TestContext context = new TestContext();
 
-        private final int maxLoops;
-        private int currentLoop = 0;
+        // Act
+        context.sut.run();
 
-        public MockAsyncGlobal(int maxLoops) {
+        // Assert
+        assertEquals(5, context.sut.preEpochCallCount);
+        assertEquals(5, context.sut.postEpochCallCount);
+    }
 
-            this.maxLoops = maxLoops;
+    @Test
+    public void when_run_expect_trainSubEpochCalledAndResultPassedToListeners() {
+        // Arrange
+        TestContext context = new TestContext();
+
+        // Act
+        context.sut.run();
+
+        // Assert
+        assertEquals(4, context.listener.statEntries.size());
+        int[] expectedStepCounter = new int[] { 2, 4, 6, 8 };
+        for(int i = 0; i < 4; ++i) {
+            IDataManager.StatEntry statEntry = context.listener.statEntries.get(i);
+            assertEquals(expectedStepCounter[i], statEntry.getStepCounter());
+            assertEquals(i, statEntry.getEpochCounter());
+            assertEquals(2.0, statEntry.getReward(), 0.0001);
         }
+    }
 
-        @Override
-        public boolean isRunning() {
-            return true;
-        }
+    private static class TestContext {
+        public final MockAsyncGlobal asyncGlobal = new MockAsyncGlobal();
+        public final MockNeuralNet neuralNet = new MockNeuralNet();
+        public final MockObservationSpace observationSpace = new MockObservationSpace();
+        public final MockMDP mdp = new MockMDP(observationSpace);
+        public final MockAsyncConfiguration config = new MockAsyncConfiguration(5, 2);
+        public final AsyncTrainingListenerList listeners = new AsyncTrainingListenerList();
+        public final MockAsyncTrainingListener listener = new MockAsyncTrainingListener();
+        public final MockAsyncThread sut = new MockAsyncThread(asyncGlobal, 0, neuralNet, mdp, config, listeners);
 
-        @Override
-        public void setRunning(boolean value) {
-
-        }
-
-        @Override
-        public boolean isTrainingComplete() {
-            return ++currentLoop >= maxLoops;
-        }
-
-        @Override
-        public void start() {
-
-        }
-
-        @Override
-        public AtomicInteger getT() {
-            return null;
-        }
-
-        @Override
-        public NeuralNet getCurrent() {
-            return null;
-        }
-
-        @Override
-        public NeuralNet getTarget() {
-            return null;
-        }
-
-        @Override
-        public void enqueue(Gradient[] gradient, Integer nstep) {
-
+        public TestContext() {
+            asyncGlobal.setMaxLoops(10);
+            listeners.add(listener);
         }
     }
 
     public static class MockAsyncThread extends AsyncThread {
 
+        public int preEpochCallCount = 0;
+        public int postEpochCallCount = 0;
+
+
         IAsyncGlobal asyncGlobal;
         private final MockNeuralNet neuralNet;
-        private final MDP mdp;
         private final AsyncConfiguration conf;
-        private final IDataManager dataManager;
 
-        public MockAsyncThread(IAsyncGlobal asyncGlobal, int threadNumber, MockNeuralNet neuralNet, MDP mdp, AsyncConfiguration conf, IDataManager dataManager) {
-            super(asyncGlobal, threadNumber);
+        public MockAsyncThread(IAsyncGlobal asyncGlobal, int threadNumber, MockNeuralNet neuralNet, MDP mdp, AsyncConfiguration conf, AsyncTrainingListenerList listeners) {
+            super(asyncGlobal, mdp, listeners, threadNumber);
 
             this.asyncGlobal = asyncGlobal;
             this.neuralNet = neuralNet;
-            this.mdp = mdp;
             this.conf = conf;
-            this.dataManager = dataManager;
+        }
+
+        @Override
+        protected void preEpoch() {
+            ++preEpochCallCount;
+            super.preEpoch();
+        }
+
+        @Override
+        protected void postEpoch() {
+            ++postEpochCallCount;
+            super.postEpoch();
         }
 
         @Override
@@ -219,18 +148,8 @@ public class AsyncThreadTest {
         }
 
         @Override
-        protected MDP getMdp() {
-            return mdp;
-        }
-
-        @Override
         protected AsyncConfiguration getConf() {
             return conf;
-        }
-
-        @Override
-        protected IDataManager getDataManager() {
-            return dataManager;
         }
 
         @Override
@@ -244,129 +163,6 @@ public class AsyncThreadTest {
         }
     }
 
-    public static class MockNeuralNet implements NeuralNet {
 
-        @Override
-        public NeuralNetwork[] getNeuralNetworks() {
-            return new NeuralNetwork[0];
-        }
-
-        @Override
-        public boolean isRecurrent() {
-            return false;
-        }
-
-        @Override
-        public void reset() {
-
-        }
-
-        @Override
-        public INDArray[] outputAll(INDArray batch) {
-            return new INDArray[0];
-        }
-
-        @Override
-        public NeuralNet clone() {
-            return null;
-        }
-
-        @Override
-        public void copy(NeuralNet from) {
-
-        }
-
-        @Override
-        public Gradient[] gradient(INDArray input, INDArray[] labels) {
-            return new Gradient[0];
-        }
-
-        @Override
-        public void fit(INDArray input, INDArray[] labels) {
-
-        }
-
-        @Override
-        public void applyGradient(Gradient[] gradients, int batchSize) {
-
-        }
-
-        @Override
-        public double getLatestScore() {
-            return 0;
-        }
-
-        @Override
-        public void save(OutputStream os) throws IOException {
-
-        }
-
-        @Override
-        public void save(String filename) throws IOException {
-
-        }
-    }
-
-    public static class MockAsyncConfiguration implements AsyncConfiguration {
-
-        private final int nStep;
-        private final int maxEpochStep;
-
-        public MockAsyncConfiguration(int nStep, int maxEpochStep) {
-            this.nStep = nStep;
-
-            this.maxEpochStep = maxEpochStep;
-        }
-
-        @Override
-        public int getSeed() {
-            return 0;
-        }
-
-        @Override
-        public int getMaxEpochStep() {
-            return maxEpochStep;
-        }
-
-        @Override
-        public int getMaxStep() {
-            return 0;
-        }
-
-        @Override
-        public int getNumThread() {
-            return 0;
-        }
-
-        @Override
-        public int getNstep() {
-            return nStep;
-        }
-
-        @Override
-        public int getTargetDqnUpdateFreq() {
-            return 0;
-        }
-
-        @Override
-        public int getUpdateStart() {
-            return 0;
-        }
-
-        @Override
-        public double getRewardFactor() {
-            return 0;
-        }
-
-        @Override
-        public double getGamma() {
-            return 0;
-        }
-
-        @Override
-        public double getErrorClamp() {
-            return 0;
-        }
-    }
 
 }

@@ -25,41 +25,48 @@ import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.StepCountable;
+import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingEpochEndEvent;
+import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingEpochEvent;
+import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingListenerList;
+import org.deeplearning4j.rl4j.learning.listener.TrainingEpochEndEvent;
+import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
-import java.io.IOException;
-
 /**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
- *
  * This represent a local thread that explore the environment
  * and calculate a gradient to enqueue to the global thread/model
  *
  * It has its own version of a model that it syncs at the start of every
  * sub epoch
  *
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
+ * @author Alexandre Boulanger
  */
 @Slf4j
 public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Thread implements StepCountable {
 
-    private int threadNumber;
+    private final int threadNumber;
     @Getter @Setter
     private int stepCounter = 0;
     @Getter @Setter
     private int epochCounter = 0;
+    @Getter
+    private MDP<O, A, AS> mdp;
     @Getter @Setter
     private IHistoryProcessor historyProcessor;
-    @Getter
-    private int lastMonitor = -Constants.MONITOR_FREQ;
 
-    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, int threadNumber) {
+    private final AsyncTrainingListenerList listeners;
+
+    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, MDP<O, A, AS> mdp, AsyncTrainingListenerList listeners, int threadNumber) {
+        this.mdp = mdp;
+        this.listeners = listeners;
         this.threadNumber = threadNumber;
     }
 
@@ -78,49 +85,57 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     }
 
     protected void preEpoch() {
-        if (getStepCounter() - lastMonitor >= Constants.MONITOR_FREQ && getHistoryProcessor() != null
-                        && getDataManager().isSaveData()) {
-            lastMonitor = getStepCounter();
-            int[] shape = getMdp().getObservationSpace().getShape();
-            getHistoryProcessor().startMonitor(getDataManager().getVideoDir() + "/video-" + threadNumber + "-"
-                            + getEpochCounter() + "-" + getStepCounter() + ".mp4", shape);
-        }
+        // Do nothing
     }
 
+    /**
+     * This method will start the worker thread<p>
+     * The thread will stop when:<br>
+     * - The AsyncGlobal thread terminates or reports that the training is complete
+     * (see {@link AsyncGlobal#isTrainingComplete()}). In such case, the currently running epoch will still be handled normally and
+     * events will also be fired normally.<br>
+     * OR<br>
+     * - a listener explicitly stops it, in which case, the AsyncGlobal thread will be terminated along with
+     * all other worker threads <br>
+     * <p>
+     * Listeners<br>
+     * For a given event, the listeners are called sequentially in same the order as they were added. If one listener
+     * returns {@link org.deeplearning4j.rl4j.learning.listener.TrainingListener.ListenerResponse
+     * TrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
+     * Events:
+     * <ul>
+     *   <li>{@link TrainingListener#onEpochStart(TrainingEvent) onEpochStart()} is called at the start
+     *   of every epoch.</li>
+     *   <li>{@link TrainingListener#onEpochEnd(TrainingEpochEndEvent) onEpochEnd()} is called at the end of every
+     *   epoch. It will not be called if onEpochStart stops the training.</li>
+     * </ul>
+     */
     @Override
     public void run() {
         RunContext<O> context = new RunContext<>();
 
-        try {
-            log.info("ThreadNum-" + threadNumber + " Started!");
+        log.info("ThreadNum-" + threadNumber + " Started!");
 
-            startNewEpoch(context);
-            preEpoch();
+        boolean canContinue = initWork(context);
+        if (canContinue) {
 
             while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
                 handleTraining(context);
                 if (context.length >= getConf().getMaxEpochStep() || getMdp().isDone()) {
-                    endEpoch(context);
-
-                    log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + context.rewards);
-
-                    startNewEpoch(context);
-                    epochCounter++;
-                    preEpoch();
+                    canContinue = finishEpoch(context) && startNewEpoch(context);
+                    if (!canContinue) {
+                        break;
+                    }
                 }
             }
-        } catch (Exception e) {
-            log.error("Thread crashed: " + e.getCause());
-            getAsyncGlobal().setRunning(false);
-            e.printStackTrace();
-        } finally {
-            postEpoch();
         }
+        terminateWork();
     }
 
-    private void startNewEpoch(RunContext context) {
+    private void initNewEpoch(RunContext context) {
         getCurrent().reset();
         Learning.InitMdp<O>  initMdp = Learning.initMdp(getMdp(), historyProcessor);
+
         context.obs = initMdp.getLastObs();
         context.rewards = initMdp.getReward();
         context.length = initMdp.getSteps();
@@ -129,6 +144,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     private void handleTraining(RunContext<O> context) {
         int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - context.length);
         SubEpochReturn<O> subEpochReturn = trainSubEpoch(context.obs, maxSteps);
+
         context.obs = subEpochReturn.getLastObs();
         stepCounter += subEpochReturn.getSteps();
         context.length += subEpochReturn.getSteps();
@@ -136,12 +152,41 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         context.score = subEpochReturn.getScore();
     }
 
-    private void endEpoch(RunContext context) throws IOException { // FIXME: throws
-        postEpoch();
-
-        IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, context.rewards, context.length, context.score);
-        getDataManager().appendStat(statEntry);
+    private boolean initWork(RunContext context) {
+        initNewEpoch(context);
+        preEpoch();
+        return listeners.notifyEpochStarted(buildEvent());
     }
+
+    private boolean startNewEpoch(RunContext context) {
+        initNewEpoch(context);
+        epochCounter++;
+        preEpoch();
+        return listeners.notifyEpochStarted(buildEvent());
+    }
+
+    private boolean finishEpoch(RunContext context) {
+        postEpoch();
+        IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, context.rewards, context.length, context.score);
+
+        log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + context.rewards);
+
+        return listeners.notifyEpochFinished(buildEpochEndEvent(statEntry));
+    }
+
+    private void terminateWork() {
+        postEpoch();
+        getAsyncGlobal().terminate();
+    }
+
+    private AsyncTrainingEpochEvent buildEvent() {
+        return new AsyncTrainingEpochEvent(this);
+    }
+
+    private AsyncTrainingEpochEndEvent buildEpochEndEvent(IDataManager.StatEntry statEntry) {
+        return new AsyncTrainingEpochEndEvent(this, statEntry);
+    }
+
 
     protected abstract NN getCurrent();
 
@@ -149,11 +194,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     protected abstract IAsyncGlobal<NN> getAsyncGlobal();
 
-    protected abstract MDP<O, A, AS> getMdp();
-
     protected abstract AsyncConfiguration getConf();
-
-    protected abstract IDataManager getDataManager();
 
     protected abstract Policy<O, A> getPolicy(NN net);
 

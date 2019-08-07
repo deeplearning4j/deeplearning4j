@@ -24,10 +24,9 @@ import org.deeplearning4j.rl4j.learning.async.AsyncThread;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
-import org.deeplearning4j.rl4j.policy.Policy;
+import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
@@ -40,16 +39,12 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
     @Getter
     final private MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
-    final private IDataManager dataManager;
-    @Getter
     final private AsyncGlobal<IDQN> asyncGlobal;
 
 
-    public AsyncNStepQLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, AsyncNStepQLConfiguration conf,
-                    IDataManager dataManager) {
+    public AsyncNStepQLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, AsyncNStepQLConfiguration conf) {
         super(conf);
         this.mdp = mdp;
-        this.dataManager = dataManager;
         this.configuration = conf;
         this.asyncGlobal = new AsyncGlobal<>(dqn, conf);
         mdp.getActionSpace().setSeed(conf.getSeed());
@@ -57,14 +52,14 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
 
 
     public AsyncThread newThread(int i) {
-        return new AsyncNStepQLearningThreadDiscrete(mdp.newInstance(), asyncGlobal, configuration, i, dataManager);
+        return new AsyncNStepQLearningThreadDiscrete(mdp.newInstance(), asyncGlobal, configuration, getListeners(), i);
     }
 
     public IDQN getNeuralNet() {
         return asyncGlobal.getCurrent();
     }
 
-    public Policy<O, Integer> getPolicy() {
+    public IPolicy<O, Integer> getPolicy() {
         return new DQNPolicy<O>(getNeuralNet());
     }
 
