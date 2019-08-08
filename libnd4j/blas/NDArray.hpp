@@ -1138,6 +1138,39 @@ void NDArray::printBuffer(const char* msg, Nd4jLong limit, const bool sync) cons
 }
 
 //////////////////////////////////////////////////////////////////////////
+// print element by element consequently in a way they (elements) are stored in physical memory
+void NDArray::printLinearBuffer() const {
+
+    syncToHost();
+
+    const auto ews = this->ews() > 0 ? this->ews() : 1;
+    const auto len = this->lengthOf();
+
+    printf("[");
+
+    if (this->dataType() == nd4j::DataType::INT32) {
+        for(Nd4jLong e = 0; e < len; e++)
+            printf("%d, ", this->bufferAsT<int>()[e * ews]);
+    }
+    else if(this->dataType() == nd4j::DataType::INT64) {
+        for(Nd4jLong e = 0; e < len; e++)
+            printf("%lld, ", this->bufferAsT<Nd4jLong>()[e * ews]);
+    }
+    else if(this->dataType() == nd4j::DataType::FLOAT32) {
+        for(Nd4jLong e = 0; e < len; e++)
+            printf("%.3f, ", this->bufferAsT<float>()[e * ews]);
+    }
+    else if(this->dataType() == nd4j::DataType::DOUBLE) {
+        for(Nd4jLong e = 0; e < len; e++)
+            printf("%.3f, ", this->bufferAsT<double>()[e * ews]);
+    }
+    else
+        throw std::invalid_argument("NDArray::printLinearBuffer: not implemented yet for this data type !");
+
+    printf("]\n");
+    fflush(stdout);
+}
+//////////////////////////////////////////////////////////////////////////
 static void printFormatted(NDArray const* arr, int depth, int limit) {
 
     if (arr->rankOf() == 1) {
