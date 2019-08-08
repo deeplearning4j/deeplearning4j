@@ -478,6 +478,11 @@ namespace nd4j {
         void printBuffer(const char* msg = nullptr, Nd4jLong limit = -1, const bool sync = true) const;
 
         /**
+        * print element by element consequently in a way they (elements) are stored in physical memory
+        */
+        void printLinearBuffer() const;
+
+        /**
         *  prints _buffer (if host = true) or _bufferD (if host = false) as it is, that is in current state without checking buffer status
         */
         template<typename T>
