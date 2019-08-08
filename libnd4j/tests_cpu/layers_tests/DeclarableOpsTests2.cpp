@@ -502,8 +502,8 @@ TEST_F(DeclarableOpsTests2, Test_FloorDiv_2) {
     auto x = NDArrayFactory::create<float>('c', {1, 3}, {3.0, 6.0, -3.0});
     auto y = NDArrayFactory::create<float>('c', {1, 3}, {-2.0, 2.0, -2.0});
     auto eps = NDArrayFactory::create<float>('c', {1, 3}, {1, 2, 3});
-    auto exp1 = NDArrayFactory::create<float>('c', {1, 3}, {1,  2., 3});
-    auto exp2 = NDArrayFactory::create<float>('c', {1, 3}, {-0,  -2., 3});
+    auto exp1 = NDArrayFactory::create<float>('c', {1, 3}, {0.f,  0.f, 0.f});
+    auto exp2 = NDArrayFactory::create<float>('c', {1, 3}, {0.f, 0.f, 0.f});
 
     nd4j::ops::floordiv_bp op;
 
