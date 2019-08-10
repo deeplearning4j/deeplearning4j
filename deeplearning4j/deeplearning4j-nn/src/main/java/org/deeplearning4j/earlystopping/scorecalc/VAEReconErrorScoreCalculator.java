@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -35,7 +36,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
  */
 public class VAEReconErrorScoreCalculator extends BaseScoreCalculator<Model> {
 
-    protected final RegressionEvaluation.Metric metric;
+    protected final Metric metric;
     protected RegressionEvaluation evaluation;
 
     /**
@@ -44,7 +45,7 @@ public class VAEReconErrorScoreCalculator extends BaseScoreCalculator<Model> {
      * @param metric
      * @param iterator
      */
-    public VAEReconErrorScoreCalculator(RegressionEvaluation.Metric metric, DataSetIterator iterator) {
+    public VAEReconErrorScoreCalculator(Metric metric, DataSetIterator iterator) {
         super(iterator);
         this.metric = metric;
     }

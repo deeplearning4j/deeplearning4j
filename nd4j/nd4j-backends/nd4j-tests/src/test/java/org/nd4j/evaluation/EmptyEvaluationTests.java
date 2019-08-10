@@ -3,6 +3,7 @@ package org.nd4j.evaluation;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.*;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -40,7 +41,7 @@ public class EmptyEvaluationTests extends BaseNd4jTest {
         RegressionEvaluation re = new RegressionEvaluation();
         re.stats();
 
-        for (RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()) {
+        for (Metric m : Metric.values()) {
             try {
                 re.scoreForMetric(m);
             } catch (Throwable t){

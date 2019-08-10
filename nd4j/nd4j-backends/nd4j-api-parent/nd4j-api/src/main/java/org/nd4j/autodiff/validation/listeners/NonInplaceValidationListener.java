@@ -1,9 +1,9 @@
 package org.nd4j.autodiff.validation.listeners;
 
 import lombok.Getter;
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.base.Preconditions;
@@ -14,6 +14,7 @@ import org.nd4j.linalg.api.ops.Op;
 import java.security.MessageDigest;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 public class NonInplaceValidationListener extends BaseListener {
     @Getter
@@ -30,7 +31,7 @@ public class NonInplaceValidationListener extends BaseListener {
     }
 
     @Override
-    public void preOpExecution(SameDiff sd, At at, boolean training, SameDiffOp op) {
+    public void preOpExecution(SameDiff sd, At at, SameDiffOp op) {
         if(op.getOp().isInPlace()){
             //Don't check inplace op
             return;
@@ -57,7 +58,7 @@ public class NonInplaceValidationListener extends BaseListener {
     }
 
     @Override
-    public void opExecution(SameDiff sd, At at, boolean training, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
         if(op.getOp().isInPlace()){
             //Don't check inplace op
             return;
@@ -124,4 +125,8 @@ public class NonInplaceValidationListener extends BaseListener {
         }
     }
 
+    @Override
+    public boolean isActive(Operation operation) {
+        return true;
+    }
 }

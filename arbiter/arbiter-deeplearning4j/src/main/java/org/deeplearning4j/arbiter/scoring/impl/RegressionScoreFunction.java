@@ -21,12 +21,13 @@ import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
 /**
  * Score function for regression (including multi-label regression) for a MultiLayerNetwork or ComputationGraph
- * on a test set. Supports all regression metrics: {@link RegressionEvaluation.Metric}
+ * on a test set. Supports all regression metrics: {@link Metric}
  *
  * @author Alex Black
  */
@@ -35,13 +36,13 @@ import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)  //For JSON
 public class RegressionScoreFunction extends BaseNetScoreFunction {
 
-    protected RegressionEvaluation.Metric metric;
+    protected Metric metric;
 
     public RegressionScoreFunction(@NonNull org.deeplearning4j.eval.RegressionEvaluation.Metric metric) {
         this(metric.toNd4j());
     }
 
-    public RegressionScoreFunction(@NonNull RegressionEvaluation.Metric metric) {
+    public RegressionScoreFunction(@NonNull Metric metric) {
         this.metric = metric;
     }
 

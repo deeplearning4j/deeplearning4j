@@ -20,6 +20,9 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.IMetric;
+import org.nd4j.evaluation.classification.ROC.Metric;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.evaluation.serde.ROCArraySerializer;
@@ -49,7 +52,18 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
      * AUROC: Area under ROC curve<br>
      * AUPRC: Area under Precision-Recall Curve
      */
-    public enum Metric {AUROC, AUPRC}
+    public enum Metric implements IMetric {AUROC, AUPRC;
+
+        @Override
+        public Class<? extends IEvaluation> getEvaluationClass() {
+            return ROCMultiClass.class;
+        }
+
+        @Override
+        public boolean minimize() {
+            return false;
+        }
+    }
 
     private int thresholdSteps;
     private boolean rocRemoveRedundantPts;
@@ -59,6 +73,13 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
 
     @EqualsAndHashCode.Exclude      //Exclude axis: otherwise 2 Evaluation instances could contain identical stats and fail equality
     protected int axis = 1;
+
+    protected ROCMultiClass(int axis, int thresholdSteps, boolean rocRemoveRedundantPts, List<String> labels) {
+        this.thresholdSteps = thresholdSteps;
+        this.rocRemoveRedundantPts = rocRemoveRedundantPts;
+        this.axis = axis;
+        this.labels = labels;
+    }
 
     public ROCMultiClass() {
         //Default to exact
@@ -361,5 +382,23 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
             default:
                 throw new IllegalStateException("Unknown metric: " + metric);
         }
+    }
+
+    @Override
+    public double getValue(IMetric metric){
+        if(metric instanceof Metric){
+            if(metric == Metric.AUPRC)
+                return calculateAverageAUCPR();
+            else if(metric == Metric.AUROC)
+                return calculateAverageAUC();
+            else
+                throw new IllegalStateException("Can't get value for non-ROC Metric " + metric);
+        } else
+            throw new IllegalStateException("Can't get value for non-ROC Metric " + metric);
+    }
+
+    @Override
+    public ROCMultiClass newInstance() {
+        return new ROCMultiClass(axis, thresholdSteps, rocRemoveRedundantPts, labels);
     }
 }

@@ -3,6 +3,7 @@ package org.nd4j.autodiff.listeners.debugging;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -70,7 +71,12 @@ public class ExecDebuggingListener extends BaseListener {
     }
 
     @Override
-    public void preOpExecution(SameDiff sd, At at, boolean training, SameDiffOp op) {
+    public boolean isActive(Operation operation) {
+        return true;
+    }
+
+    @Override
+    public void preOpExecution(SameDiff sd, At at, SameDiffOp op) {
         if(lastIter != at.iteration()){
             lastIter = at.iteration();
             stepThisIter = 0;

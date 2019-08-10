@@ -30,6 +30,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
  * Infer datatypes for all variables.
@@ -80,7 +81,7 @@ public class DataTypesSession extends AbstractSession<DataType, DataTypesSession
 
     @Override
     public DataType[] getOutputs(DataTypeCalc op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs,
-                                 Set<String> constAndPhInputs, List<Listener> listeners, boolean training, At at) {
+                                 Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch) {
         List<DataType> outTypes = op.getFn().calculateOutputDataTypes(op.getInputTypes());
 
         if(dynamicUpdate) {
