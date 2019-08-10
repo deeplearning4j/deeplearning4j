@@ -1014,21 +1014,21 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             if (len < ELEMENT_THRESHOLD) {
 
                 PRAGMA_OMP_SIMD
-                for (int i = 0; i < len; i++) {
+                for (Nd4jLong i = 0; i < len; i++) {
                     hZ[i * resultEleStride] = input[i * inputEleStride];
                 }
             }
             else {
 
                 PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (int i = 0; i < len; i++) {
+                for (Nd4jLong i = 0; i < len; i++) {
                     hZ[i * resultEleStride] = input[i * inputEleStride];
                 }
             }
         }
         else {
             int idx = 0;
-            for(int i = 0; i < len; i++)
+            for(Nd4jLong i = 0; i < len; i++)
                     hZ[idx++] = input[shape::getIndexOffset(i, inputShapeInfo, len)];
         }
     }
@@ -1047,7 +1047,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
             if (order == 'f') {
                 // 1. get c ordering coordinates
                 auto cIndexCoordinates = new Nd4jLong[rank - 1];
-                int divisor = 1;
+                Nd4jLong divisor = 1;
                 for (int dim = rank - 1; dim > 0; dim--) {
                     cIndexCoordinates[dim - 1] = (i / divisor) % xShape[dim];
                     divisor *= xShape[dim];
@@ -1056,7 +1056,7 @@ void flattenGeneric(Nd4jPointer *extraPointers,
 
                 // 2. convert to f ordering index
                 int fIndex = 0;
-                int multiplier = 1;
+                Nd4jLong multiplier = 1;
                 for (int dim = 1; dim <= rank - 1; dim++) {
                     fIndex += cIndexCoordinates[dim - 1] * multiplier;
                     multiplier *= xShape[dim];

@@ -670,7 +670,7 @@ void cnpy::npy_save(std::string fname,
         fwrite(&header[0],sizeof(char),header.size(),fp);
     }
 
-    unsigned int nels = 1;
+    unsigned long long nels = 1;
     for(int i = 0;i < ndims;i++) nels *= shape[i];
 
     fwrite(data,sizeof(T),nels,fp);

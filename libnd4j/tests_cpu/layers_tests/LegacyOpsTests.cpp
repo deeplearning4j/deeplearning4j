@@ -382,7 +382,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_1) {
             z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), extra, nullptr, nullptr);
 
     // z.printIndexedBuffer("z");
-    for (int e = 0; e < z.lengthOf(); e++) {
+    for (Nd4jLong e = 0; e < z.lengthOf(); e++) {
         ASSERT_TRUE(z.e<double>(e) >= 0);
     }
 }
@@ -402,7 +402,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_2) {
             z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), extra, nullptr, nullptr);
 
     // z.printIndexedBuffer("z");
- for (int e = 0; e < z.lengthOf(); e++) {
+ for (Nd4jLong e = 0; e < z.lengthOf(); e++) {
      if (e >= z.lengthOf() / 2)
          ASSERT_TRUE(z.e<bool>(e));
      else

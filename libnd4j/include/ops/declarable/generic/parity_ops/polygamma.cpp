@@ -35,7 +35,7 @@ CONFIGURABLE_OP_IMPL(polygamma, 2, 1, false, 0, 0) {
 
     REQUIRE_TRUE(n->isSameShape(x), 0, "POLYGAMMA op: two input arrays n and x must have the same shapes, but got n=%s and x=%s instead !", ShapeUtils::shapeAsString(n).c_str(), ShapeUtils::shapeAsString(x).c_str());
 
-    int arrLen = n->lengthOf();
+    Nd4jLong arrLen = n->lengthOf();
     // FIXME: this shit should be single op call, not a loop!
     auto nPositive =  n->reduceNumber(nd4j::reduce::IsPositive, nullptr);
     auto xPositive =  x->reduceNumber(nd4j::reduce::IsPositive, nullptr);

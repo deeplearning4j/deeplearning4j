@@ -229,7 +229,7 @@ CUSTOM_OP_IMPL(deconv2d_bp, 3, 2, false, 0, 9) {
     // ----- calculation of gradB ----- //
     if(gradB) {
         if(gradB->rankOf() == 2)
-            gradB = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
+            gradB = new NDArray(gradB->reshape(gradB->ordering(), {gradB->lengthOf()}));
         gradO->reduceAlongDimension(reduce::Sum, gradB, {0, 2, 3});                                // sum over bS, oH, oW
         if(gradB != OUTPUT_VARIABLE(2))
             delete gradB;

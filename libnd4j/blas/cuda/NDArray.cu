@@ -301,7 +301,7 @@ void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
 // change an array by repeating it the number of times given by reps.
 NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     int dim = reps.size();
-    int product = 1;
+    Nd4jLong product = 1;
     for(const auto& item : reps)
         product *= item;
     if(product == 0)

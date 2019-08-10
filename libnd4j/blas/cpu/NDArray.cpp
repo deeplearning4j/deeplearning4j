@@ -153,7 +153,7 @@ static void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
     auto y = reinterpret_cast<T *>(yBuffer);
 
     PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(static))
-    for (int i = 0; i < length; ++i) {
+    for (Nd4jLong i = 0; i < length; ++i) {
         auto temp = x[i];
         x[i] = y[i];
         y[i] = temp;
@@ -272,7 +272,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     else {
 
         PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(int i=0;  i<resultLen; ++i) {
+        for(Nd4jLong i=0;  i<resultLen; ++i) {
             auto xOffset = result.getOffset(i);
             auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
             BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (result.getBuffer(), xOffset, this->getBuffer(), yOffset), LIBND4J_TYPES);
@@ -305,15 +305,14 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
         }
     }
     else if(target.ordering() == 'c' && ews > 1) {
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i) {
+        for(Nd4jLong i=0;  i<targetLen; ++i) {
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
             BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i*ews, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
     else {
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i) {
+
+        for(Nd4jLong i=0;  i<targetLen; ++i) {
 
             auto xOffset = target.getOffset(i);
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
@@ -335,23 +334,22 @@ void NDArray::tile(NDArray& target) const {
     const auto ews = target.ews();
     const auto targetLen = target.lengthOf();
     if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for (int i = 0; i < targetLen; ++i) {
+
+        for (Nd4jLong i = 0; i < targetLen; ++i) {
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
             BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
     else if(target.ordering() == 'c' && ews > 1) {
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i) {
+
+        for(Nd4jLong i=0;  i<targetLen; ++i) {
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
             BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i*ews, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
     else {
 
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i) {
+        for(Nd4jLong i=0;  i<targetLen; ++i) {
 
             auto xOffset = target.getOffset(i);
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());

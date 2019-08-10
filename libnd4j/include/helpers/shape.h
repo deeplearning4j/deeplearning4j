@@ -127,7 +127,7 @@ namespace shape {
 
     ND4J_EXPORT _CUDA_HD int tadIndexForLinear(int linearIndex, int tadLength);
 
-    ND4J_EXPORT _CUDA_HD int tadLength(Nd4jLong *shapeInfo, int *dimension, int dimensionLength);
+    ND4J_EXPORT _CUDA_HD Nd4jLong tadLength(Nd4jLong *shapeInfo, int *dimension, int dimensionLength);
 
     ND4J_EXPORT _CUDA_HD bool canReshape(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShape, bool isFOrder);
 
@@ -856,8 +856,6 @@ namespace shape {
  * Returns the prod of the data
  * up to the given length
  */
-    ND4J_EXPORT _CUDA_HD int prod(Nd4jLong *data, int length);
-
     ND4J_EXPORT _CUDA_HD Nd4jLong prodLong(const Nd4jLong *data, int length);
 
     /**
@@ -1055,12 +1053,12 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 * Length of a tad given
 * the shape information
 */
-    INLINEDEF _CUDA_HD int tadLength(Nd4jLong *shapeInfo, int *dimension, int dimensionLength) {
+    INLINEDEF _CUDA_HD Nd4jLong tadLength(Nd4jLong *shapeInfo, int *dimension, int dimensionLength) {
         if(dimensionLength == 1) {
             return shape::shapeOf(shapeInfo)[dimension[0]];
         }
         else {
-            int ret = 1;
+            Nd4jLong ret = 1;
             for(int i = 0; i < shape::rank(shapeInfo); i++) {
                 for(int j = 0; j < dimensionLength; j++) {
                     if(i == dimension[j])
@@ -1307,7 +1305,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         traceNew(6);
 
         Nd4jLong *stride = new Nd4jLong[dimensions];
-        int st = startNum;
+        Nd4jLong st = startNum;
         for (int j = 0; j < rank; j++) {
             stride[j] = st;
             st *= shape[j];
@@ -1326,7 +1324,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 
         //int dimensions = rank;
 
-        int st = startNum;
+        Nd4jLong st = startNum;
         for (int j = 0; j < rank; j++) {
             ret[j] = st;
             st *= shape[j];
@@ -1361,7 +1359,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 
         // }
 
-        int st = startNum;
+        Nd4jLong st = startNum;
         for (int j = rank - 1; j >= 0; j--) {
             stride[j] = st;
             st *= shape[j];
@@ -1383,7 +1381,7 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
 
         // }
 
-        int st = startNum;
+        Nd4jLong st = startNum;
         for (int j = rank - 1; j >= 0; j--) {
             ret[j] = st;
             st *= shape[j];
@@ -1513,8 +1511,8 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
             int oldnd;
             Nd4jLong *oldDims = shape::copyOf(rank, shape);
             Nd4jLong *oldStrides = shape::copyOf(rank, stride);
-            int np, op, last_stride;
-            int oldStart, oldStop, ok, newStart, newStop, nk;
+            Nd4jLong np, op, last_stride;
+            Nd4jLong oldStart, oldStop, ok, newStart, newStop, nk;
 
             traceNew(10);
 
@@ -2042,13 +2040,12 @@ template <typename T>
  * @return
  */
     INLINEDEF _CUDA_HD char getOrder(int length, Nd4jLong *shape, Nd4jLong *stride, int elementStride) {
-        int sd = -1;
+        Nd4jLong sd = 1;
         int dim = -1;
         int i = -1;
         int cContiguous = 1;
         int isFortran = 1;
 
-        sd = 1;
         for (i = length - 1; i >= 0; --i) {
             dim = shape[i];
 
@@ -2235,7 +2232,7 @@ template <typename T>
 
     INLINEDEF _CUDA_HD int oneDimEqualToLength(Nd4jLong *shape, int rank) {
         for(int i = 0; i < rank; i++) {
-            if(shape[i] == shape::prod(shape,rank))
+            if(shape[i] == shape::prodLong(shape,rank))
                 return 1;
         }
 
@@ -3103,11 +3100,11 @@ INLINEDEF _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, cons
         if(shape::isVector(shape,rank)) {
             //return total length for row vectors
             if(dimensionLength == 1 && shape[0] == 1) {
-                return shape::prod(shape,rank);
+                return shape::prodLong(shape,rank);
             }
         }
         else if(rank == dimensionLength)
-            return shape::prod(shape,rank);
+            return shape::prodLong(shape,rank);
         int absSelta = nd4j::math::nd4j_abs<int>(rank - dimensionLength);
         traceNew(27);
         auto ret2 = shape::removeIndex<Nd4jLong>(shape, dimension, rank, dimensionLength);
@@ -3554,18 +3551,6 @@ INLINEDEF _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, cons
         return ret;
     }
 
-/**
- * Returns the prod of the data
- * up to the given length
- */
-    INLINEDEF _CUDA_HD int prod(Nd4jLong *data, int length) {
-        int prod = 1;
-        for (int i = 0; i < length; i++) {
-            prod *= data[i];
-        }
-
-        return prod;
-    }
 
 /**
  * Returns the prod of the data
@@ -3956,7 +3941,7 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
         Nd4jLong* newStrides       = shape::stride(newShapeInfo);
         const Nd4jLong* oldShape   = shape::shapeOf(const_cast<Nd4jLong*>(oldShapeInfo));
         const Nd4jLong* oldStrides = shape::stride(const_cast<Nd4jLong*>(oldShapeInfo));
-        int oldStart(0), oldStop(1), newStart(0), newStop(1), newDim, oldDim;
+        Nd4jLong oldStart(0), oldStop(1), newStart(0), newStop(1), newDim, oldDim;
 
         while (newStart < newRank && oldStart < oldRank) {
 
@@ -3995,11 +3980,11 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
 
 
     INLINEDEF _CUDA_H bool canReshape(const int oldRank, Nd4jLong* oldShape, const int newRank, Nd4jLong* newShapeOf, bool isFOrder) {
-        int oldnd;
+        Nd4jLong oldnd;
         Nd4jLong* oldDims = shape::copyOf(oldRank, shape::shapeOf(oldShape));
         Nd4jLong* oldStrides = shape::copyOf(oldRank, shape::stride(oldShape));
-        int np, op, last_stride;
-        int oldStart, oldStop, ok, newStart, newStop, nk;
+        Nd4jLong np, op, last_stride;
+        Nd4jLong oldStart, oldStop, ok, newStart, newStop, nk;
         auto newStrides = new Nd4jLong[newRank];
         oldnd = 0;
 

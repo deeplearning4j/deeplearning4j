@@ -75,7 +75,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
     permutBt = axesB;
     permutBt.insert(permutBt.end(), list_B.begin(), list_B.end());
 
-    int n2 = 1;
+    Nd4jLong n2 = 1;
     for (int i = 0; i < axeAsize; i++)
         n2 *= aShapeInfo[axesA[i] + 1];
     shapeAt = {-1, n2};
@@ -86,7 +86,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
         oldShapeA[i] = aShapeInfo[list_A[i] + 1];
 
 
-    int n3 = 1;
+    Nd4jLong n3 = 1;
     for (int i = 0; i < axeBsize; i++)
         n3 *= bShapeInfo[axesB[i] + 1];
     shapeBt = {n3, -1};
@@ -553,7 +553,7 @@ std::vector<int> ShapeUtils::getDimsWithSameShape(const NDArray& max, const NDAr
 Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd4jLong>& reps, nd4j::memory::Workspace* workspace) {
     // check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
     int repsSize = reps.size();
-    int product = 1;
+    Nd4jLong product = 1;
     for(const auto& item : reps)
         product *= item;
     if(product == 0)

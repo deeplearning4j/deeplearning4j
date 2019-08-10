@@ -2938,7 +2938,7 @@ bool NDArray::reshapei(const char order, const std::vector<Nd4jLong>& cshape) {
     if (numberNegativesOnes > 0)
         delete[] shape_;
 
-    int arrLength = 1;
+    Nd4jLong arrLength = 1;
     for(const auto& item : shape)
         arrLength *= item;
 
