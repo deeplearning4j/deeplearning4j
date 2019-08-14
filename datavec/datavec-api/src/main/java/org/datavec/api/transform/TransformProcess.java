@@ -67,6 +67,7 @@ import org.joda.time.DateTimeZone;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
+import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 
 import java.io.IOException;
 import java.io.Serializable;
@@ -417,6 +418,16 @@ public class TransformProcess implements Serializable {
     public static TransformProcess fromJson(String json) {
         try {
             return JsonMappers.getMapper().readValue(json, TransformProcess.class);
+        } catch (InvalidTypeIdException e){
+            if(e.getMessage().contains("@class")){
+                //JSON may be legacy (1.0.0-alpha or earlier), attempt to load it using old format
+                try{
+                    return JsonMappers.getLegacyMapper().readValue(json, TransformProcess.class);
+                } catch (IOException e2){
+                    throw new RuntimeException(e2);
+                }
+            }
+            throw new RuntimeException(e);
         } catch (IOException e) {
             //TODO proper exception message
             throw new RuntimeException(e);
