@@ -52,6 +52,7 @@ public class CSVSparkTransformServerNoJsonTest {
     public static void before() throws Exception {
         server = new CSVSparkTransformServer();
         FileUtils.write(fileSave, transformProcess.toJson());
+
         // Only one time
         Unirest.setObjectMapper(new ObjectMapper() {
             private org.nd4j.shade.jackson.databind.ObjectMapper jacksonObjectMapper =
@@ -73,6 +74,7 @@ public class CSVSparkTransformServerNoJsonTest {
                 }
             }
         });
+
         server.runMain(new String[] {"-dp", "9050"});
     }
 

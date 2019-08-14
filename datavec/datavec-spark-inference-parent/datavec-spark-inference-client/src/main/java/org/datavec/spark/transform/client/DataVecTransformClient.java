@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform.client;
 
+
 import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.http.exceptions.UnirestException;

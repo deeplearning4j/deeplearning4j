@@ -14,29 +14,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.nn.api;
+package org.nd4j.adapters;
 
-import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.io.Serializable;
+import org.nd4j.linalg.dataset.MultiDataSet;
 
 /**
- * This interface describes entity used to conver neural network output to specified class.
- * I.e. INDArray -> int[] on the fly.
+ * This interface describes method for transformation from object of type I to MultiDataSet.
  *
- * PLEASE NOTE: Implementation will be used in workspace environment to avoid additional allocations during inference.
- * This means you shouldn't store or return the INDArrays passed to OutputAdapter.apply(INDArray...) directly.
- * If you need a copy of the output array, use standard network output methods, or use INDArray.detach() before storing the array
- *
- * @param <T>
  */
-public interface OutputAdapter<T> extends Serializable {
-
+public interface InputAdapter<I> {
     /**
-     * This method provides conversion from multiple INDArrays to T
-     *
-     * @param outputs
+     * This method converts input object to MultiDataSet
+     * @param input
      * @return
      */
-    T apply(INDArray... outputs);
+    MultiDataSet apply(I input);
 }

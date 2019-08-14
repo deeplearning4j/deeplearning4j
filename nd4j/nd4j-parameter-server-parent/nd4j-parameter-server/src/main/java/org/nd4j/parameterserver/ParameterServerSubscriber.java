@@ -21,13 +21,15 @@ import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
 import com.google.common.primitives.Ints;
-import com.mashape.unirest.http.HttpResponse;
+
+import org.nd4j.shade.jackson.databind.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
 import io.aeron.Aeron;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.val;
 import org.agrona.CloseHelper;
 import org.agrona.concurrent.BusySpinIdleStrategy;
 import org.json.JSONObject;
@@ -49,7 +51,6 @@ import org.nd4j.parameterserver.updater.SoftSyncParameterUpdater;
 import org.nd4j.parameterserver.updater.SynchronousParameterUpdater;
 import org.nd4j.parameterserver.updater.storage.InMemoryUpdateStorage;
 import org.nd4j.parameterserver.util.CheckSocket;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -342,7 +343,7 @@ public class ParameterServerSubscriber implements AutoCloseable {
                     JSONObject jsonObject = new JSONObject(objectMapper.writeValueAsString(subscriberState));
                     String url = String.format("http://%s:%d/updatestatus/%d", statusServerHost, statusServerPort,
                                     streamId);
-                    HttpResponse<String> entity = Unirest.post(url).header("Content-Type", "application/json")
+                    val entity = Unirest.post(url).header("Content-Type", "application/json")
                                     .body(jsonObject).asString();
                 } catch (Exception e) {
                     failCount.incrementAndGet();

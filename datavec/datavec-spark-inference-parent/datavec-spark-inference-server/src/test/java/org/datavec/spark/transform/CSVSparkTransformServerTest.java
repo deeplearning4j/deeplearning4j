@@ -16,6 +16,7 @@
 
 package org.datavec.spark.transform;
 
+
 import com.mashape.unirest.http.JsonNode;
 import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
@@ -49,6 +50,7 @@ public class CSVSparkTransformServerTest {
         server = new CSVSparkTransformServer();
         FileUtils.write(fileSave, transformProcess.toJson());
         // Only one time
+
         Unirest.setObjectMapper(new ObjectMapper() {
             private org.nd4j.shade.jackson.databind.ObjectMapper jacksonObjectMapper =
                             new org.nd4j.shade.jackson.databind.ObjectMapper();
@@ -69,6 +71,7 @@ public class CSVSparkTransformServerTest {
                 }
             }
         });
+
         server.runMain(new String[] {"--jsonPath", fileSave.getAbsolutePath(), "-dp", "9050"});
     }
 

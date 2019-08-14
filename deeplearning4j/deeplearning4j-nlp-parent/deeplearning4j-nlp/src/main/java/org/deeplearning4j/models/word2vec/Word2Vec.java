@@ -19,7 +19,6 @@ package org.deeplearning4j.models.word2vec;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import jdk.nashorn.internal.objects.annotations.Property;
 import lombok.Getter;
 import lombok.NonNull;
 import org.apache.commons.compress.compressors.gzip.GzipUtils;
