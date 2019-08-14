@@ -32,19 +32,17 @@ import org.datavec.api.transform.sequence.SequenceSplit;
 import org.datavec.api.transform.sequence.window.WindowFunction;
 import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
-import org.nd4j.linalg.activations.IActivation;
-import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.serde.json.LegacyIActivationDeserializer;
-import org.nd4j.serde.json.LegacyILossFunctionDeserializer;
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.cfg.MapperConfig;
-import org.nd4j.shade.jackson.databind.introspect.*;
+import org.nd4j.shade.jackson.databind.introspect.Annotated;
+import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
+import org.nd4j.shade.jackson.databind.introspect.AnnotationMap;
+import org.nd4j.shade.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.nd4j.shade.jackson.databind.jsontype.TypeResolverBuilder;
-import org.nd4j.shade.jackson.databind.util.Annotations;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 import org.nd4j.util.OneTimeLogger;
@@ -292,7 +290,6 @@ public class JsonMappers {
                     //This was removed with no obvious replacement, no deprecated tag in the javadoc in any version before
                     // replacement. No obvious notes or upgrade path in the release notes either.
                     //If anyone knows a way to do this properly - please fix this!
-                    Annotations a = c.getAnnotations();
                     try {
                         Field f = AnnotatedClass.class.getDeclaredField("_classAnnotations");
                         f.setAccessible(true);
