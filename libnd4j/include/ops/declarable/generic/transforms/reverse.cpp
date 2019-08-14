@@ -101,7 +101,7 @@ namespace ops  {
         Nd4jLong *out;
         COPY_SHAPE(in, out);
 
-        return SHAPELIST(out);
+        return SHAPELIST(CONSTANT(out));
     }
 
 }

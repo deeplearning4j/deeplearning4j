@@ -341,7 +341,7 @@ namespace nd4j {
             if (DataTypeUtils::isR(xType)) {
                 COPY_SHAPE(inShape, newShape);
 
-                return SHAPELIST(newShape);
+                return SHAPELIST(CONSTANT(newShape));
             } else if (DataTypeUtils::isZ(xType)) {
                 auto zShapeArr = INPUT_VARIABLE(0);
                 auto zShapeVector = zShapeArr->asVectorT<Nd4jLong>();
