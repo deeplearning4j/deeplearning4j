@@ -31,7 +31,6 @@
     <groupId>org.nd4j</groupId>
     <artifactId>nd4s</artifactId>
     <packaging>jar</packaging>
-    <!--packaging>jar</packaging-->
 
     <name>nd4s</name>
 
