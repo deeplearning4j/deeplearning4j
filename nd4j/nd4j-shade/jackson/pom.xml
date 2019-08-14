@@ -260,7 +260,7 @@
         <dependency>
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
-            <version>${snakeyaml.version}</version>
+            <version>${shaded.snakeyaml.version}</version>
         </dependency>
     </dependencies>
 
