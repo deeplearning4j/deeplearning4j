@@ -116,12 +116,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
         if (iterator.resetSupported() && !iterator.hasNext())
             this.backedIterator.reset();
 
-        this.thread = new AsyncPrefetchThread(buffer, iterator, terminator);
-
-        /**
-         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
-         */
-        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
+        this.thread = new AsyncPrefetchThread(buffer, iterator, terminator, deviceId);
 
         thread.setDaemon(true);
         thread.start();
@@ -207,12 +202,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
         backedIterator.reset();
         shouldWork.set(true);
-        this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator);
-
-        /**
-         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
-         */
-        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
+        this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator, deviceId);
 
         thread.setDaemon(true);
         thread.start();
@@ -340,13 +330,15 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
         private MemoryWorkspace workspace;
 
+        private final int deviceId;
+
 
         protected AsyncPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue,
-                                      @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator) {
+                                      @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator, int deviceId) {
             this.queue = queue;
             this.iterator = iterator;
             this.terminator = terminator;
-
+            this.deviceId = deviceId;
 
             this.setDaemon(true);
             this.setName("AMDSI prefetch thread");
@@ -354,6 +346,7 @@ public class AsyncMultiDataSetIterator implements MultiDataSetIterator {
 
         @Override
         public void run() {
+            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
             externalCall();
             try {
                 if (useWorkspaces) {

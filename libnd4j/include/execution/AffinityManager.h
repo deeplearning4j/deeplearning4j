@@ -14,21 +14,33 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.jita.allocator.context;
+//
+// @author raver119@gmail.com
+//
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+#ifndef LIBND4J_AFFINITYMANAGER_H
+#define LIBND4J_AFFINITYMANAGER_H
 
-/**
- * This is simple class-independant storage for device contexts.
- *
- * TODO: Something better then typecast required here
- * @author raver119@gmail.com
- */
-@Data
-@NoArgsConstructor
-@AllArgsConstructor
-public class ExternalContext {
-    private Object context;
+#include <dll.h>
+#include <pointercast.h>
+#include <atomic>
+#include <mutex>
+
+namespace nd4j {
+    class ND4J_EXPORT AffinityManager {
+    private:
+        static std::atomic<int> _lastDevice;
+        static int _numberOfDevices;
+        static std::mutex _currentMutex;
+        static std::mutex _numberMutex;
+
+    public:
+        static int currentNativeDeviceId();
+        static int currentDeviceId();
+        static int numberOfDevices();
+        static void setCurrentDevice(int deviceId);
+        static void setCurrentNativeDevice(int deviceId);
+    };
 }
+
+#endif //DEV_TESTS_AFFINITYMANAGER_H

@@ -3104,6 +3104,15 @@ public native void deleteRandomGenerator(OpaqueRandomGenerator ptr);
 public native @Cast("char*") String runLightBenchmarkSuit(@Cast("bool") boolean printOut);
 public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean printOut);
 
+public native OpaqueLaunchContext defaultLaunchContext();
+public native @Cast("Nd4jPointer") Pointer lcScalarPointer(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcReductionPointer(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcAllocationPointer(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcExecutionStream(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcCopyStream(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcBlasHandle(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc);
+
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H
 
 
@@ -9928,6 +9937,8 @@ public static final int PREALLOC_SIZE = 33554432;
 // #include <op_boilerplate.h>
 // #include <memory/Workspace.h>
 // #include <vector>
+// #include <mutex>
+// #include <execution/ContextBuffers.h>
 
 @Namespace("nd4j") @NoOffset public static class LaunchContext extends Pointer {
     static { Loader.load(); }

@@ -356,7 +356,7 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
     auto stream = getContext()->getCudaStream();
 
     prepareSpecialUse({&target}, {this});
-    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(target.dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES);
     registerSpecialUse({&target}, {this});
 }
 
@@ -375,7 +375,7 @@ void NDArray::tile(NDArray& target) const {
     auto stream = getContext()->getCudaStream();
 
     prepareSpecialUse({&target}, {this});
-    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(target.dataType(),  tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES);
     registerSpecialUse({&target}, {this});
 }
 
@@ -434,7 +434,7 @@ void NDArray::repeat(int dimension, NDArray& target) const {
 
     NDArray::prepareSpecialUse({&target}, {this});
     auto stream = getContext()->getCudaStream();
-    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), repeatKernelHH, (getSpecialBuffer(), target.getSpecialBuffer(), numTads, lengthOf(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets(), *stream), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(target.dataType(), repeatKernelHH, (getSpecialBuffer(), target.getSpecialBuffer(), numTads, lengthOf(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets(), *stream), LIBND4J_TYPES);
     NDArray::registerSpecialUse({&target}, {this});
 }
 

@@ -110,6 +110,63 @@ void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_
 
 	DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams), PAIRWISE_BOOL_OPS);
 }
+
+
+    template<typename X, typename Y>
+    void PairWiseBoolTransform<X,Y>::exec(
+            const int opNum,
+            void *dx,
+            Nd4jLong *xShapeBuffer,
+            void *y,
+            Nd4jLong *yShapeBuffer,
+            void *result,
+            Nd4jLong *resultShapeBuffer,
+            void *extraParams) {
+
+    }
+
+    template<typename X, typename Y>
+    void PairWiseBoolTransform<X,Y>::exec(
+            const int opNum,
+            void *dx,
+            Nd4jLong xStride,
+            void *y,
+            Nd4jLong yStride,
+            void *result,
+            Nd4jLong resultStride,
+            void *extraParams,
+            Nd4jLong n) {
+
+    }
+
+
+    template<typename X, typename Y>
+    template<typename OpType>
+    void PairWiseBoolTransform<X,Y>::exec(
+            void *vx,
+            Nd4jLong* xShapeBuffer,
+            void *vy,
+            Nd4jLong* yShapeBuffer,
+            void *vresult,
+            Nd4jLong* resultShapeBuffer,
+            void *vextraParams) {
+
+    }
+
+    template<typename X, typename Y>
+    template<typename OpType>
+    void PairWiseBoolTransform<X,Y>::exec(void *vx,
+                     Nd4jLong xStride,
+                     void *vy,
+                     Nd4jLong yStride,
+                     void *vresult,
+                     Nd4jLong resultStride,
+                     void *vextraParams,
+                     const Nd4jLong n) {
+
+    }
+
+
       
     BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
 }

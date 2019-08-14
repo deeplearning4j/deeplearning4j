@@ -125,7 +125,7 @@ namespace nd4j {
                 double min_val = input.reduceNumber(reduce::SameOps::Min).e<double>(0);
                 double max_val = input.reduceNumber(reduce::SameOps::Max).e<double>(0);
 
-                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogram_, (context, input.specialBuffer(), input.specialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), numBins, min_val, max_val), LIBND4J_TYPES, INTEGER_TYPES);
+                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogram_, (context, input.specialBuffer(), input.specialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), numBins, min_val, max_val), LIBND4J_TYPES, INDEXING_TYPES);
 
                 NDArray::registerSpecialUse({&output}, {&input});
             }

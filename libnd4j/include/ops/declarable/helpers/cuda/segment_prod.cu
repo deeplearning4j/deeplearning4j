@@ -192,9 +192,8 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void segmentProdFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentProdFunctor_, (context, input, indices, output), NUMERIC_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentProdFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
     }
-    BUILD_DOUBLE_TEMPLATE(template void segmentProdFunctor_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
 
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
@@ -233,10 +232,8 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     void unsortedSegmentProdFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentProdFunctor_, (context, input, indices, numOfClasses, output),
-                              FLOAT_TYPES, INTEGER_TYPES);
+                              NUMERIC_TYPES, INDEXING_TYPES);
     }
-    // -------------------------------------------------------------------------------------------------------------- //
-    BUILD_DOUBLE_TEMPLATE(template void unsortedSegmentProdFunctor_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
 
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
@@ -360,11 +357,9 @@ namespace helpers {
 
     int segmentProdFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentProdFunctorBP_, (context, input,
-                indices, gradOut, output), FLOAT_TYPES, INTEGER_TYPES);
+                indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
     }
-    // -------------------------------------------------------------------------------------------------------------- //
 
-    BUILD_DOUBLE_TEMPLATE(template int segmentProdFunctorBP_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
     // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T, typename I>
@@ -407,10 +402,8 @@ namespace helpers {
 
     // -------------------------------------------------------------------------------------------------------------- //
     int unsortedSegmentProdFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentProdFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentProdFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
     }
-    // -------------------------------------------------------------------------------------------------------------- //
-    BUILD_DOUBLE_TEMPLATE(template int unsortedSegmentProdFunctorBP_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
 
     // -------------------------------------------------------------------------------------------------------------- //
 

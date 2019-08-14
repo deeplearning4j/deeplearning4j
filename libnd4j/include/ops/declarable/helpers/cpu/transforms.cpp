@@ -56,9 +56,6 @@ static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const N
         BUILD_SINGLE_SELECTOR(gradO.dataType(), triuBP_, (context, input, gradO, gradI, diagonal), LIBND4J_TYPES);
     }
 
-
-BUILD_SINGLE_TEMPLATE(template void triuBP_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int diagonal), LIBND4J_TYPES);
-
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void trace_(const NDArray& input, NDArray& output) {
@@ -77,8 +74,6 @@ static void trace_(const NDArray& input, NDArray& output) {
     void trace(nd4j::LaunchContext * context, const NDArray& input, NDArray& output) {
         BUILD_SINGLE_SELECTOR(input.dataType(), trace_, (input, output), LIBND4J_TYPES);
     }
-
-    BUILD_SINGLE_TEMPLATE(template void trace_, (const NDArray& input, NDArray& output), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -172,14 +167,6 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::graph::RandomGenerato
     void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace) {
         BUILD_SINGLE_SELECTOR(input.dataType(), randomShuffle_, (input, output, rng, isInplace), LIBND4J_TYPES);
     }
-
-    BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace), LIBND4J_TYPES);
-
-
-
-
-
-
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -386,8 +373,6 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 void pad(nd4j::LaunchContext * context, const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue) {
     BUILD_SINGLE_SELECTOR(input.dataType(), pad_, (mode, input, paddings, output, padValue), LIBND4J_TYPES);
 }
-
-BUILD_SINGLE_TEMPLATE(template void pad_, (const int mode, const NDArray& input, const NDArray& paddings, NDArray& output, NDArray const& padValue), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 /*// initial values of inIdx, outIdx, dim must be equal to zero
@@ -623,9 +608,8 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
 ////////////////////////////////////////////////////////////////////////
 void gatherND(nd4j::LaunchContext * context, NDArray& input, NDArray& indices, NDArray& output) {
-    BUILD_DOUBLE_SELECTOR(input.dataType(), indices.dataType(), gatherND_, (input, indices, output), LIBND4J_TYPES, INTEGER_TYPES);
+    BUILD_DOUBLE_SELECTOR(input.dataType(), indices.dataType(), gatherND_, (input, indices, output), LIBND4J_TYPES, INDEXING_TYPES);
 }
-BUILD_DOUBLE_TEMPLATE(template void gatherND_, (NDArray& input, NDArray& indices, NDArray& output), LIBND4J_TYPES, INTEGER_TYPES);
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -704,8 +688,6 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
     void gather(NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs) {
         BUILD_SINGLE_SELECTOR(input->dataType(), gather_, (input, indices, output, intArgs), LIBND4J_TYPES);
     }
-
-    BUILD_SINGLE_TEMPLATE(template void gather_, (NDArray* input, const NDArray* indices, NDArray* output, const std::vector<int>& intArgs), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void eye(nd4j::LaunchContext * context, NDArray& output) {
@@ -826,7 +808,6 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
         BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), mergeMaxIndex_, (inArrs, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void mergeMaxIndex_, (const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -850,8 +831,6 @@ static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (inArrs, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void mergeMax_, (const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
-
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
@@ -874,7 +853,6 @@ static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (inArrs, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void mergeAvg_, (const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -897,8 +875,6 @@ static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     void mergeAdd(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (inArrs, output), LIBND4J_TYPES);
     }
-
-    BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (const std::vector<NDArray*>& inArrs, NDArray& output), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
@@ -969,11 +945,6 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
 void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace) {
     BUILD_SINGLE_SELECTOR(output.dataType(), clipByNorm_, (input, output, dimensions, clipNorm, isInplace), FLOAT_TYPES);
 }
-
-BUILD_SINGLE_TEMPLATE(template void clipByNorm_, (NDArray& input, NDArray& output, const std::vector<int>& dimensions, const NDArray& clipNorm, const bool isInplace), FLOAT_TYPES);
-
-
-
 
 
 

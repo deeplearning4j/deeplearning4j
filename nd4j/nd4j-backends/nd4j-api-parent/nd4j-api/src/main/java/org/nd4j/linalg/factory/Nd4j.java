@@ -58,6 +58,7 @@ import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
+import org.nd4j.linalg.api.ops.impl.shape.Tile;
 import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.impl.*;
@@ -2557,15 +2558,17 @@ public class Nd4j {
     public static INDArray read(DataInputStream dis) {
         val headerShape = BaseDataBuffer.readHeader(dis);
 
-        var shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle()}, headerShape.getRight());
+        var shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
         shapeInformation.read(dis, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getThird());
-        DataType type;
+        val length = Shape.length(shapeInformation);
+        DataType type = null;
         DataBuffer data = null;
 
         val headerData = BaseDataBuffer.readHeader(dis);
         try {
             // current version contains dtype in extras
             data = CompressedDataBuffer.readUnknown(dis, headerData.getFirst(), headerData.getMiddle(), headerData.getRight());
+            type = ArrayOptionsHelper.dataType(shapeInformation.asLong());
         } catch (ND4JUnknownDataTypeException e) {
             // manually setting data type
             type = headerData.getRight();
@@ -5318,25 +5321,7 @@ public class Nd4j {
      * @return the tiled ndarray
      */
     public static INDArray tile(INDArray tile, @NonNull int... repeat) {
-        int d = repeat.length;
-        long[] shape = ArrayUtil.copy(tile.shape());
-        long n = Math.max(tile.length(), 1);
-        if (d < tile.rank()) {
-            repeat = Ints.concat(ArrayUtil.nTimes(tile.rank() - d, 1), repeat);
-        }
-        for (int i = 0; i < shape.length; i++) {
-            if (repeat[i] != 1) {
-                tile = tile.reshape(-1, n).repeat(0, repeat[i]);
-            }
-
-            long in = shape[i];
-            long nOut = in * repeat[i];
-            shape[i] = nOut;
-            n /= Math.max(in, 1);
-
-        }
-
-        return tile.reshape(shape);
+        return Nd4j.exec(new Tile(new INDArray[]{tile}, new INDArray[]{}, repeat))[0];
     }
 
     /**

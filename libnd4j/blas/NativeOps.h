@@ -1769,6 +1769,17 @@ ND4J_EXPORT void deleteRandomGenerator(OpaqueRandomGenerator* ptr);
 ND4J_EXPORT const char* runLightBenchmarkSuit(bool printOut);
 ND4J_EXPORT const char* runFullBenchmarkSuit(bool printOut);
 
+typedef nd4j::LaunchContext OpaqueLaunchContext;
+
+ND4J_EXPORT OpaqueLaunchContext* defaultLaunchContext();
+ND4J_EXPORT Nd4jPointer lcScalarPointer(OpaqueLaunchContext* lc);
+ND4J_EXPORT Nd4jPointer lcReductionPointer(OpaqueLaunchContext* lc);
+ND4J_EXPORT Nd4jPointer lcAllocationPointer(OpaqueLaunchContext* lc);
+ND4J_EXPORT Nd4jPointer lcExecutionStream(OpaqueLaunchContext* lc);
+ND4J_EXPORT Nd4jPointer lcCopyStream(OpaqueLaunchContext* lc);
+ND4J_EXPORT Nd4jPointer lcBlasHandle(OpaqueLaunchContext* lc);
+ND4J_EXPORT Nd4jPointer lcSolverHandle(OpaqueLaunchContext* lc);
+
 }
 
 #endif //NATIVEOPERATIONS_NATIVEOPS_H

@@ -28,6 +28,7 @@
 #include <helpers/threshold.h>
 #include <ops/specials_cuda.h>
 #include <helpers/DebugHelper.h>
+#include <AffinityManager.h>
 
 #include <exceptions/datatype_exception.h>
 #include <helpers/CudaLaunchHelper.h>
@@ -1691,11 +1692,7 @@ void setOmpMinThreads(int threads) {
 }
 
 int getDevice() {
-    int curDevice = -1;
-
-    cudaGetDevice(&curDevice);
-
-    return curDevice;
+    return nd4j::AffinityManager::currentDeviceId();
 }
 
 void setElementThreshold(int num) {
@@ -2391,8 +2388,8 @@ void sortByValue(Nd4jPointer *extraPointers,
 
     auto xLength = shape::length(xShapeInfo);
     auto xEWS = shape::elementWiseStride(xShapeInfo);
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto xType = nd4j::ArrayOptions::dataType(yShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
 
     // check if xLength is a power of 2, and use bitonic sort, if that's the case
@@ -2406,7 +2403,7 @@ void sortByValue(Nd4jPointer *extraPointers,
 
         for (int k = 2; k <= xLength; k = 2*k) {
             for (int j = k >> 1; j > 0; j = j >> 1) {
-                BUILD_DOUBLE_SELECTOR(xType, yType, bitonicSortStepGenericValue, (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, j, k, xLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(xType, yType, bitonicSortStepGenericKey, (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, j, k, xLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
             }
         }
     } else {
@@ -2430,7 +2427,7 @@ void sortByValue(Nd4jPointer *extraPointers,
             int rev = 0;
             do{
                 int half = n >> 1;
-                BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericValue, (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, n, xLength, rev, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+                BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericKey, (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, n, xLength, rev, descending), LIBND4J_TYPES, LIBND4J_TYPES);
                 n>>=1;
                 rev = 1;
             } while(n > 1);
@@ -3342,6 +3339,7 @@ Nd4jLong getConstantDataBufferSizeOf(nd4j::ConstantDataBuffer* dbf) {
 nd4j::graph::Context* createGraphContext(int nodeId) {
     return new nd4j::graph::Context(nodeId);
 }
+
 nd4j::graph::RandomGenerator* getGraphContextRandomGenerator(nd4j::graph::Context* ptr) {
     return &ptr->randomGenerator();
 }
@@ -3459,4 +3457,36 @@ const char* runFullBenchmarkSuit(bool printOut) {
 
 Nd4jLong getCachedMemory(int deviceId) {
     return nd4j::ConstantHelper::getInstance()->getCachedAmount(deviceId);
+}
+
+nd4j::LaunchContext* defaultLaunchContext() {
+    return LaunchContext::defaultContext();
+}
+
+Nd4jPointer lcScalarPointer(OpaqueLaunchContext* lc) {
+    return lc->getScalarPointer();
+}
+
+Nd4jPointer lcReductionPointer(OpaqueLaunchContext* lc) {
+    return lc->getReductionPointer();
+}
+
+Nd4jPointer lcAllocationPointer(OpaqueLaunchContext* lc) {
+    return lc->getAllocationPointer();
+}
+
+Nd4jPointer lcExecutionStream(OpaqueLaunchContext* lc) {
+    return lc->getCudaStream();
+}
+
+Nd4jPointer lcCopyStream(OpaqueLaunchContext* lc) {
+    return lc->getCudaSpecialStream();
+}
+
+Nd4jPointer lcBlasHandle(OpaqueLaunchContext* lc) {
+    return lc->getCublasHandle();
+}
+
+Nd4jPointer lcSolverHandle(OpaqueLaunchContext* lc) {
+    return lc->getCusolverHandle();
 }

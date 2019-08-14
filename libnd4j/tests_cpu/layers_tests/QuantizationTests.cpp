@@ -31,13 +31,17 @@ class QuantizationTests : public testing::Test {
 };
 
 TEST_F(QuantizationTests, Basic_Test_1) {
+#ifndef __CUDABLAS__
     auto s = TypeCast::estimateQuantizedSize(10);
     ASSERT_EQ(18, s);
+#endif
 }
 
 TEST_F(QuantizationTests, Basic_Test_2) {
+#ifndef __CUDABLAS__
     auto s = TypeCast::estimateQuantizedSize(1);
     ASSERT_EQ(9, s);
+#endif
 }
 
 TEST_F(QuantizationTests, Compression_Test_1) {

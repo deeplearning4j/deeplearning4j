@@ -101,7 +101,7 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
     const auto yType = targets->dataType();
 
     NDArray::prepareSpecialUse({output}, {predictions, targets});
-    BUILD_DOUBLE_SELECTOR(xType, yType, inTopKCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), predictions->getSpecialBuffer(), predictions->getSpecialShapeInfo(), targets->getSpecialBuffer(), targets->getSpecialShapeInfo(), output->getSpecialBuffer(), output->getSpecialShapeInfo(), packX.specialShapeInfo(), packX.specialOffsets(), k), FLOAT_TYPES, INTEGER_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, yType, inTopKCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), predictions->getSpecialBuffer(), predictions->getSpecialShapeInfo(), targets->getSpecialBuffer(), targets->getSpecialShapeInfo(), output->getSpecialBuffer(), output->getSpecialShapeInfo(), packX.specialShapeInfo(), packX.specialOffsets(), k), FLOAT_TYPES, INDEXING_TYPES);
     NDArray::registerSpecialUse({output}, {predictions, targets});
 
     manager.synchronize();
@@ -269,16 +269,13 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
     int topKFunctor(nd4j::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort) {
         input->syncToDevice();
 
-        BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), topKFunctor_, (context, input, values, indices, k, needSort), LIBND4J_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), topKFunctor_, (context, input, values, indices, k, needSort), LIBND4J_TYPES, INDEXING_TYPES);
 
         values->tickWriteDevice();
         indices->tickWriteDevice();
 
         return Status::OK();
     }
-
-
-    BUILD_DOUBLE_TEMPLATE(template int topKFunctor_, (nd4j::LaunchContext * context, const NDArray* input, NDArray* values, NDArray* indices, const uint k, bool needSort), LIBND4J_TYPES, INTEGER_TYPES);
 
 }
 }

@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ops.custom.Flatten;
+import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
@@ -572,6 +573,10 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         if (toConcat.length == 1)
             return toConcat[0];
 
+        return Nd4j.exec(new Concat(dimension, toConcat))[0];
+
+        // legacy implementation
+/*
         // if reusable var wasn't created for this thread, or is smaller then needed - set it to new value
         if (extrazA.get() == null || extrazB.get() == null || extrazSize.get() == null || extrazSize.get() < toConcat.length) {
             extrazA.set(new PointerPointer(toConcat.length));
@@ -627,6 +632,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                     null, null);
 
         return ret;
+        */
     }
 
 

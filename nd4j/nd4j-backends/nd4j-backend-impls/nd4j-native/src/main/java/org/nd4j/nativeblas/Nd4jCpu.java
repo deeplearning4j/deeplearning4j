@@ -3104,6 +3104,15 @@ public native void deleteRandomGenerator(OpaqueRandomGenerator ptr);
 public native @Cast("char*") String runLightBenchmarkSuit(@Cast("bool") boolean printOut);
 public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean printOut);
 
+public native OpaqueLaunchContext defaultLaunchContext();
+public native @Cast("Nd4jPointer") Pointer lcScalarPointer(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcReductionPointer(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcAllocationPointer(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcExecutionStream(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcCopyStream(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcBlasHandle(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc);
+
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H
 
 
@@ -9723,9 +9732,12 @@ public static final int PREALLOC_SIZE = 33554432;
 // #ifndef __CLION_IDE__
 // #define BUILD_SINGLE_UNCHAINED_TEMPLATE(NAME, SIGNATURE, TYPES) EVAL(_EXEC_SINGLE_T(RANDOMSINGLEU, NAME, (SIGNATURE), TYPES))
 // #define BUILD_SINGLE_TEMPLATE(NAME, SIGNATURE, TYPES) EVAL(_EXEC_SINGLE_T(RANDOMSINGLE, NAME, (SIGNATURE), TYPES))
+// #define BUILD_SINGLE_TEMPLATE_TWICE(NAME, SIGNATURE, TYPES) EVAL(_EXEC_SELECTOR_T(TEMPLATE_SINGLE_TWICE, NAME, SIGNATURE, TYPES))
 // #define BUILD_DOUBLE_TEMPLATE(NAME, SIGNATURE, TYPES_A, TYPES_B) EVAL(_EXEC_DOUBLE_T(RANDOMDOUBLE, NAME, (SIGNATURE), (TYPES_A), TYPES_B))
 // #define BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type");}}
+// #define BUILD_SINGLE_SELECTOR_TWICE(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE_TWICE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type");}}
 // #define BUILD_SINGLE_SELECTOR_THRICE(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_SINGLE_THRICE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type");}}
+
 
 // #define BUILD_SINGLE_PARTIAL_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES) switch(XTYPE) { EVAL(_EXEC_SELECTOR_T(SELECTOR_PARTIAL_SINGLE, NAME, SIGNATURE, TYPES)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__);  fflush(stdout); throw std::runtime_error("bad data type"); }}
 // #define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B) switch(XTYPE) { EVAL(_EXEC_SELECTOR_TT_1(SELECTOR_DOUBLE, YTYPE, NAME, (SIGNATURE), (TYPES_B), TYPES_A)); default: {printf("[ERROR] Unknown dtypeX=%d on %s:%d", XTYPE, __FILE__, __LINE__); fflush(stdout); throw std::runtime_error("bad data type");}}
@@ -9736,8 +9748,10 @@ public static final int PREALLOC_SIZE = 33554432;
 // #else
 // #define BUILD_SINGLE_UNCHAINED_TEMPLATE(NAME, SIGNATURE, TYPES)
 // #define BUILD_SINGLE_TEMPLATE(NAME, SIGNATURE, TYPES)
+// #define BUILD_SINGLE_TEMPLATE_TWICE(NAME, SIGNATURE, TYPES)
 // #define BUILD_DOUBLE_TEMPLATE(NAME, SIGNATURE, TYPES_A, TYPES_B)
 // #define BUILD_SINGLE_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES)
+// #define BUILD_SINGLE_SELECTOR_TWICE(XTYPE, NAME, SIGNATURE, TYPES)
 // #define BUILD_SINGLE_SELECTOR_THRICE(XTYPE, NAME, SIGNATURE, TYPES)
 // #define BUILD_SINGLE_PARTIAL_SELECTOR(XTYPE, NAME, SIGNATURE, TYPES)
 // #define BUILD_DOUBLE_SELECTOR(XTYPE, YTYPE, NAME, SIGNATURE, TYPES_A, TYPES_B)
@@ -9773,6 +9787,12 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define _SELECTOR_SINGLE_THRICE(A, B, C, D) case C: {A<D, D, D>B; break;};
 // #define SELECTOR_SINGLE_THRICE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE_THRICE(A, B, UNPAREN(C)))
 
+// #define _SELECTOR_SINGLE_TWICE(A, B, C, D) case C: {A<D, D>B; break;};
+// #define SELECTOR_SINGLE_TWICE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_SINGLE_TWICE(A, B, UNPAREN(C)))
+
+// #define _TEMPLATE_SINGLE_TWICE(A, B, C, D) A<D, D>B;
+// #define TEMPLATE_SINGLE_TWICE(A, B, C) EVALUATING_PASTE(_TEM, PLATE_SINGLE_TWICE(A, B, UNPAREN(C)))
+
 // #define _SELECTOR_PARTIAL_SINGLE(A, B, C, D) case C: {A D, UNPAREN2(B); break;};
 // #define SELECTOR_PARTIAL_SINGLE(A, B, C) EVALUATING_PASTE(_SEL, ECTOR_PARTIAL_SINGLE(A, B, UNPAREN(C)))
 
@@ -9801,6 +9821,7 @@ public static final int PREALLOC_SIZE = 33554432;
 // #define BROADCAST_BOOL(NAME) nd4j::BroadcastBoolOpsTuple::custom(nd4j::scalar::NAME, nd4j::pairwise::NAME, nd4j::broadcast::NAME)
 
 
+public static final int ALL_INDICES =INT64;
 public static final int ALL_INTS =UINT64;
 public static final int ALL_FLOATS =BFLOAT16;
 
@@ -22694,6 +22715,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <op_boilerplate.h>
 // #include <memory/Workspace.h>
 // #include <vector>
+// #include <mutex>
+// #include <execution/ContextBuffers.h>
 
 @Namespace("nd4j") @NoOffset public static class LaunchContext extends Pointer {
     static { Loader.load(); }

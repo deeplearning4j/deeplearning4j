@@ -55,9 +55,9 @@ TEST_F(DataTypesValidationTests, Basic_Test_1) {
 }
 
 TEST_F(DataTypesValidationTests, Basic_Test_2) {
-    auto input = NDArrayFactory::create<uint8_t>('c', {1, 1, 1, 4});
-    auto weights = NDArrayFactory::create<float>('c', {1, 1, 1, 4});
-    auto exp = NDArrayFactory::create<float>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
+    auto input = NDArrayFactory::create<float16>('c', {1, 1, 1, 4});
+    auto weights = NDArrayFactory::create<float16>('c', {1, 1, 1, 4});
+    auto exp = NDArrayFactory::create<float16>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
 
     weights.assign(2.0);
     input.linspace(1);
@@ -75,10 +75,10 @@ TEST_F(DataTypesValidationTests, Basic_Test_2) {
 
 
 TEST_F(DataTypesValidationTests, Basic_Test_3) {
-    auto input = NDArrayFactory::create<int8_t>('c', {1, 1, 1, 4});
-    auto weights = NDArrayFactory::create<float16>('c', {1, 1, 1, 4});
-    auto exp = NDArrayFactory::create<float>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
-    auto out = NDArrayFactory::create<float>('c', {1, 4, 1, 4});
+    auto input = NDArrayFactory::create<bfloat16>('c', {1, 1, 1, 4});
+    auto weights = NDArrayFactory::create<bfloat16>('c', {1, 1, 1, 4});
+    auto exp = NDArrayFactory::create<bfloat16>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
+    auto out = NDArrayFactory::create<bfloat16>('c', {1, 4, 1, 4});
 
     weights.assign(2.0);
     input.linspace(1);

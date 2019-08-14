@@ -14,29 +14,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.jita.allocator.garbage;
+//
+// @author raver119@gmail.com
+//
 
-import lombok.NonNull;
-import lombok.extern.slf4j.Slf4j;
-import org.nd4j.jita.allocator.impl.AtomicAllocator;
-import org.nd4j.linalg.api.memory.Deallocator;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.jcublas.context.CudaContext;
+#include "loops/scalar.h"
+#include <cuda.h>
+#include <cuda_runtime.h>
+#include <op_boilerplate.h>
+#include <helpers/TAD.h>
+#include <types/types.h>
 
-/**
- * This class provides Deallocator implementation for tracking/releasing CudaContexts once thread holding it dies
- * @author raver119@gmail.com
- */
-@Slf4j
-public class ContextDeallocator implements Deallocator {
-    private CudaContext context;
+namespace functions {
+    namespace scalar {
 
-    public ContextDeallocator(@NonNull CudaContext context) {
-        this.context = context;
-    }
-
-    @Override
-    public void deallocate() {
-        AtomicAllocator.getInstance().getContextPool().releaseContext(context);
     }
 }

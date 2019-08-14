@@ -231,7 +231,6 @@ static void sruBICudaLauncher(const int blocksPerGrid, const int threadsPerBlock
 
     sruBICuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vwi, wiShapeInfo, vb, bShapeInfo, vc0, c0ShapeInfo, vmask, maskShapeInfo, vht, htShapeInfo, vct, ctShapeInfo);
 }
-BUILD_SINGLE_TEMPLATE(template void sruBICudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vwi, const Nd4jLong* wiShapeInfo, const void* vb, const Nd4jLong* bShapeInfo, const void* vc0, const Nd4jLong* c0ShapeInfo, const void* vmask, const Nd4jLong* maskShapeInfo, void* vht, const Nd4jLong* htShapeInfo, void* vct, const Nd4jLong* ctShapeInfo), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void sruBI(nd4j::LaunchContext * context, NDArray* x, const NDArray* w, const NDArray* b, const NDArray* c0, const NDArray* mask, NDArray* ht, NDArray* ct) {

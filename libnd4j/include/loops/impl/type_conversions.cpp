@@ -209,15 +209,6 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
         }
     };
 
-    _CUDA_H Nd4jLong TypeCast::estimateQuantizedSize(Nd4jLong rawSize) {
-        if (rawSize <= 0)
-            throw std::runtime_error("Input size for quantization can't be <= 0");
-
-        // 2 fp32 values for max/min, and rawSize number of BYTES
-        return 8 + rawSize;
-    }
-
-
     template void TypeCast::convertFromThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertFromThreshold<float16>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
     template void TypeCast::convertFromThreshold<double>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);

@@ -84,7 +84,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
         // FIXME: remove
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.EVERYWHERE);
 
-        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val ctx = AtomicAllocator.getInstance().getDeviceContext();
         nativeOps.setGraphContextInputArray(context, index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), array.isEmpty() ? null : AtomicAllocator.getInstance().getPointer(array, ctx), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
         super.setInputArray(index, array);
@@ -94,7 +94,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
     public void setOutputArray(int index, @NonNull INDArray array) {
         Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.EVERYWHERE);
 
-        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val ctx = AtomicAllocator.getInstance().getDeviceContext();
         nativeOps.setGraphContextOutputArray(context, index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), array.isEmpty() ? null : AtomicAllocator.getInstance().getPointer(array, ctx), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
         super.setOutputArray(index, array);

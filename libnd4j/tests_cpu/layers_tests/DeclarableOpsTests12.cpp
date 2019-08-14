@@ -729,8 +729,8 @@ TEST_F(DeclarableOpsTests12, multiUnique_2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, tensormmul_6) {
 
-    NDArray x('c', {1}, {2});
-    NDArray y('c', {2,1,2}, {1,2,3,4});
+    NDArray x('c', {1}, {2}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {2,1,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
     NDArray exp('c', {2,2}, {2,4,6,8}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::tensormmul op;

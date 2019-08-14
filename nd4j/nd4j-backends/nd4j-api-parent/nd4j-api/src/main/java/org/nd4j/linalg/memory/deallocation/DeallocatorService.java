@@ -57,13 +57,12 @@ public class DeallocatorService {
             log.debug("Starting deallocator thread {}", e + 1);
             queues[e] = new ReferenceQueue<>();
 
+            int deviceId = e % numDevices;
             // attaching queue to its own thread
-            deallocatorThreads[e] = new DeallocatorServiceThread(queues[e], e);
+            deallocatorThreads[e] = new DeallocatorServiceThread(queues[e], e, deviceId);
             deallocatorThreads[e].setName("DeallocatorServiceThread_" + e);
             deallocatorThreads[e].setDaemon(true);
 
-            int deviceId = e % numDevices;
-            Nd4j.getAffinityManager().attachThreadToDevice(deallocatorThreads[e], deviceId);
             deviceMap.get(deviceId).add(queues[e]);
             
             deallocatorThreads[e].start();
@@ -87,16 +86,19 @@ public class DeallocatorService {
         private final ReferenceQueue<Deallocatable> queue;
         private final int threadIdx;
         public static final String DeallocatorThreadNamePrefix = "DeallocatorServiceThread thread ";
+        private final int deviceId;
 
-        private DeallocatorServiceThread(@NonNull ReferenceQueue<Deallocatable> queue, int threadIdx) {
+        private DeallocatorServiceThread(@NonNull ReferenceQueue<Deallocatable> queue, int threadIdx, int deviceId) {
             this.queue = queue;
             this.threadIdx = threadIdx;
             this.setName(DeallocatorThreadNamePrefix + threadIdx);
+            this.deviceId = deviceId;
             setContextClassLoader(null);
         }
 
         @Override
         public void run() {
+            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
             boolean canRun = true;
             long cnt = 0;
             while (canRun) {

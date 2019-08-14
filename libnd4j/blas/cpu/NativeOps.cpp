@@ -2985,6 +2985,38 @@ const char* runFullBenchmarkSuit(bool printOut) {
     return chars;
 }
 
+nd4j::LaunchContext* defaultLaunchContext() {
+    return LaunchContext::defaultContext();
+}
+
+Nd4jPointer lcScalarPointer(OpaqueLaunchContext* lc) {
+    return nullptr;
+}
+
+Nd4jPointer lcReductionPointer(OpaqueLaunchContext* lc) {
+    return nullptr;
+}
+
+Nd4jPointer lcAllocationPointer(OpaqueLaunchContext* lc) {
+    return nullptr;
+}
+
+Nd4jPointer lcExecutionStream(OpaqueLaunchContext* lc) {
+    return nullptr;
+}
+
+Nd4jPointer lcCopyStream(OpaqueLaunchContext* lc) {
+    return nullptr;
+}
+
+Nd4jPointer lcBlasHandle(OpaqueLaunchContext* lc) {
+    return nullptr;
+}
+
+Nd4jPointer lcSolverHandle(OpaqueLaunchContext* lc) {
+    return nullptr;
+}
+
 
 BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric, (void *, Nd4jLong*, void*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);

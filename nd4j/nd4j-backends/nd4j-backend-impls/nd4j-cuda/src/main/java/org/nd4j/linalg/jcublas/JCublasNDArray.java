@@ -570,7 +570,7 @@ public class JCublasNDArray extends BaseNDArray {
         //Nd4j.getExecutioner().commit();
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = (CudaContext) allocator.getDeviceContext();
 
         AllocationPoint srcPoint = allocator.getAllocationPoint(this);
         AllocationPoint dstPoint = allocator.getAllocationPoint(ret);

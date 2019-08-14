@@ -40,7 +40,7 @@
     (float, long, long)        
 
 
-BUILD_SINGLE_SELECTOR_THRICE(xType, template class functionName, , DATA_TYPES);
+BUILD_SINGLE_TEMPLATE_TWICE(template class functionName, , DATA_TYPES)
 
 //BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functionName, (signature), DATA_TYPES, Y_TYPES);
 

@@ -107,7 +107,6 @@ namespace helpers {
         return Status::OK();
         return Status::OK();
     }
-    BUILD_SINGLE_TEMPLATE(template void bdsLoopH, (cudaStream_t* stream, void const* inputX, Nd4jLong const* inputXshape, void const* inputY, Nd4jLong const* inputYshape, void* output, Nd4jLong* outputShape), NUMERIC_TYPES);
 
 }
 }

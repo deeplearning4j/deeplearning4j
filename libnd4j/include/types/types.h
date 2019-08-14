@@ -76,6 +76,10 @@
         (nd4j::DataType::FLOAT32, float), \
         (nd4j::DataType::DOUBLE, double)
 
+#define INDEXING_TYPES \
+        (nd4j::DataType::INT32, int32_t), \
+        (nd4j::DataType::INT64, Nd4jLong)
+
 #define FLOAT_NATIVE \
         (nd4j::DataType::FLOAT32, float), \
         (nd4j::DataType::DOUBLE, double)

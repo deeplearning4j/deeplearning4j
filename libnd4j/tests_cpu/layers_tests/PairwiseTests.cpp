@@ -32,6 +32,7 @@ public:
     int dimensionLength = 1;
 };
 
+#ifndef __CUDABLAS__
 
 TEST_F(EqualsTest,Eps) {
     auto val = nd4j::NDArrayFactory::create(0.0f);
@@ -45,3 +46,5 @@ TEST_F(EqualsTest,Eps) {
                                                                val.shapeInfo());
     ASSERT_TRUE(val.e<float>(0) < 0.5);
 }
+
+#endif

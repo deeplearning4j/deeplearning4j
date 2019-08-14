@@ -60,6 +60,7 @@ import org.nd4j.linalg.cache.TADManager;
 import org.nd4j.linalg.compression.ThresholdCompression;
 import org.nd4j.linalg.exception.ND4JIllegalArgumentException;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.buffer.AddressRetriever;
 import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
@@ -1513,11 +1514,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val surfaceBuffer = (BaseCudaDataBuffer) getBuffer(batch);
         surfaceBuffer.lazyAllocateHostPointer();
 
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
 
-        IntPointer pointer = (IntPointer) new CudaPointer(AtomicAllocator.getInstance().getHostPointer(surfaceBuffer))
+        val pointer = (IntPointer) new CudaPointer(AtomicAllocator.getInstance().getHostPointer(surfaceBuffer))
                 .asIntPointer();
-        AllocationPoint surfacePoint = AtomicAllocator.getInstance().getAllocationPoint(surfaceBuffer);
+        val surfacePoint = AtomicAllocator.getInstance().getAllocationPoint(surfaceBuffer);
 
         int maxTypes = 5;
 
@@ -1659,7 +1660,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             this.exec(single);
         }
 
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
         context.syncOldStream();
     }
 
@@ -1671,9 +1672,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int numIntArrays = op.getIntArrayArguments().size();
         int numRealArguments = op.getRealArguments().size();
 
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
 
-        PointerPointer extraArgs = new PointerPointer(32);
+        val extraArgs = new PointerPointer(32);
         extraArgs.put(0, null);
         extraArgs.put(1, context.getOldStream());
         extraArgs.put(2, new CudaPointer(1));
@@ -1890,8 +1891,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public void commit() {
-        ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncOldStream();
-        ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).syncSpecialStream();
+        AtomicAllocator.getInstance().getDeviceContext().syncOldStream();
+        AtomicAllocator.getInstance().getDeviceContext().syncSpecialStream();
     }
 
     @Override
@@ -1901,14 +1902,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         int numThreads = 1024;
         int numBlocks = (int) (buffer.length() / numThreads + (buffer.length() % numThreads == 0 ? 0 : 1));
 
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
 
         DataBuffer blocksBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks+1, true) : Nd4j.getDataBufferFactory().createInt(numBlocks+1, true, Nd4j.getMemoryManager().getCurrentWorkspace());
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
 
-        PointerPointer extras = extraz.get().put(1, context.getOldStream());
+        val extras = extraz.get().put(1, context.getOldStream());
 
 
 
@@ -2024,7 +2025,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         DataBuffer result = target.data();
 
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
 
         if (extraz.get() == null)
             extraz.set(new PointerPointer(32));
@@ -2254,10 +2255,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
-        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val ctx = AtomicAllocator.getInstance().getDeviceContext();
 
         val name = op.opName();
         try (val context = (CudaOpContext) buildContext()) {
+
             context.markInplace(op.isInplaceCall());
 
             // transferring rng state
@@ -2279,6 +2281,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             Nd4j.getRandom().setStates(states.getFirst(), states.getSecond());
 
             return result;
+        } catch (ND4JOpProfilerException e) {
+            throw e;
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
         }
@@ -2545,10 +2549,14 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public INDArray[] exec(CustomOp op, OpContext context) {
-        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        long st = profilingConfigurableHookIn(op);
+
+        val ctx = AtomicAllocator.getInstance().getDeviceContext();
         ((CudaOpContext) context).setCudaStream(ctx.getOldStream(), ctx.getBufferReduction(), ctx.getBufferAllocation());
 
         nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());
+
+        profilingConfigurableHookOut(op, st);
 
         if (context.getOutputArrays().isEmpty())
             return new INDArray[0];
@@ -2559,7 +2567,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArrayStatistics inspectArray(@NonNull INDArray array) {
         val debugInfo = new Nd4jCuda.DebugInfo();
-        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val ctx = AtomicAllocator.getInstance().getDeviceContext();
         AtomicAllocator.getInstance().synchronizeHostData(array);
 
         if (extraz.get() == null)

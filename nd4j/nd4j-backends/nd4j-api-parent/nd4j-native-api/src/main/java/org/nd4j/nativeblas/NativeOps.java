@@ -1175,4 +1175,14 @@ public interface NativeOps {
     String runFullBenchmarkSuit(boolean printOut);
 
     long getCachedMemory(int deviceId);
+
+    OpaqueLaunchContext defaultLaunchContext();
+
+    Pointer lcScalarPointer(OpaqueLaunchContext lc);
+    Pointer lcReductionPointer(OpaqueLaunchContext lc);
+    Pointer lcAllocationPointer(OpaqueLaunchContext lc);
+    Pointer lcExecutionStream(OpaqueLaunchContext lc);
+    Pointer lcCopyStream(OpaqueLaunchContext lc);
+    Pointer lcBlasHandle(OpaqueLaunchContext lc);
+    Pointer lcSolverHandle(OpaqueLaunchContext lc);
 }
