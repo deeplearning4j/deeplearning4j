@@ -6522,6 +6522,15 @@ public class Nd4jTestsC extends BaseNd4jTest {
     }
 
     @Test
+    public void testRndBloat16() {
+        INDArray x  = Nd4j.rand(DataType.BFLOAT16 , 'c', new long[]{5});
+        assertTrue(x.sumNumber().floatValue() > 0);
+
+        x = Nd4j.randn(DataType.BFLOAT16 , 10);
+        assertTrue(x.sumNumber().floatValue() > 0);
+    }
+
+    @Test
     public void testLegacyDeserialization_2() throws Exception {
         val f = new ClassPathResource("legacy/NDArray_longshape_float.bin").getFile();
 

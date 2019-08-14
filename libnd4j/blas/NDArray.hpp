@@ -344,7 +344,7 @@ bool NDArray::isS() const {
 //////////////////////////////////////////////////////////////////////////
 bool NDArray::isR() const {
     auto xType = ArrayOptions::dataType(this->_shapeInfo);
-    return xType == FLOAT32 || xType == HALF || xType == DOUBLE || xType == FLOAT8;
+    return xType == FLOAT32 || xType == HALF || xType == DOUBLE || xType == FLOAT8 || xType == BFLOAT16;
 }
 
 //////////////////////////////////////////////////////////////////////////

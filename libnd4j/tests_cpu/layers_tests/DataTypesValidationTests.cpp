@@ -27,6 +27,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/col2im.h>
+#include <helpers/RandomLauncher.h>
 
 using namespace nd4j;
 
@@ -102,6 +103,14 @@ TEST_F(DataTypesValidationTests, Basic_Test_4) {
     nd4j::ops::conv2d op;
     auto result = op.execute({&input, &weights}, {&out}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0}, {});
     ASSERT_EQ(ND4J_STATUS_VALIDATION, result);
+}
+
+TEST_F(DataTypesValidationTests, test_bfloat16_rand_1) {
+    auto x = NDArrayFactory::create<bfloat16>('c', {5, 10});
+    RandomGenerator gen(119, 120);
+    RandomLauncher::fillUniform(LaunchContext::defaultContext(), gen, &x, 1, 6);
+
+    ASSERT_TRUE(x.sumNumber().e<float>(0) > 0);
 }
 
 TEST_F(DataTypesValidationTests, cast_1) {

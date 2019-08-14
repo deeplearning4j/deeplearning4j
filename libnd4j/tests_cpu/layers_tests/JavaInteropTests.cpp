@@ -1212,6 +1212,18 @@ TEST_F(JavaInteropTests, Test_Fastpath_7) {
     ASSERT_EQ(e, z);
 }
 
+TEST_F(JavaInteropTests, test_bfloat16_rng) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+
+    auto z = NDArrayFactory::create<bfloat16>('c', {10});
+    RandomGenerator rng(119, 323841120L);
+    bfloat16 args[2] = {(bfloat16) 0.0f, (bfloat16) 1.0f};
+    execRandom(nullptr, nd4j::random::Ops::UniformDistribution, &rng, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), args);
+    z.printIndexedBuffer("z");
+    ASSERT_TRUE(z.sumNumber().e<float>(0) > 0);
+}
+
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     auto pl = nd4j::graph::readFlatBuffers("./resources/gru_dynamic_mnist.fb");
