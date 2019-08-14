@@ -16,16 +16,13 @@
 
 package org.datavec.api.writable.comparator;
 
-import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
 import java.util.Comparator;
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyMappingHelper.WritableComparatorHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface WritableComparator extends Comparator<Writable>, Serializable {
 
 }
