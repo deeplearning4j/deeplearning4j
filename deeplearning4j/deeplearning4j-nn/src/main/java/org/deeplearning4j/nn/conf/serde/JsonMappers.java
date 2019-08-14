@@ -42,8 +42,10 @@ import org.nd4j.shade.jackson.databind.introspect.JacksonAnnotationIntrospector;
 import org.nd4j.shade.jackson.databind.jsontype.TypeResolverBuilder;
 import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
+import org.nd4j.util.OneTimeLogger;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -231,8 +233,18 @@ public class JsonMappers {
                         return null;
 
                     //Pass the remaining annotations (if any) to the original introspector
-                    AnnotatedClass ann2 = c.withAnnotations(newMap);
-                    return super._findTypeResolver(config, ann2, baseType);
+                    //Up to Jackson 2.8.9 we could use AnnotatedClass ann2 = c.withAnnotations(newMap);
+                    //This was removed with no obvious replacement, no deprecated tag in the javadoc in any version before
+                    // replacement. No obvious notes or upgrade path in the release notes either.
+                    //If anyone knows a way to do this properly - please fix this!
+                    try {
+                        Field f = AnnotatedClass.class.getDeclaredField("_classAnnotations");
+                        f.setAccessible(true);
+                        f.set(ann, newMap);
+                    } catch (Throwable t){
+                        OneTimeLogger.warn(log, "Error modifying annotations - JSON deserialization of legacy formats may fail", t);
+                    }
+                    return super._findTypeResolver(config, ann, baseType);
                 }
             }
             return super._findTypeResolver(config, ann, baseType);
