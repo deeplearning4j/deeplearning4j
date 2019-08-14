@@ -42,15 +42,15 @@ import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.annotation.PropertyAccessor;
 import org.nd4j.shade.jackson.databind.*;
 import org.nd4j.shade.jackson.databind.cfg.MapperConfig;
-import org.nd4j.shade.jackson.databind.introspect.Annotated;
-import org.nd4j.shade.jackson.databind.introspect.AnnotatedClass;
-import org.nd4j.shade.jackson.databind.introspect.AnnotationMap;
-import org.nd4j.shade.jackson.databind.introspect.JacksonAnnotationIntrospector;
+import org.nd4j.shade.jackson.databind.introspect.*;
 import org.nd4j.shade.jackson.databind.jsontype.TypeResolverBuilder;
+import org.nd4j.shade.jackson.databind.util.Annotations;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
+import org.nd4j.util.OneTimeLogger;
 
 import java.lang.annotation.Annotation;
+import java.lang.reflect.Field;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -237,11 +237,12 @@ public class JsonMappers {
         ret.enable(SerializationFeature.INDENT_OUTPUT);
         ret.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         ret.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        ret.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);     //Need this otherwise JsonProperty annotations on constructors won't be seen
     }
 
 
     /**
-     * Custom Jackson Introspector to ignore the {@code @JsonTypeYnfo} annotations on layers etc.
+     * Custom Jackson Introspector to ignore the {@code @JsonTypeInfo} annotations on ops etc.
      * This is so we can deserialize legacy format JSON without recursing infinitely, by selectively ignoring
      * a set of JsonTypeInfo annotations
      */
@@ -287,8 +288,21 @@ public class JsonMappers {
                         return null;
 
                     //Pass the remaining annotations (if any) to the original introspector
-                    AnnotatedClass ann2 = c.withAnnotations(newMap);
-                    return super._findTypeResolver(config, ann2, baseType);
+                    //Up to Jackson 2.8.9 we could use AnnotatedClass ann2 = c.withAnnotations(newMap);
+                    //This was removed with no obvious replacement, no deprecated tag in the javadoc in any version before
+                    // replacement. No obvious notes or upgrade path in the release notes either.
+                    //If anyone knows a way to do this properly - please fix this!
+                    Annotations a = c.getAnnotations();
+                    try {
+                        Field f = AnnotatedClass.class.getDeclaredField("_classAnnotations");
+                        f.setAccessible(true);
+                        f.set(ann, newMap);
+                    } catch (Throwable t){
+                        OneTimeLogger.warn(log, "Error modifying annotations - JSON deserialization of legacy formats may fail", t);
+                    }
+
+
+                    return super._findTypeResolver(config, ann, baseType);
                 }
             }
             return super._findTypeResolver(config, ann, baseType);
