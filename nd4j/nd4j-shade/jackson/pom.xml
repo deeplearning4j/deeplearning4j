@@ -139,6 +139,7 @@
                         <includes>
                             <include>com.fasterxml.jackson:*</include>
                             <include>com.fasterxml.jackson.*:*</include>
+                            <include>org.yaml*:*</include>
                         </includes>
                     </artifactSet>
 
@@ -147,6 +148,11 @@
                         <relocation>
                             <pattern>com.fasterxml.jackson</pattern>
                             <shadedPattern>org.nd4j.shade.jackson</shadedPattern>
+                        </relocation>
+                        <!-- Snake YAML that Jackson depends on -->
+                        <relocation>
+                            <pattern>org.yaml</pattern>
+                            <shadedPattern>org.nd4j.shade.yaml</shadedPattern>
                         </relocation>
                     </relocations>
 
@@ -251,8 +257,11 @@
             <version>${jackson.version}</version>
         </dependency>
 
-
-
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${snakeyaml.version}</version>
+        </dependency>
     </dependencies>
 
 </project>
