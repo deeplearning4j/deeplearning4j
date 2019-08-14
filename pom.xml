@@ -328,8 +328,8 @@
         <slf4j.version>1.7.21</slf4j.version>
         <junit.version>4.12</junit.version>
         <logback.version>1.2.3</logback.version>
-        <jackson.version>2.5.1</jackson.version>
-        <spark.jackson.version>${jackson.version}</spark.jackson.version>
+        <jackson.version>2.9.9.3</jackson.version>
+        <spark.jackson.version>2.5.1</spark.jackson.version>
         <spark2.jackson.version>2.6.5</spark2.jackson.version>
         <geo.jackson.version>2.8.7</geo.jackson.version>
         <lombok.version>1.18.2</lombok.version>
