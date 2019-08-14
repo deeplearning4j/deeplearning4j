@@ -18,7 +18,6 @@ package org.datavec.api.transform.condition;
 
 import org.datavec.api.transform.ColumnOp;
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;

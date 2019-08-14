@@ -16,7 +16,6 @@
 
 package org.datavec.api.writable;
 
-import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.DataInput;
@@ -60,8 +59,7 @@ import java.io.Serializable;
  *     }
  * </pre></blockquote></p>
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyMappingHelper.WritableHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface Writable extends Serializable {
     /**
      * Serialize the fields of this object to <code>out</code>.

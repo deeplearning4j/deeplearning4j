@@ -23,12 +23,14 @@ import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.metadata.CategoricalMetaData;
 import org.datavec.api.transform.metadata.ColumnMetaData;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.serde.JsonMappers;
 import org.datavec.api.transform.serde.JsonSerializer;
 import org.datavec.api.transform.serde.YamlSerializer;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
 import java.io.IOException;
@@ -116,6 +118,16 @@ public class DataAnalysis implements Serializable {
     public static DataAnalysis fromJson(String json) {
         try{
             return new JsonSerializer().getObjectMapper().readValue(json, DataAnalysis.class);
+        } catch (InvalidTypeIdException e){
+            if(e.getMessage().contains("@class")){
+                try{
+                    //JSON may be legacy (1.0.0-alpha or earlier), attempt to load it using old format
+                    return JsonMappers.getLegacyMapper().readValue(json, DataAnalysis.class);
+                } catch (IOException e2){
+                    throw new RuntimeException(e2);
+                }
+            }
+            throw new RuntimeException(e);
         } catch (Exception e){
             //Legacy format
             ObjectMapper om = new JsonSerializer().getObjectMapper();
