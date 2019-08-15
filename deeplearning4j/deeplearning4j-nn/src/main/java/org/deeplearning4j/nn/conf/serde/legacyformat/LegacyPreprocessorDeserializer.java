@@ -65,7 +65,8 @@ public class LegacyPreprocessorDeserializer extends BaseLegacyDeserializer<Input
     @Override
     public ObjectMapper getLegacyJsonMapper() {
 //        return JsonMappers.getMapperLegacyJson();
-        return JsonMappers.getJsonMapperLegacyFormatPreproc();
+//        return JsonMappers.getJsonMapperLegacyFormatPreproc();
+        throw new RuntimeException("To be removed");
     }
 
     @Override
