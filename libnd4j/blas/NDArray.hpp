@@ -2462,7 +2462,7 @@ double NDArray::getTrace() const {
 
     double sum = 0.;
 
-PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(OMP_SUMT:sum) if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
+PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(OMP_SUMT:sum) OMP_IF(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
     for(int i = 0; i < minDim; ++i)
         sum += e<double>(i * offset);
 

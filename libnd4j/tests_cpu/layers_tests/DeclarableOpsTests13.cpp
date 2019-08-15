@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -33,8 +33,8 @@ class DeclarableOpsTests13 : public testing::Test {
 public:
 
     DeclarableOpsTests13() {
-        printf("\n");
-        fflush(stdout);
+        //printf("\n");
+        //fflush(stdout);
     }
 };
 
@@ -103,8 +103,9 @@ TEST_F(DeclarableOpsTests13, test_argmax_edge_1) {
 
     nd4j::ops::argmax op;
     auto result = op.execute(ctx);
+    ASSERT_EQ(Status::OK(), result);
 
-    nd4j_printf("Done\n","");
+    //nd4j_printf("Done\n","");
     delete ctx;
 }
 
@@ -258,7 +259,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_1) {
 
 
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printBuffer("Output");
+    //result->at(0)->printBuffer("Output");
     ASSERT_TRUE(exp1.equalsTo(result->at(0)));
     delete result;
 }
@@ -306,8 +307,8 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_EdgeForceTest_3) {
 
     //nd4j_printf("rows %lld, cols %lld, vals %lld, res full %lld\n", rows.lengthOf(), cols.lengthOf(), vals.lengthOf(), exp1.lengthOf());
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(0)->printBuffer("Output");
-    exp.printBuffer("Expect");
+    //result->at(0)->printBuffer("Output");
+    //exp.printBuffer("Expect");
     //result->at(0)->printShapeInfo("Shape output");
     ASSERT_TRUE(exp.equalsTo(result->at(0)));
     delete result;
@@ -327,7 +328,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_1) {
     nd4j::ops::barnes_symmetrized op;
     auto result = op.execute({&rows, &cols, &vals}, {}, {1});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(2)->printBuffer("Symmetrized1");
+    //result->at(2)->printBuffer("Symmetrized1");
     ASSERT_TRUE(exp.equalsTo(result->at(2)));
 
     delete result;
@@ -346,7 +347,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_2) {
     nd4j::ops::barnes_symmetrized op;
     auto result = op.execute({&rows, &cols, &vals}, {}, {3});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(2)->printBuffer("Symmetrized2");
+    //result->at(2)->printBuffer("Symmetrized2");
     //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
     ASSERT_TRUE(exp.equalsTo(result->at(2)));
     delete result;
@@ -365,7 +366,7 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_3) {
     nd4j::ops::barnes_symmetrized op;
     auto result = op.execute({&rows, &cols, &vals}, {}, {11});
     ASSERT_EQ(result->status(), Status::OK());
-    result->at(2)->printBuffer("Symmetrized3");
+    //result->at(2)->printBuffer("Symmetrized3");
     //exp.printBuffer("EXPect symm3");
     //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
     //ASSERT_TRUE(exp.equalsTo(result->at(0)));
@@ -390,10 +391,10 @@ TEST_F(DeclarableOpsTests13, BarnesHutTsne_symmetrized_4) {
     auto result = op.execute({&rows, &cols, &vals}, {}, {11});
     ASSERT_EQ(result->status(), Status::OK());
     auto res = result->at(2);
-    res->printBuffer("Symmetrized4");
-    exp4.printBuffer("Expected sym");
-    nd4j_printf("Total res is {1, %lld}\n", res->lengthOf());
-    nd4j_printf("Expected is {1, %lld}\n", exp4.lengthOf());
+  //  res->printBuffer("Symmetrized4");
+  //  exp4.printBuffer("Expected sym");
+  //  nd4j_printf("Total res is {1, %lld}\n", res->lengthOf());
+  //  nd4j_printf("Expected is {1, %lld}\n", exp4.lengthOf());
 
     //exp.printBuffer("EXPect symm3");
     //    ASSERT_TRUE(exp[i]->equalsTo(result->at(i)));
@@ -617,5 +618,40 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_5) {
     ASSERT_TRUE(exp.equalsTo(result));
 
     delete results;
+}
+
+
+TEST_F(DeclarableOpsTests13, shift_bits_1) {
+    auto x = NDArrayFactory::create<int>('c', {5});
+    auto e = x.ulike();
+    x.assign(32);
+    e.assign(512);
+
+    nd4j::ops::shift_bits op;
+    auto result = op.execute({&x}, {}, {4});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, cyclic_shift_bits_1) {
+    auto x = NDArrayFactory::create<int>('c', {5});
+    auto e = x.ulike();
+    x.assign(32);
+    e.assign(512);
+
+    nd4j::ops::cyclic_shift_bits op;
+    auto result = op.execute({&x}, {}, {4});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
 }
 

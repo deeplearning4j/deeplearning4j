@@ -479,7 +479,7 @@ namespace helpers {
             for (auto fi = idxs.begin(); fi != idxs.end(); ++fi) {
                 auto outputT = listOfOutTensors->at(fi->first);
                 outputT->assign(listOfTensors->at(fi->second.at(0)));
-                auto loopSize = fi->second.size();
+                Nd4jLong loopSize = fi->second.size();
                 PRAGMA_OMP_PARALLEL_FOR
                 for (Nd4jLong idx = 1; idx < loopSize; ++idx) {
                     auto current = listOfTensors->at(fi->second.at(idx));
