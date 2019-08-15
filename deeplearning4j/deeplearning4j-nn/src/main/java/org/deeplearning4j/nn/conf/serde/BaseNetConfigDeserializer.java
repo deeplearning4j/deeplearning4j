@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.Updater;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.*;
 import org.nd4j.linalg.activations.Activation;
@@ -30,6 +31,8 @@ import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
+import org.nd4j.linalg.lossfunctions.ILossFunction;
+import org.nd4j.linalg.lossfunctions.impl.*;
 import org.nd4j.shade.jackson.core.JsonParser;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationContext;
@@ -111,6 +114,15 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
     protected boolean requiresActivationFromLegacy(Layer[] layers){
         for(Layer l : layers){
             if(l instanceof BaseLayer && ((BaseLayer)l).getActivationFn() == null){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean requiresLegacyLossHandling(Layer[] layers){
+        for(Layer l : layers){
+            if(l instanceof BaseOutputLayer && ((BaseOutputLayer)l).getLossFn() == null){
                 return true;
             }
         }
@@ -267,8 +279,31 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
             }
             baseLayer.setActivationFn(a);
         }
+    }
 
-
+    //0.5.0 and earlier: loss function was an enum like "lossFunction" : "NEGATIVELOGLIKELIHOOD",
+    protected void handleLossBackwardCompatibility(BaseOutputLayer baseLayer, ObjectNode on){
+        if(baseLayer.getLossFn() == null && on.has("activationFunction")) {
+            String lfn = on.get("lossFunction").asText();
+            ILossFunction loss = null;
+            switch (lfn) {
+                case "MCXENT":
+                    loss = new LossMCXENT();
+                    break;
+                case "MSE":
+                    loss = new LossMSE();
+                    break;
+                case "NEGATIVELOGLIKELIHOOD":
+                    loss = new LossNegativeLogLikelihood();
+                    break;
+                case "SQUARED_LOSS":
+                    loss = new LossL2();
+                    break;
+                case "XENT":
+                    loss = new LossBinaryXENT();
+            }
+            baseLayer.setLossFn(loss);
+        }
     }
 
     private static Map<String,Class<? extends IActivation>> activationMap;

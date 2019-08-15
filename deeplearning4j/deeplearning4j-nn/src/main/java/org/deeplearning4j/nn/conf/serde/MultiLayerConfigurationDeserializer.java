@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
@@ -60,6 +61,7 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
         boolean requiresLegacyRegularizationHandling = requiresRegularizationFromLegacy(layers);
         boolean requiresLegacyWeightInitHandling = requiresWeightInitFromLegacy(layers);
         boolean requiresLegacyActivationHandling = requiresActivationFromLegacy(layers);
+        boolean requiresLegacyLossHandling = requiresLegacyLossHandling(layers);
 
         if(attemptIUpdaterFromLegacy || requiresLegacyRegularizationHandling || requiresLegacyWeightInitHandling) {
             JsonLocation endLocation = jp.getCurrentLocation();
@@ -140,6 +142,10 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
 
                 if(requiresLegacyActivationHandling && layers[i] instanceof BaseLayer && ((BaseLayer)layers[i]).getActivationFn() == null){
                     handleActivationBackwardCompatibility((BaseLayer) layers[i], on);
+                }
+
+                if(requiresLegacyLossHandling && layers[i] instanceof BaseOutputLayer && ((BaseOutputLayer)layers[i]).getLossFn() == null){
+                    handleLossBackwardCompatibility((BaseOutputLayer) layers[i], on);
                 }
             }
         }
