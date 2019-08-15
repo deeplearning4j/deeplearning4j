@@ -56,7 +56,7 @@ DECLARE_SHAPE_FN(mergemaxindex) {
         dtype = (DataType)INT_ARG(0);
 
     auto resShape = ShapeBuilders::copyShapeInfoAndType(in, dtype, block.workspace());
-    return SHAPELIST(resShape);
+    return SHAPELIST(CONSTANT(resShape));
 }
 }
 

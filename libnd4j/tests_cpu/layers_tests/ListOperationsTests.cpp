@@ -105,6 +105,7 @@ TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
         auto row = list.read(e);
         ASSERT_TRUE(row->equalsTo(tads->at(e)));
         //list.write(e, row);
+        delete row;
     }
 
     delete result;

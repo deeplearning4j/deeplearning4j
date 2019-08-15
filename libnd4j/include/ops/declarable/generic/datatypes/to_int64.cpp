@@ -44,7 +44,7 @@ namespace nd4j {
         }
         DECLARE_SHAPE_FN(to_int64) {
             auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DataType::INT64, true, block.workspace());
-            return SHAPELIST(outShape);
+            return SHAPELIST(CONSTANT(outShape));
         }
 
     }

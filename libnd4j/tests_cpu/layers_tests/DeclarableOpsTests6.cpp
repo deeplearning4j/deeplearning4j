@@ -1570,8 +1570,8 @@ TEST_F(DeclarableOpsTests6, LogDet_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("LogDet Output1 ");
-    exp.printIndexedBuffer("LogDet Expected1 ");
+//    z->printIndexedBuffer("LogDet Output1 ");
+//    exp.printIndexedBuffer("LogDet Expected1 ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1592,9 +1592,9 @@ TEST_F(DeclarableOpsTests6, LogDet_2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("LogDet Output2 ");
+//    z->printIndexedBuffer("LogDet Output2 ");
 //    z->printShapeInfo("Shape");
-    exp.printIndexedBuffer("LogDet Expected2 ");
+//    exp.printIndexedBuffer("LogDet Expected2 ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1615,9 +1615,9 @@ TEST_F(DeclarableOpsTests6, LogDet_3) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("LogDet Output3 ");
+//    z->printIndexedBuffer("LogDet Output3 ");
 //    z->printShapeInfo("Shape");
-    exp.printIndexedBuffer("LogDet Expected3 ");
+//    exp.printIndexedBuffer("LogDet Expected3 ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1662,8 +1662,8 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+//    z->printIndexedBuffer("Output ");
+//    exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1698,8 +1698,8 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_01) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+//    z->printIndexedBuffer("Output ");
+//    exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1732,8 +1732,8 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_02) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+//    z->printIndexedBuffer("Output ");
+//    exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1812,8 +1812,8 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_03) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output ");
-    exp.printIndexedBuffer("Expected ");
+//    z->printIndexedBuffer("Output ");
+//    exp.printIndexedBuffer("Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
