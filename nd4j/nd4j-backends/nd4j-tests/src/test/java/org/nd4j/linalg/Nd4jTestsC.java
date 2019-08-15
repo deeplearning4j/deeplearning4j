@@ -7979,6 +7979,14 @@ public class Nd4jTestsC extends BaseNd4jTest {
         //from [4,4,3] to [2,4,6] then crop to [2,4,5]
     }
 
+    @Test
+    public void testToFromByteArray() throws IOException {
+        // simple test to get rid of toByteArray and fromByteArray compiler warnings.
+        INDArray x = Nd4j.arange(10);
+        byte[] xb = Nd4j.toByteArray(x);
+        INDArray y = Nd4j.fromByteArray(xb);
+        assertEquals(x,y);
+    }
 
     private static INDArray fwd(INDArray input, INDArray W, INDArray b){
         INDArray ret = Nd4j.createUninitialized(input.size(0), W.size(1));

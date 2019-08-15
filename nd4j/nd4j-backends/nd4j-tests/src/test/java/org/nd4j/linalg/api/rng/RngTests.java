@@ -102,7 +102,7 @@ public class RngTests extends BaseNd4jTest {
     }
 
     @Test
-    void testRandomBinomial() {
+    public void testRandomBinomial() {
         //silly tests. Just increasing the usage for randomBinomial to stop compiler warnings.
         INDArray x = Nd4j.randomBinomial(10, 0.5, 3,3);
         assertTrue(x.sum().getDouble(0) > 0.0); //silly test. Just increasing th usage for randomBinomial
