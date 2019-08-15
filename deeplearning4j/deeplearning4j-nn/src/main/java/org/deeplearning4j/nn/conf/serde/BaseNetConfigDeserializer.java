@@ -23,6 +23,9 @@ import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.weights.*;
+import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.activations.IActivation;
+import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.learning.config.*;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
@@ -38,6 +41,8 @@ import org.nd4j.shade.jackson.databind.node.ObjectNode;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * A custom (abstract) deserializer that handles backward compatibility (currently only for updater refactoring that
@@ -97,6 +102,15 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
     protected boolean requiresWeightInitFromLegacy(Layer[] layers){
         for(Layer l : layers){
             if(l instanceof BaseLayer && ((BaseLayer)l).getWeightInitFn() == null){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    protected boolean requiresActivationFromLegacy(Layer[] layers){
+        for(Layer l : layers){
+            if(l instanceof BaseLayer && ((BaseLayer)l).getActivationFn() == null){
                 return true;
             }
         }
@@ -220,7 +234,7 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
     }
 
     protected void handleWeightInitBackwardCompatibility(BaseLayer baseLayer, ObjectNode on){
-        if(on != null && (on.has("weightInit") )){
+        if(on != null && on.has("weightInit") ){
             //Legacy format JSON
             if(on.has("weightInit")){
                 String wi = on.get("weightInit").asText();
@@ -228,8 +242,7 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
                     WeightInit w = WeightInit.valueOf(wi);
                     Distribution d = null;
                     if(w == WeightInit.DISTRIBUTION && on.has("dist")){
-                        //TODO deserialize distribution
-                        String dist = on.get("dist").asText();
+                        String dist = on.get("dist").toString();
                         d = NeuralNetConfiguration.mapper().readValue(dist, Distribution.class);
                     }
                     IWeightInit iwi = w.getWeightInitFunction(d);
@@ -239,6 +252,34 @@ public abstract class BaseNetConfigDeserializer<T> extends StdDeserializer<T> im
                 }
             }
         }
+    }
+
+    //Changed after 0.7.1 from "activationFunction" : "softmax" to "activationFn" : <object>
+    protected void handleActivationBackwardCompatibility(BaseLayer baseLayer, ObjectNode on){
+
+        if(baseLayer.getActivationFn() == null && on.has("activationFunction")){
+            String afn = on.get("activationFunction").asText();
+            IActivation a = null;
+            try {
+                a = getMap().get(afn.toLowerCase()).newInstance();
+            } catch (InstantiationException | IllegalAccessException e){
+                //Ignore
+            }
+            baseLayer.setActivationFn(a);
+        }
+
+
+    }
+
+    private static Map<String,Class<? extends IActivation>> activationMap;
+    private static synchronized Map<String,Class<? extends IActivation>> getMap(){
+        if(activationMap == null){
+            activationMap = new HashMap<>();
+            for(Activation a : Activation.values()){
+                activationMap.put(a.toString().toLowerCase(), a.getActivationFunction().getClass());
+            }
+        }
+        return activationMap;
     }
 
     @Override
