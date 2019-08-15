@@ -121,7 +121,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         Nd4j.getDeallocatorService().pickObject(this);
 
         // now we're
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
 
         val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
@@ -1522,7 +1522,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             lazyAllocateHostPointer();
         }
 
-        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
         NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(allocationPoint.getDevicePointer(), 0, length * elementSize, 0, context.getSpecialStream());
 
         MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;

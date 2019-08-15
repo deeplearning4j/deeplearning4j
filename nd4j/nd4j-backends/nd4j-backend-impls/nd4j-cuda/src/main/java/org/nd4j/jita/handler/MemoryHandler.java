@@ -19,8 +19,6 @@ package org.nd4j.jita.handler;
 import com.google.common.collect.Table;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
-import org.nd4j.jita.allocator.context.ContextPool;
-import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AllocationShape;
@@ -295,7 +293,7 @@ public interface MemoryHandler {
      * This method returns ExternalContext wrapper (if applicable)
      * @return
      */
-    ExternalContext getDeviceContext();
+    CudaContext getDeviceContext();
 
     void registerAction(CudaContext context, INDArray result, INDArray... operands);
 
@@ -306,8 +304,4 @@ public interface MemoryHandler {
     boolean promoteObject(DataBuffer buffer);
 
     void relocateObject(DataBuffer buffer);
-
-    ContextPool getContextPool();
-
-
 }

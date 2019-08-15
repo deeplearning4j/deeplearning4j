@@ -120,6 +120,17 @@ namespace functions {
             nd4j::DebugHelper::checkErrorCode(stream, "transformBool(...) failed");
 		}
 
+        template<typename X, typename Z>
+        void TransformBool<X,Z>::exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
+        }
+
+        template<typename X, typename Z>
+        template <typename OpType>
+        void TransformBool<X,Z>::exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
+        }
+
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformBool, , LIBND4J_TYPES, BOOL_TYPES);
     }
 }

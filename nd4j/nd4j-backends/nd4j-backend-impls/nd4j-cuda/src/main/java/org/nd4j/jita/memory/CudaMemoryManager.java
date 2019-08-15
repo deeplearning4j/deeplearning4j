@@ -19,7 +19,6 @@ package org.nd4j.jita.memory;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.Pointer;
-import org.nd4j.jita.allocator.context.impl.LimitedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
@@ -79,7 +78,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
                 throw new RuntimeException("Failed to allocate " + bytes + " bytes from DEVICE [" + Nd4j.getAffinityManager().getDeviceForCurrentThread() + "] memory");
 
             if (initialize) {
-                val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+                val context = AtomicAllocator.getInstance().getDeviceContext();
 
                 int i = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, bytes, 0, context.getSpecialStream());
                 if (i == 0)
@@ -168,7 +167,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
      */
     @Override
     public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
 
 
         if (dstBuffer instanceof CompressedDataBuffer && !(srcBuffer instanceof CompressedDataBuffer)) {
@@ -258,7 +257,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
         AllocationPoint point = AtomicAllocator.getInstance().getAllocationPoint(array);
 
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+            CudaContext context = AtomicAllocator.getInstance().getDeviceContext();
             NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(AtomicAllocator.getInstance().getPointer(array, context),0, array.data().length() * Nd4j.sizeOfDataType(array.data().dataType()),0, context.getOldStream());
 
             // we also memset host pointer
@@ -289,20 +288,6 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
     @Override
     public void releaseCurrentContext() {
-        // gettting context for this thread
-        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-
-        if (context == null)
-            return;
-
-        // we dont want any remnaints below this line
-        context.syncOldStream();
-        context.syncSpecialStream();
-
-        val pool = AtomicAllocator.getInstance().getContextPool();
-
-        // push it back to pool
-        pool.releaseContext(context);
-        ((LimitedContextPool) pool).removeAcquired();
+        throw new UnsupportedOperationException("Not implemented yet");
     }
 }

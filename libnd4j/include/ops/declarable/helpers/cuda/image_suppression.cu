@@ -85,8 +85,8 @@ namespace helpers {
             *shouldSelect = shouldSelectShared;
         }
     }
-    template <typename I>
 
+    template <typename I>
     static __global__ void copyIndices(void* indices,  void* indicesLong, Nd4jLong len) {
         __shared__ I* indexBuf;
         __shared__ Nd4jLong* srcBuf;
@@ -115,15 +115,15 @@ namespace helpers {
         sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
         // TO DO: sort indices using scales as value row
         //std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return scales->e<T>(i) > scales->e<T>(j);});
-        I* indexBuf = reinterpret_cast<I*>(indices->specialBuffer());
+        auto indexBuf = reinterpret_cast<I*>(indices->specialBuffer());
 
         NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()});
         int numSelected = 0;
         int numBoxes = boxes->sizeAt(0);
-        T* boxesBuf = reinterpret_cast<T*>(boxes->specialBuffer());
+        auto boxesBuf = reinterpret_cast<T*>(boxes->specialBuffer());
 
-        I* selectedIndicesData = reinterpret_cast<I*>(selectedIndices.specialBuffer());
-        I* outputBuf = reinterpret_cast<I*>(output->specialBuffer());
+        auto selectedIndicesData = reinterpret_cast<I*>(selectedIndices.specialBuffer());
+        auto outputBuf = reinterpret_cast<I*>(output->specialBuffer());
 
         bool* shouldSelectD;
         auto err = cudaMalloc(&shouldSelectD, sizeof(bool));
@@ -138,8 +138,7 @@ namespace helpers {
                     throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot set up bool flag to device", err);
                 }
 
-                shouldSelectKernel<T> <<< 128, 256, 1024, *stream >>>
-                                                           (boxesBuf, boxes->specialShapeInfo(), indexBuf, selectedIndicesData, threshold, numSelected, i, shouldSelectD);
+                shouldSelectKernel<T,I><<<128, 256, 1024, *stream>>>(boxesBuf, boxes->specialShapeInfo(), indexBuf, selectedIndicesData, threshold, numSelected, i, shouldSelectD);
                 err = cudaMemcpy(&shouldSelect, shouldSelectD, sizeof(bool), cudaMemcpyDeviceToHost);
                 if (err) {
                     throw cuda_exception::build("helpers::nonMaxSuppressionV2: Cannot set up bool flag to host", err);
@@ -161,9 +160,8 @@ namespace helpers {
     }
 
     void nonMaxSuppressionV2(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(boxes->dataType(), output->dataType(), nonMaxSuppressionV2_, (context, boxes, scales, maxSize, threshold, output), FLOAT_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(boxes->dataType(), output->dataType(), nonMaxSuppressionV2_, (context, boxes, scales, maxSize, threshold, output), FLOAT_TYPES, INDEXING_TYPES);
     }
-    BUILD_DOUBLE_TEMPLATE(template void nonMaxSuppressionV2_, (nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
 
 }
 }

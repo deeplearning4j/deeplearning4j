@@ -32,6 +32,7 @@ public:
 };
 
 TEST_F(TypeCastTests, Test_Cast_1) {
+#ifndef __CUDABLAS__
     const int limit = 100;
     auto src = new double[limit];
     auto z = new float[limit];
@@ -51,6 +52,7 @@ TEST_F(TypeCastTests, Test_Cast_1) {
     delete[] src;
     delete[] z;
     delete[] exp;
+#endif
 }
 
 TEST_F(TypeCastTests, Test_ConvertDtype_1) {

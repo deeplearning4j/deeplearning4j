@@ -164,6 +164,7 @@ public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
                         .put(new Info("OpaqueConstantDataBuffer").pointerTypes("OpaqueConstantDataBuffer"))
                         .put(new Info("OpaqueContext").pointerTypes("OpaqueContext"))
                         .put(new Info("OpaqueRandomGenerator").pointerTypes("OpaqueRandomGenerator"))
+                        .put(new Info("OpaqueLaunchContext").pointerTypes("OpaqueLaunchContext"))
                         .put(new Info("const char").valueTypes("byte").pointerTypes("@Cast(\"char*\") String",
                                         "@Cast(\"char*\") BytePointer"))
                         .put(new Info("char").valueTypes("char").pointerTypes("@Cast(\"char*\") BytePointer",

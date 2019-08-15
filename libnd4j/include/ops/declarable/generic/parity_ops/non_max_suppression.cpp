@@ -75,7 +75,7 @@ namespace nd4j {
         DECLARE_TYPES(non_max_suppression) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_INTS});
+                    ->setAllowedOutputTypes({ALL_INDICES});
         }
 
     }

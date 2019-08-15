@@ -164,13 +164,13 @@ void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* 
                                                                                   sizeof(Nd4jLong)));
 
             NDArray::prepareSpecialUse({output}, {input, pIndices});
-            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLauncher, (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets), NUMERIC_TYPES, INTEGER_TYPES);
+            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLauncher, (context->getCudaStream(), numOfSubArrs, input->getSpecialBuffer(), xShapeInfo, xOffsets, pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->getSpecialBuffer(), zShapeInfo, zOffsets), LIBND4J_TYPES, INDEXING_TYPES);
             NDArray::registerSpecialUse({output}, {input, pIndices});
             manager.synchronize();
         }
         else {
             NDArray::prepareSpecialUse({output}, {input, pIndices});
-            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLinear, (context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()), NUMERIC_TYPES, INTEGER_TYPES);
+            BUILD_DOUBLE_SELECTOR(input->dataType(), pIndices->dataType(), gatherCudaLinear, (context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), pIndices->getSpecialBuffer(), pIndices->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo()), LIBND4J_TYPES, INDEXING_TYPES);
             NDArray::registerSpecialUse({output}, {input, pIndices});
 
         }
@@ -180,12 +180,6 @@ void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* 
 
     }
 }
-
-
-BUILD_DOUBLE_TEMPLATE(template void gatherCudaLauncher, (const cudaStream_t *stream, const int numOfSubArrs, const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xOffsets, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zOffsets), NUMERIC_TYPES, INTEGER_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void gatherCudaLinear, (const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo), NUMERIC_TYPES, INTEGER_TYPES);
-
-
 
 }
 }

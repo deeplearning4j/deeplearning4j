@@ -22,7 +22,6 @@ import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.jita.allocator.context.impl.LimitedContextPool;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.impl.MemoryTracker;
 
@@ -537,15 +536,6 @@ public class AllocatorTest {
         INDArray arg3 = Nd4j.rand(1,300);
         controller.prepareAction(x, arg1, arg2, arg3);
         assertEquals(currEventsNumber+5, controller.getEventsProvider().getEventsNumber());
-    }
-
-    @Test
-    public void testReleaseContext() {
-        LimitedContextPool pool = (LimitedContextPool) AtomicAllocator.getInstance().getContextPool();
-        System.out.println(pool.acquireContextForDevice(0));
-        INDArray x = Nd4j.rand(1,10);
-        pool.releaseContext(pool.getContextForDevice(0));
-        System.out.println(pool.getContextForDevice(0));
     }
 
     @Test

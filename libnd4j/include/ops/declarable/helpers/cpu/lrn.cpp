@@ -410,10 +410,9 @@ static void lrnBP_(const NDArray& input, const NDArray& gradO, NDArray& gradI, c
     gradI *= gradO;
 }
 
-BUILD_DOUBLE_TEMPLATE(template void lrnBP_, (const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta), LIBND4J_TYPES, FLOAT_TYPES);
 
 void lrnBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int depth, const float bias, const float alpha, const float beta) {
-    BUILD_DOUBLE_SELECTOR(input.dataType(), gradO.dataType(), lrnBP_, (input, gradO, gradI, depth, bias, alpha, beta), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(input.dataType(), gradO.dataType(), lrnBP_, (input, gradO, gradI, depth, bias, alpha, beta), FLOAT_TYPES, FLOAT_TYPES);
 }
 
 }

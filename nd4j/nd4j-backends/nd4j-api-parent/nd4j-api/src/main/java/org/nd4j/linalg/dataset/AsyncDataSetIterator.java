@@ -129,13 +129,8 @@ public class AsyncDataSetIterator implements DataSetIterator {
         if (iterator.resetSupported() && !iterator.hasNext())
             this.backedIterator.reset();
 
-        this.thread = new AsyncPrefetchThread(buffer, iterator, terminator, null);
+        this.thread = new AsyncPrefetchThread(buffer, iterator, terminator, null, deviceId);
 
-        /**
-         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
-         */
-
-        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
         thread.setDaemon(true);
         thread.start();
     }
@@ -229,12 +224,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         backedIterator.reset();
         shouldWork.set(true);
-        this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator, null);
-
-        /**
-         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
-         */
-        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
+        this.thread = new AsyncPrefetchThread(buffer, backedIterator, terminator, null, deviceId);
 
         thread.setDaemon(true);
         thread.start();
@@ -391,13 +381,15 @@ public class AsyncDataSetIterator implements DataSetIterator {
                         .policySpill(SpillPolicy.REALLOCATE).build();
 
         private MemoryWorkspace workspace;
+        private final int deviceId;
 
 
         protected AsyncPrefetchThread(@NonNull BlockingQueue<DataSet> queue, @NonNull DataSetIterator iterator,
-                                      @NonNull DataSet terminator, MemoryWorkspace workspace) {
+                                      @NonNull DataSet terminator, MemoryWorkspace workspace, int deviceId) {
             this.queue = queue;
             this.iterator = iterator;
             this.terminator = terminator;
+            this.deviceId = deviceId;
 
             this.setDaemon(true);
             this.setName("ADSI prefetch thread");
@@ -405,6 +397,7 @@ public class AsyncDataSetIterator implements DataSetIterator {
 
         @Override
         public void run() {
+            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
             externalCall();
             try {
                 if (useWorkspace)

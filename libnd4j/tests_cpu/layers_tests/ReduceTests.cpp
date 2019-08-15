@@ -62,7 +62,7 @@ public:
     std::vector<int> dim = {1, 2, 3};
 };
 
-
+#ifndef __CUDABLAS__
 TEST_F(EuclideanDistanceTest,Test1) {
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
     nd4j::ArrayOptions::setDataType(shapeBuffer, nd4j::DataType::FLOAT32);
@@ -153,3 +153,5 @@ TEST_F(ReduceTest,MatrixTest) {
     delete tad;
     delete[] xShapeInfo;
 }
+
+#endif

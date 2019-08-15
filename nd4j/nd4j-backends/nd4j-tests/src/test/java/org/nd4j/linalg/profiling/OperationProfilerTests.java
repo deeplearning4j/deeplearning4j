@@ -444,6 +444,8 @@ public class OperationProfilerTests extends BaseNd4jTest {
                 Nd4j.exec(op);  //Should trigger NaN panic
                 fail();
             } catch (Exception e){
+                //throw new RuntimeException(e);
+                log.info("Message: {}", e.getMessage());
                 assertTrue(e.getMessage(), e.getMessage().contains("NaN"));
             }
 

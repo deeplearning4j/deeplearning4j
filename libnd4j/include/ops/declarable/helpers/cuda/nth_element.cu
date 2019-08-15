@@ -88,8 +88,7 @@ namespace helpers {
     BUILD_SINGLE_SELECTOR(input->dataType(), nthElementFunctor_, (context, input, n, output, reverse), LIBND4J_TYPES);
 
     }
-    BUILD_SINGLE_TEMPLATE(template void nthElementFunctor_, (nd4j::LaunchContext * context, NDArray* input, Nd4jLong n, NDArray* output, bool reverse), LIBND4J_TYPES);
-    
+
 }
 }
 }

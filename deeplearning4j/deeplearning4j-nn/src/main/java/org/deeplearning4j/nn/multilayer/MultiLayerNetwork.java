@@ -25,6 +25,7 @@ import lombok.val;
 import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.bytedeco.javacpp.Pointer;
+import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;;
 import org.deeplearning4j.datasets.iterator.MultiDataSetWrapperIterator;
 import org.deeplearning4j.eval.RegressionEvaluation;

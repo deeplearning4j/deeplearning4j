@@ -25,10 +25,6 @@ import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.concurrency.DeviceAllocationsTracker;
-import org.nd4j.jita.allocator.context.ContextPool;
-import org.nd4j.jita.allocator.context.ExternalContext;
-import org.nd4j.jita.allocator.context.impl.LimitedContextPool;
-import org.nd4j.jita.allocator.context.impl.PackedContextPool;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
@@ -37,6 +33,9 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.impl.MemoryTracker;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.jita.allocator.pointers.PointersPair;
+import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
+import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
+import org.nd4j.jita.allocator.pointers.cuda.cusolverDnHandle_t;
 import org.nd4j.jita.allocator.utils.AllocationUtils;
 import org.nd4j.jita.conf.Configuration;
 import org.nd4j.jita.conf.CudaEnvironment;
@@ -99,8 +98,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
     private final AtomicBoolean wasInitialised = new AtomicBoolean(false);
 
-    private final ContextPool contextPool;
-
     @Getter
     private final MemoryProvider memoryProvider;
 
@@ -142,7 +139,6 @@ public class CudaZeroHandler implements MemoryHandler {
         switch (configuration.getExecutionModel()) {
             case SEQUENTIAL: {
                 this.flowController = new GridFlowController();
-                this.contextPool = new LimitedContextPool();
             }
                 break;
             default:
@@ -222,7 +218,7 @@ public class CudaZeroHandler implements MemoryHandler {
                     boolean initialize) {
 
         long reqMemory = AllocationUtils.getRequiredMemory(shape);
-        CudaContext context = getCudaContext();
+        val context = getCudaContext();
         switch (targetMode) {
             case HOST: {
                 if (MemoryTracker.getInstance().getActiveHostAmount() + reqMemory >= configuration.getMaximumZeroAllocation()) {
@@ -1158,8 +1154,8 @@ public class CudaZeroHandler implements MemoryHandler {
      * @return
      */
     @Override
-    public ExternalContext getDeviceContext() {
-        return new ExternalContext(getCudaContext());
+    public CudaContext getDeviceContext() {
+        return getCudaContext();
     }
 
     /**
@@ -1167,30 +1163,20 @@ public class CudaZeroHandler implements MemoryHandler {
      * @return
      */
     public CudaContext getCudaContext() {
-        // FIXME: remove this before release
-        Integer deviceId = getDeviceId();
-        return contextPool.acquireContextForDevice(deviceId);
-    }
+        val lc = nativeOps.defaultLaunchContext();
 
+        // TODO: maybe make ThreadLocal cache for context?
 
-    /**
-     * This method does initialization for thread.
-     *
-     *
-     * @param threadId
-     */
-    protected void initCudaContextForThread(Long threadId) {
-
-        // we set device to be used prior to stream creation
-
-        nativeOps.setDevice(getDeviceId());
-
-        CudaContext context = new CudaContext();
-        context.initHandle();
-        context.initOldStream();
-        context.initStream();
-        context.associateHandle();
-        //contextPool.put(threadId, context);
+        return CudaContext.builder()
+                .bufferScalar(nativeOps.lcScalarPointer(lc))
+                .bufferReduction(nativeOps.lcReductionPointer(lc))
+                .bufferAllocation(nativeOps.lcAllocationPointer(lc))
+                .bufferSpecial(nativeOps.lcScalarPointer(lc))
+                .oldStream(new cudaStream_t(nativeOps.lcExecutionStream(lc)))
+                .specialStream(new cudaStream_t(nativeOps.lcCopyStream(lc)))
+                .cublasHandle(new cublasHandle_t(nativeOps.lcBlasHandle(lc)))
+                .solverHandle(new cusolverDnHandle_t(nativeOps.lcSolverHandle(lc)))
+                .build();
     }
 
     /**
@@ -1227,11 +1213,4 @@ public class CudaZeroHandler implements MemoryHandler {
     public FlowController getFlowController() {
         return flowController;
     }
-
-    @Override
-    public ContextPool getContextPool() {
-        return contextPool;
-    }
-
-
 }

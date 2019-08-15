@@ -465,6 +465,7 @@ TEST_F(LegacyOpsTests, PowDerivative_1) {
     ASSERT_TRUE(exp.equalsTo(&x));
 }
 
+#ifndef __CUDABLAS__
 TEST_F(LegacyOpsTests, reduce3_1) {
 
     Nd4jLong yShape[2] = {4,4};
@@ -493,6 +494,8 @@ TEST_F(LegacyOpsTests, reduce3_1) {
     delete[] shapeBuffer;
     delete[] xShapeBuffer;
 }
+
+#endif
 
 
 TEST_F(LegacyOpsTests, Reduce3_2) {

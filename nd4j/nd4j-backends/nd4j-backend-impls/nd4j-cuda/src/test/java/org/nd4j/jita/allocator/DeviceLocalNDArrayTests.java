@@ -38,14 +38,16 @@ public class DeviceLocalNDArrayTests {
         val dl = new DeviceLocalNDArray(arr);
 
         for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
+            val f = e;
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    Nd4j.getAffinityManager().unsafeSetDevice(f);
                     dl.get().addi(1.0);
                     Nd4j.getExecutioner().commit();
                 }
             });
-            Nd4j.getAffinityManager().attachThreadToDevice(t, e);
+
             t.start();
             t.join();
         }
@@ -60,9 +62,11 @@ public class DeviceLocalNDArrayTests {
         val dl = new DeviceLocalNDArray(arr);
 
         for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
+            val f = e;
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    Nd4j.getAffinityManager().unsafeSetDevice(f);
                     for (int i = 0; i < 10; i++) {
                         val tmp = Nd4j.create(DataType.DOUBLE, shape);
                         tmp.addi(1.0);
@@ -70,7 +74,7 @@ public class DeviceLocalNDArrayTests {
                     }
                 }
             });
-            Nd4j.getAffinityManager().attachThreadToDevice(t, e);
+
             t.start();
             t.join();
 
@@ -79,14 +83,16 @@ public class DeviceLocalNDArrayTests {
         System.gc();
 
         for (int e = 0; e < Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
+            val f = e;
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    Nd4j.getAffinityManager().unsafeSetDevice(f);
                     dl.get().addi(1.0);
                     Nd4j.getExecutioner().commit();
                 }
             });
-            Nd4j.getAffinityManager().attachThreadToDevice(t, e);
+
             t.start();
             t.join();
         }

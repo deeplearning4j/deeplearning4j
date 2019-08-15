@@ -143,7 +143,7 @@ public class ProtectedCudaConstantHandler implements ConstantHandler {
         AllocationsTracker.getInstance().markAllocated(AllocationKind.CONSTANT, deviceId, requiredMemoryBytes);
 
         long currentOffset = constantOffsets.get(deviceId).get();
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
         if (currentOffset + requiredMemoryBytes >= MAX_CONSTANT_LENGTH || requiredMemoryBytes > MAX_BUFFER_LENGTH) {
             if (point.getAllocationStatus() == AllocationStatus.HOST
                             && CudaEnvironment.getInstance().getConfiguration().getMemoryModel() == Configuration.MemoryModel.DELAYED) {

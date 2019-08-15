@@ -70,7 +70,7 @@ namespace nd4j {
 
                 NDArray::prepareSpecialUse({&input}, {&updates, &indices});
 
-                BUILD_DOUBLE_SELECTOR(xType, yType, scatterSimple_, (context, opId, input, updates, indices, dimensions), LIBND4J_TYPES, INTEGER_TYPES);
+                BUILD_DOUBLE_SELECTOR(xType, yType, scatterSimple_, (context, opId, input, updates, indices, dimensions), LIBND4J_TYPES, INDEXING_TYPES);
 
                 NDArray::registerSpecialUse({&input}, {&updates, &indices});
             }

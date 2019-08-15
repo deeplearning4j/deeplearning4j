@@ -72,7 +72,7 @@ public class SynchronousFlowController implements FlowController {
     public void synchronizeToHost(AllocationPoint point) {
 
         if (!point.isActualOnHostSide()) {
-            val context = (CudaContext) allocator.getDeviceContext().getContext();
+            val context = allocator.getDeviceContext();
 
             if (!point.isConstant())
                 waitTillFinished(point);
@@ -102,7 +102,7 @@ public class SynchronousFlowController implements FlowController {
 
         if (!point.isActualOnDeviceSide()) {
             if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-                val context = (CudaContext) allocator.getDeviceContext().getContext();
+                val context = allocator.getDeviceContext();
 
                 long perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
@@ -135,7 +135,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareActionAllWrite(INDArray... operands) {
-        val context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = allocator.getDeviceContext();
         val cId = allocator.getDeviceId();
 
         for (INDArray operand : operands) {
@@ -168,7 +168,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
-        val context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = allocator.getDeviceContext();
         val cId = allocator.getDeviceId();
 
 
@@ -290,7 +290,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands) {
-        val context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = allocator.getDeviceContext();
 
         if (result != null) {
             result.acquireLock();

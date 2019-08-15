@@ -25,6 +25,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.shape.bp.ConcatBp;
@@ -41,6 +42,12 @@ public class Concat extends DynamicCustomOp {
 
     public Concat(){
 
+    }
+
+    public Concat(int concatDimension, INDArray... arrays) {
+        super(null, arrays, new INDArray[0]);
+        this.concatDimension = concatDimension;
+        addIArgument(concatDimension);
     }
 
     public Concat(SameDiff sameDiff, int concatDimension, SDVariable... inputs){

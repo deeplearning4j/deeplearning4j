@@ -62,9 +62,9 @@ namespace nd4j {
             }
         }
     }
-    BUILD_DOUBLE_TEMPLATE(template __global__ void repeatKernelDouble, (void const* inputBuffer, void* outputBuffer,
+    BUILD_SINGLE_TEMPLATE_TWICE(template __global__ void repeatKernelDouble, (void const* inputBuffer, void* outputBuffer,
             Nd4jLong numTads, Nd4jLong inputLength, Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
-            Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets), LIBND4J_TYPES, LIBND4J_TYPES);
+            Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets), LIBND4J_TYPES);
 
     template <typename T>
     void repeatKernelH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength, Nd4jLong outputLength,
@@ -88,10 +88,10 @@ namespace nd4j {
         dim3 launchDims(256, 512, 8192);
         repeatKernelDouble<X,Y><<<launchDims.x, launchDims.y, launchDims.z, stream>>>(inputBuffer, outputBuffer, numTads, inputLength, tadOnlyInputShapeInfo, tadInputOffsets, tadOnlyOutputShapeInfo, tadOutputOffsets);
     }
-    BUILD_DOUBLE_TEMPLATE(template void repeatKernelHH, (void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
+    BUILD_SINGLE_TEMPLATE_TWICE(template void repeatKernelHH, (void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
             Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
             Nd4jLong* tadOnlyOutputShapeInfo, Nd4jLong *tadOutputOffsets,
-            cudaStream_t stream), LIBND4J_TYPES, LIBND4J_TYPES);
+            cudaStream_t stream), LIBND4J_TYPES);
 
 
 }

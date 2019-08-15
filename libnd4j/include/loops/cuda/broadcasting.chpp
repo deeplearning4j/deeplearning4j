@@ -60,8 +60,17 @@ static __global__ void broadcastInverseSimple(
     functions::broadcast::Broadcast<X,Y,Z>::template transformInverseCuda<OpClass>(x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,dimension,dimensionLength,tadOnlyShapeInfo,tadOffsets,tadOnlyShapeInfoZ,tadOffsetsZ);
 }
 
+
 namespace functions {
     namespace broadcast {
+
+        static Nd4jLong __device__ __noinline__ _getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo, Nd4jLong length) {
+            return shape::getIndexOffset(index, shapeInfo, length);
+        }
+
+        static Nd4jLong __device__ __noinline__ _length(Nd4jLong *shapeInfo) {
+            return shape::length(shapeInfo);
+        }
 
         template<typename X, typename Y, typename Z>
         template <typename OpClass>
@@ -120,9 +129,9 @@ namespace functions {
 
             if (threadIdx.x == 0) {
 
-                tadLength = shape::length(tadOnlyShapeInfo);
+                tadLength = _length(tadOnlyShapeInfo);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                numTads = shape::length(yShapeInfo) / tadLength;
+                numTads = _length(yShapeInfo) / tadLength;
                 xEWS = shape::elementWiseStride(xShapeInfo);
                 zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
             }
@@ -146,9 +155,9 @@ namespace functions {
                 else {
                     // it is expected that x and z tads and y array all have the same length
                     for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                        auto xOffset = shape::getIndexOffset(i, xShapeInfo,  tadLength);
-                        auto yOffset = shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
-                        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
+                        auto xOffset = _getIndexOffset(i, xShapeInfo,  tadLength);
+                        auto yOffset = _getIndexOffset(i, tadOnlyShapeInfo, tadLength);
+                        auto zOffset = _getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
                         rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset]);
                     }
                 }
@@ -186,9 +195,9 @@ namespace functions {
 
             if (threadIdx.x == 0) {
                                 
-   	            tadLength = shape::length(tadOnlyShapeInfo);
+   	            tadLength = _length(tadOnlyShapeInfo);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                numTads = shape::length(xShapeInfo) / tadLength;
+                numTads = _length(xShapeInfo) / tadLength;
                 yEWS = shape::elementWiseStride(yShapeInfo);
                 zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
             }
@@ -212,14 +221,15 @@ namespace functions {
                     // it is expected that x and z tads and y array all have the same length
                     for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
                         
-                        auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
-                        auto yOffset = shape::getIndexOffset(i, yShapeInfo, tadLength);
-                        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
+                        auto xOffset = _getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
+                        auto yOffset = _getIndexOffset(i, yShapeInfo, tadLength);
+                        auto zOffset = _getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
                         rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
                     }
                 }
             }
         }
+
 /*
         BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT Broadcast, , PAIRWISE_TYPES_0);
         BUILD_PAIRWISE_TEMPLATE(template class ND4J_EXPORT Broadcast, , PAIRWISE_TYPES_1);

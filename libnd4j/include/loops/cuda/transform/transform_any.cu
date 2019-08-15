@@ -114,6 +114,17 @@ namespace functions {
             nd4j::DebugHelper::checkErrorCode(stream, "transformAny(...) failed");
 		}
 
+        template<typename X, typename Z>
+        void TransformAny<X,Z>::exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism) {
+
+        }
+
+        template<typename X, typename Z>
+        template <typename OpType>
+        void TransformAny<X,Z>::exec(void *dx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism) {
+
+        }
+
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformAny, , LIBND4J_TYPES, LIBND4J_TYPES);
     }
 }

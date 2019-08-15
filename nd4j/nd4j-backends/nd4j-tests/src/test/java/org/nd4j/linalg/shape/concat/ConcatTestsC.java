@@ -25,6 +25,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
+import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -212,7 +213,7 @@ public class ConcatTestsC extends BaseNd4jTest {
         assertEquals(exp, concat2);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test(expected = ND4JIllegalStateException.class)
     public void testConcatVector() {
         System.out.println(Nd4j.concat(0, Nd4j.ones(1,1000000), Nd4j.create(1, 1)));
     }

@@ -109,8 +109,6 @@ namespace nd4j {
                 NDArray::registerSpecialUse({gradX, gradY}, {x, y, epsNext});
             }
 
-            BUILD_SINGLE_TEMPLATE(template void minimumBPFunctor_, (NDArray* x, NDArray* y, NDArray* epsNext, NDArray* gradX, NDArray* gradY), NUMERIC_TYPES);
-
         }
     }
 }

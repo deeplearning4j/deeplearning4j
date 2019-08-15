@@ -144,6 +144,7 @@
         <module>dl4j-perf</module>
         <module>dl4j-integration-tests</module>
         <module>deeplearning4j-common</module>
+        <module>deeplearning4j-remote</module>
     </modules>
 
     <dependencyManagement>

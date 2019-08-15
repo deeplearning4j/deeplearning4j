@@ -34,20 +34,6 @@ public interface AffinityManager {
      */
     Integer getDeviceForCurrentThread();
 
-    /**
-     * This method returns deviceId for specified thread
-     * @param thread
-     * @return
-     */
-    Integer getDeviceForThread(Thread thread);
-
-    /**
-     * This method returns deviceId for specified threadId
-     *
-     * @param threadId
-     * @return
-     */
-    Integer getDeviceForThread(long threadId);
 
     /**
      * This method returns id of current device for a given INDArray
@@ -56,23 +42,6 @@ public interface AffinityManager {
      * @return
      */
     Integer getDeviceForArray(INDArray array);
-
-    /**
-     * This method attaches specified thread to specified device
-     *
-     * @param thread
-     * @param deviceId
-     */
-    void attachThreadToDevice(Thread thread, Integer deviceId);
-
-
-    /**
-     * This method attaches specified thread (by Id) to specified device
-     *
-     * @param threadId java ID of the thread
-     * @param deviceId
-     */
-    void attachThreadToDevice(long threadId, Integer deviceId);
 
     /**
      * This method returns number of available devices

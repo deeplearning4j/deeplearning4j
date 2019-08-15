@@ -189,7 +189,6 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
     // col2imCuda2<T><<<512, 512, 1024, *stream>>>(columns, image, colShapeInfo, imShapeInfo, sH, sW, pH, pW, dH, dW);
     col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH, sW, pH, pW, dH, dW);
 }
-BUILD_SINGLE_TEMPLATE(template void col2imCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream, const void *col, const Nd4jLong *colShapeInfo, void *im, const Nd4jLong *imShapeInfo, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void col2im(nd4j::LaunchContext& context, const NDArray& col, NDArray& im, const int sH, const int sW, const int pH, const int pW, const int iH, const int iW, const int dH, const int dW) {
@@ -201,7 +200,7 @@ void col2im(nd4j::LaunchContext& context, const NDArray& col, NDArray& im, const
     const int sharedMem = col.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
 
     NDArray::prepareSpecialUse({&im}, {&col});
-    BUILD_SINGLE_SELECTOR(im.dataType(), col2imCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context.getCudaStream(), col.getSpecialBuffer(), col.getSpecialShapeInfo(), im.specialBuffer(), im.specialShapeInfo(), sH, sW, pH, pW, dH, dW), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(im.dataType(), col2imCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context.getCudaStream(), col.getSpecialBuffer(), col.getSpecialShapeInfo(), im.specialBuffer(), im.specialShapeInfo(), sH, sW, pH, pW, dH, dW), FLOAT_TYPES);
     NDArray::registerSpecialUse({&im}, {&col});
 
     manager.synchronize();

@@ -3104,6 +3104,15 @@ public native void deleteRandomGenerator(OpaqueRandomGenerator ptr);
 public native @Cast("char*") String runLightBenchmarkSuit(@Cast("bool") boolean printOut);
 public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean printOut);
 
+public native OpaqueLaunchContext defaultLaunchContext();
+public native @Cast("Nd4jPointer") Pointer lcScalarPointer(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcReductionPointer(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcAllocationPointer(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcExecutionStream(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcCopyStream(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcBlasHandle(OpaqueLaunchContext lc);
+public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc);
+
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H
 
 
@@ -4035,6 +4044,11 @@ public native @Cast("char*") String runFullBenchmarkSuit(@Cast("bool") boolean p
         public native void printBuffer(@Cast("char*") String msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/, @Cast("const bool") boolean sync/*=true*/);
         public native void printBuffer();
         public native void printBuffer(@Cast("char*") BytePointer msg/*=nullptr*/, @Cast("Nd4jLong") long limit/*=-1*/, @Cast("const bool") boolean sync/*=true*/);
+
+        /**
+        * print element by element consequently in a way they (elements) are stored in physical memory
+        */
+        public native void printLinearBuffer();
 
         /**
         *  prints _buffer (if host = true) or _bufferD (if host = false) as it is, that is in current state without checking buffer status
@@ -7047,9 +7061,9 @@ public static final int PREALLOC_SIZE = 33554432;
 
     @Namespace("shape") public static native int tadIndexForLinear(int linearIndex, int tadLength);
 
-    @Namespace("shape") public static native int tadLength(@Cast("Nd4jLong*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
-    @Namespace("shape") public static native int tadLength(@Cast("Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
-    @Namespace("shape") public static native int tadLength(@Cast("Nd4jLong*") long[] shapeInfo, int[] dimension, int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("Nd4jLong*") LongPointer shapeInfo, IntPointer dimension, int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("Nd4jLong*") LongBuffer shapeInfo, IntBuffer dimension, int dimensionLength);
+    @Namespace("shape") public static native @Cast("Nd4jLong") long tadLength(@Cast("Nd4jLong*") long[] shapeInfo, int[] dimension, int dimensionLength);
 
     @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") LongPointer oldShape, int newRank, @Cast("Nd4jLong*") LongPointer newShape, @Cast("bool") boolean isFOrder);
     @Namespace("shape") public static native @Cast("bool") boolean canReshape(int oldRank, @Cast("Nd4jLong*") LongBuffer oldShape, int newRank, @Cast("Nd4jLong*") LongBuffer newShape, @Cast("bool") boolean isFOrder);
@@ -7894,10 +7908,6 @@ public static final int PREALLOC_SIZE = 33554432;
  * Returns the prod of the data
  * up to the given length
  */
-    @Namespace("shape") public static native int prod(@Cast("Nd4jLong*") LongPointer data, int length);
-    @Namespace("shape") public static native int prod(@Cast("Nd4jLong*") LongBuffer data, int length);
-    @Namespace("shape") public static native int prod(@Cast("Nd4jLong*") long[] data, int length);
-
     @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") LongPointer data, int length);
     @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") LongBuffer data, int length);
     @Namespace("shape") public static native @Cast("Nd4jLong") long prodLong(@Cast("const Nd4jLong*") long[] data, int length);
@@ -8745,10 +8755,6 @@ public static final int PREALLOC_SIZE = 33554432;
  * @param originalTadNum the tad number for the reduced version of the problem
  */
 
-/**
- * Returns the prod of the data
- * up to the given length
- */
 
 /**
  * Returns the prod of the data
@@ -9931,6 +9937,8 @@ public static final int PREALLOC_SIZE = 33554432;
 // #include <op_boilerplate.h>
 // #include <memory/Workspace.h>
 // #include <vector>
+// #include <mutex>
+// #include <execution/ContextBuffers.h>
 
 @Namespace("nd4j") @NoOffset public static class LaunchContext extends Pointer {
     static { Loader.load(); }

@@ -58,6 +58,7 @@ import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
+import org.nd4j.linalg.api.ops.impl.shape.Tile;
 import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.impl.*;
@@ -2222,7 +2223,6 @@ public class Nd4j {
      * Write an ndarray to a writer
      * @param writer the writer to write to
      * @param write the ndarray to write
-     * @throws IOException
      */
     public static void write(OutputStream writer, INDArray write) throws IOException {
         DataOutputStream stream = new DataOutputStream(writer);
@@ -2230,14 +2230,12 @@ public class Nd4j {
         stream.close();
     }
 
-
     /**
      * Convert an ndarray to a byte array
      * @param arr the array to convert
      * @return the converted byte array
-     * @throws IOException
      */
-    public static byte[] toByteArray(INDArray arr) throws IOException {
+    public static byte[] toByteArray(@NonNull  INDArray arr) throws IOException {
         if (arr.length() * arr.data().getElementSize() >  Integer.MAX_VALUE)
             throw new ND4JIllegalStateException("");
 
@@ -2252,14 +2250,12 @@ public class Nd4j {
      * Read an ndarray from a byte array
      * @param arr the array to read from
      * @return the deserialized ndarray
-     * @throws IOException
      */
-    public static INDArray fromByteArray(byte[] arr) throws IOException {
+    public static INDArray fromByteArray(@NonNull  byte[] arr) throws IOException {
         ByteArrayInputStream bis = new ByteArrayInputStream(arr);
         INDArray ret = read(bis);
         return ret;
     }
-
 
     /**
      * Read line via input streams
@@ -2280,7 +2276,6 @@ public class Nd4j {
      * @param split    the split separator
      * @param charset the  charset
      * @return the deserialized array.
-     * @throws IOException
      */
     public static INDArray readNumpy(@NonNull DataType dataType, @NonNull InputStream filePath, @NonNull String split, @NonNull Charset charset) throws IOException {
         BufferedReader reader = new BufferedReader(new InputStreamReader(filePath, charset));
@@ -2449,7 +2444,7 @@ public class Nd4j {
                 }
                 //parse data
                 if (lineNum > 5) {
-                    String[] entries = line.replace("\\],", "").replaceAll("\\]", "").replaceAll("\\[", "").split(sep);
+                    String[] entries = line.replace("\\],", "").replaceAll("]", "").replaceAll("\\[", "").split(sep);
                     if (rank == 0) {
                         try {
                             newArr.addi((format.parse(entries[0])).doubleValue());
@@ -2496,7 +2491,6 @@ public class Nd4j {
      * @return NDArray
      */
     public static INDArray readTxt(String filePath) {
-        String sep = ",";
         File file = new File(filePath);
         InputStream is = null;
         try {
@@ -2505,13 +2499,7 @@ public class Nd4j {
         } catch (FileNotFoundException e) {
             throw new RuntimeException(e);
         } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
+            IOUtils.closeQuietly(is);
         }
     }
 
@@ -2552,9 +2540,9 @@ public class Nd4j {
      */
     public static INDArray createArrayFromShapeBuffer(DataBuffer data, Pair<DataBuffer, long[]> shapeInfo) {
         int rank = Shape.rank(shapeInfo.getFirst());
-        long offset = Shape.offset(shapeInfo.getFirst());
+        // removed offset parameter that called a deprecated method which always returns 0.
         INDArray result = Nd4j.create(data, toIntArray(rank, Shape.shapeOf(shapeInfo.getFirst())),
-                toIntArray(rank, Shape.stride(shapeInfo.getFirst())), offset, Shape.order(shapeInfo.getFirst()));
+                toIntArray(rank, Shape.stride(shapeInfo.getFirst())), 0, Shape.order(shapeInfo.getFirst()));
         if (data instanceof CompressedDataBuffer)
             result.markAsCompressed(true);
 
@@ -2566,9 +2554,8 @@ public class Nd4j {
      *
      * @param dis the data input stream to read from
      * @return the ndarray
-     * @throws IOException
      */
-    public static INDArray read(DataInputStream dis) throws IOException {
+    public static INDArray read(DataInputStream dis) {
         val headerShape = BaseDataBuffer.readHeader(dis);
 
         var shapeInformation = Nd4j.createBufferDetached(new long[]{headerShape.getMiddle().longValue()}, headerShape.getRight());
@@ -2597,7 +2584,6 @@ public class Nd4j {
      *
      * @param arr              the array to write
      * @param dataOutputStream the data output stream to write to
-     * @throws IOException
      */
     public static void write(INDArray arr, DataOutputStream dataOutputStream) throws IOException {
         //BaseDataBuffer.write(...) doesn't know about strides etc, so dup (or equiv. strategy) is necessary here
@@ -2614,7 +2600,6 @@ public class Nd4j {
      * Save an ndarray to the given file
      * @param arr the array to save
      * @param saveTo the file to save to
-     * @throws IOException
      */
     public static void saveBinary(INDArray arr, File saveTo) throws IOException {
         BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(saveTo));
@@ -2629,7 +2614,6 @@ public class Nd4j {
      * Read a binary ndarray from the given file
      * @param read the nd array to read
      * @return the loaded ndarray
-     * @throws IOException
      */
     public static INDArray readBinary(File read) throws IOException {
         BufferedInputStream bis = new BufferedInputStream(new FileInputStream(read));
@@ -2645,21 +2629,9 @@ public class Nd4j {
      * @param arr the array to clear
      */
     public static void clearNans(INDArray arr) {
-        //BooleanIndexing.applyWhere(arr, Conditions.isNan(), new Value(Nd4j.EPS_THRESHOLD));
         getExecutioner().exec(new ReplaceNans(arr, Nd4j.EPS_THRESHOLD));
     }
-
-    /**
-     * Reverses the passed in matrix such that m[0] becomes m[m.length - 1] etc
-     *
-     * @param reverse the matrix to reverse
-     * @return the reversed matrix
-     */
-    public static INDArray rot(INDArray reverse) {
-        INDArray ret = INSTANCE.rot(reverse);
-        return ret;
-    }
-
+    
     /**
      * Reverses the passed in matrix such that m[0] becomes m[m.length - 1] etc
      *
@@ -2667,8 +2639,6 @@ public class Nd4j {
      * @return the reversed matrix
      */
     public static INDArray reverse(INDArray reverse) {
-        //INDArray ret = INSTANCE.reverse(reverse);
-        //logCreationIfNecessary(ret);
         return Nd4j.getExecutioner().exec(new OldReverse(reverse));
     }
 
@@ -2682,8 +2652,7 @@ public class Nd4j {
      * @return the 1D range vector
      */
     public static INDArray arange(double begin, double end, double step) {
-        INDArray ret = INSTANCE.arange(begin, end, step);
-        return ret;
+        return INSTANCE.arange(begin, end, step);
     }
 
     /**
@@ -2693,8 +2662,7 @@ public class Nd4j {
      * See {@link #arange(double, double, double)} with step size 1.
      */
     public static INDArray arange(double begin, double end) {
-        INDArray ret = INSTANCE.arange(begin, end, 1);
-        return ret;
+        return INSTANCE.arange(begin, end, 1);
     }
 
     /**
@@ -2723,31 +2691,18 @@ public class Nd4j {
      * in the matrix
      *
      * @param x the diagonal values
-     * @param k the kth diagonal to get
-     * @return new matrix
-     */
-    public static INDArray diag(INDArray x, int k) {
-        INDArray ret;
-        if(x.isVectorOrScalar() || x.isRowVector() || x.isColumnVector()) {
-            ret = Nd4j.create(new long[]{x.length(), x.length()});
-            Nd4j.getExecutioner().execAndReturn(new Diag(new INDArray[]{x},new INDArray[]{ret}));
-        } else {
-            ret = Nd4j.createUninitialized(new long[]{Math.min(x.size(0), x.size(1))});
-            Nd4j.getExecutioner().execAndReturn(new DiagPart(x,ret));
-        }
-        return ret;
-    }
-
-    /**
-     * Creates a new matrix where the values of the given vector are the diagonal values of
-     * the matrix if a vector is passed in, if a matrix is returns the kth diagonal
-     * in the matrix
-     *
-     * @param x the diagonal values
      * @return new matrix
      */
     public static INDArray diag(INDArray x) {
-        return diag(x, 0);
+        INDArray ret;
+        if(x.isVectorOrScalar() || x.isRowVector() || x.isColumnVector()) {
+            ret = Nd4j.create(x.dataType(), x.length(), x.length());
+            Nd4j.getExecutioner().execAndReturn(new Diag(new INDArray[]{x},new INDArray[]{ret}));
+        } else {
+            ret = Nd4j.createUninitialized(x.dataType(), Math.min(x.size(0), x.size(1)));
+            Nd4j.getExecutioner().execAndReturn(new DiagPart(x,ret));
+        }
+        return ret;
     }
 
     /**
@@ -2813,22 +2768,8 @@ public class Nd4j {
     }
 
     public static INDArray appendBias(@NonNull INDArray... vectors) {
-        INDArray ret = INSTANCE.appendBias(vectors);
-        return ret;
+        return INSTANCE.appendBias(vectors);
     }
-
-    /**
-     * Perform an operation along a diagonal
-     *
-     * @param x    the ndarray to perform the operation on
-     * @param func the operation to perform
-     */
-    public static void doAlongDiagonal(INDArray x, Function<Number, Number> func) {
-        if (x.isMatrix())
-            for (int i = 0; i < x.rows(); i++)
-                x.put(i, i, func.apply(x.getDouble(i, i)));
-    }
-
 
     ////////////////////// RANDOM ///////////////////////////////
 
@@ -2905,7 +2846,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(@NonNull DataType dataType, char order, @NonNull long... shape) {
-        INDArray ret = Nd4j.createUninitialized(dataType, shape, order); //INSTANCE.rand(order, shape);
+        INDArray ret = Nd4j.createUninitialized(dataType, shape, order);
         return rand(ret);
     }
 
@@ -2920,7 +2861,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(@NonNull DataType dataType, @NonNull int... shape) {
-        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), Nd4j.order()); //INSTANCE.rand(order, shape);
+        INDArray ret = Nd4j.createUninitialized(dataType, ArrayUtil.toLongArray(shape), Nd4j.order());
         return rand(ret);
     }
 
@@ -2935,7 +2876,7 @@ public class Nd4j {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
-        INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());//INSTANCE.rand(rows, columns, Nd4j.getRandom());
+        INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
         return rand(ret);
     }
 
@@ -2974,7 +2915,6 @@ public class Nd4j {
      */
     @Deprecated
     public static INDArray rand(int[] shape, long seed) {
-        INDArray ret = createUninitialized(shape, Nd4j.order());//;INSTANCE.rand(shape, seed);
         return rand(seed, ArrayUtil.toLongArray(shape));
     }
 
@@ -3038,8 +2978,6 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(@NonNull Distribution dist, @NonNull long... shape) {
-        //INDArray ret = INSTANCE.rand(shape, dist);
-        //logCreationIfNecessary(ret);
         return dist.sample(shape);
     }
 
@@ -3052,7 +2990,7 @@ public class Nd4j {
      * @return the random ndarray with the specified shape
      */
     public static INDArray rand(int rows, int columns, @NonNull org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = createUninitialized(new int[] {rows, columns}, order());//INSTANCE.rand(rows, columns, rng);
+        INDArray ret = createUninitialized(new int[] {rows, columns}, order());
         return rand(ret, rng);
     }
 
@@ -3069,7 +3007,7 @@ public class Nd4j {
      */
     @Deprecated
     public static INDArray rand(long[] shape, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, min, max, rng);
+        INDArray ret = createUninitialized(shape, order());
         return rand(ret, min, max, rng);
     }
 
@@ -3083,7 +3021,7 @@ public class Nd4j {
      * @return a random matrix of the specified shape and range
      */
     public static INDArray rand(double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng, @NonNull long... shape) {
-        INDArray ret = createUninitialized(shape, order()); //INSTANCE.rand(shape, min, max, rng);
+        INDArray ret = createUninitialized(shape, order());
         return rand(ret, min, max, rng);
     }
 
@@ -3098,7 +3036,7 @@ public class Nd4j {
      * @return a drandom matrix of the specified shape and range
      */
     public static INDArray rand(int rows, int columns, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
-        INDArray ret = createUninitialized(rows, columns);//INSTANCE.rand(rows, columns, min, max, rng);
+        INDArray ret = createUninitialized(rows, columns);
         return rand(ret, min, max, rng);
     }
 
@@ -3127,7 +3065,7 @@ public class Nd4j {
      * Create a ndarray of the given shape and data type with values from N(0,1)
      *
      * @param shape the shape of the ndarray
-     * @return
+     * @return new array with random values
      */
     public static INDArray randn(@NonNull DataType dataType, @NonNull int... shape) {
         return randn(dataType, ArrayUtil.toLongArray(shape));
@@ -3207,7 +3145,7 @@ public class Nd4j {
      * Random normal N(0, 1) using the specified seed
      *
      * @param shape the shape of the array
-     * @return
+     * @return new array with random values
      */
     public static INDArray randn(long seed, @NonNull long... shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order());
@@ -3219,7 +3157,7 @@ public class Nd4j {
      *
      * @param rows    the number of rows in the matrix
      * @param columns the number of columns in the matrix
-     * @return
+     * @return new array with random values
      */
     public static INDArray randn(long rows, long columns) {
         INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
@@ -3243,7 +3181,7 @@ public class Nd4j {
      *
      * @param rows    the number of rows in the matrix
      * @param columns the number of columns in the matrix
-     * @return
+     * @return new array with random values
      */
     public static INDArray randn(long rows, long columns, long seed) {
         INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
@@ -3256,7 +3194,7 @@ public class Nd4j {
      * @param rows    the number of rows in the matrix
      * @param columns the number of columns in the matrix
      * @param r       the random generator to use
-     * @return
+     * @return new array with random values
      */
     public static INDArray randn(long rows, long columns, @NonNull org.nd4j.linalg.api.rng.Random r) {
         INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
@@ -3284,7 +3222,7 @@ public class Nd4j {
      *
      * @param shape the shape of the array
      * @param r     the random generator to use
-     * @return
+     * @return new array with random values
      */
     public static INDArray randn(@NonNull org.nd4j.linalg.api.rng.Random r, @NonNull long... shape) {
         final INDArray ret = Nd4j.createUninitialized(shape, order());
@@ -3455,9 +3393,9 @@ public class Nd4j {
      *
      * PLEASE NOTE: memory of underlying array will be NOT initialized, and won't be set to 0.0
      *
-     * @param rows
-     * @param columns
-     * @return
+     * @param rows rows
+     * @param columns columns
+     * @return uninitialized 2D array of rows x columns
      */
     public static INDArray createUninitialized(long rows, long columns) {
         return createUninitialized(new long[] {rows, columns});
@@ -3578,7 +3516,7 @@ public class Nd4j {
      * @return the created ndarray.
      */
     public static INDArray create(double[][][] data) {
-        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
+        return create(ArrayUtil.flatten(data), data.length, data[0].length, data[0][0].length);
     }
 
     /**
@@ -3587,7 +3525,7 @@ public class Nd4j {
      * @return the created ndarray.
      */
     public static INDArray create(float[][][] data) {
-        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length});
+        return create(ArrayUtil.flatten(data), data.length, data[0].length, data[0][0].length);
     }
 
     /**
@@ -3605,7 +3543,7 @@ public class Nd4j {
      * @return the created ndarray.
      */
     public static INDArray create(double[][][][] data) {
-        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length, data[0][0][0].length});
+        return create(ArrayUtil.flatten(data), data.length, data[0].length, data[0][0].length, data[0][0][0].length);
     }
 
     /**
@@ -3614,7 +3552,7 @@ public class Nd4j {
      * @return the created ndarray.
      */
     public static INDArray create(float[][][][] data) {
-        return create(ArrayUtil.flatten(data), new int[] {data.length, data[0].length, data[0][0].length, data[0][0][0].length});
+        return create(ArrayUtil.flatten(data), data.length, data[0].length, data[0][0].length, data[0][0][0].length);
     }
 
     /**
@@ -3655,8 +3593,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(float[] data, char order) {
-        INDArray ret = INSTANCE.create(data, order);
-        return ret;
+        return INSTANCE.create(data, order);
     }
 
     /**
@@ -3667,8 +3604,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(double[] data, char order) {
-        INDArray ret = INSTANCE.create(data, order);
-        return ret;
+        return INSTANCE.create(data, order);
     }
 
     /**
@@ -3679,8 +3615,7 @@ public class Nd4j {
      * @return the created ndarray
      */
     public static INDArray create(int columns, char order) {
-        INDArray ret = INSTANCE.create(new long[] {columns}, Nd4j.getStrides(new long[] {columns}, order), 0, order);
-        return ret;
+        return INSTANCE.create(new long[] {columns}, Nd4j.getStrides(new long[] {columns}, order), 0, order);
     }
 
     /**
@@ -3765,8 +3700,7 @@ public class Nd4j {
      * @return the created ndarray.
      */
     public static INDArray create(int[] data, long[] shape, long[]strides, char order, DataType type) {
-        val ret = INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
-        return ret;
+        return INSTANCE.create(data, shape, strides, order, type, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
@@ -5387,25 +5321,7 @@ public class Nd4j {
      * @return the tiled ndarray
      */
     public static INDArray tile(INDArray tile, @NonNull int... repeat) {
-        int d = repeat.length;
-        long[] shape = ArrayUtil.copy(tile.shape());
-        long n = Math.max(tile.length(), 1);
-        if (d < tile.rank()) {
-            repeat = Ints.concat(ArrayUtil.nTimes(tile.rank() - d, 1), repeat);
-        }
-        for (int i = 0; i < shape.length; i++) {
-            if (repeat[i] != 1) {
-                tile = tile.reshape(-1, n).repeat(0, repeat[i]);
-            }
-
-            long in = shape[i];
-            long nOut = in * repeat[i];
-            shape[i] = nOut;
-            n /= Math.max(in, 1);
-
-        }
-
-        return tile.reshape(shape);
+        return Nd4j.exec(new Tile(new INDArray[]{tile}, new INDArray[]{}, repeat))[0];
     }
 
     /**

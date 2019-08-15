@@ -69,7 +69,14 @@ namespace nd4j {
         template <typename T>
         static _CUDA_H void convertFromThreshold(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);
 
-        static _CUDA_H Nd4jLong estimateQuantizedSize(Nd4jLong rawSize);
+        FORCEINLINE static _CUDA_H Nd4jLong estimateQuantizedSize(Nd4jLong rawSize) {
+            if (rawSize <= 0)
+                throw std::runtime_error("Input size for quantization can't be <= 0");
+
+            // 2 fp32 values for max/min, and rawSize number of BYTES
+            return 8 + rawSize;
+        }
+
 
         template <typename T>
         static _CUDA_H void convertToQuantized(Nd4jPointer *extras, void *dx, Nd4jLong N, void *dz);

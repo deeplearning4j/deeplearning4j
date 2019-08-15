@@ -68,101 +68,9 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public Integer getDeviceForCurrentThread() {
-        return getDeviceForThread(Thread.currentThread().getId());
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().getDevice();
     }
 
-    /**
-     * This method returns deviceId for given thread.
-     *
-     * If no device was assigned to this thread before this call, it'll be assinged here.
-     * @param thread
-     * @return
-     */
-    @Override
-    public Integer getDeviceForThread(Thread thread) {
-        return getDeviceForThread(thread.getId());
-    }
-
-    /**
-     * This method returns deviceId for given thread, identified by threadId
-     *
-     * If no device was assigned to this thread before this call, it'll be assinged here.
-     *
-     * @param threadId
-     * @return
-     */
-    @Override
-    public Integer getDeviceForThread(long threadId) {
-        if (getNumberOfDevices() == 1)
-            return 0;
-
-        Integer aff = affinityMap.get(threadId);
-
-        if (aff == null) {
-            Integer deviceId = getNextDevice(threadId);
-            affinityMap.put(threadId, deviceId);
-            affiliated.set(new AtomicBoolean(false));
-
-            if (threadId == Thread.currentThread().getId()) {
-                NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(deviceId);
-                //logger.error("setDevice({}) called for thread {}", deviceId, Thread.currentThread().getName());
-                affiliated.get().set(true);
-            }
-
-            return deviceId;
-        } else {
-
-            if (threadId == Thread.currentThread().getId()) {
-                if (affiliated.get() == null)
-                    affiliated.set(new AtomicBoolean(false));
-
-                if (!affiliated.get().get()) {
-                    NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(aff);
-                    //logger.error("SCARY setDevice({}) called for thread {}", aff, threadId);
-                    affiliated.get().set(true);
-                    return aff;
-                }
-            }
-
-            return aff;
-        }
-/*
-
-
-        return affinityMap.get(threadId);
-*/
-        //return 0;
-    }
-
-    /**
-     * This method pairs specified thread & device
-     *
-     * @param thread
-     * @param deviceId
-     */
-    @Override
-    public void attachThreadToDevice(Thread thread, Integer deviceId) {
-        attachThreadToDevice(thread.getId(), deviceId);
-    }
-
-    /**
-     * This method pairs specified thread & device
-     *
-     * @param threadId
-     * @param deviceId
-     */
-    @Override
-    public void attachThreadToDevice(long threadId, Integer deviceId) {
-        val t = Thread.currentThread();
-        String name = "N/A";
-        if (t.getId() == threadId)
-            name = t.getName();
-
-        List<Integer> devices = new ArrayList<>(CudaEnvironment.getInstance().getConfiguration().getAvailableDevices());
-        logger.trace("Manually mapping thread [{} - {}] to device [{}], out of [{}] devices...", threadId,
-                name, deviceId, devices.size());
-        affinityMap.put(threadId, deviceId);
-    }
 
     /**
      * This method returns device id available. Round-robin balancing used here.
@@ -275,14 +183,13 @@ public class CudaAffinityManager extends BasicAffinityManager {
         val empty = array.isEmpty();
 
         // we use this call to get device memory updated
-        AtomicAllocator.getInstance().getPointer(array, (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
+        AtomicAllocator.getInstance().getPointer(array, AtomicAllocator.getInstance().getDeviceContext());
 
         int currentDeviceId = getDeviceForCurrentThread();
 
         if (currentDeviceId != deviceId.intValue()) {
             Nd4j.getMemoryManager().releaseCurrentContext();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(deviceId);
-            attachThreadToDevice(Thread.currentThread().getId(), deviceId);
+            unsafeSetDevice(deviceId);
         }
 
 
@@ -292,8 +199,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         if (currentDeviceId != deviceId.intValue()) {
             Nd4j.getMemoryManager().releaseCurrentContext();
-            attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
-            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(currentDeviceId);
+            unsafeSetDevice(currentDeviceId);
         }
 
 
@@ -312,11 +218,11 @@ public class CudaAffinityManager extends BasicAffinityManager {
         if (buffer == null)
             return null;
 
-        int currentDeviceId = AtomicAllocator.getInstance().getDeviceId();
+        int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
         if (currentDeviceId != deviceId) {
             Nd4j.getMemoryManager().releaseCurrentContext();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(deviceId);
-            Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), deviceId);
+            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
         }
 
         DataBuffer dstBuffer = Nd4j.createBuffer(buffer.dataType(), buffer.length(), false);
@@ -324,8 +230,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
 
         if (currentDeviceId != deviceId) {
             Nd4j.getMemoryManager().releaseCurrentContext();
-            NativeOpsHolder.getInstance().getDeviceNativeOps().setDevice(currentDeviceId);
-            Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread().getId(), currentDeviceId);
+            Nd4j.getAffinityManager().unsafeSetDevice(currentDeviceId);
         }
 
         return dstBuffer;

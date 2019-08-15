@@ -1073,10 +1073,12 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         List<INDArray> arrays = new ArrayList<>();
         val num = 10;
         for (int i = 0; i < num; i++) {
-            arrays.add(Nd4j.create(20, 20).assign(i));
+            arrays.add(Nd4j.create(5, 20).assign(i));
         }
 
         INDArray pile = Nd4j.pile(arrays);
+
+        log.info("Pile: {}", pile);
 
         INDArray[] tears = Nd4j.tear(pile, 1, 2);
 

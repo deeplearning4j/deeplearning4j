@@ -24,6 +24,7 @@
 #include <NDArray.h>
 #include <ops/ops.h>
 #include <GradCheck.h>
+#include <array>
 
 
 using namespace nd4j;
@@ -361,6 +362,77 @@ TEST_F(DeclarableOpsTests15, test_rank_2) {
     ASSERT_EQ(e, *z);
 
     delete result;
+}
+
+TEST_F(DeclarableOpsTests15, test_concat_column_1) {
+    auto x = NDArrayFactory::create<double>('c', {2, 1}, {1, 1});
+    auto y = NDArrayFactory::create<double>('c', {2, 1}, {0, 0});
+    auto e = NDArrayFactory::create<double>('c', {2, 2}, {1, 0, 1, 0});
+    auto z = NDArrayFactory::create<double>('c', {2, 2});
+
+    nd4j::ops::concat op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {1}, {});
+    ASSERT_EQ(Status::OK(), status);
+
+    z.printIndexedBuffer("z");
+
+    ASSERT_EQ(e, z);
+}
+
+TEST_F(DeclarableOpsTests15, test_concat_large_1) {
+    std::array<NDArray*, 2000> arrays;
+    Context context(1);
+    Nd4jLong axis = 0;
+
+    // we crate bunch of arrays, filled with specific values
+    for (int e = 0; e < arrays.size(); e++) {
+        auto array = NDArrayFactory::create_<float>('c', {1, 300});
+        array->assign(e);
+        context.setInputArray(e, array, true);
+    }
+
+    auto z = NDArrayFactory::create<float>('c', {2000, 300});
+    context.setOutputArray(0, &z, false);
+    context.setIArguments(&axis, 1);
+
+    nd4j::ops::concat op;
+    op.execute(&context);
+
+    for (int e = 0; e < arrays.size(); e++) {
+        auto row = z.tensorAlongDimension(e, {1});
+
+        ASSERT_NEAR((float) e, row->e<float>(0), 1e-5f);
+
+        delete row;
+    }
+}
+
+TEST_F(DeclarableOpsTests15, test_concat_large_2) {
+    std::array<NDArray*, 10> arrays;
+    Context context(1);
+    Nd4jLong axis = 0;
+
+    // we crate bunch of arrays, filled with specific values
+    for (int e = 0; e < arrays.size(); e++) {
+        auto array = NDArrayFactory::create_<float>('c', {1, 5, 20});
+        array->assign(e);
+        context.setInputArray(e, array, true);
+    }
+
+    auto z = NDArrayFactory::create<float>('c', {arrays.size(), 5, 20});
+    context.setOutputArray(0, &z, false);
+    context.setIArguments(&axis, 1);
+
+    nd4j::ops::concat op;
+    op.execute(&context);
+
+    for (int e = 0; e < arrays.size(); e++) {
+        auto row = z.tensorAlongDimension(e, {1, 2});
+
+        ASSERT_NEAR((float) e, row->meanNumber().e<float>(0), 1e-5f);
+
+        delete row;
+    }
 }
 
 TEST_F(DeclarableOpsTests15, test_lstmBlock_1) {

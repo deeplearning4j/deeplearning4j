@@ -107,7 +107,7 @@ namespace nd4j {
             COPY_SHAPE(x, shapeE);
             COPY_SHAPE(y, shapeG);
 
-            auto shapeList = SHAPELIST(shapeE, shapeG);
+            auto shapeList = SHAPELIST(CONSTANT(shapeE), CONSTANT(shapeG));
 
             return shapeList;
         }

@@ -62,7 +62,7 @@ public class JcublasLevel2 extends BaseLevel2 {
         CublasPointer cBPointer = new CublasPointer(X, ctx);
         CublasPointer cCPointer = new CublasPointer(Y, ctx);
 
-        cublasHandle_t handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getCublasHandle();
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getCublasStream()));
 
@@ -134,7 +134,7 @@ public class JcublasLevel2 extends BaseLevel2 {
         CublasPointer cBPointer = new CublasPointer(X, ctx);
         CublasPointer cCPointer = new CublasPointer(Y, ctx);
 
-        cublasHandle_t handle = ctx.getHandle();
+        cublasHandle_t handle = ctx.getCublasHandle();
         synchronized (handle) {
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getCublasStream()));
 
