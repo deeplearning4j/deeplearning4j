@@ -16,11 +16,8 @@
 
 package org.datavec.image.transform;
 
-import lombok.Data;
 import org.datavec.image.data.ImageWritable;
-import org.datavec.image.serde.LegacyImageMappingHelper;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.util.Random;
@@ -31,8 +28,7 @@ import java.util.Random;
  * @author saudet
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyImageMappingHelper.ImageTransformHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ImageTransform {
 
     /**
