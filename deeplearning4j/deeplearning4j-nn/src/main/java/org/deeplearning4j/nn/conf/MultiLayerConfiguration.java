@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -41,6 +42,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
 import java.io.IOException;
@@ -157,6 +159,16 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
             conf = mapper.readValue(json, MultiLayerConfiguration.class);
+        } catch (InvalidTypeIdException e){
+            if(e.getMessage().contains("@class")){
+                try{
+                    //JSON may be legacy (1.0.0-alpha or earlier), attempt to load it using old format
+                    return JsonMappers.getLegacyMapper().readValue(json, MultiLayerConfiguration.class);
+                } catch (IOException e2){
+                    throw new RuntimeException(e2);
+                }
+            }
+            throw new RuntimeException(e);
         } catch (IOException e) {
             //Check if this exception came from legacy deserializer...
             String msg = e.getMessage();
