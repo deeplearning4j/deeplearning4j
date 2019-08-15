@@ -29,34 +29,34 @@ namespace nd4j {
         _numTads = numTads;
     }
 
-    Nd4jLong* TadPack::primaryShapeInfo() {
+    Nd4jLong* TadPack::primaryShapeInfo() const {
         return reinterpret_cast<Nd4jLong *>(_tadShape.primary());
     }
-    Nd4jLong* TadPack::primaryOffsets() {
+    Nd4jLong* TadPack::primaryOffsets() const {
         return reinterpret_cast<Nd4jLong *>(_tadOffsets.primary());
     }
 
-    Nd4jLong* TadPack::specialShapeInfo() {
+    Nd4jLong* TadPack::specialShapeInfo() const {
         return reinterpret_cast<Nd4jLong *>(_tadShape.special());
     }
 
-    Nd4jLong* TadPack::specialOffsets() {
+    Nd4jLong* TadPack::specialOffsets() const {
         return reinterpret_cast<Nd4jLong *>(_tadOffsets.special());
     }
 
-    Nd4jLong TadPack::numberOfTads() {
+    Nd4jLong TadPack::numberOfTads() const {
         return _numTads;
     }
 
-    Nd4jLong* TadPack::platformShapeInfo() {
+    Nd4jLong* TadPack::platformShapeInfo() const {
         return nd4j::Environment::getInstance()->isCPU() ? primaryShapeInfo() : specialShapeInfo();
     }
 
-    Nd4jLong* TadPack::platformOffsets() {
+    Nd4jLong* TadPack::platformOffsets() const {
         return nd4j::Environment::getInstance()->isCPU() ? primaryOffsets() : specialOffsets();
     }
 
-    int TadPack::shapeInfoLength() {
+    int TadPack::shapeInfoLength() const {
         return (int) shape::shapeInfoLength(primaryShapeInfo());
     }
 }

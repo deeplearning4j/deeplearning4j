@@ -15,11 +15,13 @@
  ******************************************************************************/
 package org.nd4s
 
+import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4s.Implicits._
+import org.nd4s.ops.FunctionalOpExecutioner
 import org.scalatest.{ FlatSpec, Matchers }
 
 class NDArrayCollectionAPITest extends FlatSpec with Matchers {
-  "CollectionLikeNDArray" should "provides filter API" ignore {
+  "CollectionLikeNDArray" should "provides filter API" in {
     val ndArray =
       Array(
         Array(1, 2, 3),
@@ -38,7 +40,48 @@ class NDArrayCollectionAPITest extends FlatSpec with Matchers {
         ).toNDArray
     )
   }
-  it should "provides filter bitmask API" ignore {
+
+  "CollectionLikeNDArray from Floats" should "provides filter API" in {
+    val ndArray =
+      Array(
+        Array(1f, 2f, 3f),
+        Array(4f, 5f, 6f),
+        Array(7f, 8f, 9f)
+      ).toNDArray
+
+    val filtered = ndArray.filter(_ > 3)
+
+    assert(
+      filtered ==
+        Array(
+          Array(0f, 0f, 0f),
+          Array(4f, 5f, 6f),
+          Array(7f, 8f, 9f)
+        ).toNDArray
+    )
+  }
+
+  "CollectionLikeNDArray from Long " should "provides filter API" in {
+    val ndArray =
+      Array(
+        Array(1L, 2L, 3L),
+        Array(4L, 5L, 6L),
+        Array(7L, 8L, 9L)
+      ).toNDArray
+
+    val filtered = ndArray.filter(_ > 3)
+
+    assert(
+      filtered ==
+        Array(
+          Array(0L, 0L, 0L),
+          Array(4L, 5L, 6L),
+          Array(7L, 8L, 9L)
+        ).toNDArray
+    )
+  }
+
+  it should "provides filter bitmask API" in {
     val ndArray =
       Array(
         Array(1, 2, 3),
@@ -57,7 +100,7 @@ class NDArrayCollectionAPITest extends FlatSpec with Matchers {
         ).toNDArray
     )
   }
-  it should "provides map API" ignore {
+  it should "provides map API" in {
     val ndArray =
       Array(
         Array(1, 2, 3),
@@ -103,5 +146,59 @@ class NDArrayCollectionAPITest extends FlatSpec with Matchers {
 
     //check if any element in nd meet the criteria.
     assert(ndArray.exists(_ > 8))
+  }
+
+  it should "provides existTyped API" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    //check if any element in nd meet the criteria.
+    assert(ndArray.existsTyped[Int](_ > 8)(IntNDArrayEvidence))
+  }
+
+  "CollectionLikeNDArray" should "provides forAll API" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    val resultFalse = ndArray.forall(_ > 3)
+    assert(false == resultFalse)
+
+    val resultTrue = ndArray.forall(_ < 10)
+    assert(true == resultTrue)
+  }
+
+  "CollectionLikeNDArray" should "provides forAllTyped API" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).toNDArray
+
+    val results = ndArray.forallTyped[Int](_ > 3)(IntNDArrayEvidence)
+    assert(false == results)
+  }
+
+  "FunctionalOpExecutioner" should "allow debug and verbose" in {
+    val executioner = new FunctionalOpExecutioner
+    executioner.enableDebugMode(true)
+    executioner.enableVerboseMode(true)
+
+    assert(executioner.isDebug)
+    assert(executioner.isVerbose)
+  }
+
+  "FunctionalOpExecutioner" should "provide access to environment information" in {
+    FunctionalOpExecutioner.apply.printEnvironmentInformation()
+    val environment = FunctionalOpExecutioner.apply.getEnvironmentInformation
+    assert(environment != null)
   }
 }

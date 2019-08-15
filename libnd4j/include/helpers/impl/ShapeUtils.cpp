@@ -75,7 +75,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
     permutBt = axesB;
     permutBt.insert(permutBt.end(), list_B.begin(), list_B.end());
 
-    int n2 = 1;
+    Nd4jLong n2 = 1;
     for (int i = 0; i < axeAsize; i++)
         n2 *= aShapeInfo[axesA[i] + 1];
     shapeAt = {-1, n2};
@@ -86,7 +86,7 @@ std::vector<Nd4jLong> ShapeUtils::evalShapeForTensorDot(const Nd4jLong* aShapeIn
         oldShapeA[i] = aShapeInfo[list_A[i] + 1];
 
 
-    int n3 = 1;
+    Nd4jLong n3 = 1;
     for (int i = 0; i < axeBsize; i++)
         n3 *= bShapeInfo[axesB[i] + 1];
     shapeBt = {n3, -1};
@@ -473,18 +473,8 @@ bool ShapeUtils::evalBroadcastShapeInfo(Nd4jLong *max, Nd4jLong *min, const bool
     // FIXME: get rid of memcpy here
     memcpy(tmpShapeInfo, maxShapeInfo, shape::shapeInfoByteLength(maxRank));
     for (int i = 0; i < minRank; ++i)
-        if(maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i])
+        if((maxShapeInfo[maxRank-i] != 0 && maxShapeInfo[maxRank-i] < minShapeInfo[minRank-i]) || minShapeInfo[minRank-i] == 0)
             tmpShapeInfo[maxRank - i] = minShapeInfo[minRank-i];
-
-    // nullify zero axis
-    for (int e = 0; e < maxRank; e++)
-        if (maxShapeInfo[e+1] == 0)
-            tmpShapeInfo[e+1] = 0;
-
-    int delta = maxRank - minRank;
-    for (int e = minRank - 1; e >= 0; e--)
-        if (minShapeInfo[e + 1] == 0)
-            tmpShapeInfo[e + 1 + delta] = 0;
 
     ShapeUtils::updateStridesAndType(tmpShapeInfo, DataTypeUtils::pickPairwiseResultType(maxShapeInfo, minShapeInfo), shape::order(maxShapeInfo));
 
@@ -562,32 +552,32 @@ std::vector<int> ShapeUtils::getDimsWithSameShape(const NDArray& max, const NDAr
 // evaluate shapeInfo for resulting array from tile operation
 Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd4jLong>& reps, nd4j::memory::Workspace* workspace) {
     // check whether reps contains at least one zero (then throw exception) or whether all elements in reps are unities (then simply reshape or do nothing)
-    int dim = reps.size();
-    int product = 1;
+    int repsSize = reps.size();
+    Nd4jLong product = 1;
     for(const auto& item : reps)
         product *= item;
     if(product == 0)
         throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
     int rankOld = arr.rankOf();
-    int diff = rankOld - dim;
+    int diff = rankOld - repsSize;
 
     // evaluate new shapeInfo
     Nd4jLong* newShapeInfo = nullptr;
     if(diff < 0) {
-        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(dim), Nd4jLong);
-        newShapeInfo[0] = dim;                  // set new rank
+        ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(repsSize), Nd4jLong);
+        newShapeInfo[0] = repsSize;                  // set new rank
         for(int i=1; i <= -diff; ++i)
             newShapeInfo[i] = 1;                // set unities to be new dimensions at left-hand side of newShapeInfo shape place
         memcpy(newShapeInfo + 1 - diff, arr.getShapeInfo() + 1, rankOld*sizeof(Nd4jLong));       // copy old dimensions to the right-hand side of newShapeInfo shape place
-        for(int i=1; i <= dim; ++i)
+        for(int i=1; i <= repsSize; ++i)
             newShapeInfo[i] *= reps[i - 1];     // set new shape by multiplying old dimensions by corresponding numbers from reps
     }
     else {
         ALLOCATE(newShapeInfo, workspace, shape::shapeInfoLength(rankOld), Nd4jLong);
         memcpy(newShapeInfo, arr.getShapeInfo(), shape::shapeInfoByteLength(rankOld));      // copy all elements of _shapeInfo to newShapeInfo
-        for(int i=1; i <= dim; ++i)
-            newShapeInfo[rankOld + 1 - i] *= reps[dim - i];     // set new shape by multiplying old dimensions by corresponding numbers from reps
+        for(int i=1; i <= repsSize; ++i)
+            newShapeInfo[rankOld + 1 - i] *= reps[repsSize - i];     // set new shape by multiplying old dimensions by corresponding numbers from reps
     }
     shape::updateStrides(newShapeInfo, arr.ordering());
     ArrayOptions::setDataType(newShapeInfo, arr.dataType());

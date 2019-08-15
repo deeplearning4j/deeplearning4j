@@ -160,7 +160,12 @@ public class RecordReaderDataSetIterator implements DataSetIterator {
      */
     public RecordReaderDataSetIterator(RecordReader recordReader, int batchSize, int labelIndexFrom, int labelIndexTo,
                                        boolean regression) {
-        this(recordReader, new SelfWritableConverter(), batchSize, labelIndexFrom, labelIndexTo, -1, -1, regression);
+		this(recordReader, new SelfWritableConverter(), batchSize, labelIndexFrom, labelIndexTo, -1, -1, regression);
+		if (!regression) { 
+            throw new IllegalArgumentException("This constructor is only for creating regression iterators. " +
+                                               "If you're doing classification you need to use another constructor that " + 
+                                               "(implicitly) specifies numPossibleLabels");
+        }
     }
 
 

@@ -27,6 +27,9 @@
 #include <ops/declarable/CustomOperations.h>
 #include <graph/GraphUtils.h>
 
+using namespace nd4j::ops;
+using namespace nd4j::graph;
+
 int
 main(int argc, char *argv[]) {
     // this string will contain list of operations

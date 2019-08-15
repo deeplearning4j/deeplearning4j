@@ -28,8 +28,10 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    NDArray betaInc(nd4j::LaunchContext * context, const NDArray& a, const NDArray& b, const NDArray& x);
-    
+	const uint maxIter = MAX_NUM_THREADS /*articles propose 10000*/;				// max number of loop iterations in function for continued fractions
+
+    void betaInc(nd4j::LaunchContext* context, const NDArray& a, const NDArray& b, const NDArray& x, NDArray& output);
+
 
 }
 }

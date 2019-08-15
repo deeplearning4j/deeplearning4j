@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.feedforward.autoencoder.AutoEncoder;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -30,16 +31,16 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 /**
  * Score function for a MultiLayerNetwork or ComputationGraph with a single
  * {@link org.deeplearning4j.nn.conf.layers.AutoEncoder} layer.
- * Calculates the specified {@link RegressionEvaluation.Metric} on the layer's reconstructions.
+ * Calculates the specified {@link Metric} on the layer's reconstructions.
  *
  * @author Alex Black
  */
 public class AutoencoderScoreCalculator extends BaseScoreCalculator<Model> {
 
-    protected final RegressionEvaluation.Metric metric;
+    protected final Metric metric;
     protected RegressionEvaluation evaluation;
 
-    public AutoencoderScoreCalculator(RegressionEvaluation.Metric metric, DataSetIterator iterator){
+    public AutoencoderScoreCalculator(Metric metric, DataSetIterator iterator){
         super(iterator);
         this.metric = metric;
     }

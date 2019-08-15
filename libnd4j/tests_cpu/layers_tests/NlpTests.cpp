@@ -145,8 +145,8 @@ TEST_F(NlpTests, basic_sg_hs_test_3) {
     auto neu1e = NDArrayFactory::create<float>('c', {10});
 
     RandomGenerator rng(119L, 198L);
-    RandomLauncher::fillUniform(rng, &syn00, 0.0, 1.0);
-    RandomLauncher::fillUniform(rng, &syn10, 0.0, 1.0);
+    RandomLauncher::fillUniform(LaunchContext::defaultContext(), rng, &syn00, 0.0, 1.0);
+    RandomLauncher::fillUniform(LaunchContext::defaultContext(), rng, &syn10, 0.0, 1.0);
 
     syn01.assign(syn00);
     syn11.assign(syn10);

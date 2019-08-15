@@ -26,16 +26,17 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
-import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.workspace.ArrayType;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
-import org.deeplearning4j.nn.workspace.ArrayType;
 
 import java.util.Arrays;
 
@@ -624,7 +625,7 @@ public class ConvolutionUtils {
         INDArray reshaped4d = in.reshape(in.size(0), 1, in.size(1), 1);
 
         int[] outSize;
-        int[] pad;
+        int[] pad = null;
         int[] k = new int[]{kernel,1};
         int[] s = new int[]{stride, 1};
         int[] d = new int[]{dilation, 1};
@@ -638,8 +639,15 @@ public class ConvolutionUtils {
 
         INDArray output = Nd4j.createUninitialized(new int[]{(int)in.size(0), 1, outH, 1}, 'c');
 
-        Op op = new LegacyPooling2D(reshaped4d, kernel, 1, stride, 1, padding, 0, dilation, 1,
-                cm == ConvolutionMode.Same, LegacyPooling2D.Pooling2DType.MAX, 0.0, output);
+        DynamicCustomOp op = new MaxPooling2D(in, output, Pooling2DConfig.builder()
+                .kH(k[0]).kW(k[1])
+                .sH(s[0]).sW(s[1])
+                .pH(pad == null ? 0 : pad[0]).pW(pad == null ? 0 : pad[1])
+                .dH(d[0]).dW(d[1])
+                .isSameMode(cm== ConvolutionMode.Same)
+                .isNHWC(false)
+                .build());
+
         Nd4j.getExecutioner().exec(op);
         return output.reshape('c', in.size(0), outH);
     }
@@ -717,10 +725,18 @@ public class ConvolutionUtils {
         }
 
         long[] outArraySize = new long[]{inMask.size(0), inMask.size(1), outSize[0], outSize[1]};
-        INDArray outMask = Nd4j.createUninitialized(outArraySize);
-        Op op = new LegacyPooling2D(inMask, kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], dilation[0], dilation[1],
-                convolutionMode == ConvolutionMode.Same, LegacyPooling2D.Pooling2DType.MAX, 0.0, outMask);
-        Nd4j.getExecutioner().exec(op);
+        INDArray outMask = Nd4j.createUninitialized(inMask.dataType(), outArraySize);
+
+        DynamicCustomOp op = new MaxPooling2D(inMask, outMask, Pooling2DConfig.builder()
+                .kH(k[0]).kW(k[1])
+                .sH(s[0]).sW(s[1])
+                .pH(p[0]).pW(p[1])
+                .dH(d[0]).dW(d[1])
+                .isSameMode(convolutionMode == ConvolutionMode.Same)
+                .isNHWC(false)
+                .build());
+
+        Nd4j.exec(op);
         return outMask;
     }
 }

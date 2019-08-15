@@ -40,6 +40,8 @@ import java.util.Locale;
  * @author Adam Gibson
  * @author Susan Eraly
  */
+@Getter
+@Setter
 public class NDArrayStrings {
 
     public static final String EMPTY_ARRAY_STR = "[]";
@@ -55,7 +57,7 @@ public class NDArrayStrings {
     @Setter @Getter
     private static long maxPrintElements = DEFAULT_MAX_PRINT_ELEMENTS;
 
-
+    private long localMaxPrintElements = maxPrintElements;
     private String colSep = ",";
     private String newLineSep = ",";
     private int padding = 7;
@@ -82,6 +84,38 @@ public class NDArrayStrings {
         this(",", precision);
     }
 
+    public NDArrayStrings(long maxElements, int precision) {
+        this(",", precision);
+        this.localMaxPrintElements = maxElements;
+    }
+
+    public NDArrayStrings(long maxElements) {
+        this();
+        this.localMaxPrintElements = maxElements;
+    }
+
+    public NDArrayStrings(long maxElements, boolean forceSummarize, int precision) {
+        this(",", precision);
+        if(forceSummarize)
+            localMaxPrintElements = 0;
+        else
+            localMaxPrintElements = maxElements;
+    }
+
+    public NDArrayStrings(boolean forceSummarize, int precision) {
+        this(",", precision);
+        if(forceSummarize)
+            localMaxPrintElements = 0;
+    }
+
+
+
+    public NDArrayStrings(boolean forceSummarize) {
+        this(",", 4);
+        if(forceSummarize)
+            localMaxPrintElements = 0;
+    }
+
 
     /**
      * Specify a delimiter for elements in columns for 2d arrays (or in the rank-1th dimension in higher order arrays)
@@ -93,13 +127,17 @@ public class NDArrayStrings {
     public NDArrayStrings(String colSep, int precision) {
         this.colSep = colSep;
         if (!colSep.replaceAll("\\s", "").equals(",")) this.newLineSep = "";
-        this.precision = precision;
-        String decFormatNum = "0.";
-        while (precision > 0) {
-            decFormatNum += "0";
-            precision -= 1;
+        StringBuilder decFormatNum = new StringBuilder("0.");
+
+        int prec = Math.abs(precision);
+        this.precision = prec;
+        boolean useHash = precision < 0;
+
+        while (prec > 0) {
+            decFormatNum.append(useHash ? "#" : "0");
+            prec -= 1;
         }
-        this.decimalFormat = localeIndifferentDecimalFormat(decFormatNum);
+        this.decimalFormat = localeIndifferentDecimalFormat(decFormatNum.toString());
     }
 
     /**
@@ -147,7 +185,7 @@ public class NDArrayStrings {
         if (this.scientificFormat.length() + 2  > this.padding) this.padding = this.scientificFormat.length() + 2;
         this.maxToPrintWithoutSwitching = Math.pow(10,this.precision);
         this.minToPrintWithoutSwitching = 1.0/(this.maxToPrintWithoutSwitching);
-        return format(arr, 0, summarize && arr.length() > maxPrintElements);
+        return format(arr, 0, summarize && arr.length() > localMaxPrintElements);
     }
 
     private String format(INDArray arr, int offset, boolean summarize) {
@@ -267,7 +305,7 @@ public class NDArrayStrings {
                 }
             }
             if (i < l - 1) {
-                if (!summarize || i < 2 || i > l - 3 || (summarize && l == 6)) {
+                if (!summarize || i <= 2 || i >= l - 3 || (summarize && l == 6)) {
                     sb.append(colSep);
                 }
             }

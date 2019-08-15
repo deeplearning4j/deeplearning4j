@@ -15,8 +15,8 @@
  ******************************************************************************/
 
 //
-// @author Created by raver119 on 24.11.17.
-// @author Yurii Shyrma (iuriish@yahoo.com)    
+// @author raver119@gmail.com, created on 24.11.17.
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
@@ -26,64 +26,67 @@
 #include <ops/declarable/generic/helpers/ScatterHelper.h>
 
 namespace nd4j {
-    namespace ops {
-        OP_IMPL(scatter_add, 3, 1, true) {
-            auto input = INPUT_VARIABLE(0);
-            auto indices = INPUT_VARIABLE(1);
-            auto updates = INPUT_VARIABLE(2);
+namespace ops {
 
-            auto output = OUTPUT_VARIABLE(0);
+OP_IMPL(scatter_add, 3, 1, true) {
+    auto input = INPUT_VARIABLE(0);
+    auto indices = INPUT_VARIABLE(1);
+    auto updates = INPUT_VARIABLE(2);
 
-            const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-            const int inRank  = input->rankOf();
-            const int indRank = indices->rankOf();
-            const int updRank = updates->rankOf();
-            const Nd4jLong indLen = indices->lengthOf();
-    
-            REQUIRE_TRUE(inRank > 0, 0, "SCATTER_ADD OP: input should not be scalar !");
-    
-            if(inRank == 1) {
-                REQUIRE_TRUE(indices->isSameShape(updates), 0, "SCATTER_ADD OP: when input array has rank = 1 then indices and updates must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(indices).c_str(), ShapeUtils::shapeAsString(updates).c_str());
-            }
-            else if (inRank == updRank && indices->isVector()) {
+    const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
 
-                std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
-                std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
-                std::vector<Nd4jLong> expectedUpdShape = {indices->lengthOf()}; 
-                expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
-        
-                REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
-            }
-            else {
+    const int inRank  = input->rankOf();
+    const int indRank = indices->rankOf();
+    const int updRank = updates->rankOf();
+    const Nd4jLong indLen = indices->lengthOf();
 
-                REQUIRE_TRUE(updRank == indRank + inRank - 1, 0, "SCATTER_ADD OP: wrong rank of updates array, expected is %i, but got %i instead !", indRank + inRank - 1 , updRank);
-                
-                std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
-                std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
-                std::vector<Nd4jLong> expectedUpdShape = indices->getShapeAsVector();        
-                expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + Nd4jLong(1L), inShape.end());
+    REQUIRE_TRUE(inRank > 0, 0, "SCATTER_ADD OP: input should not be scalar !");
 
-                REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
-            }
+    if(inRank == 1) {
+        REQUIRE_TRUE(indices->isSameShape(updates), 0, "SCATTER_ADD OP: when input array has rank = 1 then indices and updates must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(indices).c_str(), ShapeUtils::shapeAsString(updates).c_str());
+    }
+    else if (inRank == updRank && indices->isVector()) {
 
-            if (!block.isInplace())
-                output->assign(input);
+        std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
+        std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
+        std::vector<Nd4jLong> expectedUpdShape = {indices->lengthOf()};
+        expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
 
-            helpers::scatter(block.launchContext(), pairwise::Add, *indices, *updates, *output, lock);
+        REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
+    }
+    else {
 
-            return Status::OK();
-        }
-        DECLARE_SYN(ScatterAdd, scatter_add);
+        REQUIRE_TRUE(updRank == indRank + inRank - 1, 0, "SCATTER_ADD OP: wrong rank of updates array, expected is %i, but got %i instead !", indRank + inRank - 1 , updRank);
+
+        std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
+        std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
+        std::vector<Nd4jLong> expectedUpdShape = indices->getShapeAsVector();
+        expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin() + Nd4jLong(1L), inShape.end());
+
+        REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
     }
 
-    DECLARE_TYPES(scatter_add) {
-        getOpDescriptor()
-            ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
-            ->setAllowedInputTypes(1, {ALL_INTS})
-            ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
-            ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
-    }
+    if (!block.isInplace())
+        output->assign(input);
+
+    helpers::scatter(block.launchContext(), pairwise::Add, *indices, *updates, *output, lock);
+
+    return Status::OK();
+}
+
+DECLARE_SYN(ScatterAdd, scatter_add);
+
+DECLARE_TYPES(scatter_add) {
+    getOpDescriptor()
+        ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedInputTypes(1, {ALL_INTS})
+        ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
+        ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS});
+}
+
+}
 }
 
 #endif

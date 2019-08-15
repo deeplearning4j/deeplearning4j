@@ -16,21 +16,21 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
-import lombok.AllArgsConstructor;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.util.ConvConfigUtil;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-@Builder
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
 public class DeConv2DConfig extends BaseConvolutionConfig {
     public static final String NCHW = "NCHW";
     public static final String NHWC = "NHWC";
+
 
     @Builder.Default private long kH = -1L;
     @Builder.Default private long kW = -1L;
@@ -43,8 +43,25 @@ public class DeConv2DConfig extends BaseConvolutionConfig {
     @Builder.Default private boolean isSameMode = false;
     @Builder.Default private String dataFormat = NCHW;
 
+    public DeConv2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, long dH, long dW, boolean isSameMode,
+            String dataFormat) {
+        this.kH = kH;
+        this.kW = kW;
+        this.sH = sH;
+        this.sW = sW;
+        this.pH = pH;
+        this.pW = pW;
+        this.dH = dH;
+        this.dW = dW;
+        this.isSameMode = isSameMode;
+        this.dataFormat = dataFormat;
 
+        validate();
+    }
+
+    @Override
     public Map<String, Object> toProperties() {
+
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("kH", kH);
         ret.put("kW", kW);
@@ -57,5 +74,11 @@ public class DeConv2DConfig extends BaseConvolutionConfig {
         ret.put("isSameMode", isSameMode);
         ret.put("dataFormat", dataFormat);
         return ret;
+    }
+
+    @Override
+    protected void validate() {
+        ConvConfigUtil.validate2D(kH, kW, sH, sW, pH, pW, dH, dW);
+        Preconditions.checkArgument(dataFormat != null, "Data format can't be null");
     }
 }

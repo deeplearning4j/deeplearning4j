@@ -48,6 +48,13 @@
 #include <exceptions/datatype_exception.h>
 
 
+#ifdef _OPENMP
+
+#include <omp.h>
+
+#endif
+
+
 
 
 ////////////////////////////////////////////////////////////////////////
@@ -66,6 +73,10 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::LaunchContext  *lc, int op
                                     void *extraParams,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo) {
+
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto hz = reinterpret_cast<Nd4jLong*>(hZ);
@@ -95,6 +106,9 @@ void NativeOpExecutioner::execIndexReduce(nd4j::LaunchContext  *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension, int dimensionLength,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     Nd4jLong* hz = reinterpret_cast<Nd4jLong*>(hZ);
@@ -129,6 +143,10 @@ void NativeOpExecutioner::execBroadcast(nd4j::LaunchContext  *lc,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
 
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -155,6 +173,10 @@ void NativeOpExecutioner::execInverseBroadcast(nd4j::LaunchContext  *lc,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
     if (!nd4j::Environment::getInstance()->isExperimentalBuild())
         if ((yType != xType && yType != nd4j::DataType::BOOL) || xType != zType)
             throw nd4j::datatype_exception::build("NativeOps::execBroadcast both operands must have same data type", xType, yType);
@@ -180,6 +202,9 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::LaunchContext  *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
@@ -199,6 +224,11 @@ void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
                                                   int *dimension, int dimensionLength,
                                                   Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                                   Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -232,6 +262,9 @@ void NativeOpExecutioner::execPairwiseTransform(nd4j::LaunchContext  *lc,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo,
                                     void *extraParams) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
@@ -254,6 +287,9 @@ void NativeOpExecutioner::execPairwiseBoolTransform(nd4j::LaunchContext  *lc,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo,
                                     void *extraParams) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
@@ -282,6 +318,10 @@ void NativeOpExecutioner::execReduceFloat(nd4j::LaunchContext  *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
@@ -298,6 +338,9 @@ void NativeOpExecutioner::execReduceSame(nd4j::LaunchContext  *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension, int dimensionLength,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -315,6 +358,9 @@ void NativeOpExecutioner::execReduceBool(nd4j::LaunchContext  *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension, int dimensionLength,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -332,6 +378,9 @@ void NativeOpExecutioner::execReduceLong(nd4j::LaunchContext  *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 int *dimension, int dimensionLength,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -355,6 +404,9 @@ void NativeOpExecutioner::execReduceFloatScalar(nd4j::LaunchContext  *lc,
                                     void *extraParams,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -370,6 +422,9 @@ void NativeOpExecutioner::execReduceSameScalar(nd4j::LaunchContext  *lc,
                                         void *extraParams,
                                         void *hZ, Nd4jLong *hZShapeInfo,
                                         void *dZ, Nd4jLong *dZShapeInfo) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
@@ -385,6 +440,10 @@ void NativeOpExecutioner::execReduceBoolScalar(nd4j::LaunchContext  *lc,
                                         void *hZ, Nd4jLong *hZShapeInfo,
                                         void *dZ, Nd4jLong *dZShapeInfo) {
 
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
@@ -399,6 +458,9 @@ void NativeOpExecutioner::execReduceLongScalar(nd4j::LaunchContext  *lc,
                                         void *extraParams,
                                         void *hZ, Nd4jLong *hZShapeInfo,
                                         void *dZ, Nd4jLong *dZShapeInfo) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -430,6 +492,9 @@ void NativeOpExecutioner::execReduce3Scalar(nd4j::LaunchContext  *lc,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -459,6 +524,9 @@ void NativeOpExecutioner::execReduce3(nd4j::LaunchContext  *lc,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -480,6 +548,9 @@ void NativeOpExecutioner::execReduce3(nd4j::LaunchContext  *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *xTadOnlyShapeInfo, Nd4jLong *xTadOffsets,
                             Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -501,6 +572,9 @@ void NativeOpExecutioner::execReduce3All(nd4j::LaunchContext  *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
                             Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -522,6 +596,10 @@ void NativeOpExecutioner::execReduce3TAD(nd4j::LaunchContext  *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *yTadShapeInfo, Nd4jLong *yTadOffsets) {
+
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -551,7 +629,10 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             void *hScalar, Nd4jLong *hScalarShapeInfo,
                             void *dScalar, Nd4jLong *dScalarShapeInfo,
-                            void *extraParams) {
+                            void *extraParams, bool allowParallelism) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
@@ -563,7 +644,7 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
     if (xType != yType || xType != zType)
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar", zType, xType, yType);
 
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, allowParallelism), LIBND4J_TYPES);
 #endif
 }
 
@@ -580,6 +661,9 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
@@ -604,7 +688,11 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             void *hScalar, Nd4jLong *hSscalarShapeInfo,
                             void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                            void *extraParams) {
+                            void *extraParams, bool allowParallelism) {
+
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hSscalarShapeInfo);
@@ -632,6 +720,9 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
@@ -664,6 +755,9 @@ void NativeOpExecutioner::execSummaryStats(nd4j::LaunchContext  *lc,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 bool biasCorrected) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -689,6 +783,9 @@ void NativeOpExecutioner::execSummaryStatsScalar(nd4j::LaunchContext  *lc,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo,
                                     bool biasCorrected) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -718,6 +815,9 @@ void NativeOpExecutioner::execSummaryStats(nd4j::LaunchContext  *lc,
                                 int *dimension, int dimensionLength,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                 bool biasCorrected) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -745,6 +845,9 @@ void NativeOpExecutioner::execTransformFloat(nd4j::LaunchContext  *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 void *extraParams,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -761,6 +864,9 @@ void NativeOpExecutioner::execTransformBool(nd4j::LaunchContext  *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 void *extraParams,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -776,12 +882,15 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, tadShapeInfo, tadOffsets), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, tadShapeInfo, tadOffsets, allowParallelism), LIBND4J_TYPES, LIBND4J_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -793,6 +902,9 @@ void NativeOpExecutioner::execTransformSame(nd4j::LaunchContext  *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 void *extraParams,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -809,6 +921,9 @@ void NativeOpExecutioner::execTransformStrict(nd4j::LaunchContext  *lc,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 void *extraParams,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
@@ -823,10 +938,16 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             void *extraArguments) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, hZ, hZShapeInfo, extraArguments), FLOAT_TYPES);
+
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -838,10 +959,16 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             void *extraArguments) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::execTransform(opNum, state, hX, hXShapeInfo, hZ, hZShapeInfo, extraArguments), FLOAT_TYPES);
+
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -855,10 +982,16 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
                           void *hZ, Nd4jLong *hZShapeInfo,
                           void *dZ, Nd4jLong *dZShapeInfo,
                           void *extraArguments) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
 
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::execTransform(opNum, state, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraArguments), FLOAT_TYPES);
+
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 

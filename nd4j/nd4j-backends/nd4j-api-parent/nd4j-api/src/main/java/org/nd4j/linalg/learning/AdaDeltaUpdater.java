@@ -103,7 +103,7 @@ public class AdaDeltaUpdater implements GradientUpdater<AdaDelta> {
         double epsilon = config.getEpsilon();
 
         //Line 4 of Algorithm 1: https://arxiv.org/pdf/1212.5701v1.pdf
-        //E[g^2]_t = rho * E[g^2]_{t−1} + (1-rho)*g^2_t
+        //E[g^2]_t = rho * E[g^2]_{t-1} + (1-rho)*g^2_t
         msg.muli(rho).addi(gradient.mul(gradient).muli(1 - rho));
 
         //Calculate update:

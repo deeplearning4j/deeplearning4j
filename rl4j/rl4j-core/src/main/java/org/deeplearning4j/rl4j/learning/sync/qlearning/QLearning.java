@@ -29,7 +29,7 @@ import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManager.StatEntry;
+import org.deeplearning4j.rl4j.util.IDataManager.StatEntry;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.ArrayList;
@@ -45,8 +45,12 @@ import java.util.List;
 public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
                 extends SyncLearning<O, A, AS, IDQN> {
 
+    // FIXME Changed for refac
+    // @Getter
+    // final private IExpReplay<A> expReplay;
     @Getter
-    final private IExpReplay<A> expReplay;
+    @Setter(AccessLevel.PACKAGE)
+    private IExpReplay<A> expReplay;
 
     public QLearning(QLConfiguration conf) {
         super(conf);

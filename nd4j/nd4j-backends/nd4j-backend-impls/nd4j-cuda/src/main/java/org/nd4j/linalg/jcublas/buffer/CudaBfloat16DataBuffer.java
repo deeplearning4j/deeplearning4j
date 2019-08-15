@@ -42,6 +42,10 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
         super(pointer, indexer, length);
     }
 
+    public CudaBfloat16DataBuffer(Pointer pointer, Pointer specialPointer, Indexer indexer, long length){
+        super(pointer, specialPointer, indexer, length);
+    }
+
     /**
      * Base constructor
      *
@@ -180,6 +184,11 @@ public class CudaBfloat16DataBuffer extends BaseCudaDataBuffer {
 
     @Override
     public void setData(int[] data) {
+        setData(ArrayUtil.toShorts(data));
+    }
+
+    @Override
+    public void setData(long[] data) {
         setData(ArrayUtil.toShorts(data));
     }
 

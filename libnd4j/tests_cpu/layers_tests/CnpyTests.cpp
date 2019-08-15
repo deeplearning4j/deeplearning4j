@@ -38,32 +38,28 @@ TEST_F(HeaderTest, test_dataTypes_1) {
     std::string header("0NUMPY6789{'descr': '>f4");
 
 
-    NativeOps nativeOps;
-    ASSERT_EQ(nd4j::DataType::FLOAT32, nativeOps.dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+    ASSERT_EQ(nd4j::DataType::FLOAT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 TEST_F(HeaderTest, test_dataTypes_2) {
     std::string header("0NUMPY6789{'descr': '>f8");
 
 
-    NativeOps nativeOps;
-    ASSERT_EQ(nd4j::DataType::DOUBLE, nativeOps.dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+    ASSERT_EQ(nd4j::DataType::DOUBLE, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 TEST_F(HeaderTest, test_dataTypes_3) {
     std::string header("0NUMPY6789{'descr': '<i4");
 
 
-    NativeOps nativeOps;
-    ASSERT_EQ(nd4j::DataType::INT32, nativeOps.dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+    ASSERT_EQ(nd4j::DataType::INT32, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 TEST_F(HeaderTest, test_dataTypes_4) {
     std::string header("0NUMPY6789{'descr': '>u2");
 
 
-    NativeOps nativeOps;
-    ASSERT_EQ(nd4j::DataType::UINT16, nativeOps.dataTypeFromNpyHeader(const_cast<char *>(header.data())));
+    ASSERT_EQ(nd4j::DataType::UINT16, dataTypeFromNpyHeader(const_cast<char *>(header.data())));
 }
 
 /*
@@ -88,8 +84,7 @@ TEST_F(LoadFromStringTest,PathTest) {
     ASSERT_EQ(4.0,data[3]);
     Nd4jPointer  pointer = reinterpret_cast<Nd4jPointer >(&loadedArr);
     int *shapeBuffer = shape::shapeBufferOfNpy(loadedArr);
-    NativeOps nativeOps;
-    Nd4jPointer  pointer1 = nativeOps.dataPointForNumpy(loaded);
+    Nd4jPointer  pointer1 = dataPointForNumpy(loaded);
     delete[] shapeBuffer;
 
     double *data2 = reinterpret_cast<double *>(pointer1);

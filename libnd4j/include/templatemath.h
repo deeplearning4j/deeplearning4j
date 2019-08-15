@@ -780,15 +780,33 @@ inline __device__ double nd4j_atomicMin<double>(double* address, double val)  {
 	return __longlong_as_double(old);
 }
 template <>
-inline __device__ unsigned long long nd4j_atomicMin<unsigned long long>(unsigned long long* address, unsigned long long val)  {
-     return atomicMin(address, val);
+inline __device__ uint64_t nd4j_atomicMin<uint64_t>(uint64_t* address, uint64_t val)  {
+#if __CUDA_ARCH__ >= 350
+     return atomicMin((unsigned long long*)address, (unsigned long long)val);
+#else
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = __double_as_longlong(val), assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, math::nd4j_min((unsigned long long)val, assumed));
+	} while (assumed != old);
+	return old;
+#endif
 }
 template <>
 inline __device__ Nd4jLong nd4j_atomicMin<Nd4jLong>(Nd4jLong* address, Nd4jLong val)  {
 
-        return (Nd4jLong)atomicMin((unsigned long long*)address, (unsigned long long)val);
-//    else
-//        return (Nd4jLong)atomicMax((unsigned long long*)address, (unsigned long long)val);
+ #if __CUDA_ARCH__ >= 350
+     return atomicMin((unsigned long long*)address, (unsigned long long)val);
+ #else
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = (unsigned long long)val, assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, math::nd4j_min(val, (Nd4jLong)assumed));
+	} while (assumed != old);
+	return old;
+#endif
 
 }
 template <>
@@ -807,6 +825,11 @@ inline __device__ float16 nd4j_atomicMin<float16>(float16* address, float16 val)
 }
 template <>
 inline __device__ int32_t nd4j_atomicMax<int32_t>(int32_t* address, int32_t val)  {
+     return atomicMax(address, val);
+}
+
+template <>
+inline __device__ uint32_t nd4j_atomicMax<uint32_t>(uint32_t* address, uint32_t val)  {
      return atomicMax(address, val);
 }
 
@@ -946,8 +969,18 @@ inline __device__ bfloat16 nd4j_atomicMax<bfloat16>(bfloat16* address, bfloat16 
 }
 
 template <>
-inline __device__ unsigned long long nd4j_atomicMax<unsigned long long>(unsigned long long* address, unsigned long long val)  {
-    return atomicMax(address, val);
+inline __device__ uint64_t nd4j_atomicMax<uint64_t>(uint64_t* address, uint64_t val)  {
+#if __CUDA_ARCH__ >= 350
+     return atomicMax((unsigned long long*)address, (unsigned long long)val);
+#else
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = __double_as_longlong(val), assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, math::nd4j_max((unsigned long long)val, assumed));
+	} while (assumed != old);
+	return old;
+#endif
 }
 
 template <>
@@ -1004,28 +1037,22 @@ inline __device__ long nd4j_atomicAdd<long>(long* address, long val)  {
 }
 
 template <>
-inline __device__ unsigned long nd4j_atomicAdd<unsigned long>(unsigned long* address, unsigned long val)  {
-	unsigned long long* address_as_ull = (unsigned long long int *) address;
-
-//	return atomicAdd(address, val);
-	unsigned long int old = *address_as_ull, assumed;
-	do {
-		assumed = old;
-		old = atomicCAS(address_as_ull, assumed, val + assumed);
-	} while (assumed != old);
-	return old;
+inline __device__ uint32_t nd4j_atomicAdd<uint32_t>(uint32_t* address, uint32_t val)  {
+    return atomicAdd(address, val);
 }
-template <>
-inline __device__ unsigned long long nd4j_atomicAdd<unsigned long long>(unsigned long long* address, unsigned long long val)  {
-	//unsigned long* address_as_ull = (unsigned long int *) address;
 
-	//return (Nd4jLong) atomicAdd(address_as_ull, (unsigned long long int) val);
-	unsigned long int old = *address, assumed;
-	do {
-		assumed = old;
-		old = atomicCAS(address, assumed, val + assumed);
-	} while (assumed != old);
-	return old;
+template <>
+inline __device__ uint64_t nd4j_atomicAdd<uint64_t>(uint64_t* address, uint64_t val)  {
+//	unsigned long long* address_as_ull = (unsigned long long int *) address;
+//
+////	return atomicAdd(address, val);
+//	unsigned long int old = *address_as_ull, assumed;
+//	do {
+//		assumed = old;
+//		old = atomicCAS(address_as_ull, assumed, val + assumed);
+//	} while (assumed != old);
+//	return old;
+    return (uint64_t)atomicAdd((unsigned long long*)address, (unsigned long long)val);
 }
 
 template <>
@@ -1120,16 +1147,14 @@ inline __device__ uint8_t nd4j_atomicAdd<uint8_t>(uint8_t* address, uint8_t val)
 }
 
 template <>
+inline __device__ bool nd4j_atomicAdd<bool>(bool* address, bool val)  {
+    *address += (val);
+    return *address;
+}
+
+template <>
 inline __device__ double nd4j_atomicSub<double>(double* address, double val)  {
-	unsigned long long int* address_as_ull =
-			(unsigned long long int *) address;
-	unsigned long long int old = *address_as_ull, assumed;
-	do {
-		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val -
-				__longlong_as_double(assumed)));
-	} while (assumed != old);
-	return __longlong_as_double(old);
+	return nd4j_atomicAdd<double>(address, -val);
 }
 
 template <>
@@ -1147,15 +1172,7 @@ inline __device__ double nd4j_atomicMul<double>(double* address, double val)  {
 
 template <>
 inline __device__ double nd4j_atomicDiv<double>(double* address, double val)  {
-	unsigned long long int* address_as_ull =
-			(unsigned long long int*) address;
-	unsigned long long int old = *address_as_ull, assumed;
-	do {
-		assumed = old;
-		old = atomicCAS(address_as_ull, assumed,__double_as_longlong(val /
-				__longlong_as_double(assumed)));
-	} while (assumed != old);
-	return __longlong_as_double(old);
+	return nd4j_atomicMul<double>(address, 1./val);
 }
 
 template <>
@@ -1174,14 +1191,16 @@ inline __device__ int32_t nd4j_atomicAdd<int32_t>(int32_t* address, int32_t val)
 
 template <>
 inline __device__ float nd4j_atomicSub<float>(float* address, float val) {
-	int* address_as_ull = (int*) address;
-	int old = *address_as_ull, assumed;
-	do {
-		assumed = old;
-		old = atomicCAS(address_as_ull, assumed, __float_as_int(val -
-				__float_as_int(assumed)));
-	} while (assumed != old);
-	return __int_as_float(old);
+	return nd4j_atomicAdd<float>(address, -val);
+}
+
+template <>
+inline __device__ float16 nd4j_atomicSub<float16>(float16* address, float16 val) {
+	return nd4j_atomicAdd<float16>(address, -val);
+}
+template <>
+inline __device__ bfloat16 nd4j_atomicSub<bfloat16>(bfloat16* address, bfloat16 val) {
+	return nd4j_atomicAdd<bfloat16>(address, -val);
 }
 
 template <>
@@ -1192,10 +1211,155 @@ inline __device__ float nd4j_atomicMul<float>(float* address, float val) {
 	do {
 		assumed = old;
 		old = atomicCAS(address_as_ull, assumed, __float_as_int(val *
-				__float_as_int(assumed)));
+				__int_as_float(assumed)));
 	} while (assumed != old);
 	return __int_as_float(old);
 }
+
+template <>
+inline __device__ int8_t nd4j_atomicMul<int8_t>(int8_t* address, int8_t val) {
+    unsigned int *base_address = (unsigned int *)((size_t)address & ~3);
+    unsigned int selectors[] = {0x3214, 0x3240, 0x3410, 0x4210};
+    unsigned int sel = selectors[(size_t)address & 3];
+    unsigned int old, assumed, mul, new_;
+
+    old = *base_address;
+
+    do {
+
+        assumed = old;
+        mul = val * (int8_t)__byte_perm(old, 0, ((size_t)address & 3) | 0x4440);
+        new_ = __byte_perm(old, mul, sel);
+
+        if (new_ == old)
+            break;
+
+        old = atomicCAS(base_address, assumed, new_);
+    } while (assumed != old);
+    return (int8_t)old;
+}
+
+template <>
+inline __device__ unsigned char nd4j_atomicMul<unsigned char>(unsigned char* address, unsigned char val) {
+    unsigned int *base_address = (unsigned int *)((size_t)address & ~3);
+    unsigned int selectors[] = {0x3214, 0x3240, 0x3410, 0x4210};
+    unsigned int sel = selectors[(size_t)address & 3];
+    unsigned int old, assumed, mul, new_;
+
+    old = *base_address;
+
+    do {
+
+        assumed = old;
+        mul = val * (uint8_t)__byte_perm(old, 0, ((size_t)address & 3) | 0x4440);
+        new_ = __byte_perm(old, mul, sel);
+
+        if (new_ == old)
+            break;
+
+        old = atomicCAS(base_address, assumed, new_);
+    } while (assumed != old);
+    return (uint8_t)old;
+}
+
+template <>
+inline __device__ int16_t nd4j_atomicMul<int16_t>(int16_t* address, int16_t val) {
+    size_t shift = ((size_t)address & 2);
+    int *base_address = (int *)((char*)address - shift);
+    int old = val, assumed;
+    //printf("%u %x", *base_address);
+    do {
+
+        assumed = old;
+        old = atomicCAS(base_address, assumed, (old * val));
+    } while (assumed != old);
+
+    return (int16_t)old;
+}
+
+template <>
+inline __device__ uint16_t nd4j_atomicMul<uint16_t>(uint16_t* address, uint16_t val) {
+    size_t shift = ((size_t)address & 2);
+    unsigned int *base_address = (unsigned int *)((char*)address - shift);
+    unsigned int old = val, assumed;
+    //printf("%u %x", *base_address);
+    do {
+
+        assumed = old;
+        old = atomicCAS(base_address, assumed, (old * val));
+    } while (assumed != old);
+
+    return (uint16_t)old;
+
+}
+
+template <>
+inline __device__ int nd4j_atomicMul<int>(int* address, int val) {
+	int* res_address = address;
+	int old = *res_address, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(res_address, assumed, val * assumed);
+	} while (assumed != old);
+    return old;
+}
+
+template <>
+inline __device__ unsigned int nd4j_atomicMul<unsigned int>(unsigned int* address, unsigned int val) {
+	unsigned int* res_address = address;
+	unsigned int old = *res_address, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(res_address, assumed, val * assumed);
+	} while (assumed != old);
+    return old;
+}
+
+template <>
+inline __device__ int64_t nd4j_atomicMul<int64_t>(int64_t* address, int64_t val) {
+	unsigned long long int* res_address = (unsigned long long int*)address;
+	unsigned long long int old = *res_address, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(res_address, assumed, val * assumed);
+	} while (assumed != old);
+    return (int64_t)old;
+}
+
+template <>
+inline __device__ uint64_t nd4j_atomicMul<uint64_t>(uint64_t* address, uint64_t val) {
+	unsigned long long int* res_address = (unsigned long long int*)address;
+	unsigned long long int old = *res_address, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(res_address, assumed, val * assumed);
+	} while (assumed != old);
+    return (uint64_t)old;
+}
+
+//template <>
+//inline __device__ unsigned long long nd4j_atomicMul<unsigned long long>(unsigned long long* address, unsigned long long val) {
+//	unsigned long long int* res_address = address;
+//	unsigned long long int old = *res_address, assumed;
+//	do {
+//		assumed = old;
+//		old = atomicCAS(res_address, assumed, val * assumed);
+//	} while (assumed != old);
+//    return old;
+//}
+
+#if !defined(_WIN32) && !defined(_WIN64)
+template <>
+inline __device__ Nd4jLong nd4j_atomicMul<Nd4jLong>(Nd4jLong* address, Nd4jLong val) {
+	unsigned long long int* res_address = (unsigned long long*)address;
+	unsigned long long int old = *res_address, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(res_address, assumed, val * assumed);
+	} while (assumed != old);
+    return (Nd4jLong)old;
+}
+#endif
 
 template <>
 inline __device__ bfloat16 nd4j_atomicMul<bfloat16>(bfloat16* address, bfloat16 val) {
@@ -1265,6 +1429,30 @@ inline __device__ float16 nd4j_atomicMul<float16>(float16* address, float16 val)
 
 template <>
 inline __device__ float nd4j_atomicDiv<float>(float* address, float val) {
+	int* address_as_ull =
+			(int*)address;
+	int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, __float_as_int(__int_as_float(assumed) / val ));
+	} while (assumed != old);
+	return __int_as_float(old);
+}
+
+template <>
+inline __device__ float16 nd4j_atomicDiv<float16>(float16* address, float16 val) {
+	int* address_as_ull =
+			(int*)address;
+	int old = *address_as_ull, assumed;
+	do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, __float_as_int(val *
+				__float_as_int(assumed)));
+	} while (assumed != old);
+	return __int_as_float(old);
+}
+template <>
+inline __device__ bfloat16 nd4j_atomicDiv<bfloat16>(bfloat16* address, bfloat16 val) {
 	int* address_as_ull =
 			(int*)address;
 	int old = *address_as_ull, assumed;

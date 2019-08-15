@@ -41,7 +41,7 @@ namespace nd4j {
                 }
             else if (block.width() > 1) {
                 auto a = INPUT_VARIABLE(1);
-                for (int e = 0; e < a->lengthOf(); e++) {
+                for (Nd4jLong e = 0; e < a->lengthOf(); e++) {
                     int _a = a->e<int>(e);
                     
                     if (_a < 0)
@@ -75,7 +75,6 @@ namespace nd4j {
             } else {
                 auto tmp = input->reshape(input->ordering(), shape);
                 output->assign(tmp);
-                delete tmp;
             }
 
             return Status::OK();

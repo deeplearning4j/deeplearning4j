@@ -31,6 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.jcublas.buffer.BaseCudaDataBuffer;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.jcublas.ops.executioner.CudaGridExecutioner;
 import org.nd4j.linalg.memory.BasicMemoryManager;
@@ -151,6 +152,14 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
     }
 
+    protected void allocateHostPointers(DataBuffer... dataBuffers) {
+        for (val v:dataBuffers) {
+            if (v != null && v instanceof BaseCudaDataBuffer) {
+                ((BaseCudaDataBuffer) v).lazyAllocateHostPointer();
+            }
+        }
+    }
+
     /**
      * This method provides basic memcpy functionality with respect to target environment
      *
@@ -161,9 +170,13 @@ public class CudaMemoryManager extends BasicMemoryManager {
     public void memcpy(DataBuffer dstBuffer, DataBuffer srcBuffer) {
         CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
 
+
         if (dstBuffer instanceof CompressedDataBuffer && !(srcBuffer instanceof CompressedDataBuffer)) {
             // destination is compressed, source isn't
             AllocationPoint srcPoint = AtomicAllocator.getInstance().getAllocationPoint(srcBuffer);
+
+            allocateHostPointers(dstBuffer, srcBuffer);
+
             long size = srcBuffer.getElementSize() * srcBuffer.length();
             if (!srcPoint.isActualOnHostSide()) {
                 // copying device -> host
@@ -177,12 +190,14 @@ public class CudaMemoryManager extends BasicMemoryManager {
 
             } // else {
               // copying host -> host
-            Pointer src = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
+            val src = AtomicAllocator.getInstance().getHostPointer(srcBuffer);
 
             Pointer.memcpy(dstBuffer.addressPointer(), src, size);
             // }
 
         } else if (!(dstBuffer instanceof CompressedDataBuffer) && srcBuffer instanceof CompressedDataBuffer) {
+            allocateHostPointers(dstBuffer, srcBuffer);
+
             // destination is NOT compressed, source is compressed
             AllocationPoint dstPoint = AtomicAllocator.getInstance().getAllocationPoint(dstBuffer);
             long size = srcBuffer.getElementSize() * srcBuffer.length();
@@ -193,6 +208,7 @@ public class CudaMemoryManager extends BasicMemoryManager {
         } else if (dstBuffer instanceof CompressedDataBuffer && srcBuffer instanceof CompressedDataBuffer) {
             // both buffers are compressed, just fire memcpy
 
+            allocateHostPointers(dstBuffer, srcBuffer);
 
             Pointer.memcpy(dstBuffer.addressPointer(), srcBuffer.addressPointer(),
                             srcBuffer.length() * srcBuffer.getElementSize());

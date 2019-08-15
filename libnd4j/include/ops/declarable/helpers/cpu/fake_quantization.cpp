@@ -27,7 +27,7 @@ namespace helpers {
 
     template <typename T>
     void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
-        int lowIntBound = narrowed?1:0;
+        int lowIntBound = narrowed ? 1 : 0;
         int upperIntBound = 1 << numBits - 1;
 
         const float quant_min_float = static_cast<float>(lowIntBound);

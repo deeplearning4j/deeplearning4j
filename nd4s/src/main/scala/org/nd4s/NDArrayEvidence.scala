@@ -22,6 +22,9 @@ import org.nd4s.Implicits._
 object Evidences {
   implicit val double = DoubleNDArrayEvidence
   implicit val float = FloatNDArrayEvidence
+  implicit val int = IntNDArrayEvidence
+  implicit val long = LongNDArrayEvidence
+  implicit val byte = ByteNDArrayEvidence
 }
 
 object NDArrayEvidence {
@@ -324,7 +327,7 @@ case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
     arr.asNDArray(shape: _*)
 
   override def create(arr: Array[Float], shape: Array[Int], ordering: NDOrdering, offset: Int): INDArray =
-    arr.mkNDArray(shape, ordering, offset)
+    arr.mkNDArray(shape, ordering)
 
   override def update(underlying: INDArray, ir: Array[IndexRange], num: Float): INDArray = {
     if (ir.length == 1 && !ir.head.hasNegative && ir.head
@@ -341,4 +344,202 @@ case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
   override def greaterThan(left: Float, right: Float): Boolean = left > right
 
   override def lessThan(left: Float, right: Float): Boolean = left < right
+}
+
+trait IntegerNDArrayEvidence[Value] extends NDArrayEvidence[INDArray, Value] {
+  def remainder(a: INDArray, that: INDArray): INDArray = a.remainder(that)
+
+  def add(a: INDArray, that: INDArray): INDArray = a.add(that)
+
+  def sub(a: INDArray, that: INDArray): INDArray = a.sub(that)
+
+  def mul(a: INDArray, that: INDArray): INDArray = a.mul(that)
+
+  def mmul(a: INDArray, that: INDArray): INDArray = a.mmul(that)
+
+  def div(a: INDArray, that: INDArray): INDArray = a.div(that)
+
+  def rdiv(a: INDArray, that: INDArray): INDArray = a.rdiv(that)
+
+  def addi(a: INDArray, that: INDArray): INDArray = a.addi(that)
+
+  def subi(a: INDArray, that: INDArray): INDArray = a.subi(that)
+
+  def muli(a: INDArray, that: INDArray): INDArray = a.muli(that)
+
+  def mmuli(a: INDArray, that: INDArray): INDArray = a.mmuli(that)
+
+  def remainderi(a: INDArray, that: INDArray): INDArray = a.remainder(that)
+
+  def remainderi(a: INDArray, that: Number): INDArray = a.remainderi(that)
+
+  def divi(a: INDArray, that: INDArray): INDArray = a.divi(that)
+
+  def rdivi(a: INDArray, that: INDArray): INDArray = a.rdivi(that)
+
+  def remainder(a: INDArray, that: Number): INDArray = a.remainder(that)
+
+  def add(a: INDArray, that: Number): INDArray = a.add(that)
+
+  def sub(a: INDArray, that: Number): INDArray = a.sub(that)
+
+  def mul(a: INDArray, that: Number): INDArray = a.mul(that)
+
+  def div(a: INDArray, that: Number): INDArray = a.div(that)
+
+  def rdiv(a: INDArray, that: Number): INDArray = a.rdiv(that)
+
+  def addi(a: INDArray, that: Number): INDArray = a.addi(that)
+
+  def subi(a: INDArray, that: Number): INDArray = a.subi(that)
+
+  def muli(a: INDArray, that: Number): INDArray = a.muli(that)
+
+  def divi(a: INDArray, that: Number): INDArray = a.divi(that)
+
+  def rdivi(a: INDArray, that: Number): INDArray = a.rdivi(that)
+
+  def put(a: INDArray, i: Int, element: INDArray): INDArray = a.put(i, element)
+
+  def put(a: INDArray, i: Array[Int], element: INDArray): INDArray = a.put(i, element)
+
+  def get(a: INDArray, i: INDArrayIndex*): INDArray = a.get(i: _*)
+
+  def reshape(a: INDArray, i: Int*): INDArray = a.reshape(i.map(_.toLong): _*)
+
+  def linearView(a: INDArray): INDArray = a.reshape(-1)
+
+  def dup(a: INDArray): INDArray = a.dup()
+
+  def update(a: INDArray, indices: Array[IndexRange], i: Int): INDArray =
+    a.update(indices, i)
+
+  def update(a: INDArray, indices: Array[IndexRange], i: INDArray): INDArray =
+    a.update(indices, i)
+}
+
+case object IntNDArrayEvidence extends IntegerNDArrayEvidence[Int] {
+
+  def sum(ndarray: INDArray): Int = ndarray.sumNumber().intValue()
+
+  def mean(ndarray: INDArray): Int = ndarray.meanNumber().intValue()
+
+  def normMax(ndarray: INDArray): Int = ndarray.normmaxNumber().intValue()
+
+  def norm1(ndarray: INDArray): Int = ndarray.norm1Number().intValue()
+
+  def norm2(ndarray: INDArray): Int = ndarray.norm2Number().intValue()
+
+  def max(ndarray: INDArray): Int = ndarray.maxNumber().intValue()
+
+  def min(ndarray: INDArray): Int = ndarray.minNumber().intValue()
+
+  def standardDeviation(ndarray: INDArray): Int = ndarray.stdNumber().intValue()
+
+  def product(ndarray: INDArray): Int = ndarray.prodNumber().intValue()
+
+  def variance(ndarray: INDArray): Int = ndarray.varNumber().intValue()
+
+  def get(a: INDArray, i: Int): Int = a.getInt(i)
+
+  def get(a: INDArray, i: Int, j: Int): Int = a.getInt(i, j)
+
+  def get(a: INDArray, i: Int*): Int = a.getInt(i: _*)
+
+  def create(arr: Array[Int]): INDArray = arr.toNDArray
+
+  def create(arr: Array[Int], shape: Int*): INDArray = arr.toNDArray
+
+  def create(arr: Array[Int], shape: Array[Int], ordering: NDOrdering, offset: Int): INDArray =
+    arr.mkNDArray(shape, ordering, offset)
+
+  def greaterThan(left: Int, right: Int): Boolean = left > right
+
+  def lessThan(left: Int, right: Int): Boolean = left < right
+}
+
+case object LongNDArrayEvidence extends IntegerNDArrayEvidence[Long] {
+
+  def sum(ndarray: INDArray): Long = ndarray.sumNumber().longValue()
+
+  def mean(ndarray: INDArray): Long = ndarray.meanNumber().longValue()
+
+  def normMax(ndarray: INDArray): Long = ndarray.normmaxNumber().longValue()
+
+  def norm1(ndarray: INDArray): Long = ndarray.norm1Number().longValue()
+
+  def norm2(ndarray: INDArray): Long = ndarray.norm2Number().longValue()
+
+  def max(ndarray: INDArray): Long = ndarray.maxNumber().longValue()
+
+  def min(ndarray: INDArray): Long = ndarray.minNumber().longValue()
+
+  def standardDeviation(ndarray: INDArray): Long = ndarray.stdNumber().longValue()
+
+  def product(ndarray: INDArray): Long = ndarray.prodNumber().longValue()
+
+  def variance(ndarray: INDArray): Long = ndarray.varNumber().longValue()
+
+  def get(a: INDArray, i: Int): Long = a.getLong(i)
+
+  def get(a: INDArray, i: Int, j: Int): Long = a.getLong(i, j)
+
+  def get(a: INDArray, i: Int*): Long = a.getLong(i.map(_.toLong): _*)
+
+  def create(arr: Array[Long]): INDArray = arr.toNDArray
+
+  def create(arr: Array[Long], shape: Int*): INDArray = arr.toNDArray
+
+  def create(arr: Array[Long], shape: Array[Int], ordering: NDOrdering, offset: Int): INDArray =
+    arr.mkNDArray(shape, ordering, offset)
+
+  def greaterThan(left: Long, right: Long): Boolean = left > right
+
+  def lessThan(left: Long, right: Long): Boolean = left < right
+
+  def update(a: INDArray, indices: Array[IndexRange], i: Long): INDArray =
+    a.update(indices, i)
+}
+
+case object ByteNDArrayEvidence extends IntegerNDArrayEvidence[Byte] {
+
+  def sum(ndarray: INDArray): Byte = ndarray.sumNumber().byteValue()
+
+  def mean(ndarray: INDArray): Byte = ndarray.meanNumber().byteValue()
+
+  def normMax(ndarray: INDArray): Byte = ndarray.normmaxNumber().byteValue()
+
+  def norm1(ndarray: INDArray): Byte = ndarray.norm1Number().byteValue()
+
+  def norm2(ndarray: INDArray): Byte = ndarray.norm2Number().byteValue()
+
+  def max(ndarray: INDArray): Byte = ndarray.maxNumber().byteValue()
+
+  def min(ndarray: INDArray): Byte = ndarray.minNumber().byteValue()
+
+  def standardDeviation(ndarray: INDArray): Byte = ndarray.stdNumber().byteValue()
+
+  def product(ndarray: INDArray): Byte = ndarray.prodNumber().byteValue()
+
+  def variance(ndarray: INDArray): Byte = ndarray.varNumber().byteValue()
+
+  def get(a: INDArray, i: Int): Byte = a.getInt(i).toByte
+
+  def get(a: INDArray, i: Int, j: Int): Byte = a.getInt(i, j).toByte
+
+  def get(a: INDArray, i: Int*): Byte = a.getInt(i.map(_.toInt): _*).toByte
+
+  def create(arr: Array[Byte]): INDArray = arr.toNDArray
+
+  def create(arr: Array[Byte], shape: Int*): INDArray = arr.toNDArray
+
+  def create(arr: Array[Byte], shape: Array[Int], ordering: NDOrdering, offset: Int): INDArray =
+    arr.mkNDArray(shape, ordering, offset)
+
+  def greaterThan(left: Byte, right: Byte): Boolean = left > right
+
+  def lessThan(left: Byte, right: Byte): Boolean = left < right
+
+  def update(a: INDArray, indices: Array[IndexRange], i: Byte): INDArray =
+    a.update(indices, i)
 }

@@ -23,6 +23,7 @@
 #define DEV_TESTS_CONSTANTTADHELPER_H
 
 #include <dll.h>
+#include <op_boilerplate.h>
 #include <pointercast.h>
 #include <map>
 #include <vector>
@@ -45,11 +46,43 @@ namespace nd4j {
 
         static ConstantTadHelper* getInstance();
 
-        TadPack& tadForDimensions(Nd4jLong *originalShape, const std::vector<int> &dimensions, const bool keepUnitiesInShape = false);
-        TadPack& tadForDimensions(Nd4jLong *originalShape, int* dimensions, int dimLength, const bool keepUnitiesInShape = false);
-        TadPack& tadForDimensions(Nd4jLong *originalShape, int dimensions, const bool keepUnitiesInShape = false);
+        /**
+         * These methods calculate Tensor-Along-Dimension(s) shape and offsets
+         *
+         * @param originalShape
+         * @param dimensions
+         * @param keepUnitiesInShape
+         * @return
+         */
+        TadPack& tadForDimensions(const Nd4jLong *originalShape, const std::vector<int> &dimensions, const bool keepUnitiesInShape = false);
+        TadPack& tadForDimensions(const Nd4jLong *originalShape, int* dimensions, int dimLength, const bool keepUnitiesInShape = false);
+        TadPack& tadForDimensions(const Nd4jLong *originalShape, int dimensions, const bool keepUnitiesInShape = false);
         TadPack& tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions, const bool keepUnitiesInShape = false);
         TadPack& tadForDimensions(TadDescriptor &descriptor);
+
+        /**
+         * This method returns number of cached TAD shapes/offsets on specific device
+         * @return
+         */
+        FORCEINLINE int cachedEntriesForDevice(int deviceId) {
+            if (deviceId > _cache.size())
+                throw std::runtime_error("deviceId > number of actual devices");
+
+            return _cache[deviceId].size();
+        }
+
+        /**
+         * This method returns total number of cached TAD shapes/offsets on all devices
+         * @return
+         */
+        FORCEINLINE int totalCachedEntries() {
+            int total = 0;
+
+            for (int e = 0; e < _cache.size(); e++)
+                total += _cache[e].size();
+
+            return total;
+        }
     };
 }
 

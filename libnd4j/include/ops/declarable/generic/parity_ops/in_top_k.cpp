@@ -33,8 +33,8 @@ namespace nd4j {
 
             auto result = OUTPUT_VARIABLE(0);
             REQUIRE_TRUE(block.numI() > 0, 0, "in_top_k: Parameter k is needed to be set");
-            REQUIRE_TRUE(predictions->sizeAt(0) == target->sizeAt(0), 0, "in_top_k: The predictions and target should have equal number of columns");
-            REQUIRE_TRUE(predictions->rankOf() == 2, 0, "in_top_k: The predictions array shoud have rank 2, but %i given", predictions->rankOf());
+            REQUIRE_TRUE(predictions->sizeAt(0) == target->lengthOf(), 0, "in_top_k: the number of predictions rows should be equal to target array length, but got %i and %i correspondingly !", predictions->sizeAt(0), target->lengthOf());
+            REQUIRE_TRUE(predictions->rankOf() == 2, 0, "in_top_k: The predictions array should have rank 2, but %i given", predictions->rankOf());
             REQUIRE_TRUE(target->rankOf() == 1, 0, "in_top_k: The target should be a vector");
 
             int k = INT_ARG(0);
@@ -42,7 +42,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(in_top_k) {
-            auto shapeList = SHAPELIST(); 
+            auto shapeList = SHAPELIST();
             auto in = inputShape->at(1);
             int shapeRank = shape::rank(in);
 
@@ -53,7 +53,8 @@ namespace nd4j {
 
         DECLARE_TYPES(in_top_k) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
                     ->setAllowedOutputTypes(DataType::BOOL);
         }
 

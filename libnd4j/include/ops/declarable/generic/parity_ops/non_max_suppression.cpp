@@ -68,7 +68,7 @@ namespace nd4j {
             if (boxSize < maxOutputSize) 
                 maxOutputSize = boxSize;
 
-            outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(maxOutputSize, ArrayOptions::dataType(in));
+            outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(maxOutputSize, DataType::INT32);
 
             return SHAPELIST(outputShape);
         }

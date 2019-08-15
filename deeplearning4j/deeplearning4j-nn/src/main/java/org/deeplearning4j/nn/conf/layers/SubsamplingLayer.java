@@ -57,6 +57,12 @@ public class SubsamplingLayer extends NoParamLayer {
     protected int pnorm;
     protected double eps;
     protected boolean cudnnAllowFallback = true;
+    /*
+    Default here for JSON deserialization of 1.0.0-beta4 and earlier models. New models default to false via builder.
+    This impacts average pooling only - whether the divisor should include or exclude padding along image edges.
+    DL4J originally included padding in the count, versions after 1.0.0-beta4 will exclude it by default.
+     */
+    protected boolean avgPoolIncludePadInDivisor = true;
 
     public enum PoolingType {
         MAX, AVG, SUM, PNORM;
@@ -95,6 +101,7 @@ public class SubsamplingLayer extends NoParamLayer {
         this.pnorm = builder.pnorm;
         this.eps = builder.eps;
         this.cudnnAllowFallback = builder.cudnnAllowFallback;
+        this.avgPoolIncludePadInDivisor = builder.avgPoolIncludePadInDivisor;
     }
 
     @Override
@@ -376,6 +383,7 @@ public class SubsamplingLayer extends NoParamLayer {
          * Whether fallback to non-CuDNN implementation should be used
          */
         protected boolean cudnnAllowFallback = true;
+        protected boolean avgPoolIncludePadInDivisor = false;
 
         protected BaseSubsamplingBuilder(PoolingType poolingType, int[] kernelSize, int[] stride) {
             this.setPoolingType(poolingType.toPoolingType());
@@ -480,6 +488,29 @@ public class SubsamplingLayer extends NoParamLayer {
          */
         public T cudnnAllowFallback(boolean allowFallback) {
             this.cudnnAllowFallback = allowFallback;
+            return (T) this;
+        }
+
+        /**
+         * When doing average pooling, should the padding values be included in the divisor or not?<br>
+         * Not applicable for max and p-norm pooling.<br>
+         * Users should not usually set this - instead, leave it as the default (false). It is included mainly for backward
+         * compatibility of older models<br>
+         * Consider the following 2x2 segment along the right side of the image:<br>
+         * <pre>
+         * [A, P]
+         * [B, P]
+         * </pre>
+         * Where A and B are actual values, and P is padding (0).<br>
+         * With avgPoolIncludePadInDivisor = true, we have: out = (A+B+0+0)/4<br>
+         * With avgPoolIncludePadInDivisor = false, we have: out = (A+B+0+0)/2<br>
+         * <br>
+         * Earlier versions of DL4J originally included padding in the count, newer versions exclude it.<br>
+         *
+         * @param avgPoolIncludePadInDivisor Whether the divisor should include or exclude padding for average pooling
+         */
+        public T avgPoolIncludePadInDivisor(boolean avgPoolIncludePadInDivisor){
+            this.avgPoolIncludePadInDivisor = avgPoolIncludePadInDivisor;
             return (T) this;
         }
     }

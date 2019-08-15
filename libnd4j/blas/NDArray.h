@@ -155,20 +155,20 @@ namespace nd4j {
 #ifndef __JAVACPP_HACK__
         NDArray(std::shared_ptr<DataBuffer> buffer, const ShapeDescriptor& descriptor, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const Nd4jLong offset = 0);
 
-        NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+        NDArray(std::shared_ptr<DataBuffer> buffer, const char order, const std::vector<Nd4jLong> &shape, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext());
 
 #endif
 
         /**
         *  do not allocate memory, memory for array is passed from outside
         */
-        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
+        NDArray(void *buffer, Nd4jLong* shapeInfo, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
 
         /**
         *  do not allocate memory, memory for array is passed from outside
         *  we suppose the content of both (device and host) buffers is identical
         */
-        NDArray(void *buffer, void *bufferD, Nd4jLong* shapeInfo, nd4j::LaunchContext * context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isBuffDAlloc = false);
+        NDArray(void *buffer, void *bufferD, Nd4jLong* shapeInfo, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false, const bool isBuffDAlloc = false);
 
         /**
         *  copy constructor
@@ -189,28 +189,42 @@ namespace nd4j {
         /**
 		*  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         */
-		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+		NDArray(Nd4jLong* shapeInfo, const bool copyStrides = false, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext());
 
         /**
         *  constructor creates new NDArray using shape information from "shapeInfo", set all elements in new array to be zeros, if copyStrides is true then use stride values from "shapeInfo", else calculate strides independently
         *  set dtype as array type
         */
-        NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides = false, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+        NDArray(Nd4jLong* shapeInfo, const nd4j::DataType dtype, const bool copyStrides = false, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext());
 
         /**
         *  this constructor creates new array using shape information contained in vector argument
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype = DOUBLE, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, nd4j::DataType dtype = DOUBLE, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext());
 
         /**
         * This constructor creates new array with elements copied from data and using shape information stored in shape, elements from data will be casted to dtype
         */
-        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype = DOUBLE, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+        NDArray(const char order, const std::vector<Nd4jLong> &shape, const std::vector<double>& data, nd4j::DataType dtype = DOUBLE, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext());
 
         /**
-        *  this constructor creates new array using given buffer (without memory allocating) and shape information stored in shape
+        *  this constructor creates new array using given buffer (without memory allocation) and shape information stored in shape
         */
-        NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+        NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
+
+
+        /**
+        * This method returns new array with the same shape & data type
+        * @return
+        */
+        NDArray like();
+
+        /**
+         * This method returns new uninitialized array with the same shape & data type
+         * @return
+         */
+        NDArray ulike();
+
 
         /**
         *  this constructor creates new NDArray with shape matching "other" array,
@@ -221,7 +235,7 @@ namespace nd4j {
         /**
         *  this constructor creates scalar(and set its value = 0) or empty array depending on bool argument isScalar
         */
-        NDArray(nd4j::DataType dtype, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext(), const bool isScalar = true);
+        NDArray(nd4j::DataType dtype, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const bool isScalar = true);
 
         /**
          * This method blocks until asynchronous operation finishes
@@ -257,6 +271,7 @@ namespace nd4j {
 
         static void registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList);
         static void preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables = false);
+
 
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
@@ -372,8 +387,8 @@ namespace nd4j {
         /**
         *  if _bufferD==nullptr return _buffer, else return _bufferD
         */
-        FORCEINLINE void* specialBuffer();
-        FORCEINLINE void* getSpecialBuffer() const;
+        void* specialBuffer();
+        void* getSpecialBuffer() const;
 
         /**
         *   returns device buffer if compilation is for cuda case, otherwise returns host buffer
@@ -429,16 +444,16 @@ namespace nd4j {
         /**
         *  permutes the dimensions in array according to "dimensions" array, new array points on _buffer of this array
         */
-		NDArray* permute(const std::initializer_list<int>& dimensions) const;
-        NDArray* permute(const std::vector<int>& dimensions) const;
-        NDArray* permute(const int* dimensions, const int rank) const;
+		NDArray permute(const std::initializer_list<int>& dimensions) const;
+        NDArray permute(const std::vector<int>& dimensions) const;
+        NDArray permute(const int* dimensions, const int rank) const;
 
         void permute(const int* dimensions, const int rank, NDArray& target) const;
         void permute(const std::vector<int>& dimensions, NDArray& target) const;
 
-        NDArray* permute(const std::initializer_list<Nd4jLong>& dimensions) const;
-        NDArray* permute(const std::vector<Nd4jLong>& dimensions) const;
-        NDArray* permute(const Nd4jLong* dimensions, const int rank) const;
+        NDArray permute(const std::initializer_list<Nd4jLong>& dimensions) const;
+        NDArray permute(const std::vector<Nd4jLong>& dimensions) const;
+        NDArray permute(const Nd4jLong* dimensions, const int rank) const;
 
         void permute(const Nd4jLong* dimensions, const int rank, NDArray& target) const;
         void permute(const std::vector<Nd4jLong>& dimensions, NDArray& target) const;
@@ -463,6 +478,11 @@ namespace nd4j {
         void printBuffer(const char* msg = nullptr, Nd4jLong limit = -1, const bool sync = true) const;
 
         /**
+        * print element by element consequently in a way they (elements) are stored in physical memory
+        */
+        void printLinearBuffer() const;
+
+        /**
         *  prints _buffer (if host = true) or _bufferD (if host = false) as it is, that is in current state without checking buffer status
         */
         template<typename T>
@@ -481,34 +501,34 @@ namespace nd4j {
         /**
         *  this method assigns values of given array to this one
         */
-        void assign(const NDArray* other);
+        void assign(const NDArray* other, bool allowParallelism = true);
 
         /**
         *  this method assigns values of given array to this one
         */
-        void assign(const NDArray& other);
+        void assign(const NDArray& other, bool allowParallelism = true);
 
         /**
         *  this method assigns given value to all elements in array
         */
-        void assign(const double value);
-        void assign(const float value);
-        void assign(const float16 value);
-        void assign(const bfloat16& value);
-        void assign(const Nd4jLong value);
-        void assign(const int value);
-        void assign(const int16_t value);
-        void assign(const uint8_t value);
-        void assign(const uint16_t value);
-        void assign(const uint32_t value);
-        void assign(const uint64_t value);
-        void assign(const int8_t value);
-        void assign(const bool value);
+        void assign(const double value, bool allowParallelism = true);
+        void assign(const float value, bool allowParallelism = true);
+        void assign(const float16 value, bool allowParallelism = true);
+        void assign(const bfloat16& value, bool allowParallelism = true);
+        void assign(const Nd4jLong value, bool allowParallelism = true);
+        void assign(const int value, bool allowParallelism = true);
+        void assign(const int16_t value, bool allowParallelism = true);
+        void assign(const uint8_t value, bool allowParallelism = true);
+        void assign(const uint16_t value, bool allowParallelism = true);
+        void assign(const uint32_t value, bool allowParallelism = true);
+        void assign(const uint64_t value, bool allowParallelism = true);
+        void assign(const int8_t value, bool allowParallelism = true);
+        void assign(const bool value, bool allowParallelism = true);
 
         /**
         *  returns new copy of this array, optionally in different order
         */
-        NDArray *dup(const char newOrder = 'a');
+        NDArray *dup(const char newOrder = 'a') const;
 
         /**
         *  returns sum of all elements of array
@@ -687,7 +707,7 @@ namespace nd4j {
         void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
 
-#if defined(__CUDABLAS__) && defined(BUILD_TESTS)
+#if defined(__CUDABLAS__) //&& defined(BUILD_TESTS)
         template <typename Lambda>
         FORCEINLINE void applyLambda(Lambda func, NDArray* target = nullptr);
 
@@ -790,8 +810,7 @@ namespace nd4j {
         /**
         *   apply transpose operation to the copy of this array, that is this array remains unaffected
         */
-        NDArray* transpose() const;
-        NDArray  transp() const;
+        NDArray transpose() const;
 
         /**
         *  perform transpose operation and store result in target, this array remains unaffected
@@ -915,7 +934,7 @@ namespace nd4j {
         *
         * if permute have been applied before or there are weird strides, then new buffer is allocated for new array
         */
-		NDArray* reshape(const char order, const std::vector<Nd4jLong>& shape) const;
+		NDArray reshape(const char order, const std::vector<Nd4jLong>& shape) const;
 
         /**
         *  calculate strides and set given order
@@ -1144,9 +1163,9 @@ namespace nd4j {
         *   - down from main diagonal starting at subdiagonal number "lower" if direction = 'd' (down) or 'b' (both)
         *   - up from main diagonal starting at superdiagonal number "upper"if direction = 'u' (up) or 'b' (both)
         * direction - in what direction to fill matrix. There are 3 possible directions:
-        *   'u' - fill up, mathematically this corresponds to lower triangular matrix, parameter "lower" is not taken into account
-        *   'l' - fill down, mathematically this corresponds to upper triangular matrix, parameter "upper" is not taken into account
-        *   'b' - fill in both directions, both parameters "lower" and "upper" are taken into account
+        *   'u' - fill up, mathematically this corresponds to lower triangular matrix, subdiagonal "lower" unaffected
+        *   'l' - fill down, mathematically this corresponds to upper triangular matrix, superdiagonal "upper" remains unaffected
+        *   'b' - fill in both directions, both "lower" and "upper" are taken into account
         * rest of target elements are equal to this array elements
         * target and this array should have same shapes, except when this_rank = 1 (in that case should be target_rank = 2)
         */
@@ -1211,6 +1230,8 @@ namespace nd4j {
 
         template<typename T>
         FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j);
+        template<typename T>
+        FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
 
         /**
         *  returns array element with given index
@@ -1221,6 +1242,8 @@ namespace nd4j {
 
         template<typename T>
         FORCEINLINE T t(const Nd4jLong i, const Nd4jLong j) const;
+        template<typename T>
+        FORCEINLINE T t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
 
 
         /**
@@ -2026,6 +2049,23 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
 
+template <typename T>
+T& NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
+
+    if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
+        throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=2 !");
+    if (DataTypeUtils::fromT<T>() != _dataType)
+        throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+
+    if(!isActualOnHostSide())
+        syncToHost();
+
+    Nd4jLong coords[3] = {i, j, k};
+    auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    tickWriteHost();
+    return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+}
+
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 T NDArray::t(const Nd4jLong i) const {
@@ -2059,6 +2099,23 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
     tickReadHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
+
+    template <typename T>
+    T NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
+
+        if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
+            throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=2 !");
+        if (DataTypeUtils::fromT<T>() != _dataType)
+            throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+
+        if(!isActualOnHostSide())
+            syncToHost();
+
+        Nd4jLong coords[3] = {i, j, k};
+        auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        tickReadHost();
+        return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+    }
 
 #ifndef __JAVACPP_HACK__
 ////////////////////////////////////////////////////////////////////////
@@ -2094,28 +2151,11 @@ Nd4jLong* NDArray::shapeInfo() {
 }
 
 ////////////////////////////////////////////////////////////////////////
-void* NDArray::specialBuffer() {
-
-    if (_buffer->special() == nullptr)
-        return getBuffer();
-    // FIXME: this should be fixed once CUDA backend added
-    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
-}
-
-////////////////////////////////////////////////////////////////////////
 Nd4jLong* NDArray::specialShapeInfo() {
     if (_shapeInfoD == nullptr)
         return _shapeInfo;
     // FIXME: this should be fixed once CUDA backend added
     return _shapeInfoD;
-}
-
-////////////////////////////////////////////////////////////////////////
-void* NDArray::getSpecialBuffer() const {
-      if (_buffer->special() == nullptr)
-        return getBuffer();
-    // FIXME: this should be fixed once CUDA backend added
-    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2137,7 +2177,7 @@ Nd4jLong* NDArray::getSpecialShapeInfo() const{
 }
 
 
-#if defined(__CUDACC__) && defined(BUILD_TESTS)
+#if defined(__CUDACC__) //&& defined(BUILD_TESTS)
 // for CUDA we need stil stuff inline
 #include "cuda/NDArrayLambda.hpp"
 #endif

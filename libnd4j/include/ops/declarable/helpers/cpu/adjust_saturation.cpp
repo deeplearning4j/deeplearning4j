@@ -15,99 +15,168 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <ops/declarable/helpers/adjust_saturation.h>
+#include <ops/declarable/helpers/adjust_hue.h>
+#include <helpers/ConstantTadHelper.h>
 
 
-namespace nd4j {
-namespace ops {
+namespace nd4j    {
+namespace ops     {
 namespace helpers {
 
-    template <typename T>
-    static void adjust_saturation_single_(nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
-        // we're 100% sure it's 3
-        const int numChannels = 3;
-        int tuples = array->lengthOf() /  numChannels;
-        auto bIn = reinterpret_cast<T *>(array->buffer());
-        auto bOut = reinterpret_cast<T *>(output->buffer());
-        static const int kChannelRange = 6;
+template <typename T>
+static void adjustSaturation_(const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
 
-        if (isNHWC) {
-            // for NHWC our rgb values are stored one by one
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < tuples; e++) {
-                auto i = bIn + e * numChannels;
-                auto o = bOut + e * numChannels;
+    const T factor = factorScalarArr->e<T>(0);
+    const int rank = input->rankOf();
 
-                T h, s, v;
-                // Convert the RGB color to Hue/V-range.
-                helpers::rgb_to_hsv(context, i[0], i[1], i[2], &h, &s, &v);
-                s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
-                // Convert the hue and v-range back into RGB.
-                helpers::hsv_to_rgb(context, h, s, v, o, o + 1, o + 2);
-            }
-        } else {
-            auto tadsChannelsIn = array->allTensorsAlongDimension({0});
-            auto tadsChannelsOut = output->allTensorsAlongDimension({0});
+    const T* x = input->bufferAsT<T>();
+          T* z = output->bufferAsT<T>();
 
-            auto bufferR = reinterpret_cast<T *>(tadsChannelsIn->at(0)->buffer());
-            auto bufferG = reinterpret_cast<T *>(tadsChannelsIn->at(1)->buffer());
-            auto bufferB = reinterpret_cast<T *>(tadsChannelsIn->at(2)->buffer());
+    if(dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
-            auto outputR = reinterpret_cast<T *>(tadsChannelsOut->at(0)->buffer());
-            auto outputG = reinterpret_cast<T *>(tadsChannelsOut->at(1)->buffer());
-            auto outputB = reinterpret_cast<T *>(tadsChannelsOut->at(2)->buffer());
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (Nd4jLong i = 0; i < input->lengthOf(); i += 3) {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < tuples; e++) {
-                auto _ri = bufferR + e;
-                auto _gi = bufferG + e;
-                auto _bi = bufferB + e;
+            T h, s, v;
 
-                auto _ro = outputR + e;
-                auto _go = outputG + e;
-                auto _bo = outputB + e;
+            rgbToHsv<T>(x[i], x[i+1], x[i+2], h, s, v);
 
-                T h, s, v;
-                // Convert the RGB color to Hue/V-range.
-                helpers::rgb_to_hsv(context, _ri[0], _gi[0], _bi[0], &h, &s, &v);
-                s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
-                // Convert the hue and v-range back into RGB.
-                helpers::hsv_to_rgb(context, h, s, v, _ro, _go, _bo);
-            }
+            s *= factor;
+            if(s > 1.f)
+                s = 1.f;
+            else if(s < 0.f)
+                s = 0.f;
 
-            delete tadsChannelsIn;
-            delete tadsChannelsOut;
+            hsvToRgb<T>(h, s, v, z[i], z[i+1], z[i+2]);
         }
     }
+    else {
 
-    void adjust_saturation(nd4j::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
-        auto xType = array->dataType();
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
 
-        float d = delta->e<float>(0);
-        if (array->rankOf() == 4) {
-            auto tadsIn = array->allTensorsAlongDimension({0});
-            auto tadsOut = output->allTensorsAlongDimension({0});
-            int tSize = tadsIn->size();
+        const Nd4jLong numOfTads   = packX.numberOfTads();
+        const Nd4jLong xDimCstride = input->stridesOf()[dimC];
+        const Nd4jLong zDimCstride = output->stridesOf()[dimC];
 
-            // FIXME: template selector should be moved out of loop
-            PRAGMA_OMP_PARALLEL_FOR
-            for (int e = 0; e < tSize; e++) {
-                BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
-            }
-            
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for(Nd4jLong i = 0; i < numOfTads; ++i) {
 
-            delete tadsIn;
-            delete tadsOut;
-        }
-        else {
-            BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, array, output, d, isNHWC);, FLOAT_TYPES);
+            const T* xTad = x + packX.platformOffsets()[i];
+                  T* zTad = z + packZ.platformOffsets()[i];
+
+            T h, s, v;
+
+            rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], h, s, v);
+
+            s *= factor;
+            if(s > 1.f)
+                s = 1.f;
+            else if(s < 0.f)
+                s = 0.f;
+
+            hsvToRgb<T>(h, s, v, zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+
         }
     }
+}
 
-    BUILD_SINGLE_TEMPLATE(template void adjust_saturation_single_, (nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC), FLOAT_TYPES);
+
+void adjustSaturation(nd4j::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
+
+    BUILD_SINGLE_SELECTOR(input->dataType(), adjustSaturation_, (input, factorScalarArr, output, dimC), LIBND4J_TYPES);
+}
+
+/*
+template <typename T>
+static void adjust_saturation_single_(nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC) {
+    // we're 100% sure it's 3
+    const int numChannels = 3;
+    int tuples = array->lengthOf() /  numChannels;
+    auto bIn = reinterpret_cast<T *>(array->buffer());
+    auto bOut = reinterpret_cast<T *>(output->buffer());
+    static const int kChannelRange = 6;
+
+    if (isNHWC) {
+        // for NHWC our rgb values are stored one by one
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (int e = 0; e < tuples; e++) {
+            auto i = bIn + e * numChannels;
+            auto o = bOut + e * numChannels;
+
+            T h, s, v;
+            // Convert the RGB color to Hue/V-range.
+            helpers::rgb_to_hsv(i[0], i[1], i[2], &h, &s, &v);
+            s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
+            // Convert the hue and v-range back into RGB.
+            helpers::hsv_to_rgb(h, s, v, o, o + 1, o + 2);
+        }
+    } else {
+        auto tadsChannelsIn = array->allTensorsAlongDimension({0});
+        auto tadsChannelsOut = output->allTensorsAlongDimension({0});
+
+        auto bufferR = reinterpret_cast<T *>(tadsChannelsIn->at(0)->buffer());
+        auto bufferG = reinterpret_cast<T *>(tadsChannelsIn->at(1)->buffer());
+        auto bufferB = reinterpret_cast<T *>(tadsChannelsIn->at(2)->buffer());
+
+        auto outputR = reinterpret_cast<T *>(tadsChannelsOut->at(0)->buffer());
+        auto outputG = reinterpret_cast<T *>(tadsChannelsOut->at(1)->buffer());
+        auto outputB = reinterpret_cast<T *>(tadsChannelsOut->at(2)->buffer());
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for (int e = 0; e < tuples; e++) {
+            auto _ri = bufferR + e;
+            auto _gi = bufferG + e;
+            auto _bi = bufferB + e;
+
+            auto _ro = outputR + e;
+            auto _go = outputG + e;
+            auto _bo = outputB + e;
+
+            T h, s, v;
+            // Convert the RGB color to Hue/V-range.
+            helpers::rgb_to_hsv(_ri[0], _gi[0], _bi[0], &h, &s, &v);
+            s = nd4j::math::nd4j_min<T>((T) 1.0f, nd4j::math::nd4j_max<T>((T) 0.0f, s * delta));
+            // Convert the hue and v-range back into RGB.
+            helpers::hsv_to_rgb(h, s, v, _ro, _go, _bo);
+        }
+
+        delete tadsChannelsIn;
+        delete tadsChannelsOut;
+    }
+}
+
+void adjust_saturation(nd4j::LaunchContext * context, NDArray *array, NDArray *output, NDArray* delta, bool isNHWC) {
+    auto xType = array->dataType();
+
+    float d = delta->e<float>(0);
+    if (array->rankOf() == 4) {
+        auto tadsIn = array->allTensorsAlongDimension({0});
+        auto tadsOut = output->allTensorsAlongDimension({0});
+        int tSize = tadsIn->size();
+
+        // FIXME: template selector should be moved out of loop
+        PRAGMA_OMP_PARALLEL_FOR
+        for (int e = 0; e < tSize; e++) {
+            BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, tadsIn->at(e), tadsOut->at(e), d, isNHWC);, FLOAT_TYPES);
+        }
+
+
+        delete tadsIn;
+        delete tadsOut;
+    }
+    else {
+        BUILD_SINGLE_SELECTOR(xType, adjust_saturation_single_, (context, array, output, d, isNHWC);, FLOAT_TYPES);
+    }
+}
+
+BUILD_SINGLE_TEMPLATE(template void adjust_saturation_single_, (nd4j::LaunchContext * context, NDArray *array, NDArray *output, float delta, bool isNHWC), FLOAT_TYPES);
+*/
 
 }
 }

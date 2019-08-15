@@ -49,7 +49,6 @@ import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
@@ -126,12 +125,7 @@ public class LegacyOpMapper {
             case CONDITIONAL:
             case LOOP:
             case LOOP_COND:
-            case IF:
             case RETURN:
-            case ENTER:
-            case EXIT:
-            case NEXT_ITERATION:
-            case MERGE:
             default:
                 throw new UnsupportedOperationException("Unable to map op " + opNum + " of type " + opType);
         }
@@ -753,8 +747,6 @@ public class LegacyOpMapper {
 
     public static Class<?> transformFloatingOpClass(int opNum){
         switch (opNum){
-            case 0:
-                return Histogram.class;
             case 1:
                 return Sqrt.class;
             case 3:

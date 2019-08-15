@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.io.ClassPathResource;
+import org.nd4j.linalg.util.ArrayUtil;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -254,6 +255,75 @@ public class NumpyFormatTests extends BaseNd4jTest {
 
             assertTrue(cnt > 0);
         }
+    }
+
+    @Test
+    public void testFromNumpyScalar() throws Exception {
+        val out = Nd4j.createFromNpyFile(new ClassPathResource("numpy_oneoff/scalar.npy").getFile());
+        assertEquals(Nd4j.scalar(DataType.INT, 1), out);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void readNumpyCorruptHeader1() throws Exception {
+        File f = testDir.newFolder();
+
+        File fValid = new ClassPathResource("numpy_arrays/arange_3,4_float32.npy").getFile();
+        byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
+        for( int i=0; i<10; i++ ){
+            numpyBytes[i] = 0;
+        }
+        File fCorrupt = new File(f, "corrupt.npy");
+        FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
+
+        INDArray exp = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
+
+        INDArray act1 = Nd4j.createFromNpyFile(fValid);
+        assertEquals(exp, act1);
+
+        INDArray probablyShouldntLoad = Nd4j.createFromNpyFile(fCorrupt); //Loads fine
+        boolean eq = exp.equals(probablyShouldntLoad); //And is actually equal content
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void readNumpyCorruptHeader2() throws Exception {
+        File f = testDir.newFolder();
+
+        File fValid = new ClassPathResource("numpy_arrays/arange_3,4_float32.npy").getFile();
+        byte[] numpyBytes = FileUtils.readFileToByteArray(fValid);
+        for( int i=1; i<10; i++ ){
+            numpyBytes[i] = 0;
+        }
+        File fCorrupt = new File(f, "corrupt.npy");
+        FileUtils.writeByteArrayToFile(fCorrupt, numpyBytes);
+
+        INDArray exp = Nd4j.arange(12).castTo(DataType.FLOAT).reshape(3,4);
+
+        INDArray act1 = Nd4j.createFromNpyFile(fValid);
+        assertEquals(exp, act1);
+
+        INDArray probablyShouldntLoad = Nd4j.createFromNpyFile(fCorrupt); //Loads fine
+        boolean eq = exp.equals(probablyShouldntLoad); //And is actually equal content
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testAbsentNumpyFile_1() throws Exception {
+        val f = new File("pew-pew-zomg.some_extension_that_wont_exist");
+        INDArray act1 = Nd4j.createFromNpyFile(f);
+    }
+
+    @Test(expected = IllegalArgumentException.class)
+    public void testAbsentNumpyFile_2() throws Exception {
+        val f = new File("c:/develop/batch-x-1.npy");
+        INDArray act1 = Nd4j.createFromNpyFile(f);
+        log.info("Array shape: {}; sum: {};", act1.shape(), act1.sumNumber().doubleValue());
+    }
+
+    @Ignore
+    @Test
+    public void testNumpyBoolean() {
+        INDArray out = Nd4j.createFromNpyFile(new File("c:/Users/raver/Downloads/error2.npy"));
+        System.out.println(ArrayUtil.toList(ArrayUtil.toInts(out.shape())));
+        System.out.println(out);
     }
 
     @Override

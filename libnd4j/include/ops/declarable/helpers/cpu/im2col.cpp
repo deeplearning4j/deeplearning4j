@@ -61,33 +61,34 @@ static void im2col_(nd4j::LaunchContext & context, const NDArray& input,  NDArra
 
     T *col, *im;
     int imRow, imCol;
-            
+
     if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
         PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(private(col, im, imRow, imCol) collapse(2))
     	for (int b = 0; b < bS; b++) {
-        	for (int c = 0; c < iC; ++c) {        
-            	for (int kRow = 0; kRow < kH; ++kRow) {                        
-                	for (int kCol = 0; kCol < kW; ++kCol) {                            
+        	for (int c = 0; c < iC; ++c) {
+            	for (int kRow = 0; kRow < kH; ++kRow) {
+                	for (int kCol = 0; kCol < kW; ++kCol) {
                     	for (int colH = 0; colH < oH; ++colH) {
-                        	for (int colW = 0; colW < oW; ++colW) {                    
-                                
+                        	for (int colW = 0; colW < oW; ++colW) {
+
                             	imRow = (-pH + kRow * dH) + colH*sH;
                                 imCol = (-pW + kCol * dW) + colW*sW;
-                                        
+
                                 col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
-                                im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3; 
-                                                    
+
                                 if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
                                 	*col = zeroPadVal;
-                                else 
+                                else {
+                                    im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
                                 	*col = *im;
+                                }
                             }
                         }
                     }
                 }
             }
-        }  
+        }
     }
     else {
 
@@ -96,19 +97,20 @@ static void im2col_(nd4j::LaunchContext & context, const NDArray& input,  NDArra
         	for (int colH = 0; colH < oH; ++colH) {
             	for (int colW = 0; colW < oW; ++colW) {
                 	for (int c = 0; c < iC; ++c) {
-                    	for (int kRow = 0; kRow < kH; ++kRow) {                        
-                        	for (int kCol = 0; kCol < kW; ++kCol) {                            
-                        
+                    	for (int kRow = 0; kRow < kH; ++kRow) {
+                        	for (int kCol = 0; kCol < kW; ++kCol) {
+
                             	imRow = (-pH + kRow * dH) + colH*sH;
                                 imCol = (-pW + kCol * dW) + colW*sW;
-                                        
+
                                 col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
-                                im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
-                                                    
+
                                 if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
                                 	*col = zeroPadVal;
-                                else 
+                                else {
+                                    im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
                                 	*col = *im;
+                                }
                             }
                         }
                     }

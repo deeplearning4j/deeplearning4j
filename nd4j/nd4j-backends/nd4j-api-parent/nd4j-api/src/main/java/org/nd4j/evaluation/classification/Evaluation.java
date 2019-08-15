@@ -22,7 +22,11 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.EvaluationAveraging;
 import org.nd4j.evaluation.EvaluationUtils;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.IMetric;
 import org.nd4j.evaluation.meta.Prediction;
+import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.evaluation.serde.ConfusionMatrixDeserializer;
 import org.nd4j.evaluation.serde.ConfusionMatrixSerializer;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -83,7 +87,18 @@ import java.util.*;
 @JsonIgnoreProperties({"confusionMatrixMetaData"})
 public class Evaluation extends BaseEvaluation<Evaluation> {
 
-    public enum Metric {ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC}
+    public enum Metric implements IMetric {ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC;
+
+        @Override
+        public Class<? extends IEvaluation> getEvaluationClass() {
+            return Evaluation.class;
+        }
+
+        @Override
+        public boolean minimize() {
+            return false;
+        }
+    }
 
     //What to output from the precision/recall function when we encounter an edge case
     protected static final double DEFAULT_EDGE_VALUE = 0.0;
@@ -121,6 +136,17 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
      */
     @Getter @Setter
     protected int maxWarningClassesToPrint = 16;
+
+    protected Evaluation(int axis, Integer binaryPositiveClass, int topN, List<String> labelsList,
+            Double binaryDecisionThreshold, INDArray costArray, int maxWarningClassesToPrint){
+        this.axis = axis;
+        this.binaryPositiveClass = binaryPositiveClass;
+        this.topN = topN;
+        this.labelsList = labelsList;
+        this.binaryDecisionThreshold = binaryDecisionThreshold;
+        this.costArray = costArray;
+        this.maxWarningClassesToPrint = maxWarningClassesToPrint;
+    }
 
     // Empty constructor
     public Evaluation() {
@@ -190,6 +216,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
         if (labels != null) {
             createConfusion(labels.size());
         }
+
         this.topN = topN;
         if(labels != null && labels.size() == 2){
             this.binaryPositiveClass = 1;
@@ -702,7 +729,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
             builder.append("\nCost array: ").append(Arrays.toString(costArray.dup().data().asFloat()));
         }
         //Note that we could report micro-averaged too - but these are the same as accuracy
-        //"Note that for “micro�?-averaging in a multiclass setting with all labels included will produce equal precision, recall and F,"
+        //"Note that for “micro-averaging in a multiclass setting with all labels included will produce equal precision, recall and F,"
         //http://scikit-learn.org/stable/modules/model_evaluation.html
 
         builder.append("\n\n");
@@ -884,7 +911,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * When calculating the (macro) average precision, how many classes are excluded from the average due to
-     * no predictions – i.e., precision would be the edge case of 0/0
+     * no predictions - i.e., precision would be the edge case of 0/0
      *
      * @return Number of classes excluded from the  average precision
      */
@@ -894,7 +921,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * When calculating the (macro) average Recall, how many classes are excluded from the average due to
-     * no predictions – i.e., recall would be the edge case of 0/0
+     * no predictions - i.e., recall would be the edge case of 0/0
      *
      * @return Number of classes excluded from the average recall
      */
@@ -904,7 +931,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * When calculating the (macro) average F1, how many classes are excluded from the average due to
-     * no predictions – i.e., F1 would be calculated from a precision or recall of 0/0
+     * no predictions - i.e., F1 would be calculated from a precision or recall of 0/0
      *
      * @return Number of classes excluded from the average F1
      */
@@ -914,7 +941,7 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     /**
      * When calculating the (macro) average FBeta, how many classes are excluded from the average due to
-     * no predictions – i.e., FBeta would be calculated from a precision or recall of 0/0
+     * no predictions - i.e., FBeta would be calculated from a precision or recall of 0/0
      *
      * @return Number of classes excluded from the average FBeta
      */
@@ -1868,5 +1895,18 @@ public class Evaluation extends BaseEvaluation<Evaluation> {
 
     public static Evaluation fromYaml(String yaml) {
         return fromYaml(yaml, Evaluation.class);
+    }
+
+    @Override
+    public double getValue(IMetric metric){
+        if(metric instanceof Metric){
+            return scoreForMetric((Metric) metric);
+        } else
+            throw new IllegalStateException("Can't get value for non-evaluation Metric " + metric);
+    }
+
+    @Override
+    public Evaluation newInstance() {
+        return new Evaluation(axis, binaryPositiveClass, topN, labelsList, binaryDecisionThreshold, costArray, maxWarningClassesToPrint);
     }
 }

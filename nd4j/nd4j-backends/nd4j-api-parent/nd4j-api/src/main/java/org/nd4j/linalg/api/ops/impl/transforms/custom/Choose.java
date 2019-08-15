@@ -69,7 +69,6 @@ public class Choose extends DynamicCustomOp {
 
         addInputArgument(inputs);
         addIArgument(condition.condtionNum());
-        addOutputArgument(Nd4j.create(inputs[0].length()),Nd4j.scalar(1.0));
     }
 
     /**
@@ -106,8 +105,6 @@ public class Choose extends DynamicCustomOp {
         if(!tArgs.isEmpty())
             addTArgument(Doubles.toArray(tArgs));
         addIArgument(condition.condtionNum());
-
-        addOutputArgument(Nd4j.create(inputs[0].shape(), inputs[0].ordering()),Nd4j.scalar(DataType.LONG, 1.0));
     }
 
     public Choose(String opName, SameDiff sameDiff, SDVariable[] args, boolean inPlace) {

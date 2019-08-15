@@ -140,10 +140,23 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         dataPointer.capacity(dataBufferElementSize * Shape.length(shapeBuffer));
 
         val jvmShapeInfo = shapeBuffer.asLong();
-        log.info("JVM shapeInfo: {}", jvmShapeInfo);
         val dtype = ArrayOptionsHelper.dataType(jvmShapeInfo);
 
         switch (dtype) {
+            case BOOL: {
+                val dPointer = new BooleanPointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        BooleanIndexer.create(dPointer));
+            }
+            break;
             case UBYTE: {
                 val dPointer = new BytePointer(dataPointer.limit() / dataBufferElementSize);
                 val perfX = PerformanceTracker.getInstance().helperStartTransaction();
@@ -611,6 +624,7 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
                     bb2.put((byte)((s >> 8) & 0xff));
                     bb2.put((byte)(s & 0xff));
                 }
+                Nd4j.getAffinityManager().tagLocation(arr, AffinityManager.Location.HOST);
                 map.put(fName, arr.reshape(order, shape));
             } else if(dt == DataType.LONG){
                 long[] d = new long[(int)size];

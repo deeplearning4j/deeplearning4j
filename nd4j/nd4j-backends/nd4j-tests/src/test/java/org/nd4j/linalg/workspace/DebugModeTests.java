@@ -81,17 +81,17 @@ public class DebugModeTests extends BaseNd4jTest {
         try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1993")) {
             assertEquals(10 * 1024 * 1024L, ws.getCurrentSize());
             assertEquals(0, ws.getDeviceOffset());
-            assertEquals(0, ws.getHostOffset());
+            assertEquals(0, ws.getPrimaryOffset());
 
             val array = Nd4j.create(DataType.DOUBLE, 10, 10).assign(1.0f);
             assertTrue(array.isAttached());
 
             // nothing should get into workspace
-            assertEquals(0, ws.getHostOffset());
+            assertEquals(0, ws.getPrimaryOffset());
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
-            assertEquals(10 * 10 * Nd4j.sizeOfDataType(DataType.DOUBLE) + Nd4j.sizeOfDataType(DataType.DOUBLE), ws.getSpilledSize());
+            assertEquals(10 * 10 * Nd4j.sizeOfDataType(DataType.DOUBLE), ws.getSpilledSize());
         }
     }
 
@@ -107,24 +107,24 @@ public class DebugModeTests extends BaseNd4jTest {
         try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {
             assertEquals(0L, ws.getCurrentSize());
             assertEquals(0, ws.getDeviceOffset());
-            assertEquals(0, ws.getHostOffset());
+            assertEquals(0, ws.getPrimaryOffset());
 
             val array = Nd4j.create(DataType.DOUBLE, 10, 10).assign(1.0f);
 
             assertTrue(array.isAttached());
 
             // nothing should get into workspace
-            assertEquals(0, ws.getHostOffset());
+            assertEquals(0, ws.getPrimaryOffset());
             assertEquals(0, ws.getDeviceOffset());
 
             // array buffer should be spilled now
-            assertEquals(10 * 10 * Nd4j.sizeOfDataType(DataType.DOUBLE) + Nd4j.sizeOfDataType(DataType.DOUBLE), ws.getSpilledSize());
+            assertEquals(10 * 10 * Nd4j.sizeOfDataType(DataType.DOUBLE), ws.getSpilledSize());
         }
 
         try (val ws = (Nd4jWorkspace) Nd4j.getWorkspaceManager().getAndActivateWorkspace(basicConfig, "R_119_1992")) {
             assertEquals(0L, ws.getCurrentSize());
             assertEquals(0, ws.getDeviceOffset());
-            assertEquals(0, ws.getHostOffset());
+            assertEquals(0, ws.getPrimaryOffset());
             assertEquals(0, ws.getSpilledSize());
         }
     }

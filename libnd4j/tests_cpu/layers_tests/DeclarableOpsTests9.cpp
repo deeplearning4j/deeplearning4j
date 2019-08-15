@@ -110,8 +110,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     double extraParams[] = {lambda};
 
     Nd4jLong *buffer = new Nd4jLong[N];
-    NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
 
@@ -122,7 +121,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 
 }
@@ -142,8 +141,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
 
 
     Nd4jLong *buffer = new Nd4jLong[N];
-    NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test2: RNG initialization failed !");
 
@@ -155,7 +153,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 
 }
@@ -172,8 +170,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     double extraParams[] = {lambda};
 
     Nd4jLong *buffer = new Nd4jLong[N];
-    NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test1: RNG initialization failed !");
 
@@ -184,10 +181,10 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 }
-*/
+
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
@@ -206,14 +203,13 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
     Nd4jLong *buffer = new Nd4jLong[N];
    // Nd4jPointer extra[2];
 #ifndef __CUDABLAS__
-    NativeOps nativeOps;
-    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
 
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
 #endif
     const double actualMean = x.meanNumber().e<double>(0);
     const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
@@ -225,6 +221,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
 
     delete[] buffer;
 }
+*/
 
 TEST_F(DeclarableOpsTests9, ScalarOpTest_MixedOrders_1) {
     auto x = NDArrayFactory::create<double>('f', {2, 2}, {1.0, 3.0, 2.0, 4.0});
@@ -234,45 +231,6 @@ TEST_F(DeclarableOpsTests9, ScalarOpTest_MixedOrders_1) {
     x.applyScalar(scalar::Add, 1.0, &z);
 
     ASSERT_EQ(e, z);
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, tile_bp_test1) {
-
-    auto input    = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
-    auto gradO    = NDArrayFactory::create<double>('c', {4, 9});
-    auto gradIExp = NDArrayFactory::create<double>('c', {2, 3}, {0.78, 0.84, 0.9,1.32, 1.38, 1.44});
-
-    gradO.linspace(0.01, 0.01);
-
-    nd4j::ops::tile_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {2, 3});
-    auto gradI = results->at(0);
-
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(gradIExp.isSameShape(gradI));
-    ASSERT_TRUE(gradIExp.equalsTo(gradI));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, tile_bp_test2) {
-
-    auto input    = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
-    auto gradO    = NDArrayFactory::create<double>('c', {2, 9});
-    auto gradIExp = NDArrayFactory::create<double>('c', {2, 3}, {0.12, 0.15, 0.18, 0.39, 0.42, 0.45});
-
-    gradO.linspace(0.01, 0.01);
-
-    nd4j::ops::tile_bp op;
-    auto results = op.execute({&input, &gradO}, {}, {1, 3});
-    auto gradI = results->at(0);
-    ASSERT_EQ(Status::OK(), results->status());
-    ASSERT_TRUE(gradIExp.isSameShape(gradI));
-    ASSERT_TRUE(gradIExp.equalsTo(gradI));
-
-    delete results;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -624,6 +582,45 @@ TEST_F(DeclarableOpsTests9, concat_test16) {
     ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, tile_bp_test1) {
+
+    auto input    = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
+    auto gradO    = NDArrayFactory::create<double>('c', {4, 9});
+    auto gradIExp = NDArrayFactory::create<double>('c', {2, 3}, {0.78, 0.84, 0.9,1.32, 1.38, 1.44});
+
+    gradO.linspace(0.01, 0.01);
+
+    nd4j::ops::tile_bp op;
+    auto results = op.execute({&input, &gradO}, {}, {2, 3});
+    auto gradI = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(gradIExp.isSameShape(gradI));
+    ASSERT_TRUE(gradIExp.equalsTo(gradI));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, tile_bp_test2) {
+
+    auto input    = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
+    auto gradO    = NDArrayFactory::create<double>('c', {2, 9});
+    auto gradIExp = NDArrayFactory::create<double>('c', {2, 3}, {0.12, 0.15, 0.18, 0.39, 0.42, 0.45});
+
+    gradO.linspace(0.01, 0.01);
+
+    nd4j::ops::tile_bp op;
+    auto results = op.execute({&input, &gradO}, {}, {1, 3});
+    auto gradI = results->at(0);
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(gradIExp.isSameShape(gradI));
+    ASSERT_TRUE(gradIExp.equalsTo(gradI));
+
+    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1005,12 +1002,10 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     x0.linspace(1);
     x1.linspace(1);
 /*
-    NativeOps nativeOps;
-
     float prob[] = {0.5f};
     Nd4jLong* _bufferA = new Nd4jLong[100000];
     long _seed = 119L;
-    auto _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+    auto _rngA = (nd4j::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
 
     x0. applyTransform(random::DropOutInverted, &x0, prob);
 //    x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
@@ -1026,7 +1021,7 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
 //    ASSERT_FALSE(x0.equalsTo(nexp0));
 //    ASSERT_FALSE(x0.equalsTo(nexp1));
 //    ASSERT_FALSE(x0.equalsTo(nexp2));
-    nativeOps.destroyRandom(_rngA);
+    destroyRandom(_rngA);
     delete [] _bufferA;
 */
     nd4j::ops::dropout op;
@@ -1592,7 +1587,6 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
 
     const int bS   = 2;
     const int nOut = 3;
-    const int axis = 0;
     const double clip = 0.7;
 
     auto x = NDArrayFactory::create<double>('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]
@@ -1652,6 +1646,92 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test3) {
     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
 
     ASSERT_TRUE(isGradCorrect);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, cumprod_1) {
+
+    auto inputC = NDArrayFactory::create<double>('c', {3, 5},   {1., 2., 3., 4., 5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15.});
+    auto axis = NDArrayFactory::create<Nd4jLong>(1);
+
+    auto expFF = NDArrayFactory::create<double>('c', {3, 5}, {1.,   2.,   6.,    24.,   120., 6.,  42., 336.,  3024., 30240.,11., 132.,1716., 24024.,360360.});
+    auto expTF = NDArrayFactory::create<double>('c', {3, 5}, {1, 1, 2, 6, 24,1, 6, 42, 336, 3024,1, 11, 132, 1716, 24024});
+
+    auto expFT = NDArrayFactory::create<double>('c', {3, 5}, {120, 120, 60, 20, 5,30240, 5040, 720, 90, 10,360360, 32760, 2730, 210, 15});    //+++
+    auto expTT = NDArrayFactory::create<double>('c', {3, 5}, {120, 60, 20, 5, 1,5040, 720, 90, 10, 1,32760, 2730, 210, 15, 1});
+
+    int exclusive, reverse;
+
+    //************************************//
+    exclusive = 0; reverse = 0;
+
+    nd4j::ops::cumprod op;
+    auto result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    auto z = result->at(0);
+    ASSERT_TRUE(expFF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 0;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    z = result->at(0);
+    ASSERT_TRUE(expTF.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 0; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    z = result->at(0);
+    ASSERT_TRUE(expFT.equalsTo(z));
+    delete result;
+
+    //************************************//
+    exclusive = 1; reverse = 1;
+
+    result = op.execute({&inputC, &axis}, {}, {exclusive, reverse}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(Status::OK(), result->status());
+    z = result->at(0);
+    ASSERT_TRUE(expTT.equalsTo(z));
+    delete result;
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, cumprod_2) {
+
+    NDArray x('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray x0 = x(0, {0});
+    NDArray x1 = x(1, {0});
+    x0.linspace(1, 0.1);
+    x1.linspace(1, 0.1);
+
+    NDArray exp('c', {2, 1500}, nd4j::DataType::FLOAT32);
+    NDArray exp0 = exp(0, {0});
+    NDArray exp1 = exp(1, {0});
+
+    exp0.p<float>(0, 1.);
+    exp1.p<float>(0, 1.);
+
+    for (int i = 1; i < 1500; ++i) {
+        const auto prev = exp0.e<float>(i-1);
+        exp0.p<float>(i, prev * x0.e<float>(i));
+        exp1.p<float>(i, prev * x1.e<float>(i));
+    }
+
+    nd4j::ops::cumprod op;
+    auto result = op.execute({&x}, {}, {0, 0, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -2533,25 +2613,56 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_2) {
 TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_1) {
 
     auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
-    auto y = NDArrayFactory::create<double>('c', {2, 3}, {0., 1., 2., 1., 0., 2. });
+    auto y = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2, 1, 0, 2});
     auto dLdzX = NDArrayFactory::create<double>('c', {2, 4});
     auto dLdzY = NDArrayFactory::create<double>('c', {2, 4});
     auto dLdzZ = NDArrayFactory::create<double>('c', {2, 4});
+    auto exp = NDArrayFactory::create<double>('c', {2,3,4}, {1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1, 3, 3, 3, 3});
     x.linspace(1);
-    dLdzX.linspace(1);
-    dLdzY.linspace(2);
-    dLdzZ.linspace(3);
+//    dLdzX.linspace(1);
+//    dLdzY.linspace(2);
+//    dLdzZ.linspace(3);
+    dLdzX.assign(1);
+    dLdzY.assign(2);
+    dLdzZ.assign(3);
 
     nd4j::ops::dynamic_partition op1;
     auto res1 = op1.execute({&x, &y}, {}, {3});
 
     nd4j::ops::dynamic_partition_bp op2;
-    auto res2 = op2.execute({&x, &y, res1->at(0), res1->at(1), res1->at(2)}, {}, {3});
+    auto res2 = op2.execute({&x, &y, &dLdzX, &dLdzY, &dLdzZ}, {}, {3});
     ASSERT_TRUE(res2->status() == ND4J_STATUS_OK);
     ASSERT_TRUE(res2->size() == 2);
+//    printf("How many: %ul\n", res2->size());
+//    res2->at(0)->printBuffer("Ouputput0");
+//    res2->at(1)->printBuffer("Ouputput1");
+    ASSERT_TRUE(res2->at(0)->equalsTo(exp));
     delete res1;
     delete res2;
 }
+//////////////////////////////////////////////////////////////////////
+//TEST_F(DeclarableOpsTests9, Dynamic_Partition_BP_2) {
+//
+//    auto x = NDArrayFactory::create<double>('c', {2, 3, 4});
+//    auto y = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2, 1, 0, 2});
+//    auto dLdzX = NDArrayFactory::create<double>('c', {2, 4});
+//    auto dLdzY = NDArrayFactory::create<double>('c', {2, 4});
+//    auto dLdzZ = NDArrayFactory::create<double>('c', {2, 4});
+//    x.linspace(1);
+//    dLdzX.linspace(1);
+//    dLdzY.linspace(1);
+//    dLdzZ.linspace(1);
+//
+//    const OpArgsHolder argsHolderFF({&x, &y}, {}, {3});
+//    const OpArgsHolder argsHolderBP({&x, &y, &dLdzX, &dLdzY, &dLdzZ}, {}, {3});
+//
+//    nd4j::ops::dynamic_partition opFF;
+//    nd4j::ops::dynamic_partition_bp opBP;
+//
+//    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+//
+//    ASSERT_TRUE(isGradCorrect);
+//}
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, Floormod_BP_Test_4) {
@@ -2653,9 +2764,8 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test3) {
     ASSERT_TRUE(isGradCorrect);
 }
 
-////////////////////////////////////////////////////////////////////
 /*
-//2019/02/23 AB - GRU backprop tests disabled pending update of GRU backprop op after rewriting forward pass
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, gru_cell_bp_test1) {
 
     const int bS = 2;
@@ -2663,160 +2773,58 @@ TEST_F(DeclarableOpsTests9, gru_cell_bp_test1) {
     const int nU = 4;
 
     NDArray x('c', {bS, iS}, nd4j::DataType::DOUBLE);
-    NDArray h0('c', {bS, nU}, nd4j::DataType::DOUBLE);
-    NDArray Wx('c', {iS, 3*nU}, nd4j::DataType::DOUBLE);
-    NDArray Wh('c', {nU, 3*nU}, nd4j::DataType::DOUBLE);
-    NDArray b('c', {3*nU}, nd4j::DataType::DOUBLE);
+    NDArray hi('c', {bS, nU}, nd4j::DataType::DOUBLE);
+    NDArray W('c', {iS+nU, 2*nU}, nd4j::DataType::DOUBLE);
+    NDArray Wc('c', {iS+nU, nU}, nd4j::DataType::DOUBLE);
+    NDArray b('c', {2*nU}, nd4j::DataType::DOUBLE);
+    NDArray bc('c', {nU}, nd4j::DataType::DOUBLE);
+    NDArray dLdr('c', {bS, nU}, nd4j::DataType::DOUBLE);
+    NDArray dLdu('c', {bS, nU}, nd4j::DataType::DOUBLE);
+    NDArray dLdc('c', {bS, nU}, nd4j::DataType::DOUBLE);
     NDArray dLdh('c', {bS, nU}, nd4j::DataType::DOUBLE);
 
-    x.linspace(0.5, 0.5);
-    h0 = 1.;
-    Wx = 0.003;
-    Wh = 0.006;
-    b  = 0.5;
+    x.linspace(-5, 0.5);
+    hi   = 1.;
+    W    = 0.003;
+    Wc   = 0.006;
+    b    = 0.5;
+    bc   = 0.35;
 
-    const OpArgsHolder argsHolderFF({&x, &h0, &Wx, &Wh, &b}, {}, {});
-    const OpArgsHolder argsHolderBP({&x, &h0, &Wx, &Wh, &b, &dLdh}, {}, {});
 
-    nd4j::ops::gruCell opFF;
-    nd4j::ops::gruCell_bp opBP;
+    const OpArgsHolder argsHolderFF({&x, &hi, &W, &Wc, &b, &bc}, {}, {});
+    nd4j::ops::gruCell op;
+    auto results = op.execute(argsHolderFF);
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    ASSERT_TRUE(isGradCorrect);
-}
+    auto u = results->at(1);    // [bS, nU]
+    auto c = results->at(2);    // [bS, nU]
+    auto h = results->at(3);    // [bS, nU]
 
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, gru_cell_bp_test2) {
+    dLdh = 1.; // SUM loss
 
-    const int bS = 2;
-    const int iS = 3;
-    const int nU = 4;
+    NDArray Wch = Wc({iS,iS+nU, 0,0}); // [nU, nU]
+    NDArray dhdc  = 1. - *u;
+    NDArray dhdu  = hi - *c;
+    NDArray dcdZc = 1. - *c * *c;
+    dLdc.assign(dLdh * dhdc);
+    dLdu.assign(dLdh * dhdu);
+    dLdr.assign(mmul(dLdc * dcdZc * hi, Wch.transpose()));
 
-    NDArray x('c', {bS, iS}, nd4j::DataType::DOUBLE);
-    NDArray h0('c', {bS, nU}, nd4j::DataType::DOUBLE);
-    NDArray Wx('c', {iS, 3*nU}, nd4j::DataType::DOUBLE);
-    NDArray Wh('c', {nU, 3*nU}, nd4j::DataType::DOUBLE);
-    NDArray b('c', {3*nU}, nd4j::DataType::DOUBLE);
-    NDArray dLdh('c', {bS, nU}, nd4j::DataType::DOUBLE);
+    delete results;
 
-    x.linspace(0.5, 0.5);
-    h0 = 1.;
-    Wx = 0.003;
-    Wh = 0.006;
-    b  = 0.;
 
-    const OpArgsHolder argsHolderFF({&x, &h0, &Wx, &Wh, &b}, {}, {});
-    const OpArgsHolder argsHolderBP({&x, &h0, &Wx, &Wh, &b, &dLdh}, {}, {});
+    const OpArgsHolder argsHolderBP({&x, &hi, &W, &Wc, &b, &bc, &dLdr, &dLdu, &dLdc, &dLdh}, {}, {});
 
     nd4j::ops::gruCell opFF;
     nd4j::ops::gruCell_bp opBP;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
-}
-
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, gru_cell_bp_test3) {
-
-    const int bS = 2;
-    const int iS = 3;
-    const int nU = 4;
-
-    NDArray x('c', {bS, iS}, nd4j::DataType::DOUBLE);
-    NDArray h0('c', {bS, nU}, nd4j::DataType::DOUBLE);
-    NDArray Wx('c', {iS, 3*nU}, nd4j::DataType::DOUBLE);
-    NDArray Wh('c', {nU, 3*nU}, nd4j::DataType::DOUBLE);
-    NDArray b('c', {3*nU}, nd4j::DataType::DOUBLE);
-    NDArray dLdh('c', {bS, nU}, nd4j::DataType::DOUBLE);
-    // NDArray<double> dLdWx0('c', {iS, 3*nU});
-    // NDArray<double> dLdWh0('c', {nU, 3*nU});
-    // NDArray<double> dLdb0 ('c', {3*nU});
-
-    x = 1.;
-    h0 = 0.0;
-    Wx = 0.0;
-    Wh = 0.0;
-    b  = 0.5;
-
-    const OpArgsHolder argsHolderFF({&x, &h0, &Wx, &Wh, &b}, {}, {});
-    const OpArgsHolder argsHolderBP({&x, &h0, &Wx, &Wh, &b, &dLdh}, {}, {});
-
-    nd4j::ops::gruCell opFF;
-    nd4j::ops::gruCell_bp opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-    ASSERT_TRUE(isGradCorrect);
-}
-
-////////////////////////////////////////////////////////////////////
-// TEST_F(DeclarableOpsTests9, gru_bp_test1) {
-
-//     const int time = 5;
-//     const int bS   = 2;
-//     const int iS   = 3;
-//     const int nU   = 4;
-
-//     NDArray<double> x     ('c', {time, bS, iS});
-//     NDArray<double> h0    ('c', {bS, nU});
-//     NDArray<double> Wx    ('c', {iS, 3*nU});
-//     NDArray<double> Wh    ('c', {nU, 3*nU});
-//     NDArray<double> b     ('c', {3*nU});
-//     NDArray<double> dLdh  ('c', {time, bS, nU});
-
-//     x.linspace(0.5, 0.5);
-//     h0 = 1.;
-//     Wx = 0.003;
-//     Wh = 0.006;
-//     b  = 0.5;
-
-//     const OpArgsHolder<double> argsHolderFF({&x, &h0, &Wx, &Wh, &b}, {}, {});
-//     const OpArgsHolder<double> argsHolderBP({&x, &h0, &Wx, &Wh, &b, &dLdh}, {}, {});
-
-//     nd4j::ops::gru<double> opFF;
-//     nd4j::ops::gru_bp<double> opBP;
-
-//     const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
-
-//     ASSERT_TRUE(isGradCorrect);
-// }
-
-////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, gru_cell_bp_test3_1) {
-
-    const int bS = 2;
-    const int iS = 3;
-    const int nU = 4;
-
-    auto x  = NDArrayFactory::create<double>('c', {bS, iS});
-    auto h0  = NDArrayFactory::create<double>('c', {bS, nU});
-    auto Wx  = NDArrayFactory::create<double>('c', {iS, 3*nU});
-    auto Wh  = NDArrayFactory::create<double>('c', {nU, 3*nU});
-    auto b  = NDArrayFactory::create<double>('c', {3*nU});
-    auto dLdh  = NDArrayFactory::create<double>('c', {bS, nU});
-    // NDArray<double> dLdWx0('c', {iS, 3*nU});
-    // NDArray<double> dLdWh0('c', {nU, 3*nU});
-    // NDArray<double> dLdb0 ('c', {3*nU});
-
-    x = 1.;
-    h0 = 0.0;
-    Wx = 0.0;
-    Wh = 0.0;
-    b  = 0.5;
-
-    const OpArgsHolder argsHolderFF({&x, &h0, &Wx, &Wh, &b}, {}, {});
-    const OpArgsHolder argsHolderBP({&x, &h0, &Wx, &Wh, &b, &dLdh}, {}, {});
-
-    nd4j::ops::gruCell opFF;
-    nd4j::ops::gruCell_bp opBP;
-
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {1, 1, 1, 1 , 1, 1}, {0., 1.}, nd4j::GradCheck::LossFunc::SUM, true);
 
     ASSERT_TRUE(isGradCorrect);
 }
 */
+
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, Cholesky_Test_1) {
 
@@ -2828,13 +2836,29 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_1) {
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto res = result->at(0);
-    //res->printIndexedBuffer("Output for Cholesky");
+//    res->printIndexedBuffer("Output for Cholesky1");
     ASSERT_TRUE(exp.equalsTo(res));
     delete result;
 }
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, Cholesky_Test_2) {
+
+    NDArray x = NDArrayFactory::create<double>('c', {2, 3, 3}, {4, 12,-16, 12 ,37,-43, -16, -43, 98, 1, 1, 1, 1, 2, 2, 1, 2., 6});
+    NDArray exp = NDArrayFactory::create<double>('c', {2, 3, 3}, {2.,  0.,  0., 6., 1.,  0., -8.,  5.,  3., 1., 0., 0., 1., 1., 0,1., 1., 2.});
+
+    nd4j::ops::cholesky op;
+
+    auto result = op.execute({&x}, {}, {});
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto res = result->at(0);
+//    res->printIndexedBuffer("Output for Cholesky 2");
+    ASSERT_TRUE(exp.equalsTo(res));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, Cholesky_Test_3) {
 
     NDArray x = NDArrayFactory::create<float>('c', {2, 3, 3}, {4, 12,-16, 12 ,37,-43, -16, -43, 98, 1, 1, 1, 1, 2, 2, 1, 2., 6});
     NDArray exp = NDArrayFactory::create<float>('c', {2, 3, 3}, {2.,  0.,  0., 6., 1.,  0., -8.,  5.,  3., 1., 0., 0., 1., 1., 0,1., 1., 2.});
@@ -2844,7 +2868,7 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_2) {
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto res = result->at(0);
-    //res->printIndexedBuffer("Output for Cholesky");
+//    res->printIndexedBuffer("Output for Cholesky 3");
     ASSERT_TRUE(exp.equalsTo(res));
     delete result;
 }

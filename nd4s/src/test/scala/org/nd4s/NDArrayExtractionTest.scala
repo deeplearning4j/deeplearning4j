@@ -48,20 +48,48 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
     assert(extracted == expected)
   }
 
-  it should "be able to extract a part of 2d matrix with offset" ignore { //Ignored AB 2019/05/21 - https://github.com/deeplearning4j/deeplearning4j/issues/7657
-    val ndArray = (1 to 9).mkNDArray(Array(2, 2), NDOrdering.C, offset = 4)
+  it should "be able to extract a part of 2d matrix with double data and offset" in {
+    val ndArray = (1 to 9).map(_.toDouble).mkNDArray(Array(2, 2), NDOrdering.C, offset = 4)
 
     val expectedArray = Array(
-      Array(5, 6),
-      Array(7, 8)
+      Array(5d, 6d),
+      Array(7d, 8d)
     ).mkNDArray(ordering)
     assert(ndArray == expectedArray)
 
     val expectedSlice = Array(
-      Array(5),
-      Array(7)
+      Array(5d),
+      Array(7d)
     ).toNDArray
-    assert(ndArray(->, 0) == expectedSlice)
+    assert(expectedArray(->, 0 -> 1) == expectedSlice)
+  }
+
+  it should "be able to extract a part of 2d matrix with integer data" in {
+    val ndArray = (1 to 9).mkNDArray(Array(2, 2))
+
+    val expectedArray = Array(
+      Array(1, 2),
+      Array(3, 4)
+    ).mkNDArray(ordering)
+    assert(ndArray == expectedArray)
+
+    val expectedSlice = Array(
+      Array(1),
+      Array(3)
+    ).toNDArray
+    val actualSlice = expectedArray(->, 0 -> 1)
+    assert(actualSlice == expectedSlice)
+  }
+
+  it should " provide overloaded -> operator providing matrix slices as nd4j" in {
+
+    val expectedArray = (1 to 9).mkNDArray(Array(2, 2))
+    val expectedSlice = expectedArray.slice(0)
+    val actualSlice = expectedArray(0, ->)
+
+    Console.println(expectedSlice)
+
+    assert(actualSlice == expectedSlice)
   }
 
   it should "be able to extract a part of vertically long matrix in" in {
@@ -163,7 +191,7 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
 
   // TODO: fix me. This is about INDArray having to be sliced by LONG indices
   // can't find the correct way to fix implicits without breaking other stuff.
-  it should "be able to extract sub-matrix with index range by step" ignore {
+  it should "be able to extract sub-matrix with index range by step" in {
     val ndArray =
       Array(
         Array(1, 2, 3),
@@ -249,9 +277,10 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
     )
   }
 
-  "num2Scalar" should "convert number to Scalar INDArray" ignore { //Ignored AB 2019/05/21 - https://github.com/deeplearning4j/deeplearning4j/issues/7657
-    assert(1.toScalar == List(1).toNDArray)
-    assert(2f.toScalar == List(2).toNDArray)
-    assert(3d.toScalar == List(3).toNDArray)
+  "num2Scalar" should "convert number to Scalar INDArray" in {
+
+    assert(1.toScalar.data() == List(1).toNDArray.data())
+    assert(2f.toScalar.data() == List(2).toNDArray.data())
+    assert(3d.toScalar.data() == List(3).toNDArray.data())
   }
 }

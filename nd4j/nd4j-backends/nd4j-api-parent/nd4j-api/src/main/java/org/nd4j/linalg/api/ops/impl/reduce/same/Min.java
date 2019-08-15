@@ -41,6 +41,10 @@ public class Min extends BaseReduceSameOp {
         super(x, dimensions);
     }
 
+    public Min(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
     public Min(INDArray x, INDArray z, int... dimensions) {
         super(x, null, z, dimensions);
     }

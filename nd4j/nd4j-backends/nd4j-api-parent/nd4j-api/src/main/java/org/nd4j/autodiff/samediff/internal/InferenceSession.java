@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
+import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -38,6 +39,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -72,6 +74,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
         Map<String,INDArray> out = new HashMap<>();
         for(Map.Entry<String,INDArray> e : placeholders.entrySet()){
+            Preconditions.checkState(sameDiff.hasVariable(e.getKey()), "Invalid placeholder passed for execution: " +
+                    "No variable/placeholder with name %s exists", e.getKey());
             INDArray arr = e.getValue();
             //First: check workspaces
             if(arr.isAttached()){
@@ -104,12 +108,34 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
     @Override
     public INDArray[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                 Set<String> constAndPhInputs, List<Listener> listeners, boolean training, At at) {
-        INDArray[] out = getOutputsHelper(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
+                                 Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch) {
         if(listeners != null && listeners.size() > 0){
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
             for(Listener l : listeners){
-                l.opExecution(sameDiff, at, training, sdOp, out);
+                if(l.isActive(at.operation()))
+                    l.preOpExecution(sameDiff, at, sdOp);
+            }
+        }
+
+        INDArray[] out = getOutputsHelper(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
+        if(listeners != null && listeners.size() > 0){
+            SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
+
+            ImmutableMap.Builder<String, INDArray> namedOutsBuilder = ImmutableMap.builder();
+
+            for(int i = 0 ; i < out.length ; i++)
+                namedOutsBuilder.put(sdOp.outputsOfOp.get(i), out[i]);
+
+            Map<String, INDArray> namedOuts = namedOutsBuilder.build();
+
+            for(Listener l : listeners){
+                if(l.isActive(at.operation())) {
+                    l.opExecution(sameDiff, at, batch, sdOp, out);
+
+                    for(String varName : namedOuts.keySet()){
+                        l.activationAvailable(sameDiff, at, batch, sdOp, varName, namedOuts.get(varName));
+                    }
+                }
             }
         }
         return out;
@@ -601,7 +627,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 if(v.isConstant()) {
                     args[i] = v.getArr();
                 } else if(v.isPlaceHolder()) {
-                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array provided for placeholder %s");
+                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array provided for placeholder %s", s);
                     args[i] = placeholderValues.get(s);
                 } else if(constEnterInputs != null && constEnterInputs.contains(s)){
                     //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy

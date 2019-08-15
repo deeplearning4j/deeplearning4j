@@ -512,6 +512,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         for(; i<topologicalOrder.length; i++ ){
             String name = indices.getIdxToName().get(i);
             org.deeplearning4j.nn.conf.graph.GraphVertex n = configVertexMap.get(name);
+            n.setDataType(netDtype);
             numParamsForVertex[i] = n.numParams(true);
             numParams += numParamsForVertex[i];
         }
@@ -1944,6 +1945,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             activations.put(configuration.getNetworkInputs().get(i), features[i]);
         }
 
+        boolean traceLog = log.isTraceEnabled();
+
         //Do forward pass according to the topological ordering of the network
         for (int i = 0; i <= layerIndex; i++) {
             GraphVertex current = vertices[topologicalOrder[i]];
@@ -1952,6 +1955,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
             if(excludeIdxs != null && ArrayUtils.contains(excludeIdxs, vIdx)){
                 continue;
+            }
+
+            if(traceLog){
+                log.trace("About forward pass: {} (\"{}\") - {}", i, vName, current.getClass().getSimpleName());
             }
 
             try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
@@ -2025,6 +2032,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     current.clear();
                 }
             }
+
+            if(traceLog){
+                log.trace("Completed forward pass: {} (\"{}\") - {}", i, vName, current.getClass().getSimpleName());
+            }
         }
 
         return activations;
@@ -2088,6 +2099,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         workspaceMgr.setHelperWorkspacePointers(helperWorkspaces);
 
+        boolean traceLog = log.isTraceEnabled();
+
         Map<String, INDArray> activations = new HashMap<>();
         //Do forward pass according to the topological ordering of the network
         int stopIndex;
@@ -2100,6 +2113,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             GraphVertex current = vertices[topologicalOrder[i]];
             String vName = current.getVertexName();
             int vIdx = current.getVertexIndex();
+
+            if(traceLog){
+                log.trace("About forward pass: {} (\"{}\") - {}", i, vName, current.getClass().getSimpleName());
+            }
 
             if(excludeIdxs != null && ArrayUtils.contains(excludeIdxs, vIdx)){
                 continue;
@@ -2157,6 +2174,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 if(clearInputs) {
                     current.clear();
                 }
+            }
+
+            if(traceLog){
+                log.trace("Completed forward pass: {} (\"{}\") - {}", i, vName, current.getClass().getSimpleName());
             }
         }
         return activations;
@@ -2556,12 +2577,19 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         LinkedList<Triple<String, INDArray, Character>> gradients = new LinkedList<>();
         boolean[] setVertexEpsilon = new boolean[topologicalOrder.length]; //If true: already set epsilon for this vertex; later epsilons should be *added* to the existing one, not set
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        boolean traceLog = log.isTraceEnabled();
+
         try{
             for(int i=topologicalOrder.length-1; i>= 0; i--){
                 boolean hitFrozen = false;
                 GraphVertex current = vertices[topologicalOrder[i]];
                 int vIdx = current.getVertexIndex();
                 String vertexName = current.getVertexName();
+
+                if(traceLog){
+                    log.trace("About backprop: {} (\"{}\") - {}", i, vertexName, current.getClass().getSimpleName());
+                }
 
                 //FIXME: make the frozen vertex feature extraction more flexible
                 if (current.hasLayer() && current.getLayer() instanceof FrozenLayer || current instanceof FrozenVertex){
@@ -2718,6 +2746,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                     }
                     closeAtEndIteraton[i] = null;
                 }
+
+                if(traceLog){
+                    log.trace("Completed backprop: {} (\"{}\") - {}", i, vertexName, current.getClass().getSimpleName());
+                }
             }
 
         } finally {
@@ -2864,7 +2896,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             solver.getOptimizer().setUpdaterComputationGraph(new ComputationGraphUpdater(this));
         }
         if(solver != null) {
-            return solver.getOptimizer().getComputationGraphUpdater();
+            return solver.getOptimizer().getComputationGraphUpdater(initializeIfAbsent);
         }
         return null;
     }
@@ -2891,26 +2923,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     /**
-     * Get the parameters for the ComputationGraph
-     *
-     * @param backwardOnly If true: backprop parameters only (i.e., no visible layer biases used in layerwise pretraining layers)
+     * @deprecated To be removed. Use {@link #params()}
      */
+    @Deprecated
     public INDArray params(boolean backwardOnly) {
-        if (backwardOnly)
-            return flattenedParams;
-
-        List<INDArray> list = new ArrayList<>(layers.length);
-        for (int i = 0; i < topologicalOrder.length; i++) {
-            if (!vertices[topologicalOrder[i]].hasLayer())
-                continue;
-
-            Layer l = vertices[topologicalOrder[i]].getLayer();
-            INDArray layerParams = l.params();
-            if (layerParams != null)
-                list.add(layerParams); //may be null: subsampling etc layers
-        }
-
-        return Nd4j.toFlattened('f', list);
+        return params();
     }
 
     /**
@@ -3182,7 +3199,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public INDArray params() {
-        return params(true);
+        return flattenedParams;
     }
 
     @Override

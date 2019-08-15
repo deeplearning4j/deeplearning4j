@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.broadcast;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -33,6 +34,10 @@ public class BiasAddGrad extends DynamicCustomOp {
 
     public BiasAddGrad(SameDiff sameDiff, SDVariable input, SDVariable bias, SDVariable gradient) {
         super(null, sameDiff, new SDVariable[]{input, bias, gradient});
+    }
+
+    public BiasAddGrad(@NonNull INDArray input, @NonNull INDArray bias, @NonNull INDArray gradient, INDArray output){
+        super(new INDArray[]{input, bias, gradient}, wrapOrNull(output));
     }
 
     public BiasAddGrad() {}

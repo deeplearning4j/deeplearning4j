@@ -249,8 +249,6 @@ public class Convolution {
                         .isSameMode(isSameMode)
                         .sH(sy)
                         .sW(sx)
-                        .virtualHeight(virtualHeight)
-                        .virtualWidth(virtualWidth)
                         .type(type)
                         .divisor(divisor)
                         .build())

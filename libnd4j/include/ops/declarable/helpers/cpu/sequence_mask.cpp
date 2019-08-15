@@ -24,20 +24,20 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
+    template <typename I, typename B>
     static void sequenceMask_(NDArray* input, NDArray* output, int maxIndex) {
         PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
         for (Nd4jLong i = 0; i < maxIndex; i++)
             for(Nd4jLong k = 0; k < input->lengthOf(); k++)
-                if (i < input->e<int>(k))
-                    output->p<T>(k * maxIndex + i,  T(1.0f));
+                if (i < input->t<I>(k))
+                    output->t<B>(k * maxIndex + i) = B(true); //,  T(1.0f));
     }
 
     void sequenceMask(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), sequenceMask_, (input, output, maxIndex), LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sequenceMask_, (input, output, maxIndex), INTEGER_TYPES, BOOL_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void sequenceMask_, (NDArray* input, NDArray* output, int maxIndex), LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void sequenceMask_, (NDArray* input, NDArray* output, int maxIndex), INTEGER_TYPES, BOOL_TYPES);
 }
 }
 }

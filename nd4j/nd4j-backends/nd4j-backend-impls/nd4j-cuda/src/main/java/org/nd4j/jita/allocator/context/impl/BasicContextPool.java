@@ -93,18 +93,7 @@ public class BasicContextPool implements ContextPool {
             try {
                 // this is lockable thing, but since it locks once per thread initialization, performance impact won't be big
                 lock.acquire();
-                // we create 1 CUcontext per device, which will be shared for all threads/streams on this device
-                /*
-                if (!cuPool.containsKey(deviceId)) {
-                    CUcontext cuContext = createNewContext(deviceId);
-                    cuPool.put(deviceId, cuContext);
-                }
-                
-                int result = JCudaDriver.cuCtxSetCurrent(cuPool.get(deviceId));
-                if (result != CUresult.CUDA_SUCCESS) {
-                    throw new RuntimeException("Failed to set context on assigner");
-                }
-                */
+
                 if (!contextsForDevices.containsKey(deviceId)) {
                     contextsForDevices.put(deviceId, new ConcurrentHashMap<Integer, CudaContext>());
                 }
@@ -120,11 +109,11 @@ public class BasicContextPool implements ContextPool {
                         // if we have no contexts created - it's just awesome time to attach cuBLAS handle here
                         log.debug("Creating new cuBLAS handle for device [{}]...", deviceId);
 
-                        cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
+                        //cudaStream_t cublasStream = createNewStream(deviceId).getOldStream();
 
-                        cublasHandle_t handle = createNewCublasHandle(cublasStream);
+                        cublasHandle_t handle = createNewCublasHandle(context.getOldStream());
                         context.setHandle(handle);
-                        context.setCublasStream(cublasStream);
+                        //context.setCublasStream(cublasStream);
 
                         cublasPool.put(deviceId, handle);
 

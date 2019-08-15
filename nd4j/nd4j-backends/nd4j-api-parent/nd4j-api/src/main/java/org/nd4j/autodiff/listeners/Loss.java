@@ -1,5 +1,8 @@
 package org.nd4j.autodiff.listeners;
 
+import java.util.ArrayList;
+import java.util.Collections;
+
 import lombok.Data;
 import lombok.NonNull;
 import org.nd4j.base.Preconditions;
@@ -7,7 +10,7 @@ import org.nd4j.base.Preconditions;
 import java.util.List;
 
 /**
- * Loss class - represents the loss (score) for the network. Provides a breakdown of all the loss components
+ * Loss class - represents the loss (score) for the network, for one iteration. Provides a breakdown of all the loss components
  *
  * @author Alex Black
  */
@@ -70,4 +73,96 @@ public class Loss {
         }
         return sum;
     }
+
+    public Loss copy() {
+        return new Loss(lossNames, losses);
+    }
+
+    public static Loss sum(List<Loss> losses) {
+
+        if (losses.size() == 0)
+            return new Loss(Collections.<String>emptyList(), new double[0]);
+
+        double[] lossValues = new double[losses.get(0).losses.length];
+        List<String> lossNames = new ArrayList<>(losses.get(0).lossNames);
+
+        for (int i = 0; i < losses.size(); i++) {
+            Loss l = losses.get(i);
+            Preconditions.checkState(l.losses.length == lossValues.length,
+                    "Loss %s has %s losses, the others before it had %s.", i, l.losses.length, lossValues.length);
+
+            Preconditions.checkState(l.lossNames.equals(lossNames),
+                    "Loss %s has different loss names from the others before it.  Expected %s, got %s.",
+                    i, lossNames, l.lossNames);
+
+            for (int j = 0; j < lossValues.length; j++)
+                lossValues[j] += l.losses[j];
+
+        }
+
+        return new Loss(lossNames, lossValues);
+    }
+
+    public static Loss average(List<Loss> losses) {
+        Loss sum = sum(losses);
+
+        for (int i = 0; i < sum.losses.length; i++) {
+            sum.losses[i] /= losses.size();
+        }
+
+        return sum;
+    }
+
+    public static Loss add(Loss a, Loss b) {
+        Preconditions.checkState(a.lossNames.equals(b.lossNames),
+                "Loss names differ.  First loss has names %s, second has names %s.",
+                a.lossNames, b.lossNames);
+
+        double[] lossValues = new double[a.losses.length];
+        for (int i = 0; i < lossValues.length; i++)
+            lossValues[i] = a.losses[i] + b.losses[i];
+
+        return new Loss(a.lossNames, lossValues);
+    }
+
+    public static Loss sub(Loss a, Loss b) {
+        Preconditions.checkState(a.lossNames.equals(b.lossNames),
+                "Loss names differ.  First loss has names %s, second has names %s.",
+                a.lossNames, b.lossNames);
+
+        double[] lossValues = new double[a.losses.length];
+        for (int i = 0; i < lossValues.length; i++)
+            lossValues[i] = a.losses[i] - b.losses[i];
+
+        return new Loss(a.lossNames, lossValues);
+    }
+
+    public static Loss div(Loss a, Number b) {
+        double[] lossValues = new double[a.losses.length];
+        for (int i = 0; i < lossValues.length; i++)
+            lossValues[i] = a.losses[i] / b.doubleValue();
+
+        return new Loss(a.lossNames, lossValues);
+    }
+
+    public Loss add(Loss other) {
+        return add(this, other);
+    }
+
+    public Loss sub(Loss other) {
+        return sub(this, other);
+    }
+
+    public Loss plus(Loss other) {
+        return add(this, other);
+    }
+
+    public Loss minus(Loss other) {
+        return sub(this, other);
+    }
+
+    public Loss div(Number other) {
+        return div(this, other);
+    }
+
 }

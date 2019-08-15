@@ -28,7 +28,7 @@ import java.util.List;
  *
  * @author raver119@gmail.com
  */
-public interface OpContext {
+public interface OpContext extends AutoCloseable {
 
     /**
      * This method sets integer arguments required for operation

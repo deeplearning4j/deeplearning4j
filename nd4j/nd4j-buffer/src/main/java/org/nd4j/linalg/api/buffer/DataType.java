@@ -89,6 +89,15 @@ public enum DataType {
     }
 
     /**
+     * Return true if the value is numerical.<br>
+     * Equivalent to {@code this != UTF8 && this != COMPRESSED && this != UNKNOWN}<br>
+     * Note: Boolean values are considered numerical (0/1)<br>
+     */
+    public boolean isNumerical(){
+        return this != UTF8 && this != COMPRESSED && this != UNKNOWN;
+    }
+
+    /**
      * @return True if the datatype is a numerical type and is signed (supports negative values)
      */
     public boolean isSigned(){
@@ -112,6 +121,36 @@ public enum DataType {
             case UNKNOWN:
             default:
                 return false;
+        }
+    }
+
+    /**
+     * @return the max number of significant decimal digits
+     */
+    public int precision(){
+        switch (this){
+            case DOUBLE:
+                return 17;
+            case FLOAT:
+                return 9;
+            case HALF:
+                return 5;
+            case BFLOAT16:
+                return 4;
+            case LONG:
+            case INT:
+            case SHORT:
+            case BYTE:
+            case UBYTE:
+            case BOOL:
+            case UTF8:
+            case COMPRESSED:
+            case UINT16:
+            case UINT32:
+            case UINT64:
+            case UNKNOWN:
+            default:
+                return -1;
         }
     }
 

@@ -30,7 +30,7 @@ namespace helpers {
     T lup(nd4j::LaunchContext * context, NDArray* input, NDArray* compound, NDArray* permutation);
 
     int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
-    int log_abs_determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
+    int logAbsDeterminant(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
 
     int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output);
 

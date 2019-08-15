@@ -251,8 +251,6 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .kW(kW)
                 .pH(pH)
                 .pW(pW)
-                .virtualHeight(1)
-                .virtualWidth(1)
                 .isNHWC(data_format.equalsIgnoreCase("nhwc"))
                 .extra(0.0) // averaging only for non-padded values
                 .build();
@@ -277,8 +275,6 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .kW(kernelShape.get(1).intValue())
                 .pH(padding.get(0).intValue())
                 .pW(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
-                .virtualWidth(1)
-                .virtualHeight(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();

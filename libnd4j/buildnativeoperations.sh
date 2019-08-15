@@ -183,7 +183,7 @@ case "$OS" in
     export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
     export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
     export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-arm/"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm.cmake -DANDROID_BUILD=true"
     ;;
 
     android-arm64)
@@ -194,7 +194,7 @@ case "$OS" in
     export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
     export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
     export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-arm64/"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-arm64.cmake -DANDROID_BUILD=true"
     ;;
 
     android-x86)
@@ -205,7 +205,7 @@ case "$OS" in
     export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
     export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
     export ANDROID_ROOT="$ANDROID_NDK/platforms/android-14/arch-x86/"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86.cmake -DANDROID_BUILD=true"
     ;;
 
     android-x86_64)
@@ -216,7 +216,7 @@ case "$OS" in
     export ANDROID_CPP="$ANDROID_NDK/sources/cxx-stl/llvm-libc++/"
     export ANDROID_LLVM="$ANDROID_NDK/toolchains/llvm/prebuilt/$KERNEL/"
     export ANDROID_ROOT="$ANDROID_NDK/platforms/android-21/arch-x86_64/"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/android-x86_64.cmake -DANDROID_BUILD=true"
     ;;
 
     ios-x86_64)
@@ -229,7 +229,7 @@ case "$OS" in
     fi
     XCODE_PATH="$(xcode-select --print-path)"
     export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86_64.cmake --debug-trycompile"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86_64.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     ios-x86)
@@ -242,7 +242,7 @@ case "$OS" in
     fi
     XCODE_PATH="$(xcode-select --print-path)"
     export IOS_SDK="$XCODE_PATH/Platforms/iPhoneSimulator.platform/Developer/SDKs/iPhoneSimulator$IOS_VERSION.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86.cmake --debug-trycompile"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-x86.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     ios-arm64)
@@ -255,7 +255,7 @@ case "$OS" in
     fi
     XCODE_PATH="$(xcode-select --print-path)"
     export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm64.cmake --debug-trycompile"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm64.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     ios-arm)
@@ -268,7 +268,7 @@ case "$OS" in
     fi
     XCODE_PATH="$(xcode-select --print-path)"
     export IOS_SDK="$XCODE_PATH/Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS$IOS_VERSION.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm.cmake --debug-trycompile"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-arm.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     ios-armv7)
@@ -278,7 +278,7 @@ case "$OS" in
     LIBTYPE="static"
     ARCH="armv7"
     export IOS_SDK="/Applications/Xcode.app/Contents/Developer/Platforms/${iPhoneOS}.platform/Developer/SDKs/${iPhoneOS}${IOS_VERSION}.sdk"
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-armv7.cmake --debug-trycompile"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_TOOLCHAIN_FILE=cmake/ios-armv7.cmake --debug-trycompile -DIOS_BUILD=true"
     ;;
 
     linux*)
@@ -295,7 +295,7 @@ case "$OS" in
         export CXX="$(ls -1 /usr/local/bin/g++-? | head -n 1)"
         PARALLEL="true"
     fi
-    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_MACOSX_RPATH=ON"
+    export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_MACOSX_RPATH=ON -DAPPLE_BUILD=true"
     ;;
 
     windows*)

@@ -21,6 +21,9 @@ import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
 import org.nd4j.evaluation.BaseEvaluation;
 import org.nd4j.evaluation.EvaluationUtils;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.IMetric;
+import org.nd4j.evaluation.classification.Evaluation.Metric;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan;
@@ -58,7 +61,18 @@ import java.util.List;
 @Data
 public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
 
-    public enum Metric {ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC, FAR}
+    public enum Metric implements IMetric {ACCURACY, F1, PRECISION, RECALL, GMEASURE, MCC, FAR;
+
+        @Override
+        public Class<? extends IEvaluation> getEvaluationClass() {
+            return EvaluationBinary.class;
+        }
+
+        @Override
+        public boolean minimize() {
+            return false;
+        }
+    }
 
     public static final int DEFAULT_PRECISION = 4;
     public static final double DEFAULT_EDGE_VALUE = 0.0;
@@ -79,6 +93,13 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     @JsonSerialize(using = NDArrayTextSerializer.class)
     @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray decisionThreshold;
+
+    protected EvaluationBinary(int axis, ROCBinary rocBinary, List<String> labels, INDArray decisionThreshold){
+        this.axis = axis;
+        this.rocBinary = rocBinary;
+        this.labels = labels;
+        this.decisionThreshold = decisionThreshold;
+    }
 
     /**
      * Create an EvaulationBinary instance with an optional decision threshold array.
@@ -452,15 +473,45 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
     }
 
     /**
-     * Calculate the G-measure for the given output
+     * Macro average of the Matthews correlation coefficient (MCC) (see {@link #matthewsCorrelation(int)}) for all labels.
+     *
+     * @return The macro average of the MCC for all labels.
+     */
+    public double averageMatthewsCorrelation() {
+        double ret = 0.0;
+        for (int i = 0; i < numLabels(); i++) {
+            ret += matthewsCorrelation(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
+    }
+
+    /**
+     * Calculate the macro average G-measure for the given output
      *
      * @param output The specified output
-     * @return The G-measure for the specified output
+     * @return The macro average of the G-measure for the specified output
      */
     public double gMeasure(int output) {
         double precision = precision(output);
         double recall = recall(output);
         return EvaluationUtils.gMeasure(precision, recall);
+    }
+
+    /**
+     * Average G-measure (see {@link #gMeasure(int)}) for all labels.
+     *
+     * @return The G-measure for all labels.
+     */
+    public double averageGMeasure() {
+        double ret = 0.0;
+        for (int i = 0; i < numLabels(); i++) {
+            ret += gMeasure(i);
+        }
+
+        ret /= (double) numLabels();
+        return ret;
     }
 
     /**
@@ -679,5 +730,37 @@ public class EvaluationBinary extends BaseEvaluation<EvaluationBinary> {
         return fromYaml(yaml, EvaluationBinary.class);
     }
 
+    @Override
+    public double getValue(IMetric metric){
+        if(metric instanceof Metric){
+            switch ((Metric) metric){
+                case ACCURACY:
+                    return averageAccuracy();
+                case F1:
+                    return averageF1();
+                case PRECISION:
+                    return averagePrecision();
+                case RECALL:
+                    return averageRecall();
+                case GMEASURE:
+                    return averageGMeasure();
+                case MCC:
+                    return averageMatthewsCorrelation();
+                case FAR:
+                    return averageFalseAlarmRate();
+                default:
+                    throw new IllegalStateException("Can't get value for non-binary evaluation Metric " + metric);
+            }
+        } else
+            throw new IllegalStateException("Can't get value for non-binary evaluation Metric " + metric);
+    }
 
+    @Override
+    public EvaluationBinary newInstance() {
+        if(rocBinary != null) {
+            return new EvaluationBinary(axis, rocBinary.newInstance(), labels, decisionThreshold);
+        } else {
+            return new EvaluationBinary(axis, null, labels, decisionThreshold);
+        }
+    }
 }

@@ -39,6 +39,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.SpecifiedIndex;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.string.NDArrayStrings;
 import org.nd4j.linalg.util.LinAlgExceptions;
 
 import java.nio.LongBuffer;
@@ -47,7 +48,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import static org.nd4j.linalg.factory.Nd4j.compressDebug;
 import static org.nd4j.linalg.factory.Nd4j.createUninitialized;
+import static org.nd4j.linalg.factory.Nd4j.preventUnpack;
 
 /**
  * @author Audrey Loeffel
@@ -1250,6 +1253,58 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
+
+
+    @Override
+    public INDArray normmax(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray norm2(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray norm1(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray std(boolean biasCorrected, boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray prod(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray mean(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray mean(INDArray result, boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray max(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray min(boolean keepDims, int... dimension) {
+        return null;
+    }
+
+    @Override
+    public INDArray sum(INDArray result, boolean keepDims, int... dimension) {
+        return null;
+    }
+
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
 
@@ -1963,5 +2018,25 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     @Override
     public INDArray ulike() {
         throw new UnsupportedOperationException("Not yet implemented");
+    }
+
+    @Override
+    public String toString(NDArrayStrings options){
+        return "SPARSE ARRAY, TOSTRING NOT SUPPORTED";
+    }
+
+    @Override
+    public String toString(long maxElements, boolean forceSummarize, int decimalPlaces){
+        return toString(new NDArrayStrings(maxElements, forceSummarize, decimalPlaces));
+    }
+
+    @Override
+    public String toStringFull(){
+        return toString(Long.MAX_VALUE, false, dataType().precision());
+    }
+
+    @Override
+    public String toString(){
+        return toString(new NDArrayStrings());
     }
 }

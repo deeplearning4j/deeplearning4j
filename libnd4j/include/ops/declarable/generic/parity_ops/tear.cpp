@@ -38,7 +38,7 @@ namespace nd4j {
                 REQUIRE_TRUE(v >= 0 && v < input->rankOf(), 0, "Tear dimensions should be non-negative values, and lower then input rank. Got %i instead", v);
 
             auto tads = input->allTensorsAlongDimension(dims);
-            for (int e = 0; e < tads->size(); e++) {
+            for (Nd4jLong e = 0; e < tads->size(); e++) {
                 auto outE = OUTPUT_VARIABLE(e);
                 outE->assign(tads->at(e));
 
@@ -62,7 +62,7 @@ namespace nd4j {
             auto numTads = tadPack.numberOfTads();
 
             auto result = SHAPELIST();
-            for (int e = 0; e < numTads; e++) {
+            for (Nd4jLong e = 0; e < numTads; e++) {
                 auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), shape::order(inShape), shape::rank(tadPack.primaryShapeInfo()), shape::shapeOf(tadPack.primaryShapeInfo()));
                 result->push_back(newShape);
             }

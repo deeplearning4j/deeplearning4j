@@ -16,11 +16,14 @@
 
 package org.nd4j.linalg.api.ops.impl.image;
 
+import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -33,10 +36,31 @@ import java.util.*;
  * CropAndResize Op
  * @author Alex Black
  */
+@NoArgsConstructor
 public class CropAndResize extends DynamicCustomOp {
     public enum Method {BILINEAR, NEAREST};
     protected Method method = Method.BILINEAR;
     protected double extrapolationValue = 0.0;
+
+    public CropAndResize(@NonNull SameDiff sameDiff, @NonNull SDVariable image, @NonNull SDVariable cropBoxes, @NonNull SDVariable boxIndices,
+                         @NonNull SDVariable cropOutSize, @NonNull Method method, double extrapolationValue){
+        super(sameDiff, new SDVariable[]{image, cropBoxes, boxIndices, cropOutSize});
+        this.method = method;
+        this.extrapolationValue = extrapolationValue;
+        addArgs();
+    }
+
+    public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
+                         @NonNull INDArray cropOutSize, @NonNull Method method, double extrapolationValue){
+        super(new INDArray[]{image, cropBoxes, boxIndices, cropOutSize}, null);
+        Preconditions.checkArgument(image.rank() == 4, "Input image must be rank 4 with shape [batch, height, width, channels], got %ndShape", image);
+        Preconditions.checkArgument(cropBoxes.rank() == 2 && cropBoxes.size(1) == 4, "Crop boxes must be rank 4 with shape [num_boxes, 5], got %ndShape", cropBoxes);
+        Preconditions.checkArgument(boxIndices.rank() == 1 && cropBoxes.size(0) == boxIndices.size(0),
+                "Box indices must be rank 1 array with shape [num_boxes] (same as cropBoxes.size(0), got array with shape %ndShape", boxIndices);
+        this.method = method;
+        this.extrapolationValue = extrapolationValue;
+        addArgs();
+    }
 
     @Override
     public String opName() {

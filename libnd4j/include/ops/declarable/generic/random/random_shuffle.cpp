@@ -33,11 +33,11 @@ OP_IMPL(random_shuffle, 1, 1, true) {
     const bool isInplace = block.isInplace();
     auto output = isInplace ? nullptr : OUTPUT_VARIABLE(0);
 
-    nd4j::random::RandomBuffer* rng = block.getRNG();   
-    
-    REQUIRE_TRUE(rng != nullptr, 0, "RANDOM_SHUFFLE op: RNG should be defined in Graph !");
+//    nd4j::random::RandomBuffer* rng = block.getRNG();
+    nd4j::graph::RandomGenerator rng = block.randomGenerator();
+//    REQUIRE_TRUE(rng != nullptr, 0, "RANDOM_SHUFFLE op: RNG should be defined in Graph !");
 
-    helpers::randomShuffle(block.launchContext(), *input, *output, *rng, isInplace);
+    helpers::randomShuffle(block.launchContext(), *input, *output, rng, isInplace);
     
     return Status::OK();
 }

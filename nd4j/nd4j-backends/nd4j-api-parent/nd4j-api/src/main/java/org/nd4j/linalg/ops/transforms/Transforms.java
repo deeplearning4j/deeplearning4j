@@ -21,6 +21,7 @@ import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.ScalarOp;
 import org.nd4j.linalg.api.ops.TransformOp;
 import org.nd4j.linalg.api.ops.impl.reduce3.*;
@@ -29,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNot;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
@@ -43,9 +45,11 @@ import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
 import org.nd4j.linalg.api.ops.impl.transforms.same.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.inverse.InvertMatrix;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -56,7 +60,8 @@ import java.util.List;
 public class Transforms {
 
 
-    private Transforms() {}
+    private Transforms() {
+    }
 
     /**
      * Cosine similarity
@@ -64,7 +69,6 @@ public class Transforms {
      * @param d1 the first vector
      * @param d2 the second vector
      * @return the cosine similarities between the 2 arrays
-     *
      */
     public static double cosineSim(@NonNull INDArray d1, @NonNull INDArray d2) {
         return Nd4j.getExecutioner().exec(new CosineSimilarity(d1, d2)).getDouble(0);
@@ -103,12 +107,21 @@ public class Transforms {
         return Nd4j.getExecutioner().exec(new OldReverse(x, dup ? x.ulike() : x));
     }
 
-    public static INDArray dot(INDArray x, INDArray y){
-        return Nd4j.getExecutioner().exec(new Dot(x,y));
+    /**
+     * Dot product, new INDArray instance will be returned.<br>
+     * Note that the Nd4J design is different from Numpy. Numpy dot on 2d arrays is matrix multiplication. Nd4J is
+     * full array dot product reduction.
+     *
+     * @param x the first vector
+     * @param y the second vector
+     * @return the dot product between the 2 arrays
+     */
+    public static INDArray dot(INDArray x, INDArray y) {
+        return Nd4j.getExecutioner().exec(new Dot(x, y));
     }
 
-    public static INDArray cross(INDArray x, INDArray y){
-        Cross c = new Cross(x,y,null);
+    public static INDArray cross(INDArray x, INDArray y) {
+        Cross c = new Cross(x, y, null);
         List<LongShapeDescriptor> shape = c.calculateOutputShape();
         INDArray out = Nd4j.create(shape.get(0));
         c.addOutputArgument(out);
@@ -117,7 +130,6 @@ public class Transforms {
     }
 
     /**
-     *
      * @param d1
      * @param d2
      * @return
@@ -139,7 +151,6 @@ public class Transforms {
     }
 
     /**
-     *
      * @param d1
      * @param d2
      * @return
@@ -188,7 +199,6 @@ public class Transforms {
     }
 
 
-
     /**
      * Returns the negative of an ndarray
      *
@@ -224,6 +234,7 @@ public class Transforms {
 
     /**
      * Ceiling function
+     *
      * @param ndArray
      * @param copyOnOps
      * @return
@@ -244,7 +255,6 @@ public class Transforms {
 
 
     /**
-     *
      * @param ndArray
      * @param k
      * @return
@@ -255,6 +265,7 @@ public class Transforms {
 
     /**
      * Sin function
+     *
      * @param in
      * @return
      */
@@ -264,6 +275,7 @@ public class Transforms {
 
     /**
      * Sin function
+     *
      * @param in
      * @param copy
      * @return
@@ -275,6 +287,7 @@ public class Transforms {
 
     /**
      * Sin function
+     *
      * @param in
      * @return
      */
@@ -284,6 +297,7 @@ public class Transforms {
 
     /**
      * Sin function
+     *
      * @param in
      * @param copy
      * @return
@@ -294,6 +308,7 @@ public class Transforms {
 
     /**
      * Sinh function
+     *
      * @param in
      * @return
      */
@@ -303,6 +318,7 @@ public class Transforms {
 
     /**
      * Sinh function
+     *
      * @param in
      * @param copy
      * @return
@@ -312,7 +328,6 @@ public class Transforms {
     }
 
     /**
-     *
      * @param in
      * @return
      */
@@ -321,7 +336,6 @@ public class Transforms {
     }
 
     /**
-     *
      * @param in
      * @param copy
      * @return
@@ -331,7 +345,6 @@ public class Transforms {
     }
 
     /**
-     *
      * @param in
      * @return
      */
@@ -340,7 +353,6 @@ public class Transforms {
     }
 
     /**
-     *
      * @param in
      * @param copy
      * @return
@@ -435,7 +447,6 @@ public class Transforms {
     }
 
 
-
     public static INDArray leakyRelu(INDArray arr, double cutoff) {
         return leakyRelu(arr, cutoff, true);
     }
@@ -453,7 +464,6 @@ public class Transforms {
     public static INDArray leakyReluDerivative(INDArray in, double cutoff, boolean copy) {
         return Nd4j.getExecutioner().exec(new LeakyReLUDerivative(in, (copy ? in.ulike() : in), cutoff));
     }
-
 
 
     public static INDArray softPlus(INDArray arr) {
@@ -495,29 +505,28 @@ public class Transforms {
     }
 
 
-
     public static INDArray softmax(INDArray arr) {
         return softmax(arr, true);
     }
 
 
     /**
-     *
      * @param in
      * @param copy
      * @return
      */
     public static INDArray softmax(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().exec(new OldSoftMax(in, (copy ? in.ulike() : in)));
+        return Nd4j.getExecutioner().exec((CustomOp) new SoftMax(in, (copy ? in.ulike() : in), -1))[0];
     }
 
     /**
      * out = in * (1-in)
+     *
      * @param in   Input array
      * @param copy If true: copy. False: apply in-place
      * @return
      */
-    public static INDArray timesOneMinus(INDArray in, boolean copy){
+    public static INDArray timesOneMinus(INDArray in, boolean copy) {
         return Nd4j.getExecutioner().exec(new TimesOneMinus(in, (copy ? in.ulike() : in)));
     }
 
@@ -534,6 +543,7 @@ public class Transforms {
 
     /**
      * Run the exp operation
+     *
      * @param ndArray
      * @return
      */
@@ -558,7 +568,7 @@ public class Transforms {
         return exec(dup ? new HardTanh(ndArray, ndArray.ulike()) : new HardTanh(ndArray));
     }
 
-    public static INDArray hardSigmoid(INDArray arr, boolean dup){
+    public static INDArray hardSigmoid(INDArray arr, boolean dup) {
         return Nd4j.getExecutioner().exec(new HardSigmoid(arr, (dup ? arr.ulike() : arr)));
     }
 
@@ -580,9 +590,7 @@ public class Transforms {
     }
 
 
-
     /**
-     *
      * @param ndArray
      * @return
      */
@@ -852,11 +860,11 @@ public class Transforms {
      * @return
      */
     public static INDArray max(INDArray first, INDArray second, boolean dup) {
-        INDArray result = first;
-        if (dup) {
-            result = first.ulike();
-        }
-        return exec(new OldMax(first, second, result));
+        long[] outShape = broadcastResultShape(first, second);   //Also validates
+        Preconditions.checkState(dup || Arrays.equals(outShape, first.shape()), "Cannot do inplace max operation when first input is not equal to result shape (%ndShape vs. result %s)",
+                first, outShape);
+        INDArray out = dup ? Nd4j.create(first.dataType(), outShape) : first;
+        return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Max(first, second, out))[0];
     }
 
     /**
@@ -902,10 +910,11 @@ public class Transforms {
      * @return
      */
     public static INDArray min(INDArray first, INDArray second, boolean dup) {
-        if (dup) {
-            first = first.dup();
-        }
-        return exec(new OldMin(second, first, first));
+        long[] outShape = broadcastResultShape(first, second);   //Also validates
+        Preconditions.checkState(dup || Arrays.equals(outShape, first.shape()), "Cannot do inplace min operation when first input is not equal to result shape (%ndShape vs. result %s)",
+                first, outShape);
+        INDArray out = dup ? Nd4j.create(first.dataType(), outShape) : first;
+        return Nd4j.exec(new org.nd4j.linalg.api.ops.impl.transforms.custom.Min(first, second, out))[0];
     }
 
     /**
@@ -1018,7 +1027,6 @@ public class Transforms {
     }
 
 
-
     /**
      * Sqrt function
      *
@@ -1104,7 +1112,6 @@ public class Transforms {
     }
 
 
-
     /**
      * Apply the given elementwise op
      *
@@ -1131,8 +1138,9 @@ public class Transforms {
      * repeated squarings to minimize the number of mmul() operations needed
      * <p>If <i>n</i> is zero, the identity matrix is returned.</p>
      * <p>If <i>n</i> is negative, the matrix is inverted and raised to the abs(n) power.</p>
-     * @param in A square matrix to raise to an integer power, which will be changed if dup is false.
-     * @param n The integer power to raise the matrix to.
+     *
+     * @param in  A square matrix to raise to an integer power, which will be changed if dup is false.
+     * @param n   The integer power to raise the matrix to.
      * @param dup If dup is true, the original input is unchanged.
      * @return The result of raising <i>in</i> to the <i>n</i>th power.
      */
@@ -1174,4 +1182,15 @@ public class Transforms {
         }
     }
 
+
+    protected static long[] broadcastResultShape(INDArray first, INDArray second){
+        if(first.equalShapes(second)){
+            return first.shape();
+        } else if(Shape.areShapesBroadcastable(first.shape(), second.shape())){
+            return Shape.broadcastOutputShape(first.shape(), second.shape());
+        } else {
+            throw new IllegalStateException("Array shapes are not broadcastable: " + Arrays.toString(first.shape()) +
+                    " vs. " + Arrays.toString(second.shape()));
+        }
+    }
 }

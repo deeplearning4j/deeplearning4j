@@ -20,10 +20,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 @AllArgsConstructor
 @Data
@@ -45,6 +42,7 @@ public class TFImportStatus {
     private final Set<String> importSupportedOpNames;
     /** The (unique) names of all ops that were encountered, and can NOT be imported (lacking import mapping) */
     private final Set<String> unsupportedOpNames;
+    private final Map<String,Set<String>> unsupportedOpModels;
 
 
     public TFImportStatus merge(@NonNull TFImportStatus other){
@@ -55,7 +53,7 @@ public class TFImportStatus {
         newCantImportModelPaths.addAll(other.cantImportModelPaths);
 
         List<String> newReadErrorModelPaths = new ArrayList<>(readErrorModelPaths);
-            newReadErrorModelPaths.addAll(other.readErrorModelPaths);
+        newReadErrorModelPaths.addAll(other.readErrorModelPaths);
 
 
 
@@ -70,6 +68,19 @@ public class TFImportStatus {
 
         int countUnique = newImportSupportedOpNames.size() + newUnsupportedOpNames.size();
 
+        Map<String,Set<String>> newUnsupportedOpModels = new HashMap<>();
+        if(unsupportedOpModels != null)
+            newUnsupportedOpModels.putAll(unsupportedOpModels);
+        if(other.unsupportedOpModels != null){
+            for(Map.Entry<String,Set<String>> e : other.unsupportedOpModels.entrySet()){
+                if(!newUnsupportedOpModels.containsKey(e.getKey())){
+                    newUnsupportedOpModels.put(e.getKey(), e.getValue());
+                } else {
+                    newUnsupportedOpModels.get(e.getKey()).addAll(e.getValue());
+                }
+            }
+        }
+
 
         return new TFImportStatus(
                 newModelPaths,
@@ -79,7 +90,8 @@ public class TFImportStatus {
                 countUnique,
                 newOpNames,
                 newImportSupportedOpNames,
-                newUnsupportedOpNames);
+                newUnsupportedOpNames,
+                newUnsupportedOpModels);
     }
 
 }

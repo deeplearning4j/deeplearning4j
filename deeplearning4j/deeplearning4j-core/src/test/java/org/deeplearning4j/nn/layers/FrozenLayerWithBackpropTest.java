@@ -165,35 +165,13 @@ public class FrozenLayerWithBackpropTest extends BaseDL4JTest {
                 .weightInit(WeightInit.XAVIER)
                 .updater(new Sgd(2))
                 .list()
-                .layer(0,
-                        new DenseLayer.Builder()
-                                .nIn(4)
-                                .nOut(3)
-                                .build()
-                )
-                .layer(1,
-                        new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
-                                new DenseLayer.Builder()
-                                        .nIn(3)
-                                        .nOut(4)
-                                        .build()
-                        )
-                )
-                .layer(2,
-                        new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
-                                new DenseLayer.Builder()
-                                        .nIn(4)
-                                        .nOut(2)
-                                        .build()
-                        )
-                ).layer(3,
-                        new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
-                                new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                        .nIn(2)
-                                        .nOut(1)
-                                        .build()
-                        )
-                )
+                .layer(new DenseLayer.Builder().nIn(4).nOut(3).build())
+                .layer(new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
+                                new DenseLayer.Builder().nIn(3).nOut(4).build()))
+                .layer(new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
+                                new DenseLayer.Builder().nIn(4).nOut(2).build()))
+                .layer(new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
+                                new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.TANH).nIn(2).nOut(1).build()))
                 .build();
 
         MultiLayerNetwork network = new MultiLayerNetwork(conf1);
@@ -238,70 +216,18 @@ public class FrozenLayerWithBackpropTest extends BaseDL4JTest {
                 .seed(12345)
                 .graphBuilder()
                 .addInputs("input")
-                .addLayer(initialLayer,
-                        new DenseLayer.Builder()
-                                .nIn(4)
-                                .nOut(4)
-                                .build(),
-                        "input"
-                )
-                .addLayer(frozenBranchUnfrozenLayer0,
-                        new DenseLayer.Builder()
-                                .nIn(4)
-                                .nOut(3)
-                                .build(),
-                        initialLayer
-                )
-                .addLayer(frozenBranchFrozenLayer1,
-                        new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
-                                new DenseLayer.Builder()
-                                        .nIn(3)
-                                        .nOut(4)
-                                        .build()
-                        ),
-                        frozenBranchUnfrozenLayer0
-                )
-                .addLayer(frozenBranchFrozenLayer2,
-                        new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
-                                new DenseLayer.Builder()
-                                        .nIn(4)
-                                        .nOut(2)
-                                        .build()
-                        ),
-                        frozenBranchFrozenLayer1
-                )
-                .addLayer(unfrozenLayer0,
-                        new DenseLayer.Builder()
-                                .nIn(4)
-                                .nOut(4)
-                                .build(),
-                        initialLayer
-                )
-                .addLayer(unfrozenLayer1,
-                        new DenseLayer.Builder()
-                                .nIn(4)
-                                .nOut(2)
-                                .build(),
-                        unfrozenLayer0
-                )
-                .addLayer(unfrozenBranch2,
-                        new DenseLayer.Builder()
-                                .nIn(2)
-                                .nOut(1)
-                                .build(),
-                        unfrozenLayer1
-                )
-                .addVertex("merge",
-                        new MergeVertex(), frozenBranchFrozenLayer2, unfrozenBranch2)
-                .addLayer(frozenBranchOutput,
-                        new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
-                                new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
-                                        .nIn(3)
-                                        .nOut(1)
-                                        .build()
-                        ),
-                        "merge"
-                )
+                .addLayer(initialLayer, new DenseLayer.Builder().nIn(4).nOut(4).build(),"input")
+                .addLayer(frozenBranchUnfrozenLayer0, new DenseLayer.Builder().nIn(4).nOut(3).build(),initialLayer)
+                .addLayer(frozenBranchFrozenLayer1, new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
+                        new DenseLayer.Builder().nIn(3).nOut(4).build()),frozenBranchUnfrozenLayer0)
+                .addLayer(frozenBranchFrozenLayer2, new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
+                        new DenseLayer.Builder().nIn(4).nOut(2).build()),frozenBranchFrozenLayer1)
+                .addLayer(unfrozenLayer0, new DenseLayer.Builder().nIn(4).nOut(4).build(),initialLayer)
+                .addLayer(unfrozenLayer1, new DenseLayer.Builder().nIn(4).nOut(2).build(),unfrozenLayer0)
+                .addLayer(unfrozenBranch2, new DenseLayer.Builder().nIn(2).nOut(1).build(),unfrozenLayer1)
+                .addVertex("merge", new MergeVertex(), frozenBranchFrozenLayer2, unfrozenBranch2)
+                .addLayer(frozenBranchOutput,new org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop(
+                        new OutputLayer.Builder(LossFunctions.LossFunction.MSE).activation(Activation.TANH).nIn(3).nOut(1).build()),"merge")
                 .setOutputs(frozenBranchOutput)
                 .build();
 

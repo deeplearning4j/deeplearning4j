@@ -53,7 +53,7 @@ namespace nd4j {
 */
             REQUIRE_TRUE(block.numT() > 1, 0, "RandomUniform: to/from must be set");
 
-            RandomLauncher::fillUniform(rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
+            RandomLauncher::fillUniform(block.launchContext(), rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
             return Status::OK();
         }
 

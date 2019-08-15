@@ -59,21 +59,20 @@ CUSTOM_OP_IMPL(avgpool2d, 1, 1, false, 0, 10) {
     const int iH = static_cast<int>(isNCHW ? input->sizeAt(2) : input->sizeAt(1));
     const int iW = static_cast<int>(isNCHW ? input->sizeAt(3) : input->sizeAt(2));
 
-    if (!isNCHW) {
-        input  = input->permute({0, 3, 1, 2});                // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
-        output = output->permute({0, 3, 1, 2});               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
+    if(!isNCHW) {
+        input  = new NDArray(input->permute({0, 3, 1, 2}));                // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+        output = new NDArray(output->permute({0, 3, 1, 2}));               // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
     }
 
     ConvolutionUtils::calcOutSizePool2D(oH, oW, kH, kW, sH, sW, pH, pW, dH, dW, iH, iW, isSameMode);
 
     if (isSameMode)
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
-            
+
     // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
     ConvolutionUtils::pooling2d(block, *input, *output, kH, kW, sH, sW, pH, pW, dH, dW, PoolingType::AVG_POOL, extraParam0);
-    //output->printBuffer("output op");
 
-    if (!isNCHW) {
+    if(!isNCHW) {
         delete input;
         delete output;
     }
@@ -92,7 +91,7 @@ DECLARE_SYN(avgpool, avgpool2d);
     }
 
 DECLARE_SHAPE_FN(avgpool2d) {
-    
+
     auto inShape = inputShape->at(0);
     auto shapeOf = shape::shapeOf(inShape);
 
@@ -177,27 +176,28 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
     REQUIRE_TRUE(expectedGradOShape == ShapeUtils::shapeAsString(gradO), 0, "AVGPOOL2D_BP op: wrong shape of output's gradients array (next epsilon), expected is %s, but got %s instead !", expectedGradOShape.c_str(), ShapeUtils::shapeAsString(gradO).c_str());
     REQUIRE_TRUE(expectedGradIShape == ShapeUtils::shapeAsString(gradI), 0, "AVGPOOL2D_BP op: wrong shape of input's gradients array (epsilon), expected is %s, but got %s instead !", expectedGradIShape.c_str(), ShapeUtils::shapeAsString(gradI).c_str());
 
+
     if(!isNCHW) {
-        input = input->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
-        gradI = gradI->permute({0, 3, 1, 2});                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]                        
-        gradO = gradO->permute({0, 3, 1, 2});                                   // [bS, oH, oW, iC] -> [bS, iC, oH, oW]                        
+        input = new NDArray(input->permute({0, 3, 1, 2}));                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+        gradI = new NDArray(gradI->permute({0, 3, 1, 2}));                                   // [bS, iH, iW, iC] -> [bS, iC, iH, iW]
+        gradO = new NDArray(gradO->permute({0, 3, 1, 2}));                                   // [bS, oH, oW, iC] -> [bS, iC, oH, oW]
     }
-    
-    if(isSameMode)                       // SAME        
+
+    if(isSameMode)                       // SAME
         ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-    // NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());    
+    // NDArray<T> columnsWrongShape(input->ordering(), {bS, iC, oH, oW, kH, kW}, input->getWorkspace());
     // NDArray<T>* columns = columnsWrongShape.permute({0, 1, 4, 5, 2, 3});                                // [bS, iC, oH, oW, kH, kW] -> [bS, iC, kH, kW, oH, oW]
-    // NDArray<T>* gradOVector = gradO->reshape('c', {(int) gradO->lengthOf(), 1}); 
+    // NDArray<T>* gradOVector = gradO->reshape('c', {(int) gradO->lengthOf(), 1});
     // NDArray<T>* columns2d = columnsWrongShape.reshape('c', {bS*iC*oH*oW, kH*kW});
-    
+
     // columns2d->addiColumnVector(gradOVector);
 
     // columns->template applyTransform<simdOps::Col2Im<T>>(gradI, std::vector<T>({(T)sH, (T)sW, (T)pH, (T)pW, (T)iH, (T)iW, (T)dH, (T)dW}).data());
 
-    // *gradI /= kH*kW; 
-            
-    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;    
+    // *gradI /= kH*kW;
+
+    // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - poolingMode; 9 - divisor;
     ConvolutionUtils::pooling2dBP(block, *input, *gradO, *gradI, kH, kW, sH, sW, pH, pW, dH, dW, 1, extraParam0);
 
     if(!isNCHW) {
@@ -205,16 +205,13 @@ CUSTOM_OP_IMPL(avgpool2d_bp, 2, 1, false, 0, 10) {
         delete gradI;
         delete gradO;
     }
-    // delete columns;
-    // delete columns2d;
-    // delete gradOVector;
-    
+
     return Status::OK();
 
 }
 
 DECLARE_SHAPE_FN(avgpool2d_bp) {
-                
+
     REQUIRE_TRUE(inputShape->at(0)[0] == 4, 0, "AVGPOOL2D_BP op: input array must be 4D, but got %i instead!", inputShape->at(0)[0]);
     REQUIRE_TRUE(inputShape->at(1)[0] == 4, 0, "AVGPOOL2D_BP op: output's gradient array (next epsilon) must be 4D, but got %i instead!", inputShape->at(1)[0]);
 

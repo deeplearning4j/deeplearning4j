@@ -97,6 +97,9 @@ public interface MemoryWorkspace extends AutoCloseable, Deallocatable {
      */
     PagedPointer alloc(long requiredMemory, DataType dataType, boolean initialize);
 
+
+    long getPrimaryOffset();
+
     /**
      * This method does allocation from a given Workspace
      *

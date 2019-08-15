@@ -39,25 +39,22 @@ nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* A, const nd4j::N
 nd4j::NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, const std::vector<int>& axes_0, const std::vector<int>& axes_1) {
 
     std::vector<int> permutAt, permutBt;
-    std::vector<Nd4jLong> shapeAt, shapeBt;        
+    std::vector<Nd4jLong> shapeAt, shapeBt;
 
     auto outShape = ShapeUtils::evalShapeForTensorDot(a, b, axes_0, axes_1, permutAt, permutBt, shapeAt, shapeBt);
 
-    NDArray* aPR = a->permute(permutAt);
-    NDArray* bPR = b->permute(permutBt);
-    
-    // check whether reshape is necessary
-    if(!aPR->isSameShape(shapeAt))
-        aPR->reshapei( shapeAt);
-    if(!bPR->isSameShape(shapeBt))
-        bPR->reshapei( shapeBt);
+    NDArray aPR = a->permute(permutAt);
+    NDArray bPR = b->permute(permutBt);
 
-    NDArray* c = mmul(aPR, bPR, nullptr, 1.0, 0.0);
+    // check whether reshape is necessary
+    if(!aPR.isSameShape(shapeAt))
+        aPR.reshapei( shapeAt);
+    if(!bPR.isSameShape(shapeBt))
+        bPR.reshapei( shapeBt);
+
+    NDArray* c = mmul(&aPR, &bPR, nullptr, 1.0, 0.0);
 
     c->reshapei(outShape);
-
-    delete aPR;
-    delete bPR;
 
     return c;
 }
@@ -74,65 +71,67 @@ void nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b,
 
     // check whether permutation is required
     if(!permutForC.empty())
-        cP = c->permute(permutForC);
+        cP = new NDArray(c->permute(permutForC));
 
     auto aPR = a->permute(permutAt);
     auto bPR = b->permute(permutBt);
 
     // check whether reshape is necessary
-    if(!aPR->isSameShape(shapeAt))
-            aPR->reshapei(shapeAt);
-    if(!bPR->isSameShape(shapeBt))
-            bPR->reshapei(shapeBt);
+    if(!aPR.isSameShape(shapeAt))
+            aPR.reshapei(shapeAt);
+    if(!bPR.isSameShape(shapeBt))
+            bPR.reshapei(shapeBt);
 
-    if(!cP->isSameShape({aPR->sizeAt(0), bPR->sizeAt(1)}))
-        cPR = cP->reshape(cP->ordering(), {aPR->sizeAt(0), bPR->sizeAt(1)});
+    if(!cP->isSameShape({aPR.sizeAt(0), bPR.sizeAt(1)}))
+        cPR = new NDArray(cP->reshape(cP->ordering(), {aPR.sizeAt(0), bPR.sizeAt(1)}));
 
-    mmul(aPR, bPR, cPR, 1.0, 0.0);
+    mmul(&aPR, &bPR, cPR, 1.0, 0.0);
 
-    if(cPR->getBuffer() != cP->getBuffer() || cPR->getSpecialBuffer() != cP->getSpecialBuffer() )   // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()        
-        cP->assign(cPR);    
+    if(cPR->getBuffer() != cP->getBuffer() || cPR->getSpecialBuffer() != cP->getSpecialBuffer() )   // this means both permute and reshape have been performed on c, cP always points on c->getBuffer()
+        cP->assign(cPR);
 
     if(cPR != c)
         delete cPR;
     if(cP != c)
         delete cP;
-    delete aPR;
-    delete bPR;
 }
 
 
 #ifndef __JAVACPP_HACK__
 //////////////////////////////////////////////////////////////////////////
 void nd4j::MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB, const std::vector<std::vector<Nd4jLong>>& modifC) {
+
     NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
     std::string whatToDoWithA, whatToDoWithB, whatToDoWithC;         // "" - nothing; "p" - permutation; "r" - reshaping; "pr" - permutation+reshaping; "rp" - reshaping/permutation, and so on; if another string is produced - throw exception
-    for(const auto& arr : modifA) 
-        whatToDoWithA = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithA + "p" : whatToDoWithA + "r";        // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array            
-    for(const auto& arr : modifB) 
-        whatToDoWithB = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithB + "p" : whatToDoWithB + "r";    
-    for(const auto& arr : modifC) 
-        whatToDoWithC = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithC + "p" : whatToDoWithC + "r";    
+
+    for(const auto& arr : modifA)
+        whatToDoWithA = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithA + "p" : whatToDoWithA + "r";        // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array
+    for(const auto& arr : modifB)
+        whatToDoWithB = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithB + "p" : whatToDoWithB + "r";
+    for(const auto& arr : modifC)
+        whatToDoWithC = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithC + "p" : whatToDoWithC + "r";
+
     // first step for a array
     if(!whatToDoWithA.empty())
-        aPR = (whatToDoWithA[0] == 'p') ? a->permute(modifA[0]) : a->reshape(a->ordering(), modifA[0]);
+        aPR = (whatToDoWithA[0] == 'p') ? new NDArray(a->permute(modifA[0])) : new NDArray(a->reshape(a->ordering(), modifA[0]));
     // first step for b array
     if(!whatToDoWithB.empty())
-        bPR = (whatToDoWithB[0] == 'p') ? b->permute(modifB[0]) : b->reshape(b->ordering(), modifB[0]);
+        bPR = (whatToDoWithB[0] == 'p') ? new NDArray(b->permute(modifB[0])) : new NDArray(b->reshape(b->ordering(), modifB[0]));
     // rest steps for a array
     for(int i = 1; i < whatToDoWithA.size(); ++i)
         if(whatToDoWithA[i] == 'p') aPR->permutei(modifA[i]); else aPR->reshapei(modifA[i]);
     // rest steps for b array
     for(int i = 1; i < whatToDoWithB.size(); ++i)
         if(whatToDoWithB[i] == 'p') bPR->permutei(modifB[i]); else bPR->reshapei(modifB[i]);
+
     // now work with c array
     std::vector<NDArray*> cArrs = {c};
     if(!whatToDoWithC.empty()) {
         cArrs = std::vector<NDArray*>(whatToDoWithC.size()+1, c);
-        for(int i = 0; i < cArrs.size()-1; ++i)                               
-            cArrs[i+1] = (whatToDoWithC[i] == 'p') ? cArrs[i]->permute(modifC[i]) : cArrs[i]->reshape(c->ordering(), modifC[i]);  // since we ignore first element in cArrs (that is cArrs[0]) then it is always equal to c
+        for(int i = 0; i < cArrs.size()-1; ++i)
+            cArrs[i+1] = (whatToDoWithC[i] == 'p') ? new NDArray(cArrs[i]->permute(modifC[i])) : new NDArray(cArrs[i]->reshape(c->ordering(), modifC[i]));  // since we ignore first element in cArrs (that is cArrs[0]) then it is always equal to c
     }
-    
+
     mmul(aPR, bPR, cArrs[cArrs.size()-1], 1.0, 0.0);
 
     // check whether new buffer allocation was happened for c array
@@ -152,27 +151,30 @@ void nd4j::MmulHelper::tensorDot(const NDArray* a, const NDArray* b, NDArray* c,
 
 //////////////////////////////////////////////////////////////////////////
 NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray* b, const std::vector<std::vector<Nd4jLong>>& modifA, const std::vector<std::vector<Nd4jLong>>& modifB) {
+
     NDArray *aPR(const_cast<NDArray*>(a)), *bPR(const_cast<NDArray*>(b));
     std::string whatToDoWithA, whatToDoWithB;         // "" - nothing; "p" - permutation only; "r" - reshaping only; "pr" - permutation+reshaping; "rp" - reshaping/permutation; another string - throw exception
-    for(const auto& arr : modifA) 
-        whatToDoWithA = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithA + "p" : whatToDoWithA + "r";        // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array            
-    for(const auto& arr : modifB) 
-        whatToDoWithB = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithB + "p" : whatToDoWithB + "r";    
+
+    for(const auto& arr : modifA)
+        whatToDoWithA = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithA + "p" : whatToDoWithA + "r";        // when 0 is present in arr then it is permutation array, otherwise - it is reshaping array
+    for(const auto& arr : modifB)
+        whatToDoWithB = (std::find(arr.begin(), arr.end(), 0) != arr.end()) ? whatToDoWithB + "p" : whatToDoWithB + "r";
+
     // first step for a array
     if(!whatToDoWithA.empty())
-        aPR = (whatToDoWithA[0] == 'p') ? a->permute(modifA[0]) : a->reshape(a->ordering(), modifA[0]);
+        aPR = (whatToDoWithA[0] == 'p') ? new NDArray(a->permute(modifA[0])) : new NDArray(a->reshape(a->ordering(), modifA[0]));
     // first step for b array
     if(!whatToDoWithB.empty())
-        bPR = (whatToDoWithB[0] == 'p') ? b->permute(modifB[0]) : b->reshape(b->ordering(), modifB[0]);
+        bPR = (whatToDoWithB[0] == 'p') ? new NDArray(b->permute(modifB[0])) : new NDArray(b->reshape(b->ordering(), modifB[0]));
     // rest steps for a array
     for(int i = 1; i < whatToDoWithA.size(); ++i)
         if(whatToDoWithA[i] == 'p') aPR->permutei(modifA[i]); else aPR->reshapei(modifA[i]);
     // rest steps for b array
     for(int i = 1; i < whatToDoWithB.size(); ++i)
         if(whatToDoWithB[i] == 'p') bPR->permutei(modifB[i]); else bPR->reshapei(modifB[i]);
-            
+
     NDArray* result = mmul(aPR, bPR, nullptr, 1.0, 0.0);
-    
+
     if(aPR != a)
         delete aPR;
     if(bPR != b)
@@ -281,9 +283,9 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
             nd4j_printf("NDArrayFactory::matmul static method: input shape of output array is wrong, actual is %s and expected is %s ! \n", ShapeUtils::shapeAsString(z).c_str(), ShapeUtils::shapeAsString(outShape).c_str());
             throw std::invalid_argument("");
         }
-        
+
         NDArray* xT(const_cast<NDArray*>(x)), *yT(const_cast<NDArray*>(y)), *zT(z);
-    
+
         if((transX && xRank > 1) || (transY && yRank > 1)) {
             const int rank = xRank >= yRank ? xRank : yRank;
             std::vector<int> permut(rank);
@@ -291,25 +293,25 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
                 permut[i] = i;
             permut[rank-2] = rank - 1;
             permut[rank-1] = rank - 2;
-        
+
             if(transX)
-                xT = x->permute(permut);
+                xT = new NDArray(x->permute(permut));
 
             if(transY)
-                yT = y->permute(permut);
+                yT = new NDArray(y->permute(permut));
         }
 
         if(xRank <= 2 && yRank <= 2) {  // dot (1Dx1D), vector-matrix (1Dx2D), matrix-vector (2Dx1D), matrix-matrix (2Dx2D) product cases
 
             if(xRank == 1 && yRank == 2) {   // reduce vector-matrix to matrix-matrix case
-                xT = x->reshape(x->ordering(), {1, x->lengthOf()}); // please note x is not transposed in this case (since xRank=1)
-                zT = z->reshape(z->ordering(), {1, z->lengthOf()});
+                xT = new NDArray(x->reshape(x->ordering(), {1, x->lengthOf()})); // please note x is not transposed in this case (since xRank=1)
+                zT = new NDArray(z->reshape(z->ordering(), {1, z->lengthOf()}));
             }
-        
+
             mmul(xT, yT, zT, 1., 0.);
         }
         else {  // rest cases -  batched mmul
-        
+
             const int batchRank = xRank - 2;
             std::vector<int> dimsToExclude(batchRank);
             for(int i = 0; i < batchRank; ++i)

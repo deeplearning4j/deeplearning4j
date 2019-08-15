@@ -17,19 +17,26 @@
 package org.nd4j.jita.allocator;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.var;
 import org.apache.commons.lang3.RandomUtils;
+import org.bytedeco.javacpp.Pointer;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.nd4j.jita.allocator.context.impl.LimitedContextPool;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.impl.MemoryTracker;
 
 import lombok.val;
 
+import org.nd4j.jita.conf.CudaEnvironment;
+import org.nd4j.jita.flow.FlowController;
 import org.nd4j.jita.memory.impl.CudaFullCachingProvider;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
+import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.enums.MirroringPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.executors.ExecutorServiceProvider;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
 import org.nd4j.jita.memory.impl.CudaDirectProvider;
@@ -39,6 +46,12 @@ import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationPoint;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.impl.AllocationShape;
+import org.nd4j.linalg.primitives.Pair;
+
+import java.util.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import static org.junit.Assert.*;
 
@@ -315,5 +328,235 @@ public class AllocatorTest {
             System.gc();
             Thread.sleep(30000);
         }
+    }
+
+    @Test
+    public void testAllocations() {
+        INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
+        assertArrayEquals(new long[]{10, 5}, x.shape());
+
+        for (DataType dataType : DataType.values()) {
+            for (int i = 0; i < 10; ++i) {
+
+                x = Nd4j.create(DataType.FLOAT, 10 * i + 1, 5 * i + 2);
+                assertArrayEquals(new long[]{10 * i + 1, 5 * i + 2}, x.shape());
+
+                val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+                assertNotNull(pointX);
+                assertTrue(x.shapeInfoDataBuffer().isConstant());
+
+                assertNotNull(pointX.getHostPointer());
+                assertNotNull(pointX.getDevicePointer());
+
+                assertEquals(64, pointX.getShape().getNumberOfBytes());
+            }
+        }
+    }
+
+    @Test
+    public void testAllocations1() {
+        INDArray x = Nd4j.zeros(1,10);
+
+        for (int i = 0; i < 100000; ++i) {
+            INDArray toAdd = Nd4j.ones(1,10);
+            x.putRow(i+1, toAdd);
+        }
+
+        assertTrue(x.shapeInfoDataBuffer().isConstant());
+
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+        assertNotNull(pointX);
+
+        assertNotNull(pointX);
+        assertTrue(x.shapeInfoDataBuffer().isConstant());
+
+        assertNotNull(pointX.getHostPointer());
+        assertNotNull(pointX.getDevicePointer());
+
+        assertEquals(64, pointX.getShape().getNumberOfBytes());
+    }
+
+    @Test
+    public void testReallocate() {
+        INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
+        var pointX = AtomicAllocator.getInstance().getAllocationPoint(x.data());
+
+        assertNotNull(pointX);
+
+        assertEquals(200, pointX.getShape().getNumberOfBytes());
+
+        val hostP = pointX.getHostPointer();
+        val deviceP = pointX.getDevicePointer();
+
+        assertEquals(50, x.data().capacity());
+        x.data().reallocate(500);
+
+        pointX = AtomicAllocator.getInstance().getAllocationPoint(x.data());
+
+        assertEquals(500, x.data().capacity());
+        assertEquals(2000, pointX.getShape().getNumberOfBytes());
+
+        assertNotEquals(hostP, pointX.getHostPointer());
+        assertNotEquals(deviceP, pointX.getDevicePointer());
+    }
+
+    @Test
+    public void testDataMigration() {
+
+        for (boolean p2pEnabled : new boolean[]{true, false}) {
+
+            CudaEnvironment.getInstance().getConfiguration().allowCrossDeviceAccess(p2pEnabled);
+
+            Thread[] threads = new Thread[4];
+            List<Pair<INDArray, INDArray>> sumsPerList = new ArrayList<>();
+            List<INDArray> lst = new ArrayList<>();
+
+            for (int i = 0; i < 4; ++i) {
+                threads[i] = new Thread() {
+                    @Override
+                    public void run() {
+                        INDArray x = Nd4j.rand(1, 10);
+                        Pair<INDArray, INDArray> pair = new Pair<>();
+                        pair.setFirst(Nd4j.sum(x));
+                        pair.setSecond(x);
+                        sumsPerList.add(pair);
+                        lst.add(x);
+                    }
+                };
+                threads[i].start();
+            }
+
+            try {
+                for (val thread : threads) {
+                    thread.join();
+                }
+            } catch (InterruptedException e) {
+                log.info("Interrupted");
+            }
+
+            Collections.shuffle(lst);
+
+            for (int i = 0; i < lst.size(); ++i) {
+                INDArray data = lst.get(i);
+
+                for (int j = 0; j < sumsPerList.size(); ++j) {
+                    if (sumsPerList.get(j).getFirst().equals(data))
+                        assertEquals(sumsPerList.get(j).getSecond(), data);
+
+                }
+            }
+        }
+    }
+
+
+    @Ignore
+    @Test
+    public void testHostFallback() {
+        // Take device memory
+        long bytesFree = MemoryTracker.getInstance().getApproximateFreeMemory(0);
+        Pointer p = Nd4j.getMemoryManager().allocate((long)(bytesFree*0.75), MemoryKind.DEVICE, true);
+
+        // Fallback to host
+        INDArray x1  = Nd4j.create(1, (long)(bytesFree*0.15));
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x1.shapeInfoDataBuffer());
+
+        assertNotNull(pointX);
+        assertNotNull(pointX.getHostPointer());
+        assertNotNull(pointX.getDevicePointer());
+
+        Nd4j.getMemoryManager().release(p, MemoryKind.DEVICE);
+    }
+
+    @Test
+    public void testAffinityGuarantees() {
+        ExecutorService service = ExecutorServiceProvider.getExecutorService();
+        final INDArray steady = Nd4j.rand(1,100);
+        Map<INDArray, Integer> deviceData = new HashMap<>();
+
+        Future<List<INDArray>>[] results = new Future[10];
+        for (int i = 0; i < results.length; ++i) {
+            results[i] = service.submit(new Callable<List<INDArray>>() {
+                @Override
+                public List<INDArray> call() {
+                    List<INDArray> retVal = new ArrayList<>();
+                    for (int i = 0; i < 100; ++i) {
+                        INDArray x = Nd4j.rand(1, 100);
+                        System.out.println("Device for x:" + Nd4j.getAffinityManager().getDeviceForArray(x));
+                        System.out.println("Device for steady: " + Nd4j.getAffinityManager().getDeviceForArray(steady));
+                        deviceData.put(x, Nd4j.getAffinityManager().getDeviceForArray(x));
+                        deviceData.put(steady, Nd4j.getAffinityManager().getDeviceForArray(steady));
+                        retVal.add(x);
+                    }
+                    Thread[] innerThreads = new Thread[4];
+                    for (int k = 0; k < 4; ++k) {
+                        innerThreads[k] = new Thread() {
+                            @Override
+                            public void run() {
+                                for (val res : retVal) {
+                                    assertEquals(deviceData.get(res), Nd4j.getAffinityManager().getDeviceForArray(res));
+                                    assertEquals(deviceData.get(steady), Nd4j.getAffinityManager().getDeviceForArray(steady));
+                                }
+                            }
+                        };
+                        innerThreads[k].start();
+                    }
+                    try {
+                        for (int k = 0; k < 4; ++k) {
+                            innerThreads[k].join();
+                        }
+                    } catch (InterruptedException e) {
+                        log.info(e.getMessage());
+                    }
+                    return retVal;
+                }
+            });
+
+            try {
+                List<INDArray> resArray = results[i].get();
+                for (val res : resArray) {
+                    assertEquals(deviceData.get(res), Nd4j.getAffinityManager().getDeviceForArray(res));
+                    assertEquals(deviceData.get(steady), Nd4j.getAffinityManager().getDeviceForArray(steady));
+                }
+            } catch (Exception e) {
+                log.info(e.getMessage());
+            }
+        }
+    }
+
+    @Test
+    public void testEventsRelease() {
+        FlowController controller = AtomicAllocator.getInstance().getFlowController();
+        long currEventsNumber = controller.getEventsProvider().getEventsNumber();
+
+        INDArray x = Nd4j.rand(1,10);
+        controller.prepareAction(x);
+        assertEquals(currEventsNumber+1, controller.getEventsProvider().getEventsNumber());
+
+        INDArray arg1 = Nd4j.rand(1,100);
+        INDArray arg2 = Nd4j.rand(1,200);
+        INDArray arg3 = Nd4j.rand(1,300);
+        controller.prepareAction(x, arg1, arg2, arg3);
+        assertEquals(currEventsNumber+5, controller.getEventsProvider().getEventsNumber());
+    }
+
+    @Test
+    public void testReleaseContext() {
+        LimitedContextPool pool = (LimitedContextPool) AtomicAllocator.getInstance().getContextPool();
+        System.out.println(pool.acquireContextForDevice(0));
+        INDArray x = Nd4j.rand(1,10);
+        pool.releaseContext(pool.getContextForDevice(0));
+        System.out.println(pool.getContextForDevice(0));
+    }
+
+    @Test
+    public void testDataBuffers() {
+        INDArray x = Nd4j.create(DataType.FLOAT, 10, 5);
+        val pointX = AtomicAllocator.getInstance().getAllocationPoint(x.shapeInfoDataBuffer());
+        assertEquals(50, x.data().capacity());
+        x.data().destroy();
+        assertNull(x.data());
+        assertEquals(64, pointX.getShape().getNumberOfBytes());
+        System.out.println(pointX.getHostPointer());
+        System.out.println(pointX.getDevicePointer());
     }
 }

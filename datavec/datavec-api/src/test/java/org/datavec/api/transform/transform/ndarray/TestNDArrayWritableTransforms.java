@@ -26,6 +26,7 @@ import org.datavec.api.writable.NDArrayWritable;
 import org.datavec.api.writable.Text;
 import org.datavec.api.writable.Writable;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -78,14 +79,14 @@ public class TestNDArrayWritableTransforms {
         assertEquals(expColNames, tp.getFinalSchema().getColumnNames());
 
 
-        List<Writable> in = Arrays.<Writable>asList(new DoubleWritable(0), new NDArrayWritable(Nd4j.linspace(0, 9, 10)),
-                        new NDArrayWritable(Nd4j.valueArrayOf(1, 10, 2.0)));
+        List<Writable> in = Arrays.<Writable>asList(new DoubleWritable(0), new NDArrayWritable(Nd4j.linspace(DataType.DOUBLE,0, 10, 1).reshape(1,10)),
+                        new NDArrayWritable(Nd4j.valueArrayOf(1, 10, 2.0).castTo(DataType.DOUBLE)));
         List<Writable> out = tp.execute(in);
 
         List<Writable> exp =
-                        Arrays.<Writable>asList(new DoubleWritable(0), new NDArrayWritable(Nd4j.linspace(0, 9, 10)),
-                                        new NDArrayWritable(Nd4j.valueArrayOf(1, 10, 2.0)),
-                                        new NDArrayWritable(Nd4j.linspace(0, 9, 10).addi(2.0)));
+                        Arrays.<Writable>asList(new DoubleWritable(0), new NDArrayWritable(Nd4j.linspace(DataType.DOUBLE,0, 10, 1).reshape(1,10)),
+                                        new NDArrayWritable(Nd4j.valueArrayOf(1, 10, 2.0).castTo(DataType.DOUBLE)),
+                                        new NDArrayWritable(Nd4j.linspace(DataType.DOUBLE, 0, 10, 1).addi(2.0).reshape(1,10)));
 
         assertEquals(exp, out);
     }

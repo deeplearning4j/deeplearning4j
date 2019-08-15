@@ -8,7 +8,7 @@ weight: 3
 
 # Variables in `SameDiff`
 
-##What are variables
+## What are variables
 
 All values defining or passing through each `SameDiff` instance - be it weights, bias, inputs, activations or 
 general parameters - all are handled by objects of class `SDVariable`. 
@@ -16,7 +16,7 @@ general parameters - all are handled by objects of class `SDVariable`.
 Observe that by variables we normally mean not just single values - as it is done in various online examples describing 
 autodifferentiation - but rather whole multidimensional arrays of them.
 
-##Variable types
+## Variable types
 
 All variables in `SameDiff` belong to one of four *variable types*, constituting an enumeration `VariableType`. 
 Here they are:
@@ -39,7 +39,7 @@ VariableType varType = yourVariable.getVariableType();
 The current value of a variable in a form of `INDArray` may be obtained using `getArr` or `getArr(true)` - the latter 
 one if you wish the program to throw an exception if the variable's value is not initialized. 
 
-##Data types
+## Data types
 
 The data within each variable also has its *data type*, contained in `DataType` enum. Currently in `DataType` there 
 are three *floating point* types: `FLOAT`, `DOUBLE` and `HALF`; four *integer* types: `LONG`, `INT`, `SHORT` and 
@@ -59,7 +59,8 @@ will require its `SDVariable` arguments `input` and `weights` to be of one of th
 throw an exception otherwise. Also, as we shall discuss just below, all the `SDVariables` of type `VARIABLE` are 
 supposed to be of floating point type.
 
-##Common features of variables
+## Common features of variables
+
 Before we go to the differences between variables, let us first look at the properties they all share 
 - All variables are ultimately derived from an instance of `SameDiff`, serving as parts of its 
 [graph](./samediff/graphs). In fact, each variable has a `SameDiff` as one of its fields.
@@ -68,7 +69,7 @@ Before we go to the differences between variables, let us first look at the prop
 - All variables may or may not be given names - in the latter case, a name is actually created automatically. Either
 way, the names need to be/are created unique. We shall come back to naming below.
 
-##Differences between variable types
+## Differences between variable types
 
 Let us now have a closer look at each type of variables, and what distinguish them from each other.
 
@@ -87,6 +88,7 @@ SDVariable weights = samediff.var("weights", DataType.FLOAT, 784, 10);
 ```
 adds a variable constituting of a 784x10 array of `float` numbers - weights for a single layer MNIST perceptron 
 in this case - to a pre-existing `SameDiff` instance `samediff`.
+
 However, this way the values within a variable will be set as zeros. You may also create a variable with values from
 a preset `INDArray`. Say
 ```java
@@ -95,10 +97,12 @@ SDVariable weights = samediff.var("weigths", Nd4j.nrand(784, 10).div(28));
 will create a variable filled with normally distributed randomly generated numbers with variance `1/28`. You may put
 any other array creation methods instead of `nrand`, or any preset array, of course. Also, you may use some popular 
 initialization scheme, like so:
+
 ```java
 SDVariable weights = samediff.var("weights", new XavierInitScheme('c', 784, 10), DataType.FLOAT, 784, 10);
 ```
 Now, the weights will be randomly initialized using the Xavier scheme. There are other ways to create and 
+
 fill variables: you may look them up in the 'known subclasses' section [of our javadoc](https://deeplearning4j.org/api/latest/org/nd4j/weightinit/WeightInitScheme.html").
 
 ### Constants
@@ -143,7 +147,7 @@ of `VARIABLE`'s.
 There are as many ways array-type variables are created as there are operations, so you're better up focusing on
 our [operations section](./samediff/ops), our [javadoc](https://deeplearning4j.org/api/latest/) and [examples](./samediff/exampes).
 
-##Recap table
+## Recap table
 
 Let us summarize the main properties of variable types in one table:
 
@@ -188,10 +192,10 @@ For now it is not possible to turn a constant back into a placeholder, we may co
 there is a need for that. For now, if you wish to effectively freeze your placeholder but be able to use it again, 
 consider supplying it with constant values rather than turning it into a constant.
 
-##Variables' names and values
+## Variables' names and values
 ### Getting variables from `SameDiff`
 Recall that every variable in an instance of `SameDiff` has its unique `String` name. Your `SameDiff` actually tracks your 
-variables by their names, and allows you to retrieve them by using `getVaraible(String name)` method.
+variables by their names, and allows you to retrieve them by using `getVariable(String name)` method.
 
 Consider the following line:
 ```java

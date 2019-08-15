@@ -81,6 +81,6 @@ public class LogX extends BaseScalarOp {
 
     @Override
     public String tensorflowName() {
-        return "LogX";
+        throw new NoOpNameFoundException("No TensorFlow op found for " + getClass().getSimpleName());
     }
 }

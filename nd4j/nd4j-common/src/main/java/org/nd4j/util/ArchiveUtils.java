@@ -158,11 +158,28 @@ public class ArchiveUtils {
     /**
      * List all of the files and directories in the specified tar.gz file
      *
+     * @param tarFile A .tar file
+     * @return List of files and directories
+     */
+    public static List<String> tarListFiles(File tarFile) throws IOException {
+        Preconditions.checkState(!tarFile.getPath().endsWith(".tar.gz"), ".tar.gz files should not use this method - use tarGzListFiles instead");
+        return tarGzListFiles(tarFile, false);
+    }
+
+    /**
+     * List all of the files and directories in the specified tar.gz file
+     *
      * @param tarGzFile A tar.gz file
      * @return List of files and directories
      */
     public static List<String> tarGzListFiles(File tarGzFile) throws IOException {
-        try(TarArchiveInputStream tin = new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(tarGzFile))))) {
+        return tarGzListFiles(tarGzFile, true);
+    }
+
+    protected static List<String> tarGzListFiles(File file, boolean isTarGz) throws IOException {
+        try(TarArchiveInputStream tin =
+                    isTarGz ? new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(file)))) :
+                            new TarArchiveInputStream(new BufferedInputStream(new FileInputStream(file)))) {
             ArchiveEntry entry;
             List<String> out = new ArrayList<>();
             while((entry = tin.getNextTarEntry()) != null){
@@ -218,7 +235,6 @@ public class ArchiveUtils {
     public static void tarGzExtractSingleFile(File tarGz, File destination, String pathInTarGz) throws IOException {
         try(TarArchiveInputStream tin = new TarArchiveInputStream(new GZIPInputStream(new BufferedInputStream(new FileInputStream(tarGz))))) {
             ArchiveEntry entry;
-            List<String> out = new ArrayList<>();
             boolean extracted = false;
             while((entry = tin.getNextTarEntry()) != null){
                 String name = entry.getName();

@@ -24,6 +24,7 @@ import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,13 +43,19 @@ public class DataSetIteratorSplitter {
     protected DataSetIterator backedIterator;
     protected final long totalExamples;
     protected final double ratio;
+    protected final double[] ratios;
     protected final long numTrain;
     protected final long numTest;
+    protected final long numArbitrarySets;
+    protected final int[] splits;
+
 
     protected AtomicLong counter = new AtomicLong(0);
 
     protected AtomicBoolean resetPending = new AtomicBoolean(false);
     protected DataSet firstTrain = null;
+
+    protected int partNumber = 0;
 
     /**
      * The only constructor
@@ -71,17 +78,94 @@ public class DataSetIteratorSplitter {
         this.backedIterator = baseIterator;
         this.totalExamples = totalBatches;
         this.ratio = ratio;
+        this.ratios = null;
         this.numTrain = (long) (totalExamples * ratio);
         this.numTest = totalExamples - numTrain;
+        this.numArbitrarySets = 2;
+        this.splits = null;
 
         log.warn("IteratorSplitter is used: please ensure you don't use randomization/shuffle in underlying iterator!");
     }
+
+    public DataSetIteratorSplitter(@NonNull DataSetIterator baseIterator, long totalBatches, double[] ratios) {
+        for (double ratio : ratios) {
+            if (!(ratio > 0.0 && ratio < 1.0))
+                throw new ND4JIllegalStateException("Ratio value should be in range of 0.0 > X < 1.0");
+        }
+
+        if (totalBatches < 0)
+            throw new ND4JIllegalStateException("totalExamples number should be positive value");
+
+        if (!baseIterator.resetSupported())
+            throw new ND4JIllegalStateException("Underlying iterator doesn't support reset, so it can't be used for runtime-split");
+
+
+        this.backedIterator = baseIterator;
+        this.totalExamples = totalBatches;
+        this.ratio = 0.0;
+        this.ratios = ratios;
+        this.numTrain = 0; //(long) (totalExamples * ratio);
+        this.numTest = 0; //totalExamples - numTrain;
+        this.numArbitrarySets = ratios.length;
+
+        this.splits = new int[this.ratios.length];
+        for (int i = 0; i < this.splits.length; ++i) {
+            this.splits[i] = (int)(totalExamples * ratios[i]);
+        }
+
+        log.warn("IteratorSplitter is used: please ensure you don't use randomization/shuffle in underlying iterator!");
+    }
+
+    public DataSetIteratorSplitter(@NonNull DataSetIterator baseIterator, int[] splits) {
+
+        /*if (!(simpleRatio > 0.0 && simpleRatio < 1.0))
+           throw new ND4JIllegalStateException("Ratio value should be in range of 0.0 > X < 1.0");*/
+
+        int totalBatches = 0;
+        for (val v:splits)
+            totalBatches += v;
+
+        if (totalBatches < 0)
+            throw new ND4JIllegalStateException("totalExamples number should be positive value");
+
+        if (!baseIterator.resetSupported())
+            throw new ND4JIllegalStateException("Underlying iterator doesn't support reset, so it can't be used for runtime-split");
+
+
+        this.backedIterator = baseIterator;
+        this.totalExamples = totalBatches;
+        this.ratio = 0.0;
+        this.ratios = null;
+
+        this.numTrain = 0; //(long) (totalExamples * ratio);
+        this.numTest = 0; //totalExamples - numTrain;
+        this.splits = splits;
+        this.numArbitrarySets = splits.length;
+
+        log.warn("IteratorSplitter is used: please ensure you don't use randomization/shuffle in underlying iterator!");
+    }
+
+    public List<DataSetIterator> getIterators() {
+        List<DataSetIterator> retVal = new ArrayList<>();
+        int partN = 0;
+        int bottom = 0;
+        for (final int split : splits) {
+                ScrollableDataSetIterator partIterator =
+                        new ScrollableDataSetIterator(partN++, backedIterator, counter, resetPending, firstTrain,
+                                new int[]{bottom,split});
+                bottom += split;
+                retVal.add(partIterator);
+        }
+        return retVal;
+    }
+
 
     /**
      * This method returns train iterator instance
      *
      * @return
      */
+    @Deprecated
     public DataSetIterator getTrainIterator() {
         return new DataSetIterator() {
             @Override
@@ -184,6 +268,7 @@ public class DataSetIteratorSplitter {
      *
      * @return
      */
+    @Deprecated
     public DataSetIterator getTestIterator() {
         return new DataSetIterator() {
             @Override

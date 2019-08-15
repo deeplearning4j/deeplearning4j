@@ -24,6 +24,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.concurrency.AffinityManager;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.memory.enums.AllocationPolicy;
@@ -31,7 +32,7 @@ import org.nd4j.linalg.api.memory.enums.LearningPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import sun.awt.image.DataBufferNative;
+
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -103,7 +104,7 @@ public class DataBufferTests extends BaseNd4jTest {
                 assertEquals(useWs, i.isAttached());
                 testDBOps(i);
 
-                i = Nd4j.createBuffer(new int[]{1, 2, 3}, 0);
+                i = Nd4j.createBuffer(new int[]{1, 2, 3});
                 checkTypes(DataType.INT, i, 3);
                 assertEquals(useWs, i.isAttached());
                 testDBOps(i);
@@ -288,6 +289,8 @@ public class DataBufferTests extends BaseNd4jTest {
                     continue;
                 }
 
+                log.info("Testing source [{}]; target: [{}]", sourceType, dt);
+
                 for (boolean useWs : new boolean[]{false, true}) {
 
                     try (MemoryWorkspace ws = (useWs ? workspace.notifyScopeEntered() : null)) {
@@ -334,7 +337,6 @@ public class DataBufferTests extends BaseNd4jTest {
                         assertFalse(db2.isAttached());
 
                         if(!sourceType.equals("boolean")){
-                            log.info("Testing source [{}]; target: [{}]", sourceType, dt);
                             testDBOps(db1);
                             testDBOps(db2);
                         }
@@ -374,6 +376,8 @@ public class DataBufferTests extends BaseNd4jTest {
             ByteBuffer bb = arr2.data().pointer().asByteBuffer();
             bb.position(0);
             bb.put(b);
+
+            Nd4j.getAffinityManager().tagLocation(arr2, AffinityManager.Location.HOST);
 
             assertEquals(arr.toString(), arr2.toString());
             assertEquals(arr, arr2);

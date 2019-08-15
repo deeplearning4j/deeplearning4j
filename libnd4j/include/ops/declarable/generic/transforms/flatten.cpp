@@ -42,7 +42,7 @@ namespace nd4j {
             }
 
             char order = (char) INT_ARG(0);
-            helpers::flatten(arrays, output, order);
+            helpers::flatten(block.launchContext(), arrays, output, order);
 
             return Status::OK();
         }

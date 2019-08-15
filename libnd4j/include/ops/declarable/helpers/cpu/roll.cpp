@@ -90,7 +90,7 @@ namespace helpers {
         if (!inplace)
             output->assign(input);
 
-        auto source = input;
+        auto source = output; //input;
         for (int axe: axes) {
             if (axe == source->rankOf() - 1) {// last dimension
                 std::unique_ptr<ResultSet> listOfTensors(source->allTensorsAlongDimension({axe}));
@@ -145,8 +145,8 @@ namespace helpers {
                     }
                 }
             }
-            if (!inplace)
-                source = output;
+//            if (!inplace)
+//                source = output;
         }
     }
 

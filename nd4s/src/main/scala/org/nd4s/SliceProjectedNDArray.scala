@@ -18,7 +18,7 @@ package org.nd4s
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.indexing.{ NDArrayIndex, SpecifiedIndex }
 
-class SliceProjectedNDArray(val array: INDArray, filtered: Array[Int]) {
+class SliceProjectedNDArray(val array: INDArray, val filtered: Array[Int]) {
   def this(ndarray: INDArray) {
     this(ndarray, (0 until ndarray.slices().toInt).toArray)
   }

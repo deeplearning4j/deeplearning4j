@@ -370,7 +370,7 @@ public class AtomicAllocator implements Allocator {
         //Nd4j.getExecutioner().push();
 
         // we don't synchronize constant buffers, since we assume they are always valid on host side
-        if (buffer.isConstant() || buffer.dataType() == DataType.UTF8) {
+        if (buffer.isConstant() || buffer.dataType() == DataType.UTF8 || AtomicAllocator.getInstance().getAllocationPoint(buffer).getPointers().getHostPointer() == null) {
             return;
         }
 
@@ -485,7 +485,6 @@ public class AtomicAllocator implements Allocator {
 
         if (buffer.isAttached()) {
             long reqMem = AllocationUtils.getRequiredMemory(requiredMemory);
-            //log.info("Allocating {} bytes from attached memory...", reqMem);
 
             // workaround for init order
             getMemoryHandler().getCudaContext();
@@ -494,17 +493,16 @@ public class AtomicAllocator implements Allocator {
             val workspace = (CudaWorkspace) Nd4j.getMemoryManager().getCurrentWorkspace();
 
             val pair = new PointersPair();
-
             val ptrDev = workspace.alloc(reqMem, MemoryKind.DEVICE, requiredMemory.getDataType(), initialize);
-            //val addr = ptrDev.address();
-            //log.info("Allocated device pointer: {}; Divider: {}; ReqMem: {}; ReqMem divider: {};", addr, addr % 8, reqMem, reqMem % 8);
-            val ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
 
-            pair.setHostPointer(ptrHost);
             if (ptrDev != null) {
                 pair.setDevicePointer(ptrDev);
                 point.setAllocationStatus(AllocationStatus.DEVICE);
             } else {
+                // we allocate initial host pointer only
+                val ptrHost = workspace.alloc(reqMem, MemoryKind.HOST, requiredMemory.getDataType(), initialize);
+                pair.setHostPointer(ptrHost);
+
                 pair.setDevicePointer(ptrHost);
                 point.setAllocationStatus(AllocationStatus.HOST);
             }
@@ -521,6 +519,7 @@ public class AtomicAllocator implements Allocator {
         allocationsMap.put(allocId, point);
         //point.tickHostRead();
         point.tickDeviceWrite();
+        //point.setAllocationStatus(location);
         return point;
     }
 
@@ -530,7 +529,7 @@ public class AtomicAllocator implements Allocator {
      * @param objectId
      * @return
      */
-    protected AllocationPoint getAllocationPoint(Long objectId) {
+    protected AllocationPoint getAllocationPoint(@NonNull Long objectId) {
         return allocationsMap.get(objectId);
     }
 

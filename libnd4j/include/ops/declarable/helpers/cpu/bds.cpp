@@ -30,11 +30,20 @@ namespace helpers {
 
 
         if (x_shape->lengthOf() == 1 || y_shape->lengthOf() == 1) {// except case
-            auto lesser = (x_shape->lengthOf() == 1 ? x_shape: y_shape);
-            auto greater = (x_shape->lengthOf() == 1 ? y_shape: x_shape);
-            output->assign(greater);
-
-            output->p(greater->lengthOf() - 1, lesser->e(0L));
+            // lenght are equals
+            if (x_shape->lengthOf() == y_shape->lengthOf()) {
+                auto greater = (x_shape->e<Nd4jLong>(0) < y_shape->e<Nd4jLong>(0) ? y_shape : x_shape);
+                output->assign(greater);
+            }
+            else {
+                auto lesser = (x_shape->lengthOf() == 1 ? x_shape : y_shape);
+                auto greater = (x_shape->lengthOf() == 1 ? y_shape : x_shape);
+                output->assign(greater);
+                auto lastG = greater->lengthOf() - 1;
+                auto lastL = lesser->lengthOf() - 1;
+                if (greater->e<Nd4jLong>(lastG) < lesser->e<Nd4jLong>(lastL))
+                    output->p(lastG, lesser->e(lastL));
+            }
         }
         else {
             //int e = 0, x = 0, y = 0;
@@ -52,13 +61,6 @@ namespace helpers {
                     val = nd4j::math::nd4j_max(x_shape->e<Nd4jLong>(xLen - 1), y_shape->e<Nd4jLong>(e));
                 }
 
-//                if (e)
-//                    if (val != output->e<Nd4jLong>(e - 1)) {
-//                        nd4j_printf(
-//                                "broadcast_dynamic_shape: Input shapes should be compatible, but %lld and %lld were given.\n",
-//                                val, output->e<Nd4jLong>(e - 1));
-//                        return Status::CODE(ND4J_STATUS_VALIDATION, "broadcast_dynamic_shape: BDS validation failed!");
-//                    }
                 output->p(e, val);
             }
         }

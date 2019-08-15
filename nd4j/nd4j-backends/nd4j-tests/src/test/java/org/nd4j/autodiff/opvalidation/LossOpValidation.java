@@ -163,7 +163,7 @@ public class LossOpValidation extends BaseOpValidation {
                             //Loss loss aka binary cross entropy loss
                             //Labels are random bernoulli
                             Nd4j.getExecutioner().exec(new BernoulliDistribution(labelsArr, 0.5));
-                            predictionsArr = Nd4j.rand(predictionsArr.shape());
+                            predictionsArr = Nd4j.rand(predictionsArr.shape()).muli(0.8).addi(0.1);
                             INDArray logP = Transforms.log(predictionsArr.add(eps), true);
                             INDArray log1p = Transforms.log(predictionsArr.rsub(1.0).add(eps), true);
                             expOut = labelsArr.mul(logP).addi(labelsArr.rsub(1).mul(log1p)).negi();

@@ -54,7 +54,7 @@ public abstract class BaseNetScoreFunction implements ScoreFunction {
                 ds.configure(dataSourceProperties);
             }
         } catch (Exception e){
-            throw new RuntimeException(e);
+            throw new RuntimeException("Error creating DataSource instance - missing no-arg constructor?", e);
         }
         return score(model, ds.testData());
     }

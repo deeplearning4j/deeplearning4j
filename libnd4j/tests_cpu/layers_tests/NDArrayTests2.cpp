@@ -678,8 +678,7 @@ TEST_F(NDArrayTest2, permute_test4) {
     // arr1P->printShapeInfo();
 
     // ASSERT_TRUE(arr1.isSameShapeStrict(&arr2));
-    ASSERT_TRUE(arr1P->isSameShapeStrict(&arr2));
-    delete arr1P;
+    ASSERT_TRUE(arr1P.isSameShapeStrict(&arr2));
     delete []arr1Buffer;
     delete []arr2Buffer;
 }
@@ -1320,4 +1319,21 @@ TEST_F(NDArrayTest2, test_trueBroadcast_empty_2) {
     auto z = y + x;
 
     ASSERT_EQ(x, z);
+}
+
+TEST_F(NDArrayTest2, test_subarray_followed_by_reshape_1) {
+
+    NDArray x('c', {5, 1, 3}, nd4j::DataType::FLOAT32);
+    NDArray e('c', {1, 3}, {7.f, 8.f, 9.f}, nd4j::DataType::FLOAT32);
+
+    x.linspace(1.);
+
+    auto s = x({2,3, 0,0, 0,0});
+
+    // s.printIndexedBuffer("s");
+
+    auto r = s.reshape(x.ordering(), {1, 3});
+    // r.printIndexedBuffer("r");
+
+    ASSERT_EQ(e, r);
 }

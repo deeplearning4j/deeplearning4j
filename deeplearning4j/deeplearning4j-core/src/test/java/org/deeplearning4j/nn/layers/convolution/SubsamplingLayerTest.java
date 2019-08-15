@@ -155,7 +155,7 @@ public class SubsamplingLayerTest extends BaseDL4JTest {
     }
 
 
-    @Test(expected = IllegalStateException.class)
+    @Test(expected = UnsupportedOperationException.class)
     public void testSubSampleLayerSumBackprop() throws Exception {
         Layer layer = getSubsamplingLayer(SubsamplingLayer.PoolingType.SUM);
         INDArray input = getData();

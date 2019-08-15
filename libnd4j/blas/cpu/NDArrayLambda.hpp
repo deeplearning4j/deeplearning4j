@@ -39,7 +39,7 @@ void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::
         if (f == z) {
 
             PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < _length; e++) {
+            for (Nd4jLong e = 0; e < _length; e++) {
 
                 auto tOffset = this->getOffset(e);
                 auto uOffset = second->getOffset(e);
@@ -50,7 +50,7 @@ void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::
         } else {
 
             PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < _length; e++) {
+            for (Nd4jLong e = 0; e < _length; e++) {
 
                 auto tOffset = this->getOffset(e);
                 auto uOffset = second->getOffset(e);
@@ -104,13 +104,13 @@ void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T,
     if (this->ordering() == other->ordering() && this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1) && this->ews() == other->ews()) {
 
         PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int e = 0; e < _length; e++)
+        for (Nd4jLong e = 0; e < _length; e++)
             z[e] = func(f[e], s[e]);
     } else {
         if (f == z) {
 
             PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < _length; e++) {
+            for (Nd4jLong e = 0; e < _length; e++) {
 
                 auto xOffset = this->getOffset(e);
                 auto yOffset = other->getOffset(e);
@@ -120,7 +120,7 @@ void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T,
         } else {
 
             PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < _length; e++) {
+            for (Nd4jLong e = 0; e < _length; e++) {
 
                 auto xOffset = this->getOffset(e);
                 auto yOffset = other->getOffset(e);

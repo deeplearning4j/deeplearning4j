@@ -48,10 +48,7 @@ namespace nd4j {
                 //nd4j_debug("Reshaping to: [%i, %i]\n", -1, (int) bias->lengthOf());
                 auto tArr = input->reshape(input->ordering(), shape);
                 auto zArr = z->reshape(z->ordering(), shape);
-                tArr->addRowVector(bias, zArr);
-
-                delete tArr;
-                delete zArr;
+                tArr.addRowVector(bias, &zArr);
             }
 
             STORE_RESULT(*z);
@@ -87,13 +84,12 @@ namespace nd4j {
             // cnn case
             if (input->rankOf() == 4) {
                 auto epsilonNext2d = epsilonNext->permute({1, 0, 2, 3});
-                epsilonNext2d->reshapei('c', {(int) bias->lengthOf(), -1});
+                epsilonNext2d.reshapei('c', {(int) bias->lengthOf(), -1});
 
-                auto sum = epsilonNext2d->reduceAlongDimension(reduce::Sum, {1});
+                auto sum = epsilonNext2d.reduceAlongDimension(reduce::Sum, {1});
                 gradB->assign(sum);
 
                 delete sum;
-                delete epsilonNext2d;
             } else if (input->rankOf() == 2) {
                 // regular fully-connected case
                 auto sum = epsilonNext->reduceAlongDimension(reduce::Sum, {0});

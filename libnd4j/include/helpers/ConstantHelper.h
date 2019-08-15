@@ -44,6 +44,8 @@ namespace nd4j {
         std::vector<Nd4jPointer> _devicePointers;
         std::vector<Nd4jLong> _deviceOffsets;
         std::mutex _mutex;
+
+        std::vector<Nd4jLong> _counters;
     public:
         ~ConstantHelper() = default;
 
@@ -53,6 +55,8 @@ namespace nd4j {
         void* replicatePointer(void *src, size_t numBytes, memory::Workspace *workspace = nullptr);
 
         ConstantDataBuffer* constantBuffer(const ConstantDescriptor &descriptor, nd4j::DataType dataType);
+
+        Nd4jLong getCachedAmount(int deviceId);
     };
 }
 

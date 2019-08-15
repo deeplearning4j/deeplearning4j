@@ -42,8 +42,9 @@ namespace nd4j {
         }
         DECLARE_TYPES(unsorted_segment_max) {
             getOpDescriptor()
-                ->setAllowedOutputTypes(nd4j::DataType::ANY)
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
+                ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+                ->setAllowedInputTypes(1, {ALL_INTS})
                 ->setSameMode(true);
         }
         DECLARE_SHAPE_FN(unsorted_segment_max) {
@@ -73,7 +74,9 @@ namespace nd4j {
             getOpDescriptor()
                     ->setAllowedOutputTypes(0, {ALL_FLOATS})
 					->setAllowedOutputTypes(1, {ALL_INTS})
-                    ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setAllowedInputTypes(2, {ALL_FLOATS})
                     ->setSameMode(false);
         }
 

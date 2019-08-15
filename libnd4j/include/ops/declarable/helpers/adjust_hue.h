@@ -15,120 +15,204 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
 #include <NDArray.h>
 
-namespace nd4j {
-namespace ops {
+namespace nd4j    {
+namespace ops     {
 namespace helpers {
-    template <typename T>
-    static FORCEINLINE void rgb_to_hv(nd4j::LaunchContext * context, T r, T g, T b, T* h, T* v_min, T* v_max) {
-        T v_mid;
-        int h_category;
-        // According to the figures in:
-        // https://en.wikipedia.org/wiki/HSL_and_HSV#Hue_and_chroma
-        // For the conditions, we don't care about the case where two components are
-        // equal. It is okay to count it in either side in that case.
-        if (r < g) {
-            if (b < r) {
-            // b < r < g
-                *v_max = g;
-                v_mid = r;
-                *v_min = b;
-                h_category = 1;
-            } else if (b > g) {
-            // r < g < b
-                *v_max = b;
-                v_mid = g;
-                *v_min = r;
-                h_category = 3;
-            } else {
-            // r < b < g
-                *v_max = g;
-                v_mid = b;
-                *v_min = r;
-                h_category = 2;
-            }
+
+
+    void adjustHue(nd4j::LaunchContext* context, const NDArray *input, const NDArray* deltaScalarArr, NDArray *output, const int dimC);
+
+
+
+////////////////////////////////////////////////////////////////////////////////
+template <typename T>
+FORCEINLINE _CUDA_HD void rgbToHsv(const T& r, const T& g, const T& b, T& h, T& s, T& v) {
+
+    // h values are in range [0, 360)
+    // s and v values are in range [0, 1]
+
+    const T max = nd4j::math::nd4j_max<T>(r, nd4j::math::nd4j_max<T>(g, b));
+    const T min = nd4j::math::nd4j_min<T>(r, nd4j::math::nd4j_min<T>(g, b));
+    const T c  = max - min;
+
+    // calculate h
+    if(c == 0) {
+        h = 0;
+    }
+    else if(max == r) {
+        h = 60.f * ((g - b) / c) + (g >= b ? 0 : 360);
+    }
+    else if(max == g) {
+        h = 60.f * ((b - r) / c) + 120;
+    }
+    else { // max == b
+        h = 60.f * ((r - g) / c) + 240;
+    }
+
+    // calculate s
+    s = max == (T)0 ? (T)0 : c / max;
+
+    // calculate v
+    v = max / 255.f;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+template <typename T>
+FORCEINLINE _CUDA_HD void hsvToRgb(const T& h, const T& s, const T& v, T& r, T& g, T& b) {
+
+    const float sector = h / 60.f;
+    const T c = v * s;
+
+    if(0.f <= sector && sector < 1.f) {
+        r = v;
+        g = v - c * (1 - sector);
+        b = v - c;
+    }
+    else if(1.f <= sector && sector < 2.f) {
+        r = v - c * (sector - 1);
+        g = v;
+        b = v - c;
+    }
+    else if(2.f <= sector && sector < 3.f) {
+        r = v - c;
+        g = v;
+        b = v - c * (3 - sector);
+    }
+    else if(3.f <= sector && sector < 4.f) {
+        r = v - c;
+        g = v - c * (sector - 3);
+        b = v;
+    }
+    else if(4.f <= sector && sector < 5.f) {
+        r = v - c * (5 - sector);
+        g = v - c;
+        b = v;
+    }
+    else {      // 5.f <= sector < 6.f
+        r = v;
+        g = v - c;
+        b = v - c * (sector - 5);
+    }
+
+    r *= 255;
+    g *= 255;
+    b *= 255;
+}
+
+/*////////////////////////////////////////////////////////////////////////////////
+template <typename T>
+static FORCEINLINE _CUDA_HD void rgb_to_hv(T r, T g, T b, T* h, T* v_min, T* v_max) {
+    T v_mid;
+    int h_category;
+    // According to the figures in:
+    // https://en.wikipedia.org/wiki/HSL_and_HSV#Hue_and_chroma
+    // For the conditions, we don't care about the case where two components are
+    // equal. It is okay to count it in either side in that case.
+    if (r < g) {
+        if (b < r) {
+        // b < r < g
+            *v_max = g;
+            v_mid = r;
+            *v_min = b;
+            h_category = 1;
+        } else if (b > g) {
+        // r < g < b
+            *v_max = b;
+            v_mid = g;
+            *v_min = r;
+            h_category = 3;
         } else {
-        // g < r
-            if (b < g) {
-            // b < g < r
-                *v_max = r;
-                v_mid = g;
-                *v_min = b;
-                h_category = 0;
-            } else if (b > r) {
-            // g < r < b
-                *v_max = b;
-                v_mid = r;
-                *v_min = g;
-                h_category = 4;
-            } else {
-            // g < b < r
-                *v_max = r;
-                v_mid = b;
-                *v_min = g;
-                h_category = 5;
-            }
+        // r < b < g
+            *v_max = g;
+            v_mid = b;
+            *v_min = r;
+            h_category = 2;
         }
-        if (*v_max == *v_min) {
-            *h = 0;
-            return;
-        }
-        auto ratio = (v_mid - *v_min) / (*v_max - *v_min);
-        bool increase = ((h_category & 0x1) == 0);
-        *h = h_category + (increase ? ratio : (1 - ratio));
-    }
-
-    template <typename T>
-    static FORCEINLINE void hv_to_rgb(nd4j::LaunchContext * context, T h, T v_min, T v_max, T* r, T* g, T* b) {
-        int h_category = static_cast<int>(h);
-        T ratio = h - (T)h_category;
-        bool increase = ((h_category & 0x1) == 0);
-        if (!increase)
-            ratio = 1 - ratio;
-        
-        T v_mid = v_min + ratio * (v_max - v_min);
-        // According to the figures in:
-        // https://en.wikipedia.org/wiki/HSL_and_HSV#Hue_and_chroma
-        switch (h_category) {
-            case 0:
-                *r = v_max;
-                *g = v_mid;
-                *b = v_min;
-            break;
-            case 1:
-                *r = v_mid;
-                *g = v_max;
-                *b = v_min;
-            break;
-            case 2:
-                *r = v_min;
-                *g = v_max;
-                *b = v_mid;
-            break;
-            case 3:
-                *r = v_min;
-                *g = v_mid;
-                *b = v_max;
-            break;
-            case 4:
-                *r = v_mid;
-                *g = v_min;
-                *b = v_max;
-            break;
-            case 5:
-            default:
-                *r = v_max;
-                *g = v_min;
-                *b = v_mid;
+    } else {
+    // g < r
+        if (b < g) {
+        // b < g < r
+            *v_max = r;
+            v_mid = g;
+            *v_min = b;
+            h_category = 0;
+        } else if (b > r) {
+        // g < r < b
+            *v_max = b;
+            v_mid = r;
+            *v_min = g;
+            h_category = 4;
+        } else {
+        // g < b < r
+            *v_max = r;
+            v_mid = b;
+            *v_min = g;
+            h_category = 5;
         }
     }
+    if (*v_max == *v_min) {
+        *h = 0;
+        return;
+    }
+    auto ratio = (v_mid - *v_min) / (*v_max - *v_min);
+    bool increase = ((h_category & 0x1) == 0);
+    *h = h_category + (increase ? ratio : (1 - ratio));
+}
 
-    void _adjust_hue(nd4j::LaunchContext * context, NDArray *input, NDArray *output, NDArray *delta, bool isNHWC);
+////////////////////////////////////////////////////////////////////////////////
+template <typename T>
+static FORCEINLINE _CUDA_HD void hv_to_rgb(T h, T v_min, T v_max, T* r, T* g, T* b) {
+    int h_category = static_cast<int>(h);
+    T ratio = h - (T)h_category;
+    bool increase = ((h_category & 0x1) == 0);
+    if (!increase)
+        ratio = 1 - ratio;
+
+    T v_mid = v_min + ratio * (v_max - v_min);
+    // According to the figures in:
+    // https://en.wikipedia.org/wiki/HSL_and_HSV#Hue_and_chroma
+    switch (h_category) {
+        case 0:
+            *r = v_max;
+            *g = v_mid;
+            *b = v_min;
+        break;
+        case 1:
+            *r = v_mid;
+            *g = v_max;
+            *b = v_min;
+        break;
+        case 2:
+            *r = v_min;
+            *g = v_max;
+            *b = v_mid;
+        break;
+        case 3:
+            *r = v_min;
+            *g = v_mid;
+            *b = v_max;
+        break;
+        case 4:
+            *r = v_mid;
+            *g = v_min;
+            *b = v_max;
+        break;
+        case 5:
+        default:
+            *r = v_max;
+            *g = v_min;
+            *b = v_mid;
+    }
+}
+
+*/
 }
 }
 }

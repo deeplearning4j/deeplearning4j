@@ -29,7 +29,6 @@ namespace nd4j {
             auto x = INPUT_VARIABLE(0);
             auto y = INPUT_VARIABLE(1);
 
-            nd4j_printf("Comparing [%f] to [%f]\n", x->e<float>(0), y->e<float>(0));
             if (x->e<float>(0) < y->e<float>(0))
                 return ND4J_STATUS_TRUE;
             else

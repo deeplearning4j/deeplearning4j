@@ -37,6 +37,7 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldDivOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldSubOp;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -156,6 +157,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             try {
                 ret = helper.backpropGradient(in, eps, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
                         layerConf.getEps(), workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Throwable t){
                 if(t.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation
@@ -447,6 +450,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
                 ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
                         globalVarView, decay, layerConf.getEps(), workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Throwable t) {
                 if(t.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation

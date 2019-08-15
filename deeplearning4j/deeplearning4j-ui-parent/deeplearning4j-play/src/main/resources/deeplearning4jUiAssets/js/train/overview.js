@@ -20,6 +20,8 @@ function selectStdevChart(fieldName) {
         $("#stdevGradients").removeAttr("class");
         $("#stdevUpdates").attr("class", "active");
     }
+
+    renderOverviewPage(false);
 }
 
 /* ---------- Render page ---------- */

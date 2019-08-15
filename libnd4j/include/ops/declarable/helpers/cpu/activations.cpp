@@ -89,19 +89,19 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
         T sum = 0.;
         int length = shape::length(inShapeInfo);
 
-#pragma omp simd reduction(maxT:max)
+PRAGMA_OMP_SIMD_ARGS(reduction(OMP_MAXT:max))
         for (int i = 0; i < length; i++) {
             const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
             max = nd4j::math::nd4j_max<T>(max, inBuff[offset]);
         }
 
-#pragma omp parallel for simd reduction(sumT:sum)
+PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(reduction(OMP_SUMT:sum))
         for (int i = 0; i < length; i++) {
             const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
             outBuff[offset] = nd4j::math::nd4j_exp<T, T>(inBuff[offset] - max);
             sum += outBuff[offset];
         }
-#pragma omp simd
+PRAGMA_OMP_SIMD
         for (int i = 0; i < length; i++) {
             const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
             outBuff[offset] /= sum;
@@ -138,7 +138,7 @@ void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArr
     BUILD_SINGLE_SELECTOR(xType, softMaxForVector_, (input.getBuffer(), input.getShapeInfo(), output.buffer(), output.shapeInfo()), FLOAT_TYPES);
 }
 
-
+///////////////////////////////////////////////////////////////////
     template <typename T>
     void logSoftMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, Nd4jLong *outShapeInfo) {
         auto inBuff  = reinterpret_cast<T *>(input);
@@ -293,46 +293,46 @@ void softmax(nd4j::LaunchContext * context, const NDArray& input, NDArray& outpu
 }
 
 
-    //////////////////////////////////////////////////////////////////////////
-    void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
-        const Nd4jLong inputLen = input.lengthOf();
-        const Nd4jLong* inputShapeInfo = input.getShapeInfo();
-        const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
+//////////////////////////////////////////////////////////////////////////
+void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, NDArray& output) {
+    const Nd4jLong inputLen = input.lengthOf();
+    const Nd4jLong* inputShapeInfo = input.getShapeInfo();
+    const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(inputLen > Environment::getInstance()->elementwiseThreshold())
-        for(Nd4jLong i = 0; i < inputLen; ++i) {
-             // FIXME: double!
-            double x = input.e<double>(i);
-            if(x < 0.0) {
-                // FIXME: double
-                output.p(i, (x * alpha.e<double>(shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo))));
-            } else
-                output.p(i, x);
-        }
-    }
-
-    //////////////////////////////////////////////////////////////////////////
-    void preluBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
-
-        const Nd4jLong inputLen = input.lengthOf();
-        const Nd4jLong* inputShapeInfo = input.getShapeInfo();
-        const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
-
-        dLdA.assign(0.0f);
-
-        for(Nd4jLong i = 0; i < inputLen; ++i) {
+    PRAGMA_OMP_PARALLEL_FOR_IF(inputLen > Environment::getInstance()->elementwiseThreshold())
+    for(Nd4jLong i = 0; i < inputLen; ++i) {
+         // FIXME: double!
+        double x = input.e<double>(i);
+        if(x < 0.0) {
             // FIXME: double
-            double x   = input.e<double>(i);
-            double grO = dLdO.e<double>(i);
-            if(x < 0.0) {
-                Nd4jLong alphaInd = shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo);
-                dLdI.p(i, grO * alpha.e<double>(alphaInd));
-                double prevVal = dLdA.e<double>(alphaInd);
-                prevVal += (grO * x);
-                dLdA.p(alphaInd, prevVal );
-            }
-            else
-                dLdI.p(i, grO);
+            output.p(i, (x * alpha.e<double>(shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo))));
+        } else
+            output.p(i, x);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+void preluBP(nd4j::LaunchContext * context, const NDArray& input, const NDArray& alpha, const NDArray& dLdO, NDArray& dLdI, NDArray& dLdA) {
+
+    const Nd4jLong inputLen = input.lengthOf();
+    const Nd4jLong* inputShapeInfo = input.getShapeInfo();
+    const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
+
+    dLdA.assign(0.0f);
+
+    for(Nd4jLong i = 0; i < inputLen; ++i) {
+        // FIXME: double
+        double x   = input.e<double>(i);
+        double grO = dLdO.e<double>(i);
+        if(x < 0.0) {
+            Nd4jLong alphaInd = shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo);
+            dLdI.p(i, grO * alpha.e<double>(alphaInd));
+            double prevVal = dLdA.e<double>(alphaInd);
+            prevVal += (grO * x);
+            dLdA.p(alphaInd, prevVal);
+        }
+        else
+            dLdI.p(i, grO);
     }
 }
 

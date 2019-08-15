@@ -190,7 +190,8 @@ public class MultiLayerNetworkTaskCreator implements TaskCreator {
                 try{
                     dsInstance = dataSource.newInstance();
                 } catch (Exception e){
-                    throw new RuntimeException("Error instantiating instance of DataSource for class " + dataSource.getName());
+                    throw new RuntimeException("Error instantiating instance of DataSource for class " + dataSource.getName() +
+                            " - no zero-arg constructor?",e);
                 }
                 if(dataSourceProperties != null)
                     dsInstance.configure(dataSourceProperties);

@@ -27,7 +27,7 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            void flatten(std::vector<NDArray*> &inputs, NDArray *output, char order);
+            void flatten(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order);
         }
     }
 }

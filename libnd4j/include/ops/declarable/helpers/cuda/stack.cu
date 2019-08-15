@@ -32,75 +32,78 @@ namespace helpers {
 
 
 	template <typename T>
-	static __global__ void stackKernel(void** inputList, void** inputShapeList, int inputListLength, Nd4jLong arrLen, void* outputBuffer, Nd4jLong* tadShape, Nd4jLong *tadOffsets) {  //, Nd4jLong* tadShape, Nd4jLong* tadOffsets) {
+	static __global__ void stackKernel(void** inputList, void** inputShapeList, int inputListLength, Nd4jLong arrLen, void* vz, const Nd4jLong* zShapeInfo, Nd4jLong* tadShape, Nd4jLong *tadOffsets) {
 
-		__shared__ int arrIdx, blocksPerArr;
-		__shared__ T *z;
-		__shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLenPerBlock, start, end, offsetZ, zLength;
+		T* z = reinterpret_cast<T*>(vz);
 
-		if (threadIdx.x == 0) {
-            z = reinterpret_cast<T*>(outputBuffer);
-		}
+		if(tadShape == nullptr) {	// scalar case
 
-		__syncthreads();
-
-		for (int t = blockIdx.x; t < inputListLength; t += gridDim.x) {
-            auto tZ = z + tadOffsets[t];
-		    auto tX = reinterpret_cast<T*>(inputList[t]);
-		    auto xShape = reinterpret_cast<Nd4jLong*>(inputShapeList[t]);
-
-		    for (int e = threadIdx.x; e < arrLen; e += blockDim.x) {
-		        tZ[shape::getIndexOffset(e, tadShape, arrLen)] = tX[shape::getIndexOffset(e, xShape, arrLen)];
-            }
-		}
-	}
-	///////////////////////////////////////////////////////////////////
-	template <typename T>
-	static void stack_(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
-		if(inArrs[0]->isScalar()) {
-
-//#pragma omp parallel for
-			for (size_t i = 0; i < inArrs.size(); ++i) {
-                inArrs[i]->syncToHost();
-
-                outArr->p(i, inArrs[i]->e<T>(0));
-            }
-			outArr->syncToDevice();
+			for (Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x; i < inputListLength; i += gridDim.x * blockDim.x)
+				z[shape::getIndexOffset(i, zShapeInfo, inputListLength)] = reinterpret_cast<T*>(inputList[i])[0];
 		}
 		else {
-			//Nd4jLong **dInShapeInfo;
-			//void **dInBuffers;
-			std::vector<void const*> inputList(inArrs.size());
-			std::vector<Nd4jLong const*> inputShapeList(inArrs.size());
-			auto stream = context->getCudaStream();
 
-			for (size_t i = 0; i < inputList.size(); ++i) {
-				inputList[i] = inArrs[i]->getSpecialBuffer();
-				inputShapeList[i] = inArrs[i]->getSpecialShapeInfo();
+			for (int t = blockIdx.x; t < inputListLength; t += gridDim.x) {
+
+	            auto tZ = z + tadOffsets[t];
+			    auto tX = reinterpret_cast<T*>(inputList[t]);
+			    auto xShapeInfo = reinterpret_cast<Nd4jLong*>(inputShapeList[t]);
+
+			    for (int e = threadIdx.x; e < arrLen; e += blockDim.x)
+			        tZ[shape::getIndexOffset(e, tadShape, arrLen)] = tX[shape::getIndexOffset(e, xShapeInfo, arrLen)];
 			}
-
-            std::vector<int> axis = ShapeUtils::evalDimsToExclude(outArr->rankOf(), {dim});
-
-
-            auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(outArr->getShapeInfo(), axis);
-
-
-            PointersManager manager(context, "helpers::stack");
-            auto dInBuffers = (void **) manager.replicatePointer(inputList.data(), inputList.size() * sizeof(Nd4jLong*));
-            auto dInShapeInfo = (void **) manager.replicatePointer(inputShapeList.data(), inputShapeList.size() * sizeof(Nd4jLong*));
-
-            dim3 launchDims(inArrs.size(), inArrs[0]->lengthOf(), 1024);
-
-			stackKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>((void**)dInBuffers, (void**)dInShapeInfo, inputList.size(), inArrs[0]->lengthOf(), outArr->specialBuffer(), packX.specialShapeInfo(), packX.specialOffsets()); //, dTadShape, dTadOffsets);
-            manager.synchronize();
 		}
 	}
 
-	void stack(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim) {
+	///////////////////////////////////////////////////////////////////
+	template <typename T>
+	static void stack_(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
+
+		const bool scalarCase = inArrs[0]->isScalar();
+
+		const int threadsPerBlock = MAX_NUM_THREADS / 2;
+		const int blocksPerGrid = scalarCase ? (outArr->lengthOf() + threadsPerBlock - 1) / threadsPerBlock : inArrs.size();
+
+		NDArray::prepareSpecialUse({outArr}, {});
+
+		// FIXME: !!!
+		for (auto v:inArrs)
+		    NDArray::prepareSpecialUse({}, {v});
+
+		std::vector<void const*> inputList(inArrs.size());
+		std::vector<Nd4jLong const*> inputShapeList(inArrs.size());
+
+		for (size_t i = 0; i < inputList.size(); ++i) {
+			inputList[i] = inArrs[i]->getSpecialBuffer();
+			inputShapeList[i] = inArrs[i]->getSpecialShapeInfo();
+		}
+
+        PointersManager manager(context, "helpers::stack");
+        auto dInBuffers = (void **) manager.replicatePointer(inputList.data(), inputList.size() * sizeof(Nd4jLong*));
+        auto dInShapeInfo = (void **) manager.replicatePointer(inputShapeList.data(), inputShapeList.size() * sizeof(Nd4jLong*));
+
+        if(scalarCase) {
+        	stackKernel<T><<<blocksPerGrid, threadsPerBlock, 1024, *context->getCudaStream()>>>((void**)dInBuffers, (void**)dInShapeInfo, inputList.size(), inArrs[0]->lengthOf(), outArr->specialBuffer(), outArr->getSpecialShapeInfo(), nullptr, nullptr);
+        }
+        else {
+        	std::vector<int> axis = ShapeUtils::evalDimsToExclude(outArr->rankOf(), {dim});
+        	auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(outArr->getShapeInfo(), axis);
+			stackKernel<T><<<blocksPerGrid, threadsPerBlock, 1024, *context->getCudaStream()>>>((void**)dInBuffers, (void**)dInShapeInfo, inputList.size(), inArrs[0]->lengthOf(), outArr->specialBuffer(), nullptr, packZ.specialShapeInfo(), packZ.specialOffsets());
+        }
+        manager.synchronize();
+
+        NDArray::registerSpecialUse({outArr}, {});
+
+        // FIXME: !!!
+        for (auto v:inArrs)
+            NDArray::registerSpecialUse({}, {v});
+	}
+
+	void stack(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim) {
 		BUILD_SINGLE_SELECTOR(outArr->dataType(), stack_, (context, inArrs, outArr, dim), LIBND4J_TYPES);
 	}
 
-	BUILD_SINGLE_TEMPLATE(template void stack_ , (nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim), LIBND4J_TYPES);
+	BUILD_SINGLE_TEMPLATE(template void stack_ , (nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim), LIBND4J_TYPES);
 
 }
 }

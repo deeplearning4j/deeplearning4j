@@ -21,9 +21,12 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSetPreProcessor;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
@@ -43,6 +46,9 @@ public class MultiDataSetIteratorSplitter {
     protected final double ratio;
     protected final long numTrain;
     protected final long numTest;
+    protected final double[] ratios;
+    protected final long numArbitrarySets;
+    protected final int[] splits;
 
     protected AtomicLong counter = new AtomicLong(0);
 
@@ -71,8 +77,79 @@ public class MultiDataSetIteratorSplitter {
         this.ratio = ratio;
         this.numTrain = (long) (totalExamples * ratio);
         this.numTest = totalExamples - numTrain;
+        this.ratios = null;
+        this.numArbitrarySets = 0;
+        this.splits = null;
 
         log.warn("IteratorSplitter is used: please ensure you don't use randomization/shuffle in underlying iterator!");
+    }
+
+    public MultiDataSetIteratorSplitter(@NonNull MultiDataSetIterator baseIterator, long totalBatches, double[] ratios) {
+        for (double ratio : ratios) {
+            if (!(ratio > 0.0 && ratio < 1.0))
+                throw new ND4JIllegalStateException("Ratio value should be in range of 0.0 > X < 1.0");
+        }
+
+        if (totalBatches < 0)
+            throw new ND4JIllegalStateException("totalExamples number should be positive value");
+
+        if (!baseIterator.resetSupported())
+            throw new ND4JIllegalStateException("Underlying iterator doesn't support reset, so it can't be used for runtime-split");
+
+
+        this.backedIterator = baseIterator;
+        this.totalExamples = totalBatches;
+        this.ratio = 0.0;
+        this.numTrain = (long) (totalExamples * ratio);
+        this.numTest = totalExamples - numTrain;
+        this.ratios = null;
+        this.numArbitrarySets = ratios.length;
+
+        this.splits = new int[this.ratios.length];
+        for (int i = 0; i < this.splits.length; ++i) {
+            this.splits[i] = (int)(totalExamples * ratios[i]);
+        }
+
+        log.warn("IteratorSplitter is used: please ensure you don't use randomization/shuffle in underlying iterator!");
+    }
+
+    public MultiDataSetIteratorSplitter(@NonNull MultiDataSetIterator baseIterator, int[] splits) {
+
+        int totalBatches = 0;
+        for (val v:splits)
+            totalBatches += v;
+
+        if (totalBatches < 0)
+            throw new ND4JIllegalStateException("totalExamples number should be positive value");
+
+        if (!baseIterator.resetSupported())
+            throw new ND4JIllegalStateException("Underlying iterator doesn't support reset, so it can't be used for runtime-split");
+
+
+        this.backedIterator = baseIterator;
+        this.totalExamples = totalBatches;
+        this.ratio = 0.0;
+        this.numTrain = (long) (totalExamples * ratio);
+        this.numTest = totalExamples - numTrain;
+        this.ratios = null;
+        this.numArbitrarySets = splits.length;
+        this.splits = splits;
+
+        log.warn("IteratorSplitter is used: please ensure you don't use randomization/shuffle in underlying iterator!");
+    }
+
+    public List<MultiDataSetIterator> getIterators() {
+        List<MultiDataSetIterator> retVal = new ArrayList<>();
+        int partN = 0;
+        int bottom = 0;
+        for (final int split : splits) {
+            ScrollableMultiDataSetIterator partIterator =
+                    new ScrollableMultiDataSetIterator(partN++, backedIterator, counter, firstTrain,
+                            new int[]{bottom,split});
+            bottom += split;
+            retVal.add(partIterator);
+        }
+        return retVal;
     }
 
     /**
@@ -80,6 +157,7 @@ public class MultiDataSetIteratorSplitter {
      *
      * @return
      */
+    @Deprecated
     public MultiDataSetIterator getTrainIterator() {
         return new MultiDataSetIterator() {
             @Override
@@ -162,6 +240,7 @@ public class MultiDataSetIteratorSplitter {
      *
      * @return
      */
+    @Deprecated
     public MultiDataSetIterator getTestIterator() {
         return new MultiDataSetIterator() {
             @Override

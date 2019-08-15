@@ -122,13 +122,10 @@ CUSTOM_OP_IMPL(reduce_sum_bp, 2, 1, false, 0, 0) {
 
         if(!keepDims) {
             auto gradOShapeKeepDims = ShapeUtils::evalReduceShapeInfo(gradO->ordering(), dimensions, *input, true, false, block.getWorkspace());
-            gradO = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
-        }
-
-        gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), gradO, gradI);
-
-        if(!keepDims)
-            delete gradO;
+            auto r  = gradO->reshape(gradO->ordering(), ShapeUtils::pullShapeFromShapeInfo(gradOShapeKeepDims));  // for example could be something like [a,b] -> [1,a,1,b]
+            gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), &r, gradI);
+        } else
+            gradI->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Assign(), gradO, gradI);
     }
 
     return Status::OK();

@@ -39,31 +39,31 @@ NDArray Householder<T>::evalHHmatrix(const NDArray& x) {
 
 	T coeff;
 	T normX = x.reduceNumber(reduce::Norm2).e<T>(0);
-	
+
 	if(normX*normX - x.e<T>(0) * x.e<T>(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
 
 		normX = x.e<T>(0);
 		coeff = 0.f;
 		w = 0.f;
-		
-	} 	
+
+	}
 	else {
-		
+
 		if(x.e<T>(0) >= (T)0.f)
 			normX = -normX;									// choose opposite sign to lessen roundoff error
-		
+
 		T u0 = x.e<T>(0) - normX;
-		coeff = -u0 / normX;				
-		w.assign(x / u0);		
+		coeff = -u0 / normX;
+		w.assign(x / u0);
 	}
-	
+
 	w.p(Nd4jLong(0), 1.f);
 	wT.assign(&w);
-	
-	auto identity = NDArrayFactory::create(x.ordering(), {(int)x.lengthOf(), (int)x.lengthOf()}, x.dataType(), x.getContext());
-	identity.setIdentity();																			// identity matrix	
 
-	return identity - mmul(w, wT) * coeff;	
+	auto identity = NDArrayFactory::create(x.ordering(), {(int)x.lengthOf(), (int)x.lengthOf()}, x.dataType(), x.getContext());
+	identity.setIdentity();																			// identity matrix
+
+	return identity - mmul(w, wT) * coeff;
 
 }
 
@@ -79,7 +79,7 @@ void Householder<T>::evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff,
 		throw std::runtime_error("ops::helpers::Householder::evalHHmatrixData method: input tail vector must have length less than unity compared to input x vector!");
 
 	normX = x.reduceNumber(reduce::Norm2, nullptr).e<T>(0);
-		
+
 	if(normX*normX - x.e<T>(0) * x.e<T>(0) <= DataTypeUtils::min<T>() || x.lengthOf() == 1) {
 
 		normX = x.e<T>(0);
@@ -87,18 +87,18 @@ void Householder<T>::evalHHmatrixData(const NDArray& x, NDArray& tail, T& coeff,
 		tail = (T)0.f;
 	}
 	else {
-		
+
 		if(x.e<T>(0) >= (T)0.f)
 			normX = -normX;									// choose opposite sign to lessen roundoff error
-		
+
 		T u0 = x.e<T>(0) - normX;
-		coeff = -u0 / normX;				
+		coeff = -u0 / normX;
 
 		if(x.isRowVector())
-			tail.assign(x({0,0, 1,-1}) / u0);		
+			tail.assign(x({0,0, 1,-1}) / u0);
 		else
-			tail.assign(x({1,-1, 0,0,}) / u0);		
-	}		
+			tail.assign(x({1,-1, 0,0,}) / u0);
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -107,20 +107,20 @@ void Householder<T>::evalHHmatrixDataI(const NDArray& x, T& coeff, T& normX) {
 
 	int rows = (int)x.lengthOf()-1;
 	int num = 1;
-	
+
 	if(rows == 0) {
 		rows = 1;
 		num = 0;
-	}	
-	
+	}
+
 	auto tail = NDArrayFactory::create(x.ordering(), {rows, 1}, x.dataType(), x.getContext());
 	evalHHmatrixData(x, tail, coeff, normX);
 
 	if(x.isRowVector()) {
 		auto temp = x({0,0,  num, x.sizeAt(1)}, true);
-		temp.assign(tail);		
+		temp.assign(tail);
 	}
-	else {		
+	else {
 		auto temp = x({num,x.sizeAt(0), 0,0}, true);
 		temp.assign(tail);
 	}
@@ -129,14 +129,14 @@ void Householder<T>::evalHHmatrixDataI(const NDArray& x, T& coeff, T& normX) {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 void Householder<T>::mulLeft(NDArray& matrix, const NDArray& tail, const T coeff) {
-	
-	// if(matrix.rankOf() != 2)
-	// 	throw "ops::helpers::Householder::mulLeft method: input array must be 2D matrix !";	
 
-	if(matrix.sizeAt(0) == 1)   
-    	matrix *= (T)1.f - coeff;
-  	
-  	else if(coeff != (T)0.f) {
+	// if(matrix.rankOf() != 2)
+	// 	throw "ops::helpers::Householder::mulLeft method: input array must be 2D matrix !";
+
+	if(matrix.sizeAt(0) == 1) {
+        matrix *= (T) 1.f - coeff;
+    }
+    else if(coeff != (T)0.f) {
 
   		auto bottomPart = new NDArray(matrix({1,matrix.sizeAt(0), 0,0}, true));
 		auto bottomPartCopy = *bottomPart;
@@ -145,26 +145,22 @@ void Householder<T>::mulLeft(NDArray& matrix, const NDArray& tail, const T coeff
 
 			auto column = tail;
 			auto row = tail.transpose();
-    		auto resultingRow = mmul(*row, bottomPartCopy);
+    		auto resultingRow = mmul(row, bottomPartCopy);
     		auto fistRow = matrix({0,1, 0,0}, true);
-    		resultingRow += fistRow;        	
-    		fistRow -= resultingRow * coeff;	
-    		*bottomPart -= mmul(column, resultingRow) * coeff;    		
-
-			delete row;
+    		resultingRow += fistRow;
+    		fistRow -= resultingRow * coeff;
+    		*bottomPart -= mmul(column, resultingRow) * coeff;
 		}
 		else {
-			
+
 			auto row = tail;
 			auto column = tail.transpose();
     		auto resultingRow = mmul(row, bottomPartCopy);
     		auto fistRow = matrix({0,1, 0,0}, true);
     		resultingRow += fistRow;
     		fistRow -= resultingRow * coeff;
-    		*bottomPart -= mmul(*column, resultingRow) * coeff;    	
-
-			delete column;
-		}	    	    	
+    		*bottomPart -= mmul(column, resultingRow) * coeff;
+		}
 		delete bottomPart;
 	}
 }
@@ -176,10 +172,10 @@ void Householder<T>::mulRight(NDArray& matrix, const NDArray& tail, const T coef
 
 	// if(matrix.rankOf() != 2)
 	// 	throw "ops::helpers::Householder::mulRight method: input array must be 2D matrix !";
-	
-	if(matrix.sizeAt(1) == 1)   
+
+	if(matrix.sizeAt(1) == 1)
     	matrix *= (T)1.f - coeff;
-  	
+
   	else if(coeff != (T)0.f) {
 
   		auto rightPart = new NDArray(matrix({0,0, 1,matrix.sizeAt(1)}, true));
@@ -191,30 +187,25 @@ void Householder<T>::mulRight(NDArray& matrix, const NDArray& tail, const T coef
 			auto column = tail;
 			auto row = tail.transpose();
     		auto resultingCol = mmul(rightPartCopy, column);
-    		resultingCol += *fistCol;        	
-    		*fistCol -= resultingCol * coeff;	
-    		*rightPart -= mmul(resultingCol, *row) * coeff;    		
-
-			delete row;			
-		}
-		else {
-			
-			auto row = tail;
-			auto column = tail.transpose();
-    		auto resultingCol = mmul(rightPartCopy, *column);
-    		resultingCol += *fistCol;        	
+    		resultingCol += *fistCol;
     		*fistCol -= resultingCol * coeff;
     		*rightPart -= mmul(resultingCol, row) * coeff;
+		}
+		else {
 
-			delete column;
-			
-		}	    	    	
+			auto row = tail;
+			auto column = tail.transpose();
+    		auto resultingCol = mmul(rightPartCopy, column);
+    		resultingCol += *fistCol;
+    		*fistCol -= resultingCol * coeff;
+    		*rightPart -= mmul(resultingCol, row) * coeff;
+		}
   		delete rightPart;
   		delete fistCol;
 	}
 }
 
-      
+
 template class ND4J_EXPORT Householder<float>;
 template class ND4J_EXPORT Householder<float16>;
 template class ND4J_EXPORT Householder<bfloat16>;

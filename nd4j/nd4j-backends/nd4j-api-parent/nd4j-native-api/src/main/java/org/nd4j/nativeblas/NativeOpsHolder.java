@@ -16,16 +16,14 @@
 
 package org.nd4j.nativeblas;
 
+import java.util.Properties;
 import lombok.Getter;
 import org.bytedeco.javacpp.Loader;
-import org.bytedeco.javacpp.Pointer;
 import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Properties;
 
 /**
  * @author raver119@gmail.com
@@ -37,6 +35,46 @@ public class NativeOpsHolder {
 
     @Getter
     private final NativeOps deviceNativeOps;
+
+    public static int getCores(int totals) {
+        // that's special case for Xeon Phi
+        if (totals >= 256)
+            return 64;
+
+        int ht_off = totals / 2; // we count off HyperThreading without any excuses
+        if (ht_off <= 4)
+            return 4; // special case for Intel i5. and nobody likes i3 anyway
+
+        if (ht_off > 24) {
+            int rounds = 0;
+            while (ht_off > 24) { // we loop until final value gets below 24 cores, since that's reasonable threshold as of 2016
+                if (ht_off > 24) {
+                    ht_off /= 2; // we dont' have any cpus that has higher number then 24 physical cores
+                    rounds++;
+                }
+            }
+            // 20 threads is special case in this branch
+            if (ht_off == 20 && rounds < 2)
+                ht_off /= 2;
+        } else { // low-core models are known, but there's a gap, between consumer cpus and xeons
+            if (ht_off <= 6) {
+                // that's more likely consumer-grade cpu, so leave this value alone
+                return ht_off;
+            } else {
+                if (isOdd(ht_off)) // if that's odd number, it's final result
+                    return ht_off;
+
+                // 20 threads & 16 threads are special case in this branch, where we go min value
+                if (ht_off == 20 || ht_off == 16)
+                    ht_off /= 2;
+            }
+        }
+        return ht_off;
+    }
+
+    private static boolean isOdd(int value) {
+        return (value % 2 != 0);
+    }
 
     private NativeOpsHolder() {
         try {
@@ -59,7 +97,7 @@ public class NativeOpsHolder {
                     deviceNativeOps.setOmpNumThreads(Math.max(1, cores / chips));
                 } else
                     deviceNativeOps.setOmpNumThreads(
-                                    deviceNativeOps.getCores(Runtime.getRuntime().availableProcessors()));
+                                    getCores(Runtime.getRuntime().availableProcessors()));
             }
             //deviceNativeOps.setOmpNumThreads(4);
 
@@ -74,5 +112,4 @@ public class NativeOpsHolder {
     public static NativeOpsHolder getInstance() {
         return INSTANCE;
     }
-
 }

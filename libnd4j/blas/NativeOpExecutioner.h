@@ -177,7 +177,7 @@ public:
                             void *dZ, Nd4jLong *dZShapeInfo,
                             void *hScalar, Nd4jLong *hSscalarShapeInfo,
                             void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                            void *extraParams);
+                            void *extraParams, bool allowParallelism = true);
 
 static void execScalarBool(nd4j::LaunchContext  *lc,
                             int opNum,
@@ -187,7 +187,7 @@ static void execScalarBool(nd4j::LaunchContext  *lc,
                             void *dZ, Nd4jLong *dZShapeInfo,
                             void *hScalar, Nd4jLong *hSscalarShapeInfo,
                             void *dScalar, Nd4jLong *dSscalarShapeInfo,
-                            void *extraParams);
+                            void *extraParams, bool allowParallelism = true);
 
  static void execScalar(nd4j::LaunchContext  *lc,
                             int opNum,
@@ -334,7 +334,7 @@ static void execTransformAny(nd4j::LaunchContext  *lc,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                 void *extraParams,
-                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism = true);
 
 static void execTransformStrict(nd4j::LaunchContext  *lc,
                                     int opNum,

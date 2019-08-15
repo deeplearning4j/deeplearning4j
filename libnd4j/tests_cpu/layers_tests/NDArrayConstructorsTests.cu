@@ -99,14 +99,14 @@ TEST_F(NDArrayConstructorsTests, test_constructor_4) {
 TEST_F(NDArrayConstructorsTests, test_constructor_5) {
     auto x = NDArrayFactory::create<double>('c',{2, 2}, {1, 2, 3, 4});
 
-    ASSERT_FALSE(x.buffer() == nullptr);
+    ASSERT_TRUE(x.buffer() == nullptr);
     ASSERT_FALSE(x.specialBuffer() == nullptr);
 
     ASSERT_FALSE(x.shapeInfo() == nullptr);
     ASSERT_FALSE(x.specialShapeInfo() == nullptr);
 
     ASSERT_TRUE(x.isActualOnDeviceSide());
-    ASSERT_TRUE(x.isActualOnHostSide());
+    ASSERT_FALSE(x.isActualOnHostSide());
 }
 
 TEST_F(NDArrayConstructorsTests, test_constructor_6) {
@@ -139,14 +139,14 @@ TEST_F(NDArrayConstructorsTests, test_constructor_7) {
 TEST_F(NDArrayConstructorsTests, test_constructor_8) {
     auto x = NDArrayFactory::create_<double>('c',{2, 2}, {1, 2, 3, 4});
 
-    ASSERT_FALSE(x->buffer() == nullptr);
+    ASSERT_TRUE(x->buffer() == nullptr);
     ASSERT_FALSE(x->specialBuffer() == nullptr);
 
     ASSERT_FALSE(x->shapeInfo() == nullptr);
     ASSERT_FALSE(x->specialShapeInfo() == nullptr);
 
     ASSERT_TRUE(x->isActualOnDeviceSide());
-    ASSERT_TRUE(x->isActualOnHostSide());
+    ASSERT_FALSE(x->isActualOnHostSide());
 
     delete x;
 }
@@ -184,7 +184,7 @@ TEST_F(NDArrayConstructorsTests, test_linspace_1) {
 TEST_F(NDArrayConstructorsTests, test_constructor_10) {
 
     NDArray scalar1(nd4j::DataType::DOUBLE); // scalar1 = 0
-    NDArray scalar2('c', {0}, {0});
+    NDArray scalar2('c', {}, {0});
 
     ASSERT_TRUE(scalar1.isActualOnDeviceSide());
     ASSERT_TRUE(!scalar1.isActualOnHostSide());
@@ -198,7 +198,7 @@ TEST_F(NDArrayConstructorsTests, test_constructor_10) {
     ASSERT_TRUE(scalar2.isActualOnDeviceSide());
     ASSERT_TRUE(scalar2.isActualOnHostSide());
 
-    ASSERT_TRUE(scalar1.getBuffer() == nullptr);        
+    ASSERT_TRUE(scalar1.getBuffer() == nullptr);
     ASSERT_TRUE(scalar1.getSpecialBuffer() != nullptr);
     ASSERT_TRUE(scalar1.getShapeInfo() != nullptr);
     ASSERT_TRUE(scalar1.getSpecialShapeInfo() != nullptr);

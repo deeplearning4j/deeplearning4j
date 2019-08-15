@@ -20,6 +20,7 @@
 #include <helpers/DebugHelper.h>
 #include <DataTypeUtils.h>
 #include <exceptions/datatype_exception.h>
+#include <exceptions/cuda_exception.h>
 #include <helpers/CudaLaunchHelper.h>
 #include <helpers/ShapeBuilders.h>
 #include <PointersManager.h>
@@ -112,7 +113,10 @@ void NativeOpExecutioner::execPairwiseTransform(nd4j::LaunchContext  *lc,
     BUILD_SINGLE_SELECTOR_THRICE(xType, functions::pairwise_transforms::PairWiseTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams), LIBND4J_TYPES)
 #endif
 
-    DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execPairwiseTransform failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -141,6 +145,11 @@ void NativeOpExecutioner::execPairwiseBoolTransform( nd4j::LaunchContext  *lc,
     dim3 launchDims(256, 1024, 16384);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES)
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execPairwiseBoolTransform failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -162,6 +171,11 @@ void NativeOpExecutioner::execSummaryStatsScalar(nd4j::LaunchContext  *lc,
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer), LIBND4J_TYPES, FLOAT_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execSummaryStatsScalar failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -196,7 +210,10 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::LaunchContext  *lc,
 
 	BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
 
-	DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execBroadcastBool failed", res);
 }
 
 void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
@@ -229,7 +246,10 @@ void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
 
-    DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execInverseBroadcastBool failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -274,7 +294,10 @@ void NativeOpExecutioner::execBroadcast(nd4j::LaunchContext  *lc,
     BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
 #endif
 
-	DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execBroadcast failed", res);
 }
 
 void NativeOpExecutioner::execInverseBroadcast(nd4j::LaunchContext  *lc,
@@ -306,7 +329,10 @@ void NativeOpExecutioner::execInverseBroadcast(nd4j::LaunchContext  *lc,
     BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
 #endif
 
-    DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execInverseBroadcast failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -336,9 +362,12 @@ void NativeOpExecutioner::execReduceSame(nd4j::LaunchContext  *lc,
     auto numBlocks = shape::length(hZShapeInfo);
     dim3 launchDims(numBlocks, 256, 8192);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
 
-    nd4j::DebugHelper::checkErrorCode(stream, "execReduceSame(...) failed");
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduceSame failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -368,9 +397,12 @@ void NativeOpExecutioner::execReduceLong(nd4j::LaunchContext  *lc,
     auto numBlocks = shape::length(hZShapeInfo);
     dim3 launchDims(numBlocks, 256, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES, LONG_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES, LONG_TYPES);
 
-    nd4j::DebugHelper::checkErrorCode(stream, "execReduceLong(...) failed");
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduceLong failed", res);
 
 }
 
@@ -401,9 +433,12 @@ void NativeOpExecutioner::execReduceBool(nd4j::LaunchContext  *lc,
     auto numBlocks = shape::length(hZShapeInfo);
     dim3 launchDims(numBlocks, 256, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES, BOOL_TYPES);
 
-    nd4j::DebugHelper::checkErrorCode(stream, "execReduceBool(...) failed");
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduceBool failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -446,6 +481,11 @@ void NativeOpExecutioner::execIndexReduce(nd4j::LaunchContext  *lc,
 	auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
 	BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce,  ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execIndexReduce failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -481,7 +521,12 @@ void  NativeOpExecutioner::execReduceFloat(nd4j::LaunchContext  *lc,
     auto numBlocks = shape::length(hZShapeInfo);
     dim3 launchDims(numBlocks, 256, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX,dXShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceXD(launchDims, stream, opNum, xRank, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, dimension, dimensionLength, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduceFloat failed", res);
 }
 
 
@@ -536,7 +581,10 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::LaunchContext  *lc,
                                                                                                 1,
                                                                                                 allocationPointer, reductionPointer,
                                                                                                 nullptr, nullptr), LIBND4J_TYPES);
-    nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalar(...) failed");
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execIndexReduceScalar failed", res);
 }
 
 
@@ -560,7 +608,12 @@ void NativeOpExecutioner::execReduceFloatScalar(nd4j::LaunchContext  *lc,
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceScalar(launchDims, stream, opNum, dX,dXShapeInfo, extraParams, dZ,dZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceFloatFunction, ::execReduceScalar(launchDims, stream, opNum, dX,dXShapeInfo, hXShapeInfo, extraParams, dZ,dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduceFloatScalar failed", res);
 }
 
 
@@ -587,7 +640,12 @@ void NativeOpExecutioner::execReduceBoolScalar(nd4j::LaunchContext  *lc,
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES, BOOL_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES, BOOL_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduceBoolScalar failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -613,7 +671,12 @@ void NativeOpExecutioner::execReduceSameScalar(nd4j::LaunchContext  *lc,
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(xType, functions::reduce::ReduceSameFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduceSameScalar failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -639,7 +702,12 @@ void NativeOpExecutioner::execReduceLongScalar(nd4j::LaunchContext  *lc,
     auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
     dim3 launchDims(numBlocks, blockWidth, 32768);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, extraParams, dZ, dZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES, LONG_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer, nullptr), LIBND4J_TYPES, LONG_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduceLongScalar failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -665,7 +733,10 @@ void NativeOpExecutioner::execTransformSame(nd4j::LaunchContext  *lc,
 
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES);
 
-    nd4j::DebugHelper::checkErrorCode(stream, "execTransformSame(...) failed");
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execTransformSame failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -690,6 +761,11 @@ void NativeOpExecutioner::execTransformBool(nd4j::LaunchContext  *lc,
         throw std::runtime_error("NativeOpExecutioner::execTransformBool requires Z to have same boolean type");
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execTransformBool failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -700,7 +776,7 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
                                 		void *hZ, Nd4jLong *hZShapeInfo,
                                 		void *dZ, Nd4jLong *dZShapeInfo,
                                 		void *extraParams,
-                                		Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                		Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism) {
 
 	auto stream = lc->getCudaStream();
 
@@ -751,6 +827,11 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
             BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
         }
 	}
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execTransformAny failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -774,78 +855,12 @@ void NativeOpExecutioner::execTransformStrict(nd4j::LaunchContext  *lc,
     if (xType != zType || !DataTypeUtils::isR(xType))
         throw datatype_exception::build("NativeOpExecutioner::execTransformStrict requires X & Z to have same floating point type", xType, zType);
 
-    switch (opNum) {
-        case transform::SoftMax:
-        case transform::SoftMaxDerivative:
-        case transform::LogSoftMax: {
-                if (shape::isVector(hXShapeInfo)) {
-                    int length = shape::length(hXShapeInfo);
-                    int block = nd4j::math::nd4j_min<int>(length, 256);
+    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
 
-                    launchDims.x = 1;
-                    launchDims.y = block;
-                    launchDims.z += (block * sizeof(double) * 4);
-
-                    BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, lc->getAllocationPointer(), lc->getReductionPointer(), nullptr, nullptr), FLOAT_TYPES);
-                } else {
-                    auto shape = shape::shapeOf(hXShapeInfo);
-                    auto reductionPointer = lc->getReductionPointer();
-					auto allocationPointer = lc->getAllocationPointer();
-					auto specialPointer = reinterpret_cast<double *>(allocationPointer);
-
-                    // special pointer for special buffer for special ops
-                    auto dimension = reinterpret_cast<int *>(specialPointer);
-                    auto maxDimension = dimension + 1;
-                    auto maxShapeBuffer = reinterpret_cast<Nd4jLong *>(maxDimension + 1);
-                    auto special = reinterpret_cast<double *> (maxShapeBuffer + (MAX_RANK * 2 + 4));
-
-
-                    Nd4jLong maxShape[2] = {shape::shapeOf(hXShapeInfo)[0], 1};
-                    auto hostMaxShapeBuffer = shape::shapeBuffer(2, xType, maxShape);
-
-                    prepareShapeBuffer<<<1, 1, 128, *stream>>>(dimension, maxDimension, maxShapeBuffer, shape[0], xType);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    // max 3
-                    execReduceSame(lc, reduce::Max, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1, tadShapeInfo, tadOffsets);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    // sub 1
-                    execBroadcast(lc, broadcast::Subtract, hX, hXShapeInfo, dX, dXShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1, tadShapeInfo, tadOffsets, nullptr, nullptr);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    // exp 3
-                    execTransformFloat(lc, transform::Exp, hZ, hZShapeInfo, dZ, dZShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    //sum 1
-                    execReduceSame(lc, reduce::Sum, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, maxDimension, 1, tadShapeInfo, tadOffsets);
-
-                    // divide 3
-                    execBroadcast(lc, broadcast::Divide, hZ, hZShapeInfo, dZ, dZShapeInfo, nullptr, hostMaxShapeBuffer, special, maxShapeBuffer, nullptr, hZShapeInfo, dZ, dZShapeInfo, dimension, 1, tadShapeInfo, tadOffsets, nullptr, nullptr);
-
-                    DEBUG_KERNEL(stream, opNum);
-
-                    // log 3
-                    if (opNum == transform::LogSoftMax)
-                        execTransformFloat(lc, transform::Log, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-                    else if (opNum == transform::SoftMaxDerivative)
-                        execTransformStrict(lc, transform::SpecialDerivative, nullptr, hZShapeInfo, dZ, dZShapeInfo, nullptr, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-
-                    nd4j::DebugHelper::checkErrorCode(stream, "SoftMax(...) failed");
-
-                    delete hostMaxShapeBuffer;
-                }
-            }
-            break;
-        default: {
-            BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
-        }
-    }
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execTransformStrict failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -869,22 +884,13 @@ void NativeOpExecutioner::execTransformFloat(nd4j::LaunchContext  *lc,
     if (!DataTypeUtils::isR(zType))
         throw datatype_exception::build("NativeOpExecutioner::execTransformFloat requires Z to have floating point type", zType);
 
-    if (opNum == transform::Histogram) {
-        dim3 launchDims(256, 256, 32768);
+    dim3 launchDims(512, 512, 16384);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 
-        Nd4jPointer maskedallocationPointer;
-        auto length = shape::length(hZShapeInfo);
-        cudaMalloc(reinterpret_cast<void **>(&maskedallocationPointer), length * launchDims.x * DataTypeUtils::sizeOf(nd4j::DataType::INT64));
-        auto imaskedallocationPointer = reinterpret_cast<int *>(maskedallocationPointer);
-
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, imaskedallocationPointer, reductionPointer, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
-
-        checkCudaErrors(cudaStreamSynchronize(*stream));
-        cudaFree(maskedallocationPointer);
-    } else {
-        dim3 launchDims(512, 512, 16384);
-        BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
-    }
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execTransformFloat failed", res);
 }
 
 
@@ -910,6 +916,11 @@ void NativeOpExecutioner::execSummaryStats(nd4j::LaunchContext  *lc,
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execSummaryStats requires Z operand to have floating point data type", zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, nullptr, biasCorrected, reductionPointer), LIBND4J_TYPES, FLOAT_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execSummaryStats A failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -935,6 +946,11 @@ void NativeOpExecutioner::execSummaryStats(nd4j::LaunchContext  *lc,
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execSummaryStats requires Z operand to have floating point data type", zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::summarystats::SummaryStatsReduce, ::execSummaryStatsReduce(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, biasCorrected, reductionPointer), LIBND4J_TYPES, FLOAT_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execSummaryStats B failed", res);
 }
 
 
@@ -969,7 +985,10 @@ void NativeOpExecutioner::execReduce3(nd4j::LaunchContext  *lc,
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, allocationPointer, reductionPointer, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 
-    DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduce3 failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1018,6 +1037,11 @@ void NativeOpExecutioner::execReduce3(nd4j::LaunchContext  *lc,
                                                                     allocationPointer,
                                                                     tadOnlyShapeInfo, tadOffsets,
                                                                     yTadOnlyShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduce3 B failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1052,6 +1076,11 @@ void NativeOpExecutioner::execReduce3Scalar(nd4j::LaunchContext  *lc,
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execReduce3Scalar requires Z operand to have floating point data type", zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execScalar(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, allocationPointer, reductionPointer, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduce3Scalar failed", res);
 }
 
 
@@ -1064,7 +1093,7 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
 										void *dZ, Nd4jLong *dZShapeInfo,
 										void *hScalar, Nd4jLong *hScalarShapeInfo,
 										void *dScalar, Nd4jLong *dScalarShapeInfo,
-										void *extraParams) {
+										void *extraParams, bool allowParallelism) {
 
 	auto stream = lc->getCudaStream();
 
@@ -1082,7 +1111,10 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
 
 	BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalar, extraParams), LIBND4J_TYPES, BOOL_TYPES);
 
-	DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execScalarBool failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1115,7 +1147,10 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
 
 	BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
 
-	DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execScalarBool B failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1127,7 +1162,7 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
 									void *dZ, Nd4jLong *dZShapeInfo,
 									void *hScalar, Nd4jLong *hScalarShapeInfo,
 									void *dScalar, Nd4jLong *dScalarShapeInfo,
-									void *extraParams) {
+									void *extraParams, bool allowParallelism) {
 
 	auto stream = lc->getCudaStream();
 
@@ -1144,7 +1179,10 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
 	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo, hZShapeInfo, dScalar, extraParams), LIBND4J_TYPES);
 #endif
 
-	DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execScalar failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1175,7 +1213,10 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
 	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
 #endif
 
-	DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execScalar B failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1197,12 +1238,18 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
     dim3 launchDims = dim3(512, 512, 32768);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(stateHost);
+
     // functions::random::RandomFunction<float>::executeCudaSingle(launchDims, extraPointers, opNum, stateHost, dZ, dZShapeInfo, extraArguments),
     BUILD_SINGLE_SELECTOR(zType, functions::random::RandomFunction, ::executeCudaSingle(launchDims, stream, opNum, stateDevice, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
-    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
-    checkCudaErrors(cudaStreamSynchronize(*stream));
+    res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execRandom X failed", res);
+
     cudaFree(stateDevice);
+
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1224,14 +1271,20 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
     checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(stateHost);
+
     dim3 launchDims = dim3(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaDouble(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments);
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaDouble(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
-    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
-    checkCudaErrors(cudaStreamSynchronize(*stream));
+    res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execRandom XY failed", res);
+
     cudaFree(stateDevice);
+
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1254,14 +1307,20 @@ void NativeOpExecutioner::execRandom(nd4j::LaunchContext  *lc,
     checkCudaErrors(cudaStreamSynchronize(*stream));
     checkCudaErrors(cudaMemcpyAsync(stateDevice, stateHost, sizeOf, cudaMemcpyHostToDevice, *stream));
 
+    auto rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(stateHost);
+
     dim3 launchDims = dim3(512, 512, 32768);
     auto xType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     // functions::random::RandomFunction<float>::executeCudaTriple(launchDims, extraPointers, opNum, stateHost, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments);
     BUILD_SINGLE_SELECTOR(xType, functions::random::RandomFunction, ::executeCudaTriple(launchDims, stream, opNum, stateDevice, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraArguments), FLOAT_TYPES);
 
-    checkCudaErrors(cudaMemcpyAsync(stateHost, stateDevice, sizeOf, cudaMemcpyDeviceToHost, *stream));
-    checkCudaErrors(cudaStreamSynchronize(*stream));
+    res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execRandom XYZ failed", res);
+
     cudaFree(stateDevice);
+
+    rng->rewindH(shape::length(hZShapeInfo));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1299,7 +1358,10 @@ void NativeOpExecutioner::execReduce3All(nd4j::LaunchContext  *lc,
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::execAll(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParamsVals, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets), LIBND4J_TYPES, FLOAT_TYPES);
 
-	DEBUG_KERNEL(stream, opNum);
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduce3All failed", res);
 }
 
 
@@ -1339,5 +1401,10 @@ void NativeOpExecutioner::execReduce3TAD(nd4j::LaunchContext  *lc,
     dim3 launchDims(numBlocks, 256, 32768);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce3::Reduce3, ::exec(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, extraParams, dZ, dZShapeInfo, dimension, dimensionLength, 1, allocationPointer, tadShapeInfo, tadOffsets, yTadShapeInfo, yTadOffsets), LIBND4J_TYPES, FLOAT_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execReduce3TAD failed", res);
 }
 

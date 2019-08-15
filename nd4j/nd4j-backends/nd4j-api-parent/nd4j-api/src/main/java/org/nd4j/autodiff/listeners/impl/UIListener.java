@@ -4,7 +4,10 @@ import com.google.flatbuffers.Table;
 import lombok.NonNull;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
+import org.nd4j.autodiff.listeners.ListenerResponse;
 import org.nd4j.autodiff.listeners.Loss;
+import org.nd4j.autodiff.listeners.records.LossCurve;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
@@ -280,12 +283,17 @@ public class UIListener extends BaseListener {
     }
 
     @Override
+    public boolean isActive(Operation operation) {
+        return operation == Operation.TRAINING;
+    }
+
+    @Override
     public void epochStart(SameDiff sd, At at) {
         epochTrainEval = null;
     }
 
     @Override
-    public void epochEnd(SameDiff sd, At at) {
+    public ListenerResponse epochEnd(SameDiff sd, At at, LossCurve lossCurve, long epochTimeMillis) {
 
         //If any training evaluation, report it here:
         if(epochTrainEval != null){
@@ -315,6 +323,7 @@ public class UIListener extends BaseListener {
         }
 
         epochTrainEval = null;
+        return ListenerResponse.CONTINUE;
     }
 
     @Override
@@ -401,13 +410,13 @@ public class UIListener extends BaseListener {
 
 
     @Override
-    public void opExecution(SameDiff sd, At at, boolean training, SameDiffOp op, INDArray[] outputs) {
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
 
 
         //Do training set evaluation, if required
         //Note we'll do it in opExecution not iterationDone because we can't be sure arrays will be stil be around in the future
         //i.e., we'll eventually add workspaces and clear activation arrays once they have been consumed
-        if(training && trainEvalMetrics != null && trainEvalMetrics.size() > 0){
+        if(at.operation() == Operation.TRAINING && trainEvalMetrics != null && trainEvalMetrics.size() > 0){
             long time = System.currentTimeMillis();
 
             //First: check if this op is relevant at all to evaluation...

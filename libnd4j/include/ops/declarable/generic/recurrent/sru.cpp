@@ -145,16 +145,16 @@ DECLARE_SHAPE_FN(sru) {
 CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     auto x        = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
     auto w        = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
-    auto b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
+    auto b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 x 2*K]
     auto c0       = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0
     auto c        = INPUT_VARIABLE(4);                // C, [bS x K x N]
     auto inGradCt = INPUT_VARIABLE(5);                // [bS x K]
     auto inGradH  = INPUT_VARIABLE(6);                // [bS x K x N]
     NDArray* mask     = nullptr;                      // optional,  2d tensor of dropout mask [bS x K]
 
-    bool applyMask = false;        
+    bool applyMask = false;
     if (block.width() > 7) {
-        mask = INPUT_VARIABLE(7);   
+        mask = INPUT_VARIABLE(7);
         applyMask = true;
     }
 
@@ -166,7 +166,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     const int bS      = x->shapeOf()[0];
     const int K       = x->shapeOf()[1];
     const int N       = x->shapeOf()[2];                     // N - number of time steps
-    
+
     auto gradBias = NDArrayFactory::create_(x->ordering(), {bS, 2*K, N}, gradX->dataType(), block.launchContext());
     auto gradU    = NDArrayFactory::create_(x->ordering(), {bS, 3*K, N}, gradX->dataType(), block.launchContext());
     auto gradHX   = NDArrayFactory::create_(x->ordering(), {bS, K, N}, gradX->dataType(), block.launchContext());
@@ -199,7 +199,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     std::vector<Nd4jLong> idx = {0,0, 0,0, 0,0};
 
-    for (int t = N-1; t >=0 ; --t) {           
+    for (int t = N-1; t >=0 ; --t) {
         // initialization
         idx[4] = t;
         idx[5] = t + 1;
@@ -242,7 +242,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         gct->applyPairwiseTransform(pairwise::Subtract, &xt, temp1, nullptr);                 // temp1 = (g_ct - xt)
         rtMinus->applyPairwiseTransform(pairwise::Multiply, &rt, temp2, nullptr);             // temp2 = (1.0f - rt) * rt;
         temp1->applyPairwiseTransform(pairwise::Multiply, *temp2, nullptr);                   // temp1 = (g_ct - xt) * (1.0f - rt) * rt;
-        inGradHt.applyPairwiseTransform(pairwise::Multiply, temp1, &gradBRt, nullptr);       // = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;        
+        inGradHt.applyPairwiseTransform(pairwise::Multiply, temp1, &gradBRt, nullptr);       // = inGradHt * (g_ct - xt) * (1.0f - rt) * rt;
 
         // bF, TODO - tanh
         // gradTanh = (1.0f - g_ct * g_ct);
@@ -259,7 +259,7 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
         temp1->applyPairwiseTransform(pairwise::Multiply, temp2, &gradBFt, nullptr);          // gradBFt = (gradCt + inGradCt) * (ct_1 - zt) * (1 - ft) * ft;
 
         // x_t (highway connection), gradHXt = inGradHt * (1.0f - rt);
-        inGradHt.applyPairwiseTransform(pairwise::Multiply, rtMinus, &gradHXt, nullptr);        
+        inGradHt.applyPairwiseTransform(pairwise::Multiply, rtMinus, &gradHXt, nullptr);
 
         // U_t, gradUZt = (inGradHt * rt * grad_tanh + inGradCt) * (1.0f - ft);
         rt.applyPairwiseTransform(pairwise::Multiply, gradTanh, temp1, nullptr);        // temp1 = rt * grad_tanh
@@ -280,14 +280,14 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
     // gradInit
     gradInit->assign(inGradCt);
 
-    // gradX 
+    // gradX
     auto weightsT = w->transpose();                                            // [K x 3K]
-    MmulHelper::mmul(weightsT, gradU, gradX, 1., 0.);                    // [bS x K x N]    
+    MmulHelper::mmul(&weightsT, gradU, gradX, 1., 0.);                    // [bS x K x N]
     gradX->applyPairwiseTransform(pairwise::Add, gradHX, gradX, nullptr);        // + grad_highway_x
     if(applyMask)
         gradX->applyBroadcast(broadcast::Multiply, {0,1}, mask, gradX, nullptr);  // apply mask
 
-    // gradB    
+    // gradB
     auto temp3 = gradBias->reduceAlongDimension(reduce::Sum, {0,2}, false, true);    // [1 x 2K]
     gradB->assign(temp3);
 
@@ -297,8 +297,8 @@ CUSTOM_OP_IMPL(sru_bp, 8, 4, true, 0, 0) {
 
     delete gct;   delete gradU; delete gradHX;
     delete temp1; delete temp2; delete temp3; delete gradCt; delete wi;
-    delete gradTanh; delete ftMinus; delete rtMinus; delete weightsT; delete gradBias;
-    
+    delete gradTanh; delete ftMinus; delete rtMinus; delete gradBias;
+
     return Status::OK();
 }
 
@@ -322,21 +322,21 @@ DECLARE_SHAPE_FN(sru_bp) {
     ShapeDescriptor descriptor4(ArrayOptions::dataType(inShape), order, {bS, inSize});
 
     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor1), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor2), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor3), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor4));
-}   
- 
+}
+
 
 
 //////////////////////////////////////////////////////////////////////////
-CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {    
-    
+CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
+
     auto x  = INPUT_VARIABLE(0);                                      // X, input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch size, inSize - number of features
     auto w  = INPUT_VARIABLE(1);                                      // W, 2d tensor of weights [2*inSize x 6*inSize]
-    auto b  = INPUT_VARIABLE(2);                                      // B, row of biases with twice length [1 × 4*inSize]
+    auto b  = INPUT_VARIABLE(2);                                      // B, row of biases with twice length [1 x 4*inSize]
     auto c0 = INPUT_VARIABLE(3);                                      // C_{0}, 2d tensor of initial state [bS x 2*inSize] at time t=0
     NDArray* mask = block.width() > 4 ? INPUT_VARIABLE(4) : nullptr;  // optional, 2d tensor of dropout mask [bS x 2*inSize]
-       
+
     auto ht = OUTPUT_VARIABLE(0);             // h_t, [time x bS x 2*inSize]
-    auto ct = OUTPUT_VARIABLE(1);             // c_t, [time x bS x 2*inSize]    
+    auto ct = OUTPUT_VARIABLE(1);             // c_t, [time x bS x 2*inSize]
 
     // input shapes validation
     const int rank = x->rankOf();
@@ -345,20 +345,20 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 
     REQUIRE_TRUE(x->rankOf()  == rank,   0, "SRU_BI operation: wrong rank of input array, expected is %i, but got %i instead !", rank, x->rankOf());
     REQUIRE_TRUE(w->rankOf()  == rank-1, 0, "SRU_BI operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf());
-    REQUIRE_TRUE(b->rankOf()  <= rank-1, 0, "SRU_BI operation: wrong rank of biases  array, expected is <=2, but got %i instead !", b->rankOf());
-    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU_BI operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf());    
+    REQUIRE_TRUE(b->rankOf()  == 1,      0, "SRU_BI operation: wrong rank of biases array, expected is 1, but got %i instead !", b->rankOf());
+    REQUIRE_TRUE(c0->rankOf() == rank-1, 0, "SRU_BI operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf());
     if(mask)
         REQUIRE_TRUE(mask->rankOf() == rank-1, 0, "SRU_BI operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, mask->rankOf());
 
     const std::string wShape         = ShapeUtils::shapeAsString(w);
     const std::string wCorrectShape  = ShapeUtils::shapeAsString({2*inSize, 6*inSize});
     const std::string bShape         = ShapeUtils::shapeAsString(b);
-    const std::string bCorrectShape  = ShapeUtils::shapeAsString({1, 4*inSize});
+    const std::string bCorrectShape  = ShapeUtils::shapeAsString({4*inSize});
     const std::string c0Shape        = ShapeUtils::shapeAsString(c0);
     const std::string c0CorrectShape = ShapeUtils::shapeAsString({bS, 2*inSize});
 
     REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU_BI operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str());
-    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU_BI operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
+    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU_BI operation: wrong shape of biases array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
     REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU_BI operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str());
     if(mask) {
         const std::string maskShape = ShapeUtils::shapeAsString(mask);
@@ -366,7 +366,7 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
     }
 
     helpers::sruBI(block.launchContext(), x, w, b, c0, mask, ht, ct);
-    
+
     return Status::OK();
 }
 
@@ -379,20 +379,20 @@ CUSTOM_OP_IMPL(sru_bi, 5, 2, true, 0, 0) {
 DECLARE_SHAPE_FN(sru_bi) {
 
     auto xShapeInfo    = inputShape->at(0);         // [time x bS x 2K ]
-    auto wShapeInfo    = inputShape->at(1); 
-    auto bShapeInfo    = inputShape->at(2); 
-    auto c0ShapeInfo   = inputShape->at(3); 
+    auto wShapeInfo    = inputShape->at(1);
+    auto bShapeInfo    = inputShape->at(2);
+    auto c0ShapeInfo   = inputShape->at(3);
     Nd4jLong* maskShapeInfo = block.width() > 4 ? inputShape->at(4) : nullptr;     // optional,  2d tensor of dropout mask [bS x inSize]
 
     const int      rank   = xShapeInfo[0];              // = 3
     const Nd4jLong time   = xShapeInfo[1];
     const Nd4jLong bS     = xShapeInfo[2];
-    const Nd4jLong inSize = xShapeInfo[3] / 2;    
+    const Nd4jLong inSize = xShapeInfo[3] / 2;
 
 
       // input shapes validation
     REQUIRE_TRUE(wShapeInfo[0]  == rank-1, 0, "SRU_BI operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, wShapeInfo[0]);
-    REQUIRE_TRUE(bShapeInfo[0]  == rank-1,      0, "SRU_BI operation: wrong rank of biases  array, expected is <=2, but got %i instead !", rank-1, bShapeInfo[0]);
+    REQUIRE_TRUE(bShapeInfo[0]  == 1,      0, "SRU_BI operation: wrong rank of biases  array, expected is 1, but got %i instead !", bShapeInfo[0]);
     REQUIRE_TRUE(c0ShapeInfo[0] == rank-1, 0, "SRU_BI operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0ShapeInfo[0]);
     if(maskShapeInfo)
         REQUIRE_TRUE(maskShapeInfo[0] == rank-1, 0, "SRU_BI operation: wrong rank of mask array, expected is %i, but got %i instead !", rank-1, maskShapeInfo[0]);
@@ -400,12 +400,12 @@ DECLARE_SHAPE_FN(sru_bi) {
     const std::string wShape         = ShapeUtils::shapeAsString(wShapeInfo);
     const std::string wCorrectShape  = ShapeUtils::shapeAsString({2*inSize, 6*inSize});
     const std::string bShape         = ShapeUtils::shapeAsString(bShapeInfo);
-    const std::string bCorrectShape  = ShapeUtils::shapeAsString({1, 4*inSize});
+    const std::string bCorrectShape  = ShapeUtils::shapeAsString({4*inSize});
     const std::string c0Shape        = ShapeUtils::shapeAsString(c0ShapeInfo);
     const std::string c0CorrectShape = ShapeUtils::shapeAsString({bS, 2*inSize});
 
     REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU_BI operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str());
-    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU_BI operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
+    REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU_BI operation: wrong shape of biases array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
     REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU_BI operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str());
     if(maskShapeInfo) {
         const std::string maskShape = ShapeUtils::shapeAsString(maskShapeInfo);
@@ -428,15 +428,15 @@ DECLARE_SHAPE_FN(sru_bi) {
 
 //////////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
-    
+
     auto x        = INPUT_VARIABLE(0);                // X, input 3d tensor [time x bS x 2*inSize], time - number of time steps, bS - batch size, inSize - number of features
     auto w        = INPUT_VARIABLE(1);                // W, 2d tensor of weights [2*inSize x 6*inSize]
-    auto b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 4*inSize]
+    auto b        = INPUT_VARIABLE(2);                // B, row of biases with twice length [4*inSize]
     auto c0       = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x 2*inSize] at time t=0
     auto ct       = INPUT_VARIABLE(4);                // C, [time x bS x 2*inSize]
     auto inGradC0 = INPUT_VARIABLE(5);                // [bS x 2*inSize]
     auto inGradHt = INPUT_VARIABLE(6);                // [time x bS x 2*inSize]
-    NDArray* mask = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;  // optional,  2d tensor of dropout mask [bS x 2*inSize]    
+    NDArray* mask = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;  // optional,  2d tensor of dropout mask [bS x 2*inSize]
 
     // input shapes validation
     const int rank = x->rankOf();
@@ -445,7 +445,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     const Nd4jLong inSize = x->sizeAt(2) / 2;
 
     REQUIRE_TRUE(w->rankOf()        == rank-1, 0, "SRU_BI_BP operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, w->rankOf());
-    REQUIRE_TRUE(b->rankOf()        <= rank-1, 0, "SRU_BI_BP operation: wrong rank of biases  array, expected is <=2, but got %i instead !", b->rankOf());
+    REQUIRE_TRUE(b->rankOf()        == 1,      0, "SRU_BI_BP operation: wrong rank of biases array, expected is 1, but got %i instead !", b->rankOf());
     REQUIRE_TRUE(c0->rankOf()       == rank-1, 0, "SRU_BI_BP operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0->rankOf());
     REQUIRE_TRUE(ct->rankOf()       == rank,   0, "SRU_BI_BP operation: wrong rank of state array, expected is %i, but got %i instead !", rank, ct->rankOf());
     REQUIRE_TRUE(inGradC0->rankOf() == rank-1, 0, "SRU_BI_BP operation: wrong rank of gradient c0, expected is %i, but got %i instead !", rank-1, inGradC0->rankOf());
@@ -456,7 +456,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
     const std::string wShape         = ShapeUtils::shapeAsString(w);
     const std::string wCorrectShape  = ShapeUtils::shapeAsString({2*inSize, 6*inSize});
     const std::string bShape         = ShapeUtils::shapeAsString(b);
-    const std::string bCorrectShape  = ShapeUtils::shapeAsString({1, 4*inSize});
+    const std::string bCorrectShape  = ShapeUtils::shapeAsString({4*inSize});
     const std::string c0Shape        = ShapeUtils::shapeAsString(c0);
     const std::string c0CorrectShape = ShapeUtils::shapeAsString({bS, 2*inSize});
     const std::string ctShape        = ShapeUtils::shapeAsString(ct);
@@ -470,7 +470,7 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
         const std::string maskShape = ShapeUtils::shapeAsString(mask);
         REQUIRE_TRUE(maskShape == c0CorrectShape, 0, "SRU_BI operation: wrong shape of mask array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), maskShape.c_str());
     }
-   
+
     auto gradI  = OUTPUT_VARIABLE(0);              // [time x bS x 2*inSize]
     auto gradW  = OUTPUT_VARIABLE(1);              // [time x 2*inSize x 6*inSize]
     auto gradB  = OUTPUT_VARIABLE(2);              // [1 x 4*inSize]
@@ -484,9 +484,9 @@ CUSTOM_OP_IMPL(sru_bi_bp, 8, 4, true, 0, 0) {
 DECLARE_SHAPE_FN(sru_bi_bp) {
 
     auto xShapeInfo        = inputShape->at(0);         // [time x bS x 2K ]
-    auto wShapeInfo        = inputShape->at(1); 
-    auto bShapeInfo        = inputShape->at(2); 
-    auto c0ShapeInfo       = inputShape->at(3); 
+    auto wShapeInfo        = inputShape->at(1);
+    auto bShapeInfo        = inputShape->at(2);
+    auto c0ShapeInfo       = inputShape->at(3);
     auto ctShapeInfo       = inputShape->at(4);
     auto inGradC0ShapeInfo = inputShape->at(5);
     auto inGradHtShapeInfo = inputShape->at(6);
@@ -499,7 +499,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     const Nd4jLong inSize = xShapeInfo[3] / 2;
 
     REQUIRE_TRUE(wShapeInfo[0]        == rank-1, 0, "SRU_BI_BP operation: wrong rank of weights array, expected is %i, but got %i instead !", rank-1, wShapeInfo[0]);
-    REQUIRE_TRUE(bShapeInfo[0]        <= rank-1, 0, "SRU_BI_BP operation: wrong rank of biases  array, expected is <=2, but got %i instead !", bShapeInfo);
+    REQUIRE_TRUE(bShapeInfo[0]        == 1,      0, "SRU_BI_BP operation: wrong rank of biases  array, expected is 1, but got %i instead !", bShapeInfo[0]);
     REQUIRE_TRUE(c0ShapeInfo[0]       == rank-1, 0, "SRU_BI_BP operation: wrong rank of initial state array, expected is %i, but got %i instead !", rank-1, c0ShapeInfo);
     REQUIRE_TRUE(ctShapeInfo[0]       == rank,   0, "SRU_BI_BP operation: wrong rank of state array, expected is %i, but got %i instead !", rank, ctShapeInfo);
     REQUIRE_TRUE(inGradC0ShapeInfo[0] == rank-1, 0, "SRU_BI_BP operation: wrong rank of gradient c0, expected is %i, but got %i instead !", rank-1, inGradC0ShapeInfo[0]);
@@ -510,7 +510,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     const std::string wShape               = ShapeUtils::shapeAsString(wShapeInfo);
     const std::string wCorrectShape        = ShapeUtils::shapeAsString({2*inSize, 6*inSize});
     const std::string bShape               = ShapeUtils::shapeAsString(bShapeInfo);
-    const std::string bCorrectShape        = ShapeUtils::shapeAsString({1, 4*inSize});
+    const std::string bCorrectShape        = ShapeUtils::shapeAsString({4*inSize});
     const std::string c0Shape              = ShapeUtils::shapeAsString(c0ShapeInfo);
     const std::string c0CorrectShape       = ShapeUtils::shapeAsString({bS, 2*inSize});
     const std::string ctShape              = ShapeUtils::shapeAsString(ctShapeInfo);
@@ -535,11 +535,11 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
     ShapeDescriptor descriptor1(ArrayOptions::dataType(xShapeInfo), order, {time, bS, 2 * inSize});
     ShapeDescriptor descriptor2(ArrayOptions::dataType(xShapeInfo), order, {time, 2 * inSize, 6 * inSize});
-    ShapeDescriptor descriptor3(ArrayOptions::dataType(xShapeInfo), order, {1, 4 * inSize});
+    ShapeDescriptor descriptor3(ArrayOptions::dataType(xShapeInfo), order, {4 * inSize});
     ShapeDescriptor descriptor4(ArrayOptions::dataType(xShapeInfo), order, {bS, 2 * inSize});
 
     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor1), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor2), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor3), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor4));
-}   
+}
 
 }
 }
@@ -549,15 +549,15 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operations for Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
+       *
+       * Input arrays:
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 x 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: 3d tensor of cell output [bS x K x N]
        *    1: 3d tensor of cell state [bS x K x N]
        */
@@ -568,15 +568,15 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation for Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
+       *
+       * Input arrays:
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 x 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: 3d tensor of cell output [bS x K x N]
        *    1: 3d tensor of cell state [bS x K x N]
        */
@@ -588,23 +588,23 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operation for back propagation in Simple Recurrent Unit: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
-       * 
-       * Input arrays: 
+       *
+       * Input arrays:
        *    0: input 3d tensor with shape [bS x K x N], N - number of time steps, bS - batch size, K - number of features
        *    1: 2d tensor of weights [3K x K]
-       *    2: row of biases with twice length [1 × 2K]
+       *    2: row of biases with twice length [1 x 2K]
        *    3: 2d tensor of previous cell state [bS x K]
        *    4: 3d tensor of cell state [bS x K x N]
        *    5: 2d tensor of cell state gradients [bS x K]
        *    6: 3d tensor of state output gradients [bS x K x N]
        *    7: optional, 2d tensor of dropout mask [bS x K]
-       *  
-       * Output arrays: 
+       *
+       * Output arrays:
        *    0: 3d tensor of input gradients [bS x K x N]
        *    1: 3d tensor of weights gradients [bS x 3K x K]
        *    2: 2d, row of biases gradients [1 x 2K]
        *    3: 2d, tensor of state gradients [bS x K]
-       */                  
+       */
         // #if NOT_EXCLUDED(OP_sru_logic)
         // DECLARE_CUSTOM_OP(sru_bp_logic,8, 4, true,  0, 0);
         // #endif
@@ -618,27 +618,27 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 // }
 
 /////////////////////////////////////////////////////////////////////////
-// CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {    
-    
+// CUSTOM_OP_IMPL(sru_logic, 5, 2, false, 0, 0) {
+
 //     auto input   = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x K x N], N - number of time steps, bS - batch size, K - number of features
 //     auto weights = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x K]
-//     auto bias    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*K]
+//     auto bias    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 x 2*K]
 //     auto init    = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x K] at time t=0
 //     NDArray* mask    = nullptr;                          // optional,  2d tensor of dropout mask [bS x K]
 
-//     bool applyMask = false;        
+//     bool applyMask = false;
 //     if (block.width() > 4) {
-//         mask = INPUT_VARIABLE(4);   
+//         mask = INPUT_VARIABLE(4);
 //         applyMask = true;
 //     }
 
 //     auto output = OUTPUT_VARIABLE(0);                // h_t, [bS x K x N]
 //     auto state  = OUTPUT_VARIABLE(1);                // c_t, [bS x K x N]
-    
+
 //     const int bS     = input->shapeOf()[0];                     // bS - batch size
 //     const int K      = input->shapeOf()[1];                     // K - number of features
 //     const int N      = input->shapeOf()[2];                     // N - number of time steps
-        
+
 //     const auto wi = mmul(*weights, *input);                    //  U [bS x 3K x N]
 //     const auto bF = (*bias)({0,0,  0,  K});                       // biases for forget gate [1 x K]
 //     const auto bR = (*bias)({0,0,  K,2*K});                       // biases for reset  gate [1 x K]
@@ -664,7 +664,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 //         ft = sigmoid_(ft + bF);
 //         rt = sigmoid_(rt + bR);
 
-//         ct = ft * (ct - zt) + zt;                
+//         ct = ft * (ct - zt) + zt;
 //         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
 //         ct.applyTransform(transform::Tanh, &gct);
 //         ht = rt * (gct - xt) + xt;
@@ -694,23 +694,23 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 //     Nd4jLong* newShapeInfo1 = nullptr;
 //     ALLOCATE(newShapeInfo1, block.getWorkspace(), size, Nd4jLong);
-    
-//     newShapeInfo1[0] = rank;        
+
+//     newShapeInfo1[0] = rank;
 //     newShapeInfo1[1] = bS;
 //     newShapeInfo1[2] = K;
 //     newShapeInfo1[3] = N;
-    
+
 //     ShapeUtils::updateStridesAndType(newShapeInfo1, inShape, order);
 //     auto result = CONSTANT(newShapeInfo1);
 //     return SHAPELIST(result, result);
-// }   
+// }
 
 
 // //////////////////////////////////////////////////////////////////////////
 // CUSTOM_OP_IMPL(sru_old, 5, 2, false, 0, 0) {
 //     auto x   = INPUT_VARIABLE(0);                // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
 //     auto w = INPUT_VARIABLE(1);                // W, 2d tensor of weights [3K x inSize]
-//     auto b    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 × 2*inSize]
+//     auto b    = INPUT_VARIABLE(2);                // B, row of biases with twice length [1 x 2*inSize]
 //     auto c0    = INPUT_VARIABLE(3);                // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
 //     NDArray* mask    = nullptr;                          // optional,  2d tensor of dropout mask [bS x inSize]
 
@@ -820,7 +820,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 //     auto x        = INPUT_VARIABLE(0);                                   // X, input 3d tensor [bS x inSize x time], time - number of time steps, bS - batch size, inSize - number of features
 //     auto w        = INPUT_VARIABLE(1);                                   // W, 2d tensor of weights [3*inSize x inSize]
-//     auto b        = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [1 × 2*inSize]
+//     auto b        = INPUT_VARIABLE(2);                                   // B, row of biases with twice length [1 x 2*inSize]
 //     auto c0       = INPUT_VARIABLE(3);                                   // C_{0}, 2d tensor of initial state [bS x inSize] at time t=0
 //     auto c        = INPUT_VARIABLE(4);                                   // C, [bS x inSize x time]
 //     auto inGradCt = INPUT_VARIABLE(5);                                   // [bS x inSize]
@@ -860,7 +860,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 //     const std::string inGradCtCorrectShape = ShapeUtils::shapeAsString({bS, inSize});
 //     const std::string inGradHShape         = ShapeUtils::shapeAsString(inGradH);
 //     const std::string inGradHCorrectShape  = ShapeUtils::shapeAsString({bS, inSize, time});
-    
+
 //     REQUIRE_TRUE(wShape  == wCorrectShape,  0, "SRU_BP operation: wrong shape of weights array, expected is %s, but got %s instead !", wCorrectShape.c_str(), wShape.c_str());
 //     // REQUIRE_TRUE(bShape  == bCorrectShape,  0, "SRU_BP operation: wrong shape of biases  array, expected is %s, but got %s instead !", bCorrectShape.c_str(), bShape.c_str());
 //     REQUIRE_TRUE(c0Shape == c0CorrectShape, 0, "SRU_BP operation: wrong shape of initial state array, expected is %s, but got %s instead !", c0CorrectShape.c_str(), c0Shape.c_str());
@@ -896,11 +896,11 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 //         auto inGradHt = (*inGradH)({ 0,0, 0,0,              t,t+1});    // [bS x inSize  x time] -> [bS x inSize]
 
 //         auto ct_1 = t ? (*c)({ 0,0, 0,0, t-1,t}) : *c0;                                                // previous c_{t-1}
-        
+
 //         ///////////////// forward
 //         // ft = sigmoid(ft + bf), rt = sigmoid(rt + bR)
 //         ft = sigmoid_(ft + bF);
-//         rt = sigmoid_(rt + bR);        
+//         rt = sigmoid_(rt + bR);
 //         // TODO T val = (activation_type == 1) ? tanh(cur) : ((activation_type == 2) ? reluf(cur) : cur );
 //         ct.applyTransform(transform::Tanh, &gct);
 
@@ -910,7 +910,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 //         NDArray ftMinus = 1. - ft;
 //         NDArray rtMinus = 1. - rt;
 //         NDArray gradBRt = inGradHt * (gct - xt) * rtMinus * rt;
-//         // bF, TODO - tanh            
+//         // bF, TODO - tanh
 //         NDArray gradTanh = 1. - gct * gct;
 //         NDArray gradCt = inGradHt * rt * gradTanh;
 //         NDArray gradBFt = (gradCt + *inGradCt) * (ct_1 - zt) * ftMinus * ft;
@@ -923,7 +923,7 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 //         // c_{t-1}, inGradCt = (gradCt + inGradCt) * ft;
 //         *inGradCt = (gradCt + *inGradCt) * ft;
 
-//         // save results        
+//         // save results
 //         gradBias({0,0, 0,inSize, t,t+1}, true).assign(gradBFt);
 //         gradBias({0,0, inSize,2*inSize, t,t+1}, true).assign(gradBRt);
 //         gradU({0,0, 0,inSize, t,t+1}, true).assign(gradUZt);
@@ -934,19 +934,19 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 
 //     // gradInit
 //     gradInit->assign(inGradCt);
-//     // gradX 
+//     // gradX
 //     w->transposei();                                                               // [inSize x 3K]
 //     gradX->assign( mmul(*w, gradU) + gradHX);
 //     if(mask)
 //         gradX->applyBroadcast(broadcast::Multiply, {0,1}, mask, gradX, nullptr);       // apply mask
 
-//     // gradB    
+//     // gradB
 //     gradBias.reduceAlongDimension(reduce::Sum, gradB, {0,2}, false, true);    // [1 x 2K]
 
 //     // gradW [bS x 3K x inSize]
 //     x->permutei({0, 2, 1});                                               // [bS x time x inSize]
 //     gradW->assign( mmul(gradU, *x) );
-    
+
 //     return Status::OK();
 // }
 
@@ -969,4 +969,4 @@ DECLARE_SHAPE_FN(sru_bi_bp) {
 //     ShapeDescriptor descriptor4(ArrayOptions::dataType(inShape), order, {bS, inSize});
 
 //     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(descriptor1), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor2), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor3), ConstantShapeHelper::getInstance()->createShapeInfo(descriptor4));
-// }   
+// }

@@ -660,6 +660,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             val nParamsPerLayer = new long[nLayers];
             for (int i = 0; i < nLayers; i++) {
                 NeuralNetConfiguration conf = layerWiseConfigurations.getConf(i);
+                conf.getLayer().setDataType(netDtype);
                 nParamsPerLayer[i] = conf.getLayer().initializer().numParams(conf);
                 paramLength += nParamsPerLayer[i];
             }
@@ -1106,12 +1107,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         List<INDArray> out = new ArrayList<>();
         out.add(workspaceMgr.leverageTo(ArrayType.INPUT, input));    //Probably unnecessary usually
 
+        boolean traceLog = log.isTraceEnabled();
+
         for( int i=0; i<=layerIndex; i++ ){
             try(MemoryWorkspace wsFFWorking = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)){
                 if (getLayerWiseConfigurations().getInputPreProcess(i) != null) {
                     input = getLayerWiseConfigurations().getInputPreProcess(i).preProcess(input, getInputMiniBatchSize(), workspaceMgr);
                     //Validation: Exception if invalid (bad preprocessor implementation)
                     validateArrayWorkspaces(workspaceMgr, input, ArrayType.ACTIVATIONS, i, true, "Feed forward to layer (training)");
+                }
+
+                if(traceLog){
+                    log.trace("About to forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
                 if(fwdPassType == FwdPassType.STANDARD){
@@ -1141,6 +1148,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 validateArrayWorkspaces(workspaceMgr, layers[i].input(), ArrayType.INPUT, i, false, "Feed forward to layer (training)");
 
                 out.add(input);
+
+                if(traceLog){
+                    log.trace("Completed forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
+                }
             }
         }
 
@@ -1227,9 +1238,16 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         MemoryWorkspace wsActCloseNext = null;
         MemoryWorkspace temp = null;
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        boolean traceLog = log.isTraceEnabled();
+
         try {
             for (int i = 0; i <= layerIndex; i++) {
                 LayerWorkspaceMgr mgr = (i % 2 == 0 ? mgrEven : mgrOdd);
+
+                if(traceLog){
+                    log.trace("About to forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
+                }
 
                 //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
                 //Hence: put inputs in working memory
@@ -1297,6 +1315,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     }
                     wsActCloseNext = temp;
                     temp = null;
+                }
+
+                if(traceLog){
+                    log.trace("Completed forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
                 //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
@@ -1432,29 +1454,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
 
     /**
-     * Returns a 1 x m vector where the vector is composed of a flattened vector of all of the parameters (weights and
-     * biases etc) for all parameters in the network. Note that this method is generally reserved for developer and
-     * internal use - see {@link #getParam(String)} and {@link #paramTable()} for a more useful/interpretable
-     * representation of the parameters.<br>
-     * Note that with backwardsOnly = false the parameter vector is not a copy, and changes to the returned INDArray
-     * will impact the network parameters.
-     *
-     * @param backwardOnly Return a copy of the parameters excluding any parameters used only for unsupervised layers'
-     *                     unsupervised training (such as decoder parameters in an autoencoder layer
-     * @return the params for this neural net
+     * @deprecated To be removed. Use {@link #params()} instead
      */
+    @Deprecated
     public INDArray params(boolean backwardOnly) {
-        if (backwardOnly)
-            return params();
-
-        List<INDArray> params = new ArrayList<>();
-        for (Layer layer : getLayers()) {
-            INDArray layerParams = layer.params();
-            if (layerParams != null)
-                params.add(layerParams); //may be null: subsampling etc layers
-        }
-
-        return Nd4j.toFlattened('f', params);
+        return params();
     }
 
 
@@ -1863,10 +1867,17 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         MemoryWorkspace wsActGradCloseNext = null;
         MemoryWorkspace wsActGradTemp = null;
         MemoryWorkspace initialWorkspace = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        boolean traceLog = log.isTraceEnabled();
+
         try {
             for (int i = layers.length - 1; i >= 0; i--) {
                 if (layers[i] instanceof FrozenLayer) {
                     break;
+                }
+
+                if(traceLog){
+                    log.trace("About to backprop: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
                 LayerWorkspaceMgr workspaceMgr = (i % 2 == 0 ? mgrEven : mgrOdd);
@@ -1943,6 +1954,10 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     }
                     wsActGradCloseNext = wsActGradTemp;
                     wsActGradTemp = null;
+                }
+
+                if(traceLog){
+                    log.trace("Completed backprop: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
             }
         } finally {
@@ -3157,7 +3172,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             }
         }
         if(solver != null) {
-            return solver.getOptimizer().getUpdater();
+            return solver.getOptimizer().getUpdater(initializeIfReq);
         }
         return null;
     }

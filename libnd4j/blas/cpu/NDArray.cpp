@@ -153,7 +153,7 @@ static void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
     auto y = reinterpret_cast<T *>(yBuffer);
 
     PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(static))
-    for (int i = 0; i < length; ++i) {
+    for (Nd4jLong i = 0; i < length; ++i) {
         auto temp = x[i];
         x[i] = y[i];
         y[i] = temp;
@@ -181,6 +181,7 @@ void NDArray::swapUnsafe(NDArray& other) {
 void NDArray::synchronize(const char* msg) const {
     // no-op
 }
+
 void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
     // no-op
 }
@@ -193,6 +194,7 @@ void NDArray::preparePrimaryUse(const std::initializer_list<const NDArray*>& wri
 void NDArray::registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList) {
     // no-op
 }
+
 void NDArray::syncShape() const {
     // no-op
 }
@@ -208,10 +210,27 @@ void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
     return nullptr;
 }
 
+////////////////////////////////////////////////////////////////////////
+void* NDArray::specialBuffer() {
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+////////////////////////////////////////////////////////////////////////
+void* NDArray::getSpecialBuffer() const {
+    if (_buffer->special() == nullptr)
+        return getBuffer();
+    // FIXME: this should be fixed once CUDA backend added
+    return static_cast<int8_t*>(_buffer->special()) + (_offset * sizeOfT());
+}
+
+
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
-    int dim = reps.size();
+    const int repsSize = reps.size();
     int product = 1;
     for(const auto& item : reps)
         product *= item;
@@ -219,11 +238,11 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
         throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
     int rankOld = rankOf();
-    int diff = rankOld - dim;
+    int diff = rankOld - repsSize;
     if(product==1) {        // in this case 2 possibilities are present: just reshape or nothing to do
         NDArray result(*this);
         if(diff < 0) {      // reshape to higher dimension
-            std::vector<Nd4jLong> shapeNew = reps;               // need to have unities at first "diff" positions of new shape
+            std::vector<Nd4jLong> shapeNew = reps;               // there is requirement to have unities at first "diff" positions of new shape
             memcpy(&shapeNew[-diff], result.getShapeInfo()+1, rankOld * sizeof(Nd4jLong));   // put old shape numbers at rest of positions
             result.reshapei(ordering(), shapeNew);
         }
@@ -253,7 +272,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     else {
 
         PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(int i=0;  i<resultLen; ++i) {
+        for(Nd4jLong i=0;  i<resultLen; ++i) {
             auto xOffset = result.getOffset(i);
             auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
             BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (result.getBuffer(), xOffset, this->getBuffer(), yOffset), LIBND4J_TYPES);
@@ -286,15 +305,14 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
         }
     }
     else if(target.ordering() == 'c' && ews > 1) {
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i) {
+        for(Nd4jLong i=0;  i<targetLen; ++i) {
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
             BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i*ews, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
     else {
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i) {
+
+        for(Nd4jLong i=0;  i<targetLen; ++i) {
 
             auto xOffset = target.getOffset(i);
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
@@ -316,23 +334,22 @@ void NDArray::tile(NDArray& target) const {
     const auto ews = target.ews();
     const auto targetLen = target.lengthOf();
     if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for (int i = 0; i < targetLen; ++i) {
+
+        for (Nd4jLong i = 0; i < targetLen; ++i) {
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
             BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
     else if(target.ordering() == 'c' && ews > 1) {
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i) {
+
+        for(Nd4jLong i=0;  i<targetLen; ++i) {
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
             BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i*ews, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
         }
     }
     else {
 
-//#pragma omp parallel for simd if(targetLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)
-        for(int i=0;  i<targetLen; ++i) {
+        for(Nd4jLong i=0;  i<targetLen; ++i) {
 
             auto xOffset = target.getOffset(i);
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());

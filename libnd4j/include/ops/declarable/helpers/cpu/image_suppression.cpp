@@ -20,6 +20,8 @@
 
 #include <ops/declarable/helpers/image_suppression.h>
 //#include <blas/NDArray.h>
+#include <algorithm>
+#include <numeric>
 
 namespace nd4j {
 namespace ops {
@@ -28,13 +30,13 @@ namespace helpers {
     template <typename T>
     static void nonMaxSuppressionV2_(NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
         std::vector<Nd4jLong> indices(scales->lengthOf());
-        for (size_t i = 0; i < indices.size(); ++i)
-            indices[i] = i;
+        std::iota(indices.begin(), indices.end(), 0);
+
         std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return scales->e<T>(i) > scales->e<T>(j);});
 
-        std::vector<int> selected;
+//        std::vector<int> selected(output->lengthOf());
         std::vector<int> selectedIndices(output->lengthOf(), 0);
-        auto needToSuppressWithThreshold = [threshold] (NDArray& boxes, int previousIndex, int nextIndex) -> bool {
+        auto needToSuppressWithThreshold = [] (NDArray& boxes, int previousIndex, int nextIndex, T threshold) -> bool {
             T minYPrev = nd4j::math::nd4j_min(boxes.e<T>(previousIndex, 0), boxes.e<T>(previousIndex, 2));
             T minXPrev = nd4j::math::nd4j_min(boxes.e<T>(previousIndex, 1), boxes.e<T>(previousIndex, 3));
             T maxYPrev = nd4j::math::nd4j_max(boxes.e<T>(previousIndex, 0), boxes.e<T>(previousIndex, 2));
@@ -59,29 +61,28 @@ namespace helpers {
             return intersectionValue > threshold;
 
         };
+//        int numSelected = 0;
+        int numBoxes = boxes->sizeAt(0);
         int numSelected = 0;
-        for (int i = 0; i < boxes->sizeAt(0); ++i) {
-            if (selected.size() >= output->lengthOf()) break;
-            bool shouldSelect = true;
-            // Overlapping boxes are likely to have similar scores,
-            // therefore we iterate through the selected boxes backwards.
+
+        for (int i = 0; i < numBoxes; ++i) {
+            bool shouldSelect = numSelected < output->lengthOf();
+            PRAGMA_OMP_PARALLEL_FOR //_ARGS(firstprivate(numSelected))
             for (int j = numSelected - 1; j >= 0; --j) {
-                if (needToSuppressWithThreshold(*boxes, indices[i], indices[selectedIndices[j]])) {
+                if (shouldSelect)
+                if (needToSuppressWithThreshold(*boxes, indices[i], indices[selectedIndices[j]], T(threshold))) {
                     shouldSelect = false;
-                    break;
                 }
             }
             if (shouldSelect) {
-                selected.push_back(indices[i]);
+                output->p(numSelected, indices[i]);
                 selectedIndices[numSelected++] = i;
             }
         }
-        for (size_t e = 0; e < selected.size(); ++e)
-            output->p<int>(e, selected[e]);
     }
 
     void nonMaxSuppressionV2(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(output->dataType(), nonMaxSuppressionV2_, (boxes, scales, maxSize, threshold, output), NUMERIC_TYPES);
+        BUILD_SINGLE_SELECTOR(boxes->dataType(), nonMaxSuppressionV2_, (boxes, scales, maxSize, threshold, output), NUMERIC_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template void nonMaxSuppressionV2_, (NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output), NUMERIC_TYPES);
 

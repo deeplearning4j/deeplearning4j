@@ -82,12 +82,12 @@ public class RngTests extends BaseNd4jTest {
         INDArray narr = Nd4j.randn('c', rows, cols);
         assertArrayEquals(new long[] {rows, cols}, narr.shape());
         assertEquals('c', narr.ordering());
-        assertEquals(narr.meanNumber().doubleValue(), 0.0, 0.05);
+        assertEquals(0.0, narr.meanNumber().doubleValue(), 0.05);
 
         INDArray narr2 = Nd4j.randn('f', rows, cols);
         assertArrayEquals(new long[] {rows, cols}, narr2.shape());
         assertEquals('f', narr2.ordering());
-        assertEquals(narr2.meanNumber().doubleValue(), 0.0, 0.05);
+        assertEquals(0.0, narr2.meanNumber().doubleValue(), 0.05);
 
         INDArray narr3 = Nd4j.randn('c', new int[] {rows, cols, dim2});
         assertArrayEquals(new long[] {rows, cols, dim2}, narr3.shape());
@@ -97,7 +97,7 @@ public class RngTests extends BaseNd4jTest {
         INDArray narr4 = Nd4j.randn('f', new int[] {rows, cols, dim2});
         assertArrayEquals(new long[] {rows, cols, dim2}, narr4.shape());
         assertEquals('f', narr4.ordering());
-        assertEquals(narr4.meanNumber().doubleValue(), 0.0, 0.05);
+        assertEquals(0.0, narr4.meanNumber().doubleValue(), 0.05);
 
     }
 

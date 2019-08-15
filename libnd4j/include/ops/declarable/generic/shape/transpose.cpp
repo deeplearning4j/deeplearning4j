@@ -39,7 +39,6 @@ namespace ops {
                 auto t = x->transpose();
                 output->assign(t);
                 STORE_RESULT(*output);
-                delete t;
             }
         } else {
             // this is tf-mode transpose, that's nd4j permute
@@ -83,8 +82,6 @@ namespace ops {
 
                 auto output = OUTPUT_VARIABLE(0);
                 output->assign(input);
-
-                delete input;
              }
         }
         return Status::OK();

@@ -31,7 +31,7 @@ import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.Constants;
-import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
@@ -57,7 +57,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     @Getter
     private int lastMonitor = -Constants.MONITOR_FREQ;
 
-    public AsyncThread(AsyncGlobal<NN> asyncGlobal, int threadNumber) {
+    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, int threadNumber) {
         this.threadNumber = threadNumber;
     }
 
@@ -109,7 +109,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                 if (length >= getConf().getMaxEpochStep() || getMdp().isDone()) {
                     postEpoch();
 
-                    DataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score);
+                    IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, rewards, length, score);
                     getDataManager().appendStat(statEntry);
                     log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
 
@@ -136,13 +136,13 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     protected abstract int getThreadNumber();
 
-    protected abstract AsyncGlobal<NN> getAsyncGlobal();
+    protected abstract IAsyncGlobal<NN> getAsyncGlobal();
 
     protected abstract MDP<O, A, AS> getMdp();
 
     protected abstract AsyncConfiguration getConf();
 
-    protected abstract DataManager getDataManager();
+    protected abstract IDataManager getDataManager();
 
     protected abstract Policy<O, A> getPolicy(NN net);
 
@@ -159,7 +159,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     @AllArgsConstructor
     @Value
-    public static class AsyncStatEntry implements DataManager.StatEntry {
+    public static class AsyncStatEntry implements IDataManager.StatEntry {
         int stepCounter;
         int epochCounter;
         double reward;

@@ -290,18 +290,16 @@ public class GradientCheckTestsMasking extends BaseDL4JTest {
         int nOut = 2;
 
         //1 example, TS length 3
-        INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0}, new int[] {1, nOut, 3}, 'f');
+        INDArray mask1 = Nd4j.create(new double[] {1, 0, 0, 1, 0, 1}, new int[] {1, nOut, 3}, 'f');
         //1 example, TS length 1
-        INDArray mask2 = Nd4j.create(new double[] {1, 1, 0, 1}, new int[] {1, nOut, 1}, 'f');
+        INDArray mask2 = Nd4j.create(new double[] {1, 1}, new int[] {1, nOut, 1}, 'f');
         //3 examples, TS length 3
         INDArray mask3 = Nd4j.create(new double[] {
                         //With fortran order: dimension 0 (example) changes quickest, followed by dimension 1 (value within time
                         // step) followed by time index (least frequently)
-                        1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0,
-
-                        0, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1,
-
-                        1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0}, new int[] {3, nOut, 3}, 'f');
+                        1, 0, 1, 0, 1, 1,
+                        0, 1, 1, 1, 1, 0,
+                        1, 1, 1, 0, 0, 1,}, new int[] {3, nOut, 3}, 'f');
         INDArray[] labelMasks = new INDArray[] {mask1, mask2, mask3};
 
         ILossFunction[] lossFunctions = new ILossFunction[] {new LossBinaryXENT(),

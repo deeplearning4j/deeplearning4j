@@ -25,6 +25,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class HierarchicSoftmax extends BaseAggregate {
     private int vectorLength;
 

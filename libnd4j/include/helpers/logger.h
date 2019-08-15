@@ -55,8 +55,8 @@ namespace nd4j {
 
         static void _CUDA_H info(const char *format, ...);
 
-        static void _CUDA_H printv(const char *format, std::vector<int>& vec);
-        static void _CUDA_H printv(const char *format, std::vector<Nd4jLong>& vec);
+        static void _CUDA_H printv(const char *format, const std::vector<int>& vec);
+        static void _CUDA_H printv(const char *format, const std::vector<Nd4jLong>& vec);
     };
 
 }

@@ -20,63 +20,68 @@
 
 #include <ops/declarable/helpers/helpers.h>
 
-namespace nd4j {
-namespace ops {
+namespace nd4j    {
+namespace ops     {
 namespace helpers {
 
-    void dilation2d(nd4j::LaunchContext * context, NDArray *input, NDArray *weights, NDArray *output, int stride_rows, int stride_cols, int rate_rows, int rate_cols, int pad_top, int pad_left);
+//////////////////////////////////////////////////////////////////////
+void dilation2d(nd4j::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW);
 
-    FORCEINLINE Nd4jStatus _outputSize(nd4j::LaunchContext * context, int input_size, int filter_size, int dilation_rate, int stride, bool isSameMode, int *output_size, int *padding_before, int *padding_after) {
-        if (stride <= 0)
-            return Status::THROW("Dilation2D: Stride must be > 0");
-    
-        if (dilation_rate < 1)
-            return Status::THROW("Dilation2D: Dilation rate must be >= 1");
+//////////////////////////////////////////////////////////////////////
+FORCEINLINE Nd4jStatus outputSize(nd4j::LaunchContext * context, const int inSize, const int k, const int d, const int s, bool isSameMode, int *outSize, int *padding_before, int *padding_after) {
+    if (s <= 0)
+        return Status::THROW("Dilation2D: Stride must be > 0");
 
-        int effective_filter_size = (filter_size - 1) * dilation_rate + 1;
-        if (isSameMode) {
-            *output_size = (input_size + stride - 1) / stride;
-            const int padding_needed = nd4j::math::nd4j_max<int>(0, (*output_size - 1) * stride + effective_filter_size -input_size);
-      
-            *padding_before = padding_needed / 2;
-            *padding_after = padding_needed - *padding_before;
-        } else {
-            *output_size = (input_size - effective_filter_size + stride) / stride;
-            *padding_before = *padding_after = 0;
-        }
+    if (d < 1)
+        return Status::THROW("Dilation2D: Dilation rate must be >= 1");
 
-        if (*output_size < 0)
-            return Status::THROW("Dilation2D: output_size has negative value");
-        
-        return Status::OK();
+    int kEff = (k - 1) * d + 1;
+    if (isSameMode) {
+        *outSize = (inSize + s - 1) / s;
+        const int padding_needed = nd4j::math::nd4j_max<int>(0, (*outSize - 1) * s + kEff -inSize);
+
+        *padding_before = padding_needed / 2;
+        *padding_after = padding_needed - *padding_before;
+    } else {
+        *outSize = (inSize - kEff + s) / s;
+        *padding_before = *padding_after = 0;
     }
 
+    if (*outSize < 0)
+        return Status::THROW("Dilation2D: outSize has negative value");
 
-    FORCEINLINE Nd4jStatus _dilation_hw(nd4j::LaunchContext * context, Nd4jLong *in, Nd4jLong *wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *stride_rows, int *stride_cols, int *rate_rows, int *rate_cols, int *pad_top, int *pad_left, int *out_rows, int *out_cols) {
-        const int input_rows = shape::sizeAt(in, 1);
-        const int input_cols = shape::sizeAt(in, 2);
-        const int depth = shape::sizeAt(in, 3);
+    return Status::OK();
+}
 
-        *stride_rows = strides[1];
-        *stride_cols = strides[2];
-        *rate_rows = rates[1];
-        *rate_cols = rates[2];
+//////////////////////////////////////////////////////////////////////
+FORCEINLINE Nd4jStatus dilation_hw(nd4j::LaunchContext * context, Nd4jLong *in, Nd4jLong *wh, std::vector<int> &strides, std::vector<int> &rates, bool isSameMode, int *sH, int *sW, int *pH, int *pW, int *dH, int *dW, int *oH, int *oW) {
+    const int iH = shape::sizeAt(in, 1);
+    const int iW = shape::sizeAt(in, 2);
+    const int iC = shape::sizeAt(in, 3);
 
-        const int filter_rows = shape::sizeAt(wh, 0);
-        const int filter_cols = shape::sizeAt(wh, 1);
+    *sH = strides[1];
+    *sW = strides[2];
+    *dH = rates[1];
+    *dW = rates[2];
 
-        const int filter_rows_eff = filter_rows + (filter_rows - 1) * (*rate_rows - 1);
-        const int filter_cols_eff = filter_cols + (filter_cols - 1) * (*rate_cols - 1);
+    const int kH = shape::sizeAt(wh, 0);
+    const int kW = shape::sizeAt(wh, 1);
 
-        int padding_after_unusedA, padding_after_unusedB;
-        if (_outputSize(context, input_rows, filter_rows_eff, 1, *stride_rows, isSameMode, out_rows, pad_top, &padding_after_unusedA) != Status::OK())
-            return Status::THROW("Dilation2D: bad height");
+    const int kHeff = kH + (kH - 1) * (*dH - 1);
+    const int kWeff = kW + (kW - 1) * (*dW - 1);
 
-        if (_outputSize(context, input_cols, filter_cols_eff, 1, *stride_cols, isSameMode, out_cols, pad_left, &padding_after_unusedA) != Status::OK())
-            return Status::THROW("Dilation2D: bad width");
+    int padding_after_unusedA, padding_after_unusedB;
+    if (outputSize(context, iH, kHeff, 1, *sH, isSameMode, oH, pH, &padding_after_unusedA) != Status::OK())
+        return Status::THROW("Dilation2D: bad height");
 
-        return Status::OK();
-    }
+    if (outputSize(context, iW, kWeff, 1, *sW, isSameMode, oW, pW, &padding_after_unusedA) != Status::OK())
+        return Status::THROW("Dilation2D: bad width");
+
+    return Status::OK();
+}
+
+
+
 }
 }
 }

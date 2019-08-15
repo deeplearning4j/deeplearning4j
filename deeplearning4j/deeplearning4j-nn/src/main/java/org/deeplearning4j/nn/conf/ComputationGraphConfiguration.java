@@ -350,7 +350,7 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
                     "Use .addInputs(String...) to label (and give an ordering to) the network inputs");
         }
         if ((networkOutputs == null || networkOutputs.isEmpty()) && !allowNoOutput) {
-            throw new IllegalStateException("Invalid configuration: network has no outputs." +
+            throw new IllegalStateException("Invalid configuration: network has no outputs. " +
                     "Use .setOutput(String...) to specify (and give an ordering to) the output vertices, " +
                     "or use allowNoOutputs(true) to disable this check");
         }

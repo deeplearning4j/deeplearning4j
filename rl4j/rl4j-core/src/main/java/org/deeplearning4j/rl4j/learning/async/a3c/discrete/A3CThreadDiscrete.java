@@ -28,7 +28,7 @@ import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.util.IDataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -52,12 +52,12 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
     @Getter
     final protected int threadNumber;
     @Getter
-    final protected DataManager dataManager;
+    final protected IDataManager dataManager;
 
     final private Random random;
 
     public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal,
-                    A3CDiscrete.A3CConfiguration a3cc, int threadNumber, DataManager dataManager) {
+                    A3CDiscrete.A3CConfiguration a3cc, int threadNumber, IDataManager dataManager) {
         super(asyncGlobal, threadNumber);
         this.conf = a3cc;
         this.asyncGlobal = asyncGlobal;

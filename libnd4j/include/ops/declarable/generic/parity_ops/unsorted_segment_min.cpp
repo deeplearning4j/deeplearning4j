@@ -63,7 +63,8 @@ namespace nd4j {
         DECLARE_TYPES(unsorted_segment_min) {
             getOpDescriptor()
                     ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS})
-                    ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
                     ->setSameMode(true);
         }
 
@@ -73,9 +74,11 @@ namespace nd4j {
 
         DECLARE_TYPES(unsorted_segment_min_bp) {
             getOpDescriptor()
-                    ->setAllowedOutputTypes(0, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS, ALL_INTS})
 					->setAllowedOutputTypes(1, {ALL_INTS})
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, {ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setAllowedInputTypes(2, {ALL_FLOATS, ALL_INTS})
                     ->setSameMode(false);
         }
 

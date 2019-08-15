@@ -24,16 +24,40 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    static void sequenceMask_(NDArray* input, NDArray* output, int maxIndex) {
-        //
+    template <typename I, typename B>
+    static __global__ void sequenceMaskKernel(void* inputBuf, Nd4jLong* inputShape, void* outputBuf, Nd4jLong* outputShape, int maxIndex) {
+
+        __shared__ I* input;
+        __shared__ B* output;
+        __shared__ Nd4jLong inputLen, outputLen;
+        if (threadIdx.x == 0) {
+            input = reinterpret_cast<I*>(inputBuf);
+            output = reinterpret_cast<B*>(outputBuf);
+            inputLen = shape::length(inputShape);
+            outputLen = shape::length(outputShape);
+        }
+
+        for (auto i = blockIdx.x; i < maxIndex; i += gridDim.x)
+            for(auto k = threadIdx.x; k < inputLen; k += blockDim.x)
+                if (i < input[shape::getIndexOffset(k, inputShape, inputLen)])
+                    output[shape::getIndexOffset(k * maxIndex + i, outputShape, outputLen)] = B(true);
+
+    }
+
+    template <typename I, typename B>
+    static void sequenceMask_(LaunchContext* context, NDArray* input, NDArray* output, int maxIndex) {
+        dim3 launchDims(maxIndex, input->lengthOf(), 128);
+        NDArray::prepareSpecialUse({output}, {input});
+        auto stream = context->getCudaStream();
+        sequenceMaskKernel<I, B><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), maxIndex);
+        NDArray::registerSpecialUse({output}, {input});
     }
 
     void sequenceMask(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), sequenceMask_, (input, output, maxIndex), LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sequenceMask_, (context, input, output, maxIndex), INTEGER_TYPES, BOOL_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void sequenceMask_, (NDArray* input, NDArray* output, int maxIndex), LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template void sequenceMask_, (nd4j::LaunchContext* context, NDArray* input, NDArray* output, int maxIndex), INTEGER_TYPES, BOOL_TYPES);
 }
 }
 }

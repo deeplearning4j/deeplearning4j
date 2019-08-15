@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
@@ -49,13 +50,14 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarLessThan;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.ops.impl.transforms.Histogram;
+import org.nd4j.linalg.api.ops.impl.transforms.HistogramFixedWidth;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.floating.Histogram;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Log;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.OldSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SetRange;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
@@ -96,9 +98,9 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testSoftmaxReference() {
         INDArray input = Nd4j.linspace(1,4,4, DataType.FLOAT).reshape(2,2);
         INDArray dup = input.dup();
-        Nd4j.getExecutioner().exec(new OldSoftMax(dup));
+        Nd4j.getExecutioner().exec((CustomOp) new SoftMax(dup));
         INDArray result = Nd4j.zeros(DataType.FLOAT, 2,2);
-        Nd4j.getExecutioner().exec(new OldSoftMax(input,result));
+        Nd4j.getExecutioner().exec((CustomOp) new SoftMax(input,result));
         assertEquals(dup,result);
 
 
@@ -322,9 +324,9 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testRowSoftmax() {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
-        OldSoftMax softMax = new OldSoftMax(arr);
-        opExecutioner.exec(softMax);
-        assertEquals(getFailureMessage(), 1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
+        val softMax = new SoftMax(arr);
+        opExecutioner.exec((CustomOp) softMax);
+        assertEquals(getFailureMessage(), 1.0, softMax.outputArguments()[0].sumNumber().doubleValue(), 1e-1);
     }
 
     @Test
@@ -422,23 +424,23 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testSoftMax() {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(1, -1);
-        OldSoftMax softMax = new OldSoftMax(arr);
-        opExecutioner.exec(softMax);
-        assertEquals(getFailureMessage(), 1.0, softMax.z().sumNumber().doubleValue(), 1e-1);
+        val softMax = new SoftMax(arr);
+        opExecutioner.exec((CustomOp) softMax);
+        assertEquals(getFailureMessage(), 1.0, softMax.outputArguments()[0].sumNumber().doubleValue(), 1e-1);
 
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
-        OldSoftMax softmax = new OldSoftMax(linspace.dup());
-        Nd4j.getExecutioner().exec(softmax);
-        assertEquals(linspace.rows(), softmax.z().sumNumber().doubleValue(), 1e-1);
+        val softmax = new SoftMax(linspace.dup());
+        Nd4j.getExecutioner().exec((CustomOp) softmax);
+        assertEquals(linspace.rows(), softmax.outputArguments()[0].sumNumber().doubleValue(), 1e-1);
     }
 
 
     @Test
     public void testDimensionSoftMax() {
         INDArray linspace = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
-        OldSoftMax max = new OldSoftMax(linspace);
-        Nd4j.getExecutioner().exec(max);
-        linspace.assign(max.z());
+        val max = new SoftMax(linspace);
+        Nd4j.getExecutioner().exec((CustomOp) max);
+        linspace.assign(max.outputArguments()[0]);
         assertEquals(getFailureMessage(), linspace.getRow(0).sumNumber().doubleValue(), 1.0, 1e-1);
     }
 
@@ -782,7 +784,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testSoftmax() {
         INDArray vec = Nd4j.linspace(1, 18, 18, DataType.DOUBLE);
         INDArray matrix = vec.dup().reshape(3, 6);
-        Nd4j.getExecutioner().exec(new OldSoftMax(matrix));
+        Nd4j.getExecutioner().exec((CustomOp) new SoftMax(matrix));
         INDArray assertion = Nd4j.create(
                         new double[] {0.0042697787, 0.011606461, 0.031549633, 0.085760795, 0.23312202, 0.6336913,
                                         0.0042697787, 0.011606461, 0.031549633, 0.085760795, 0.23312202, 0.6336913,
@@ -875,14 +877,14 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     @Test
     public void testHistogram1() {
         INDArray x = Nd4j.linspace(1, 1000, 100000, DataType.DOUBLE);
-        INDArray z = Nd4j.zeros(DataType.DOUBLE,new long[]{20});
+        INDArray z = Nd4j.zeros(DataType.LONG,new long[]{20});
 
         INDArray xDup = x.dup();
         INDArray zDup = z.dup();
 
-        INDArray zExp = Nd4j.create(DataType.DOUBLE, 20).assign(5000);
+        INDArray zExp = Nd4j.create(DataType.LONG, 20).assign(5000);
 
-        Histogram histogram = new Histogram(x, z);
+        val histogram = new Histogram(x, z);
 
         Nd4j.getExecutioner().exec(histogram);
 
@@ -898,16 +900,13 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
     public void testHistogram2() {
         INDArray x = Nd4j.create(new float[] {0f, 0f, 0f, 5f, 5f, 5f, 10f, 10f, 10f});
 
-
         INDArray xDup = x.dup();
 
-        INDArray zExp = Nd4j.zeros(DataType.FLOAT, 10).putScalar(0, 3f).putScalar(5, 3f).putScalar(9, 3f);
+        INDArray zExp = Nd4j.zeros(DataType.LONG, 10).putScalar(0, 3).putScalar(5, 3).putScalar(9, 3);
 
-        Histogram histogram = new Histogram(x, 10);
+        val histogram = new Histogram(x, 10);
 
-        Nd4j.getExecutioner().exec(histogram);
-
-        INDArray z = histogram.z();
+        val z = Nd4j.getExecutioner().exec(histogram)[0];
 
         assertEquals(xDup, x);
 

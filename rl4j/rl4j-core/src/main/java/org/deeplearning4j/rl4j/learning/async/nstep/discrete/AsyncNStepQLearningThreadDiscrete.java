@@ -19,7 +19,7 @@ package org.deeplearning4j.rl4j.learning.async.nstep.discrete;
 import lombok.Getter;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
+import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
 import org.deeplearning4j.rl4j.learning.async.MiniTrans;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -29,7 +29,7 @@ import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.util.IDataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -46,17 +46,17 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
     @Getter
     final protected MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
-    final protected AsyncGlobal<IDQN> asyncGlobal;
+    final protected IAsyncGlobal<IDQN> asyncGlobal;
     @Getter
     final protected int threadNumber;
     @Getter
-    final protected DataManager dataManager;
+    final protected IDataManager dataManager;
 
     final private Random random;
 
-    public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IDQN> asyncGlobal,
+    public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IAsyncGlobal<IDQN> asyncGlobal,
                     AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf, int threadNumber,
-                    DataManager dataManager) {
+                    IDataManager dataManager) {
         super(asyncGlobal, threadNumber);
         this.conf = conf;
         this.asyncGlobal = asyncGlobal;

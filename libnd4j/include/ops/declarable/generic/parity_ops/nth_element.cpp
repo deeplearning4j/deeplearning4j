@@ -40,7 +40,7 @@ namespace nd4j {
             else {
 //                if (!input->isVector() && reverse)
 //                    n->assign(lastDim - n->e<Nd4jLong>(0) - 1);
-                helpers::nthElementFunctor(block.launchContext(), input, n, output, reverse);
+                helpers::nthElementFunctor(block.launchContext(), input, nVal, output, reverse);
             }
             return ND4J_STATUS_OK;
         }

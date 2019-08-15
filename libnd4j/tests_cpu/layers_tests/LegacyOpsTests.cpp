@@ -85,7 +85,7 @@ TEST_F(LegacyOpsTests,  Reciprocal_1) {
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
     ASSERT_TRUE(ethalon.equalsTo(&x));
-    
+
 }
 
 TEST_F(LegacyOpsTests,  PWT_Tests_1) {
@@ -172,7 +172,7 @@ TEST_F(LegacyOpsTests, ReduceTests_1) {
     ASSERT_EQ(1, result->size());
 
     auto z = result->at(0);
-    z->printBuffer("ReduceTest1");
+    // z->printBuffer("ReduceTest1");
     ASSERT_TRUE(z->isScalar());
     ASSERT_NEAR(x.sumNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
@@ -217,7 +217,7 @@ TEST_F(LegacyOpsTests, ReduceTests_3) {
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
-    
+
     delete result;
 }
 
@@ -232,10 +232,10 @@ TEST_F(LegacyOpsTests, ReduceTests_4) {
     auto result = op.execute({&x, &indices}, {}, {}, {true});
     auto z = result->at(0);
     auto exp = x.reduceAlongDims(reduce::Sum, {1}, true);
-    indices.printShapeInfo("Indices shape");
+    // indices.printShapeInfo("Indices shape");
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    z->printIndexedBuffer("Output reduce 4");
-    exp.printIndexedBuffer("Expected reduce 4");
+    // z->printIndexedBuffer("Output reduce 4");
+    // exp.printIndexedBuffer("Expected reduce 4");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -253,7 +253,7 @@ TEST_F(LegacyOpsTests, ReduceTests_5) {
     ASSERT_EQ(1, result->size());
 
     auto z = result->at(0);
-    z->printBuffer("ReduceTest1");
+    // z->printBuffer("ReduceTest1");
     ASSERT_TRUE(z->isScalar());
     ASSERT_NEAR(x.meanNumber().e<float>(0), z->e<float>(0), 1e-5f);
 
@@ -315,9 +315,9 @@ TEST_F(LegacyOpsTests, ReduceTests_8) {
     auto exp = x.reduceAlongDims(reduce::Mean, {1}, true);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
-    z->printIndexedBuffer("Reduce8 output");
-    z->printShapeInfo("Reduce8 shape");
-    exp.printShapeInfo("Reduce8 expected shape");
+    // z->printIndexedBuffer("Reduce8 output");
+    // z->printShapeInfo("Reduce8 shape");
+    // exp.printShapeInfo("Reduce8 expected shape");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -356,7 +356,7 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     ASSERT_EQ(1, result->size());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Hello indexreduce2");
+    // z->printIndexedBuffer("Hello indexreduce2");
     ASSERT_TRUE(exp.equalsTo(z));
     //ASSERT_EQ(4, z->e<int>(0));
     //ASSERT_EQ(4, z->e<int>(1));
@@ -382,7 +382,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_1) {
             z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), extra, nullptr, nullptr);
 
     // z.printIndexedBuffer("z");
-    for (int e = 0; e < z.lengthOf(); e++) {
+    for (Nd4jLong e = 0; e < z.lengthOf(); e++) {
         ASSERT_TRUE(z.e<double>(e) >= 0);
     }
 }
@@ -402,7 +402,7 @@ TEST_F(LegacyOpsTests, Test_IsMax_2) {
             z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), extra, nullptr, nullptr);
 
     // z.printIndexedBuffer("z");
- for (int e = 0; e < z.lengthOf(); e++) {
+ for (Nd4jLong e = 0; e < z.lengthOf(); e++) {
      if (e >= z.lengthOf() / 2)
          ASSERT_TRUE(z.e<bool>(e));
      else
@@ -423,8 +423,8 @@ TEST_F(LegacyOpsTests, BroadcastingTests_1) {
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
     auto list = x.allTensorsAlongDimension({1});
-    x.printIndexedBuffer("Output broadcast");
-    list->at(0)->printIndexedBuffer("Column 0:");
+    // x.printIndexedBuffer("Output broadcast");
+    // list->at(0)->printIndexedBuffer("Column 0:");
     for (int e = 0; e < list->size(); e++)
         ASSERT_TRUE(row.equalsTo(list->at(e)));
 
@@ -439,14 +439,15 @@ TEST_F(LegacyOpsTests, BroadcastingTests_2) {
     e.assign(4.0);
 
     int axis = 1;
-    shape::TAD tad;
-    tad.init(y.shapeInfo(), &axis, 1);
-    tad.createTadOnlyShapeInfo();
-    tad.createOffsets();
 
-    shape::printShapeInfoLinear("tad shape", tad.tadOnlyShapeInfo);
+    // shape::printShapeInfoLinear("tad shape", tad.tadOnlyShapeInfo);
+    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), {axis});
 
-    NativeOpExecutioner::execInverseBroadcast(LaunchContext::defaultContext(), broadcast::Add, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), &axis, 1, tad.tadOnlyShapeInfo, tad.tadOffsets, tad.tadOnlyShapeInfo, tad.tadOffsets);
+    NDArray::prepareSpecialUse({&y}, {&x});
+
+    NativeOpExecutioner::execInverseBroadcast(LaunchContext::defaultContext(), broadcast::Add, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), &axis, 1, packY.platformShapeInfo(), packY.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+
+    NDArray::registerSpecialUse({&y}, {&x});
 
     ASSERT_EQ(e, y);
 }
@@ -465,7 +466,7 @@ TEST_F(LegacyOpsTests, PowDerivative_1) {
 }
 
 TEST_F(LegacyOpsTests, reduce3_1) {
-    
+
     Nd4jLong yShape[2] = {4,4};
     Nd4jLong xShape[1] = {4};
     float y[16] ={1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16};
@@ -479,16 +480,16 @@ TEST_F(LegacyOpsTests, reduce3_1) {
     std::vector<int> dim = {1};
 
     auto shapeBuffer  = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 2, yShape);
-    auto xShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 1, xShape);    
+    auto xShapeBuffer = nd4j::ShapeBuilders::createShapeInfo(nd4j::DataType::FLOAT32, 'c', 1, xShape);
 
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
     auto tadShapeBuffer = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
     functions::reduce3::Reduce3<float, float>::exec(opNum, x, xShapeBuffer, extraVals, y, shapeBuffer, result, tadShapeBuffer, dimension, dimensionLength);
 
     float distancesAssertion[4] = {0.0,8.0,16.0,24.0};
-    for(int i = 0; i < 4; i++) 
+    for(int i = 0; i < 4; i++)
         ASSERT_EQ(distancesAssertion[i],result[i]);
-    
+
     delete[] shapeBuffer;
     delete[] xShapeBuffer;
 }
@@ -500,10 +501,30 @@ TEST_F(LegacyOpsTests, Reduce3_2) {
     auto z = NDArrayFactory::create<float>('c', {5});
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
+    dim.syncToHost();
 
-    NativeOps nativeOps;
-    nativeOps.execReduce3(nullptr, reduce3::CosineSimilarity, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
-                          nullptr, nullptr, nullptr, nullptr);
+    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+
+    Nd4jPointer* extraPointers = nullptr;
+    #ifdef __CUDABLAS__
+        extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
+    #endif
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
+    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
+
+    NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
+
+    execReduce3Tad(extraPointers, reduce3::CosineSimilarity,
+                        x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                        nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                        dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
+                        packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+
+    NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
+
+    delete []extraPointers;
 }
 
 TEST_F(LegacyOpsTests, Reduce3_3) {
@@ -516,20 +537,31 @@ TEST_F(LegacyOpsTests, Reduce3_3) {
     auto z = NDArrayFactory::create<double>('c', {3});
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
+    dim.syncToHost();
 
-    NativeOps nativeOps;
+    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
 
-    nativeOps.execReduce3(nullptr, reduce3::CosineDistance, 
-                        x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
-                        nullptr, 
-                        y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(), 
-                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), 
+    Nd4jPointer* extraPointers = nullptr;
+    #ifdef __CUDABLAS__
+        extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
+    #endif
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
+    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
+
+    NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
+
+
+    execReduce3Tad(extraPointers, reduce3::CosineDistance,
+                        x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                        nullptr,
+                        y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                         dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
-                          nullptr, nullptr, nullptr, nullptr);
-
-    // z.printIndexedBuffer("z");
-
+                        packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
     ASSERT_EQ(e, z);
+    NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
+    delete []extraPointers;
 }
 
 TEST_F(LegacyOpsTests, Reduce3_4) {
@@ -542,20 +574,33 @@ TEST_F(LegacyOpsTests, Reduce3_4) {
     auto z = NDArrayFactory::create<double>('c', {1, 3});
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
+    dim.syncToHost();
 
-    NativeOps nativeOps;
+    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
 
-    nativeOps.execReduce3(nullptr, reduce3::CosineDistance,
+    Nd4jPointer* extraPointers = nullptr;
+    #ifdef __CUDABLAS__
+        extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
+    #endif
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
+    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
+
+    NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
+
+
+    execReduce3Tad(extraPointers, reduce3::CosineDistance,
                           x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                           nullptr,
                           y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
                           z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                           dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
-                          nullptr, nullptr, nullptr, nullptr);
+                          packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
 
     // z.printIndexedBuffer("z");
-
+    NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
     ASSERT_EQ(e, z);
+    delete []extraPointers;
 }
 
 TEST_F(LegacyOpsTests, Reduce3_5) {
@@ -568,20 +613,32 @@ TEST_F(LegacyOpsTests, Reduce3_5) {
     auto z = NDArrayFactory::create<double>('c', {1, 3});
 
     auto dim = NDArrayFactory::create<int>('c', {1}, {1});
+    dim.syncToHost();
 
-    NativeOps nativeOps;
+    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
 
-    nativeOps.execReduce3(nullptr, reduce3::CosineDistance,
+    Nd4jPointer* extraPointers = nullptr;
+    #ifdef __CUDABLAS__
+        extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
+    #endif
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {1});
+    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {1});
+
+    NDArray::prepareSpecialUse({&z}, {&x, &y, &dim});
+
+
+    execReduce3Tad(extraPointers, reduce3::CosineDistance,
                           x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                           nullptr,
                           y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
                           z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                           dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
-                          nullptr, nullptr, nullptr, nullptr);
+                          packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
 
-    z.printIndexedBuffer("z");
-
+    NDArray::registerSpecialUse({&z}, {&x, &y, &dim});
     ASSERT_EQ(e, z);
+    delete []extraPointers;
 }
 
 TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
@@ -593,29 +650,27 @@ TEST_F(LegacyOpsTests, test_Reduce3_All_1) {
     auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), -1);
     auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), -1);
 
-    NativeOps ops;
-    ops.execReduce3All(nullptr, reduce3::EuclideanDistance, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+
+    Nd4jPointer* extraPointers = nullptr;
+    #ifdef __CUDABLAS__
+        extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
+    #endif
+
+    NDArray::prepareSpecialUse({&z}, {&x, &y});
+
+    execReduce3All(extraPointers, reduce3::EuclideanDistance, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                        nullptr, y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                        dim.buffer(), dim.shapeInfo(), dim.specialBuffer(), dim.specialShapeInfo(),
                        tadPackX.platformShapeInfo(), tadPackX.platformOffsets(),
                        tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
+
+    NDArray::registerSpecialUse({&z}, {&x, &y});
+
+    delete []extraPointers;
 }
 
-TEST_F(LegacyOpsTests, Softmax_119_1) {
-    auto x = NDArrayFactory::create<float>('c', {10, 10});
-    x.linspace(1.0);
-
-    x.applyTransform(transform::StrictOps::SoftMax);
-}
-
-TEST_F(LegacyOpsTests, Softmax_119_2) {
-    auto x = NDArrayFactory::create<float>('f', {10, 5});
-    auto z = NDArrayFactory::create<float>('f', {10, 5});
-    x.linspace(1.0);
-
-    x.applyTransform(transform::StrictOps::SoftMax, &z);
-}
 
 TEST_F(LegacyOpsTests, test_inverse_broadcast_1) {
     auto x = NDArrayFactory::create<float>('c', {4}, {2.0f, 2.0f, 2.0f, 2.0f});
@@ -653,7 +708,7 @@ TEST_F(LegacyOpsTests, test_inverse_broadcast_2) {
 
     auto tadPackY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.shapeInfo(), 1);
 
-    y.tickWriteDevice();
+    z.tickWriteDevice();
 
     NativeOpExecutioner::execInverseBroadcastBool(LaunchContext::defaultContext(), broadcast::BoolOps::EqualTo,
         x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
@@ -676,7 +731,11 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_1) {
 
     int dim = 1;
 
-    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Sum, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.shapeInfo(), nullptr);
+    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Sum,
+                                        x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                                        nullptr,
+                                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                                        &dim, 1, x.getPlatformShapeInfo(), nullptr);
 
     ASSERT_EQ(e, z);
 }
@@ -689,7 +748,7 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_2) {
 
     int dim = 1;
 
-    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Min, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.shapeInfo(), nullptr);
+    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Min, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.getPlatformShapeInfo(), nullptr);
 
     ASSERT_EQ(e, z);
 }
@@ -702,7 +761,7 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_3) {
 
     int dim = 1;
 
-    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Max, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.shapeInfo(), nullptr);
+    NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Max, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.getPlatformShapeInfo(), nullptr);
 
     ASSERT_EQ(e, z);
 }

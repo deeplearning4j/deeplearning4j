@@ -27,7 +27,7 @@
 
 namespace nd4j {
     namespace ops {
-        CUSTOM_OP_IMPL(choose, -1, 2, false, -1, -1) {
+        CUSTOM_OP_IMPL(choose, -1, 2, false, -2, -1) {
 
             int mode = INT_ARG(0);
             auto result = OUTPUT_VARIABLE(0);
@@ -61,6 +61,8 @@ namespace nd4j {
         DECLARE_SHAPE_FN(choose) {
             Nd4jLong *shape;
             int rank;
+            int mode = INT_ARG(0);
+            auto numResults = NDArrayFactory::create<Nd4jLong>(0L);
             if(block.width() > 1) {
                 auto first = INPUT_VARIABLE(0);
                 auto second = INPUT_VARIABLE(1);
@@ -72,18 +74,22 @@ namespace nd4j {
                     shape = second->getShapeInfo();
                     rank = second->rankOf();
                 }
+
+                helpers::chooseFunctorArray(block.launchContext(), first, second, mode, nullptr, &numResults);
             }
             else {
                 auto first = INPUT_VARIABLE(0);
                 shape = first->getShapeInfo();
                 rank = first->rankOf();
+                double scalar = T_ARG(0);
+
+                helpers::chooseFunctorScalar(block.launchContext(), first, scalar, mode, nullptr, &numResults);
             }
 
-            Nd4jLong* newShape;
-            COPY_SHAPE(shape, newShape);
+            auto newShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(numResults.e<Nd4jLong>(0), ArrayOptions::dataType(inputShape->at(0)));
 
             auto shapeScalar = ConstantShapeHelper::getInstance()->scalarShapeInfo(nd4j::DataType::INT64);
-            return SHAPELIST(CONSTANT(newShape), shapeScalar);
+            return SHAPELIST(newShape, shapeScalar);
         }
 
 

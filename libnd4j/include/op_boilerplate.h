@@ -1459,12 +1459,12 @@
 #ifdef _RELEASE
 
 #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) if (WORKSPACE == nullptr) {auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT)); if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);} else { }; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(nd4j::memory::MemoryType::DEVICE, LENGTH * sizeof(TT))); }
-#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (WORKSPACE == nullptr) { auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; };
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (VARIABLE != nullptr) {if (WORKSPACE == nullptr) { auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; }; };
 
 #else
 
 #define ALLOCATE_SPECIAL(VARIABLE, WORKSPACE, LENGTH, TT) if (WORKSPACE == nullptr) {auto erc_##VARIABLE = cudaMalloc(reinterpret_cast<void**>(&VARIABLE), LENGTH * sizeof(TT)); if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] allocation failed", erc_##VARIABLE);} else { nd4j::memory::MemoryTracker::getInstance()->countIn(nd4j::memory::MemoryType::DEVICE, VARIABLE, LENGTH * sizeof(TT)); }; } else {VARIABLE = reinterpret_cast<TT *>(WORKSPACE->allocateBytes(nd4j::memory::MemoryType::DEVICE, LENGTH * sizeof(TT))); }
-#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (WORKSPACE == nullptr) { nd4j::memory::MemoryTracker::getInstance()->countOut(VARIABLE); auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; };
+#define RELEASE_SPECIAL(VARIABLE, WORKSPACE) if (VARIABLE != nullptr) {if (WORKSPACE == nullptr) { nd4j::memory::MemoryTracker::getInstance()->countOut(VARIABLE); auto erc_##VARIABLE = cudaFree(reinterpret_cast<void *>(VARIABLE));  if (erc_##VARIABLE != 0) {throw cuda_exception::build("[DEVICE] deallocation failed", erc_##VARIABLE);}; }; };
 
 #endif
 

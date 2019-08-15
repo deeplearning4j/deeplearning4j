@@ -54,14 +54,14 @@ namespace nd4j {
                 int e2 = e;
                 for (; e < (int) arguments->size(); e++) {
                     if (arguments->at(e) == -1){
-                        long shapeLength = 1;
+                        Nd4jLong shapeLength = 1;
                         for(; e2 < e; e2++){
                             shapeLength *= arguments->at(e2);
                         }
                         for(e2 = e + 1; e2 < arguments->size(); e2++){
                             shapeLength *= arguments->at(e2);
                         }
-                        long realShape = x->lengthOf() / shapeLength;
+                        Nd4jLong realShape = x->lengthOf() / shapeLength;
                         shapeNew.push_back(realShape);
                     }
                     else{
@@ -87,8 +87,8 @@ namespace nd4j {
                     auto xr = x->reshape(order, shapeNew);
                     ret->assign(xr);
                     STORE_RESULT(*ret);
-                    delete xr;
-                    return ND4J_STATUS_OK;
+
+                    return Status::OK();
                 }
             } else if (block.width() == 2) {
                 auto s = INPUT_VARIABLE(1);
@@ -109,16 +109,15 @@ namespace nd4j {
                 for (int e = 0; e < (int) s->lengthOf(); e++) {
                     auto dim = s->e<Nd4jLong >(e);
                     if (dim == -1){
-                        long shapeLength = 1;
+                        Nd4jLong shapeLength = 1;
                         for(int e2 = 0; e2 < e; e2++){
                             shapeLength *= s->e<Nd4jLong>(e2);
                         }
                         for(int e2 = e + 1; e2 < (int) s->lengthOf(); e2++){
                             REQUIRE_TRUE(s->e<Nd4jLong>(e2) != -1, 0, "Reshape : Only one unknown dimension (-1) is allowed.");
-                            shapeLength *=
-                                    s->e<Nd4jLong>(e2);
+                            shapeLength *= s->e<Nd4jLong>(e2);
                         }
-                        long realShape = x->lengthOf() / shapeLength;
+                        Nd4jLong realShape = x->lengthOf() / shapeLength;
                         shapeNew[e] = realShape;
                     }
                     else{
@@ -143,7 +142,6 @@ namespace nd4j {
                     } else {
                         auto xr = x->reshape(order, shapeNew);
                         ret->assign(xr);
-                        delete xr;
                     }
 
                     return Status::OK();
@@ -188,7 +186,7 @@ namespace nd4j {
                 for (; e < (int) arguments->size(); e++) {
                     if ((int) arguments->at(e) == -1){
 
-                        long shapeLength = 1;
+                        Nd4jLong shapeLength = 1;
                         for(; e2 < e; e2 ++){
                             shapeLength *= arguments->at(e2);
                         }
@@ -202,7 +200,7 @@ namespace nd4j {
                             shapeNew.push_back(0);
                         } else {
                             //Standard case
-                            long realShape = shape::length(inp) / shapeLength;
+                            Nd4jLong realShape = shape::length(inp) / shapeLength;
                             shapeNew.push_back(realShape);
                         }
                     }
@@ -241,7 +239,7 @@ namespace nd4j {
                 for (int e = 0; e < (int) y->lengthOf(); e++) {
                     auto dim = y->e<Nd4jLong>(e);
                     if (dim == -1){
-                        long shapeLength = 1;
+                        Nd4jLong shapeLength = 1;
                         for(int e2 = 0; e2 < e; e2++){
                             shapeLength *= y->e<Nd4jLong>(e2);
                         }
@@ -254,7 +252,7 @@ namespace nd4j {
                             //Edge case for empty:
                             shapeNew[e] = 0;
                         } else {
-                            long realShape = shape::length(inp) / shapeLength;
+                            Nd4jLong realShape = shape::length(inp) / shapeLength;
                             shapeNew[e] = realShape;
                         }
                     }else {

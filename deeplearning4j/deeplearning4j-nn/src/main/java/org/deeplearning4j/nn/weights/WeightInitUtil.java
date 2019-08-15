@@ -41,10 +41,6 @@ public class WeightInitUtil {
 
     private WeightInitUtil() {}
 
-    public static INDArray initWeights(int[] shape, float min, float max) {
-        return Nd4j.rand(shape, min, max, Nd4j.getRandom());
-    }
-
 
     /**
      * Initializes a matrix with the given weight initialization scheme.

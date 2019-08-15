@@ -64,7 +64,8 @@ public class Identity extends BaseDynamicTransformOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        return i_v;
+        //Eventually we'll optimize this out
+        return Collections.singletonList(sameDiff.identity(i_v.get(0)));
     }
 
     @Override

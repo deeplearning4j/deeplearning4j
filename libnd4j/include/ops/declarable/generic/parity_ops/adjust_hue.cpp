@@ -15,7 +15,8 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
@@ -28,46 +29,35 @@
 namespace nd4j {
 namespace ops {
 
-    DECLARE_TYPES(adjust_hue) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setSameMode(true);
-    }
 
-    CONFIGURABLE_OP_IMPL(adjust_hue, 1, 1, true, -2, -2) {
-        auto input = INPUT_VARIABLE(0);
-        auto output = OUTPUT_VARIABLE(0);
+CONFIGURABLE_OP_IMPL(adjust_hue, 1, 1, true, 1, -2) {
 
-        REQUIRE_TRUE(input->rankOf() == 3 || input->rankOf() == 4, 0, "AdjustHue: op expects either 3D or 4D input, but got %i instead", input->rankOf());
+    auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
+
+    const int rank     = input->rankOf();
+    const int dimC     = block.getIArguments()->size() > 0 ? (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank) : rank - 1;
+    const double delta = T_ARG(0);
+
+    REQUIRE_TRUE(rank >= 3, 0, "ADJUST_HUE: op expects rank of input array to be >= 3, but got %i instead", rank);
+    REQUIRE_TRUE(input->sizeAt(dimC) == 3, 0, "ADJUST_HUE: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(dimC));
+    REQUIRE_TRUE(-1. <= delta && delta <= 1., 0, "ADJUST_HUE: parameter delta must be within [-1, 1] interval, but got %f instead", delta);
+
+    NDArray deltaScalarArr = NDArrayFactory::create<double>(delta, block.launchContext());
+
+    helpers::adjustHue(block.launchContext(), input, &deltaScalarArr, output, dimC);
+
+    return Status::OK();
+}
+
+DECLARE_TYPES(adjust_hue) {
+    getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)
+                     ->setSameMode(true);
+}
 
 
-        double delta = 0;
-        if (block.numT() > 0)
-            delta = T_ARG(0);
-        else if (block.width() > 1) {
-            auto _d = INPUT_VARIABLE(1);
-            if (!_d->isScalar()) {
-                auto str = ShapeUtils::shapeAsString(_d);
-                REQUIRE_TRUE(_d->isScalar(), 0, "AdjustHue: delta should be scalar NDArray, but got %s instead", str.c_str());
-            }
-            delta = _d->e<double>(0);
-        }
 
 
-        bool isNHWC = false;
-        if (block.numI() > 0)
-            isNHWC = INT_ARG(0) == 1;
-
-        int numChannels = isNHWC ? input->sizeAt(-1) : input->sizeAt(-3);
-
-        REQUIRE_TRUE(numChannels == 3, 0, "AdjustHue: this operation expects image with 3 channels (R, G, B), but got % instead", numChannels);
-
-        auto ts = NDArrayFactory::create(delta, block.launchContext());
-        // FIXME: delta should be NDArray scalar
-        helpers::_adjust_hue(block.launchContext(), input, output, &ts, isNHWC);
-
-        return Status::OK();
-    }
 }
 }
 

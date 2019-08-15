@@ -37,7 +37,6 @@ void DataBuffer::allocateSpecial() {
 
 ////////////////////////////////////////////////////////////////////////
 void DataBuffer::syncToPrimary(const LaunchContext* context, const bool forceSync) {
-
     if(isPrimaryActual() && !forceSync)
         return;
 

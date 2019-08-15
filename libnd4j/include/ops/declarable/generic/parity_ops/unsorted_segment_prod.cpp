@@ -31,7 +31,7 @@ namespace nd4j {
             REQUIRE_TRUE(idxSegments->isVector(), 0, "unsorted_segment_prod: segment indexes array should be a vector, but it rank is %i.", idxSegments->rankOf());
             REQUIRE_TRUE(idxSegments->lengthOf() == input->sizeAt(0), 0, "unsorted_segment_prod: segment indexes array length should be equal to the input first dimension, but %i != %i.", idxSegments->lengthOf(), input->sizeAt(0));
 
-            Nd4jLong wrong;
+            Nd4jLong wrong = 0;
 
             REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), idxSegments, numOfClasses, wrong), 0, "unsorted_segment_prod: segment indices should be in range [0, %i), but %i > %i",
                     numOfClasses, wrong, numOfClasses);
@@ -62,18 +62,36 @@ namespace nd4j {
         DECLARE_TYPES(unsorted_segment_prod) {
             getOpDescriptor()
                     ->setAllowedOutputTypes({ALL_FLOATS})
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
+                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
                     ->setSameMode(false);
         }
 
         CUSTOM_OP_IMPL(unsorted_segment_prod_bp, 3, 2, false, 0, 1) {
-            return helpers::unsortedSegmentProdFunctorBP(block.launchContext(), INPUT_VARIABLE(0), INPUT_VARIABLE(1), INPUT_VARIABLE(2), INT_ARG(0), OUTPUT_VARIABLE(0));
+            auto input = INPUT_VARIABLE(0);
+            auto indices = INPUT_VARIABLE(1);
+            auto eps = INPUT_VARIABLE(2);
+//            auto numOfClasses = INT_ARG(0);
+            auto output = OUTPUT_VARIABLE(0);
+
+            Nd4jLong numOfClasses = block.width() == 4 ? INPUT_VARIABLE(3)->e<Nd4jLong>(0) : INT_ARG(0);
+            REQUIRE_TRUE(indices->isVector(), 0, "unsorted_segment_prod_bp: segment indexes array should be a vector, but it rank is %i.", indices->rankOf());
+            REQUIRE_TRUE(indices->lengthOf() == input->sizeAt(0), 0, "unsorted_segment_prod_bp: segment indexes array length should be equal to the input first dimension, but %lld != %lld.", indices->lengthOf(), input->sizeAt(0));
+
+            Nd4jLong wrong = numOfClasses;
+
+            REQUIRE_TRUE(helpers::unsortedSegmentIndicesValidate(block.launchContext(), indices, numOfClasses, wrong), 0, "unsorted_segment_prod_bp: segment indices should be in range [0, %lld), but %lld > %lld",
+                         numOfClasses, wrong, numOfClasses);
+
+            return helpers::unsortedSegmentProdFunctorBP(block.launchContext(), input, indices, eps, numOfClasses, output);
         }
         DECLARE_TYPES(unsorted_segment_prod_bp) {
             getOpDescriptor()
                     ->setAllowedOutputTypes(0, {ALL_FLOATS})
 					->setAllowedOutputTypes(1, {ALL_INTS})
-                    ->setAllowedInputTypes({ALL_FLOATS, ALL_INTS})
+                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_INTS})
+                    ->setAllowedInputTypes(2,{ALL_FLOATS})
                     ->setSameMode(false);
         }
 

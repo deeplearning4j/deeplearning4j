@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.gradientcheck;
 
+import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
@@ -53,9 +54,9 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
+@Slf4j
 public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
 
     public static final boolean PRINT_RESULTS = true;
@@ -284,6 +285,56 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
             String msg = "testBasicIrisWithElementWiseVertex(op=" + op + ")";
             assertTrue(msg, gradOK);
             TestUtils.testModelSerialization(graph);
+        }
+    }
+
+    @Test
+    public void testElementWiseVertexBroadcast(){
+
+        ElementWiseVertex.Op[] ops =
+                new ElementWiseVertex.Op[] {ElementWiseVertex.Op.Add, ElementWiseVertex.Op.Average,
+                        ElementWiseVertex.Op.Subtract, ElementWiseVertex.Op.Max, ElementWiseVertex.Op.Product};
+
+        for(boolean firstSmaller : new boolean[]{false, true}) {
+            for (ElementWiseVertex.Op op : ops) {
+                ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                        .updater(new NoOp())
+                        .dataType(DataType.DOUBLE)
+                        .activation(Activation.TANH)
+                        .seed(12345)
+                        .graphBuilder()
+                        .addInputs("in")
+                        .setOutputs("out")
+                        .layer("l1", new DenseLayer.Builder().nIn(3).nOut(firstSmaller ? 1 : 3).build(), "in")   //[mb,3]
+                        .layer("l2", new DenseLayer.Builder().nIn(3).nOut(firstSmaller ? 3 : 1).build(), "in")   //[mb,1]
+                        .addVertex("ew", new ElementWiseVertex(op), "l1", "l2")
+                        .layer("out", new OutputLayer.Builder().nIn(3).nOut(2).lossFunction(LossFunctions.LossFunction.MCXENT).activation(Activation.SOFTMAX).build(), "ew")
+                        .build();
+
+                ComputationGraph graph = new ComputationGraph(conf);
+                graph.init();
+
+                for (int mb : new int[]{1, 5}) {
+                    String msg = (firstSmaller ? "first smaller, " : "second smaller, ") + "mb=" + mb + ", op=" + op;
+
+                    log.info("Test: {}", msg);
+
+                    INDArray in = Nd4j.rand(DataType.FLOAT, mb, 3);
+
+                    INDArray out = graph.outputSingle(in);
+                    assertArrayEquals(new long[]{mb, 2}, out.shape());
+
+                    INDArray labels = TestUtils.randomOneHot(mb, 2);
+
+                    graph.fit(new DataSet(in, labels));
+
+                    boolean gradOK = GradientCheckUtil.checkGradients(graph, DEFAULT_EPS, DEFAULT_MAX_REL_ERROR,
+                            DEFAULT_MIN_ABS_ERROR, PRINT_RESULTS, RETURN_ON_FIRST_FAILURE, new INDArray[]{in},
+                            new INDArray[]{labels});
+                    assertTrue(msg, gradOK);
+                    TestUtils.testModelSerialization(graph);
+                }
+            }
         }
     }
 
@@ -996,10 +1047,10 @@ public class GradientCheckTestsComputationGraph extends BaseDL4JTest {
         int[] mbSizes = new int[] {1, 3, 10};
         for (int minibatch : mbSizes) {
 
-            INDArray in1 = Nd4j.rand(minibatch, 2);
-            INDArray in2 = Nd4j.rand(minibatch, 2);
+            INDArray in1 = Nd4j.rand(DataType.DOUBLE, minibatch, 2);
+            INDArray in2 = Nd4j.rand(DataType.DOUBLE, minibatch, 2);
 
-            INDArray labels = Nd4j.rand(minibatch, 1);
+            INDArray labels = Nd4j.rand(DataType.DOUBLE, minibatch, 1);
 
             String testName = "testBasicL2() - minibatch = " + minibatch;
 

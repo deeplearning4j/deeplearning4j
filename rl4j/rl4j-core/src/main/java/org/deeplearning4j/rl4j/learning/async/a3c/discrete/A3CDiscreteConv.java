@@ -24,7 +24,7 @@ import org.deeplearning4j.rl4j.network.ac.ActorCriticFactoryCompGraphStdConv;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManager;
+import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/8/16.
@@ -44,7 +44,7 @@ public class A3CDiscreteConv<O extends Encodable> extends A3CDiscrete<O> {
     final private HistoryProcessor.Configuration hpconf;
 
     public A3CDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic IActorCritic,
-                    HistoryProcessor.Configuration hpconf, A3CConfiguration conf, DataManager dataManager) {
+                    HistoryProcessor.Configuration hpconf, A3CConfiguration conf, IDataManager dataManager) {
         super(mdp, IActorCritic, conf, dataManager);
         this.hpconf = hpconf;
         setHistoryProcessor(hpconf);
@@ -52,13 +52,13 @@ public class A3CDiscreteConv<O extends Encodable> extends A3CDiscrete<O> {
 
 
     public A3CDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryCompGraph factory,
-                    HistoryProcessor.Configuration hpconf, A3CConfiguration conf, DataManager dataManager) {
+                    HistoryProcessor.Configuration hpconf, A3CConfiguration conf, IDataManager dataManager) {
         this(mdp, factory.buildActorCritic(hpconf.getShape(), mdp.getActionSpace().getSize()), hpconf, conf,
                         dataManager);
     }
 
     public A3CDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, ActorCriticFactoryCompGraphStdConv.Configuration netConf,
-                    HistoryProcessor.Configuration hpconf, A3CConfiguration conf, DataManager dataManager) {
+                    HistoryProcessor.Configuration hpconf, A3CConfiguration conf, IDataManager dataManager) {
         this(mdp, new ActorCriticFactoryCompGraphStdConv(netConf), hpconf, conf, dataManager);
     }
 

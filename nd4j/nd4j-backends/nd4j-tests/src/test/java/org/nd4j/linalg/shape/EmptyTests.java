@@ -256,6 +256,7 @@ public class EmptyTests extends BaseNd4jTest {
         assertArrayEquals(new long[]{0}, Nd4j.zeros(0).shape());
         assertArrayEquals(new long[]{0,0}, Nd4j.zeros(0,0).shape());
         assertArrayEquals(new long[]{0,0,0}, Nd4j.zeros(0,0,0).shape());
+        assertArrayEquals(new long[]{0,0,0}, Nd4j.zeros(new int[]{0,0,0}, 'f').shape());
         assertArrayEquals(new long[]{0}, Nd4j.zeros(0L).shape());
         assertArrayEquals(new long[]{0}, Nd4j.zeros(dt, 0L).shape());
 
@@ -287,6 +288,15 @@ public class EmptyTests extends BaseNd4jTest {
     public void testEqualShapesEmpty(){
         assertTrue(Nd4j.create(0).equalShapes(Nd4j.create(0)));
         assertFalse(Nd4j.create(0).equalShapes(Nd4j.create(1, 0)));
+    }
+
+    @Test
+    public void testEmptyWhere() {
+        val mask = Nd4j.createFromArray(false,     false,     false,     false,     false);
+        val result = Nd4j.where(mask, null, null);
+
+        assertTrue(result[0].isEmpty());
+        assertNotNull(result[0].shapeInfoDataBuffer().asLong());
     }
 
     @Override

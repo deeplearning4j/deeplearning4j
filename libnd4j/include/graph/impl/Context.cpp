@@ -454,6 +454,9 @@ namespace nd4j {
 #ifdef __CUDABLAS__
             _context = new LaunchContext(cudaStream, reductionPointer, allocationPointer);
 
+            // FIXME: either pass handle from outside, or make sure outside we use the same handle
+            _context->setCublasHandle(LaunchContext::defaultContext()->getCublasHandle());
+
             for (auto v: _fastpath_out)
                 v->setContext(_context);
 

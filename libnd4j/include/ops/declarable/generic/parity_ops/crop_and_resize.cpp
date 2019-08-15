@@ -73,12 +73,18 @@ namespace nd4j {
             outputShape[2] = height;
             outputShape[3] = in[4];
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4)));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(DataType::FLOAT32, shape::order(in), outputShape, 4)));
         }
+
         DECLARE_TYPES(crop_and_resize) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
+//                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {FLOAT32}) // as TF
+                    ->setAllowedInputTypes(2, {ALL_INTS})
+                    ->setAllowedInputTypes(3, {ALL_INTS})
+                    ->setAllowedOutputTypes({FLOAT32}); // as TF
+//                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
 }

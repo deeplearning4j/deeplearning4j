@@ -28,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author raver119@gmail.com
  */
 @Slf4j
+@Deprecated
 public class AggregateSkipGram extends BaseAggregate {
     private int vectorLength;
 

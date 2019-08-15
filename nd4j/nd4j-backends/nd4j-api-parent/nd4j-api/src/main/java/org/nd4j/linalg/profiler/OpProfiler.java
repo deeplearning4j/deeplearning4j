@@ -240,7 +240,7 @@ public class OpProfiler {
         String opClass = getOpClass(op);
         classCounter.incrementCount(opClass);
 
-        if(op.x() == null || (op.x() != null && op.x().data().address() == lastZ && op.z() == op.x() && op.y() == null)) {
+        if(op.x() == null || (op.x() != null && op.x().data().platformAddress() == lastZ && op.z() == op.x() && op.y() == null)) {
             // we have possible shift here
             matchingCounter.incrementCount(prevOpMatching + " -> " + opClass);
             matchingCounterDetailed.incrementCount(prevOpMatchingDetailed + " -> " + opClass + " " + op.opName());
@@ -254,7 +254,7 @@ public class OpProfiler {
             }
 
         }
-        lastZ = op.z() != null ? op.z().data().address() : 0L;
+        lastZ = op.z() != null ? op.z().data().platformAddress() : 0L;
         prevOpMatching = opClass;
         prevOpMatchingDetailed = opClass + " " + op.opName();
         prevOpMatchingInverted = opClass + " " + op.opName();

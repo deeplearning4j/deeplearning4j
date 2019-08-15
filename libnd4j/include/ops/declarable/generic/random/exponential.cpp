@@ -53,7 +53,7 @@ namespace nd4j {
             auto z = OUTPUT_VARIABLE(0);
             auto lambda = T_ARG(0);
 
-            RandomLauncher::fillExponential(rng, z, lambda);
+            RandomLauncher::fillExponential(block.launchContext(), rng, z, lambda);
 
             return Status::OK();
         }

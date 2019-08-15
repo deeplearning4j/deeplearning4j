@@ -154,6 +154,78 @@ TEST_F(DeclarableOpsTests1, BasicInitialization2) {
     ASSERT_EQ(1, op->getOpDescriptor()->getNumberOfOutputs());
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, ApplyGradientDescent_1) {
+    auto x = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto y = NDArrayFactory::create<double>('c', {3,4}, {0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1.0,1.1,1.2});
+    auto exp = NDArrayFactory::create<double>('c', {3,4});
+    exp.linspace(0.9, 0.9);
+    nd4j::ops::apply_sgd op;
+    auto result = op.execute({&x, &y}, {1.}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto z = result->at(0);
+//    result->at(0)->printIndexedBuffer("OUTPUT");
+//    result->at(0)->printShapeInfo("OUTPUT Shape");
+//    exp.printIndexedBuffer("EXPECT");
+    ASSERT_TRUE(z->equalsTo(exp));
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, AssignBroadcastTest_1) {
+    auto x = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto y = NDArrayFactory::create<double>('c', {1,4}, {0.1,0.2,0.3,0.4});
+    auto exp = NDArrayFactory::create<double>('c', {3,4}, {0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.4, 0.1, 0.2, 0.3, 0.4});
+    nd4j::ops::assign op;
+    auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto z = result->at(0);
+//    result->at(0)->printIndexedBuffer("OUTPUT");
+//    result->at(0)->printShapeInfo("OUTPUT Shape");
+//    exp.printIndexedBuffer("EXPECT");
+    ASSERT_TRUE(z->equalsTo(exp));
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, AssignBroadcastTest_2) {
+    auto x = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto y = NDArrayFactory::create<double>('c', {1,4}, {0.1,0.2,0.3,0.4});
+    auto eps = NDArrayFactory::create<double>('c', {3,4}, {1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4});
+    auto exp1 = NDArrayFactory::create<double>('c', {3,4}); // zero
+    auto exp2 = NDArrayFactory::create<double>('c', {1,4}, {3, 6, 9, 12});
+    nd4j::ops::assign_bp op;
+    auto result = op.execute({&x, &y, &eps}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto z1 = result->at(0);
+    auto z2 = result->at(1);
+//    z1->printIndexedBuffer("OUTPUT");
+//    z2->printIndexedBuffer("OUTPUT");
+//
+//    exp1.printIndexedBuffer("EXPECT");
+//    exp2.printIndexedBuffer("EXPECT");
+
+    ASSERT_TRUE(z1->equalsTo(exp1));
+    ASSERT_TRUE(z2->equalsTo(exp2));
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, AXpY_Test_1) {
+    auto x = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto y = NDArrayFactory::create<double>('c', {3,4}, {1,2,3,4,5,6,7,8,9,10,11,12});
+    auto exp = NDArrayFactory::create<double>('c', {3,4});
+    exp.linspace(3, 3);
+    nd4j::ops::axpy op;
+    auto result = op.execute({&x, &y}, {2.}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), ND4J_STATUS_OK);
+    auto z = result->at(0);
+//    result->at(0)->printIndexedBuffer("OUTPUT");
+//    result->at(0)->printShapeInfo("OUTPUT Shape");
+//    exp.printIndexedBuffer("EXPECT");
+    ASSERT_TRUE(z->equalsTo(exp));
+    delete result;
+}
 
 TEST_F(DeclarableOpsTests1, BasicInitialization3) {
     auto op1 = nd4j::ops::OpRegistrator::getInstance()->getOperation("concat");
@@ -472,9 +544,7 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
 /*
     Nd4jLong *buffer = new Nd4jLong[100000];
 
-    NativeOps nativeOps;
-
-    nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
+    nd4j::random::RandomBuffer *rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);
 
     if (rng == nullptr)
         throw std::runtime_error("RNG initialization failed");
@@ -496,7 +566,7 @@ TEST_F(DeclarableOpsTests1, TestRng1) {
 
     ASSERT_TRUE(x->sumNumber() > 0.0);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 
     delete variableSpace;
@@ -1450,8 +1520,6 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 
 // //////////////////////////////////////////////////////////////////////
 // TEST_F(DeclarableOpsTests1, TestLegacyExecution1) {
-//     NativeOps nativeOps;
-
 //     auto x = NDArrayFactory::create_<float>('c', {10, 10});
 //     x->assign(1.0f);
 
@@ -1483,8 +1551,8 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 //     outputShapes[0] = (Nd4jPointer) z->getShapeInfo();
 
 
-//     //auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
-//     auto status = nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+//     //auto status = execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
+//     auto status = execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
 //     ASSERT_EQ(ND4J_STATUS_OK, status);
 //     // z->printIndexedBuffer("Output add");
 //     ASSERT_NEAR(2.0f, y->meanNumber().e<float>(0), 1e-5);
@@ -1503,8 +1571,6 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 
 // //////////////////////////////////////////////////////////////////////
 // TEST_F(DeclarableOpsTests1, TestLegacyExecution2) {
-//     NativeOps nativeOps;
-
 //     auto x = NDArrayFactory::create_<float>('c', {10, 10});
 //     x->assign(1.0f);
 
@@ -1532,7 +1598,7 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 //     auto outputBuffers = new Nd4jPointer[1];
 //     auto outputShapes = new Nd4jPointer[1];
 
-//     nativeOps.execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, true);
+//     execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, true);
 
 //     ASSERT_NEAR(2.0, y->meanNumber().e<float>(0), 1e-5);
 //     ASSERT_NEAR(3.0, x->meanNumber().e<float>(0), 1e-5);
@@ -2040,210 +2106,6 @@ TEST_F(DeclarableOpsTests1, Sum1) {
 */
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Maxpool2d_test1) {
-
-    auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
-    auto exp = NDArrayFactory::create<float>('c',{bS,iD,oH,oW});
-    // auto z('c',{bS,iD,oH,oW});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dH,dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-
-    nd4j::ops::maxpool2d pooling;
-    Nd4jStatus status = pooling.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
-    ASSERT_TRUE(exp.isSameShape(result));
-
-    delete variableSpace;
-    delete block;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Maxpool2d_test2) {
-
-    const int bS = 2;
-    const int iD = 1;
-    const int iH = 28;
-    const int iW = 28;
-    const int kH = 5;
-    const int kW = 5;
-    const int sH = 1;
-    const int sW = 1;
-    const int pH = 0;
-    const int pW = 0;
-    const int dH = 1;
-    const int dW = 1;
-    const int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     // output height
-    const int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;     // output width
-
-
-    auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
-    auto exp = NDArrayFactory::create<float>('c',{bS,iD,oH,oW});
-    // auto z('c',{bS,iD,oH,oW});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dH,dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-
-    nd4j::ops::maxpool2d pooling;
-    Nd4jStatus status = pooling.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
-    ASSERT_TRUE(exp.isSameShape(result));
-
-    delete variableSpace;
-    delete block;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Maxpool2d_test3) {
-
-    const int bS = 2;
-    const int iD = 1;
-    const int iH = 28;
-    const int iW = 28;
-    const int kH = 5;
-    const int kW = 5;
-    const int sH = 1;
-    const int sW = 1;
-    const int pH = 0;
-    const int pW = 0;
-    const int dH = 1;
-    const int dW = 1;
-    const int oH = (int) nd4j::math::nd4j_ceil<float, int>(iH * 1.f / sH);
-    const int oW = (int) nd4j::math::nd4j_ceil<float, int>(iW * 1.f / sW);
-
-
-    auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
-    auto exp = NDArrayFactory::create<float>('c',{bS,iD,oH,oW});
-    // auto z('c',{bS,iD,oH,oW});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dH,dW, 1};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-
-    nd4j::ops::maxpool2d pooling;
-    Nd4jStatus status = pooling.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
-    ASSERT_TRUE(exp.isSameShape(result));
-
-    delete variableSpace;
-    delete block;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Maxpool2d_test4) {
-
-    const int bS = 2;
-    const int iD = 1;
-    const int iH = 24;
-    const int iW = 24;
-    const int kH = 3;
-    const int kW = 3;
-    const int sH = 1;
-    const int sW = 1;
-    const int pH = 0;
-    const int pW = 0;
-    const int dH = 1;
-    const int dW = 1;
-    const int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;     // output height
-    const int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;     // output width
-
-
-    auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
-    auto exp = NDArrayFactory::create<float>('c',{bS,iD,oH,oW});
-    // auto z('c',{bS,iD,oH,oW});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dH,dW, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-
-    nd4j::ops::maxpool2d pooling;
-    Nd4jStatus status = pooling.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
-    ASSERT_TRUE(exp.isSameShape(result));
-
-    delete variableSpace;
-    delete block;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Maxpool2d_test5) {
-
-    const int bS = 2;
-    const int iD = 1;
-    const int iH = 24;
-    const int iW = 24;
-    const int kH = 3;
-    const int kW = 3;
-    const int sH = 1;
-    const int sW = 1;
-    const int pH = 0;
-    const int pW = 0;
-    const int dH = 1;
-    const int dW = 1;
-    const int oH = (int) nd4j::math::nd4j_ceil<float, int>(iH * 1.f / sH);
-    const int oW = (int) nd4j::math::nd4j_ceil<float, int>(iW * 1.f / sW);
-
-
-    auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
-    auto exp = NDArrayFactory::create<float>('c',{bS,iD,oH,oW});
-    // auto z('c',{bS,iD,oH,oW});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dH,dW, 1};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-
-    nd4j::ops::maxpool2d pooling;
-    Nd4jStatus status = pooling.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    // result->printShapeInfo();
-    ASSERT_TRUE(exp.isSameShape(result));
-
-    delete variableSpace;
-    delete block;
-}
-
-//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Avgpool2d_test1) {
 
     auto x = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
@@ -2484,94 +2346,6 @@ TEST_F(DeclarableOpsTests1, IsMax3) {
     delete result;
 }
 
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Maxpool2d_bp1) {
-
-    auto input = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
-    auto epsilon = NDArrayFactory::create_<float>('c', {bS,iD,oH,oW});
-    auto exp     = NDArrayFactory::create<float>('c', {bS,iD,iH,iW});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-2, epsilon);
-    // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    block->fillInputs({-2});
-    std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-
-    nd4j::ops::maxpool2d_bp bp;
-    Nd4jStatus status = bp.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    ASSERT_TRUE(exp.isSameShape(result));
-
-    delete variableSpace;
-    delete block;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, AvgPool2dBP) {
-
-    auto input = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
-    auto epsilon = NDArrayFactory::create_<float>('c', {bS,iD,oH,oW});
-    auto exp     = NDArrayFactory::create<float>('c', {bS,iD,iH,iW});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-2, epsilon);
-    // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    block->fillInputs({-2});
-    std::vector<int>* argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 1, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode, 9 - extraParam0 (unnecessary for avg mode), 10 - data format
-
-    nd4j::ops::avgpool2d_bp bp;
-    Nd4jStatus status = bp.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    ASSERT_TRUE(exp.isSameShape(result));
-
-    delete variableSpace;
-    delete block;
-}
-
-//////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, PnormPool2dBP) {
-
-    auto input = NDArrayFactory::create_<float>('c', {bS,iD,iH,iW});
-    auto epsilon = NDArrayFactory::create_<float>('c', {bS,iD,oH,oW});
-    auto exp     = NDArrayFactory::create<float>('c', {bS,iD,iH,iW});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, input);
-    variableSpace->putVariable(-2, epsilon);
-    // variableSpace->putVariable(1, &z);
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    block->fillInputs({-2});
-    auto argI = block->getIArguments();
-    *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 3};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - divisor
-    std::vector<double>* argT = block->getTArguments();
-    *argT = {0.000001};
-
-    nd4j::ops::pnormpool2d_bp bp;
-    Nd4jStatus status = bp.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-    ASSERT_TRUE(exp.isSameShape(result));
-
-    delete variableSpace;
-    delete block;
-}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, CompactLaunchTests1) {
@@ -2887,7 +2661,7 @@ TEST_F(DeclarableOpsTests1, sru_bi_1) {
 
     NDArray input('c', {N,bS,2*K}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2*K,6*K}, nd4j::DataType::DOUBLE);
-    NDArray bias('c', {1,4*K}, nd4j::DataType::DOUBLE);
+    NDArray bias('c', {4*K}, nd4j::DataType::DOUBLE);
     NDArray init('c', {bS,2*K}, nd4j::DataType::DOUBLE);
     NDArray mask('c', {bS,2*K}, nd4j::DataType::DOUBLE);
     NDArray expState('c', {N,bS,2*K}, {1.02857, 1.02857, 1.02857, 1.11288, 1.11288, 1.11288, 1.02857, 1.02857, 1.02857, 1.11288, 1.11288, 1.11288, 1.0569, 1.0569, 1.0569, 1.08501, 1.08501, 1.08501, 1.0569, 1.0569, 1.0569, 1.08501, 1.08501, 1.08501, 1.08501, 1.08501, 1.08501, 1.0569, 1.0569, 1.0569, 1.08501, 1.08501, 1.08501, 1.0569, 1.0569, 1.0569, 1.11288, 1.11288, 1.11288, 1.02857, 1.02857, 1.02857, 1.11288, 1.11288, 1.11288, 1.02857, 1.02857, 1.02857});
@@ -2927,7 +2701,7 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
 
     auto input = NDArrayFactory::create<double>('c', {N,bS,2*K});
     auto weights = NDArrayFactory::create<double>('c', {2*K,6*K});
-    auto bias = NDArrayFactory::create<double>('c', {1,4*K});
+    auto bias = NDArrayFactory::create<double>('c', {4*K});
     auto init = NDArrayFactory::create<double>('c', {bS,2*K});
     auto mask = NDArrayFactory::create<double>('c', {bS,2*K});
     NDArray state('c', {N,bS,2*K}, stateBuff);
@@ -2938,8 +2712,8 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
 
     NDArray expGradX('c', {N,bS,2*K}, expGradXBuff);
     NDArray expGradW('c', {N,2*K,6*K}, expGradWBuff);
-    auto expGradB = NDArrayFactory::create<double>('c', {1,4*K});
-    gradBias.reduceAlongDimension(reduce::Sum, &expGradB, {0}, false, true);    // [bS x 4K] -> [1 x 4K]
+    auto expGradB = NDArrayFactory::create<double>('c', {4*K});
+    gradBias.reduceAlongDimension(reduce::Sum, &expGradB, {0});    // [bS, 4K] -> [4K]
     NDArray expGradInit('c', {bS,2*K}, expGradInitBuff);
 
     input.assign(1.5);
@@ -2965,63 +2739,6 @@ TEST_F(DeclarableOpsTests1, sru_bi_bp_1) {
     ASSERT_TRUE(expGradInit.equalsTo(gradInit));
 
     delete resultsBP;
-}
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests1, Maxpool2d_bp2) {
-
-    int bS=2, iD=1, iH=4,iW=4, oD=3, kH=2,kW=2, sH=1,sW=1, pH=0,pW=0, dH=1,dW=1;
-    int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;
-    int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;
-
-    // TypeParam epsilonBuff[]  = {6., 7., 8., 10., 11., 12., 14., 15., 16., 22., 23., 24., 26., 27., 28., 30., 31., 32.};
-    // TypeParam expectedBuff[] = {0., 0., 0., 0.,0., 6., 7., 8.,0.,10.,11.,12.,0.,14.,15.,16.,0., 0., 0., 0.,0.,22.,23.,24.,0.,26.,27.,28.,0.,30.,31.,32.};
-
-    NDArray input('c', {bS,iD,iH,iW});
-    NDArray epsilon('c', {bS,iD,oH,oW}, {6., 7., 8., 10., 11., 12., 14., 15., 16., 22., 23., 24., 26., 27., 28., 30., 31., 32.});
-    NDArray expected('c', {bS,iD,iH,iW}, {0., 0., 0., 0.,0., 6., 7., 8.,0.,10.,11.,12.,0.,14.,15.,16.,0., 0., 0., 0.,0.,22.,23.,24.,0.,26.,27.,28.,0.,30.,31.,32.});
-
-
-    input.linspace(1.);
-
-    std::initializer_list<Nd4jLong> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0, 0};   // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-
-    nd4j::ops::maxpool2d_bp op;
-    auto results = op.execute({&input, &epsilon}, {}, argI);
-    auto output = results->at(0);
-
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
-}
-
-//////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests1, Avgpool2d_bp2) {
-
-    int bS=2, iD=1, iH=4,iW=4, oD=3, kH=2,kW=2, sH=1,sW=1, pH=0,pW=0, dH=1,dW=1;
-    int oH = (iH - kH - (kH-1)*(dH-1) + 2*pH)/sH + 1;
-    int oW = (iW - kW - (kW-1)*(dW-1) + 2*pW)/sW + 1;
-
-    // TypeParam epsilonBuff[] = {3.5 , 4.5 , 5.5, 7.5 , 8.5 , 9.5, 11.5, 12.5, 13.5, 19.5, 20.5, 21.5, 23.5, 24.5, 25.5, 27.5, 28.5, 29.5};
-    // TypeParam expectedBuff[] = {0.875, 2., 2.5,1.375, 2.75 , 6., 7.,  3.75, 4.75 ,10., 11., 5.75, 2.875, 6., 6.5, 3.375, 4.875, 10.,10.5, 5.375, 10.75, 22.,23., 11.75, 12.75, 26.,27., 13.75, 6.875, 14.,14.5, 7.375};
-
-    auto input    = NDArrayFactory::create<TypeParam>('c', {bS,iD,iH,iW});
-    auto epsilon  = NDArrayFactory::create<TypeParam>('c', {bS,iD,oH,oW}, {3.5 , 4.5 , 5.5, 7.5 , 8.5 , 9.5, 11.5, 12.5, 13.5, 19.5, 20.5, 21.5, 23.5, 24.5, 25.5, 27.5, 28.5, 29.5});
-    auto expected = NDArrayFactory::create<TypeParam>('c', {bS,iD,iH,iW}, {0.875, 2., 2.5,1.375, 2.75 , 6., 7.,  3.75, 4.75 ,10., 11., 5.75, 2.875, 6., 6.5, 3.375, 4.875, 10.,10.5, 5.375, 10.75, 22.,23., 11.75, 12.75, 26.,27., 13.75, 6.875, 14.,14.5, 7.375});
-
-    input.linspace(1.);
-
-    std::initializer_list<Nd4jLong> argI = {kH,kW, sH,sW, pH,pW, dW,dH, 1, 1, 0};
-
-    nd4j::ops::avgpool2d_bp op;
-    auto results = op.execute({&input, &epsilon}, {}, argI);
-    auto output = results->at(0);
-
-    ASSERT_TRUE(expected.isSameShape(output));
-    ASSERT_TRUE(expected.equalsTo(output));
-
-    delete results;
 }
 
 TEST_F(DeclarableOpsTests1, ArgMax1) {

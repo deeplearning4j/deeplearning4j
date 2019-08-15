@@ -28,6 +28,7 @@
 #include <NDArray.h>
 #include <ops/declarable/CustomOperations.h>
 #include <types/types.h>
+#include <helpers/Loops.h>
 
 namespace nd4j {
 
@@ -36,26 +37,87 @@ namespace nd4j {
 * along a particular dimension
 */
 template <typename T>
+void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+        const uint numOfArrs = inArrs.size();
+
+        int outDim;
+        const bool isOutputVector = output.isCommonVector(outDim);
+
+        if(isOutputVector || (axis == 0 && output.ordering() == 'c')) {
+
+            bool allVectorsOrScalars = true;
+            const uint outEws = isOutputVector ? output.stridesOf()[outDim] : output.ews();
+
+            std::vector<int> nonUnityDim(numOfArrs);
+            std::vector<Nd4jLong> zOffset(numOfArrs);
+
+            for(int i = 0; i < numOfArrs; i++) {
+                allVectorsOrScalars &= (inArrs[i]->lengthOf() == 1 || inArrs[i]->isCommonVector(nonUnityDim[i]));
+                if(!allVectorsOrScalars)
+                    break;
+                if(i == 0)  zOffset[0] = 0;
+                else        zOffset[i] = zOffset[i - 1] + outEws * inArrs[i - 1]->lengthOf();
+            }
+
+            if(allVectorsOrScalars) {
+
+                T* outBuff = output.bufferAsT<T>();
+
+                PRAGMA_OMP_PARALLEL_FOR_SIMD
+                for (uint r = 0; r < numOfArrs; r++) {
+
+                    const Nd4jLong arrLen = inArrs[r]->lengthOf();
+                    const uint xEws    = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
+
+                    T *z = outBuff + zOffset[r];
+                    T *x = inArrs[r]->bufferAsT<T>();
+
+                    if(outEws == 1 && xEws == 1)
+                        for (Nd4jLong e = 0; e < arrLen; e++)
+                            z[e] = x[e];
+                    else
+                        for (Nd4jLong e = 0; e < arrLen; e++)
+                            z[e * outEws] = x[e * xEws];
+                }
+                return;
+            }
+        }
+
+        const int rank  = inArrs[0]->rankOf();
+        const int rank2 = 2*rank;
+        std::vector<std::vector<Nd4jLong>> indices(numOfArrs, std::vector<Nd4jLong>(rank2,0));
+
+        // take into account indices for first array
+        indices[0][2 * axis + 1] = inArrs[0]->sizeAt(axis);
+
+        // loop through the rest of input arrays
+        for(int i = 1; i < numOfArrs; ++i) {
+            indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
+            indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
+        }
+
+        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        for(int i = 0; i < numOfArrs; ++i) {
+            auto temp = output(indices[i], true);
+            nd4j::TransformLoops<T,T,T>::template loopTransform<simdOps::Assign<T,T>, false>(inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr);
+        }
+}
+
+/**
+* Concatneate multi array of the same shape together
+* along a particular dimension
+*/
+template <typename T>
 void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPointer *data, Nd4jPointer *inputShapeInfo, void *vresult, Nd4jLong *resultShapeInfo) {
     auto result = reinterpret_cast<T *>(vresult);
-
-    std::vector<Nd4jLong> iArgs = {dimension};
-    std::vector<double> tArgs;
-    std::vector<bool> bArgsEmpty;
     std::vector<NDArray*> inputs(numArrays);
-    std::vector<NDArray*> outputs(1);
 
-    outputs[0] = new NDArray(static_cast<void*>(result), static_cast<Nd4jLong*>(resultShapeInfo));
+    NDArray output(static_cast<void*>(result), static_cast<Nd4jLong*>(resultShapeInfo));
 
     for(int i = 0; i < numArrays; ++i)
         inputs[i] = new NDArray(static_cast<void *>(data[i]), static_cast<Nd4jLong*>(inputShapeInfo[i]));
 
-    nd4j::ops::concat op;
-    auto status = op.execute(inputs, outputs, tArgs, iArgs, bArgsEmpty);
-    if(status != Status::OK())
-        throw std::runtime_error("concatCpuGeneric fails to be executed !");
-    
-    delete outputs[0];
+    nd4j::SpecialMethods<T>::concatCpuGeneric(inputs, output, dimension);
 
     for(int i = 0; i < numArrays; ++i)
         delete inputs[i];
@@ -224,12 +286,11 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             if (i < right){ quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff, descending); }
 
         }else{
-#pragma omp task
+PRAGMA_OMP_TASK
             { quickSort_parallel_internal(array, xShapeInfo, left, j, cutoff, descending); }
-#pragma omp task
+PRAGMA_OMP_TASK
             { quickSort_parallel_internal(array, xShapeInfo, i, right, cutoff, descending); }
         }
-
     }
 
     template<typename T>
@@ -239,13 +300,15 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
         PRAGMA_OMP_PARALLEL_THREADS(numThreads)
         {
-#pragma omp single nowait
+PRAGMA_OMP_SINGLE_ARGS(nowait)
             {
                 quickSort_parallel_internal(array, xShapeInfo, 0, lenArray-1, cutoff, descending);
             }
         }
 
     }
+
+
 
     template <typename T>
     int SpecialMethods<T>::nextPowerOf2(int number) {
@@ -349,7 +412,7 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
 
         Nd4jLong retVal = 0L;
 
-#pragma omp parallel for schedule(guided) proc_bind(close) reduction(+:retVal)
+PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVal))
         for (Nd4jLong x = 0; x < N; x += 16) {
 
             int byte = 0;
@@ -392,5 +455,221 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         return retVal;
     }
 
+    template <typename X, typename Y>
+    void quickSort_parallel_internal_key(X* key, Nd4jLong *xShapeInfo, Y* values, Nd4jLong *yShapeInfo, int left, int right, int cutoff, bool descending) {
+        auto length = shape::length(xShapeInfo);
+        int i = left, j = right;
+        X ktmp;
+        X pivot = key[shape::getIndexOffset((left + right) / 2, xShapeInfo, length)];
+
+        Y vtmp;
+
+        {
+            /* PARTITION PART */
+            while (i <= j) {
+                if (descending) {
+                    while (key[shape::getIndexOffset(i, xShapeInfo, length)] > pivot)
+                        i++;
+                    while (key[shape::getIndexOffset(j, xShapeInfo, length)] < pivot)
+                        j--;
+                    if (i <= j) {
+                        ktmp = key[shape::getIndexOffset(i, xShapeInfo, length)];
+                        key[shape::getIndexOffset(i, xShapeInfo, length)] = key[shape::getIndexOffset(j, xShapeInfo, length)];
+                        key[shape::getIndexOffset(j, xShapeInfo, length)] = ktmp;
+
+                        vtmp = values[shape::getIndexOffset(i, yShapeInfo, length)];
+                        values[shape::getIndexOffset(i, yShapeInfo, length)] = values[shape::getIndexOffset(j, yShapeInfo, length)];
+                        values[shape::getIndexOffset(j, yShapeInfo, length)] = vtmp;
+
+                        i++;
+                        j--;
+                    }
+                } else {
+                    while (key[shape::getIndexOffset(i, xShapeInfo, length)] < pivot)
+                        i++;
+                    while (key[shape::getIndexOffset(j, xShapeInfo, length)] > pivot)
+                        j--;
+                    if (i <= j) {
+                        ktmp = key[shape::getIndexOffset(i, xShapeInfo, length)];
+                        key[shape::getIndexOffset(i, xShapeInfo, length)] = key[shape::getIndexOffset(j, xShapeInfo, length)];
+                        key[shape::getIndexOffset(j, xShapeInfo, length)] = ktmp;
+
+                        vtmp = values[shape::getIndexOffset(i, yShapeInfo, length)];
+                        values[shape::getIndexOffset(i, yShapeInfo, length)] = values[shape::getIndexOffset(j, yShapeInfo, length)];
+                        values[shape::getIndexOffset(j, yShapeInfo, length)] = vtmp;
+
+                        i++;
+                        j--;
+                    }
+                }
+            }
+
+        }
+
+        //
+
+        if ( ((right-left)<cutoff) ){
+            if (left < j){ quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, left, j, cutoff, descending); }
+            if (i < right){ quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, i, right, cutoff, descending); }
+
+        }else{
+PRAGMA_OMP_TASK
+            { quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, left, j, cutoff, descending); }
+PRAGMA_OMP_TASK
+            { quickSort_parallel_internal_key(key, xShapeInfo, values, yShapeInfo, i, right, cutoff, descending); }
+        }
+    }
+
+
+    template <typename X, typename Y>
+    void quickSort_parallel_internal_value(X* key, Nd4jLong *xShapeInfo, Y* value, Nd4jLong *yShapeInfo, int left, int right, int cutoff, bool descending) {
+        auto length = shape::length(xShapeInfo);
+        int i = left, j = right;
+        X ktmp;
+        Y pivot = value[shape::getIndexOffset((left + right) / 2, yShapeInfo, length)];
+
+        Y vtmp;
+
+        {
+            /* PARTITION PART */
+            while (i <= j) {
+                if (descending) {
+                    while (value[shape::getIndexOffset(i, yShapeInfo, length)] > pivot)
+                        i++;
+                    while (value[shape::getIndexOffset(j, yShapeInfo, length)] < pivot)
+                        j--;
+                    if (i <= j) {
+                        ktmp = key[shape::getIndexOffset(i, xShapeInfo, length)];
+                        key[shape::getIndexOffset(i, xShapeInfo, length)] = key[shape::getIndexOffset(j, xShapeInfo, length)];
+                        key[shape::getIndexOffset(j, xShapeInfo, length)] = ktmp;
+
+                        vtmp = value[shape::getIndexOffset(i, yShapeInfo, length)];
+                        value[shape::getIndexOffset(i, yShapeInfo, length)] = value[shape::getIndexOffset(j, yShapeInfo, length)];
+                        value[shape::getIndexOffset(j, yShapeInfo, length)] = vtmp;
+
+                        i++;
+                        j--;
+                    }
+                } else {
+                    while (value[shape::getIndexOffset(i, yShapeInfo, length)] < pivot)
+                        i++;
+                    while (value[shape::getIndexOffset(j, yShapeInfo, length)] > pivot)
+                        j--;
+                    if (i <= j) {
+                        ktmp = key[shape::getIndexOffset(i, xShapeInfo, length)];
+                        key[shape::getIndexOffset(i, xShapeInfo, length)] = key[shape::getIndexOffset(j, xShapeInfo, length)];
+                        key[shape::getIndexOffset(j, xShapeInfo, length)] = ktmp;
+
+                        vtmp = value[shape::getIndexOffset(i, yShapeInfo, length)];
+                        value[shape::getIndexOffset(i, yShapeInfo, length)] = value[shape::getIndexOffset(j, yShapeInfo, length)];
+                        value[shape::getIndexOffset(j, yShapeInfo, length)] = vtmp;
+
+                        i++;
+                        j--;
+                    }
+                }
+            }
+
+        }
+
+        //
+
+        if ( ((right-left)<cutoff) ){
+            if (left < j){ quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, left, j, cutoff, descending); }
+            if (i < right){ quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, i, right, cutoff, descending); }
+
+        }else{
+PRAGMA_OMP_TASK
+            { quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, left, j, cutoff, descending); }
+PRAGMA_OMP_TASK
+            { quickSort_parallel_internal_value(key, xShapeInfo, value, yShapeInfo, i, right, cutoff, descending); }
+        }
+    }
+
+
+    template <typename X, typename Y>
+    static void quickSort_parallel_key(void *varray, Nd4jLong *xShapeInfo, void *yarray, Nd4jLong *yShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
+        auto array = reinterpret_cast<X *>(varray);
+        auto values = reinterpret_cast<Y *>(yarray);
+        int cutoff = 1000;
+
+        PRAGMA_OMP_PARALLEL_THREADS(numThreads)
+        {
+PRAGMA_OMP_SINGLE_ARGS(nowait)
+            {
+                quickSort_parallel_internal_key(array, xShapeInfo, values, yShapeInfo, 0, lenArray-1, cutoff, descending);
+            }
+        }
+    }
+
+    template <typename X, typename Y>
+    static void quickSort_parallel_value(void *varray, Nd4jLong *xShapeInfo, void *yarray, Nd4jLong *yShapeInfo, Nd4jLong lenArray, int numThreads, bool descending){
+        auto array = reinterpret_cast<X *>(varray);
+        auto values = reinterpret_cast<Y *>(yarray);
+        int cutoff = 1000;
+
+        PRAGMA_OMP_PARALLEL_THREADS(numThreads)
+        {
+PRAGMA_OMP_SINGLE_ARGS(nowait)
+            {
+                quickSort_parallel_internal_value(array, xShapeInfo, values, yShapeInfo, 0, lenArray-1, cutoff, descending);
+            }
+        }
+    }
+
+    template <typename X, typename Y>
+    void DoubleMethods<X,Y>::sortByKey(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, bool descending) {
+        quickSort_parallel_key<X,Y>(vx, xShapeInfo, vy, yShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
+    }
+
+    template <typename X, typename Y>
+    void DoubleMethods<X,Y>::sortByValue(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, bool descending) {
+        quickSort_parallel_value<X,Y>(vx, xShapeInfo, vy, yShapeInfo, shape::length(xShapeInfo), omp_get_max_threads(), descending);
+    }
+
+    template <typename X, typename Y>
+    void DoubleMethods<X,Y>::sortTadByKey(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int *dimension, int dimensionLength, bool descending) {
+        auto x = reinterpret_cast<X*>(vx);
+        auto y = reinterpret_cast<Y*>(vy);
+
+        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        auto packY = ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
+
+        auto xLength = shape::length(xShapeInfo);
+        auto xTadLength = shape::length(packX.primaryShapeInfo());
+        auto numTads = packX.numberOfTads();
+
+        PRAGMA_OMP_PARALLEL_FOR
+        for (Nd4jLong r = 0; r < numTads; r++) {
+            auto dx = x + packX.primaryOffsets()[r];
+            auto dy = y + packY.primaryOffsets()[r];
+
+            quickSort_parallel_key<X,Y>(dx, packX.primaryShapeInfo(), dy, packY.primaryShapeInfo(), xTadLength, 1, descending);
+        }
+    }
+
+    template <typename X, typename Y>
+    void DoubleMethods<X,Y>::sortTadByValue(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int *dimension, int dimensionLength, bool descending) {
+        auto x = reinterpret_cast<X*>(vx);
+        auto y = reinterpret_cast<Y*>(vy);
+
+        auto packX = ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        auto packY = ConstantTadHelper::getInstance()->tadForDimensions(yShapeInfo, dimension, dimensionLength);
+
+        auto xLength = shape::length(xShapeInfo);
+        auto xTadLength = shape::length(packX.primaryShapeInfo());
+        auto numTads = packX.numberOfTads();
+
+        PRAGMA_OMP_PARALLEL_FOR
+        for (Nd4jLong r = 0; r < numTads; r++) {
+            auto dx = x + packX.primaryOffsets()[r];
+            auto dy = y + packY.primaryOffsets()[r];
+
+            quickSort_parallel_value<X,Y>(dx, packX.primaryShapeInfo(), dy, packY.primaryShapeInfo(), xTadLength, 1, descending);
+        }
+    }
+
     BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES);
+    BUILD_DOUBLE_TEMPLATE(template class DoubleMethods, , LIBND4J_TYPES, LIBND4J_TYPES);
 }
+

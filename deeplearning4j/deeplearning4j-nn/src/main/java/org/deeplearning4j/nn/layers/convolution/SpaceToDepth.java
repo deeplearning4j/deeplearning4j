@@ -109,7 +109,7 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     protected INDArray preOutput(boolean training, boolean forBackprop, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(false);
-        applyDropOutIfNecessary(training, null);
+        applyDropOutIfNecessary(training, workspaceMgr);
 
         if (input.rank() != 4) {
             throw new DL4JInvalidInputException("Got rank " + input.rank()

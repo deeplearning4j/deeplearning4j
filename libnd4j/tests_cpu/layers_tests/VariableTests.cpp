@@ -169,7 +169,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_3) {
     delete conv;
 }
 
-
+/*
 TEST_F(VariableTests, Test_FlatVariableDataType_4) {
     flatbuffers::FlatBufferBuilder builder(1024);
     auto original = NDArrayFactory::create<float>('c', {5, 10});
@@ -202,7 +202,7 @@ TEST_F(VariableTests, Test_FlatVariableDataType_4) {
 
     delete rv;
 }
-
+*/
 TEST_F(VariableTests, Test_Dtype_Conversion_1) {
     auto x = NDArrayFactory::create_<float>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
     Variable v(x, "alpha", 12, 3);

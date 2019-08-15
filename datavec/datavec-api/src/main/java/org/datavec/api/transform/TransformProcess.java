@@ -17,6 +17,7 @@
 package org.datavec.api.transform;
 
 import lombok.Data;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.transform.analysis.DataAnalysis;
@@ -34,6 +35,7 @@ import org.datavec.api.transform.reduce.IAssociativeReducer;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.transform.schema.SequenceSchema;
 import org.datavec.api.transform.sequence.*;
+import org.datavec.api.transform.sequence.trim.SequenceTrimToLengthTransform;
 import org.datavec.api.transform.sequence.trim.SequenceTrimTransform;
 import org.datavec.api.transform.sequence.window.ReduceSequenceByWindowTransform;
 import org.datavec.api.transform.sequence.window.WindowFunction;
@@ -1097,6 +1099,31 @@ public class TransformProcess implements Serializable {
          */
         public Builder trimSequence(int numStepsToTrim, boolean trimFromStart) {
             actionList.add(new DataAction(new SequenceTrimTransform(numStepsToTrim, trimFromStart)));
+            return this;
+        }
+
+        /**
+         * Trim the sequence to the specified length (number of sequence steps).<br>
+         * Sequences longer than the specified maximum will be trimmed to exactly the maximum. Shorter sequences will not be modified.
+         *
+         * @param maxLength Maximum sequence length (number of time steps)
+         */
+        public Builder trimSequenceToLength(int maxLength) {
+            actionList.add(new DataAction(new SequenceTrimToLengthTransform(maxLength, SequenceTrimToLengthTransform.Mode.TRIM, null)));
+            return this;
+        }
+
+        /**
+         * Trim or pad the sequence to the specified length (number of sequence steps).<br>
+         * Sequences longer than the specified maximum will be trimmed to exactly the maximum. Shorter sequences will be
+         * padded with as many copies of the "pad" array to make the sequence length equal the specified maximum.<br>
+         * Note that the 'pad' list (i.e., values to pad with) must be equal in length to the number of columns (values per time step)
+         *
+         * @param length Required length - trim sequences longer than this, pad sequences shorter than this
+         * @param pad    Values to pad at the end of the sequence
+         */
+        public Builder trimOrPadSequenceToLength(int length, @NonNull List<Writable> pad) {
+            actionList.add(new DataAction(new SequenceTrimToLengthTransform(length, SequenceTrimToLengthTransform.Mode.TRIM_OR_PAD, pad)));
             return this;
         }
 

@@ -44,10 +44,10 @@ namespace nd4j {
             if (targetRank == 0) { // scalar only
                 determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
-            else if (targetRank == 1) { // vector 
+            else if (targetRank == 1) { // vector
                 determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
-            else { // only two last dimensions are excluded                
+            else { // only two last dimensions are excluded
                 determinantShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), shape::order(inShape), targetRank, shape::shapeOf(inShape));
             }
             return SHAPELIST(determinantShape);
@@ -79,7 +79,7 @@ namespace nd4j {
             REQUIRE_TRUE(input->rankOf() >=2, 0, "log_matrix_determinant: The rank of input array should not less than 2, but %i is given", input->rankOf());
             REQUIRE_TRUE(input->sizeAt(-1) == input->sizeAt(-2), 0, "log_matrix_determinant: The last two dimmensions should be equal, but %i and %i are given", input->sizeAt(-1), input->sizeAt(-2));
 
-            return helpers::log_abs_determinant(block.launchContext(), input, output);
+            return helpers::logAbsDeterminant(block.launchContext(), input, output);
         }
 
         DECLARE_SHAPE_FN(log_matrix_determinant) {
@@ -91,7 +91,7 @@ namespace nd4j {
             if (targetRank == 0) { // scalar only
                 determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
-            else if (targetRank == 1) { // vector 
+            else if (targetRank == 1) { // vector
                 determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded
@@ -132,7 +132,7 @@ namespace nd4j {
             if (targetRank == 0) { // scalar only
                 determinantShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
             }
-            else if (targetRank == 1) { // vector 
+            else if (targetRank == 1) { // vector
                 determinantShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(shape::sizeAt(inShape, 0), ArrayOptions::dataType(inShape));
             }
             else { // only two last dimensions are excluded

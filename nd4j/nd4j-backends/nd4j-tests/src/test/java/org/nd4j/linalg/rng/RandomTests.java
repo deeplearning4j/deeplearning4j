@@ -31,6 +31,8 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
+import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
+import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
@@ -1422,6 +1424,35 @@ public class RandomTests extends BaseNd4jTest {
             out.add(Nd4j.rand(new int[]{32, channels, imageHeight, imageWidth}));
         }
         return out;
+    }
+
+
+    @Test
+    public void testRngRepeatabilityUniform(){
+        val nexp = Nd4j.create(DataType.FLOAT, 10);
+        Nd4j.getRandom().setSeed(12345);
+        val out1 = Nd4j.create(DataType.FLOAT, 10);
+        Nd4j.exec(new DistributionUniform(Nd4j.createFromArray(10L), out1, 0.0, 1.0));
+
+        Nd4j.getRandom().setSeed(12345);
+        val out2 = Nd4j.create(DataType.FLOAT, 10);
+        Nd4j.exec(new DistributionUniform(Nd4j.createFromArray(10L), out2, 0.0, 1.0));
+
+        assertEquals(out1, out2);
+        assertNotEquals(nexp, out1);
+    }
+
+    @Test
+    public void testRngRepeatabilityBernoulli(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray out1 = Nd4j.create(DataType.FLOAT, 10);
+        Nd4j.exec(new RandomBernoulli(Nd4j.createFromArray(10L), out1, 0.5));
+
+        Nd4j.getRandom().setSeed(12345);
+        INDArray out2 = Nd4j.create(DataType.FLOAT, 10);
+        Nd4j.exec(new RandomBernoulli(Nd4j.createFromArray(10L), out2, 0.5));
+
+        assertEquals(out1, out2);
     }
 
     @Override

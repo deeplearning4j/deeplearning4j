@@ -41,8 +41,6 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
     auto weights = NDArrayFactory::create<float>('c', {2, 2, 2, 3});
     auto exp = NDArrayFactory::create<float>('c', {1, 3, 5, 4});
 
-    NativeOps nativeOps;
-
     nd4j::ops::conv2d op;
 
     std::vector<double> tArgs({});
@@ -50,7 +48,7 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
 
     Nd4jPointer ptrs[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) weights.getShapeInfo()};
 
-    auto shapeList = nativeOps.calculateOutputShapes(nullptr, op.getOpHash(), ptrs, 2, tArgs.data(), tArgs.size(), iArgs.data(), iArgs.size());
+    auto shapeList = calculateOutputShapes(nullptr, op.getOpHash(), ptrs, 2, tArgs.data(), tArgs.size(), iArgs.data(), iArgs.size());
 
     ASSERT_EQ(1, shapeList->size());
 
@@ -64,16 +62,13 @@ TEST_F(JavaInteropTests, TestShapeExposure1) {
     //delete[] ptr;
     //delete shapeList;
 
-    nativeOps.deleteShapeList((Nd4jPointer) shapeList);
+    deleteShapeList((Nd4jPointer) shapeList);
 }
 
 
 TEST_F(JavaInteropTests, TestShapeExposure2) {
     auto input = NDArrayFactory::create<float>('c', {1, 2, 5, 4});
     auto exp = NDArrayFactory::create<float>('c', {4}, {1, 2, 5, 4});
-
-
-    NativeOps nativeOps;
 
     nd4j::ops::shape_of op;
 
@@ -83,14 +78,14 @@ TEST_F(JavaInteropTests, TestShapeExposure2) {
 
     Nd4jPointer ptrs[] = {(Nd4jPointer) input.getShapeInfo()};
 
-    auto shapeList = nativeOps.calculateOutputShapes(nullptr, op.getOpHash(), ptrs, 1, tArgs.data(), tArgs.size(), iArgs.data(), iArgs.size());
+    auto shapeList = calculateOutputShapes(nullptr, op.getOpHash(), ptrs, 1, tArgs.data(), tArgs.size(), iArgs.data(), iArgs.size());
 
     ASSERT_EQ(1, shapeList->size());
 
     ASSERT_EQ(exp.rankOf(), shape::rank((Nd4jLong *)shapeList->at(0)));
     ASSERT_EQ(exp.sizeAt(0), shape::shapeOf((Nd4jLong *)shapeList->at(0))[0]);
 
-    nativeOps.deleteShapeList((Nd4jPointer) shapeList);
+    deleteShapeList((Nd4jPointer) shapeList);
 }
 
 TEST_F(JavaInteropTests, TestShapeExposure3) {
@@ -109,24 +104,23 @@ TEST_F(JavaInteropTests, TestShapeExposure3) {
     sub1.assign(1.0f);
     sub2.assign(2.0f);
 
-    Nd4jPointer inputBuffers[] = {x.buffer(), sizes.buffer()};
-    Nd4jPointer inputShapes[] = {x.shapeInfo(), sizes.shapeInfo()};
+    Nd4jPointer inputBuffers[] = {x.buffer(), sizes.buffer(), x.getSpecialBuffer(), sizes.getSpecialBuffer()};
+    Nd4jPointer inputShapes[] = {x.shapeInfo(), sizes.shapeInfo(), x.getSpecialShapeInfo(), sizes.getSpecialShapeInfo()};
 
-    NativeOps nativeOps;
     nd4j::ops::split_v op;
-    
+
     Nd4jLong iArgs[] = {1};
     auto hash = op.getOpHash();
 
-    auto shapeList = nativeOps.calculateOutputShapes(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1, nullptr, 0);
+    auto shapeList = calculateOutputShapes2(nullptr, hash, inputBuffers, inputShapes, 2, nullptr, 0, iArgs, 1, nullptr, 0);
 
     ASSERT_EQ(3, shapeList->size());
 
     ASSERT_TRUE(shape::equalsSoft(sub0.shapeInfo(), shapeList->at(0)));
     ASSERT_TRUE(shape::equalsSoft(sub1.shapeInfo(), shapeList->at(1)));
     ASSERT_TRUE(shape::equalsSoft(sub2.shapeInfo(), shapeList->at(2)));
-            
-    nativeOps.deleteShapeList((Nd4jPointer) shapeList);
+
+    deleteShapeList((Nd4jPointer) shapeList);
 }
 
 TEST_F(JavaInteropTests, Test_Squeeze_1) {
@@ -136,17 +130,12 @@ TEST_F(JavaInteropTests, Test_Squeeze_1) {
 
     nd4j::ops::squeeze op;
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), x.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), x.getSpecialShapeInfo()};
 
-
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
-
-
-    NativeOps nativeOps;
-
-    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer(), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo(), z.getSpecialShapeInfo()};
+    auto status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(e, z);
@@ -158,19 +147,19 @@ TEST_F(JavaInteropTests, Test_RDiv_1) {
     auto z = NDArrayFactory::create<double>('c', {3});
     auto e = NDArrayFactory::create<double>('c', {3}, {2, 3, 4});
 
+    NDArray::prepareSpecialUse({&z}, {&x, &y});
+
     nd4j::ops::reversedivide op;
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer(), x.getSpecialBuffer(), y.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo(), x.getSpecialShapeInfo(), y.getSpecialShapeInfo()};
 
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer(), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo(), z.getSpecialShapeInfo()};
+    auto status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
 
-
-    NativeOps nativeOps;
-
-    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    NDArray::registerSpecialUse({&z}, {&x, &y});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(e, z);
@@ -195,22 +184,22 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
 
     nd4j::ops::sconv2d op;
 
+    NDArray::prepareSpecialUse({&output}, {&input, &weightsD, &weightsP, &bias});
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), (Nd4jPointer) weightsD.getBuffer(), (Nd4jPointer) weightsP.getBuffer(), (Nd4jPointer) bias.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) weightsD.getShapeInfo(), (Nd4jPointer) weightsP.getShapeInfo(), (Nd4jPointer) bias.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), (Nd4jPointer) weightsD.getBuffer(), (Nd4jPointer) weightsP.getBuffer(), (Nd4jPointer) bias.getBuffer(), (Nd4jPointer) input.getSpecialBuffer(), (Nd4jPointer) weightsD.getSpecialBuffer(), (Nd4jPointer) weightsP.getSpecialBuffer(), (Nd4jPointer) bias.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) weightsD.getShapeInfo(), (Nd4jPointer) weightsP.getShapeInfo(), (Nd4jPointer) bias.getShapeInfo(), (Nd4jPointer) input.getSpecialShapeInfo(), (Nd4jPointer) weightsD.getSpecialShapeInfo(), (Nd4jPointer) weightsP.getSpecialShapeInfo(), (Nd4jPointer) bias.getSpecialShapeInfo()};
 
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
-
-    NativeOps nativeOps;
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer(), (Nd4jPointer) output.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo(), (Nd4jPointer) output.getSpecialShapeInfo()};
 
     Nd4jLong exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0, 0};
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 4, ptrsOutBuffers, ptrsOutShapes, 1,
+    execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 4, ptrsOutBuffers, ptrsOutShapes, 1,
                                 nullptr, 0, exp, 9, nullptr, 0, false);
 
     //output.printBuffer("output");
+    NDArray::registerSpecialUse({&output}, {&input, &weightsD, &weightsP, &bias});
 
     ASSERT_NEAR(1423, output.e<float>(0), 1e-5);
         //nd4j_printf("Iter %i passed...\n", e);
@@ -230,21 +219,20 @@ TEST_F(JavaInteropTests, TestSconv2d_2) {
 
     nd4j::ops::sconv2d op;
 
+    NDArray::prepareSpecialUse({&output}, {&input, &weightsD});
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), (Nd4jPointer) weightsD.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) weightsD.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), (Nd4jPointer) weightsD.getBuffer(), input.getSpecialBuffer(), weightsD.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) weightsD.getShapeInfo(), input.getSpecialShapeInfo(), weightsD.getSpecialShapeInfo()};
 
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
-
-    NativeOps nativeOps;
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer(), output.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo(), output.getSpecialShapeInfo()};
 
     Nd4jLong exp[] = {1, 1, 1, 1, 0, 0, 1, 1, 0};
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, nullptr, 0, false);
+    execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, nullptr, 0, false);
 
-    //output.printBuffer("output");
+    NDArray::registerSpecialUse({&output}, {&input, &weightsD});
 
     ASSERT_NEAR(1, output.e<float>(0), 1e-5);
 }
@@ -255,20 +243,21 @@ TEST_F(JavaInteropTests, TestMaxPooling2d_1) {
     auto output = NDArrayFactory::create<float>('c', {1, 2, 4, 5});
     input.linspace(1);
 
+    NDArray::prepareSpecialUse({&output}, {&input});
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), input.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), input.getSpecialShapeInfo()};
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer(), output.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo(), output.getSpecialShapeInfo()};
 
     std::vector<Nd4jLong> iArgs({2, 2, 1, 1, 0, 0, 1, 1, 1});
 
     nd4j::ops::maxpool2d op;
 
-    NativeOps nativeOps;
+    Nd4jStatus status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs.data(), 9, nullptr, 0, false);
 
-    Nd4jStatus status = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs.data(), 9, nullptr, 0, false);
+    NDArray::registerSpecialUse({&output}, {&input});
     ASSERT_EQ(ND4J_STATUS_OK, status);
 
 }
@@ -285,22 +274,23 @@ TEST_F(JavaInteropTests, TestCol2Im_1) {
     auto output = NDArrayFactory::create<float>('c', {1, 2, 4, 5});
     input.linspace(1);
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
+    NDArray::prepareSpecialUse({&output}, {&input});
 
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), input.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), input.getSpecialShapeInfo()};
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer(), output.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo(), output.getSpecialShapeInfo()};
 
     nd4j::ops::col2im op;
-
-    NativeOps nativeOps;
 
     Nd4jLong exp[] = {1, 1, 1, 1, 4, 5, 1, 1, 1};
 
     auto hash = op.getOpHash();
 
-    nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, nullptr, 0, false);
+    execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 9, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&output}, {&input});
 
     ASSERT_TRUE(output.meanNumber().e<float>(0) > 0.0f);
 }
@@ -320,19 +310,22 @@ TEST_F(JavaInteropTests, TestPNorm_1) {
     auto output = NDArrayFactory::create<float>('c', {1, 3, 3, 3});
     input.linspace(1);
 
-    NativeOps nativeOps;
+    NDArray::prepareSpecialUse({&output}, {&input});
 
     nd4j::ops::pnormpool2d op;
 
     Nd4jLong exp[] = {2, 2, 1, 1, 0, 0, 1, 1, 0, 2, 0, 0};
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), input.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), input.getSpecialShapeInfo()};
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer(), output.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo(), output.getSpecialShapeInfo()};
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, nullptr, 0, false);
+
+    execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&output}, {&input});
 
     ASSERT_TRUE(output.meanNumber().e<double>(0) > 0.0);
 }
@@ -343,17 +336,19 @@ TEST_F(JavaInteropTests, TestInplace_1) {
     //auto exp('c', {10, 10});
     input.linspace(1);
 
-    NativeOps nativeOps;
+    NDArray::prepareSpecialUse({}, {&input});
 
     nd4j::ops::clipbyvalue op;
 
     double extras[] = {-1.0f, 1.0f};
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), input.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), input.getSpecialShapeInfo()};
 
 
-    Nd4jStatus result = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, nullptr, nullptr, 0, extras, 2, nullptr, 0, nullptr, 0, true);
+    Nd4jStatus result = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, nullptr, nullptr, 0, extras, 2, nullptr, 0, nullptr, 0, true);
+
+    NDArray::registerSpecialUse({}, {&input});
 
     ASSERT_EQ(ND4J_STATUS_OK, result);
 
@@ -405,6 +400,7 @@ TEST_F(JavaInteropTests, Test_Synonyms_3) {
     ASSERT_EQ(nameRef, name);
 }
 
+/*
 TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
     int inOutH = 35;
     int inOutW = 35;
@@ -415,19 +411,22 @@ TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
     x.linspace(1.0);
     z.linspace(1.0);
 
-    NativeOps nativeOps;
+    NDArray::prepareSpecialUse({&z}, {&x});
+
     nd4j::ops::avgpool2d op;
     //auto result = op.execute({&x}, {}, {3,3, 1,1, 0,0, 1,1, 1, 0, 1});
 
     Nd4jLong exp[] = {3,3, 1,1, 0,0, 1,1, 1, 0, 1};
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), x.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), x.getSpecialShapeInfo()};
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer(), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo(), z.getSpecialShapeInfo()};
 
-    auto result = nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, nullptr, 0, false);
+    auto result = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, exp, 11, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&z}, {&x});
 
     ASSERT_EQ(Status::OK(), result);
 
@@ -494,17 +493,15 @@ TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
     ASSERT_EQ(m, z);
 }
 
-/*
-TEST_F(JavaInteropTests, Test_GraphReuse_1) {
-    NativeOps nativeOps;
 
+TEST_F(JavaInteropTests, Test_GraphReuse_1) {
     uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim_false.fb");
 
-    nativeOps.registerGraph(nullptr, 119, (Nd4jPointer) data);
+    registerGraph(nullptr, 119, (Nd4jPointer) data);
 
     ASSERT_TRUE(GraphHolder::getInstance()->hasGraph(119));
 
-    nativeOps.unregisterGraph(nullptr, 119);
+    unregisterGraph(nullptr, 119);
 
     ASSERT_FALSE(GraphHolder::getInstance()->hasGraph(119));
 
@@ -520,8 +517,6 @@ TEST_F(JavaInteropTests, Test_GraphReuse_2) {
     auto exp1 = NDArrayFactory::create<float>('c', {3}, {6, 6, 6});
     auto exp2 = NDArrayFactory::create<float>('c', {3}, {9, 9, 9});
 
-    NativeOps nativeOps;
-
     // we load graph from file, because we're not in java here, and dont have buffer ready
     uint8_t* data = nd4j::graph::readFlatBuffers("./resources/reduce_dim_false.fb");
 
@@ -529,7 +524,7 @@ TEST_F(JavaInteropTests, Test_GraphReuse_2) {
     ASSERT_FALSE(GraphHolder::getInstance()->hasGraph(119));
 
     // register the graph, to call for it later
-    nativeOps.registerGraph(nullptr, 119, (Nd4jPointer) data);
+    registerGraph(nullptr, 119, (Nd4jPointer) data);
 
     // and ensure we're ok
     ASSERT_TRUE(GraphHolder::getInstance()->hasGraph(119));
@@ -547,7 +542,7 @@ TEST_F(JavaInteropTests, Test_GraphReuse_2) {
     Nd4jPointer shapes_0[] = {(Nd4jPointer) input_0.shapeInfo()};
 
     // now we're executing stored graph and providing replacement for input variable
-    auto res_0 = nativeOps.executeStoredGraph(nullptr, 119, inputs_0, shapes_0, idx, 1);
+    auto res_0 = executeStoredGraph(nullptr, 119, inputs_0, shapes_0, idx, 1);
     ASSERT_EQ(ND4J_STATUS_OK, res_0->status());
     ASSERT_EQ(1, res_0->size());
 
@@ -562,7 +557,7 @@ TEST_F(JavaInteropTests, Test_GraphReuse_2) {
     Nd4jPointer shapes_1[] = {(Nd4jPointer) input_1.shapeInfo()};
 
     // doing it again
-    auto res_1 = nativeOps.executeStoredGraph(nullptr, 119, inputs_1, shapes_1, idx, 1);
+    auto res_1 = executeStoredGraph(nullptr, 119, inputs_1, shapes_1, idx, 1);
     ASSERT_EQ(ND4J_STATUS_OK, res_1->status());
     ASSERT_EQ(1, res_1->size());
 
@@ -577,7 +572,7 @@ TEST_F(JavaInteropTests, Test_GraphReuse_2) {
     Nd4jPointer shapes_2[] = {(Nd4jPointer) input_2.shapeInfo()};
 
     // and again
-    auto res_2 = nativeOps.executeStoredGraph(nullptr, 119, inputs_2, shapes_2, idx, 1);
+    auto res_2 = executeStoredGraph(nullptr, 119, inputs_2, shapes_2, idx, 1);
     ASSERT_EQ(ND4J_STATUS_OK, res_1->status());
     ASSERT_EQ(1, res_2->size());
 
@@ -586,7 +581,7 @@ TEST_F(JavaInteropTests, Test_GraphReuse_2) {
 
 
     //////// clean out
-    nativeOps.unregisterGraph(nullptr, 119);
+    unregisterGraph(nullptr, 119);
 
     ASSERT_FALSE(GraphHolder::getInstance()->hasGraph(119));
 
@@ -606,20 +601,19 @@ TEST_F(JavaInteropTests, Test_Greater_1) {
 
     auto exp = NDArrayFactory::create<bool>('c', {2, 2}, {0, 0, 1, 1});
 
+    NDArray::prepareSpecialUse({&o}, {&x, &y});
+
     nd4j::ops::greater op;
 
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer(), x.getSpecialBuffer(), y.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo(), x.getSpecialShapeInfo(), y.getSpecialShapeInfo()};
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo()};
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) o.getBuffer(), o.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) o.getShapeInfo(), o.getSpecialShapeInfo()};
 
+    execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) o.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) o.getShapeInfo()};
-
-    NativeOps nativeOps;
-
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
-    o.printIndexedBuffer("Greater JIT");
+    NDArray::registerSpecialUse({&o}, {&x, &y});
     ASSERT_TRUE(exp.equalsTo(&o));
 }
 
@@ -633,38 +627,41 @@ TEST_F(JavaInteropTests, Test_Greater_2) {
 
     nd4j::ops::greater op;
 
+    NDArray::prepareSpecialUse({&o}, {&x, &y});
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer(), x.getSpecialBuffer(), y.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo(), x.getSpecialShapeInfo(), y.getSpecialShapeInfo()};
 
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) o.getBuffer(), o.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) o.getShapeInfo(), o.getSpecialShapeInfo()};
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) o.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) o.getShapeInfo()};
+    execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
 
-    NativeOps nativeOps;
-
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    NDArray::registerSpecialUse({&o}, {&x, &y});
 
     ASSERT_TRUE(exp.equalsTo(&o));
 }
 
 TEST_F(JavaInteropTests, Test_Boolean_Op_1) {
+
     nd4j::ops::is_non_decreasing op;
 
     auto x = NDArrayFactory::create<float>('c', {5}, {1, 2, 3, 4, 5});
     auto o = NDArrayFactory::create<bool>(false);
     auto exp = NDArrayFactory::create<bool>(1);
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+    NDArray::prepareSpecialUse({&o}, {&x});
 
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), x.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), x.getSpecialShapeInfo()};
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) o.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) o.getShapeInfo()};
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) o.getBuffer(), o.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) o.getShapeInfo(), o.getSpecialShapeInfo()};
 
-    NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&o}, {&x});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.equalsTo(&o));
@@ -677,17 +674,19 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_1) {
     auto z = NDArrayFactory::create<float>('c', {2, 3});
 
     nd4j::ops::test_output_reshape op;
-    
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo()};
 
+    NDArray::prepareSpecialUse({&z}, {&x});
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), x.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), x.getSpecialShapeInfo()};
 
-    NativeOps nativeOps;
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer(), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo(), z.getSpecialShapeInfo()};
+
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&z}, {&x});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.isSameShape(z));
@@ -704,15 +703,18 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_2) {
 
     nd4j::ops::add op;
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo()};
+    NDArray::prepareSpecialUse({&z}, {&x, &y});
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), (Nd4jPointer) y.getBuffer(), x.getSpecialBuffer(), y.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), (Nd4jPointer) y.getShapeInfo(), x.getSpecialShapeInfo(), y.getSpecialShapeInfo()};
 
-    NativeOps nativeOps;
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer(), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo(), z.getSpecialShapeInfo()};
+
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    NDArray::prepareSpecialUse({&z}, {&x, &y});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(e.isSameShape(z));
@@ -728,17 +730,20 @@ TEST_F(JavaInteropTests, Test_Inplace_Outputs_3) {
 
     nd4j::ops::gather op;
 
-     Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), (Nd4jPointer) indices.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) indices.getShapeInfo()};
+    NDArray::prepareSpecialUse({&output}, {&input, &indices});
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) input.getBuffer(), (Nd4jPointer) indices.getBuffer(), input.getSpecialBuffer(), indices.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) input.getShapeInfo(), (Nd4jPointer) indices.getShapeInfo(), input.getSpecialShapeInfo(), input.getSpecialShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) output.getBuffer(), output.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) output.getShapeInfo(), output.getSpecialShapeInfo()};
 
     Nd4jLong iArgs[] = {1};
 
-    NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 1, nullptr, 0, false);
+    auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 1, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&output}, {&input, &indices});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(e.isSameShape(output));
@@ -752,22 +757,38 @@ TEST_F(JavaInteropTests, Test_Reduce3_EdgeCase) {
     auto z = NDArrayFactory::create<float>('c', {5});
 
     auto dims = NDArrayFactory::create<int>('c', {2}, {0, 1});
+    dims.syncToHost();
 
-    NativeOps nativeOps;
-    nativeOps.execReduce3(nullptr, 2, x.buffer(), x.shapeInfo(), nullptr, nullptr, nullptr, 
-                        y.buffer(), y.shapeInfo(), nullptr, nullptr,
-                        z.buffer(), z.shapeInfo(), nullptr, nullptr,
-                        dims.buffer(), dims.shapeInfo(), dims.specialBuffer(), dims.specialShapeInfo(), nullptr, nullptr, nullptr, nullptr);
+    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+
+    Nd4jPointer* extraPointers = nullptr;
+    #ifdef __CUDABLAS__
+        extraPointers = new Nd4jPointer[6] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer()};
+    #endif
+
+    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), {0,1});
+    auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(y.getShapeInfo(), {0,1});
+
+    NDArray::prepareSpecialUse({&z}, {&x, &y, &dims});
+
+    execReduce3Tad(extraPointers, 2, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+                          nullptr,
+                        y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
+                        z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                        dims.buffer(), dims.shapeInfo(), dims.specialBuffer(), dims.specialShapeInfo(), packX.platformShapeInfo(), packX.platformOffsets(), packY.platformShapeInfo(), packY.platformOffsets());
+
+    NDArray::registerSpecialUse({&z}, {&x, &y, &dims});
+
+    delete []extraPointers;
 }
+
 /*
 TEST_F(JavaInteropTests, Test_SimpleIf_Output) {
     Environment::getInstance()->setDebug(true);
     Environment::getInstance()->setVerbose(false);
 
-    NativeOps ops;
-
     auto pl = nd4j::graph::readFlatBuffers("./resources/simpleif_0_1.fb");
-    auto ptr = ops.executeFlatGraph(nullptr, pl);
+    auto ptr = executeFlatGraph(nullptr, pl);
 
     Environment::getInstance()->setDebug(false);
     Environment::getInstance()->setVerbose(false);
@@ -785,18 +806,21 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_double) {
 
     nd4j::ops::avgpool2d op;
 
-    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(input.buffer())};
-    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(input.shapeInfo())};
+    NDArray::prepareSpecialUse({&z}, {&input});
 
-    Nd4jPointer ptrsOutBuffers[] = {reinterpret_cast<Nd4jPointer>(z.buffer())};
-    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo())};
+    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(input.buffer()), input.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(input.shapeInfo()), input.getSpecialShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {reinterpret_cast<Nd4jPointer>(z.buffer()), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo()), z.getSpecialShapeInfo()};
+
     Nd4jLong iArgs[] = {3,3,  3,3,  0,0,  1,1,1,  0,1};
 
-    NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
-    ASSERT_EQ(Status::OK(), status);
+    auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
 
+    NDArray::registerSpecialUse({&z}, {&input});
+    ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -808,19 +832,22 @@ TEST_F(JavaInteropTests, Test_MaxPool2D_float_1) {
 
     input.linspace(1.0);
 
-    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(input.buffer())};
-    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(input.shapeInfo())};
+    NDArray::prepareSpecialUse({&z}, {&input});
 
-    Nd4jPointer ptrsOutBuffers[] = {reinterpret_cast<Nd4jPointer>(z.buffer())};
-    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo())};
+    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(input.buffer()), input.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(input.shapeInfo()), input.getSpecialShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {reinterpret_cast<Nd4jPointer>(z.buffer()), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo()), z.getSpecialShapeInfo()};
 
     Nd4jLong iArgs[] = {2,2,  1,1,  1,1,  2,2,1,  0,0};
 
     nd4j::ops::maxpool2d op;
 
-    NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
+    auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&z}, {&input});
     ASSERT_EQ(Status::OK(), status);
 }
 
@@ -833,19 +860,22 @@ TEST_F(JavaInteropTests, Test_Unstack_1) {
     auto z3 = NDArrayFactory::create<double>('c',{5});
     auto z4 = NDArrayFactory::create<double>('c',{5});
 
-    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(x.buffer())};
-    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(x.shapeInfo())};
+    NDArray::prepareSpecialUse({&z0, &z1, &z2, &z3, &z4}, {&x});
 
-    Nd4jPointer ptrsOutBuffers[] = {z0.buffer(), z1.buffer(), z2.buffer(), z3.buffer(), z4.buffer()};
-    Nd4jPointer ptrsOutShapes[] = {z0.shapeInfo(), z1.shapeInfo(), z2.shapeInfo(), z3.shapeInfo(), z4.shapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(x.buffer()), x.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(x.shapeInfo()), x.getSpecialShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {z0.buffer(), z1.buffer(), z2.buffer(), z3.buffer(), z4.buffer(), z0.getSpecialBuffer(), z1.getSpecialBuffer(), z2.getSpecialBuffer(), z3.getSpecialBuffer(), z4.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {z0.shapeInfo(), z1.shapeInfo(), z2.shapeInfo(), z3.shapeInfo(), z4.shapeInfo(), z0.getSpecialShapeInfo(), z1.getSpecialShapeInfo(), z2.getSpecialShapeInfo(), z3.getSpecialShapeInfo(), z4.getSpecialShapeInfo()};
 
     Nd4jLong iArgs[] = {0};
 
     nd4j::ops::unstack op;
 
-    NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 5, nullptr, 0, iArgs, 1, nullptr, 0, false);
+    auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 5, nullptr, 0, iArgs, 1, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&z0, &z1, &z2, &z3, &z4}, {&x});
     ASSERT_EQ(Status::OK(), status);
 }
 
@@ -857,18 +887,20 @@ TEST_F(JavaInteropTests, Test_AveragePooling_FF_TF_float) {
 
     nd4j::ops::avgpool2d op;
 
-    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(input.buffer())};
-    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(input.shapeInfo())};
+    NDArray::prepareSpecialUse({&z}, {&input});
 
-    Nd4jPointer ptrsOutBuffers[] = {reinterpret_cast<Nd4jPointer>(z.buffer())};
-    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo())};
+    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(input.buffer()), input.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(input.shapeInfo()), input.getSpecialShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffers[] = {reinterpret_cast<Nd4jPointer>(z.buffer()), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo()), z.getSpecialShapeInfo()};
     Nd4jLong iArgs[] = {3,3,  3,3,  0,0,  1,1,1,  0,1};
 
-    NativeOps nativeOps;
     auto hash = op.getOpHash();
-    auto status = nativeOps.execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
-    ASSERT_EQ(Status::OK(), status);
+    auto status = execCustomOp(nullptr, hash, ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, iArgs, 11, nullptr, 0, false);
 
+    NDArray::registerSpecialUse({&z}, {&input});
+    ASSERT_EQ(Status::OK(), status);
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -883,12 +915,15 @@ TEST_F(JavaInteropTests, Test_Mixed_Add_1) {
     auto arrayZ = NDArrayFactory::create<double>({0, 0, 0, 0});
     auto arrayE = NDArrayFactory::create<double>({2, 4, 6, 8});
 
-    NativeOps ops;
-    ops.execPairwiseTransform(nullptr, pairwise::Add, 
-                              arrayX.buffer(), arrayX.shapeInfo(), nullptr, nullptr,
-                              arrayY.buffer(), arrayY.shapeInfo(), nullptr, nullptr,
-                              arrayZ.buffer(), arrayZ.shapeInfo(), nullptr, nullptr,
+    NDArray::prepareSpecialUse({&arrayZ}, {&arrayX, &arrayY});
+
+    execPairwiseTransform(nullptr, pairwise::Add,
+                              arrayX.buffer(), arrayX.shapeInfo(), arrayX.getSpecialBuffer(), arrayX.getSpecialShapeInfo(),
+                              arrayY.buffer(), arrayY.shapeInfo(), arrayY.getSpecialBuffer(), arrayY.getSpecialShapeInfo(),
+                              arrayZ.buffer(), arrayZ.shapeInfo(), arrayZ.getSpecialBuffer(), arrayZ.getSpecialShapeInfo(),
                               nullptr);
+
+    NDArray::registerSpecialUse({&arrayZ}, {&arrayX, &arrayY});
 
     ASSERT_EQ(arrayE, arrayZ);
 }
@@ -898,16 +933,19 @@ TEST_F(JavaInteropTests, Test_Add_1) {
     auto y = NDArrayFactory::create<int>('c', {5}, {1, 1, 1, 1, 1});
     auto e = NDArrayFactory::create<int>('c', {5}, {2, 2, 2, 2, 2});
 
-    NativeOps nativeOps;
+    NDArray::prepareSpecialUse({&x}, {&x, &y});
+
     nd4j::ops::add op;
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), y.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), y.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), y.getBuffer(), x.getSpecialBuffer(), y.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), y.getShapeInfo(), x.getSpecialShapeInfo(), y.getSpecialShapeInfo(),};
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) x.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) x.getShapeInfo()};
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) x.getBuffer(), x.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) x.getShapeInfo(), x.getSpecialShapeInfo()};
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&x}, {&x, &y});
 
     ASSERT_EQ(e, x);
 }
@@ -920,16 +958,19 @@ TEST_F(JavaInteropTests, zeta_test10) {
 
     auto e = NDArrayFactory::create<double>('c', {3, 4}, {23.014574, 12.184081, 8.275731, 6.1532226, 4.776538, 3.7945523, 3.0541048, 2.4765317, 2.0163891, 205.27448, 21.090889, 19.477398});
 
-    NativeOps nativeOps;
     nd4j::ops::zeta op;
 
-    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), q.getBuffer()};
-    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), q.getShapeInfo()};
+    NDArray::prepareSpecialUse({&z}, {&x, &q});
 
-    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer()};
-    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo()};
+    Nd4jPointer ptrsInBuffer[] = {(Nd4jPointer) x.getBuffer(), q.getBuffer(), x.getSpecialBuffer(), q.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {(Nd4jPointer) x.getShapeInfo(), q.getShapeInfo(), x.specialShapeInfo(), q.getSpecialShapeInfo()};
 
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    Nd4jPointer ptrsOutBuffers[] = {(Nd4jPointer) z.getBuffer(), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {(Nd4jPointer) z.getShapeInfo(), z.getSpecialShapeInfo()};
+
+    execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, ptrsOutBuffers, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+
+    NDArray::registerSpecialUse({&z}, {&x, &q});
 
     ASSERT_EQ(e, z);
 }
@@ -939,13 +980,23 @@ TEST_F(JavaInteropTests, Test_Is_Max_1) {
     auto arrayZ = NDArrayFactory::create<bool>({0, 0, 0, 0});
     auto arrayE = NDArrayFactory::create<bool>({0, 1, 0, 0});
 
-    NativeOps ops;
-    ops.execTransformAny(nullptr, transform::IsMax,
-                          arrayX.buffer(), arrayX.shapeInfo(), nullptr, nullptr,
-                          arrayZ.buffer(), arrayZ.shapeInfo(), nullptr, nullptr,
+    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+
+    Nd4jPointer* extraPointers = nullptr;
+    #ifdef __CUDABLAS__
+        extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
+    #endif
+
+    NDArray::prepareSpecialUse({&arrayZ}, {&arrayX});
+    execTransformAny(extraPointers, transform::IsMax,
+                          arrayX.buffer(), arrayX.shapeInfo(), arrayX.getSpecialBuffer(), arrayX.getSpecialShapeInfo(),
+                          arrayZ.buffer(), arrayZ.shapeInfo(), arrayZ.getSpecialBuffer(), arrayZ.getSpecialShapeInfo(),
                           nullptr);
-    //arrayZ.printIndexedBuffer("JAVA ISMAX1");
+
+    NDArray::registerSpecialUse({&arrayZ}, {&arrayX});
     ASSERT_EQ(arrayE, arrayZ);
+
+    delete []extraPointers;
 }
 
 TEST_F(JavaInteropTests, Test_Is_Max_1_2) {
@@ -953,13 +1004,22 @@ TEST_F(JavaInteropTests, Test_Is_Max_1_2) {
     auto arrayZ = NDArrayFactory::create<float>({0, 0, 0, 0});
     auto arrayE = NDArrayFactory::create<float>({0, 1, 0, 0});
 
-    NativeOps ops;
-    ops.execTransformAny(nullptr, transform::IsMax,
-                         arrayX.buffer(), arrayX.shapeInfo(), nullptr, nullptr,
-                         arrayZ.buffer(), arrayZ.shapeInfo(), nullptr, nullptr,
+    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
+
+    Nd4jPointer* extraPointers = nullptr;
+    #ifdef __CUDABLAS__
+        extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
+    #endif
+
+    NDArray::prepareSpecialUse({&arrayZ}, {&arrayX});
+    execTransformAny(extraPointers, transform::IsMax,
+                         arrayX.buffer(), arrayX.shapeInfo(), arrayX.getSpecialBuffer(), arrayX.getSpecialShapeInfo(),
+                         arrayZ.buffer(), arrayZ.shapeInfo(), arrayZ.getSpecialBuffer(), arrayZ.getSpecialShapeInfo(),
                          nullptr);
     //arrayZ.printIndexedBuffer("JAVA ISMAX1");
+    NDArray::registerSpecialUse({&arrayZ}, {&arrayX});
     ASSERT_EQ(arrayE, arrayZ);
+    delete []extraPointers;
 }
 
 TEST_F(JavaInteropTests, Test_Is_Max_2) {
@@ -970,11 +1030,12 @@ TEST_F(JavaInteropTests, Test_Is_Max_2) {
     Nd4jLong *ex[] = {tad, off};
     float ea[] = {2, 1, 2};
 
-    NativeOps ops;
-    ops.execTransformBool(reinterpret_cast<void **>(ex), transform::IsMax, 
-                          arrayX.buffer(), arrayX.shapeInfo(), nullptr, nullptr,
-                          arrayZ.buffer(), arrayZ.shapeInfo(), nullptr, nullptr,
+    NDArray::prepareSpecialUse({&arrayZ}, {&arrayX});
+    execTransformBool(reinterpret_cast<void **>(ex), transform::IsMax,
+                          arrayX.buffer(), arrayX.shapeInfo(), arrayX.getSpecialBuffer(), arrayX.getSpecialShapeInfo(),
+                          arrayZ.buffer(), arrayZ.shapeInfo(), arrayZ.getSpecialBuffer(), arrayZ.getSpecialShapeInfo(),
                           ea);
+    NDArray::registerSpecialUse({&arrayZ}, {&arrayX});
 }
 
 TEST_F(JavaInteropTests, Test_IAMax_1) {
@@ -989,15 +1050,13 @@ TEST_F(JavaInteropTests, Test_Boolean_Broadcastables_1) {
     auto arrayX = NDArrayFactory::create<double>('c', {10, 10});
     auto arrayY = NDArrayFactory::create<double>('c', {10, 10});
 
-    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(arrayX.buffer()), reinterpret_cast<Nd4jPointer>(arrayY.buffer())};
-    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(arrayX.shapeInfo()), reinterpret_cast<Nd4jPointer>(arrayY.shapeInfo())};
+    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(arrayX.buffer()), reinterpret_cast<Nd4jPointer>(arrayY.buffer()), arrayX.getSpecialBuffer(), arrayY.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(arrayX.shapeInfo()), reinterpret_cast<Nd4jPointer>(arrayY.shapeInfo()), arrayX.getSpecialShapeInfo(), arrayY.getSpecialShapeInfo()};
 
-
-
+    NDArray::prepareSpecialUse({}, {&arrayX, &arrayY});
     nd4j::ops::greater_equal op;
-    NativeOps ops;
-    auto shapeList = ops.calculateOutputShapes(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0, nullptr, 0);
-
+    auto shapeList = calculateOutputShapes2(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 2, nullptr, 0, nullptr, 0, nullptr, 0);
+    NDArray::registerSpecialUse({}, {&arrayX, &arrayY});
     delete shapeList;
 }
 
@@ -1006,18 +1065,19 @@ TEST_F(JavaInteropTests, Test_L2_Loss_3) {
     auto e = NDArrayFactory::create<double>(0.303254);
     auto z = NDArrayFactory::create<double>(0.0);
 
-    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(x.buffer())};
-    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(x.shapeInfo())};
+    NDArray::prepareSpecialUse({&z}, {&x});
 
-    Nd4jPointer ptrsOutBuffer[] = {reinterpret_cast<Nd4jPointer>(z.buffer())};
-    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo())};
+    Nd4jPointer ptrsInBuffer[] = {reinterpret_cast<Nd4jPointer>(x.buffer()), x.getSpecialBuffer()};
+    Nd4jPointer ptrsInShapes[] = {reinterpret_cast<Nd4jPointer>(x.shapeInfo()), x.getSpecialShapeInfo()};
+
+    Nd4jPointer ptrsOutBuffer[] = {reinterpret_cast<Nd4jPointer>(z.buffer()), z.getSpecialBuffer()};
+    Nd4jPointer ptrsOutShapes[] = {reinterpret_cast<Nd4jPointer>(z.shapeInfo()), z.getSpecialShapeInfo()};
 
     nd4j::ops::l2_loss op;
-    NativeOps ops;
-    auto status = ops.execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffer, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
+    auto status = execCustomOp(nullptr, op.getOpHash(), ptrsInBuffer, ptrsInShapes, 1, ptrsOutBuffer, ptrsOutShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
     ASSERT_EQ(Status::OK(), status);
 
-    z.printIndexedBuffer("z");
+    NDArray::registerSpecialUse({&z}, {&x});
 
     ASSERT_EQ(e, z);
 }
@@ -1030,15 +1090,18 @@ TEST_F(JavaInteropTests, Test_Fastpath_3) {
     auto exp = NDArrayFactory::create<float>('c', {3, 2}, {2.f, 4.f, 6.f, 8.f, 10.f, 12.f});
     Context ctx(1);
 
-    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), nullptr, nullptr);
-    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), nullptr, nullptr);
-    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), nullptr, nullptr);
+    NDArray::prepareSpecialUse({&z}, {&array0, &array1});
+
+    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), array0.getSpecialBuffer(), array0.getSpecialShapeInfo());
+    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), array1.getSpecialBuffer(), array1.getSpecialShapeInfo());
+    ctx.setOutputArray(0, z.buffer(),           z.shapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo());
 
     ASSERT_EQ(2, ctx.width());
 
-    NativeOps nativeOps;
     nd4j::ops::add op;
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), &ctx);
+    execCustomOp2(nullptr, op.getOpHash(), &ctx);
+
+    NDArray::registerSpecialUse({&z}, {&array0, &array1});
 
     ASSERT_EQ(exp, z);
 }
@@ -1049,14 +1112,18 @@ TEST_F(JavaInteropTests, Test_Fastpath_4) {
     auto z = NDArrayFactory::create<double>('c', {3, 5});
     Nd4jLong iArgs[] = {3, 5, 2};
 
+
+    NDArray::prepareSpecialUse({&z}, {});
+
     Context ctx(1);
 
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
     ctx.setIArguments(iArgs, 3);
 
-    NativeOps nativeOps;
     nd4j::ops::tri op;
-    nativeOps.execCustomOp(nullptr, op.getOpHash(), &ctx);
+    execCustomOp2(nullptr, op.getOpHash(), &ctx);
+
+    NDArray::registerSpecialUse({&z}, {});
 
     ASSERT_EQ(exp, z);
 }
@@ -1068,15 +1135,18 @@ TEST_F(JavaInteropTests, Test_Fastpath_5) {
     a.linspace(1.0);
     b.linspace(1.0);
 
+    NDArray::prepareSpecialUse({&c}, {&b, &c});
+
     Context ctx(1);
 
     ctx.setInputArray(0, a.buffer(), a.shapeInfo(), a.specialBuffer(), a.specialShapeInfo());
     ctx.setInputArray(1, b.buffer(), b.shapeInfo(), b.specialBuffer(), b.specialShapeInfo());
     ctx.setOutputArray(0, c.buffer(), c.shapeInfo(), c.specialBuffer(), c.specialShapeInfo());
 
-    NativeOps nativeOps;
     nd4j::ops::matmul op;
-    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), &ctx);
+    auto status = execCustomOp2(nullptr, op.getOpHash(), &ctx);
+
+    NDArray::registerSpecialUse({&c}, {&b, &c});
 
     ASSERT_EQ(Status::OK(), status);
 }
@@ -1092,6 +1162,8 @@ TEST_F(JavaInteropTests, Test_Fastpath_6) {
     b.linspace(1.0);
     gI.linspace(1.0);
 
+    NDArray::prepareSpecialUse({&gA, &gB}, {&a, &b, &gI});
+
     Context ctx(1);
     Nd4jLong iArgs[] = {0L, 0L, 0L};
 
@@ -1104,9 +1176,10 @@ TEST_F(JavaInteropTests, Test_Fastpath_6) {
 
     ctx.setIArguments(iArgs, 3);
 
-    NativeOps nativeOps;
     nd4j::ops::matmul_bp op;
-    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), &ctx);
+    auto status = execCustomOp2(nullptr, op.getOpHash(), &ctx);
+
+    NDArray::registerSpecialUse({&gA, &gB}, {&a, &b, &gI});
 
     ASSERT_EQ(Status::OK(), status);
 }
@@ -1117,12 +1190,13 @@ TEST_F(JavaInteropTests, Test_Fastpath_7) {
     auto z = NDArrayFactory::create<float>('c', {3});
     auto e = NDArrayFactory::create<float>('c', {3}, {1.f, 2.f, 3.f});
 
+    NDArray::prepareSpecialUse({&z}, {&a, &b});
+
     Context ctx(1);
     Nd4jLong iArgs[] = {0L, 0L, 0L};
 
     ctx.setIArguments(iArgs, 1);
 
-    NativeOps nativeOps;
     nd4j::ops::concat op;
 
     ctx.setInputArray(0, a.buffer(), a.shapeInfo(), a.specialBuffer(), a.specialShapeInfo());
@@ -1130,7 +1204,9 @@ TEST_F(JavaInteropTests, Test_Fastpath_7) {
 
     ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
-    auto status = nativeOps.execCustomOp(nullptr, op.getOpHash(), &ctx);
+    auto status = execCustomOp2(nullptr, op.getOpHash(), &ctx);
+
+    NDArray::registerSpecialUse({&z}, {&a, &b});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(e, z);
@@ -1138,10 +1214,8 @@ TEST_F(JavaInteropTests, Test_Fastpath_7) {
 
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
-    NativeOps ops;
-
     auto pl = nd4j::graph::readFlatBuffers("./resources/gru_dynamic_mnist.fb");
-    auto ptr = ops.executeFlatGraph(nullptr, pl);
+    auto ptr = executeFlatGraph(nullptr, pl);
 
     // at this point we have FlatResults
     auto flatResult = GetFlatResult(ptr->pointer());
@@ -1190,8 +1264,6 @@ TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
 }
 */
 // TEST_F(JavaInteropTests, Test_NLP_Aggregations_1) {
-//     NativeOps ops;
-
 //     std::array<float, 60> syn0 = {-0.022756476f, 0.0126427775f, 0.011029151f, -0.013542821f, -0.012327666f, -0.0032439455f, -0.008405109f, -0.016651405f, 0.0015980572f, -0.007442479f, 0.019937921f, -0.016222188f, -0.016541665f, 0.013372547f, 0.006625724f, 0.0058958204f, -0.01281835f, -6.2343775E-4f, 0.0019826533f, 0.010253737f, -0.010291531f, 0.0019767822f, 0.018071089f, -0.0117441565f, 0.023176769f, 0.0032820583f, 0.0061427564f, -0.01696018f, 0.0054971874f, 0.0043818625f, 0.019323621f, 0.0036080598f, 0.024376748f, -0.0024499625f, 0.019496754f, 0.010563821f, -2.0503551E-4f, -0.0146056535f, 0.009949291f, 0.017604528f, -0.0050302492f, -0.022060446f, 0.016468976f, -0.0034482107f, 0.010270384f, -0.0063356445f, -0.019934833f, -0.02325993f, 0.016109904f, -0.0031106502f, -0.0020592287f, 0.024031803f, 0.005184144f, -0.024887865f, 0.02100272f, 3.395051E-4f, 0.018432347f, 5.673498E-4f, -0.020073576f, 0.010949242f};
 //     std::array<float, 60> syn1;
 //     std::array<float, 100000> exp;
@@ -1283,5 +1355,5 @@ TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
 //         ptrptr[idx+2] = reinterpret_cast<void*>(exp.data());
 
 
-//     ops.execAggregateBatchFloat(nullptr, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIndexArguments, maxRealArguments, pointer.data());
+//     execAggregateBatchFloat(nullptr, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIndexArguments, maxRealArguments, pointer.data());
 // }

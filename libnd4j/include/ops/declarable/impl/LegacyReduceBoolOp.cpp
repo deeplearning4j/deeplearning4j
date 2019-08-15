@@ -94,7 +94,7 @@ namespace nd4j {
                 //indices->printIndexedBuffer("indices");
 
                 std::vector<int> dims(indices->lengthOf());
-                for (int e = 0; e < indices->lengthOf(); e++) {
+                for (Nd4jLong e = 0; e < indices->lengthOf(); e++) {
                     // lol otherwise we segfault on macOS
                     int f = indices->e<int>(e);
                     dims[e] = f >= 0 ? f : f += x->rankOf();

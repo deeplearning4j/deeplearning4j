@@ -306,6 +306,73 @@ TEST_F(DeclarableOpsTests2, gather_13) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests2, BroadcastGradientArgs_1) {
+
+    NDArray input   ('c', {3,3,4},   {1, 2, 3, 4, 5, 6, 7, 8, 9,10,11,12, 13,14,15,16,17,18,19,20,21,22,23,24, 25,26,27,28,29,30,31,32,33,34,35,36}, nd4j::DataType::INT32);
+    NDArray indices ('c', {2,3},     {0, 1, 2, 2, 1,2}, nd4j::DataType::INT32);
+
+    nd4j::ops::broadcastgradientargs op;
+
+    auto result = op.execute({&input, &indices}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_KERNEL_FAILURE, result->status());
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests2, NLP_Cbow_Test_1) {
+    auto exp0 = NDArrayFactory::create<double>('c', {1, 10});
+    auto exp1 = NDArrayFactory::create<double>('c', {1, 10});
+    auto exp2 = NDArrayFactory::create<double>('c', {1, 10});
+
+    exp0.assign(0.0095);
+    exp1.assign(0.019875);
+    exp2.assign(0.02);
+
+    auto target = NDArrayFactory::create<int>(0);
+    auto ngStarter = NDArrayFactory::empty<int>();
+    auto context = NDArrayFactory::create<int>('c', {3}, {0, 1, 2});
+    auto locked = NDArrayFactory::create<int>('c', {3});
+    auto indices = NDArrayFactory::create<int>('c', {2}, {4, 5});
+    auto codes = NDArrayFactory::create<int8_t>('c', {2}, {1, 1});
+    auto syn0 = NDArrayFactory::create<double>('c', {100, 10});
+    auto syn1 = NDArrayFactory::create<double>('c', {100, 10});
+    auto syn1Neg = NDArrayFactory::empty<double>();
+    auto expTable = NDArrayFactory::create<double>('c', {10000});
+    auto negTable = NDArrayFactory::empty<double>();
+    auto numWords = NDArrayFactory::create<int>('c', {1}, {1});
+
+    syn0.assign(0.01);
+    syn1.assign(0.02);
+    expTable.assign(0.5);
+
+    auto alpha = NDArrayFactory::create<double>(0.025);
+    auto randomValue = NDArrayFactory::create<Nd4jLong>(2L);
+    auto inferenceVector = NDArrayFactory::empty<double>();
+
+    nd4j::ops::cbow op;
+    auto result = op.execute({&target, &ngStarter, &context, &indices, &codes, &syn0, &syn1, &syn1Neg, &expTable, &negTable, &alpha, &randomValue, &numWords, &locked, &inferenceVector}, {}, {}, {true}, true);
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto row_s0_0 = syn0({0,1, 0,0}, true);
+    auto row_s0_1 = syn0({1,2, 0,0}, true);
+    auto row_s0_2 = syn0({2,3, 0,0}, true);
+
+    auto row_s1_4 = syn1({4,5, 0,0}, true);
+    auto row_s1_5 = syn1({5,6, 0,0}, true);
+    auto row_s1_6 = syn1({6,7, 0,0}, true);
+
+    ASSERT_EQ(exp0, row_s0_0);
+    ASSERT_EQ(exp0, row_s0_1);
+    ASSERT_EQ(exp0, row_s0_2);
+
+    ASSERT_EQ(exp1, row_s1_4);
+    ASSERT_EQ(exp1, row_s1_5);
+    ASSERT_EQ(exp2, row_s1_6);
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests2, Test_Concat_3D_1) {
     auto x0 = NDArrayFactory::create<double>('c', {1, 100, 150});
     auto x1 = NDArrayFactory::create<double>('c', {1, 100, 150});
@@ -334,18 +401,6 @@ TEST_F(DeclarableOpsTests2, Test_Concat_3D_1) {
 
     delete result;
 }
-
-TEST_F(DeclarableOpsTests2, Eye_check_119_1) {
-
-    nd4j::ops::eye op;
-    auto result = op.execute({},{},{3, 2});
-
-    auto z = result->at(0);
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    delete result;
-}
-
 
 TEST_F(DeclarableOpsTests2, YetAnotherMatmulTest_1) {
     auto A = NDArrayFactory::create<float>('c', {3, 3});
@@ -380,11 +435,10 @@ TEST_F(DeclarableOpsTests2, Test_Squeeze_1) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(exp->isSameShape(z));
-    ASSERT_TRUE(exp->equalsTo(z));
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
-    delete exp;
 }
 
 
@@ -421,6 +475,48 @@ TEST_F(DeclarableOpsTests2, Test_FloorMod_1) {
     ASSERT_TRUE(exp.isSameShape(z));
 
     ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests2, Test_FloorDiv_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 3}, {3.0, 6.0, -3.0});
+    auto y = NDArrayFactory::create<float>('c', {1, 3}, {-2.0, 2.0, -2.0});
+    auto exp = NDArrayFactory::create<float>('c', {1, 3}, {-2.,  3., 1.,});
+
+    nd4j::ops::floordiv op;
+
+    auto result = op.execute({&x, &y}, {}, {});
+
+    auto z = result->at(0);
+//    z->printShapeInfo("FloorDiv1 shape");
+//    z->printIndexedBuffer("FloorDiv1");
+    ASSERT_TRUE(exp.isSameShape(z));
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests2, Test_FloorDiv_2) {
+    auto x = NDArrayFactory::create<float>('c', {1, 3}, {3.0, 6.0, -3.0});
+    auto y = NDArrayFactory::create<float>('c', {1, 3}, {-2.0, 2.0, -2.0});
+    auto eps = NDArrayFactory::create<float>('c', {1, 3}, {1, 2, 3});
+    auto exp1 = NDArrayFactory::create<float>('c', {1, 3}, {0.f,  0.f, 0.f});
+    auto exp2 = NDArrayFactory::create<float>('c', {1, 3}, {0.f, 0.f, 0.f});
+
+    nd4j::ops::floordiv_bp op;
+
+    auto result = op.execute({&x, &y, &eps}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    auto z1 = result->at(0);
+    auto z2 = result->at(1);
+//    z->printShapeInfo("FloorDiv1 shape");
+//    z1->printIndexedBuffer("FloorDiv2_1");
+//    z2->printIndexedBuffer("FloorDiv2_2");
+
+    ASSERT_TRUE(exp1.equalsTo(z1));
+    ASSERT_TRUE(exp2.equalsTo(z2));
 
     delete result;
 }

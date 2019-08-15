@@ -110,9 +110,9 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum,
                                         void *z, Nd4jLong zStride,
                                         void *scalar,
                                         void *extraParams,
-                                        const Nd4jLong n) {
+                                        const Nd4jLong n, bool allowParallelism) {
 
-    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xStride, z, zStride, scalar, extraParams, n), SCALAR_OPS);
+    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xStride, z, zStride, scalar, extraParams, n, allowParallelism), SCALAR_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -121,9 +121,9 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum,
                                         void *x, Nd4jLong *xShapeInfo,
                                         void *z, Nd4jLong *zShapeInfo,
                                         void *scalar,
-                                        void *extraParams) {
+                                        void *extraParams, bool allowParallelism) {
 
-    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams), SCALAR_OPS);
+    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, allowParallelism), SCALAR_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -132,7 +132,7 @@ template<typename OpType>
 void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
                                         void *vz, Nd4jLong *zShapeInfo,
                                         void *vscalar,
-                                        void *vextraParams) {
+                                        void *vextraParams, bool allowParallelism) {
 
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
@@ -146,18 +146,18 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
     nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
     if (kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
-        transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len);              
+        transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len, allowParallelism);
     }
     else {
 
         uint xShapeInfoCast[MAX_RANK];
         const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
 
-        nd4j::OmpLaunchHelper info(len);
+        nd4j::OmpLaunchHelper info(len, allowParallelism ? -1 : 1);
 
         if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
-            PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+            PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
             {
                 auto threadNum = omp_get_thread_num();                    
                 auto threadOffset = info.getThreadOffset(threadNum);
@@ -175,7 +175,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             uint zShapeInfoCast[MAX_RANK];
             const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, zShapeInfoCast);
 
-            PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+            PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
             {
                 auto threadNum = omp_get_thread_num();                    
                 auto threadOffset = info.getThreadOffset(threadNum);
@@ -199,18 +199,18 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
                                         void *vz, Nd4jLong zEws,
                                         void *vscalar,
                                         void *vextraParams,
-                                        const Nd4jLong len) {
+                                        const Nd4jLong len, bool allowParallelism) {
                
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
     auto scalar = reinterpret_cast<Y *>(vscalar)[0];
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-    nd4j::OmpLaunchHelper info(len);
+    nd4j::OmpLaunchHelper info(len, allowParallelism ? -1 : 1);
 
     if (xEws == 1 && zEws == 1) {
 
-        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+        PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);
@@ -225,7 +225,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
     }
     else {
 
-        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
+        PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
         {
             auto threadNum = omp_get_thread_num();
             auto threadOffset = info.getThreadOffset(threadNum);

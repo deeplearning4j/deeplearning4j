@@ -24,6 +24,7 @@ import org.deeplearning4j.nn.conf.dropout.TestDropout;
 import org.deeplearning4j.nn.conf.layers.GravesLSTM;
 import org.deeplearning4j.nn.conf.layers.LSTM;
 import org.deeplearning4j.nn.conf.layers.Layer;
+import org.deeplearning4j.nn.conf.layers.RnnLossLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -196,4 +197,43 @@ public class TestRnnLayers extends BaseDL4JTest {
         }
     }
 
+    @Test
+    public void testMismatchedInputLabelLength(){
+
+        for( int i=0; i<2; i++ ){
+
+            NeuralNetConfiguration.ListBuilder lb = new NeuralNetConfiguration.Builder()
+
+                    .list()
+                    .layer(new SimpleRnn.Builder().nIn(5).nOut(5).build());
+
+            switch (i){
+                case 0:
+                    lb.layer(new RnnOutputLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).nIn(5).nOut(5).build());
+                    break;
+                case 1:
+                    lb.layer(new RnnLossLayer.Builder().activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build());
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
+
+            MultiLayerConfiguration conf = lb.build();
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            INDArray in = Nd4j.rand(DataType.FLOAT, 3, 5, 5);
+            INDArray l = TestUtils.randomOneHotTimeSeries(3, 5, 10);
+
+            try{
+                net.fit(in,l);
+            } catch (Throwable t){
+                String msg = t.getMessage();
+                assertTrue(msg, msg.contains("sequence length") && msg.contains("input") && msg.contains("label"));
+            }
+
+        }
+
+
+    }
 }

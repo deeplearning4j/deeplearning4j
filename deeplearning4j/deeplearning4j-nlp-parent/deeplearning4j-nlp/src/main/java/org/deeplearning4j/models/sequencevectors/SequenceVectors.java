@@ -1312,10 +1312,12 @@ public class SequenceVectors<T extends SequenceElement> extends WordVectorsImpl<
                             int rest = batchSequences.size() % batchSize;
                             int chunks = ((batchSequences.size() >= batchSize) ? batchSequences.size() / batchSize : 0) + ((rest > 0)? 1 : 0);
                             for (int j = 0; j < chunks; ++j) {
-                                if (elementsLearningAlgorithm instanceof SkipGram)
-                                    ((SkipGram)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
-                                else if (elementsLearningAlgorithm instanceof CBOW)
-                                    ((CBOW)elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
+                                if (trainElementsVectors) {
+                                    if (elementsLearningAlgorithm instanceof SkipGram)
+                                        ((SkipGram) elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
+                                    else if (elementsLearningAlgorithm instanceof CBOW)
+                                        ((CBOW) elementsLearningAlgorithm).iterateSample(batchSequences.get(j));
+                                }
 
                                 if (trainSequenceVectors) {
                                     if (sequenceLearningAlgorithm instanceof DBOW)

@@ -70,7 +70,7 @@ public class AllocationPoint {
     private boolean isAttached = false;
 
     // thread safety is guaranteed by allocLock
-    private volatile AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;
+    private AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;
 
     private transient TimeProvider timeProvider = new OperativeProvider();
 

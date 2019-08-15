@@ -69,6 +69,11 @@ public abstract class BaseReduceFloatOp extends BaseReduceOp implements ReduceFl
     }
 
 
+    public BaseReduceFloatOp(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
+
     public BaseReduceFloatOp(INDArray x, int... dimensions) {
         super(x, dimensions);
     }

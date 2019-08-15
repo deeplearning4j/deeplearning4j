@@ -467,7 +467,8 @@ namespace nd4j {
             std::vector<int> addAxes     = BitwiseUtils::valueBits(new_axis_mask);
             std::vector<int> moveAxes    = BitwiseUtils::valueBits(shrink_axis_mask);
 
-            if (0 == shrink_axis_mask)
+            //if (0 == shrink_axis_mask)
+            if (false)
             for (int dim = 0, b = 0, e = 0; dim < x_rank; ++dim) {
 
                 if(moveAxes[dim])
@@ -504,12 +505,12 @@ namespace nd4j {
             if (indices.size()) {
                 newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c',
                                                                                shape);
-                if (inputLen > 1) {
-                    newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c',
-                                                                                   shape);
-                } else {
-                    newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
-                }
+//                if (inputLen > 1) {
+//                    newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inShape), 'c',
+//                                                                                   shape);
+//                } else {
+//                    newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inShape));
+//                }
             } else
                 newShape = ConstantShapeHelper::getInstance()->emptyShapeInfo(ArrayOptions::dataType(inShape));
 
@@ -639,7 +640,7 @@ namespace nd4j {
             Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
 
-            return SHAPELIST(newShape);
+            return SHAPELIST(CONSTANT(newShape));
         }
 
         DECLARE_TYPES(strided_slice) {

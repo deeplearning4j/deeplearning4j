@@ -88,10 +88,10 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
-            }
-//            __syncthreads();  // Eliminated due RTX20xx specific
+
+            __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -137,10 +137,6 @@ namespace randomOps {
 //                    __syncthreads();  // Eliminated due RTX20xx specific
                 }
             }
-
-//            __syncthreads();  // Eliminated due RTX20xx specific
-            if (threadIdx.x == 0 && blockIdx.x == 0)
-                devRng->rewindH(zLength);
         }
 #endif
 
@@ -208,9 +204,6 @@ namespace randomOps {
                     }
                 }
             }
-
-            // update rng state
-            rng->rewindH(zLength);
         }
     };
 
@@ -277,7 +270,7 @@ namespace randomOps {
             for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
 
-//            __syncthreads();  // Eliminated due RTX20xx specific
+            __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -299,10 +292,6 @@ namespace randomOps {
                     z[epm * zEWS] =  (nd4j::math::nd4j_sqrt<T,T>(t * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
                 }
             }
-
-//            __syncthreads();          // Eliminated due RTX20xx specific
-            if (threadIdx.x == 0 && blockIdx.x == 0)
-                devRng->rewindH(zLength);
         }
 #endif
 
@@ -352,9 +341,6 @@ namespace randomOps {
                     z[epm * zEWS] = z1;
                 }
             }
-
-            // update rng state
-            rng->rewindH(zLength);
         }
     };
 
@@ -401,10 +387,10 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
-            }
-//            __syncthreads();  // Eliminated due RTX20xx specific
+
+            __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -423,10 +409,6 @@ namespace randomOps {
                 // if trials is set to 0, effectively we just have successful memset
                 z[e * zEWS] = static_cast<T>(success);
             }
-
-//            __syncthreads();  // Eliminated due RTX20xx specific
-            if (trials > 0 && threadIdx.x == 0 && blockIdx.x == 0)
-                devRng->rewindH(zLength * trials);
         }
 #endif
 
@@ -472,10 +454,6 @@ namespace randomOps {
                     z[e * zEWS] = static_cast<T>(success);
                 }
             }
-
-            // update rng state
-            if (trials > 0)
-                rng->rewindH(zLength * trials);
         }
     };
 
@@ -522,10 +500,10 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
-            }
-//            __syncthreads();  // Eliminated due RTX20xx specific
+
+            __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -591,10 +569,6 @@ namespace randomOps {
                     z[e * zEWS] = static_cast<T>(success);
                 }
             }
-
-            // update rng state
-            if (trials > 0)
-                rng->rewindH(zLength * trials);
         }
     };
     
@@ -676,10 +650,10 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
-            }
-//            __syncthreads();  // Eliminated due RTX20xx specific
+
+            __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -724,9 +698,6 @@ namespace randomOps {
                         z[e] = mean + nd4j::DataTypeUtils::min<T>();
                 }
             }
-
-            // update rng state
-            rng->rewindH(zLength);
         }
     };
 
@@ -788,10 +759,10 @@ namespace randomOps {
             __syncthreads();
 
             // using this loop instead of memcpy
-            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x) {
+            for (int e = threadIdx.x; e < sizeof(nd4j::graph::RandomGenerator); e+= blockDim.x)
                 cB[e] = dB[e];
-            }
-//            __syncthreads();  // Eliminated due RTX20xx specific
+
+            __syncthreads();
 
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
@@ -868,9 +839,6 @@ namespace randomOps {
                     }
                 }
             }
-
-            // update rng state
-            rng->rewindH(zLength);
         }
     };
 

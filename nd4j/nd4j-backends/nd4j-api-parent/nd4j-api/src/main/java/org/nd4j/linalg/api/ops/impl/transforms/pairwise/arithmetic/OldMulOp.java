@@ -28,10 +28,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Multiplication operation
- *
- * @author Adam Gibson
+ * @deprecated Use {@link MulOp}
  */
+@Deprecated
 public class OldMulOp extends BaseTransformAnyOp {
     public OldMulOp(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, i_v1, i_v2);

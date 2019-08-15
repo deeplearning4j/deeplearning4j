@@ -48,7 +48,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.BaseNativeNDArrayFactory;
 import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.*;
 
@@ -200,19 +199,10 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray createUninitializedDetached(int[] shape, char ordering) {
+    public INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape){
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
-        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
-        return ret;
-    }
-
-    @Override
-    public INDArray createUninitializedDetached(long[] shape, char ordering) {
-        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-        Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+        INDArray ret = new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
         return ret;
     }
@@ -619,9 +609,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                             "Illegal concatenation at array " + i + " and shape element " + j);
                 }
             }
-
-
-            //log.info("Shape[{}]: {}", i, Arrays.toString(toConcat[i].shapeInfoDataBuffer().asInt()));
         }
 
         if (allScalars) {
@@ -630,8 +617,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             outputShape[dimension] = sumAlongDim;
         }
 
-        //PointerPointer dummy = new PointerPointer(new Pointer[] {null});
-
         INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
 
         nativeOps.concat(null, dimension, toConcat.length,
@@ -639,11 +624,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                 null, null,
                     ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     null, null,
-                    //new PointerPointer(new Pointer[] {null}), new PointerPointer(new Pointer[] {null}));
                     null, null);
 
         return ret;
-        // return super.concat(dimension,toConcat);
     }
 
 

@@ -15,18 +15,23 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
 #include <templatemath.h>
 #include <NDArray.h>
 
-namespace nd4j {
-namespace ops {
+namespace nd4j    {
+namespace ops     {
 namespace helpers {
+
+    void adjustSaturation(nd4j::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC);
+
+/*
     template <typename T>
-    static FORCEINLINE void rgb_to_hsv(nd4j::LaunchContext * context, T r, T g, T b, T* h, T* s, T* v) {
+    static FORCEINLINE _CUDA_HD void rgb_to_hsv(T r, T g, T b, T* h, T* s, T* v) {
         T vv = nd4j::math::nd4j_max<T>(r, nd4j::math::nd4j_max<T>(g, b));
         T range = vv - nd4j::math::nd4j_min<T>(r, nd4j::math::nd4j_min<T>(g, b));
         if (vv > 0) {
@@ -54,7 +59,7 @@ namespace helpers {
     }
 
     template <typename T>
-    static FORCEINLINE void hsv_to_rgb(nd4j::LaunchContext * context, T h, T s, T v, T* r, T* g, T* b) {
+    static FORCEINLINE _CUDA_HD void hsv_to_rgb(T h, T s, T v, T* r, T* g, T* b) {
         T c = s * v;
         T m = v - c;
         T dh = h * 6;
@@ -63,10 +68,10 @@ namespace helpers {
         T fmodu = dh;
         while (fmodu <= (T) 0)
             fmodu += (T) 2.0f;
-        
+
         while (fmodu >= (T) 2.0f)
             fmodu -= (T) 2.0f;
-        
+
         T x = c * (1. - nd4j::math::nd4j_abs<T>(fmodu - 1.));
         switch (h_category) {
             case 0:
@@ -104,13 +109,13 @@ namespace helpers {
                 gg = 0;
                 bb = 0;
         }
-        
+
         *r = rr + m;
         *g = gg + m;
         *b = bb + m;
     }
+*/
 
-    void adjust_saturation(nd4j::LaunchContext * context, NDArray *input, NDArray *output, NDArray *delta, bool isNHWC);
 }
 }
 }

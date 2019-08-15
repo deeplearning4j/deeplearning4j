@@ -64,7 +64,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
-            cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
+            cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getCublasStream()));
 
             cublasSgemv_v2(new cublasContext(handle), convertTranspose(TransA), M, N, new FloatPointer(alpha),
                             (FloatPointer) cAPointer.getDevicePointer(), lda,
@@ -136,7 +136,7 @@ public class JcublasLevel2 extends BaseLevel2 {
 
         cublasHandle_t handle = ctx.getHandle();
         synchronized (handle) {
-            cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getOldStream()));
+            cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getCublasStream()));
 
             cublasDgemv_v2(new cublasContext(handle), convertTranspose(TransA), M, N, new DoublePointer(alpha),
                             (DoublePointer) cAPointer.getDevicePointer(), lda,

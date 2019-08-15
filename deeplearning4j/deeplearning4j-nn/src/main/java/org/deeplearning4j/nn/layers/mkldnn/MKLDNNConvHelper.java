@@ -127,7 +127,7 @@ public class MKLDNNConvHelper implements ConvolutionHelper {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
 
-        if(context == null || true){
+        if(context == null ){
             context = Nd4j.getExecutioner().buildContext();
             context.setIArguments(kernel[0], kernel[1],
                     strides[0], strides[1],

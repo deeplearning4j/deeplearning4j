@@ -451,6 +451,17 @@ public abstract class DifferentialFunction {
         }
     }
 
+    public void replaceArg(int i, SDVariable newArg){
+        if(sameDiff != null){
+            sameDiff.replaceArgFor(i, newArg, this);
+            if(args()[i].isPlaceHolder() && !newArg.isPlaceHolder()){
+                sameDiff.removePropertyToResolve(this, args()[i].getVarName());
+            } else if(!args()[i].isPlaceHolder() && newArg.isPlaceHolder()){
+                sameDiff.addPropertyToResolve(this, newArg.getVarName());
+            }
+        }
+    }
+
 
     /**
      * Return the output variables for this differential function.
@@ -550,6 +561,8 @@ public abstract class DifferentialFunction {
                 continue;
 
             val var = sameDiff.getVarNameForFieldAndFunction(this,property);
+            if(var == null)
+                continue;   //Rarely (like Conv2D) properties will be optional. For example kH/kW args will be inferred from weight shape
             val fieldType = fields.get(property);
             val varArr = sameDiff.getArrForVarName(var);
             //already defined
@@ -627,6 +640,7 @@ public abstract class DifferentialFunction {
                 sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
             } else {
                 SDVariable gradVar = vals.get(i);
+
                 sameDiff.updateVariableNameAndReference(gradVar,var.getVarName() + "-grad");
                 sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
                 sameDiff.setForwardVariableForVarName(gradVar.getVarName(),var);
@@ -643,19 +657,7 @@ public abstract class DifferentialFunction {
             if(sameDiff == null)
                 this.ownName = UUID.randomUUID().toString();
             else {
-                int argIndex = 0;
-                String scope = sameDiff.currentNameScope();
-                if(scope == null)
-                    scope = "";
-                else
-                    scope = scope + "/";
-                String varName = scope + sameDiff.generateNewVarName(opName(),argIndex);
-                while(sameDiff.functionExists(varName)) {
-                    varName = scope + sameDiff.generateNewVarName(opName(), argIndex);
-                    argIndex++;
-                }
-
-                this.ownName = varName;
+                this.ownName = sameDiff.getOpName(opName());
             }
 
             if(sameDiff != null && !(this instanceof SDVariable))

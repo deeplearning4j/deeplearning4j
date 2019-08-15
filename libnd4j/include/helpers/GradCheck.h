@@ -29,20 +29,20 @@ namespace nd4j {
 
 class GradCheck {
 
-    public:        
-        enum LossFunc {MEAN = 0, SUM = 1};    
+    public:
+        enum LossFunc {MEAN = 0, SUM = 1};
     private:
         static constexpr double EPSILON = 1e-5;
         static constexpr double MAXRELERR = 1e-5;
         static constexpr double MINABSERR = 1e-6;
         static void fillGradArrays(const LossFunc loss, const std::vector<NDArray*>& gradArrs);
 
-    
-    public:        
-        
-        /** 
+
+    public:
+
+        /**
         *  performs numerical check of gradients in back prop
-        * 
+        *
         *  opFF - feed forward operation
         *  opBP - back propagation operation
         *  argsHolderFF - argument holder for feed forward operation
@@ -61,7 +61,7 @@ class GradCheck {
 
 
 // //////////////////////////////////////////////////////////////////////////
-// ///// IMLEMENTATION OF INLINE METHODS ///// 
+// ///// IMLEMENTATION OF INLINE METHODS /////
 // //////////////////////////////////////////////////////////////////////////
 
 // template<typename T>

@@ -917,4 +917,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
     public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
         throw new UnsupportedOperationException();
     }
+
+    @Override
+    public String runLightBenchmarkSuit(boolean printOut) {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public String runFullBenchmarkSuit(boolean printOut) {
+        throw new UnsupportedOperationException();
+    }
 }

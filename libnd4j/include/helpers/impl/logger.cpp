@@ -40,7 +40,7 @@ namespace nd4j {
 #ifdef __CUDACC__
     __host__
 #endif
-     void Logger::printv(const char *format, std::vector<int>& vec) {
+     void Logger::printv(const char *format, const std::vector<int>& vec) {
         printf("%s: {", format);
         for(int e = 0; e < vec.size(); e++) {
             auto v = vec[e];
@@ -55,7 +55,7 @@ namespace nd4j {
     #ifdef __CUDACC__
     __host__
 #endif
-     void Logger::printv(const char *format, std::vector<Nd4jLong>& vec) {
+     void Logger::printv(const char *format, const std::vector<Nd4jLong>& vec) {
         printf("%s: {", format);
         for(int e = 0; e < vec.size(); e++) {
             auto v = vec[e];

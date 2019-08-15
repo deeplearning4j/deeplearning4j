@@ -87,35 +87,43 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
     private INDArray activateHelper(boolean activations, LayerWorkspaceMgr workspaceMgr){
         assertInputSet(false);
 
-        //Check where the output occors. If it's a simple loss layer (no params) this could
+        //Check where the output occurs. If it's a simple loss layer (no params) this could
         // just be the input!
         if(activations && INPUT_KEY.equals(layerConf().activationsVertexName())){
             return workspaceMgr.leverageTo(ArrayType.ACTIVATIONS, input);
         }
 
-        if(sameDiff == null){
-            doInit();
-        }
-
         //TODO optimize
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            sameDiff.associateArrayWithVariable(input.dup(), sameDiff.getVariable(INPUT_KEY));
-            if(layerConf().labelsRequired() && labels != null) {
-                sameDiff.associateArrayWithVariable(labels.dup(), sameDiff.getVariable(LABELS_KEY));
+            if(sameDiff == null){
+                doInit();
             }
+
             for(String s : paramTable.keySet() ) {
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            INDArray score = sameDiff.execAndEndResult();
+            Map<String,INDArray> phMap = new HashMap<>();
+            phMap.put(INPUT_KEY, input);
+            if(!activations && layerConf().labelsRequired() && labels != null) {
+                phMap.put(LABELS_KEY, labels);
+            }
+
+            String s = activations ? layerConf().activationsVertexName() : outputVar.getVarName();
+
+            INDArray out = sameDiff.execSingle(phMap, s);
+
+            //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
+            sameDiff.clearPlaceholders(true);
+            sameDiff.clearOpInputs();
+
             if(activations) {
-                INDArray result = sameDiff.getArrForVarName(layerConf().activationsVertexName());
-                Preconditions.checkNotNull(result, "Activations (result) array for variable \"%s\" was " +
+                Preconditions.checkNotNull(out, "Activations (result) array for variable \"%s\" was " +
                         "null - error during execution or this variable (as defined by method activationsVertexName()) " +
                         "does not exist", layerConf().activationsVertexName());
-                return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
+                return workspaceMgr.dup(ArrayType.ACTIVATIONS, out);
             } else {
-                return score;
+                return out;
             }
         }
     }
@@ -127,23 +135,26 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
         Preconditions.checkState(!layerConf().labelsRequired() || labels != null, "Cannot execute backprop: Labels are not set. " +
                 "If labels are not required for this SameDiff output layer, override SameDiffOutputLayer.labelsRequired()" +
                 " to return false instead");
-
-        if(sameDiff == null){
-            //Usually doInit will be called in forward pass; not necessarily the case in output layers
-            // (for efficiency, we skip output layer forward pass in MultiLayerNetwork/ComputationGraph)
-            doInit();
-        }
-
         Gradient g = new DefaultGradient();
 
         INDArray dLdIn;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            INDArray castInput = input.castTo(Nd4j.defaultFloatingPointType());
+            if(sameDiff == null){
+                //Usually doInit will be called in forward pass; not necessarily the case in output layers
+                // (for efficiency, we skip output layer forward pass in MultiLayerNetwork/ComputationGraph)
+                doInit();
+            }
+            if(!sameDiff.hasGradientFunction()) {
+                //Create when scoped out, to ensure any arrays are not in WS
+                sameDiff.createGradFunction(INPUT_KEY);
+            }
+
+            INDArray castInput = input.castTo(dataType);
             if(castInput.isAttached())
                 castInput = castInput.dup();
             sameDiff.associateArrayWithVariable(castInput, sameDiff.getVariable(INPUT_KEY));
             if(layerConf().labelsRequired()) {
-                INDArray castLabels = labels.castTo(Nd4j.defaultFloatingPointType());
+                INDArray castLabels = labels.castTo(dataType);
                 if(castLabels.isAttached())
                     castLabels = castLabels.dup();
                 sameDiff.associateArrayWithVariable(castLabels, sameDiff.getVariable(LABELS_KEY));
@@ -154,7 +165,17 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 sameDiff.associateArrayWithVariable(paramTable.get(s), s);
             }
 
-            sameDiff.execBackwards(Collections.<String, INDArray>emptyMap());
+            List<String> gradVarNames = new ArrayList<>();
+            for(String s : paramTable.keySet()){
+                gradVarNames.add(sameDiff.getVariable(s).getGradient().getVarName());
+            }
+            gradVarNames.add(sameDiff.grad(INPUT_KEY).getVarName());
+
+            Map<String,INDArray> phMap = new HashMap<>();
+            phMap.put(INPUT_KEY, input);
+            phMap.put(LABELS_KEY, labels);
+
+            sameDiff.execBackwards(phMap, gradVarNames);
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
@@ -164,6 +185,10 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
             dLdIn = sameDiff.grad(INPUT_KEY).getArr();
         }
+
+        //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
+        sameDiff.clearPlaceholders(true);
+        sameDiff.clearOpInputs();
 
         return new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
     }
@@ -252,18 +277,20 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             sameDiff = SameDiff.create();
             Map<String, INDArray> p = paramTable();
 
-            val inputShape = input.shape().clone();
-            SDVariable inputVar = sameDiff.var(INPUT_KEY, dataType, inputShape);
+            long[] inputShape = input.shape().clone();
+            inputShape[0] = -1;
+            SDVariable inputVar = sameDiff.placeHolder(INPUT_KEY, dataType, inputShape);
             SDVariable labelVar = null;
             if(layerConf().labelsRequired()){
-                long[] labelShape = labels == null ? new long[]{1} : labels.shape().clone();
-                labelVar = sameDiff.var(LABELS_KEY, dataType, labelShape);
+                long[] labelShape = labels == null ? new long[]{-1, -1} : labels.shape().clone();
+                labelShape[0] = -1;
+                labelVar = sameDiff.placeHolder(LABELS_KEY, dataType, labelShape);
             }
             Map<String, long[]> paramShapes = layerConf().getLayerParams().getParamShapes();
             Map<String, SDVariable> params = new LinkedHashMap<>();
             for (String s : paramShapes.keySet()) {
                 val ps = paramShapes.get(s);
-                SDVariable v = sameDiff.var(s, ps);
+                SDVariable v = sameDiff.var(s, dataType, ps);
                 params.put(s, v);
             }
             SDVariable layerOutput = bl.defineLayer(sameDiff, inputVar, labelVar, params);

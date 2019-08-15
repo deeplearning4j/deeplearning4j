@@ -261,6 +261,8 @@ DataBuffer& DataBuffer::operator=(const DataBuffer& other) {
 
     allocateBuffers();
     copyBufferFrom(other);
+
+    return *this;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -285,6 +287,8 @@ DataBuffer& DataBuffer::operator=(DataBuffer&& other) noexcept {
     other._primaryBuffer = other._specialBuffer = nullptr;
     other.setAllocFlags(false, false);
     other._lenInBytes = 0;
+
+    return *this;
 }
 
 ////////////////////////////////////////////////////////////////////////

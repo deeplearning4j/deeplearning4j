@@ -20,8 +20,10 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
@@ -49,12 +51,8 @@ public class ExternalErrorsFunction extends DifferentialFunction {
 
     public ExternalErrorsFunction(){ }
 
-    public void updateVariable(String str, INDArray gradient){
-        gradients.put(str, gradient);
-        //Update immediately if possible. New shapes might be needed for shape calculation
-        if(gradVariables != null){
-            gradVariables.get(str).setArray(gradient);
-        }
+    public String getGradPlaceholderName(){
+        return arg().getVarName() + "-grad";
     }
 
     @Override
@@ -76,10 +74,14 @@ public class ExternalErrorsFunction extends DifferentialFunction {
             for(SDVariable arg : args()){
                 INDArray gradArr = gradients.get(arg.getVarName());
                 SDVariable grad;
+                DataType dt = arg.dataType();
+                String n = getGradPlaceholderName();
                 if(gradArr != null){
-                    grad = sameDiff.var(arg.getVarName() + "-externalGrad", gradArr);
+                    long[] shape = gradArr.shape().clone();
+                    shape[0] = -1;
+                    grad = sameDiff.var(n, VariableType.PLACEHOLDER, null, dt, shape);
                 } else {
-                    grad = sameDiff.var(arg.getVarName() + "-externalGrad", arg.dataType(), arg.getShape());
+                    grad = sameDiff.var(n, VariableType.PLACEHOLDER, null, dt);
                 }
                 gradVariables.put(arg.getVarName(), grad);
                 out.add(grad);

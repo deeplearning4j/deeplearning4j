@@ -25,6 +25,11 @@ import org.nd4j.imports.descriptors.onnx.OnnxDescriptorParser;
 import org.nd4j.imports.descriptors.onnx.OpDescriptor;
 import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -67,7 +72,6 @@ public class DifferentialFunctionClassHolder {
         add(AvgPooling2D.class.getName());
         add(Conv2D.class.getName());
         add(Conv3D.class.getName());
-        add(FullConv3D.class.getName());
         add(LocalResponseNormalization.class.getName());
         add(MaxPooling2D.class.getName());
         add(Pooling2D.class.getName());
@@ -231,7 +235,18 @@ public class DifferentialFunctionClassHolder {
         //log.debug("Missing " + set.size() + " ops!");
 
         countTotalTfOps = tensorflowOpDescriptors.size();
-        countTotalMappedOps = nodeConverters.size();
+
+        //Work out total number of TF ops mapped
+        Set<String> tfMappedOps = new HashSet<>();
+        for(DifferentialFunction df : nodeConverters.values()){
+            try{
+                String[] tfNames = df.tensorflowNames();
+                Collections.addAll(tfMappedOps, tfNames);
+            } catch (NoOpNameFoundException e){
+                //Ignore
+            }
+        }
+        countTotalMappedOps = tfMappedOps.size();
 
         //Get custom ops - map from hash to class
         Map<String,CustomOpDescriptor> descriptorMap = Nd4j.getExecutioner().getCustomOperations();
@@ -331,13 +346,27 @@ public class DifferentialFunctionClassHolder {
     }
 
     public Class<?> customOpClassForHashAndName(long customOpHash, String name){
-        if(customOpHashToClasses.containsKey(customOpHash)){
-            return customOpHashToClasses.get(customOpHash).get(name);
-        } else if(customOpHashToClass.containsKey(customOpHash)){
-            return customOpHashToClass.get(customOpHash);
-        } else {
-            throw new IllegalStateException("No op known for hash: " + customOpHash);
+        switch (name) {
+            case Enter.OP_NAME:
+                return Enter.class;
+            case Exit.OP_NAME:
+                return Exit.class;
+            case NextIteration.OP_NAME:
+                return NextIteration.class;
+            case Merge.OP_NAME:
+                return Merge.class;
+            case Switch.OP_NAME:
+                return Switch.class;
+            default:
+                if(customOpHashToClasses.containsKey(customOpHash)){
+                    return customOpHashToClasses.get(customOpHash).get(name);
+                } else if(customOpHashToClass.containsKey(customOpHash)){
+                    return customOpHashToClass.get(customOpHash);
+                } else {
+                    throw new IllegalStateException("No op known for hash: " + customOpHash);
+                }
         }
+
     }
 
     public static DifferentialFunctionClassHolder getInstance() {

@@ -26,6 +26,7 @@
 #include <vector>
 #include <array/DataType.h>
 #include <pointercast.h>
+#include <stdlib.h>
 
 namespace nd4j {
     class ND4J_EXPORT ExtraArguments {

@@ -169,7 +169,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     protected BaseDataBuffer(DataBuffer underlyingBuffer, long length, long offset) {
         if (length < 0)
-            throw new IllegalArgumentException("Length must be >= 1");
+            throw new IllegalArgumentException("Length must be >= 0");
 
         if (length == 0)
             length = 1;
@@ -684,7 +684,7 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     protected BaseDataBuffer(long length, boolean initialize) {
         if (length < 0)
-            throw new IllegalArgumentException("Length must be >= 1");
+            throw new IllegalArgumentException("Length must be >= 0");
         initTypeAndSize();
         this.length = length;
         this.underlyingLength = length;
@@ -2601,7 +2601,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
         }
 
         Pointer.memcpy(pointer, oldPointer, this.length() * getElementSize());
-        //this.underlyingLength = length;
+        this.underlyingLength = length;
+        this.length = length;
         return this;
     }
 
@@ -2660,5 +2661,10 @@ public abstract class BaseDataBuffer implements DataBuffer {
         this.pointer.deallocate();
         this.indexer = null;
         this.pointer = null;
+    }
+
+    @Override
+    public long platformAddress() {
+        return address();
     }
 }

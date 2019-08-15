@@ -1094,16 +1094,15 @@ public interface NDArrayFactory {
     INDArray createUninitialized(long[] shape, char ordering);
 
     INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace);
-
+    
     /**
-     * Cretes uninitialized INDArray detached from any (if any) workspace
-     * @param shape
-     * @param ordering
-     * @return
+     * Create an uninitialized ndArray. Detached from workspace.
+     * @param dataType data type. Exceptions will be thrown for UTF8, COMPRESSED and UNKNOWN data types.
+     * @param ordering  Fortran 'f' or C/C++ 'c' ordering.
+     * @param shape the shape of the array.
+     * @return the created detached array.
      */
-    INDArray createUninitializedDetached(int[] shape, char ordering);
-
-    INDArray createUninitializedDetached(long[] shape, char ordering);
+    INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape);
 
     /**
      *

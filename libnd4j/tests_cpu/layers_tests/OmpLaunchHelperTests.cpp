@@ -102,9 +102,9 @@ TEST_F(OmpLaunchHelperTests, loop_test1) {
     }
     
     #ifdef _OPENMP
-        ASSERT_TRUE(info._numThreads == desiredNumThreads);        
+        ASSERT_EQ(desiredNumThreads, info._numThreads);
     #else
-        ASSERT_TRUE(info._numThreads == 1);
+        ASSERT_EQ(1, info._numThreads);
     #endif
     
 }

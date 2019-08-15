@@ -21,6 +21,9 @@ import lombok.EqualsAndHashCode;
 import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.IMetric;
+import org.nd4j.evaluation.classification.ROCMultiClass.Metric;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.evaluation.serde.ROCArraySerializer;
@@ -53,7 +56,18 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
      * AUROC: Area under ROC curve<br>
      * AUPRC: Area under Precision-Recall Curve
      */
-    public enum Metric {AUROC, AUPRC}
+    public enum Metric implements IMetric {AUROC, AUPRC;
+
+        @Override
+        public Class<? extends IEvaluation> getEvaluationClass() {
+            return ROCBinary.class;
+        }
+
+        @Override
+        public boolean minimize() {
+            return false;
+        }
+    }
 
     @JsonSerialize(using = ROCArraySerializer.class)
     private ROC[] underlying;
@@ -64,6 +78,13 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
 
     @EqualsAndHashCode.Exclude      //Exclude axis: otherwise 2 Evaluation instances could contain identical stats and fail equality
     protected int axis = 1;
+
+    protected ROCBinary(int axis, int thresholdSteps, boolean rocRemoveRedundantPts, List<String> labels) {
+        this.thresholdSteps = thresholdSteps;
+        this.rocRemoveRedundantPts = rocRemoveRedundantPts;
+        this.axis = axis;
+        this.labels = labels;
+    }
 
     public ROCBinary() {
         this(0);
@@ -409,5 +430,23 @@ public class ROCBinary extends BaseEvaluation<ROCBinary> {
             default:
                 throw new IllegalStateException("Unknown metric: " + metric);
         }
+    }
+
+    @Override
+    public double getValue(IMetric metric){
+        if(metric instanceof Metric){
+            if(metric == Metric.AUPRC)
+                return calculateAverageAUCPR();
+            else if(metric == Metric.AUROC)
+                return calculateAverageAuc();
+            else
+                throw new IllegalStateException("Can't get value for non-binary ROC Metric " + metric);
+        } else
+            throw new IllegalStateException("Can't get value for non-binary ROC Metric " + metric);
+    }
+
+    @Override
+    public ROCBinary newInstance() {
+        return new ROCBinary(axis, thresholdSteps, rocRemoveRedundantPts, labels);
     }
 }

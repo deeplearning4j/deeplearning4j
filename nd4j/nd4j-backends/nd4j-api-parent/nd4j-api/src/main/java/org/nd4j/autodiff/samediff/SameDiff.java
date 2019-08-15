@@ -16,7 +16,9 @@
 
 package org.nd4j.autodiff.samediff;
 
+import com.google.common.base.Predicates;
 import com.google.common.collect.HashBasedTable;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
@@ -24,17 +26,20 @@ import com.rits.cloning.Cloner;
 import com.rits.cloning.IFastCloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.output.CloseShieldOutputStream;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.listeners.At;
-import org.nd4j.autodiff.listeners.Listener;
-import org.nd4j.autodiff.listeners.Loss;
+import org.nd4j.autodiff.listeners.*;
+import org.nd4j.autodiff.listeners.impl.HistoryListener;
+import org.nd4j.autodiff.listeners.records.History;
+import org.nd4j.autodiff.listeners.records.LossCurve;
+import org.nd4j.autodiff.samediff.config.BatchOutputConfig;
+import org.nd4j.autodiff.samediff.config.EvaluationConfig;
+import org.nd4j.autodiff.samediff.config.FitConfig;
+import org.nd4j.autodiff.samediff.config.OutputConfig;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -42,8 +47,10 @@ import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
 import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.classification.Evaluation;
+import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.graph.*;
-import org.nd4j.jackson.objectmapper.holder.ObjectMapperHolder;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -81,11 +88,11 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 import org.nd4j.linalg.util.ND4JFileUtils;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.weightinit.WeightInitScheme;
 import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
+import org.tensorflow.framework.GraphDef;
 
 import java.io.*;
 import java.lang.reflect.Method;
@@ -93,9 +100,10 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
 
 /**
  * SameDiff is the entrypoint for ND4J's automatic differentiation functionality.
@@ -104,28 +112,29 @@ import java.util.zip.ZipOutputStream;
  * <p>
  * That graph accumulates operations.
  * <p>
- * In order to execute the graph, you run one of the execution methods, such as {@link #exec(Map, String...)}
+ * In order to execute the graph, you run one of the execution methods, such as {@link #output(Map, String...)}
  */
 @AllArgsConstructor
 @Builder
 @Slf4j
 public class SameDiff extends SDBaseOps {
+    protected static final String GRAD_FN_KEY = "grad";
 
     //Fields for graph structure and execution
     @Getter     //TODO use package private instead of public getters?
-    private final Map<String,Variable> variables = new LinkedHashMap<>();         //Use linked hash map to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde
+    private final Map<String, Variable> variables = new LinkedHashMap<>();         //Use linked hash map to guarantee iteration order based on order they were added. Used in inputs() and flatbuffers serde
     @Getter
-    private final Map<String,SameDiffOp> ops = new LinkedHashMap<>();
+    private final Map<String, SameDiffOp> ops = new LinkedHashMap<>();
     @Getter
-    private final Map<Long,InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
+    private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
-    private final Map<String,DeviceLocalNDArray> constantArrays = new ConcurrentHashMap<>();
-    private final Map<String,DeviceLocalNDArray> variablesArrays = new ConcurrentHashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
-    private final Map<Long,Map<String,INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
+    private final Map<String, DeviceLocalNDArray> constantArrays = new ConcurrentHashMap<>();
+    private final Map<String, DeviceLocalNDArray> variablesArrays = new ConcurrentHashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
+    private final Map<Long, Map<String, INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
     private final List<String> lossVariables = new ArrayList<>();
 
-    private List<Listener> listeners = new ArrayList<>();
+    private final List<Listener> listeners = new ArrayList<>();
 
     private final List<NameScope> nameScopes = new ArrayList<>();  //Used as a stack
 
@@ -136,7 +145,7 @@ public class SameDiff extends SDBaseOps {
     @Getter
     private boolean initializedTraining;                            //True if training setup has been done
     @Getter
-    private Map<String,GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
+    private Map<String, GradientUpdater> updaterMap;                 //GradientUpdater instance for each trainable parameter
 
     ////////////////////////////////////////
     //map a function's instance id to a base name, used for propagating variable names
@@ -154,49 +163,83 @@ public class SameDiff extends SDBaseOps {
 
     ////////////////////////////////////////
 
-    /** Op creator object for math operations */
+    /**
+     * Op creator object for math operations
+     */
     public final SDMath math = new SDMath(this);
-    /** Op creator object for random number generation operations */
+    /**
+     * Op creator object for random number generation operations
+     */
     public final SDRandom random = new SDRandom(this);
-    /** Op creator object for general neural network operations */
+    /**
+     * Op creator object for general neural network operations
+     */
     public final SDNN nn = new SDNN(this);
-    /** Op creator object for convolutional neural network operations */
+    /**
+     * Op creator object for convolutional neural network operations
+     */
     public final SDCNN cnn = new SDCNN(this);
-    /** Op creator object for recurrent neural network operations */
+    /**
+     * Op creator object for recurrent neural network operations
+     */
     public final SDRNN rnn = new SDRNN(this);
-    /** Op creator object for loss function operations */
+    /**
+     * Op creator object for loss function operations
+     */
     public final SDLoss loss = new SDLoss(this);
+    /**
+     * Op creator object for image operations
+     */
+    public final SDImage image = new SDImage(this);
 
-    /** Op creator object for math operations */
-    public SDMath math(){
+    /**
+     * Op creator object for math operations
+     */
+    public SDMath math() {
         return math;
     }
 
-    /** Op creator object for random number generation operations */
-    public SDRandom random(){
+    /**
+     * Op creator object for random number generation operations
+     */
+    public SDRandom random() {
         return random;
     }
 
-    /** Op creator object for general neural network operations */
-    public SDNN nn(){
+    /**
+     * Op creator object for general neural network operations
+     */
+    public SDNN nn() {
         return nn;
     }
 
-    /** Op creator object for convolutional neural network operations */
-    public SDCNN cnn(){
+    /**
+     * Op creator object for convolutional neural network operations
+     */
+    public SDCNN cnn() {
         return cnn;
     }
 
-    /** Op creator object for recurrent neural network operations */
-    public SDRNN rnn(){
+    /**
+     * Op creator object for recurrent neural network operations
+     */
+    public SDRNN rnn() {
         return rnn;
     }
 
-    /** Op creator object for loss function operations */
-    public SDLoss loss(){
+    /**
+     * Op creator object for loss function operations
+     */
+    public SDLoss loss() {
         return loss;
     }
 
+    /**
+     * Op creator object for image operations
+     */
+    public SDImage image() {
+        return image;
+    }
 
 
     /**
@@ -244,6 +287,13 @@ public class SameDiff extends SDBaseOps {
     private Map<int[], Op> opsForResult;
     private boolean resolvedVariables = false;
 
+
+    @Getter
+    private Stack<ArgumentInterceptor> argumentInterceptors = new Stack<>();
+    @Getter
+    private Set<ArgumentInterceptor> pausedArgumentInterceptors = new HashSet<>();
+
+    private Set<String> blockNames = new HashSet<>();
 
     @Getter
     @Setter
@@ -297,8 +347,7 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Update the opName for the variable
-     * with the given vertex id
+     * Update the opName for the variable with the given vertex id
      *
      * @param varName  the vertex id to update
      * @param withName thew new opName
@@ -311,9 +360,9 @@ public class SameDiff extends SDBaseOps {
         v.setName(withName);
         variables.put(withName, v);
 
-        for(SameDiffOp op : ops.values()){
+        for (SameDiffOp op : ops.values()) {
             List<String> outputsOfOp = op.getOutputsOfOp();
-            if(outputsOfOp != null && !outputsOfOp.isEmpty()) {
+            if (outputsOfOp != null && !outputsOfOp.isEmpty()) {
                 for (int i = 0; i < outputsOfOp.size(); i++) {
                     if (outputsOfOp.get(i).equals(oldVarName)) {
                         outputsOfOp.set(i, withName);
@@ -322,7 +371,7 @@ public class SameDiff extends SDBaseOps {
             }
 
             List<String> inputsToOp = op.getInputsToOp();
-            if(inputsToOp != null && !inputsToOp.isEmpty()) {
+            if (inputsToOp != null && !inputsToOp.isEmpty()) {
                 for (int i = 0; i < inputsToOp.size(); i++) {
                     if (inputsToOp.get(i).equals(oldVarName)) {
                         inputsToOp.set(i, withName);
@@ -410,42 +459,53 @@ public class SameDiff extends SDBaseOps {
     /**
      * Returns this samediff instance's {@link DifferentialFunctionFactory}
      *
-     * @return
+     * @return DifferentialFunctionFactory
      */
     public DifferentialFunctionFactory f() {
         return functionFactory;
     }
 
-    public void setListeners(Listener... listeners){
+    /**
+     * Set the current {@link Listener} instances.
+     * Note that
+     *
+     * @param listeners Listeners
+     */
+    public void setListeners(Listener... listeners) {
         this.listeners.clear();
         addListeners(listeners);
     }
 
-    public void setListeners(Collection<? extends Listener> listeners){
+    public void setListeners(Collection<? extends Listener> listeners) {
         this.listeners.clear();
         addListeners(listeners);
     }
 
-    public void addListeners(Listener... listeners){
+    public void addListeners(Listener... listeners) {
         addListeners(Arrays.asList(listeners));
     }
 
-    public void addListeners(Collection<? extends Listener> listeners){
+    public void addListeners(Collection<? extends Listener> listeners) {
         this.listeners.addAll(listeners);
     }
+
+    public List<Listener> getListeners() {
+        return listeners;
+    }
+
 
     /**
      * @return The current name scope, if any (null otherwise). See {@link #withNameScope(String)} for more details.
      */
-    public String currentNameScope(){
-        if(nameScopes.isEmpty())
+    public String currentNameScope() {
+        if (nameScopes.isEmpty())
             return null;
 
         //Would use String.join but that is Java 8+
         StringBuilder sb = new StringBuilder();
         boolean first = true;
-        for(NameScope ns : nameScopes){
-            if(!first){
+        for (NameScope ns : nameScopes) {
+            if (!first) {
                 sb.append("/");
             }
             sb.append(ns.getName());
@@ -457,27 +517,30 @@ public class SameDiff extends SDBaseOps {
     /**
      * @return The name with the current name scope (if any) appended. See {@link #withNameScope(String)}
      */
-    protected String nameWithScope(String name){
+    protected String nameWithScope(String name) {
         String scope = currentNameScope();
-        if(scope == null){
+        if (scope == null) {
             return name;
         }
-        return scope + "/" + name;
+        if (!name.startsWith(scope + "/"))
+            return scope + "/" + name;
+        else
+            return name;
     }
 
     //Intentionally package private
-    void addNameScope(NameScope nameScope){
+    void addNameScope(NameScope nameScope) {
         nameScopes.add(nameScope);
     }
 
     //Intentionally package private
-    void closeNameScope(NameScope nameScope){
+    void closeNameScope(NameScope nameScope) {
         //Check that the name scope is closed correctly/in order
         Preconditions.checkState(!nameScopes.isEmpty(), "Cannot close name scope: no name scopes are currently defined");
-        Preconditions.checkState(nameScopes.get(nameScopes.size()-1).equals(nameScope),
+        Preconditions.checkState(nameScopes.get(nameScopes.size() - 1).equals(nameScope),
                 "Cannot close name scope %s: Name scopes must be closed in order. Current name scopes: \"%s\"", nameScope, currentNameScope());
 
-        nameScopes.remove(nameScopes.size()-1);
+        nameScopes.remove(nameScopes.size() - 1);
     }
 
     /**
@@ -497,7 +560,7 @@ public class SameDiff extends SDBaseOps {
      *  String zName = z.getVarName();      //RESULT: "z"
      *  }
      * </pre>
-     *
+     * <p>
      * Note that name scopes can also be nested:
      * <pre>
      *  {@code
@@ -512,16 +575,33 @@ public class SameDiff extends SDBaseOps {
      *  }
      * </pre>
      *
-     *
      * @param nameScope Name of the name scope to open/create
      * @return The NameScope object
      */
-    public NameScope withNameScope(String nameScope){
+    public NameScope withNameScope(String nameScope) {
         NameScope ns = new NameScope(this, nameScope);
         addNameScope(ns);
         return ns;
     }
 
+
+    public List<SameDiffOp> getOpsInScope(NameScope scope) {
+        ArrayList<SameDiffOp> ops = new ArrayList<>();
+        for (SameDiffOp v : this.ops.values()) {
+            if (v.getName().startsWith(scope.getName()))
+                ops.add(v);
+        }
+        return ops;
+    }
+
+    public List<SDVariable> getVariablesInScope(NameScope scope) {
+        ArrayList<SDVariable> vars = new ArrayList<>();
+        for (SDVariable v : variables()) {
+            if (v.getVarName().startsWith(scope.getName()))
+                vars.add(v);
+        }
+        return vars;
+    }
 
     /**
      * @param sameDiff
@@ -596,11 +676,11 @@ public class SameDiff extends SDBaseOps {
         return ops.containsKey(id);
     }
 
-    public DifferentialFunction functionOutputFor(String varName){
-        if(variables.get(varName).getOutputOfOp() == null)
+    public DifferentialFunction functionOutputFor(String varName) {
+        if (variables.get(varName).getOutputOfOp() == null)
             return null;
         String outName = variables.get(varName).getOutputOfOp();
-        if(outName == null)
+        if (outName == null)
             return null;
         return ops.get(outName).getOp();
     }
@@ -632,7 +712,7 @@ public class SameDiff extends SDBaseOps {
             throw new ND4JIllegalStateException("Function must not be a variable!");
         }
 
-        if(ops.containsKey(id)){
+        if (ops.containsKey(id)) {
 
         } else {
             ops.put(id, SameDiffOp.builder().name(id).op(function).build());
@@ -712,17 +792,17 @@ public class SameDiff extends SDBaseOps {
     }
 
 
-    public void setArrayForVariable(@NonNull String varName, @NonNull INDArray arr){
+    public void setArrayForVariable(@NonNull String varName, @NonNull INDArray arr) {
         Preconditions.checkState(variables.containsKey(varName), "No variable with name \"%s\" exists", varName);
 
         SDVariable v = getVariable(varName);
-        if(v.isConstant()) {
+        if (v.isConstant()) {
             constantArrays.put(varName, new DeviceLocalNDArray(arr));
-        } else if(v.getVariableType() == VariableType.VARIABLE) {
+        } else if (v.getVariableType() == VariableType.VARIABLE) {
             variablesArrays.put(varName, new DeviceLocalNDArray(arr));
-        } else if(v.isPlaceHolder()){
+        } else if (v.isPlaceHolder()) {
             long tid = Thread.currentThread().getId();
-            if(!placeholdersPerThread.containsKey(tid)){
+            if (!placeholdersPerThread.containsKey(tid)) {
                 placeholdersPerThread.put(tid, new HashMap<String, INDArray>());
             }
             placeholdersPerThread.get(tid).put(varName, arr);
@@ -790,6 +870,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Put or update the shape for the given variable name. Optionally supports clearing the specified variable's
      * INDArray if it's shape does not match the new shape
+     *
      * @param varName                   Variable name
      * @param shape                     Shape to put
      * @param clearArrayOnShapeMismatch If false: no change to arrays. If true: if an INDArray is defined for the specified
@@ -797,9 +878,9 @@ public class SameDiff extends SDBaseOps {
      *                                  its shape does not match the specified shape
      */
     @Deprecated
-    public void putOrUpdateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch){
+    public void putOrUpdateShapeForVarName(String varName, long[] shape, boolean clearArrayOnShapeMismatch) {
         Preconditions.checkNotNull(shape, "Cannot put null shape for variable: %s", varName);
-        if(variableNameToShape.containsKey(varName)){
+        if (variableNameToShape.containsKey(varName)) {
 //            updateShapeForVarName(varName, shape, clearArrayOnShapeMismatch);
             //TODO
         } else {
@@ -826,7 +907,7 @@ public class SameDiff extends SDBaseOps {
      */
     public boolean arrayAlreadyExistsForVarName(String varName) {
         SDVariable var = getVariable(varName);
-        switch(var.getVariableType()){
+        switch (var.getVariableType()) {
             case VARIABLE:
                 return variablesArrays.containsKey(varName);
             case ARRAY:
@@ -851,27 +932,27 @@ public class SameDiff extends SDBaseOps {
     public INDArray getArrForVarName(@NonNull String varName) {
         Preconditions.checkState(variables.containsKey(varName), "No variable found with name \"%s\"", varName);
         SDVariable v = variables.get(varName).getVariable();
-        switch(v.getVariableType()){
+        switch (v.getVariableType()) {
             case VARIABLE:
-                if(!variablesArrays.containsKey(varName)) {
+                if (!variablesArrays.containsKey(varName)) {
                     //VARIBALE type arrays should have a parameter initializer...
                     // we should use this to azy init the array if none is present
                     v.storeAndAllocateNewArray();
                 }
                 return variablesArrays.get(varName).get();
             case CONSTANT:
-                if(!constantArrays.containsKey(varName))
+                if (!constantArrays.containsKey(varName))
                     return null;
                 return constantArrays.get(varName).get();
             case ARRAY:
                 //Only stored in inference session...
                 InferenceSession s = sessions.get(Thread.currentThread().getId());
-                if(s == null)
+                if (s == null)
                     return null;
                 return s.get(varName, InferenceSession.OUTER_FRAME, 0, null, false);
             case PLACEHOLDER:
                 long tid = Thread.currentThread().getId();
-                if(placeholdersPerThread.get(tid) == null || !placeholdersPerThread.get(tid).containsKey(varName))
+                if (placeholdersPerThread.get(tid) == null || !placeholdersPerThread.get(tid).containsKey(varName))
                     return null;
                 return placeholdersPerThread.get(tid).get(varName);
             default:
@@ -886,8 +967,8 @@ public class SameDiff extends SDBaseOps {
      * @param variable the name of the variable to associate the array with
      */
     public void associateArrayWithVariable(INDArray arr, @NonNull String variable) {
-    Preconditions.checkState(variables.containsKey(variable), "Cannot associate array with variable \"%s\": " +
-            "variable \"%s\" does not exist in this SameDiff instance", variable, variable);
+        Preconditions.checkState(variables.containsKey(variable), "Cannot associate array with variable \"%s\": " +
+                "variable \"%s\" does not exist in this SameDiff instance", variable, variable);
         associateArrayWithVariable(arr, this.getVariable(variable));
     }
 
@@ -916,16 +997,16 @@ public class SameDiff extends SDBaseOps {
         }
 
         boolean duped = false;
-        if(arr.isAttached()) {
+        if (arr.isAttached()) {
             arr = arr.detach();
             duped = true;
         }
-        if(arr.isView()) {
+        if (arr.isView()) {
             arr = arr.dup();
             duped = true;
         }
 
-        if(!duped && variable.getVariableType() == VariableType.VARIABLE) {
+        if (!duped && variable.getVariableType() == VariableType.VARIABLE) {
             for (DeviceLocalNDArray otherArr : variablesArrays.values()) {
                 if (otherArr.get() == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
                     arr = arr.dup();
@@ -934,7 +1015,7 @@ public class SameDiff extends SDBaseOps {
             }
         }
 
-        switch(variable.getVariableType()){
+        switch (variable.getVariableType()) {
             case VARIABLE:
                 variablesArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
                 break;
@@ -957,7 +1038,7 @@ public class SameDiff extends SDBaseOps {
 
 
                 long tid = Thread.currentThread().getId();
-                if(!placeholdersPerThread.containsKey(tid)){
+                if (!placeholdersPerThread.containsKey(tid)) {
                     placeholdersPerThread.put(tid, new HashMap<String, INDArray>());
                 }
                 placeholdersPerThread.get(tid).put(variable.getVarName(), arr);
@@ -969,11 +1050,11 @@ public class SameDiff extends SDBaseOps {
         //putOrUpdateShapeForVarName(variable.getVarName(), arr.shape(), true);
 
         //Also update nested SameDiff instances (such as gradient function)
-        if(sameDiffFunctionInstances != null && sameDiffFunctionInstances.size() > 0){
-            for(Map.Entry<String,SameDiff> e : sameDiffFunctionInstances.entrySet()){
+        if (sameDiffFunctionInstances != null && sameDiffFunctionInstances.size() > 0) {
+            for (Map.Entry<String, SameDiff> e : sameDiffFunctionInstances.entrySet()) {
                 SameDiff sd = e.getValue();
                 SDVariable v = sd.getVariable(variable.getVarName());
-                if(v != null){
+                if (v != null) {
                     sd.associateArrayWithVariable(arr, v);
                 }
             }
@@ -1002,8 +1083,8 @@ public class SameDiff extends SDBaseOps {
      * @return Map of variables by name
      */
     public Map<String, SDVariable> variableMap() {
-        Map<String,SDVariable> ret = new LinkedHashMap<>();
-        for(Variable v : variables.values()){
+        Map<String, SDVariable> ret = new LinkedHashMap<>();
+        for (Variable v : variables.values()) {
             ret.put(v.getName(), v.getVariable());
         }
         return ret;
@@ -1096,6 +1177,19 @@ public class SameDiff extends SDBaseOps {
         } else {
             List<String> newVal = propertiesToResolve.get(forFunction.getOwnName());
             newVal.add(arrayName);
+        }
+    }
+
+    /**
+     * Remove a property to resolve added with {@link #addPropertyToResolve(DifferentialFunction, String)}
+     *
+     * @param forFunction the function to add the property to resolve for
+     * @param arrayName   the array name
+     */
+    public void removePropertyToResolve(DifferentialFunction forFunction, String arrayName) {
+        if (propertiesToResolve.containsKey(forFunction.getOwnName())) {
+            List<String> newVal = propertiesToResolve.get(forFunction.getOwnName());
+            newVal.remove(arrayName);
         }
     }
 
@@ -1217,7 +1311,7 @@ public class SameDiff extends SDBaseOps {
      * Also checks for input arguments and updates the graph adding an appropriate edge when the full graph is declared.
      *
      * @param variables Variables - arguments for the specified differential function
-     * @param function Differential function
+     * @param function  Differential function
      */
     public void addOutgoingFor(SDVariable[] variables, DifferentialFunction function) {
         String[] varNames = new String[variables.length];
@@ -1263,12 +1357,109 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Add a new argument interceptor to the interceptor stack
+     * <p>
+     * For internal use only.
+     * <p>
+     * When a op is added with arguments, most recent argument interceptor is called on it.
+     * If ops are added in that interceptor, the next most recent will be called on their args, and so on.
+     *
+     * @param interceptor the argument interceptor to add
+     */
+    public void addArgumentInterceptor(@NonNull ArgumentInterceptor interceptor) {
+        argumentInterceptors.push(interceptor);
+    }
+
+    private boolean isArgumentInterceptorPaused(@NonNull ArgumentInterceptor interceptor) {
+        return pausedArgumentInterceptors.contains(interceptor);
+    }
+
+    private ArgumentInterceptor getArgumentInterceptorToUse() {
+
+        if (argumentInterceptors.isEmpty())
+            return null;
+
+        ArgumentInterceptor use = argumentInterceptors.peek();
+        int i = 1;
+        while (isArgumentInterceptorPaused(use)) {
+            if (argumentInterceptors.size() - i < 0)
+                return null;
+
+            use = argumentInterceptors.elementAt(argumentInterceptors.size() - i);
+            i++;
+        }
+
+        return use;
+    }
+
+    /**
+     * Remote the top (most recently added) argument interceptor
+     * <p>
+     * For internal use only.
+     */
+    public void removeArgumentInterceptor() {
+        if (!argumentInterceptors.isEmpty())
+            argumentInterceptors.pop();
+    }
+
+    /**
+     * Pause the top (most recently added) argument interceptor
+     * <p>
+     * For internal use only.
+     */
+    public void pauseArgumentInterceptor() {
+        pausedArgumentInterceptors.add(argumentInterceptors.peek());
+    }
+
+    /**
+     * Pause the given argument interceptor
+     * <p>
+     * For internal use only.
+     *
+     * @param interceptor the argument interceptor to pause
+     */
+    public void pauseArgumentInterceptor(@NonNull ArgumentInterceptor interceptor) {
+        pausedArgumentInterceptors.add(interceptor);
+    }
+
+    /**
+     * Unpause the top (most recently added) argument interceptor
+     * <p>
+     * For internal use only.
+     */
+    public void unpauseArgumentInterceptor() {
+        pausedArgumentInterceptors.remove(argumentInterceptors.peek());
+    }
+
+    /**
+     * Unpause the top given argument interceptor
+     * <p>
+     * For internal use only.
+     *
+     * @param interceptor the argument interceptor to unpause
+     */
+    public void unpauseArgumentInterceptor(@NonNull ArgumentInterceptor interceptor) {
+        pausedArgumentInterceptors.remove(interceptor);
+    }
+
+    /**
      * Adds incoming arguments for the specified differential function to the graph
      *
      * @param variables Name of the variables that are arguments (inputs) to the specified function
      * @param function  Function
      */
     public void addArgsFor(String[] variables, DifferentialFunction function) {
+
+        ArgumentInterceptor interceptor = getArgumentInterceptorToUse();
+
+        if (interceptor != null) {
+            pauseArgumentInterceptor(interceptor);
+            for (int i = 0; i < variables.length; i++) {
+                variables[i] = interceptor.intercept(getVariable(variables[i])).getVarName();
+            }
+            unpauseArgumentInterceptor(interceptor);
+        }
+
         if (function.getOwnName() == null)
             throw new ND4JIllegalStateException("Instance id can not be null. Function not initialized properly");
 
@@ -1281,7 +1472,7 @@ public class SameDiff extends SDBaseOps {
 
         //Add function if it doesn't exist
         //TODO could "not existing" be a bug sometimes?
-        if(!ops.containsKey(function.getOwnName())){
+        if (!ops.containsKey(function.getOwnName())) {
             ops.put(function.getOwnName(), SameDiffOp.builder().name(function.getOwnName()).op(function).build());
         }
 
@@ -1294,11 +1485,10 @@ public class SameDiff extends SDBaseOps {
                 funcs = new ArrayList<>();
                 this.variables.get(variableName).setInputsForOp(funcs);
             }
-            if(!funcs.contains(function.getOwnName()))  //Avoid duplicates for function names.
+            if (!funcs.contains(function.getOwnName()))  //Avoid duplicates for function names.
                 funcs.add(function.getOwnName());
         }
     }
-
 
     /**
      * Adds incoming arguments for the specified differential function to the graph
@@ -1307,6 +1497,7 @@ public class SameDiff extends SDBaseOps {
      * @param function  Function
      */
     public void addArgsFor(SDVariable[] variables, DifferentialFunction function) {
+
         String[] varNames = new String[variables.length];
         for (int i = 0; i < varNames.length; i++) {
             if (variables[i] == null)
@@ -1317,6 +1508,58 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Replaces the argument at i with newArg for function
+     * Does not use (or remove) ArgumentInterceptor stuff
+     */
+    public void replaceArgFor(int i, @NonNull SDVariable newArg, @NonNull DifferentialFunction function) {
+
+        Preconditions.checkArgument(i < function.args().length, "Index out of range: function " +
+                function.getOwnName() + " only has " + function.args().length + " args but you are trying" +
+                "to replace the argument at " + i);
+
+        String oldName = function.arg(i).getVarName();
+        String newName = newArg.getVarName();
+
+        if (function.arg(i).isPlaceHolder() && !newArg.isPlaceHolder()) {
+            boolean otherPlaceholders = false;
+            for (int j = 0; j < function.argNames().length; j++) {
+                if (j == i)
+                    continue;
+
+                if (function.arg(j).isPlaceHolder())
+                    otherPlaceholders = true;
+            }
+
+            if (!otherPlaceholders)
+                placeHolderFunctions.remove(function.getOwnName());
+        } else if (!function.arg(i).isPlaceHolder() && newArg.isPlaceHolder()) {
+            if (!placeHolderFunctions.contains(function.getOwnName()))
+                placeHolderFunctions.add(function.getOwnName());
+        }
+
+        List<String> oldArgs = ops.get(function.getOwnName()).getInputsToOp();
+        oldArgs = new ArrayList<>(oldArgs);
+        oldArgs.set(i, newName);
+        ops.get(function.getOwnName()).setInputsToOp(oldArgs);
+
+        List<String> funcs = this.variables.get(newName).getInputsForOp();
+
+        if (funcs == null) {
+            funcs = new ArrayList<>();
+            this.variables.get(newName).setInputsForOp(funcs);
+        }
+        if (!funcs.contains(function.getOwnName()))  //Avoid duplicates for function names.
+            funcs.add(function.getOwnName());
+
+        List<String> oldFuncs = this.variables.get(oldName).getInputsForOp();
+        if (oldFuncs != null) {
+            if (!ArrayUtils.contains(function.argNames(), oldName))
+                oldFuncs.remove(function.getOwnName());
+        }
+
+    }
+
+    /**
      * Get the differential function (if any) that this variable is the output for
      *
      * @param variableName Name of the variable
@@ -1324,7 +1567,7 @@ public class SameDiff extends SDBaseOps {
      */
     public DifferentialFunction getVariableOutputFunction(String variableName) {
         Preconditions.checkState(variables.containsKey(variableName), "No variable with name \"%s\" found in graph", variableName);
-        if(variables.get(variableName).getOutputOfOp() == null)
+        if (variables.get(variableName).getOutputOfOp() == null)
             return null;
         return ops.get(variables.get(variableName).getOutputOfOp()).getOp();
     }
@@ -1342,12 +1585,52 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * Clear the placeholder arrays from the SameDiff instance
+     *
+     * @param allThreads If true: clear the placeholders for all threads. False: clear only for current thread
+     */
+    public void clearPlaceholders(boolean allThreads) {
+        if (allThreads) {
+            this.placeholdersPerThread.clear();
+        } else {
+            long tid = Thread.currentThread().getId();
+            this.placeholdersPerThread.remove(tid);
+        }
+        for (SameDiff sd : this.sameDiffFunctionInstances.values()) {
+            sd.clearPlaceholders(allThreads);
+        }
+    }
+
+    /**
+     * Clear the input arrays to each op.
+     * This is usually not required, under normal SameDiff use
+     */
+    public void clearOpInputs() {
+        for (SameDiffOp op : ops.values()) {
+            if (op.getOp() instanceof Op) {
+                Op o = ((Op) op.getOp());
+                o.setX(null);
+                if (o.y() != null) {
+                    o.setY(null);
+                }
+            } else if (op.getOp() instanceof DynamicCustomOp) {
+                DynamicCustomOp o = (DynamicCustomOp) op.getOp();
+                o.setInputArguments((INDArray[]) null);
+            }
+        }
+        for (SameDiff sd : this.sameDiffFunctionInstances.values()) {
+            sd.clearOpInputs();
+        }
+    }
+
+    /**
      * Get an array of differential functions that have been defined for this SameDiff instance
+     *
      * @return Array of differential functions
      */
     public DifferentialFunction[] functions() {
         List<DifferentialFunction> out = new ArrayList<>(ops.size());
-        for(SameDiffOp op : ops.values()){
+        for (SameDiffOp op : ops.values()) {
             out.add(op.getOp());
         }
         return out.toArray(new DifferentialFunction[out.size()]);
@@ -1396,6 +1679,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Create a new (empty) SameDiff instance without any functions or variables
+     *
      * @return New SameDiff instance
      */
     public static SameDiff create() {
@@ -1405,6 +1689,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Clone/duplicate the SameDiff instance, including arrays etc. The returned SameDiff instance should have no
      * shared state with the original instance
+     *
      * @return The cloned SameDiff instance
      */
     public SameDiff dup() {
@@ -1418,13 +1703,14 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Count the number of elements in all arrays, according to {@link SDVariable#getShape()}
+     *
      * @return Number of array elements for all variables
      */
     public long numElements() {
         long ret = 0;
         for (SDVariable variable : variables()) {
             long[] shape = variable.getShape();
-            if(shape != null) {
+            if (shape != null) {
                 ret += ArrayUtil.prod(shape);
             }
         }
@@ -1433,12 +1719,13 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Returns the inputs (placeholders) for the SameDiff graph
+     *
      * @return the inputs for this graph
      */
     public List<String> inputs() {
         List<String> out = new ArrayList<>();
-        for(String s : variables.keySet()){
-            if(isPlaceHolder(s))
+        for (String s : variables.keySet()) {
+            if (isPlaceHolder(s))
                 out.add(s);
         }
         return out;
@@ -1448,12 +1735,13 @@ public class SameDiff extends SDBaseOps {
      * Outputs are those variables (not placeholders, constants, etc) that are the output of a function that aren't the
      * input to any other ops.
      * Usually these are the output of the last function(s) in the SameDiff instance.
+     *
      * @return The (inferred) outputs of the SameDiff instance, in no particular order
      */
-    public List<String> outputs(){
+    public List<String> outputs() {
         List<String> out = new ArrayList<>();
-        for(Variable v : variables.values()){
-            if(v.getVariable().isConstant() || v.getVariable().isPlaceHolder() ||                   //Exclude constants and placeholders
+        for (Variable v : variables.values()) {
+            if (v.getVariable().isConstant() || v.getVariable().isPlaceHolder() ||                   //Exclude constants and placeholders
                     (v.getInputsForOp() != null && !v.getInputsForOp().isEmpty()) ||                //Exclude variables that are inputs to ops
                     (v.getControlDepsForOp() != null && !v.getControlDepsForOp().isEmpty()) ||      //Exclude variables that are control dependency inputs to ops
                     (v.getControlDepsForVar() != null && !v.getControlDepsForVar().isEmpty())) {    //Exclude variables that are control dependency inputs to other variables (mainly for import of cond etc ops)
@@ -1461,16 +1749,17 @@ public class SameDiff extends SDBaseOps {
             }
 
             //Also exclude assert etc ops - doesn't make sense to return these "outputs" to user
-            if(v.getOutputOfOp() != null){
+            if (v.getOutputOfOp() != null) {
                 String opName = v.getOutputOfOp();
                 SameDiffOp o = ops.get(opName);
-                if(o.getOp() instanceof Assert){
+                if (o.getOp() instanceof Assert) {
                     continue;
                 }
 
                 //A bit of a hack for TF import: some TF graphs have Switch ops, where the output of one branch isn't consumed
                 // by any ops. Consequently, during execution this "output" might never be available. So we'll exclude the output of execution here
-                if(o.getOp() instanceof Switch){
+                // This applies to SameDiff while loops as well
+                if (o.getOp() instanceof Switch) {
                     continue;
                 }
             }
@@ -1498,23 +1787,35 @@ public class SameDiff extends SDBaseOps {
      * (b) Via {@link #setLossVariables(String...)}, @link #addLossVariable(String)} or {@link SDVariable#markAsLoss()}<br>
      * (c) Via {@link TrainingConfig#setLossVariables(List)}<br>
      */
-    public List<String> getLossVariables(){
+    public List<String> getLossVariables() {
         return Collections.unmodifiableList(this.lossVariables);
     }
 
     /**
      * Clear/remove any existing loss variables, and set the loss variables to the specified variable names.<br>
      * See {@link #addLossVariable(String)} for more details
+     *
      * @param lossVariableNames Names of variables to be loss function variables
      */
-    public void setLossVariables(String... lossVariableNames){
+    public void setLossVariables(@NonNull String... lossVariableNames) {
         this.lossVariables.clear();
-        for(String s : lossVariableNames){
+        for (String s : lossVariableNames) {
             addLossVariable(s);
         }
         //After changing loss function variables, we (probably) need to recreate gradient function - as gradient
         // function is defined with respect to specific loss function variables
         sameDiffFunctionInstances.remove("grad");
+    }
+
+    /**
+     * See {@link #setLossVariables(String...)}
+     */
+    public void setLossVariables(@NonNull SDVariable... lossVariables) {
+        String[] varNames = new String[lossVariables.length];
+        for (int i = 0; i < lossVariables.length; i++)
+            varNames[i] = lossVariables[i].getVarName();
+
+        setLossVariables(varNames);
     }
 
     /**
@@ -1525,24 +1826,32 @@ public class SameDiff extends SDBaseOps {
      * Note also that only ARRAY type SDVariables can be marked as losses to be minimized. That is, we cannot mark the value
      * of a constant, variable or placeholder to be minimized as doing so would not make sense.<br>
      */
-    public void addLossVariable(@NonNull String variableName){
+    public void addLossVariable(@NonNull String variableName) {
         Preconditions.checkState(hasVariable(variableName), "No variable with name \"%s\" exists", variableName);
         SDVariable v = getVariable(variableName);
         Preconditions.checkState(v.dataType().isFPType(), "Only floating point type variables can be marked as losses to be minimized." +
                 " SDVariable \"%s\" has datatype %s", variableName, v.dataType());
         Preconditions.checkState(v.getVariableType() == VariableType.ARRAY, "Only ARRAY type SDVariables can be marked as losses to be minimized." +
                 " SDVariable \"%s\" has variable type %s", variableName, v.getVariableType());
-        if(!lossVariables.contains(variableName)){
+        if (!lossVariables.contains(variableName)) {
             lossVariables.add(variableName);
         }
     }
 
     /**
+     * See {@link #addLossVariable(String)}
+     */
+    public void addLossVariable(@NonNull SDVariable variable) {
+        addLossVariable(variable.getVarName());
+    }
+
+    /**
      * Set the training configuration ({@link TrainingConfig}) for the SameDiff instance.
      * A TrainingConfig must be set before the SameDiff instance can be trained via the fit methods
+     *
      * @param trainingConfig Training configuration
      */
-    public void setTrainingConfig(TrainingConfig trainingConfig){
+    public void setTrainingConfig(TrainingConfig trainingConfig) {
         this.trainingConfig = trainingConfig;
     }
 
@@ -1553,10 +1862,14 @@ public class SameDiff extends SDBaseOps {
      * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
      * be performed.
      *
-     * @param dataSet The DataSet (single minibatch) to peform training on
+     * @param dataSet   The DataSet (single minibatch) to peform training on
+     * @param listeners Additional listeners to use during this operation
+     * @return a {@link History} object containing the history information for this training operation
+     * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
      */
-    public void fit(DataSet dataSet){
-        fit(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), 1, false);
+    public History fit(@NonNull DataSet dataSet, @NonNull Listener... listeners) {
+        return fit(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), 1, false,
+                null, 1, listeners);
     }
 
     /**
@@ -1564,10 +1877,14 @@ public class SameDiff extends SDBaseOps {
      * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
      * be performed.
      *
-     * @param dataSet The DataSet (single minibatch) to peform training on
+     * @param dataSet   The MultiDataSet (single minibatch) to peform training on
+     * @param listeners Additional listeners to use during this operation
+     * @return a {@link History} object containing the history information for this training operation
+     * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
      */
-    public void fit(MultiDataSet dataSet){
-        fit(new SingletonMultiDataSetIterator(dataSet), 1, false);
+    public History fit(@NonNull MultiDataSet dataSet, @NonNull Listener... listeners) {
+        return fit(new SingletonMultiDataSetIterator(dataSet), 1, false,
+                null, 1, listeners);
     }
 
     /**
@@ -1576,12 +1893,34 @@ public class SameDiff extends SDBaseOps {
      * single input and a single output.<br>
      * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
      * be performed.
+     * <p>
+     * A special case of {@link #fit()}.
+     *
+     * @param iter                The iterator to train the SameDiff instance with
+     * @param numEpochs           The number of epochs for training. Must be > 0
+     * @param validationIter      The DataSetIterator to use for validation (null to skip validation)
+     * @param validationFrequency The frequency with which to run validation.  1 is every epoch, 2 is every other, etc.
+     * @param listeners           Additional listeners to use during this operation
+     * @return a {@link History} object containing the history information for this training operation
+     * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
+     */
+    public History fit(@NonNull DataSetIterator iter, int numEpochs, DataSetIterator validationIter, int validationFrequency, @NonNull Listener... listeners) {
+        return fit().train(iter, numEpochs).validate(validationIter, validationFrequency).listeners(listeners).exec();
+    }
+
+    /**
+     * See {@link #fit(DataSetIterator, int, DataSetIterator, int, Listener...)}, does not preform validation.
+     * <p>
+     * A special case of {@link #fit()}.
      *
      * @param iter      The iterator to train the SameDiff instance with
      * @param numEpochs The number of epochs for training. Must be > 0
+     * @param listeners Additional listeners to use during this operation
+     * @return a {@link History} object containing the history information for this training operation
+     * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
      */
-    public void fit(DataSetIterator iter, int numEpochs) {
-        fit(new MultiDataSetIteratorAdapter(iter), numEpochs, true);
+    public History fit(@NonNull DataSetIterator iter, int numEpochs, @NonNull Listener... listeners) {
+        return fit().train(iter, numEpochs).listeners(listeners).exec();
     }
 
     /**
@@ -1589,31 +1928,92 @@ public class SameDiff extends SDBaseOps {
      * This method can both singe input, single output and multi-input, multi-output SameDiff instances<br>
      * Note that a {@link TrainingConfig} must be set via {@link #setTrainingConfig(TrainingConfig)} before training can
      * be performed.
+     * <p>
+     * A special case of {@link #fit()}.
+     *
+     * @param iter                The iterator to train the SameDiff instance with
+     * @param numEpochs           The number of epochs for training. Must be > 0
+     * @param validationIter      The MultiDataSetIterator to use for validation (null to skip validation)
+     * @param validationFrequency The frequency with which to run validation.  1 is every epoch, 2 is every other, etc.
+     * @param listeners           Additional listeners to use during this operation
+     * @return a {@link History} object containing the history information for this training operation
+     * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
+     */
+    public History fit(@NonNull MultiDataSetIterator iter, int numEpochs, MultiDataSetIterator validationIter, int validationFrequency, @NonNull Listener... listeners) {
+        return fit(iter, numEpochs, true, validationIter, validationFrequency, listeners);
+    }
+
+    /**
+     * See {@link #fit(MultiDataSetIterator, int, MultiDataSetIterator, int, Listener...)}, does not preform validation.
+     * <p>
+     * A special case of {@link #fit()}.
      *
      * @param iter      The iterator to train the SameDiff instance with
      * @param numEpochs The number of epochs for training. Must be > 0
+     * @param listeners Additional listeners to use during this operation
+     * @return a {@link History} object containing the history information for this training operation
+     * (evaluations specified in the {@link TrainingConfig}, loss values, and timing information).
      */
-    public void fit(MultiDataSetIterator iter, int numEpochs){
-        fit(iter, numEpochs, true);
+    public History fit(@NonNull MultiDataSetIterator iter, int numEpochs, @NonNull Listener... listeners) {
+        return fit().train(iter, numEpochs).listeners(listeners).exec();
+    }
+
+    /**
+     * Set up for a fit operation using {@link FitConfig}.
+     * <p>
+     * Supports the setting of training data ({@link MultiDataSetIterator} or {@link DataSetIterator}), number of epochs,
+     * validation data ({@link MultiDataSetIterator} or {@link DataSetIterator}), validation frequency, and additional listeners.
+     * <br><br>
+     * Example: train on data for 5 epochs, validating on valData every 2nd epoch
+     * <pre>
+     *     {@code
+     *     SameDiff sd = ...;
+     *     MultiDataSet data = ...;
+     *     MultiDataSet valData = ...;
+     *
+     *     History hist = sd.fit()
+     *         .train(data, 5)
+     *         .validate(valData, 2)
+     *         .exec();
+     *     }
+     * </pre>
+     */
+    public FitConfig fit() {
+        return new FitConfig(this);
     }
 
     //Synchronized for thread safety
-    protected synchronized void fit(@NonNull MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount) {
+    protected synchronized History fit(@NonNull MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount,
+                                       MultiDataSetIterator validationData, int validationFrequency, @NonNull Listener... listeners) {
         boolean async = iter.asyncSupported();
-        if(async){
+
+        boolean validationAsync = false;
+        if (validationData != null)
+            validationAsync = validationData.asyncSupported();
+
+        if (async) {
             iter = new AsyncMultiDataSetIterator(iter, 3, true);
         }
-        try{
-            fitHelper(iter, numEpochs, incrementEpochCount);
+
+        if (validationAsync) {
+            validationData = new AsyncMultiDataSetIterator(validationData, 3, true);
+        }
+
+        try {
+            return fitHelper(iter, numEpochs, incrementEpochCount, validationData, validationFrequency, Arrays.asList(listeners));
         } finally {
-            if(async){
-                ((AsyncMultiDataSetIterator)iter).shutdown();
+            if (async) {
+                ((AsyncMultiDataSetIterator) iter).shutdown();
+            }
+            if (validationAsync) {
+                ((AsyncMultiDataSetIterator) validationData).shutdown();
             }
         }
     }
 
     //fitHelper should only be called from fit method above
-    protected synchronized void fitHelper(MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount){
+    protected synchronized History fitHelper(@NonNull MultiDataSetIterator iter, int numEpochs, boolean incrementEpochCount,
+                                             MultiDataSetIterator validationData, int validationFrequency, @NonNull List<Listener> listeners) {
         Preconditions.checkNotNull(iter, "Iterator must not be null");
         Preconditions.checkState(numEpochs > 0, "Number of training epochs must be a positive number. Got: %s", numEpochs);
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
@@ -1621,36 +2021,68 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(numEpochs == 1 || iter.resetSupported(), "Cannot train for multiple epochs on an iterator that" +
                 " does not support resetting");
 
-        if(!iter.hasNext() && iter.resetSupported())
+        HistoryListener history = new HistoryListener(trainingConfig);
+
+        List<Listener> activeListeners = new ArrayList<>();
+
+        if (!history.evaluations().isEmpty())
+            activeListeners.add(history);
+
+        for (Listener l : this.listeners)
+            if (l.isActive(Operation.TRAINING))
+                activeListeners.add(l);
+
+        for (Listener l : listeners)
+            if (l.isActive(Operation.TRAINING))
+                activeListeners.add(l);
+
+        validateListenerActivations(activeListeners, Operation.TRAINING);
+        validateListenerActivations(activeListeners, Operation.TRAINING_VALIDATION);
+
+        if (!iter.hasNext() && iter.resetSupported())
             iter.reset();
 
         boolean performedValidation = false;
 
         int trainThreadNum = 0;
         long jThreadId = Thread.currentThread().getId();
-        boolean hasListeners = !listeners.isEmpty();
+        boolean hasListeners = !activeListeners.isEmpty();
         At at = At.builder()
                 .epoch(trainingConfig.getEpochCount())
                 .iteration(trainingConfig.getIterationCount())
                 .trainingThreadNum(trainThreadNum)
                 .javaThreadNum(jThreadId)
+                .operation(Operation.TRAINING)
                 .build();
 
+        LossCurve lossCurve = null;
 
-        for(int i = 0; i < numEpochs; i++) {
 
-            if(incrementEpochCount && hasListeners){
+        Set<String> requiredVars = new HashSet<>();
+        for (Listener l : activeListeners) {
+            requiredVars.addAll(l.requiredVariables(this).trainingVariables());
+        }
+
+        for (int i = 0; i < numEpochs; i++) {
+
+            if (incrementEpochCount && hasListeners) {
                 at.setEpoch(trainingConfig.getEpochCount());
-                for(Listener l : listeners){
+                for (Listener l : activeListeners) {
                     l.epochStart(this, at);
                 }
             }
+            long epochStartTime = System.currentTimeMillis();
+
+            double[] lossSums = null;
+            List<String> lossNames = null;
+            int lossCount = 0;
 
             while (iter.hasNext()) {
                 long dataStart = hasListeners ? System.currentTimeMillis() : 0;
                 org.nd4j.linalg.dataset.api.MultiDataSet ds = iter.next();
+
                 long dataEnd = hasListeners ? System.currentTimeMillis() : 0;
-                if(!performedValidation){
+                if (!performedValidation) {
                     Preconditions.checkState(trainingConfig.getDataSetFeatureMapping().size() == ds.numFeatureArrays(),
                             "The number of dataset feature mapping variables set in the training configuration (%s) must match" +
                                     " the number of dataset feature arrays (%s)", trainingConfig.getDataSetFeatureMapping().size(), ds.numFeatureArrays());
@@ -1663,10 +2095,10 @@ public class SameDiff extends SDBaseOps {
                     performedValidation = true;
                 }
 
-                if(hasListeners){
+                if (hasListeners) {
                     at.setIteration(trainingConfig.getIterationCount());
-                    for(Listener l : listeners){
-                        l.iterationStart(this, at, ds, (dataEnd-dataStart));
+                    for (Listener l : activeListeners) {
+                        l.iterationStart(this, at, ds, (dataEnd - dataStart));
                     }
                 }
 
@@ -1677,7 +2109,7 @@ public class SameDiff extends SDBaseOps {
                 resolveVariablesWith(placeholders);
 
                 //Calculate gradients:
-                execBackwards(placeholders);
+                execBackwards(placeholders, at.operation(), ds, requiredVars, activeListeners);
 
 
                 //Apply updater:
@@ -1685,22 +2117,22 @@ public class SameDiff extends SDBaseOps {
                     initializeTraining();
 
                 Map<Class<?>, AtomicDouble> regScore = null;        //Holds regularization scores for later reporting to listeners
-                if(hasListeners){
+                if (hasListeners) {
                     regScore = new HashMap<>();
                 }
 
                 int iteration = trainingConfig.getIterationCount();
                 int e = trainingConfig.getEpochCount();
-                for(Variable v : variables.values()){
+                for (Variable v : variables.values()) {
                     //Only update trainable params - float type parameters (variable type vars)
                     SDVariable sdv = v.getVariable();
-                    if(sdv.getVariableType() != VariableType.VARIABLE || !sdv.dataType().isFPType())
+                    if (sdv.getVariableType() != VariableType.VARIABLE || !sdv.dataType().isFPType())
                         continue;
 
 
                     INDArray param = sdv.getArr();
                     SDVariable gradVar = sdv.getGradient();
-                    if(gradVar == null){
+                    if (gradVar == null) {
                         //Not all trainable parameters have gradients defined.
                         //Consider graph: in1->loss1; in2->loss2, where we optimize only loss1.
                         //No gradient will be present for in2, because in2 doesn't impact loss1 at all
@@ -1715,9 +2147,9 @@ public class SameDiff extends SDBaseOps {
                     int iterCount = trainingConfig.getIterationCount();
                     int epochCount = trainingConfig.getEpochCount();
                     double lr = trainingConfig.getUpdater().hasLearningRate() ? trainingConfig.getUpdater().getLearningRate(iteration, epochCount) : 1.0;
-                    if(r != null && r.size() > 0){
-                        for(Regularization reg : r){
-                            if(reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER){
+                    if (r != null && r.size() > 0) {
+                        for (Regularization reg : r) {
+                            if (reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER) {
                                 reg.apply(param, grad, lr, iterCount, epochCount);
                             }
                         }
@@ -1735,13 +2167,13 @@ public class SameDiff extends SDBaseOps {
                     }
 
                     //Post-apply regularization (weight decay)
-                    if(r != null && r.size() > 0){
-                        for(Regularization reg : r){
-                            if(reg.applyStep() == Regularization.ApplyStep.POST_UPDATER){
+                    if (r != null && r.size() > 0) {
+                        for (Regularization reg : r) {
+                            if (reg.applyStep() == Regularization.ApplyStep.POST_UPDATER) {
                                 reg.apply(param, grad, lr, iterCount, epochCount);
-                                if(hasListeners){
+                                if (hasListeners) {
                                     double score = reg.score(param, iterCount, epochCount);
-                                    if(!regScore.containsKey(reg.getClass())){
+                                    if (!regScore.containsKey(reg.getClass())) {
                                         regScore.put(reg.getClass(), new AtomicDouble());
                                     }
                                     regScore.get(reg.getClass()).addAndGet(score);
@@ -1750,9 +2182,10 @@ public class SameDiff extends SDBaseOps {
                         }
                     }
 
-                    if(hasListeners){
-                        for(Listener l : listeners){
-                            l.preUpdate(this, at, v, reshapedView);
+                    if (hasListeners) {
+                        for (Listener l : activeListeners) {
+                            if (l.isActive(at.operation()))
+                                l.preUpdate(this, at, v, reshapedView);
                         }
                     }
 
@@ -1764,15 +2197,15 @@ public class SameDiff extends SDBaseOps {
                     }
                 }
 
-                if(hasListeners){
+                if (hasListeners) {
                     double[] d = new double[lossVariables.size() + regScore.size()];
                     List<String> lossVars;
-                    if(regScore.size() > 0){
+                    if (regScore.size() > 0) {
                         lossVars = new ArrayList<>(lossVariables.size() + regScore.size());
                         lossVars.addAll(lossVariables);
-                        int s=regScore.size();
+                        int s = regScore.size();
                         //Collect regularization losses
-                        for(Map.Entry<Class<?>,AtomicDouble> entry : regScore.entrySet()){
+                        for (Map.Entry<Class<?>, AtomicDouble> entry : regScore.entrySet()) {
                             lossVars.add(entry.getKey().getSimpleName());
                             d[s] = entry.getValue().get();
                         }
@@ -1782,34 +2215,152 @@ public class SameDiff extends SDBaseOps {
 
 
                     //Collect the losses...
-                    SameDiff gradFn = sameDiffFunctionInstances.get("grad");
-                    int count=0;
-                    for(String s : lossVariables){
+                    SameDiff gradFn = sameDiffFunctionInstances.get(GRAD_FN_KEY);
+                    int count = 0;
+                    for (String s : lossVariables) {
                         INDArray arr = gradFn.getArrForVarName(s);
                         double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
                         d[count++] = l;
                     }
 
                     Loss loss = new Loss(lossVars, d);
-                    for(Listener l : listeners){
+
+                    if (lossNames == null) {
+                        lossNames = lossVars;
+                    } else {
+                        Preconditions.checkState(lossNames.equals(lossVars),
+                                "Loss names mismatch, expected: %s, got: %s", lossNames, lossVars);
+                    }
+
+                    if (lossSums == null) {
+                        lossSums = d;
+                    } else {
+                        Preconditions.checkState(lossNames.equals(lossVars),
+                                "Loss size mismatch, expected: %s, got: %s", lossSums.length, d.length);
+
+                        for (int j = 0; j < lossSums.length; j++) {
+                            lossSums[j] += d[j];
+                        }
+                    }
+                    lossCount++;
+
+                    for (Listener l : activeListeners) {
                         l.iterationDone(this, at, ds, loss);
                     }
+
                 }
 
                 trainingConfig.incrementIterationCount();
             }
 
-            if(incrementEpochCount) {
-                if(hasListeners){
-                    for(Listener l : listeners){
-                        l.epochEnd(this, at);
+            long epochTime = System.currentTimeMillis() - epochStartTime;
+
+            if (incrementEpochCount && hasListeners) {
+                for (int j = 0; j < lossSums.length; j++)
+                    lossSums[j] /= lossCount;
+
+                if (lossCurve != null)
+                    lossCurve = lossCurve.addLossAndCopy(lossSums, lossNames);
+                else
+                    lossCurve = new LossCurve(lossSums, lossNames);
+            }
+
+            if (incrementEpochCount) {
+                if (hasListeners) {
+
+                    boolean doStop = false;
+                    Listener stopped = null;
+
+                    for (Listener l : activeListeners) {
+
+                        ListenerResponse res = l.epochEnd(this, at, lossCurve, epochTime);
+
+                        if (res == ListenerResponse.STOP && (i < numEpochs - 1)) {
+                            doStop = true;
+                            stopped = l;
+                        }
                     }
+
+                    if (doStop) {
+                        log.info("Stopping training early.  Listener " + stopped + " gave a STOP signal at epoch " + at.epoch() + " and iteration " + at.iteration());
+
+                        for (Listener l1 : activeListeners)
+                            l1.operationEnd(this, Operation.TRAINING);
+
+                        if (i < numEpochs - 1) {
+                            iter.reset();
+                        }
+
+                        if (incrementEpochCount)
+                            trainingConfig.incrementEpochCount();
+                        return history.getReport();
+                    }
+
+
+                    //validation evaluation
+                    if (validationData != null && (validationFrequency <= 0 || i % validationFrequency == 0)) {
+
+                        long validationStart = System.currentTimeMillis();
+                        outputHelper(validationData, new At(at.epoch(), 0, 0, 0, Operation.TRAINING_VALIDATION),
+                                listeners);
+
+                        long validationTime = System.currentTimeMillis() - validationStart;
+
+                        boolean doStopV = false;
+                        Listener stoppedV = null;
+                        for (Listener l : activeListeners) {
+
+                            ListenerResponse res = l.validationDone(this, at, validationTime);
+
+                            if (res == ListenerResponse.STOP && (i < numEpochs - 1)) {
+                                doStopV = true;
+                                stoppedV = l;
+                            }
+                        }
+
+                        if (doStopV) {
+                            log.info("Stopping training early from validation.  Listener " + stoppedV + " gave a STOP signal at epoch " + at.epoch() + " and iteration " + at.iteration());
+
+                            for (Listener l1 : activeListeners)
+                                l1.operationEnd(this, Operation.TRAINING);
+
+                            if (i < numEpochs - 1) {
+                                iter.reset();
+                            }
+
+                            if (incrementEpochCount)
+                                trainingConfig.incrementEpochCount();
+
+                            return history.getReport();
+                        }
+
+                    }
+
                 }
+
                 trainingConfig.incrementEpochCount();
             }
 
-            if(i < numEpochs - 1) {
+            if (i < numEpochs - 1) {
                 iter.reset();
+            }
+        }
+
+        for (Listener l1 : activeListeners)
+            l1.operationEnd(this, Operation.TRAINING);
+
+        return history.getReport();
+    }
+
+    /**
+     * Ensure the specified listeners do not request any activations that aren't present for the given operation
+     */
+    private void validateListenerActivations(List<Listener> listeners, Operation op) {
+        for (Listener l : listeners) {
+            for (String s : l.requiredVariables(this).requiredVariables(op)) {
+                if (!variables.containsKey(s)) {
+                    Preconditions.checkState(false, "Listener %s requested variable %s that is not defined in this SameDiff graph", l, s);
+                }
             }
         }
     }
@@ -1825,19 +2376,19 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(trainingConfig != null, "No training configuration has been set. A training configuration must " +
                 "be set before calculating the L2 loss. Use setTrainingConfig(TrainingConfig)");
 
-        if(trainingConfig.getRegularization() == null || trainingConfig.getRegularization().isEmpty()){
+        if (trainingConfig.getRegularization() == null || trainingConfig.getRegularization().isEmpty()) {
             return 0.0;
         }
 
         List<Regularization> l = trainingConfig.getRegularization();
         double loss = 0.0;
-        for(Variable v : variables.values()){
+        for (Variable v : variables.values()) {
             SDVariable sdv = v.getVariable();
-            if(sdv.getVariableType() != VariableType.VARIABLE || !sdv.dataType().isFPType()){
+            if (sdv.getVariableType() != VariableType.VARIABLE || !sdv.dataType().isFPType()) {
                 //Only trainable parameters (FP and variable type vars) contribute to regularization score
                 continue;
             }
-            for(Regularization r : l){
+            for (Regularization r : l) {
                 INDArray arr = sdv.getArr();
                 loss += r.score(arr, trainingConfig.getIterationCount(), trainingConfig.getEpochCount());
             }
@@ -1850,14 +2401,14 @@ public class SameDiff extends SDBaseOps {
      * 1. Infer the set of trainable parameters - unless specified manually by the user
      * 2. Set up the updaters
      */
-    protected void initializeTraining(){
-        if(!initializedTraining) {
-            if(trainingConfig == null) {
+    protected void initializeTraining() {
+        if (!initializedTraining) {
+            if (trainingConfig == null) {
                 throw new ND4JIllegalStateException("Please specify a training config with setTrainingConfig");
             }
             updaterMap = new HashMap<>();
-            for(Variable v : variables.values()){
-                if(v.getVariable().getVariableType() != VariableType.VARIABLE || !v.getVariable().dataType().isFPType()){
+            for (Variable v : variables.values()) {
+                if (v.getVariable().getVariableType() != VariableType.VARIABLE || !v.getVariable().dataType().isFPType()) {
                     //Skip non-trainable parameters
                     continue;
                 }
@@ -1879,24 +2430,24 @@ public class SameDiff extends SDBaseOps {
      * @param ds MultiDataSet - source of the features/labels
      * @return MultiDataSet converted to a Map, based on TrainingConfig
      */
-    private Map<String,INDArray> toPlaceholderMap(org.nd4j.linalg.dataset.api.MultiDataSet ds) {
-        Map<String,INDArray> placeholders = new HashMap<>();
+    private Map<String, INDArray> toPlaceholderMap(org.nd4j.linalg.dataset.api.MultiDataSet ds) {
+        Map<String, INDArray> placeholders = new HashMap<>();
         int count = 0;
-        for(String s : trainingConfig.getDataSetFeatureMapping()){
+        for (String s : trainingConfig.getDataSetFeatureMapping()) {
             placeholders.put(s, ds.getFeatures(count++));
         }
         count = 0;
-        if(trainingConfig.getDataSetLabelMapping() != null) {
+        if (trainingConfig.getDataSetLabelMapping() != null) {
             //Labels may be null in some models (unsupervised etc)
             for (String s : trainingConfig.getDataSetLabelMapping()) {
                 placeholders.put(s, ds.getLabels(count++));
             }
         }
 
-        if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().size() > 0){
+        if (trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().size() > 0) {
             count = 0;
-            for(String s : trainingConfig.getDataSetFeatureMaskMapping()){
-                if(s == null) {
+            for (String s : trainingConfig.getDataSetFeatureMaskMapping()) {
+                if (s == null) {
                     count++;
                     continue;
                 }
@@ -1904,10 +2455,10 @@ public class SameDiff extends SDBaseOps {
             }
         }
 
-        if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().size() > 0){
+        if (trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().size() > 0) {
             count = 0;
-            for(String s : trainingConfig.getDataSetLabelMaskMapping()){
-                if(s == null) {
+            for (String s : trainingConfig.getDataSetLabelMaskMapping()) {
+                if (s == null) {
                     count++;
                     continue;
                 }
@@ -1924,41 +2475,57 @@ public class SameDiff extends SDBaseOps {
      * {@code Evaluation e = new Evaluation();
      * sameDiff.evaluate(iterator, "softmax", e);}
      * </pre>
+     * <p>
+     * A special case of {@link #evaluate()}.
      *
      * @param iterator       Iterator as source of data to evaluate
      * @param outputVariable The variable to evaluate
+     * @param listeners      Additional listeners to use during this operation.
      * @param evaluations    The evaluations to perform
      */
-    public void evaluate(DataSetIterator iterator, String outputVariable, IEvaluation... evaluations) {
+    public void evaluate(@NonNull DataSetIterator iterator, @NonNull String outputVariable, @NonNull List<Listener> listeners, @NonNull IEvaluation... evaluations) {
         Preconditions.checkArgument(evaluations != null && evaluations.length > 0, "No evaluations were passed to the evaluate method");
-        evaluate(new MultiDataSetIteratorAdapter(iterator), Collections.singletonMap(outputVariable, Arrays.asList(evaluations)),
-                Collections.singletonMap(outputVariable, 0));
+
+        evaluate().data(iterator).evaluate(outputVariable, evaluations).listeners(listeners.toArray(new Listener[0])).exec();
+    }
+
+    /**
+     * See {@link #evaluate(DataSetIterator, String, List, IEvaluation[])}.
+     * <p>
+     * A special case of {@link #evaluate()}.
+     */
+    public void evaluate(@NonNull DataSetIterator iterator, @NonNull String outputVariable, @NonNull IEvaluation... evaluations) {
+        evaluate().data(iterator).evaluate(outputVariable, evaluations).exec();
     }
 
     /**
      * Evaluation for multiple-output networks.<br>
-     * See {@link #evaluate(MultiDataSetIterator, Map, Map)}
+     * See {@link #evaluate(MultiDataSetIterator, Map, Map, Listener[])}.
+     * <p>
+     * A special case of {@link #evaluate()}.
      */
-    public void evaluate(DataSetIterator iterator, Map<String,IEvaluation> variableEvals){
-        Map<String,Integer> map = new HashMap<>();
-        Map<String,List<IEvaluation>> variableEvalsList = new HashMap<>();
-        for(String s : variableEvals.keySet()){
+    public void evaluate(@NonNull DataSetIterator iterator, @NonNull Map<String, IEvaluation> variableEvals, @NonNull Listener... listeners) {
+        Map<String, Integer> map = new HashMap<>();
+        Map<String, List<IEvaluation>> variableEvalsList = new HashMap<>();
+        for (String s : variableEvals.keySet()) {
             map.put(s, 0);  //Only 1 possible output here with DataSetIterator
             variableEvalsList.put(s, Collections.singletonList(variableEvals.get(s)));
         }
-        evaluate(new MultiDataSetIteratorAdapter(iterator), variableEvalsList, map);
+        evaluate(new MultiDataSetIteratorAdapter(iterator), variableEvalsList, map, listeners);
     }
 
     /**
-     * Evaluation for multiple output networks - one ore more
-     * See {@link #evaluate(MultiDataSetIterator, Map, Map)}
+     * Evaluation for multiple output networks - one or more.
+     * See {@link #evaluate(MultiDataSetIterator, Map, Map, Listener[])}.
+     * <p>
+     * A special case of {@link #evaluate()}.
      */
-    public void evaluateMultiple(DataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals){
-        Map<String,Integer> map = new HashMap<>();
-        for(String s : variableEvals.keySet()){
+    public void evaluateMultiple(DataSetIterator iterator, Map<String, List<IEvaluation>> variableEvals, @NonNull Listener... listeners) {
+        Map<String, Integer> map = new HashMap<>();
+        for (String s : variableEvals.keySet()) {
             map.put(s, 0);  //Only 1 possible output here with DataSetIterator
         }
-        evaluate(new MultiDataSetIteratorAdapter(iterator), variableEvals, map);
+        evaluate(new MultiDataSetIteratorAdapter(iterator), variableEvals, map, listeners);
     }
 
     /**
@@ -1968,25 +2535,38 @@ public class SameDiff extends SDBaseOps {
      * {@code Evaluation e = new Evaluation();
      * sameDiff.evaluate(iterator, "softmax", e);}
      * </pre>
+     * <p>
+     * A special case of {@link #evaluate()}.
      *
      * @param iterator       Iterator as source of data to evaluate
      * @param outputVariable The variable to evaluate
      * @param labelIndex     The index of the target variable's labels in the iterator
+     * @param listeners      Additional listeners to use during this operation.
      * @param evaluations    The evaluations to perform
      */
-    public void evaluate(MultiDataSetIterator iterator, String outputVariable, int labelIndex, IEvaluation... evaluations) {
+    public void evaluate(@NonNull MultiDataSetIterator iterator, @NonNull String outputVariable, int labelIndex,
+                         @NonNull List<Listener> listeners, @NonNull IEvaluation... evaluations) {
         Preconditions.checkArgument(evaluations != null && evaluations.length > 0, "No evaluations were passed to the evaluate method");
-        evaluate(iterator, Collections.singletonMap(outputVariable, Arrays.asList(evaluations)),
-                Collections.singletonMap(outputVariable, labelIndex));
+
+        evaluate().data(iterator).evaluate(outputVariable, labelIndex, evaluations).listeners(listeners.toArray(new Listener[0])).exec();
     }
 
     /**
-     * Perform evaluation using classes such as {@link org.nd4j.evaluation.classification.Evaluation} for classifier outputs
+     * See {@link #evaluate(MultiDataSetIterator, String, int, List, IEvaluation[])}.
+     * <p>
+     * A special case of {@link #evaluate()}.
+     */
+    public void evaluate(@NonNull MultiDataSetIterator iterator, @NonNull String outputVariable, int labelIndex, @NonNull IEvaluation... evaluations) {
+        evaluate().data(iterator).evaluate(outputVariable, labelIndex, evaluations).exec();
+    }
+
+    /**
+     * Perform evaluation using classes such as {@link Evaluation} for classifier outputs
      * and {@link org.nd4j.evaluation.regression.RegressionEvaluation} for regression outputs.<br>
      * <br>
      * <b>Example: classifier evaluation</b><br>
      * Predictions variable name: "softmaxOutput"<br>
-     * Evaluations to perform: {@link org.nd4j.evaluation.classification.Evaluation}<br>
+     * Evaluations to perform: {@link Evaluation}<br>
      * Data: single input, single output MultiDataSets<br>
      * Code:<br>
      * <pre>
@@ -1996,38 +2576,174 @@ public class SameDiff extends SDBaseOps {
      * Map<String,Integer> labelMapping = Collections.singletonMap("softmaxOutput",0);  //Compare: "softmaxOutput" vs. MultiDataSet.getLabels(0)
      * }
      * </pre>
+     * <p>
+     * A special case of {@link #evaluate()}.
      *
      * @param iterator               The iterator - the source of the data for evaluation
      * @param variableEvals          The evaluations to perform. Key: the name of the variable. Value: the evaluations to perform
      * @param predictionLabelMapping The output/label mapping. Key: the name of the variable.
+     * @param listeners              Additional listeners to use during this operation.
      */
-    public void evaluate(MultiDataSetIterator iterator, Map<String,List<IEvaluation>> variableEvals, Map<String,Integer> predictionLabelMapping){
+    public void evaluate(MultiDataSetIterator iterator, Map<String, List<IEvaluation>> variableEvals, Map<String, Integer> predictionLabelMapping, Listener... listeners) {
+        evaluateHelper(iterator, variableEvals, predictionLabelMapping, At.defaultAt(Operation.EVALUATION), listeners);
+    }
+
+
+    /**
+     * Set up for a evaluation operation using EvaluationConfig.
+     * <p>
+     * Supports the setting of the data ({@link MultiDataSetIterator} or {@link DataSetIterator}),
+     * adding evaluations for variables (with optional label index setting), setting label indices,
+     * and setting additional listeners.
+     * Does not require setting label indices when using a {@link DataSetIterator}.
+     * <p>
+     * Also supports using {@link SDVariable} instances instead of variable names.
+     *
+     * <br><br>
+     * Example: evaluate "pred" with {@link Evaluation} and {@link ROC}, using label 0.
+     * <pre>
+     *      {@code
+     *     SameDiff sd = ...;
+     *     MultiDataSetIterator data = ...;
+     *
+     *     EvaluationRecord results = sd.evaluate()
+     *         .data(data)
+     *         .evaluate("pred", 0, new Evaluation(), new ROC()),
+     *         .exec();
+     *      }
+     *  </pre>
+     * Example: evaluate "pred" with {@link Evaluation}, using the only label from a DataSetIterator.
+     * <pre>
+     *      {@code
+     *     SameDiff sd = ...;
+     *     DataSetIterator singleData = ...;
+     *
+     *     EvaluationRecord results = sd.evaluate()
+     *         .data(singleData)
+     *         .evaluate("pred", new Evaluation()),
+     *         .exec();
+     *      }
+     *  </pre>
+     */
+    public EvaluationConfig evaluate() {
+        return new EvaluationConfig(this);
+    }
+
+    /**
+     * Helper method for evaluations.  Should only be called from the above evaluate method
+     */
+    private void evaluateHelper(MultiDataSetIterator iterator,
+                                Map<String, List<IEvaluation>> variableEvals, Map<String, Integer> predictionLabelMapping, At at, @NonNull Listener... listeners) {
         Preconditions.checkState(trainingConfig != null, "Training config has not been set");
 
         Preconditions.checkState(variableEvals.keySet().equals(predictionLabelMapping.keySet()), "Keysets for variable evaluations" +
                 " and for the prediction label mapping must be equal. Keys for variables to evaluate: %s vs. keys for label mapping: %s", variableEvals.keySet(), predictionLabelMapping.keySet());
 
-        if(!iterator.hasNext() && iterator.resetSupported())
+        List<Listener> activeListeners = new ArrayList<>();
+
+        for (Listener l : listeners)
+            if (l.isActive(at.operation()))
+                activeListeners.add(l);
+
+        for (Listener l : this.listeners)
+            if (l.isActive(at.operation()))
+                activeListeners.add(l);
+
+        validateListenerActivations(activeListeners, at.operation());
+
+        for (Listener l : activeListeners)
+            l.operationStart(this, at.operation());
+
+        boolean hasListeners = !activeListeners.isEmpty();
+
+        if (!iterator.hasNext() && iterator.resetSupported())
             iterator.reset();
+        Set<String> requiredVars = new HashSet<>(variableEvals.keySet());
 
-        List<String> reqVars = new ArrayList<>(variableEvals.keySet());
-
-        while(iterator.hasNext()){
-            MultiDataSet ds = iterator.next();
-            Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
-
-            Map<String,INDArray> m = exec(placeholderMap, reqVars);
-
-            for(Map.Entry<String,List<IEvaluation>> e : variableEvals.entrySet()){
-                INDArray prediction = m.get(e.getKey());
-                for(IEvaluation eval : e.getValue()){
-                    //TODO masking, time series, etc
-
-                    INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
-                    eval.eval(label, prediction);
-                }
+        if (hasListeners) {
+            for (Listener l : activeListeners) {
+                requiredVars.addAll(l.requiredVariables(this).evaluationVariables());
             }
         }
+
+        String[] requiredVarsArr = requiredVars.toArray(new String[0]);
+
+        while (iterator.hasNext()) {
+            long dataStart = hasListeners ? System.currentTimeMillis() : 0;
+            MultiDataSet ds = iterator.next();
+            long dataEnd = hasListeners ? System.currentTimeMillis() : 0;
+            Map<String, INDArray> placeholderMap = toPlaceholderMap(ds);
+
+            Map<String, INDArray> m;
+            Map<String, INDArray> outs = null;
+            if (hasListeners) {
+
+                for (Listener l : activeListeners) {
+                    l.iterationStart(this, at, ds, (dataEnd - dataStart));
+                }
+
+                m = directExecHelper(placeholderMap, at, ds, Collections.<String>emptyList(), activeListeners, requiredVarsArr);
+            } else {
+                m = directExecHelper(placeholderMap, at, ds, Collections.<String>emptyList(), activeListeners, requiredVarsArr);
+            }
+
+
+            for (Map.Entry<String, List<IEvaluation>> e : variableEvals.entrySet()) {
+                INDArray prediction = m.get(e.getKey());
+                for (IEvaluation eval : e.getValue()) {
+                    //TODO time series, etc
+
+                    INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
+                    INDArray mask = ds.getLabelsMaskArray(predictionLabelMapping.get(e.getKey()));
+                    eval.eval(label, prediction, mask);
+                }
+            }
+
+            if (hasListeners) {
+                for (Listener l : activeListeners) {
+                    Map<String, INDArray> outVars = Maps.newHashMap(
+                            Maps.filterKeys(outs,
+                                    Predicates.in(l.requiredVariables(this).evaluationVariables())));
+                    l.iterationDone(this, at, ds, null);
+                }
+            }
+
+            at.setIteration(at.iteration() + 1);
+        }
+
+
+        for (Listener l : activeListeners)
+            l.operationEnd(this, at.operation());
+    }
+
+    /**
+     * Do a single batch inference on a network with a single input.<br>
+     * For example, if the variable to infer was called "softmax" you would use:
+     * <pre>
+     * {@code
+     * sameDiff.output(iterator, "softmax");}
+     * </pre>
+     *
+     * @param dataSet The data to evaluate
+     * @param outputs The variables to evaluate
+     */
+    public Map<String, INDArray> output(@NonNull DataSet dataSet, @NonNull String... outputs) {
+        return outputBatches(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), outputs).get(0);
+    }
+
+    /**
+     * Do a single batch inference on a network.<br>
+     * For example, if the variable to infer was called "softmax" you would use:
+     * <pre>
+     * {@code
+     * sameDiff.output(iterator, "softmax");}
+     * </pre>
+     *
+     * @param dataSet The data to evaluate
+     * @param outputs The variables to evaluate
+     */
+    public Map<String, INDArray> output(@NonNull MultiDataSet dataSet, @NonNull String... outputs) {
+        return outputBatches(new SingletonMultiDataSetIterator(dataSet), outputs).get(0);
     }
 
     /**
@@ -2037,27 +2753,47 @@ public class SameDiff extends SDBaseOps {
      * {@code
      * sameDiff.output(iterator, "softmax");}
      * </pre>
+     * <p>
+     * Uses concatenation on the outputs of {@link #outputBatches(DataSetIterator, String...)} which may cause issues with some inputs.
+     * RNNs with variable time series length and CNNs with variable image sizes will most likely have issues.
+     * <p>
+     * Special case of {@link #output()}.
      *
-     * @param dataSet        The data to evaluate
-     * @param outputs        The variables to evaluate
+     * @param iterator  Iterator as source of data to evaluate
+     * @param listeners Additional listeners to use during this operation.
+     * @param outputs   The variables to evaluate
      */
-    public Map<String, INDArray> output(DataSet dataSet, String... outputs){
-        return output(new SingletonMultiDataSetIterator(dataSet.toMultiDataSet()), outputs).get(0);
+    public Map<String, INDArray> output(@NonNull DataSetIterator iterator, @NonNull List<Listener> listeners, @NonNull String... outputs) {
+        return output().data(iterator).output(outputs).listeners(listeners.toArray(new Listener[0])).exec();
     }
 
     /**
-     * Do inference on a network with a single input.<br>
-     * For example, if the variable to infer was called "softmax" you would use:
-     * <pre>
-     * {@code
-     * sameDiff.output(iterator, "softmax");}
-     * </pre>
-     *
-     * @param iterator       Iterator as source of data to evaluate
-     * @param outputs        The variables to evaluate
+     * See {@link #output(DataSetIterator, List, String...)}.  No additional listeners.
+     * <p>
+     * Special case of {@link #output()}.
      */
-    public List<Map<String, INDArray>> output(DataSetIterator iterator, String... outputs){
-        return output(new MultiDataSetIteratorAdapter(iterator), outputs);
+    public Map<String, INDArray> output(@NonNull DataSetIterator dataSet, @NonNull String... outputs) {
+        return output().data(dataSet).output(outputs).exec();
+    }
+
+
+    /**
+     * See {@link #output(DataSetIterator, List, String...)}, but without the concatenation of batches.
+     * <p>
+     * Special case of {@link #output()}.
+     */
+    public List<Map<String, INDArray>> outputBatches(DataSetIterator iterator, List<Listener> listeners, String... outputs) {
+        return output().data(iterator).output(outputs).listeners(listeners.toArray(new Listener[0])).execBatches();
+    }
+
+
+    /**
+     * See {@link #output(DataSetIterator, String...)}, but without the concatenation of batches.
+     * <p>
+     * Special case of {@link #output()}.
+     */
+    public List<Map<String, INDArray>> outputBatches(DataSetIterator iterator, String... outputs) {
+        return output().data(iterator).output(outputs).execBatches();
     }
 
     /**
@@ -2065,7 +2801,7 @@ public class SameDiff extends SDBaseOps {
      * <br>
      * <b>Example: classifier inference</b><br>
      * Predictions variable name: "softmaxOutput"<br>
-     * Evaluations to perform: {@link org.nd4j.evaluation.classification.Evaluation}<br>
+     * Evaluations to perform: {@link Evaluation}<br>
      * Data: single output MultiDataSets<br>
      * Code:<br>
      * <pre>
@@ -2074,42 +2810,344 @@ public class SameDiff extends SDBaseOps {
      * sameDiff.output(iterator, "softmaxOutput);
      * }
      * </pre>
+     * <p>
+     * Special case of {@link #output()}.
      *
      * @param iterator  The iterator - the source of the data for inference
+     * @param listeners Additional listeners to use during this operation.
      * @param outputs   The set of outputs to report.  If null, defaults to all outputs of this SameDiff.
      */
-    public List<Map<String, INDArray>> output(MultiDataSetIterator iterator, String... outputs){
+    public Map<String, INDArray> output(@NonNull MultiDataSetIterator iterator, @NonNull List<Listener> listeners, @NonNull String... outputs) {
+        return stackOutputs(outputHelper(iterator, At.defaultAt(Operation.INFERENCE), listeners, outputs));
+    }
+
+    /**
+     * See {@link #output(MultiDataSetIterator, List, String...)}.  No additional listeners.
+     * <p>
+     * Special case of {@link #output()}.
+     */
+    public Map<String, INDArray> output(@NonNull MultiDataSetIterator dataSet, @NonNull String... outputs) {
+        return output().data(dataSet).output(outputs).exec();
+    }
+
+    /**
+     * Perform inference.<br>
+     * <br>
+     * <b>Example: classifier inference</b><br>
+     * Predictions variable name: "softmaxOutput"<br>
+     * Evaluations to perform: {@link Evaluation}<br>
+     * Data: single output MultiDataSets<br>
+     * Code:<br>
+     * <pre>
+     * {@code
+     * MultiDataSetIterator data = ...
+     * sameDiff.output(iterator, "softmaxOutput);
+     * }
+     * </pre>
+     * <p>
+     * Uses concatenation on the outputs of {@link #outputBatches(MultiDataSetIterator, List, String...)} which may cause issues with some inputs.
+     * RNNs with variable time series length and CNNs with variable image sizes will most likely have issues.
+     * <p>
+     * Special case of {@link #output()}.
+     *
+     * @param iterator  The iterator - the source of the data for inference
+     * @param listeners Additional listeners to use during this operation.
+     * @param outputs   The set of outputs to report.  If null, defaults to all outputs of this SameDiff.
+     */
+    public List<Map<String, INDArray>> outputBatches(MultiDataSetIterator iterator, List<Listener> listeners, String... outputs) {
+        return outputHelper(iterator, At.defaultAt(Operation.INFERENCE), listeners, outputs);
+    }
+
+    /**
+     * See {@link #outputBatches(MultiDataSetIterator, List, String...)}.  No additional listeners.
+     * <p>
+     * Special case of {@link #output()}.
+     */
+    public List<Map<String, INDArray>> outputBatches(MultiDataSetIterator iterator, String... outputs) {
+        return output().data(iterator).output(outputs).execBatches();
+    }
+
+    /**
+     * Set up for an inference operation using OutputConfig.
+     * Supports the setting of variables to output, the input data ({@link MultiDataSetIterator} or {@link DataSetIterator}),
+     * and additional listeners.
+     * Has exec methods to get results in batches or concatenated, or to get results when there is only
+     * a single output (again in batches or concatenated).
+     * <p>
+     * Also supports using {@link SDVariable} instances instead of variable names.
+     *
+     * <br><br>
+     * Example: get the output of pred, with batches concatenated together
+     * <pre>
+     *     {@code
+     *     SameDiff sd = ...;
+     *     MultiDataSet data = ...;
+     *
+     *     INDArray out = sd.output()
+     *         .data(data)
+     *         .output("pred")
+     *         .execSingle();
+     *     }
+     * </pre>
+     */
+    public OutputConfig output() {
+        return new OutputConfig(this);
+    }
+
+    /**
+     * Helper method to run inference.  Also used for validation
+     */
+    private List<Map<String, INDArray>> outputHelper(MultiDataSetIterator iterator, At at, @NonNull List<Listener> listeners, @NonNull String... outputs) {
         Preconditions.checkState(trainingConfig != null, "Training config has not been set");
 
-        List<String> reqVars;
+        List<Listener> activeListeners = new ArrayList<>();
 
-        if(outputs != null){
-            reqVars = Arrays.asList(outputs);
+        for (Listener l : listeners)
+            if (l.isActive(at.operation()))
+                activeListeners.add(l);
+
+        for (Listener l : this.listeners)
+            if (l.isActive(at.operation()))
+                activeListeners.add(l);
+
+        validateListenerActivations(activeListeners, at.operation());
+
+        for (Listener l : activeListeners)
+            l.operationStart(this, at.operation());
+
+        boolean hasListeners = !activeListeners.isEmpty();
+
+        List<String> neededOutputs;
+
+        if (outputs != null) {
+            neededOutputs = Arrays.asList(outputs);
         } else {
-            reqVars = outputs();
+            neededOutputs = outputs();
         }
+
+        String[] neededOutputsArr = neededOutputs.toArray(new String[0]);
 
         List<Map<String, INDArray>> predictions = new ArrayList<>();
 
-        if(!iterator.hasNext() && iterator.resetSupported())
+        if (!iterator.hasNext() && iterator.resetSupported())
             iterator.reset();
 
-        while(iterator.hasNext()){
-            MultiDataSet ds = iterator.next();
-            Map<String,INDArray> placeholderMap = toPlaceholderMap(ds);
+        Set<String> requiredVars = new HashSet<>();
 
-            predictions.add(exec(placeholderMap, reqVars));
+        for (Listener l : activeListeners) {
+            if (at.operation() == Operation.TRAINING_VALIDATION)
+                requiredVars.addAll(l.requiredVariables(this).validationVariables());
+            else
+                requiredVars.addAll(l.requiredVariables(this).inferenceVariables());
         }
+
+        while (iterator.hasNext()) {
+            long dataStart = hasListeners ? System.currentTimeMillis() : 0;
+            MultiDataSet ds = iterator.next();
+            long dataEnd = hasListeners ? System.currentTimeMillis() : 0;
+            Map<String, INDArray> placeholderMap = toPlaceholderMap(ds);
+
+            if (hasListeners) {
+
+                for (Listener l : activeListeners) {
+                    l.iterationStart(this, at, ds, (dataEnd - dataStart));
+                }
+
+                Map<String, INDArray> outs = directExecHelper(placeholderMap, at, ds, requiredVars, activeListeners, neededOutputsArr);
+
+                for (Listener l : activeListeners) {
+                    l.iterationDone(this, at, ds, null);
+                }
+
+                predictions.add(outs);
+            } else {
+                predictions.add(directExecHelper(placeholderMap, at, ds, requiredVars, activeListeners, neededOutputsArr));
+            }
+            at.setIteration(at.iteration() + 1);
+        }
+
+
+        for (Listener l : activeListeners)
+            l.operationEnd(this, at.operation());
 
         return predictions;
     }
 
+    /**
+     * Set up for a single batch inference operation using OutputConfig.
+     * Supports the setting of placeholder inputs, outputs, and additional listeners.
+     * Has exec methods to get the single output if only one is requested, or all requested outputs.
+     * <p>
+     * Also supports using {@link SDVariable} instances instead of variable names.
+     * <p>
+     * Example: get the value of "out" with placeholders x and y
+     * <pre>
+     *     {@code
+     *     SameDiff sd = ...;
+     *     INDArray xValue = ...;
+     *     INDArray yValue = ...;
+     *     SDVariable y = ...;
+     *
+     *     INDArray outValue = sd.batchOutput()
+     *         .output("out")
+     *         .input("x", xValue)
+     *         .input(y, yValue)
+     *         .execSingle();
+     *     }
+     * </pre>
+     */
+    public BatchOutputConfig batchOutput() {
+        return new BatchOutputConfig(this);
+    }
 
-    public SDVariable one(String name, int... shape){
+    /**
+     * @deprecated See {@link #outputAll(Map)} and {@link #batchOutput()}
+     */
+    @Deprecated
+    public Map<String, INDArray> execAll(Map<String, INDArray> placeholders) {
+        return outputAll(placeholders);
+    }
+
+    /**
+     * Do inference for all variables for a single batch.
+     * <p>
+     * See {@link #output(Map, List, String...)}.
+     * <p>
+     * Special case of {@link #batchOutput()}.
+     */
+    public Map<String, INDArray> outputAll(Map<String, INDArray> placeholders) {
+        return batchOutput().outputAll().inputs(placeholders).exec();
+    }
+
+    /**
+     * @deprecated See {@link #outputSingle(Map, String)} and {@link #batchOutput()}
+     */
+    @Deprecated
+    public INDArray execSingle(Map<String, INDArray> placeholders, String output) {
+        return outputSingle(placeholders, output);
+    }
+
+    /**
+     * Do inference for a single variable for a single batch.
+     * <p>
+     * See {@link #output(Map, List, String...)}.
+     * <p>
+     * Special case of {@link #batchOutput()}.
+     */
+    public INDArray outputSingle(Map<String, INDArray> placeholders, String output) {
+        return batchOutput().output(output).inputs(placeholders).execSingle();
+    }
+
+    /**
+     * @deprecated See {@link #output(Map, List)} and {@link #batchOutput()}
+     */
+    @Deprecated
+    public Map<String, INDArray> exec(Map<String, INDArray> placeholders, List<String> outputs) {
+        return output(placeholders, outputs);
+    }
+
+    /**
+     * Do inference for the given variables for a single batch.
+     * <p>
+     * See {@link #output(Map, List, String...)}.
+     * <p>
+     * Special case of {@link #batchOutput()}.
+     */
+    public Map<String, INDArray> output(Map<String, INDArray> placeholders, List<String> outputs) {
+        return batchOutput().output(outputs.toArray(new String[0])).inputs(placeholders).exec();
+    }
+
+    /**
+     * @deprecated See {@link #output(Map, String...)} and {@link #batchOutput()}
+     */
+    @Deprecated
+    public Map<String, INDArray> exec(Map<String, INDArray> placeholders, String... outputs) {
+        return output(placeholders, outputs);
+    }
+
+    /**
+     * Do inference for the given variables for a single batch.
+     * <p>
+     * See {@link #output(Map, List, String...)}.
+     * <p>
+     * Special case of {@link #batchOutput()}.
+     */
+    public Map<String, INDArray> output(Map<String, INDArray> placeholders, String... outputs) {
+        return batchOutput().output(outputs).inputs(placeholders).exec();
+    }
+
+
+    /**
+     * Do inference for the given variables for a single batch.
+     * <p>
+     * Special case of {@link #batchOutput()}.
+     *
+     * @param placeholders The values to use for placeholders.
+     * @param listeners    Additional listeners to use during this operation.
+     * @param outputs      The variables to output and return.
+     */
+    public Map<String, INDArray> output(Map<String, INDArray> placeholders, @NonNull List<Listener> listeners, String... outputs) {
+        return batchOutputHelper(placeholders, listeners, outputs);
+    }
+
+    protected Map<String, INDArray> batchOutputHelper(Map<String, INDArray> placeholders, @NonNull List<Listener> listeners, String... outputs) {
+        List<Listener> activeListeners = new ArrayList<>();
+
+        for (Listener l : this.listeners)
+            if (l.isActive(Operation.INFERENCE))
+                activeListeners.add(l);
+
+        for (Listener l : listeners)
+            if (l.isActive(Operation.INFERENCE))
+                activeListeners.add(l);
+
+        for (Listener l : activeListeners) {
+            l.operationStart(this, Operation.INFERENCE);
+        }
+
+        validateListenerActivations(activeListeners, Operation.INFERENCE);
+
+        Map<String, INDArray> ret = directExecHelper(placeholders, At.defaultAt(Operation.INFERENCE), null, Collections.<String>emptyList(), activeListeners, outputs);
+
+        for (Listener l : activeListeners) {
+            l.operationEnd(this, Operation.INFERENCE);
+        }
+        return ret;
+    }
+
+    /**
+     * Do inference for the given variables for a single batch, with training information
+     */
+    protected Map<String, INDArray> directExecHelper(Map<String, INDArray> placeholders, At at, MultiDataSet batch,
+                                                     Collection<String> requiredActivations, List<Listener> activeListeners, String... outputs) {
+        if (at == null)
+            at = At.defaultAt();
+
+        Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
+        long threadId = Thread.currentThread().getId();
+        if (!sessions.containsKey(threadId)) {
+            log.info("Creating new InferenceSession for thread {}", threadId);
+            sessions.put(threadId, new InferenceSession(this));
+        }
+
+        List<String> phNames = inputs();
+        if (placeholders == null && phNames != null) {
+            //Maybe user set placeholders before calling exec method?
+            placeholders = placeholdersPerThread.get(Thread.currentThread().getId());
+        }
+
+        //Placeholder validation is performed in InferenceSession
+
+        InferenceSession is = sessions.get(threadId);
+        return is.output(outputs == null ? Collections.<String>emptyList() : Arrays.asList(outputs),
+                placeholders, batch, requiredActivations, activeListeners, at);
+    }
+
+    public SDVariable one(String name, int... shape) {
         return one(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
-    public SDVariable one(String name, long... shape){
+    public SDVariable one(String name, long... shape) {
         return one(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
@@ -2137,12 +3175,11 @@ public class SameDiff extends SDBaseOps {
     }
 
 
-
-    public SDVariable zero(String name, long... shape){
+    public SDVariable zero(String name, long... shape) {
         return zero(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
-    public SDVariable zero(String name, int... shape){
+    public SDVariable zero(String name, int... shape) {
         return zero(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
@@ -2171,25 +3208,28 @@ public class SameDiff extends SDBaseOps {
     /**
      * Create an SDVariable with a fixed/constant value, with a generated name<br>
      * Constants are not modified by training/backprop. See {@link VariableType} for more details.
+     *
      * @param constant Value for the constant SDVariable
      * @return The created variable
      */
-    public SDVariable constant(@NonNull INDArray constant){
+    public SDVariable constant(@NonNull INDArray constant) {
         return constant(getNewVarName(), constant);
     }
 
     /**
      * Create an SDVariable with a fixed/constant value<br>
      * Constants are not modified by training/backprop. See {@link VariableType} for more details.
-     * @param name  Name of the constant SDVariable
+     *
+     * @param name     Name of the constant SDVariable
      * @param constant Value for the constant SDVariable
      * @return The created variable
      */
-    public SDVariable constant(String name, @NonNull INDArray constant){
+    public SDVariable constant(String name, @NonNull INDArray constant) {
         Preconditions.checkState(!variables.containsKey(name), "Variable with name \"%s\" already exists", name);
         if (name == null || name.length() < 1)
             name = getNewVarName();
         SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType(), null);
+        name = v.getVarName();
         variables.put(name, Variable.builder().name(name).variable(v).build());
         constantArrays.put(name, new DeviceLocalNDArray(constant));
         return v;
@@ -2232,7 +3272,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape    the shape of the variable if any
      * @return SDVariable placeholder
      */
-    public SDVariable placeHolder(@NonNull String name, org.nd4j.linalg.api.buffer.DataType dataType, long...shape) {
+    public SDVariable placeHolder(@NonNull String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
         Preconditions.checkState(!variables.containsKey(name), "Variable already exists with name %s", name);
         SDVariable ret = new SDVariable(name, VariableType.PLACEHOLDER, this, shape, dataType, null);
         variables.put(name, Variable.builder().name(name).variable(ret).build());
@@ -2254,10 +3294,16 @@ public class SameDiff extends SDBaseOps {
 
     //TODO only allowing null datatype for TF import (it's fixed in a later step) - don't want this in the public API!
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
-                             org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
-        String withScope = nameWithScope(name);
-        if (variables.containsKey(withScope)) {
-            if(nameScopes.isEmpty()){
+                          org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
+
+
+        if (name == null || name.length() < 1)
+            name = getNewVarName();
+        else
+            name = generateNewVarName(name, 0);
+
+        if (variables.containsKey(name)) {
+            if (nameScopes.isEmpty()) {
                 throw new IllegalArgumentException("Another variable with the name " + name + " already exists (current name scope: \""
                         + currentNameScope() + "\"");
             } else {
@@ -2265,14 +3311,11 @@ public class SameDiff extends SDBaseOps {
             }
         }
 
-        if (name == null || name.length() < 1)
-            name = getNewVarName();
-
 
         SDVariable ret = new SDVariable(name, variableType, this, shape, dataType, weightInitScheme);
         addVariable(ret);
 
-        if(variableType == VariableType.PLACEHOLDER){
+        if (variableType == VariableType.PLACEHOLDER) {
             setOriginalPlaceHolderShape(name, shape);
             putShapeForVarName(name, shape);
         }
@@ -2284,8 +3327,8 @@ public class SameDiff extends SDBaseOps {
      * The underlying array will be initialized using the specified weight initilization scheme<br>
      * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
      *
-     * @param name  the name of the variable
-     * @param shape the shape of the variable
+     * @param name             the name of the variable
+     * @param shape            the shape of the variable
      * @param weightInitScheme Weight initialization scheme to use to initialize the underlying array
      * @return the created variable
      */
@@ -2305,7 +3348,7 @@ public class SameDiff extends SDBaseOps {
      */
     public SDVariable var(String name, org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
         Preconditions.checkNotNull(shape != null, "Invalid shape: shape may not be null");
-        if(Shape.isPlaceholderShape(shape)){
+        if (Shape.isPlaceholderShape(shape)) {
             return placeHolder(name, dataType, shape);
         }
         return var(name, new ZeroInitScheme(), dataType, shape);
@@ -2334,7 +3377,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(String name, int... shape){
+    public SDVariable var(String name, int... shape) {
         return var(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
@@ -2347,7 +3390,7 @@ public class SameDiff extends SDBaseOps {
      * @param shape the shape of the variable
      * @return the created variable
      */
-    public SDVariable var(String name, long... shape){
+    public SDVariable var(String name, long... shape) {
         return var(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
@@ -2361,7 +3404,7 @@ public class SameDiff extends SDBaseOps {
      */
     public SDVariable var(String name, org.nd4j.linalg.api.buffer.DataType dataType, int... shape) {
         Preconditions.checkNotNull(shape, "Invalid shape: shape may not be null");
-        if(Shape.isPlaceholderShape(shape)){
+        if (Shape.isPlaceholderShape(shape)) {
             return placeHolder(name, dataType, ArrayUtil.toLongArray(shape));
         }
         return var(name, new ZeroInitScheme(), dataType, ArrayUtil.toLongArray(shape));
@@ -2386,7 +3429,7 @@ public class SameDiff extends SDBaseOps {
 
         VariableType vt = v.getVariableType();
         NDArraySupplierInitScheme s = null;
-        switch(vt){
+        switch (vt) {
             case VARIABLE:
                 s = new NDArraySupplierInitScheme(v.getArr());
                 //Intentional fallthrough
@@ -2403,12 +3446,7 @@ public class SameDiff extends SDBaseOps {
     }
 
     private String getNewVarName() {
-        String varName = "sd_var_" + String.valueOf(variableId);
-        while (variables.containsKey(varName)) {
-            variableId++;
-            varName = "sd_var_" + String.valueOf(variableId);
-        }
-        return varName;
+        return generateNewVarName("sd_var", 0, false);
     }
 
     /**
@@ -2450,6 +3488,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Create an {@link SDVariable} with a generated name, and assocate the specified array with it.<br>
      * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
+     *
      * @param arr Array to associate with the new variable
      * @return New SDVariable
      * @see #var(String, INDArray)
@@ -2461,6 +3500,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Create an {@link SDVariable} with the specified name, and associate the specified array with it<br>
      * This is a VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
+     *
      * @param arr Array to associate with the new variable
      * @return New SDVariable with the specified name and array
      */
@@ -2476,16 +3516,16 @@ public class SameDiff extends SDBaseOps {
             name = getNewVarName();
 
         boolean duped = false;
-        if(arr.isAttached()) {
+        if (arr.isAttached()) {
             arr = arr.detach();
             duped = true;
         }
-        if(arr.isView()) {
+        if (arr.isView()) {
             arr = arr.dup();
             duped = true;
         }
 
-        if(!duped) {
+        if (!duped) {
             for (DeviceLocalNDArray otherArr : variablesArrays.values()) {
                 if (otherArr.get() == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
                     arr = arr.dup();
@@ -2498,7 +3538,7 @@ public class SameDiff extends SDBaseOps {
 
         associateArrayWithVariable(arr, ret);
         if (ArrayUtil.prod(arr.shape()) == 1) {
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
                 ret.setScalarValue(Nd4j.scalar(arr.getDouble(0)));
             }
         }
@@ -2534,17 +3574,17 @@ public class SameDiff extends SDBaseOps {
      * @param variables Variables to convert to constants
      * @return The (now constant) SDVariables
      */
-    public void convertToConstants(List<SDVariable> variables){
-        if(variables.size() == 0)
+    public void convertToConstants(List<SDVariable> variables) {
+        if (variables.size() == 0)
             return;
         boolean allConst = true;
-        for(SDVariable variable : variables) {
+        for (SDVariable variable : variables) {
             if (variable.getVariableType() != VariableType.CONSTANT) {
                 allConst = false;
                 Preconditions.checkState(variable.getVariableType() != VariableType.ARRAY, "Cannot convert variable of type ARRAY to a constant: %s", variable);
             }
         }
-        if(allConst){
+        if (allConst) {
             return; //No op
         }
 
@@ -2552,17 +3592,17 @@ public class SameDiff extends SDBaseOps {
         sessions.clear();
 
         //If gradient function has been defined, remove it (so it will be recreated later)
-        sameDiffFunctionInstances.remove("grad");
+        sameDiffFunctionInstances.remove(GRAD_FN_KEY);
 
-        for(SDVariable variable : variables ) {
+        for (SDVariable variable : variables) {
             String n = variable.getVarName();
             INDArray arr = variable.getArr();
             Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
 
             constantArrays.put(n, new DeviceLocalNDArray(arr));
             variablesArrays.remove(n);
-            if(!placeholdersPerThread.isEmpty()){
-                for(Map<String,INDArray> m : placeholdersPerThread.values()){
+            if (!placeholdersPerThread.isEmpty()) {
+                for (Map<String, INDArray> m : placeholdersPerThread.values()) {
                     m.remove(n);
                 }
             }
@@ -2575,34 +3615,34 @@ public class SameDiff extends SDBaseOps {
             //Remove updater state for now constant variables
             for (SDVariable v : variables) {
                 GradientUpdater gu = updaterMap.remove(v.getVarName());
-                Map<String,INDArray> m = gu == null ? null : gu.getState();
-                if(m != null){
-                    for(INDArray arr : m.values()){
-                        if(arr.closeable())
+                Map<String, INDArray> m = gu == null ? null : gu.getState();
+                if (m != null) {
+                    for (INDArray arr : m.values()) {
+                        if (arr.closeable())
                             arr.close();
                     }
                 }
 
                 //Also check dataset feature/label mapping -  remove any placeholders here...
-                if(trainingConfig.getDataSetFeatureMapping() != null && trainingConfig.getDataSetFeatureMapping().contains(v.getVarName())){
+                if (trainingConfig.getDataSetFeatureMapping() != null && trainingConfig.getDataSetFeatureMapping().contains(v.getVarName())) {
                     List<String> newFM = new ArrayList<>(trainingConfig.getDataSetFeatureMapping());    //New list in case of immutable list
                     newFM.remove(v.getVarName());
                     trainingConfig.setDataSetFeatureMapping(newFM);
                 }
 
-                if(trainingConfig.getDataSetLabelMapping() != null && trainingConfig.getDataSetLabelMapping().contains(v.getVarName())){
+                if (trainingConfig.getDataSetLabelMapping() != null && trainingConfig.getDataSetLabelMapping().contains(v.getVarName())) {
                     List<String> newLM = new ArrayList<>(trainingConfig.getDataSetLabelMapping());
                     newLM.remove(v.getVarName());
                     trainingConfig.setDataSetLabelMapping(newLM);
                 }
 
-                if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().contains(v.getVarName())){
+                if (trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().contains(v.getVarName())) {
                     List<String> newFMM = new ArrayList<>(trainingConfig.getDataSetFeatureMaskMapping());
                     newFMM.remove(v.getVarName());
                     trainingConfig.setDataSetFeatureMaskMapping(newFMM);
                 }
 
-                if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().contains(v.getVarName())){
+                if (trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().contains(v.getVarName())) {
                     List<String> newLMM = new ArrayList<>(trainingConfig.getDataSetLabelMaskMapping());
                     newLMM.remove(v.getVarName());
                     trainingConfig.setDataSetLabelMaskMapping(newLMM);
@@ -2632,17 +3672,17 @@ public class SameDiff extends SDBaseOps {
      * As variables, this variable will modified during any subsequent training.<br>
      * See also: {@link VariableType}
      */
-    public void convertToVariables(@NonNull List<SDVariable> constants){
-        if(constants.size() == 0)
+    public void convertToVariables(@NonNull List<SDVariable> constants) {
+        if (constants.size() == 0)
             return;
         boolean allConst = true;
-        for(SDVariable variable : constants) {
+        for (SDVariable variable : constants) {
             if (variable.getVariableType() != VariableType.VARIABLE) {
                 allConst = false;
             }
             Preconditions.checkState(variable.getVariableType() != VariableType.ARRAY, "Cannot convert variable of type ARRAY to a variable: %s", variable);
         }
-        if(allConst){
+        if (allConst) {
             return; //No op
         }
 
@@ -2650,17 +3690,17 @@ public class SameDiff extends SDBaseOps {
         sessions.clear();
 
         //If gradient function has been defined, remove it (so it will be recreated later)
-        sameDiffFunctionInstances.remove("grad");
+        sameDiffFunctionInstances.remove(GRAD_FN_KEY);
 
-        for(SDVariable variable : constants) {
+        for (SDVariable variable : constants) {
             String n = variable.getVarName();
             INDArray arr = variable.getArr();
             Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
 
             variablesArrays.put(n, new DeviceLocalNDArray(arr));
             constantArrays.remove(n);
-            if(!placeholdersPerThread.isEmpty()){
-                for(Map<String,INDArray> m : placeholdersPerThread.values()){
+            if (!placeholdersPerThread.isEmpty()) {
+                for (Map<String, INDArray> m : placeholdersPerThread.values()) {
                     m.remove(n);
                 }
             }
@@ -2682,11 +3722,88 @@ public class SameDiff extends SDBaseOps {
                         GradientUpdater u = trainingConfig.getUpdater().instantiate(stateArr, true);
                         updaterMap.put(v.getVarName(), u);
                     } else {
-                        GradientUpdater u = trainingConfig.getUpdater().instantiate((INDArray)null, true);
+                        GradientUpdater u = trainingConfig.getUpdater().instantiate((INDArray) null, true);
                         updaterMap.put(v.getVarName(), u);
                     }
                 }
             }
+        }
+    }
+
+    /**
+     * Convert the datatypes of the specified constants, placeholders and variables.<br>
+     * After conversion, the downstream datatypes are changed.
+     * For example, {@code z(float) = x(float)+y(float)}, changing both x and y to double results in {@code z(double) = x(double)+y(double)}
+     * without doing anything to change z's datatype directly (z datatype is inferred from x + y + add op).<br>
+     * ARRAY type SDVariables cannot be converted directly, as their datatypes are determined by the function +
+     * input datatypes.<b>
+     * Note that this method should be used with caution: incorrect datatype modifications may leave your network
+     * in an incorrect state. For example, {@code op(x(float),y(float)) -> op(x(double),y(float))} may not be
+     * supported by all ops.
+     *
+     * @param dataTypeMap Map of SDVariables to change the datatype for. Key = SDVariable name, Value = new datatype
+     */
+    public void convertDataTypes(@NonNull Map<String, DataType> dataTypeMap) {
+        if (dataTypeMap.isEmpty())
+            return;
+
+        //First: check these are all either constants, variables or placeholders.
+        for (Map.Entry<String, DataType> e : dataTypeMap.entrySet()) {
+            String s = e.getKey();
+            Preconditions.checkState(variables.containsKey(s), "Cannot change datatype of variable \"%s\": No variable with this name exists", s);
+            SDVariable v = variables.get(s).getVariable();
+            Preconditions.checkState(v.getVariableType() != VariableType.ARRAY, "Cannot change datatype of ARRAY type variable \"%s\": " +
+                    "datatype of ARRAY type variables is determined by the datatypes of their inputs plus corresponding ");
+            if (v.getVariableType() != VariableType.PLACEHOLDER) {
+                //Can't convert constant or variable between numerical and non-numerical type (not possible to cast)
+                Preconditions.checkState(v.dataType().isNumerical() == e.getValue().isNumerical(), "Cannot convert variables between numerical " +
+                        "and non-numerical types: attempting to convert variable \"%s\" from %s to %s", e.getKey(), v.dataType(), e.getValue());
+            }
+        }
+
+        boolean anyChanged = false;
+        for (Map.Entry<String, DataType> e : dataTypeMap.entrySet()) {
+            String s = e.getKey();
+            DataType d = e.getValue();
+            SDVariable v = variables.get(s).getVariable();
+            if (v.dataType() == d)
+                continue;   //No-op
+
+            v.setDataType(d);
+
+            switch (v.getVariableType()) {
+                case VARIABLE:
+                    DeviceLocalNDArray dl = variablesArrays.remove(e.getKey());
+                    INDArray arr = dl.get();
+                    INDArray newArr = arr.castTo(d);
+                    variablesArrays.put(e.getKey(), new DeviceLocalNDArray(newArr));
+                    break;
+                case CONSTANT:
+                    DeviceLocalNDArray dl2 = constantArrays.remove(e.getKey());
+                    INDArray arr2 = dl2.get();
+                    INDArray newArr2 = arr2.castTo(d);
+                    constantArrays.put(e.getKey(), new DeviceLocalNDArray(newArr2));
+                    break;
+                case PLACEHOLDER:
+                    Map<String, INDArray> m = placeholdersPerThread.get(Thread.currentThread().getId());
+                    if (m != null && m.containsKey(e.getKey())) {
+                        m.put(e.getKey(), m.get(e.getKey()).castTo(d));
+                    }
+                    break;
+                case ARRAY:
+                default:
+                    throw new IllegalStateException("Cannot convert array type variable");  //Should never happen
+            }
+
+
+            anyChanged = true;
+        }
+
+        if (anyChanged) {
+            sessions.clear();
+
+            //Recalculate datatypes of outputs, and dynamically update them
+            calculateOutputDataTypes(true);
         }
     }
 
@@ -2696,61 +3813,61 @@ public class SameDiff extends SDBaseOps {
      * @param from The variable to rename - this variable must exist
      * @param to   The new name for the variable - no variable with this name must already exist
      */
-    public void renameVariable(String from, String to){
+    public void renameVariable(String from, String to) {
         Preconditions.checkState(variables.containsKey(from), "Cannot rename variable \"%s\": no variable with this name exists", from);
         Preconditions.checkState(!variables.containsKey(to), "Cannot rename variable \"%s\" to name \"%s\": a variable with name \"%s\" already exists", from, to, to);
 
         Variable v = variables.get(from);
         v.setName(to);
         v.getVariable().setVarName(to);
-        if(v.getInputsForOp() != null){
-            for(String opName : v.getInputsForOp()){
+        if (v.getInputsForOp() != null) {
+            for (String opName : v.getInputsForOp()) {
                 SameDiffOp op = ops.get(opName);
                 List<String> newInputs = new ArrayList<>(op.getInputsToOp());
-                while(newInputs.contains(from)){
+                while (newInputs.contains(from)) {
                     newInputs.set(newInputs.indexOf(from), to);
                 }
                 op.setInputsToOp(newInputs);
             }
         }
 
-        if(v.getControlDepsForOp() != null){
-            for(String opName : v.getControlDepsForOp()){
+        if (v.getControlDepsForOp() != null) {
+            for (String opName : v.getControlDepsForOp()) {
                 SameDiffOp op = ops.get(opName);
                 List<String> newCDs = new ArrayList<>(op.getControlDeps());
-                while(newCDs.contains(from)){
+                while (newCDs.contains(from)) {
                     newCDs.set(newCDs.indexOf(from), to);
                 }
                 op.setControlDeps(newCDs);
             }
         }
 
-        if(v.getControlDepsForVar() != null){
-            for(String varName : v.getControlDepsForVar()){
+        if (v.getControlDepsForVar() != null) {
+            for (String varName : v.getControlDepsForVar()) {
                 Variable var = variables.get(varName);
                 List<String> newCDs = new ArrayList<>(var.getControlDeps());
-                while(newCDs.contains(from)){
+                while (newCDs.contains(from)) {
                     newCDs.set(newCDs.indexOf(from), to);
                 }
                 var.setControlDeps(newCDs);
             }
         }
 
-        if(v.getControlDeps() != null){
-            for(String varName : v.getControlDeps()){
+        if (v.getControlDeps() != null) {
+            for (String varName : v.getControlDeps()) {
                 Variable var = variables.get(varName);
                 List<String> newCDsFor = new ArrayList<>(var.getControlDepsForVar());
-                while(newCDsFor.contains(from)){
+                while (newCDsFor.contains(from)) {
                     newCDsFor.set(newCDsFor.indexOf(from), to);
                 }
                 var.setControlDepsForVar(newCDsFor);
             }
         }
 
-        if(v.getOutputOfOp() != null){
+        if (v.getOutputOfOp() != null) {
             SameDiffOp op = ops.get(v.getOutputOfOp());
             List<String> newOuts = new ArrayList<>(op.getOutputsOfOp());
-            while(newOuts.contains(from)){
+            while (newOuts.contains(from)) {
                 newOuts.set(newOuts.indexOf(from), to);
             }
             op.setOutputsOfOp(newOuts);
@@ -2759,50 +3876,50 @@ public class SameDiff extends SDBaseOps {
         variables.remove(from);
         variables.put(to, v);
 
-        if(trainingConfig != null){
-            if(trainingConfig.getDataSetFeatureMapping() != null && trainingConfig.getDataSetFeatureMapping().contains(from)){
+        if (trainingConfig != null) {
+            if (trainingConfig.getDataSetFeatureMapping() != null && trainingConfig.getDataSetFeatureMapping().contains(from)) {
                 List<String> l = new ArrayList<>(trainingConfig.getDataSetFeatureMapping());
-                while(l.contains(from)){
+                while (l.contains(from)) {
                     l.set(l.indexOf(from), to);
                 }
                 trainingConfig.setDataSetFeatureMapping(l);
             }
 
-            if(trainingConfig.getDataSetLabelMapping() != null && trainingConfig.getDataSetLabelMapping().contains(from)){
+            if (trainingConfig.getDataSetLabelMapping() != null && trainingConfig.getDataSetLabelMapping().contains(from)) {
                 List<String> l = new ArrayList<>(trainingConfig.getDataSetLabelMapping());
-                while(l.contains(from)){
+                while (l.contains(from)) {
                     l.set(l.indexOf(from), to);
                 }
                 trainingConfig.setDataSetLabelMapping(l);
             }
 
-            if(trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().contains(from)){
+            if (trainingConfig.getDataSetFeatureMaskMapping() != null && trainingConfig.getDataSetFeatureMaskMapping().contains(from)) {
                 List<String> l = new ArrayList<>(trainingConfig.getDataSetFeatureMaskMapping());
-                while(l.contains(from)){
+                while (l.contains(from)) {
                     l.set(l.indexOf(from), to);
                 }
                 trainingConfig.setDataSetFeatureMaskMapping(l);
             }
 
-            if(trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().contains(from)){
+            if (trainingConfig.getDataSetLabelMaskMapping() != null && trainingConfig.getDataSetLabelMaskMapping().contains(from)) {
                 List<String> l = new ArrayList<>(trainingConfig.getDataSetLabelMaskMapping());
-                while(l.contains(from)){
+                while (l.contains(from)) {
                     l.set(l.indexOf(from), to);
                 }
                 trainingConfig.setDataSetLabelMaskMapping(l);
             }
 
-            if(trainingConfig.getLossVariables() != null && trainingConfig.getLossVariables().contains(from)){
+            if (trainingConfig.getLossVariables() != null && trainingConfig.getLossVariables().contains(from)) {
                 List<String> l = new ArrayList<>(trainingConfig.getLossVariables());
-                while(l.contains(from)){
+                while (l.contains(from)) {
                     l.set(l.indexOf(from), to);
                 }
                 trainingConfig.setLossVariables(l);
             }
         }
 
-        for(SameDiff sd : sameDiffFunctionInstances.values()){
-            if(sd.hasVariable(from)){
+        for (SameDiff sd : sameDiffFunctionInstances.values()) {
+            if (sd.hasVariable(from)) {
                 sd.renameVariable(from, to);
             }
         }
@@ -2850,7 +3967,7 @@ public class SameDiff extends SDBaseOps {
         return v == null ? null : v.getVariable();
     }
 
-    public boolean hasVariable(String name){
+    public boolean hasVariable(String name) {
         return variables.containsKey(name);
     }
 
@@ -2877,8 +3994,8 @@ public class SameDiff extends SDBaseOps {
         //Gradients are being placed in the inner "grad" function SameDiff instance, but not the outer one
         if (variables.containsKey(varName) && variables.get(varName).getGradient() != null) {
             return variables.get(varName).getGradient();
-        } else if(sameDiffFunctionInstances.containsKey("grad") && sameDiffFunctionInstances.get("grad").variables.containsKey(varName)){
-            return sameDiffFunctionInstances.get("grad").variables.get(varName).getGradient();
+        } else if (sameDiffFunctionInstances.containsKey(GRAD_FN_KEY) && sameDiffFunctionInstances.get(GRAD_FN_KEY).variables.containsKey(varName)) {
+            return sameDiffFunctionInstances.get(GRAD_FN_KEY).variables.get(varName).getGradient();
         }
         return null;
     }
@@ -2894,10 +4011,10 @@ public class SameDiff extends SDBaseOps {
      * @param varName Name of the variable to check the existence of a gradient variable for
      * @return True if a gradient variable exists for the specified variable, for the current loss
      */
-    public boolean variableHasGradient(String varName){
+    public boolean variableHasGradient(String varName) {
         Preconditions.checkState(variables.containsKey(varName), "No variable with name \"%s\" exists", varName);
         SDVariable v = getVariable(varName);
-        if(!v.dataType().isFPType() || v.isConstant())
+        if (!v.dataType().isFPType() || v.isConstant())
             return false;
 
         return getGradForVariable(varName) != null;
@@ -2929,49 +4046,52 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Get the gradient for the variable with the specified variable name.
-     * Note that in order to run this function, {@link #execBackwards()} must be executed first.
+     * Note that in order to run this function, {@link #execBackwards(Map, Operation, MultiDataSet, Collection, List)} must be executed first.
      * All gradient functions are obtained from the results of the execBackwards call.
      *
      * @param varName the variable name to get the gradient variable for.
      * @return The gradient variable for the specified variable
      */
     public SDVariable grad(String varName) {
-        if (!sameDiffFunctionInstances.containsKey("grad")) {
+        if (!sameDiffFunctionInstances.containsKey(GRAD_FN_KEY)) {
             throw new IllegalStateException("Unable to obtain gradient. Please run execBackwards() first.");
         }
 
-        SameDiff grad = getFunction("grad");
+        SameDiff grad = getFunction(GRAD_FN_KEY);
         SDVariable var = grad.getVariable(varName);
-        return getFunction("grad").getGradForVariable(var.getVarName());
+        return getFunction(GRAD_FN_KEY).getGradForVariable(var.getVarName());
     }
 
 
     /**
      * Create a new double scalar (rank 0) SDVariable with the specified value
+     *
      * @param name  Name of the SDVariable
      * @param value Value to initialize the variable with
      * @return SDVariable
      */
     public SDVariable scalar(String name, double value) {
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return var(name, Nd4j.scalar(value));
         }
     }
 
     /**
      * Create a new float scalar (rank 0) SDVariable with the specified value
+     *
      * @param name  Name of the SDVariable
      * @param value Value to initialize the variable with
      * @return SDVariable
      */
     public SDVariable scalar(String name, float value) {
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return var(name, Nd4j.scalar(value));
         }
     }
 
     /**
      * Create a new integer scalar (rank 0) SDVariable with the specified value
+     *
      * @param name  Name of the SDVariable
      * @param value Value to initialize the variable with
      * @return SDVariable
@@ -2984,12 +4104,13 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Create a new long scalar (rank 0) SDVariable with the specified value
+     *
      * @param name  Name of the SDVariable
      * @param value Value to initialize the variable with
      * @return SDVariable
      */
     public SDVariable scalar(String name, long value) {
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return var(name, Nd4j.scalar(value));
         }
     }
@@ -3003,7 +4124,7 @@ public class SameDiff extends SDBaseOps {
      * @return SDVariable
      */
     public SDVariable scalar(String name, DataType dataType, Number value) {
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return var(name, Nd4j.scalar(dataType, value));
         }
     }
@@ -3011,21 +4132,23 @@ public class SameDiff extends SDBaseOps {
     /**
      * Create a new double scalar constant (rank 0) with the specified value.<br>
      * Constants are not modified by training/backprop. See {@link VariableType} for more details.
+     *
      * @param value Value to initialize the constant with
      * @return SDVariable
      */
-    public SDVariable constant(double value){
+    public SDVariable constant(double value) {
         return constant(null, value);
     }
 
     /**
      * Create a new double scalar constant (rank 0) with the specified value
+     *
      * @param name  Name of the SDVariable
      * @param value Value to initialize the constant with
      * @return SDVariable
      */
     public SDVariable constant(String name, double value) {
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return constant(name, Nd4j.scalar(value));
         }
     }
@@ -3033,6 +4156,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Create a new float scalar constant (rank 0) with the specified value<br>
      * Constants are not modified by training/backprop. See {@link VariableType} for more details.
+     *
      * @param value Value to initialize the constant with
      * @return SDVariable
      */
@@ -3042,18 +4166,20 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Create a new float scalar constant (rank 0) with the specified value
+     *
      * @param name  Name of the SDVariable
      * @param value Value to initialize the constant with
      * @return SDVariable
      */
     public SDVariable constant(String name, float value) {
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return constant(name, Nd4j.scalar(value));
         }
     }
 
     /**
      * Create a new integer scalar constant (rank 0) with the specified value
+     *
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(int value) {
@@ -3062,6 +4188,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Create a new integer scalar constant (rank 0) with the specified value
+     *
      * @param name  Name of the SDVariable
      * @param value Value to initialize the constant with
      * @return SDVariable
@@ -3074,6 +4201,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Create a new long scalar constant (rank 0) with the specified value
+     *
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(long value) {
@@ -3082,11 +4210,12 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * Create a new long scalar constant (rank 0) with the specified value
+     *
      * @param name  Name of the SDVariable
      * @param value Value to initialize the constant with
      */
     public SDVariable constant(String name, long value) {
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return constant(name, Nd4j.scalar(value));
         }
     }
@@ -3099,13 +4228,14 @@ public class SameDiff extends SDBaseOps {
      * @param value    Value to initialize the constant with
      */
     public SDVariable constant(String name, DataType dataType, Number value) {
-        try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+        try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
             return constant(name, Nd4j.scalar(dataType, value));
         }
     }
 
     /**
      * Add the specified variable to this SameDiff instance
+     *
      * @param variable Variable to add
      */
     public SDVariable addVariable(SDVariable variable) {
@@ -3118,37 +4248,6 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(variable.getSameDiff() == this, "Same diff instance for variable must be the same!");
         variables.put(variable.getVarName(), Variable.builder().name(variable.getVarName()).variable(variable).build());
         return variable;
-    }
-
-
-    /**
-     * Generate a new variable name based on the uniqueness of the base name and arg index<br>
-     * For example, if baseName = "X" will return:<br>
-     * "X" if "X" does not already exist, or "X:argIndex" if argIndex > 0<br>
-     * "X_1" if "X" already exists, or "X_1:argIndex" if argIndex > 0<br>
-     * "X_2" if "X" and "X_1" already exists, or "X_2:argIndex" if argIndex > 0<br>
-     * And so on, until an unused name is found
-     *
-     * @param baseName the base name to use (use function.opName() where function is a {@link DifferentialFunction}
-     * @param argIndex the arg index
-     * @return the new generated name
-     */
-    public String generateNewVarName(String baseName, int argIndex) {
-        if (!variables.containsKey(baseName) && argIndex == 0) {
-            return baseName;
-        }
-
-        //need to find a new name
-        int count = 0;
-        String name = baseName + (count == 0 ? "" : "_" + count) + (argIndex > 0 ? ":" + argIndex : "");
-        while (getVariable(name) != null) {
-            name = baseName + "_" + (++count) + (argIndex > 0 ? ":" + argIndex : "");
-        }
-
-        if (getVariable(name) != null) {
-            throw new ND4JIllegalStateException("Converged on already generated variable!");
-        }
-        return name;
     }
 
 
@@ -3166,13 +4265,16 @@ public class SameDiff extends SDBaseOps {
             baseName = getBaseNameForFunction(function);
 
         if (baseName == null)
+            baseName = function.getOwnName();
+
+        if (baseName == null)
             baseName = function.opName();
 
         //First: calculate output data types. We can always calculate output data types, even if the input arrays
         //are not available - *except for sometimes during import, until all ops/variables have been added*
         List<org.nd4j.linalg.api.buffer.DataType> outputDataTypes = null;
 
-        if(!isImport) {
+        if (!isImport) {
             List<org.nd4j.linalg.api.buffer.DataType> inputDataTypes = new ArrayList<>();
             List<String> fnInputs = ops.get(function.getOwnName()).getInputsToOp();
             if (fnInputs != null) {
@@ -3213,8 +4315,8 @@ public class SameDiff extends SDBaseOps {
                     //Generate new variable name if one with the specified name doesn't exist
                     //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
 
-                    org.nd4j.linalg.api.buffer.DataType dataType  = isImport ? null : outputDataTypes.get(i);
-                    var = var(generateNewVarName(baseName, i), VariableType.ARRAY, null, dataType, (long[])null);
+                    org.nd4j.linalg.api.buffer.DataType dataType = isImport ? null : outputDataTypes.get(i);
+                    var = var(generateNewVarName(baseName, i), VariableType.ARRAY, null, dataType, (long[]) null);
                 }
                 var.setOutputIndex(i);
                 var.setCreator(function);
@@ -3239,14 +4341,14 @@ public class SameDiff extends SDBaseOps {
             }
             if (checkGet == null) {
                 //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
-                org.nd4j.linalg.api.buffer.DataType dataType  = outputDataTypes.get(0);
-                checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[])null);
+                org.nd4j.linalg.api.buffer.DataType dataType = outputDataTypes.get(0);
+                checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[]) null);
             }
 
             if (checkGet == null) {
                 //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
-                org.nd4j.linalg.api.buffer.DataType dataType  = outputDataTypes.get(0);
-                checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[])null);
+                org.nd4j.linalg.api.buffer.DataType dataType = outputDataTypes.get(0);
+                checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[]) null);
             }
 
             checkGet.setOutputIndex(0);
@@ -3273,7 +4375,8 @@ public class SameDiff extends SDBaseOps {
      * @return the set of names generated for each output of the function.
      */
     public SDVariable[] generateOutputVariableForOp(DifferentialFunction function) {
-        return generateOutputVariableForOp(function, function.opName(), false);
+        return generateOutputVariableForOp(function,
+                function.getOwnName() != null ? function.getOwnName() : function.opName(), false);
     }
 
     /**
@@ -3288,12 +4391,9 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Creates a while statement
-     *
-     * @param sameDiffConditional
-     * @param loopBody
-     * @return
+     * @deprecated Use {@link SDBaseOps#whileLoop(String[], String, SDVariable[], SameDiffSingleLambda, SameDiffLambda)}
      */
+    @Deprecated
     public While whileStatement(SameDiffConditional sameDiffConditional,
                                 SameDiffFunctionDefinition conditionBody,
                                 SameDiffFunctionDefinition loopBody
@@ -3309,11 +4409,9 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * @param conditional
-     * @param trueBody
-     * @param falseBody
-     * @return
+     * @deprecated Use {@link SDBaseOps#ifCond(String, String, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda)}
      */
+    @Deprecated
     public If ifStatement(SameDiffConditional conditional,
                           SameDiffFunctionDefinition conditionBody,
                           SameDiffFunctionDefinition trueBody,
@@ -3400,11 +4498,11 @@ public class SameDiff extends SDBaseOps {
     }
 
     @Deprecated
-    public INDArray execAndEndResult(){
+    public INDArray execAndEndResult() {
         List<String> outputs = outputs();
         Preconditions.checkState(outputs.size() == 1, "Method can only be used with SameDiff instances with a single output");
         long tid = Thread.currentThread().getId();
-        Map<String,INDArray> placeholders = placeholdersPerThread.get(tid);
+        Map<String, INDArray> placeholders = placeholdersPerThread.get(tid);
         return execSingle(placeholders, outputs.get(0));
     }
 
@@ -3413,24 +4511,37 @@ public class SameDiff extends SDBaseOps {
      * After execution, the gradient arrays can be accessed using {@code myVariable.getGradient().getArr()}<br>
      * <b>Note</b>: This method by default calculates VARIABLE type SDVariable gradients only (as well as any other
      * gradients needed to calculate the variable gradients). That is, placeholder, constant, etc gradients are not
-     * calculated. If these gradients are required, they can be calculated using {@link #execBackwards(Map, List)} instead,
+     * calculated. If these gradients are required, they can be calculated using {@link #execBackwards(Map, List, Operation, MultiDataSet, Collection, List)} instead,
      * which allows specifying the set of SDVariables to calculate the gradients for. For example,
      * {@code execBackwards(placeholders, Arrays.asList(myPlaceholder.gradient().getVarName())}. In some cases,
      * {@link #createGradFunction()} may need to be called first
      *
      * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      */
-    public void execBackwards(Map<String,INDArray> placeholders) {
-        if (getFunction("grad") == null) {
+    public void execBackwards(Map<String, INDArray> placeholders, Operation op) {
+        execBackwards(placeholders, op, null, Collections.<String>emptyList(), Collections.<Listener>emptyList());
+    }
+
+    /**
+     * See {@link #execBackwards(Map, Operation)}.
+     * <p>
+     * Uses {@link Operation#INFERENCE}.
+     */
+    public void execBackwards(Map<String, INDArray> placeholders) {
+        execBackwards(placeholders, Operation.INFERENCE);
+    }
+
+    protected void execBackwards(Map<String, INDArray> placeholders, Operation op, MultiDataSet batch, Collection<String> requiredActivations, List<Listener> activeListeners) {
+        if (getFunction(GRAD_FN_KEY) == null) {
             createGradFunction();
         }
 
         //Collect (unique) list of gradient names...
         Set<String> varGradNames = new HashSet<>();
-        for(Variable v : variables.values()){
-            if(v.getVariable().getVariableType() == VariableType.VARIABLE){
+        for (Variable v : variables.values()) {
+            if (v.getVariable().getVariableType() == VariableType.VARIABLE) {
                 SDVariable g = v.getVariable().gradient();
-                if(g != null) {
+                if (g != null) {
                     //Not all variables can have gradients... for example: suppose graph has 2 independent loss functions,
                     // optimizing only 1 might not require changing all variables
                     varGradNames.add(g.getVarName());
@@ -3439,77 +4550,127 @@ public class SameDiff extends SDBaseOps {
         }
 
         //Also add loss values - we need these so we can report them to listeners...
-        if(!listeners.isEmpty()){
+        if (!listeners.isEmpty()) {
             varGradNames.addAll(lossVariables);
         }
 
         //Edge case: if no variables, no variable gradients to calculate...
-        if(varGradNames.isEmpty()){
+        if (varGradNames.isEmpty()) {
             log.warn("Skipping gradient execution (backward pass) - no variables to be calculated (graph does not contain any VARIABLE type SDVariables).\n" +
                     "If gradients for other variables (such as placeholders) are required, use execBackwards(Map, List) instead");
-            return;
         }
 
         List<String> vargradNamesList = new ArrayList<>(varGradNames);
-        execBackwards(placeholders, vargradNamesList);
-    }
-
-    public void execBackwards(Map<String,INDArray> placeholders, String... variableGradNamesList){
-        execBackwards(placeholders, Arrays.asList(variableGradNamesList));
+        execBackwards(placeholders, vargradNamesList, op, batch, requiredActivations, activeListeners);
     }
 
     /**
-     * As per {@link #execBackwards(Map)}, but the set of gradients to calculate can be specified manually.<br>
+     * See {@link #execBackwards(Map, List, Operation)}
+     */
+    public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, Operation op, String... variableGradNamesList) {
+        return execBackwards(placeholders, Arrays.asList(variableGradNamesList), op, null, Collections.<String>emptyList(), Collections.<Listener>emptyList());
+    }
+
+    /**
+     * See {@link #execBackwards(Map, Operation, String...)}.
+     * <p>
+     * Uses {@link Operation#INFERENCE}.
+     */
+    public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, String... variableGradNamesList) {
+        return execBackwards(placeholders, Operation.INFERENCE, variableGradNamesList);
+    }
+
+    /**
+     * As per {@link #execBackwards(Map, Operation, MultiDataSet, Collection, List)}, but the set of gradients to calculate can be specified manually.<br>
      * For example, to calculate the gradient for placeholder variable "myPlaceholder", use
      * {@code execBackwards(placeholders, Arrays.asList(myPlaceholder.gradient().getVarName())}.
      *
-     * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
+     * @param placeholders          Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      * @param variableGradNamesList Names of the gradient variables to calculate
      */
-    public void execBackwards(Map<String,INDArray> placeholders, List<String> variableGradNamesList){
-        if (getFunction("grad") == null) {
+    public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, List<String> variableGradNamesList, Operation operation) {
+        return execBackwards(placeholders, variableGradNamesList, operation, null, Collections.<String>emptyList(), Collections.<Listener>emptyList());
+    }
+
+    /**
+     * See {@link #execBackwards(Map, List, Operation)}.
+     * <p>
+     * Uses {@link Operation#INFERENCE}.
+     */
+    public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, List<String> variableGradNamesList) {
+        return execBackwards(placeholders, variableGradNamesList, Operation.INFERENCE);
+    }
+
+    protected Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, List<String> variableGradNamesList, Operation operation,
+                                                  MultiDataSet batch, Collection<String> requiredActivations, List<Listener> activeListeners) {
+        if (getFunction(GRAD_FN_KEY) == null) {
             createGradFunction();
         }
 
         log.trace("About to execute backward function");
 
         //Edge case: if no variables, no variable gradients to calculate...
-        if(variableGradNamesList.isEmpty()){
+        if (variableGradNamesList.isEmpty()) {
             log.warn("Skipping gradient calculation (backward pass) - no variables to be calculated (variableGradNamesList is empty)");
-            return;
+            return Collections.emptyMap();
         }
 
-        SameDiff sd = sameDiffFunctionInstances.get("grad");
-        sd.listeners = listeners;
+        SameDiff sd = sameDiffFunctionInstances.get(GRAD_FN_KEY);
+        sd.listeners.clear();
+        sd.listeners.addAll(activeListeners);
 
-        At at = new At(0, 0, 0, Thread.currentThread().getId());
-        if(trainingConfig != null){
+        At at = new At(0, 0, 0, Thread.currentThread().getId(), operation);
+        if (trainingConfig != null) {
             at.setIteration(trainingConfig.getIterationCount());
             at.setEpoch(trainingConfig.getEpochCount());
         }
 
-        //TODO is this 'train' flag the best approach?
-        sd.exec(placeholders, trainingConfig != null, at, variableGradNamesList.toArray(new String[variableGradNamesList.size()]));
+        return sd.directExecHelper(placeholders, at, batch, requiredActivations, activeListeners, variableGradNamesList.toArray(new String[0]));
     }
 
     /**
-     * Create the gradient function (for calculating gradients via {@link #execBackwards(Map)}) if it is not already defined.
+     * Returns true if the gradient function has been created - i.e., {@link #createGradFunction()} or {@link #createGradFunction(String...)}
+     * has been called at all
+     *
+     * @return True if gradient (backprop) function exists
+     */
+    public boolean hasGradientFunction() {
+        return sameDiffFunctionInstances.containsKey(GRAD_FN_KEY);
+    }
+
+    /**
+     * Create the gradient function (for calculating gradients via {@link #execBackwards(Map, Operation, String[])}) if it is not already defined.
      * Users do not usually need to call this function manually, as it is called as required in the aforementioned method.
      * <br><br>
      * If the gradient function already exists, this method is a no-op.<br>
      * After this method returns, the SameDiff function instance for the gradient can be accessed using {@link #getFunction(String)}
-     * with name "grad" as the argument.
+     * with name "grad" as the argument.<br>
+     * Note that the gradient array (after execBackwards has been called) can be accessed via {@code SDVariable.gradient().getArr()}
      */
     public void createGradFunction() {
-        if(lossVariables.isEmpty()){
-            if(trainingConfig != null && trainingConfig.getLossVariables() != null && !trainingConfig.getLossVariables().isEmpty()){
+        createGradFunction((String[]) null);
+    }
+
+    /**
+     * As per {@link #createGradFunction()}, but this method allows a set of variables requiring gradients to be specified.
+     * By default, only parameter gradients will be calculated; placeholder gradients may not be defined (unless they happen
+     * to be calculated in the same op as calculating a parameter gradient.
+     * This method allows you to override this behaviour by passing the name of the placeholder you want the gradients for.
+     * The specified gradient variables still need to be floating point variables.
+     *
+     * @param variablesRequiringGradients May be null. If non-null: the gradients for the variables with these names will
+     *                                    be calculated and available after backprop has been done
+     */
+    public void createGradFunction(final String... variablesRequiringGradients) {
+        if (lossVariables.isEmpty()) {
+            if (trainingConfig != null && trainingConfig.getLossVariables() != null && !trainingConfig.getLossVariables().isEmpty()) {
                 lossVariables.addAll(trainingConfig.getLossVariables());
             } else {
                 List<String> outputs = outputs();
                 if (outputs.size() == 1) {
                     String outName = outputs.get(0);
                     String opName = variables.get(outName).getOutputOfOp();
-                    if(opName == null || !(ops.get(opName).getOp() instanceof ExternalErrorsFunction)){
+                    if (opName == null || !(ops.get(opName).getOp() instanceof ExternalErrorsFunction)) {
                         log.info("Inferring output \"{}\" as loss variable as none were previously set. Use SameDiff.setLossVariables() to override", outputs.get(0));
                     }
                     lossVariables.add(outputs.get(0));
@@ -3524,6 +4685,16 @@ public class SameDiff extends SDBaseOps {
 
         if (log.isTraceEnabled()) {
             log.trace("Defining function \"grad\"");
+        }
+
+        if (variablesRequiringGradients != null && variablesRequiringGradients.length > 0) {
+            //Check that they are FP variables...
+            for (String s : variablesRequiringGradients) {
+                Preconditions.checkArgument(variables.containsKey(s), "Cannot ensure gradient exists for variable: no variable with name \"%s\" exists", s);
+                DataType dt = variables.get(s).getVariable().dataType();
+                Preconditions.checkState(dt.isFPType(), "Cannot ensure gradient exists for variable \"%s\": variable is not a floating point SDVariable." +
+                        " Only floating point SDVariables have gradients defined - variable has type %s", s, dt);
+            }
         }
 
 
@@ -3549,6 +4720,7 @@ public class SameDiff extends SDBaseOps {
         Consider following graph: X(fp) -> cast(int) -> cast(fp) -> lots of FP ops -> loss
         unless we need them for other variables, there's zero point calculating the activation gradients for the "cast(fp) -> lots of FP ops" part of the graph, as the gradient from that branch won't go anywhere.
         How to determine minimal subset? Start with FP graph from step 1... then keep pruning leaves until the only remaining leaves are those FP variables that we need gradients for.
+        Note that the user can also specify variables that they need gradients for (like placeholders) that normally wouldn't get gradients.
 
         Step 3: Differentiate ops in minimal subgraph
         The only major issue here is with multiple output ops, where only one of the outputs lead to the loss.
@@ -3559,9 +4731,8 @@ public class SameDiff extends SDBaseOps {
          */
 
 
-
         final SameDiff outer = this;
-        defineFunction("grad", new SameDiffFunctionDefinition() {
+        defineFunction(GRAD_FN_KEY, new SameDiffFunctionDefinition() {
 
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
@@ -3598,7 +4769,7 @@ public class SameDiff extends SDBaseOps {
 
                 List<SDVariable> finalOutputs = new ArrayList<>(lossVariables.size());
                 SDVariable initialGrad = sameDiff.var("one-var", Nd4j.scalar(1.0f));
-                for(String s : lossVariables){
+                for (String s : lossVariables) {
                     Preconditions.checkNotNull(s, "Encountered null value in loss variables. Null loss variables are not allowed." +
                             " Use SameDiff.setLossVariables with non-null array names to fix");
                     Preconditions.checkState(variables.containsKey(s), "Specified loss function variable \"%s\" does not exist", s);
@@ -3606,12 +4777,12 @@ public class SameDiff extends SDBaseOps {
                     Preconditions.checkState(v.dataType().isFPType(), "Specified loss function variable \"%s\" is not a floating" +
                             "point variable (datatype: %s). Only floating point variables may be used as loss function variable", s, v.dataType());
                     v = v.sum();    //If output is not a scalar: we'll use loss = v.sum(), same as adding loss for multiple outputs. We don't always know for sure if output is scalar at this point
-                    if(v.dataType() == initialGrad.dataType()){
+                    if (v.dataType() == initialGrad.dataType()) {
                         sameDiff.setGradientForVariableName(v.getVarName(), initialGrad);
                     } else {
                         sameDiff.setGradientForVariableName(v.getVarName(), initialGrad.castTo(v.dataType()));
                     }
-                    if(finalOutputs.contains(v)){
+                    if (finalOutputs.contains(v)) {
                         log.warn("Loss function variable \"{}\" appears multiple times in list of loss variables - using only first instance", s);
                     } else {
                         finalOutputs.add(v);
@@ -3629,26 +4800,26 @@ public class SameDiff extends SDBaseOps {
                 // Find all FP variables that are connected to loss by an floating point (FP16/32/64) path
                 Set<String> allFpVarsConnectedToLoss = new HashSet<>();
                 Queue<String> toProcess = new LinkedList<>();
-                for(String s : lossVariables){
-                    if(!toProcess.contains(s)){
+                for (String s : lossVariables) {
+                    if (!toProcess.contains(s)) {
                         toProcess.add(s);
                     }
                 }
-                while(!toProcess.isEmpty()){
+                while (!toProcess.isEmpty()) {
                     String next = toProcess.remove();
-                    if(!allFpVarsConnectedToLoss.contains(next)){
+                    if (!allFpVarsConnectedToLoss.contains(next)) {
                         Variable v = variables.get(next);
-                        if(v.getVariable().dataType().isFPType()){
+                        if (v.getVariable().dataType().isFPType()) {
                             allFpVarsConnectedToLoss.add(v.getName());
                             //Work out what op (if any) this is an output of... and add the inputs to that op to be processed
-                            if(v.getOutputOfOp() != null){
+                            if (v.getOutputOfOp() != null) {
                                 String opName = v.getOutputOfOp();
                                 SameDiffOp op = ops.get(opName);
                                 List<String> opInputs = op.getInputsToOp();
-                                if(opInputs != null){
-                                    for(String s : opInputs){
+                                if (opInputs != null) {
+                                    for (String s : opInputs) {
                                         Variable inputVar = variables.get(s);
-                                        if(inputVar.getVariable().dataType().isFPType()){
+                                        if (inputVar.getVariable().dataType().isFPType()) {
                                             //Add this connected floating point type to the list to be processed
                                             toProcess.add(s);
                                         }
@@ -3663,34 +4834,36 @@ public class SameDiff extends SDBaseOps {
                 // Keep removing leaf nodes until only Variable type SDVariables remain
                 Set<String> minimalSubgraphVars = new HashSet<>(allFpVarsConnectedToLoss);
                 Queue<String> leafFPVars = new LinkedList<>();
-                for(String s : allFpVarsConnectedToLoss){
+                for (String s : allFpVarsConnectedToLoss) {
                     //First: determine if is a FP leaf (Array type SDVariable)
                     Variable v = variables.get(s);
-                    if(v.getVariable().getVariableType() == VariableType.ARRAY){
+                    if (v.getVariable().getVariableType() == VariableType.ARRAY) {
                         String opName = v.getOutputOfOp();  //Always defined for array type
                         SameDiffOp op = ops.get(opName);
                         List<String> inputsToOp = op.getInputsToOp();
                         boolean anyInputsInSubgraph = false;
-                        if(inputsToOp != null){
-                            for(String s2 : inputsToOp){
-                                if(allFpVarsConnectedToLoss.contains(s2)){
+                        if (inputsToOp != null) {
+                            for (String s2 : inputsToOp) {
+                                if (allFpVarsConnectedToLoss.contains(s2)) {
                                     //Connection s2 -> s exists... therefore s is not a leaf (yet)
                                     anyInputsInSubgraph = true;
                                     break;
                                 }
                             }
                         }
-                        if(!anyInputsInSubgraph){
+                        if (!anyInputsInSubgraph) {
                             //Mark s as a leaf to be removed
                             leafFPVars.add(s);
                         }
                     }
-                    if(v.getVariable().getVariableType() == VariableType.CONSTANT || v.getVariable().getVariableType() == VariableType.PLACEHOLDER){
+                    VariableType vt = v.getVariable().getVariableType();
+                    boolean isUserRequested = variablesRequiringGradients != null && ArrayUtils.contains(variablesRequiringGradients, s);
+                    if ((vt == VariableType.CONSTANT || vt == VariableType.PLACEHOLDER) && !isUserRequested) {
                         leafFPVars.add(s);
                     }
                 }
 
-                while(!leafFPVars.isEmpty()){
+                while (!leafFPVars.isEmpty()) {
                     String nextLeaf = leafFPVars.remove();
                     Variable v = variables.get(nextLeaf);
                     minimalSubgraphVars.remove(nextLeaf);
@@ -3701,23 +4874,24 @@ public class SameDiff extends SDBaseOps {
                     //Note that any time we remove a variable, the only possible new leafs are those that this one
                     // is connected to.
                     List<String> inputsTo = v.getInputsForOp();
-                    if( inputsTo != null && !inputsTo.isEmpty()) {
+                    if (inputsTo != null && !inputsTo.isEmpty()) {
                         for (String opName : inputsTo) {
                             SameDiffOp op = ops.get(opName);
                             List<String> inputsToOp = op.getInputsToOp();
                             boolean anyPresent = false;
-                            for(String s : inputsToOp){
-                                if(minimalSubgraphVars.contains(s)){
+                            for (String s : inputsToOp) {
+                                if (minimalSubgraphVars.contains(s) || (variablesRequiringGradients != null && ArrayUtils.contains(variablesRequiringGradients, s))) {
+                                    //Note second condition: means user explicitly specified that they want gradients for that input variable... hence we need to diff this op
                                     anyPresent = true;
                                     break;
                                 }
                             }
-                            if(!anyPresent){
+                            if (!anyPresent) {
                                 //All inputs to op X are not in subgraph. Therefore outputs of op must be new leaves
                                 List<String> outVars = op.getOutputsOfOp();
-                                if(outVars != null) {
+                                if (outVars != null) {
                                     for (String s : outVars) {
-                                        if(!leafFPVars.contains(s)){
+                                        if (!leafFPVars.contains(s)) {
                                             //Mark this variable to be processed next
                                             leafFPVars.add(s);
                                         }
@@ -3733,9 +4907,9 @@ public class SameDiff extends SDBaseOps {
 
                 //At this point: we know the set of variables that are connected to the loss - these all (and only) need gradients
                 Queue<String> availableForDiff = new LinkedList<>();
-                for(SDVariable lossVar : finalOutputs){
+                for (SDVariable lossVar : finalOutputs) {
                     Variable v = sameDiff.variables.get(lossVar.getVarName());
-                    if(v.getOutputOfOp() != null){
+                    if (v.getOutputOfOp() != null) {
                         String opName = v.getOutputOfOp();
                         availableForDiff.add(opName);
                     }
@@ -3746,28 +4920,28 @@ public class SameDiff extends SDBaseOps {
                 //For example, if we have  X -> op -> Y, and Y -> (A,B) we need gradient contribution from BOTH
                 // Y->A and Y->B connections before we can do differentiation of op "op"
                 final HashMap<String, List<String>> prerequisites = new HashMap<>();    //Key: variable name. Value: list of op names
-                for(String var : minimalSubgraphVars){
+                for (String var : minimalSubgraphVars) {
                     Variable variable = variables.get(var);
                     // Copy the collection, as the original one will be modified during backprop
                     final List<String> inputsForOp = variable.getInputsForOp();
                     if (inputsForOp != null) {
                         List<String> req = new ArrayList<>();
-                        for(String opName : inputsForOp){
+                        for (String opName : inputsForOp) {
                             //Need to filter ops here
                             //For example, if we have: var -> Op1, and var -> Op2
                             //we might not need to differentiate Op2 if output of Op2 doesn't impact loss function
                             SameDiffOp o = ops.get(opName);
                             List<String> opOutputs = o.getOutputsOfOp();
                             boolean anyOpOutputsRequired = false;
-                            if(opOutputs != null) {
+                            if (opOutputs != null) {
                                 for (String s : opOutputs) {
-                                    if(minimalSubgraphVars.contains(s)) {
+                                    if (minimalSubgraphVars.contains(s)) {
                                         anyOpOutputsRequired = true;
                                         break;
                                     }
                                 }
                             }
-                            if(anyOpOutputsRequired){
+                            if (anyOpOutputsRequired) {
                                 req.add(opName);
                             }
                         }
@@ -3776,14 +4950,14 @@ public class SameDiff extends SDBaseOps {
                 }
 
                 Set<String> differentiatedOps = new HashSet<>();
-                while(!availableForDiff.isEmpty()){
+                while (!availableForDiff.isEmpty()) {
                     String dfName = availableForDiff.remove();
                     DifferentialFunction df = sameDiff.ops.get(dfName).getOp();
 
                     //Get the inputs and outputs of the op
                     List<String> inputsToOp;
                     List<String> outputsOfOp;
-                    if(df instanceof GradientBackwardsMarker){
+                    if (df instanceof GradientBackwardsMarker) {
                         SameDiffOp op = sameDiff.ops.get(df.getOwnName());
                         inputsToOp = op.getInputsToOp();
                         outputsOfOp = Collections.emptyList();
@@ -3795,18 +4969,18 @@ public class SameDiff extends SDBaseOps {
 
                     //Get gradients for all output variables:
                     List<SDVariable> grads = new ArrayList<>();
-                    for(String s : outputsOfOp){
+                    for (String s : outputsOfOp) {
                         SDVariable v = sameDiff.getVariable(s);
                         SDVariable g = v.hasGradient() ? v.gradient() : null;
 
-                        if(g == null){
+                        if (g == null) {
                             //If no gradient exists at this point, 3 possibilities:
                             // (a) we have a bug
                             // (b) output of this op isn't used in calculating the loss
                             // (c) output isn't a FP type
                             //In the FP case, we should create a zero variable to backprop, because we can't perform backprop
                             // for this op otherwise...
-                            if(!v.dataType().isFPType()){
+                            if (!v.dataType().isFPType()) {
                                 grads.add(null);
                             } else {
                                 //See "Step 3: Differentiate ops in minimal subgraph" above for explanation on why this should be zerosLike here...
@@ -3823,10 +4997,10 @@ public class SameDiff extends SDBaseOps {
                     differentiatedOps.add(df.getOwnName());
 
                     //Check the inputs to this op, see if we can differentiate those ops now (and if so: add to queue)
-                    for(String s : inputsToOp){
+                    for (String s : inputsToOp) {
                         Variable v = sameDiff.variables.get(s);
                         String opName = v.getOutputOfOp();
-                        if(opName == null || differentiatedOps.contains(opName)){
+                        if (opName == null || differentiatedOps.contains(opName)) {
                             //Skip placeholder/constant etc; also skip if we've previously differentiated this op
                             continue;
                         }
@@ -3840,23 +5014,23 @@ public class SameDiff extends SDBaseOps {
 
                         boolean isRequiredOp = false;
                         SameDiffOp op = ops.get(opName);
-                        if(op.getInputsToOp() != null){
+                        if (op.getInputsToOp() != null) {
                             List<String> opInputs = op.getInputsToOp();
                             boolean anyInputsRequired = false;
-                            for(String s2 : opInputs){
-                                if(minimalSubgraphVars.contains(s2)){
+                            for (String s2 : opInputs) {
+                                if (minimalSubgraphVars.contains(s2)) {
                                     anyInputsRequired = true;
                                     break;
                                 }
                             }
-                            if(anyInputsRequired){
-                                if(!differentiatedOps.contains(op.getName())){
+                            if (anyInputsRequired) {
+                                if (!differentiatedOps.contains(op.getName())) {
                                     isRequiredOp = true;
                                 }
                             }
                         }
 
-                        if(!isRequiredOp){
+                        if (!isRequiredOp) {
                             continue;
                         }
 
@@ -3870,20 +5044,20 @@ public class SameDiff extends SDBaseOps {
 
                         boolean allAvailable = true;
                         SameDiffOp o = sameDiff.ops.get(opName);
-                        for(String opOutput : o.getOutputsOfOp()){
+                        for (String opOutput : o.getOutputsOfOp()) {
                             Variable outVar = variables.get(opOutput);
-                            if(outVar.getVariable().dataType().isFPType()){
-                                if(minimalSubgraphVars.contains(outVar.getName())){
+                            if (outVar.getVariable().dataType().isFPType()) {
+                                if (minimalSubgraphVars.contains(outVar.getName())) {
                                     //Need gradient for this variable to be available before we can differentiate
-                                    if(outVar.getVariable().gradient() == null){
+                                    if (outVar.getVariable().gradient() == null) {
                                         allAvailable = false;
                                         break;
                                     }
                                     //However, when a variable is used multiple times, we need ALL gradient contributions available:
                                     List<String> prereqs = prerequisites.get(outVar.getName());
-                                    if(prereqs != null){
+                                    if (prereqs != null) {
                                         allAvailable &= differentiatedOps.containsAll(prereqs);
-                                        if(!allAvailable)
+                                        if (!allAvailable)
                                             break;
                                     }
                                 }
@@ -3891,25 +5065,25 @@ public class SameDiff extends SDBaseOps {
                             }
                         }
 
-                        if(allAvailable && !availableForDiff.contains(o.getOp().getOwnName())){
+                        if (allAvailable && !availableForDiff.contains(o.getOp().getOwnName())) {
                             availableForDiff.add(o.getOp().getOwnName());
                         }
                     }
                 }
 
                 //Let's validate we actually differentiated everything correctly:
-                for(String s : minimalSubgraphVars){
-                    if(lossVariables.contains(s))
+                for (String s : minimalSubgraphVars) {
+                    if (lossVariables.contains(s))
                         continue;
                     SDVariable v = variables.get(s).getVariable();
                     SDVariable g = v.gradient();
-                    if(g == null){
+                    if (g == null) {
                         throw new IllegalStateException("Error encountered during differentiation: no gradient for required variable \"" + s + "\" was calculated");
                     }
                 }
 
 
-                return new SDVariable[]{sameDiff.var("grad", org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
+                return new SDVariable[]{sameDiff.var(GRAD_FN_KEY, org.nd4j.linalg.api.buffer.DataType.FLOAT, 1)};
             }
         });
 
@@ -3954,7 +5128,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Get the original shape for the vertex id if one was set (other wise returns null).<br>
      * This is mainly for use in validating passed in arrays as arguments to {@link #resolveVariablesWith(Map)}
-     * usually when executing using {@link #execWithPlaceHolder(Map)}
+     * usually when executing using {@link #execAll(Map)}
      *
      * @param varName the vertex id to get the original shape for.
      * @return the set vertex
@@ -3984,7 +5158,7 @@ public class SameDiff extends SDBaseOps {
      * @param arrays the arrays to resolve.
      */
     public void resolveVariablesWith(Map<String, INDArray> arrays) {
-        for (Map.Entry<String,INDArray> e : arrays.entrySet()) {
+        for (Map.Entry<String, INDArray> e : arrays.entrySet()) {
             SDVariable varForName = getVariable(e.getKey());
             if (varForName == null) {
                 throw new ND4JIllegalStateException("A placeholder array was provided for variable with name \"" + e.getKey() +
@@ -3992,7 +5166,7 @@ public class SameDiff extends SDBaseOps {
             }
 
             Variable v = variables.get(e.getKey());
-            if(varForName.getVariableType() == VariableType.PLACEHOLDER){
+            if (varForName.getVariableType() == VariableType.PLACEHOLDER) {
                 //Check shape:
                 long[] shape = varForName.placeholderShape();
                 long[] newShape = e.getValue().shape();
@@ -4037,11 +5211,21 @@ public class SameDiff extends SDBaseOps {
             throw new NullPointerException("Null input: No variable found for updating!");
         }
 
-        if(newVarName != null && variables.containsKey(newVarName) && varToUpdate != variables.get(newVarName).getVariable()){
+        if (newVarName != null) {
+            String nameScope = currentNameScope();
+            if (nameScope != null) {
+                if (!newVarName.startsWith(nameScope + "/")) {
+                    newVarName = nameScope + "/" + newVarName;
+                }
+            }
+        }
+
+        if (newVarName != null && variables.containsKey(newVarName) && varToUpdate != variables.get(newVarName).getVariable()) {
             throw new IllegalStateException("Variable name \"" + newVarName + "\" already exists for a different SDVariable");
         }
 
-        if (newVarName == null && variables.containsKey(varToUpdate.getVarName())) {
+        if (newVarName == null && variables.containsKey(varToUpdate.getVarName())
+                && variables.get(varToUpdate.getVarName()).getVariable() != varToUpdate) {
             //Edge case: suppose we do m1=sd.mean(in), m2=sd.mean(m1) -> both initially have the name
             // "mean" and consequently a new variable name needs to be generated
             newVarName = generateNewVarName(varToUpdate.getVarName(), 0);
@@ -4049,13 +5233,6 @@ public class SameDiff extends SDBaseOps {
 
         if (newVarName == null || varToUpdate.getVarName().equals(newVarName)) {
             return varToUpdate;
-        }
-
-        String nameScope = currentNameScope();
-        if(nameScope != null){
-            if(!newVarName.startsWith(nameScope)){
-                newVarName = nameScope + "/" + newVarName;
-            }
         }
 
         val oldVarName = varToUpdate.getVarName();
@@ -4098,12 +5275,12 @@ public class SameDiff extends SDBaseOps {
      * as "grad" - the backward function) we have the correct SameDiff instance set for all ops/SDVariables.<br>
      * If this is not done, arrays and shapes could be fetched from the incorrect SameDiff instance for some methods
      */
-    protected void associateSameDiffWithOpsAndVariables(){
-        for(SDVariable var : variableMap().values()){
+    protected void associateSameDiffWithOpsAndVariables() {
+        for (SDVariable var : variableMap().values()) {
             var.setSameDiff(this);
         }
 //        for(DifferentialFunction df : functionInstancesById.values()){
-        for(SameDiffOp op : ops.values()){
+        for (SameDiffOp op : ops.values()) {
             DifferentialFunction df = op.getOp();
             df.setSameDiff(this);
 
@@ -4113,60 +5290,19 @@ public class SameDiff extends SDBaseOps {
             // to another SameDiff instance. At which point, they could fetch shapes and arrays from some other instance
             // (i.e., not from this one that is currently executing)
             SDVariable[] args = df.args();
-            if(args != null){
-                for(SDVariable arg : args){
+            if (args != null) {
+                for (SDVariable arg : args) {
                     arg.setSameDiff(this);
                 }
             }
 
             SDVariable[] outputs = df.outputVariables();
-            if(outputs != null){
-                for(SDVariable out : outputs){
+            if (outputs != null) {
+                for (SDVariable out : outputs) {
                     out.setSameDiff(this);
                 }
             }
         }
-    }
-
-    public Map<String,INDArray> execAll(Map<String,INDArray> placeholders){
-        List<String> allVars = new ArrayList<>();
-        for(Variable v : variables.values()){
-            allVars.add(v.getName());
-        }
-        return exec(placeholders, allVars.toArray(new String[allVars.size()]));
-    }
-
-    public INDArray execSingle(Map<String,INDArray> placeholders, String output){
-        return exec(placeholders, output).get(output);
-    }
-
-    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, List<String> outputs){
-        return exec(placeholders, outputs.toArray(new String[outputs.size()]));
-    }
-
-    public Map<String,INDArray> exec(Map<String,INDArray> placeholders, String... outputs) {
-        return exec(placeholders, false, null, outputs);
-    }
-
-    protected Map<String,INDArray> exec(Map<String,INDArray> placeholders, boolean training, At at, String... outputs){
-        Preconditions.checkState(outputs != null && outputs.length > 0, "No outputs were specified");
-        long threadId = Thread.currentThread().getId();
-        if(!sessions.containsKey(threadId)){
-            log.info("Creating new InferenceSession for thread {}", threadId);
-            sessions.put(threadId, new InferenceSession(this));
-        }
-
-        List<String> phNames = inputs();
-        if(placeholders == null && phNames != null){
-            //Maybe user set placeholders before calling exec method?
-            placeholders = placeholdersPerThread.get(Thread.currentThread().getId());
-        }
-
-        //Placeholder validation is performed in InferenceSession
-
-        InferenceSession is = sessions.get(threadId);
-        Map<String,INDArray> ret = is.output(Arrays.asList(outputs), placeholders, listeners, training, at);
-        return ret;
     }
 
 
@@ -4187,7 +5323,7 @@ public class SameDiff extends SDBaseOps {
                 0,
                 0,
                 -1,
-                0, 0, 0, 0,0, 0);
+                0, 0, 0, 0, 0, 0);
 
         return flatNode;
     }
@@ -4231,13 +5367,14 @@ public class SameDiff extends SDBaseOps {
         //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
 
         double[] extras;
-        if(node.opType() == Op.Type.CUSTOM){
-            CustomOp op = (CustomOp)node;
+        if (node.opType() == Op.Type.CUSTOM) {
+            CustomOp op = (CustomOp) node;
             extras = op.tArgs();
         } else {
-            extras = node.getExtraArgs() != null ? new double[node.getExtraArgs().length] : new double[0];
+            Object[] eArgs = node.getExtraArgs();
+            extras = eArgs != null ? new double[eArgs.length] : new double[0];
             for (int e = 0; e < extras.length; e++) {
-                extras[e] = ((Number) node.getExtraArgs()[e]).doubleValue();
+                extras[e] = ((Number) eArgs[e]).doubleValue();
             }
         }
 
@@ -4295,7 +5432,7 @@ public class SameDiff extends SDBaseOps {
         for (SDVariable input : inputs) {
             String varName = input.getVarName();
             int outIdx;
-            if(this.variables.get(varName).getOutputOfOp() != null){
+            if (this.variables.get(varName).getOutputOfOp() != null) {
                 DifferentialFunction df = ops.get(this.variables.get(varName).getOutputOfOp()).getOp();
                 outIdx = ops.get(df.getOwnName()).getOutputsOfOp().indexOf(varName);
             } else {
@@ -4320,21 +5457,21 @@ public class SameDiff extends SDBaseOps {
         log.trace("Own Name: {}", node.getOwnName());
         int ownId = id != null ? id : idCounter.incrementAndGet();  //forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
         String[] outNames = node.outputVariablesNames();
-        for(String s : outNames){
-            if(!reverseMap.containsKey(s)){
+        for (String s : outNames) {
+            if (!reverseMap.containsKey(s)) {
                 reverseMap.put(s, ownId);
             }
         }
 
         int[] dims;
-        if(node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_LONG || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3){
+        if (node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_LONG || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3) {
             dims = node.getDimensions();
-            if(dims == null)
+            if (dims == null)
                 dims = new int[0];
         } else {
             dims = new int[0];
         }
-        Map<String,Object> fnProps = node.propertiesForFunction();
+        Map<String, Object> fnProps = node.propertiesForFunction();
         int[] flatProperties = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps);
         int propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProperties);
 
@@ -4348,10 +5485,10 @@ public class SameDiff extends SDBaseOps {
         int fname = bufferBuilder.createString(node.getOwnName());
         int scopeName = bufferBuilder.createString("");
         int scalar = 0;
-        if(node instanceof ScalarOp){
-            ScalarOp sOp = (ScalarOp)node;
+        if (node instanceof ScalarOp) {
+            ScalarOp sOp = (ScalarOp) node;
             INDArray s = sOp.scalar();
-            if(s != null){
+            if (s != null) {
                 scalar = s.toFlatArray(bufferBuilder);
             }
         }
@@ -4363,7 +5500,7 @@ public class SameDiff extends SDBaseOps {
 
         List<String> outVarNames = node.getSameDiff().ops.get(node.getOwnName()).getOutputsOfOp();
         int[] outVarNamesStringsOffsets = new int[outVarNames == null ? 0 : outVarNames.size()];
-        for( int i=0; i<outVarNamesStringsOffsets.length; i++ ){
+        for (int i = 0; i < outVarNamesStringsOffsets.length; i++) {
             outVarNamesStringsOffsets[i] = bufferBuilder.createString(outVarNames.get(i));
         }
         int outVarNamesOffset = FlatNode.createOutputNamesVector(bufferBuilder, outVarNamesStringsOffsets);
@@ -4371,8 +5508,8 @@ public class SameDiff extends SDBaseOps {
         int opNameOffset = bufferBuilder.createString(opName);
 
         byte[] outTypes = new byte[outVarNames.size()];
-        int i=0;
-        for(String s : outVarNames){
+        int i = 0;
+        for (String s : outVarNames) {
             SDVariable v = getVariable(s);
             outTypes[i++] = FlatBuffersMapper.getDataTypeAsByte(v.dataType());
         }
@@ -4408,7 +5545,7 @@ public class SameDiff extends SDBaseOps {
      * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
      * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
-     * @param configuration - ExecutorConfiguration to be embedded into serialized graph
+     * @param configuration       - ExecutorConfiguration to be embedded into serialized graph
      * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
@@ -4420,7 +5557,7 @@ public class SameDiff extends SDBaseOps {
      * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
      * all arrays as a ByteBuffer containing the FlatBuffers format data
      *
-     * @param configuration - ExecutorConfiguration to be embedded into serialized graph
+     * @param configuration       - ExecutorConfiguration to be embedded into serialized graph
      * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
      */
@@ -4440,7 +5577,7 @@ public class SameDiff extends SDBaseOps {
         val framesMap = new LinkedHashMap<String, Integer>();
 
         int idx = 0;
-        val idxForOps = new IdentityHashMap<DifferentialFunction,Integer>();
+        val idxForOps = new IdentityHashMap<DifferentialFunction, Integer>();
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
             INDArray arr = variable.getArr();
@@ -4451,10 +5588,10 @@ public class SameDiff extends SDBaseOps {
             String varName = variable.getVarName();
             int varIdx;
             int outputNum;
-            if(variables.get(varName).getOutputOfOp() != null){
+            if (variables.get(varName).getOutputOfOp() != null) {
                 //This variable is the output of a node
                 DifferentialFunction df = ops.get(variables.get(varName).getOutputOfOp()).getOp();
-                if(!idxForOps.containsKey(df)){
+                if (!idxForOps.containsKey(df)) {
                     varIdx = idCounter.incrementAndGet();
                     idxForOps.put(df, varIdx);
                 } else {
@@ -4477,7 +5614,7 @@ public class SameDiff extends SDBaseOps {
             int array = 0;
             int id = IntPair.createIntPair(bufferBuilder, varIdx, outputNum);
             byte varType = (byte) variable.getVariableType().ordinal();
-            if(variable.isConstant() || variable.isPlaceHolder() || variable.getVariableType() == VariableType.VARIABLE) {
+            if (variable.isConstant() || variable.isPlaceHolder() || variable.getVariableType() == VariableType.VARIABLE) {
                 //Don't export array type (i.e., activations), these are always replaced/re-calculated on each step
                 array = arr == null ? 0 : arr.toFlatArray(bufferBuilder);
             }
@@ -4487,12 +5624,12 @@ public class SameDiff extends SDBaseOps {
                 shape = FlatVariable.createShapeVector(bufferBuilder, shp);
             }
 
-            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name,  FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), shape, array, -1, varType);
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), shape, array, -1, varType);
             flatVariables.add(flatVariable);
         }
 
         //add functions
-        for(SameDiffOp op : ops.values()){
+        for (SameDiffOp op : ops.values()) {
             DifferentialFunction func = op.getOp();
             Integer fnId = idxForOps.get(func);
             flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
@@ -4500,7 +5637,7 @@ public class SameDiff extends SDBaseOps {
 
         // we're dumping scopes now
         for (Map.Entry<String, SameDiff> scope : sameDiffFunctionInstances.entrySet()) {
-            if(scope.getKey().equalsIgnoreCase("grad")){
+            if (scope.getKey().equalsIgnoreCase(GRAD_FN_KEY)) {
                 //Skip the gradient function for export
                 continue;
             }
@@ -4523,13 +5660,13 @@ public class SameDiff extends SDBaseOps {
 
                 log.trace("Adding [{}] as [{}]", pair.getFirst(), idx);
 
-                byte varType = (byte)node.getVariableType().ordinal();
-                int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(arr.dataType()),0, array, -1, varType);
+                byte varType = (byte) node.getVariableType().ordinal();
+                int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(arr.dataType()), 0, array, -1, varType);
                 flatVariables.add(flatVariable);
             }
 
             //add functions
-            for(SameDiffOp op : scope.getValue().ops.values()){
+            for (SameDiffOp op : scope.getValue().ops.values()) {
                 DifferentialFunction func = op.getOp();
                 flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter, null));
             }
@@ -4540,17 +5677,17 @@ public class SameDiff extends SDBaseOps {
         int nodesOffset = FlatGraph.createNodesVector(bufferBuilder, Ints.toArray(flatNodes));
 
         int numPlaceholders = 0;
-        for(SDVariable v : variables()){
-            if(v.isPlaceHolder()){
+        for (SDVariable v : variables()) {
+            if (v.isPlaceHolder()) {
                 numPlaceholders++;
             }
         }
 
         int[] placeholderOffsets = new int[numPlaceholders];
-        if(numPlaceholders > 0){
-            int i=0;
-            for(SDVariable v : variables()){
-                if(!v.isPlaceHolder())
+        if (numPlaceholders > 0) {
+            int i = 0;
+            for (SDVariable v : variables()) {
+                if (!v.isPlaceHolder())
                     continue;
                 placeholderOffsets[i++] = bufferBuilder.createString(v.getVarName());
             }
@@ -4559,30 +5696,30 @@ public class SameDiff extends SDBaseOps {
 
         List<String> lossVars = getLossVariables();
         int[] lossVarOffsets = new int[lossVars == null ? 0 : lossVars.size()];
-        for( int i=0; i<lossVarOffsets.length; i++ ){
+        for (int i = 0; i < lossVarOffsets.length; i++) {
             lossVarOffsets[i] = bufferBuilder.createString(lossVars.get(i));
         }
         int lossVarOffset = FlatGraph.createLossVariablesVector(bufferBuilder, lossVarOffsets);
 
         int trainingConfigOffset = 0;
         int updaterStateOffset = 0;
-        if(trainingConfig != null){
+        if (trainingConfig != null) {
             String json = trainingConfig.toJson();
             trainingConfigOffset = bufferBuilder.createString(json);
         }
-        if(includeUpdaterState && updaterMap != null && !updaterMap.isEmpty()){
+        if (includeUpdaterState && updaterMap != null && !updaterMap.isEmpty()) {
             int[] updaterOffsets = new int[updaterMap.size()];
             int updaterNum = 0;
-            for(Map.Entry<String,GradientUpdater> g : updaterMap.entrySet()){
+            for (Map.Entry<String, GradientUpdater> g : updaterMap.entrySet()) {
                 int paramNameOffset = bufferBuilder.createString(g.getKey());
                 int stateKeyOffset = 0;
                 int stateValuesOffset = 0;
-                Map<String,INDArray> state = g.getValue().getState();
-                if(state != null && !state.isEmpty()){
+                Map<String, INDArray> state = g.getValue().getState();
+                if (state != null && !state.isEmpty()) {
                     int[] keysOffsets = new int[state.size()];
                     int[] valuesOffsets = new int[state.size()];
-                    int i=0;
-                    for(Map.Entry<String,INDArray> e : state.entrySet()){
+                    int i = 0;
+                    for (Map.Entry<String, INDArray> e : state.entrySet()) {
                         keysOffsets[i] = bufferBuilder.createString(e.getKey());
                         valuesOffsets[i] = e.getValue().toFlatArray(bufferBuilder);
                         i++;
@@ -4602,7 +5739,7 @@ public class SameDiff extends SDBaseOps {
         bufferBuilder.finish(fg);
 
         synchronized (this) {
-            for(Map.Entry<String,Integer> e : reverseMap.entrySet()){
+            for (Map.Entry<String, Integer> e : reverseMap.entrySet()) {
                 this.variables.get(e.getKey()).setVariableIndex(e.getValue());
             }
         }
@@ -4755,7 +5892,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later
      *
-     * @param file File to save the FlatBuffers serialized graph (including arrays) to
+     * @param file                File to save the FlatBuffers serialized graph (including arrays) to
      * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      */
     public void asFlatFile(@NonNull File file, @NonNull ExecutorConfiguration configuration, boolean includeUpdaterState) throws IOException {
@@ -4773,6 +5910,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * Create a {@link SameDiff} instance from a file, including the updater state
      * The method to save the file is {@link #save(File, boolean)}
+     *
      * @param file the file to load from
      * @return the loaded same diff instance
      * @throws IOException
@@ -4784,7 +5922,8 @@ public class SameDiff extends SDBaseOps {
     /**
      * Create a {@link SameDiff} instance from a file, optionally also loading the updater state
      * The method to save the file is {@link #save(File, boolean)}
-     * @param file the file to load from
+     *
+     * @param file             the file to load from
      * @param loadUpdaterState If true, load the updater state (Adam etc state). For training, use true. For inference, use false
      * @return the loaded same diff instance
      * @throws IOException
@@ -4803,6 +5942,7 @@ public class SameDiff extends SDBaseOps {
      * Create a {@link SameDiff}
      * instance from a byte buffers
      * instance.
+     *
      * @param bbIn the input byte buffer
      * @return the created samediff instance
      * @throws IOException
@@ -4818,11 +5958,11 @@ public class SameDiff extends SDBaseOps {
         int numOps = fg.nodesLength();
         int numVars = fg.variablesLength();
         List<FlatNode> ops = new ArrayList<>(numOps);
-        for( int i=0; i<numOps; i++ ){
+        for (int i = 0; i < numOps; i++) {
             ops.add(fg.nodes(i));
         }
         List<FlatVariable> vars = new ArrayList<>(numVars);
-        for( int i = 0; i < numVars; i++) {
+        for (int i = 0; i < numVars; i++) {
             vars.add(fg.variables(i));
         }
 
@@ -4838,18 +5978,18 @@ public class SameDiff extends SDBaseOps {
         //Reconstruct placeholders
         int numPlaceholders = fg.placeholdersLength();
         Set<String> ph = new LinkedHashSet<>();
-        for(int i=0; i<numPlaceholders; i++ ){
+        for (int i = 0; i < numPlaceholders; i++) {
             ph.add(fg.placeholders(i));
         }
 
         //Reconstruct variables:
-        Map<Integer,SDVariable> varNodeIds = new HashMap<>();
-        Map<Pair<Integer,Integer>, SDVariable> variablesByNodeAndOutNum = new HashMap<>();
-        Map<String,List<SDVariable>> variablesByName = new HashMap<>();
-        for(FlatVariable v : vars){
+        Map<Integer, SDVariable> varNodeIds = new HashMap<>();
+        Map<Pair<Integer, Integer>, SDVariable> variablesByNodeAndOutNum = new HashMap<>();
+        Map<String, List<SDVariable>> variablesByName = new HashMap<>();
+        for (FlatVariable v : vars) {
             int shapeLength = v.shapeLength();
             long[] shape = new long[shapeLength];
-            for( int i = 0; i < shapeLength; i++) {
+            for (int i = 0; i < shapeLength; i++) {
                 shape[i] = v.shape(i);
             }
 
@@ -4866,9 +6006,9 @@ public class SameDiff extends SDBaseOps {
 
 
             FlatArray fa = v.ndarray();
-            if(fa != null && vt != VariableType.ARRAY){
+            if (fa != null && vt != VariableType.ARRAY) {
                 INDArray arr;
-                try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+                try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                     arr = Nd4j.createFromFlatArray(fa);
                 }
                 sd.setArrayForVariable(n, arr);
@@ -4877,7 +6017,7 @@ public class SameDiff extends SDBaseOps {
             IntPair id = v.id();    //First value: node (op) id. Second: output number
             variablesByNodeAndOutNum.put(new Pair<>(id.first(), id.second()), var);
 
-            if(!variablesByName.containsKey(n)){
+            if (!variablesByName.containsKey(n)) {
                 variablesByName.put(n, new ArrayList<SDVariable>());
             }
 
@@ -4886,12 +6026,12 @@ public class SameDiff extends SDBaseOps {
         }
 
         //Reconstruct ops:
-        for(FlatNode fn : ops){
+        for (FlatNode fn : ops) {
             DifferentialFunction df = FlatBuffersMapper.fromFlatNode(fn);
             String name = fn.name();
             df.setSameDiff(sd);
             df.setOwnName(name);
-            if(sd.ops.containsKey(name)){
+            if (sd.ops.containsKey(name)) {
                 sd.ops.get(name).setOp(df);
             } else {
                 sd.ops.put(name, SameDiffOp.builder().name(name).op(df).build());
@@ -4899,7 +6039,7 @@ public class SameDiff extends SDBaseOps {
 
             int outLength = fn.outputLength();
             int[] outs = new int[outLength];
-            for( int i=0; i<outLength; i++ ){
+            for (int i = 0; i < outLength; i++) {
                 outs[i] = fn.output(i);
             }
 
@@ -4915,18 +6055,18 @@ public class SameDiff extends SDBaseOps {
                 input[i] = fn.input(i);
             }
             IntPair[] inputPaired = new IntPair[fn.inputPairedLength()];
-            List<Pair<Integer,Integer>> intPairList = new ArrayList<>();
+            List<Pair<Integer, Integer>> intPairList = new ArrayList<>();
             for (int i = 0; i < inputPaired.length; i++) {
                 inputPaired[i] = fn.inputPaired(i);
                 intPairList.add(new Pair<>(inputPaired[i].first(), inputPaired[i].second()));
             }
 
             String[] inputNames = new String[inputPaired.length];
-            for(int i=0; i<inputPaired.length; i++ ){
+            for (int i = 0; i < inputPaired.length; i++) {
                 int nodeId = inputPaired[i].first();
                 int nodeOutNum = inputPaired[i].second();
                 SDVariable varIn = variablesByNodeAndOutNum.get(new Pair<>(nodeId, nodeOutNum));
-                if(varIn == null){
+                if (varIn == null) {
                     //The variable corresponding to this op was not
                 }
                 inputNames[i] = varIn.getVarName();
@@ -4934,12 +6074,12 @@ public class SameDiff extends SDBaseOps {
             sd.ops.get(df.getOwnName()).setInputsToOp(Arrays.asList(inputNames));
 
             //Record that input variables are input to this op
-            for(String inName : inputNames) {
+            for (String inName : inputNames) {
                 Variable v = sd.getVariables().get(inName);
-                if(v.getInputsForOp() == null){
+                if (v.getInputsForOp() == null) {
                     v.setInputsForOp(new ArrayList<String>());
                 }
-                if(!v.getInputsForOp().contains(df.getOwnName())){
+                if (!v.getInputsForOp().contains(df.getOwnName())) {
                     v.getInputsForOp(
 
                     ).add(df.getOwnName());
@@ -4952,14 +6092,14 @@ public class SameDiff extends SDBaseOps {
             //In theory, we can reconstruct the output variables (minus names) if we know the number of op outputs
             //And we can calculate the op outputs - in most cases - after the op has been created and parameters set
             int numOutputs = df.getNumOutputs();
-            if(numOutputs <= 0){
+            if (numOutputs <= 0) {
                 numOutputs = fn.outputLength();
             }
 
             String[] varNames = null;
-            if(varsForOp != null && varsForOp.size() == numOutputs){
+            if (varsForOp != null && varsForOp.size() == numOutputs) {
                 varNames = new String[varsForOp.size()];
-                for( int i=0; i<varNames.length; i++ ){
+                for (int i = 0; i < varNames.length; i++) {
                     varNames[i] = varsForOp.get(i).getVarName();
                     sd.getVariables().get(varNames[i]).setOutputOfOp(df.getOwnName());
                 }
@@ -4968,10 +6108,10 @@ public class SameDiff extends SDBaseOps {
                 //We're missing some variables...
                 int outputNamesLength = fn.outputNamesLength();
                 varNames = new String[outputNamesLength];
-                for( int i=0; i<outputNamesLength; i++ ){
+                for (int i = 0; i < outputNamesLength; i++) {
                     String n = fn.outputNames(i);
                     varNames[i] = n;
-                    if(!sd.variables.containsKey(n)){
+                    if (!sd.variables.containsKey(n)) {
                         //Need to create the variable - perhaps it wasn't exported. Note output of node -> can only be VARIABLE type
                         SDVariable var = new SDVariable(n, VariableType.VARIABLE, sd, null, null, null);
                         sd.variables.put(n, Variable.builder().name(n).variable(var).build());
@@ -4984,28 +6124,28 @@ public class SameDiff extends SDBaseOps {
 
             //Check the op mapping int he variablesByNodeAndOutputNum
             //For multi-output ops, variables will have their own index, not related to the op index
-            for( int i=0; i<varNames.length; i++ ){
-                Pair<Integer,Integer> p = new Pair<>(opId, i);
-                if(!variablesByNodeAndOutNum.containsKey(p)){
+            for (int i = 0; i < varNames.length; i++) {
+                Pair<Integer, Integer> p = new Pair<>(opId, i);
+                if (!variablesByNodeAndOutNum.containsKey(p)) {
                     variablesByNodeAndOutNum.put(p, sd.getVariable(varNames[i]));
                 }
             }
         }
 
         //Reconstruct loss variables
-        if(fg.lossVariablesLength() > 0){
-            for(int i=0; i<fg.lossVariablesLength(); i++ ){
+        if (fg.lossVariablesLength() > 0) {
+            for (int i = 0; i < fg.lossVariablesLength(); i++) {
                 sd.addLossVariable(fg.lossVariables(i));
             }
         }
 
         //Reconstruct training config
         String tc = fg.trainingConfig();
-        if(tc != null){
+        if (tc != null) {
             sd.trainingConfig = TrainingConfig.fromJson(tc);
         }
 
-        if(loadUpdaterState) {
+        if (loadUpdaterState) {
             //Reconstruct updater state
             if (fg.updaterStateLength() > 0) {
                 sd.updaterMap = new HashMap<>();
@@ -5050,32 +6190,32 @@ public class SameDiff extends SDBaseOps {
         for (int e = 0; e < graph.variablesLength(); e++) {
             FlatVariable var = graph.variables(e);
             INDArray ndarray = null;
-            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            try (MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                 FlatArray fa = var.ndarray();
-                if(fa != null) {
+                if (fa != null) {
                     ndarray = Nd4j.createFromFlatArray(fa);
                 }
             }
 
             sb.append(var.id().first())
                     .append(":<").append(var.name()).append("> ");
-            if(ndarray == null){
+            if (ndarray == null) {
                 sb.append("<no array>").append("; Values: ").append("<no array>").append(";\n");
             } else {
                 sb.append(Arrays.toString(ndarray.shapeInfoDataBuffer().asInt())).append("; Values: ");
-                if(ndarray.data() == null){
+                if (ndarray.data() == null) {
                     //Empty array
                     sb.append("<empty array>");
-                } else if(ndarray.dataType() == DataType.UTF8) {
+                } else if (ndarray.dataType() == DataType.UTF8) {
                     sb.append("<string array>");
                 } else {
-                    if(ndarray.length() < 50){
-                        sb.append(Arrays.toString(ndarray.data().asFloat()).replaceAll(" ",""));
+                    if (ndarray.length() < 50) {
+                        sb.append(Arrays.toString(ndarray.data().asFloat()).replaceAll(" ", ""));
                     } else {
                         //Array is too long - only tak. last few values...
                         sb.append("[");
-                        for( int i=0; i<50; i++ ){
-                            if(i > 0)
+                        for (int i = 0; i < 50; i++) {
+                            if (i > 0)
                                 sb.append(",");
                             sb.append(ndarray.data().getFloat(i));
                         }
@@ -5173,7 +6313,7 @@ public class SameDiff extends SDBaseOps {
         int maxLengthOfName = 8;       //Length of "- Name -"
         for (String s : varMap.keySet()) {
             String outputOf = null;
-            for(SameDiffOp op : ops.values()){
+            for (SameDiffOp op : ops.values()) {
                 List<String> outputsOfOp = op.getOutputsOfOp();
                 if (outputsOfOp != null && outputsOfOp.contains(s)) {
                     outputOf = op.getName();
@@ -5202,10 +6342,10 @@ public class SameDiff extends SDBaseOps {
             String arrayShape = "-";
             if (arr != null) {
                 arrayShape = Arrays.toString(arr.shape());
-            } else if(varMap.get(s).isPlaceHolder()){
+            } else if (varMap.get(s).isPlaceHolder()) {
                 SDVariable v = varMap.get(s);
                 long[] phShape = v.placeholderShape();
-                if(phShape != null){
+                if (phShape != null) {
                     arrayShape = Arrays.toString(phShape);
                 }
             }
@@ -5283,20 +6423,172 @@ public class SameDiff extends SDBaseOps {
     }
 
 
-    public Map<String,org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(){
+    public Map<String, org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes() {
+        return calculateOutputDataTypes(false);
+    }
+
+    public Map<String, org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(boolean dynamicUpdate) {
         List<String> allVars = new ArrayList<>(variables.keySet());
-        DataTypesSession session = new DataTypesSession(this);
-        Map<String,org.nd4j.linalg.api.buffer.DataType> phValues = new HashMap<>();
-        for(Variable v : variables.values()){
-            if(v.getVariable().isPlaceHolder()){
+        DataTypesSession session = new DataTypesSession(this, dynamicUpdate);
+        Map<String, org.nd4j.linalg.api.buffer.DataType> phValues = new HashMap<>();
+        for (Variable v : variables.values()) {
+            if (v.getVariable().isPlaceHolder()) {
                 org.nd4j.linalg.api.buffer.DataType dt = v.getVariable().dataType();
                 Preconditions.checkNotNull(dt, "Placeholder variable %s has null datatype", v.getName());
                 phValues.put(v.getName(), dt);
             }
         }
-        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues, null, false, null);
+        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues, null,
+                Collections.<String>emptyList(), Collections.<Listener>emptyList(), At.defaultAt(Operation.INFERENCE));
         return out;
     }
 
+    /**
+     * For internal use only.
+     * Creates a new discinct block name from baseName.
+     * Block names are used by If and While
+     */
+    public String newBlockName(String baseName) {
 
+        if (baseName == null)
+            return null;
+
+        if (!blockNames.contains(baseName)) {
+            blockNames.add(baseName);
+            return baseName;
+        } else {
+            int i = 1;
+            while (blockNames.contains(baseName + "_" + i)) {
+                i++;
+            }
+            blockNames.add(baseName + "_" + i);
+            return baseName + "_" + i;
+        }
+    }
+
+    /**
+     * Import a frozen Tensorflow graph to a new SameDiff graph.
+     *
+     * @param graphFile The text or binary file containing the graph
+     * @return The imported graph
+     */
+    public static SameDiff importFrozenTF(File graphFile) {
+        return TFGraphMapper.getInstance().importGraph(graphFile);
+    }
+
+    /**
+     * See {@link #importFrozenTF(File)}
+     */
+    public static SameDiff importFrozenTF(GraphDef graphDef) {
+        return TFGraphMapper.getInstance().importGraph(graphDef);
+    }
+
+
+    /**
+     * See {@link #importFrozenTF(File)}
+     * <p>
+     * Again, the input can be text or binary.
+     */
+    public static SameDiff importFrozenTF(InputStream graph) {
+        return TFGraphMapper.getInstance().importGraph(graph);
+    }
+
+
+    /**
+     * Generate a new, distinct op name of the form &lt;base&gt;_#.
+     * <p>
+     * Applies name scope if active.
+     *
+     * @param base  The base name to use
+     * @param force Whether to force the result name to be the same as base.
+     */
+    public String getOpName(String base, boolean force) {
+
+        base = nameWithScope(base);
+
+        if (force && ops.containsKey(base))
+            throw new IllegalArgumentException("Op with name \"" + base + "\" already exists");
+        else if (force)
+            return base;
+
+        int start = 1;
+
+        // if we already have a name like "op_2", start from trying "op_3"
+        if (base.contains("_")) {
+            // extract number used to generate base
+            Matcher num = Pattern.compile("(.*)_(\\d+)").matcher(base);
+            // extract argIndex used to generate base
+            if (num.find()) {
+                start = Integer.parseInt(num.group(2));
+                base = num.group(1);
+            }
+        }
+
+        String name = base;
+        for (int i = start; true; i++) {
+
+            // ensure that there are no variables that look like they are outputs of this op
+            boolean varWithName = false;
+            for (String varName : variables.keySet())
+                if (varName.startsWith(name + ":") || varName.equals(name))
+                    varWithName = true;
+
+            if (!ops.containsKey(name) && !varWithName)
+                break;
+
+            name = base + "_" + i;
+        }
+        return name;
+    }
+
+    /**
+     * See {@link #getOpName(String, boolean)}
+     * force is false
+     */
+    public String getOpName(String base) {
+        return getOpName(base, false);
+    }
+
+    /**
+     * Generate a new, distinct variable name of the form &lt;base&gt;_#[:#].
+     * <p>
+     * Applies name scopes if active.
+     *
+     * @param base       The base of the name.
+     * @param argIndex   The argument index, used in the ":#".  A value of 0 (or negative) does not include the ":#" part.
+     * @param existingOp Whether to generate an distinct operation name from base (if false), or just use base (if true).
+     */
+    public String generateNewVarName(String base, int argIndex, boolean existingOp) {
+
+        base = nameWithScope(base);
+
+        if (argIndex > 0 && base.contains(":")) {
+            Matcher num = Pattern.compile("(.*):(\\d+)").matcher(base);
+            // extract argIndex used to generate base
+            if (num.find()) {
+                argIndex = Integer.parseInt(num.group(2)) + 1;
+                base = num.group(1);
+            }
+        }
+
+        if (!existingOp)
+            base = getOpName(base);
+
+        if (argIndex > 0)
+            base += ":" + argIndex;
+
+        if (variables.containsKey(base))
+            throw new IllegalArgumentException("Variable with name \"" + base + "\" already exists");
+
+        return base;
+    }
+
+    /**
+     * See {@link #generateNewVarName(String, int, boolean)}
+     * existingOp is true.
+     */
+    @Override
+    public String generateNewVarName(String base, int argIndex) {
+        return generateNewVarName(base, argIndex, true);
+    }
 }

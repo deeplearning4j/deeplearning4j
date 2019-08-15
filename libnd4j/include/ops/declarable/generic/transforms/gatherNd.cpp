@@ -36,14 +36,14 @@ CUSTOM_OP_IMPL(gather_nd, 2, 1, false, 0, 0) {
     auto output  = OUTPUT_VARIABLE(0);
 
     const int rankIn = input->rankOf();
-    const int rankInd = indices->rankOf();    
+    const int rankInd = indices->rankOf();
 
     REQUIRE_TRUE(rankInd > 0, 0, "GATHER_ND op: array of indexes can't be single scalar, the requirement is: rank > 0, but got rank = %i instead!", rankInd);
     int lastIndDim = indices->sizeAt(-1);
     REQUIRE_TRUE(lastIndDim <= rankIn, 0, "GATHER_ND op: the last dimension of indices array must be <= rank of input array but got %i and %i correspondingly!", lastIndDim, rankIn);
 
     helpers::gatherND(block.launchContext(), *input, *indices, *output);
-    
+
     return Status::OK();
 }
 
@@ -58,11 +58,11 @@ DECLARE_SHAPE_FN(gather_nd) {
 
 	auto inShapeInfoIn = inputShape->at(0);
     auto inShapeInfoInd = inputShape->at(1);
-		
+
     const int rankIn = inShapeInfoIn[0];
     const int rankInd = inShapeInfoInd[0];
-    REQUIRE_TRUE(rankInd > 0, 0, "GATHER_ND op: array of indexes can't be single scalar, the requirement is: rank > 0, but got rank = %i instead!", rankInd);    
-    const int lastIndDim = inShapeInfoInd[rankInd];    
+    REQUIRE_TRUE(rankInd > 0, 0, "GATHER_ND op: array of indexes can't be single scalar, the requirement is: rank > 0, but got rank = %i instead!", rankInd);
+    const int lastIndDim = inShapeInfoInd[rankInd];
     REQUIRE_TRUE(lastIndDim <= rankIn, 0, "GATHER_ND op: the last dimension of indices array must be <= rank of input array but got %i and %i correspondingly!", lastIndDim, rankIn);
 
 	int outRank = (rankInd - 1) + (rankIn - lastIndDim);

@@ -34,10 +34,10 @@ namespace nd4j {
 
             REQUIRE_TRUE(x->isSameShape(q), 0, "ZETA op: two input arrays must have the same shapes, bot got x=%s and q=%s !", ShapeUtils::shapeAsString(x).c_str(), ShapeUtils::shapeAsString(q).c_str());
 
-            int arrLen = x->lengthOf();
+            Nd4jLong arrLen = x->lengthOf();
 
             // FIXME: this should NOT be loop.
-            for(int i = 0; i < arrLen; ++i ) {
+            for(Nd4jLong i = 0; i < arrLen; ++i ) {
                 REQUIRE_TRUE(x->e<float>(i) > 1.f, 0, "ZETA op: all elements of x array must be > 1 !");
                 REQUIRE_TRUE(q->e<float>(i) > 0.f, 0, "ZETA op: all elements of q array must be > 0 !");
             }

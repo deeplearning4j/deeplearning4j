@@ -143,13 +143,12 @@ namespace helpers {
 
     ///////////////////////////////////////////////////////////////////
     template <typename T>
-    static void _reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
+    static void reverseSequence_(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim){
         int posOfNonUnityDim = -1;
         seqLengths->syncToHost();
         auto stream = context->getCudaStream();
-        if (!input->isActualOnDeviceSide())
-            input->syncToDevice();
 
+        NDArray::prepareSpecialUse({output}, {input, seqLengths});
         if(input->isVector() || shape::isLikeVector(input->getShapeInfo(), posOfNonUnityDim) || seqLengths->lengthOf() == 1) {
             int numOfElemsToReverse = seqLengths->e<int>(0);
 //            printf("Length %d\n", numOfElemsToReverse);
@@ -190,12 +189,11 @@ namespace helpers {
             delete inSubArrsSet;
             delete outSubArrsSet;
         }
-        input->tickReadDevice();
-        output->tickWriteDevice();
+        NDArray::registerSpecialUse({output}, {input, seqLengths});
     }
 
     void reverseSequence(nd4j::LaunchContext * context, const NDArray* input, const NDArray* seqLengths, NDArray* output, int seqDim, const int batchDim) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _reverseSequence, (context, input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), reverseSequence_, (context, input, seqLengths, output, seqDim, batchDim), LIBND4J_TYPES);
     }
 
     //////////////////////////////////////////////////////////////////////////
@@ -211,14 +209,14 @@ namespace helpers {
 
         NDArray *subArrIn, *subArrOut;
 
+        NDArray::prepareSpecialUse({output}, {input});
         for(int i = 0; i < listIn->size(); ++i) {               // listIn->size() = listOut->size()
             subArrIn   = listIn->at(i);
             subArrOut  = listOut->at(i);
             BUILD_SINGLE_SELECTOR(input->dataType(), reverseArray, (context, subArrIn, subArrOut, 0), LIBND4J_TYPES);
         }
         //BUILD_SINGLE_SELECTOR(input->dataType(), reverseArray, (context, const_cast<NDArray*>(input), output, (int)0), LIBND4J_TYPES);
-        input->tickReadDevice();
-        output->tickWriteDevice();
+        NDArray::registerSpecialUse({output}, {input});
         delete listOut;
         delete listIn;
     }

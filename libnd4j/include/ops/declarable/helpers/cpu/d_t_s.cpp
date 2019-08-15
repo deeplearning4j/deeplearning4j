@@ -44,6 +44,7 @@ namespace helpers {
 
         if (isNHWC) {
             const int total_count = batch_size * output_height * output_width * output_depth;
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int out_idx = 0; out_idx < total_count; out_idx++) {
                 const int d = out_idx % output_depth;
                 const int out_idx2 = out_idx / output_depth;
@@ -64,6 +65,7 @@ namespace helpers {
         } else {
             const int total_count = batch_size * input_depth_by_input_area;
 
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int input_idx = 0; input_idx < total_count; input_idx++) {
                 const int n_bY_bX_oC_iY = input_idx / input_width;
                 const int iX = input_idx - n_bY_bX_oC_iY * input_width;

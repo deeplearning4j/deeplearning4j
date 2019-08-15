@@ -60,12 +60,6 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
 
 
     @Test
-    public void shouldCreateSparseMatrix() {
-        INDArray matrix = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
-        //TODO
-    }
-
-    @Test
     public void shouldAddValueAtAGivenPosition() {
         /*
         * [[1 -1 0 -3 0]
@@ -74,6 +68,8 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
         *  [-4 0 2 7 0 ]
         *  [ 0 8 0 0 -5]]
         * */
+        // commented out on removal of createSparse methods from Nd4j
+        /*
         INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
         if (sparseNDArray instanceof BaseSparseNDArrayCSR) {
             BaseSparseNDArrayCSR sparseCSRArray = (BaseSparseNDArrayCSR) sparseNDArray;
@@ -92,10 +88,13 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
             assertArrayEquals(expectedPointerE, sparseCSRArray.getPointerEArray());
             assertArrayEquals(expectedShape, shape);
         }
+        */
     }
 
     @Test
     public void shouldReallocate() {
+        // commented out on removal of createSparse methods from Nd4j
+        /*
         INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
         if (sparseNDArray instanceof BaseSparseNDArrayCSR) {
             BaseSparseNDArrayCSR sparseCSRArray = (BaseSparseNDArrayCSR) sparseNDArray;
@@ -109,7 +108,7 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
             int finalSize = sparseCSRArray.getDoubleValues().length;
             assertTrue(finalSize > initialSize);
         }
-
+        */
     }
 
     @Test
@@ -121,6 +120,8 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
         *  [-4 0 2 7 0 ]
         *  [ 0 8 0 0 -5]]
         * */
+        // commented out on removal of createSparse methods from Nd4j
+        /*
         INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
         if (sparseNDArray instanceof BaseSparseNDArrayCSR) {
             BaseSparseNDArrayCSR sparseCSRArray = (BaseSparseNDArrayCSR) sparseNDArray;
@@ -138,6 +139,7 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
             assertArrayEquals(expectedPointerE, sparseCSRArray.getPointerEArray());
             assertArrayEquals(expectedShape, shape);
         }
+        */
     }
 
     @Test
@@ -164,6 +166,8 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
         INDArray denseView = array.get(NDArrayIndex.interval(1, 3), NDArrayIndex.interval(1, 3));
 
         // test with sparse :
+        // commented out on removal of createSparse methods from Nd4j
+        /*
         INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
 
         // subarray in the top right corner
@@ -214,8 +218,7 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
         assertArrayEquals(new int[] {0, 0}, sparseView.getVectorCoordinates().asInt());
         assertArrayEquals(new int[] {0, 5, 9}, sparseView.getPointerBArray());
         assertArrayEquals(new int[] {0, 6, 10}, sparseView.getPointerEArray());
-
-
+        */
     }
 
     @Test
@@ -224,12 +227,14 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
         int[] columns = {0, 1, 3, 0, 1, 2, 3, 4, 0, 2, 3, 1, 4};
         int[] pointerB = {0, 3, 5, 8, 11};
 
-        INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
+        // commented out on removal of createSparse methods from Nd4j
+        //INDArray sparseNDArray = Nd4j.createSparseCSR(values, columns, pointerB, pointerE, shape);
         /*             [0, -3, 0]
         * sparseView = [0,  0, 0] subview = [[0,0], [4,6]]
         *              [4,  6, 4]
         */
-        BaseSparseNDArrayCSR sparseView = (BaseSparseNDArrayCSR) sparseNDArray.get(NDArrayIndex.interval(0, 3),
+
+        /*BaseSparseNDArrayCSR sparseView = (BaseSparseNDArrayCSR) sparseNDArray.get(NDArrayIndex.interval(0, 3),
                         NDArrayIndex.interval(2, 5));
         BaseSparseNDArrayCSR subview =
                         (BaseSparseNDArrayCSR) sparseView.get(NDArrayIndex.interval(1, 3), NDArrayIndex.interval(0, 2));
@@ -260,5 +265,6 @@ public class SparseNDArrayCSRTest extends BaseNd4jTest {
         assertArrayEquals(new int[] {}, subview.getVectorCoordinates().asInt());
         assertArrayEquals(new int[] {0}, subview.getPointerBArray());
         assertArrayEquals(new int[] {0}, subview.getPointerEArray());
+        */
     }
 }

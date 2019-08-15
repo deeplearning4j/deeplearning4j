@@ -50,7 +50,7 @@ namespace nd4j {
         unsigned int _rIterations;
 
     protected:
-        void benchmarkOperation(OpBenchmark &benchmark);
+        std::string benchmarkOperation(OpBenchmark &benchmark);
 
         void benchmarkScalarOperation(scalar::Ops op, std::string testName, double value, NDArray &x, NDArray &z);
 
@@ -58,34 +58,30 @@ namespace nd4j {
 
         void benchmarkGEMM(char orderA, std::initializer_list<Nd4jLong> shapeA, char orderB, std::initializer_list<Nd4jLong> shapeB, char orderC, std::initializer_list<Nd4jLong> shapeC);
 
-        void printHeader();
+        std::string printHeader();
     public:
         BenchmarkHelper(unsigned int warmUpIterations = 10, unsigned int runIterations = 100);
 
-        void runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg = nullptr);
-        void runOperationSuit(std::vector<OpBenchmark*> &benchmarks, bool postHeaders, const char *msg = nullptr);
+        std::string runOperationSuit(std::initializer_list<OpBenchmark*> benchmarks, const char *msg = nullptr);
+        std::string runOperationSuit(std::vector<OpBenchmark*> &benchmarks, bool postHeaders, const char *msg = nullptr);
+        std::string runOperationSuit(OpBenchmark* benchmark);
 
-        void runOperationSuit(ScalarBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
-        void runOperationSuit(TransformBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
-        void runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
-        void runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet &, ResultSet &, ResultSet &)>& func, const char *message = nullptr);
-        void runOperationSuit(PairwiseBenchmark *op, const std::function<void (ResultSet &, ResultSet &, ResultSet &)>& func, const char *message = nullptr);
-
-
-        void runOperationSuit(TransformBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
-        void runOperationSuit(ScalarBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
-        void runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
-        void runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
-        void runOperationSuit(BroadcastBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
-        void runOperationSuit(PairwiseBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
-        void runOperationSuit(MatrixBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
-
-        void runOperationSuit(DeclarableBenchmark *op, const std::function<Context* (Parameters &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        std::string runOperationSuit(ScalarBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
+        std::string runOperationSuit(TransformBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
+        std::string runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet &, ResultSet &)>& func, const char *message = nullptr);
+        std::string runOperationSuit(ReductionBenchmark *op, const std::function<void (ResultSet &, ResultSet &, ResultSet &)>& func, const char *message = nullptr);
+        std::string runOperationSuit(PairwiseBenchmark *op, const std::function<void (ResultSet &, ResultSet &, ResultSet &)>& func, const char *message = nullptr);
 
 
-        void runScalarSuit();
+        std::string runOperationSuit(TransformBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        std::string runOperationSuit(ScalarBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        std::string runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        std::string runOperationSuit(ReductionBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        std::string runOperationSuit(BroadcastBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        std::string runOperationSuit(PairwiseBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
+        std::string runOperationSuit(MatrixBenchmark *op, const std::function<void (Parameters &, ResultSet &, ResultSet &, ResultSet &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
 
-        void runAllSuits();
+        std::string runOperationSuit(DeclarableBenchmark *op, const std::function<Context* (Parameters &)>& func, ParametersBatch &parametersBatch, const char *message = nullptr);
     };
 }
 

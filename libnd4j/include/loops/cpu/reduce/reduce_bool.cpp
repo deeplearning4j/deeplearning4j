@@ -244,8 +244,9 @@ namespace functions {
                         auto xi = x + threadOffset;
                         auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
-                        for (Nd4jLong i = 0; i < ulen; i++)
+                        for (Nd4jLong i = 0; i < ulen; i++) {
                             local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
+                        }
 
                         PRAGMA_OMP_CRITICAL
                         startingVal = OpType::update(startingVal, local, extraParams);

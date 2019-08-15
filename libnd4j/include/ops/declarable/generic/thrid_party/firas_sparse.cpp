@@ -65,7 +65,7 @@ namespace nd4j {
 
             std::unique_ptr<ResultSet> rows(x->allTensorsAlongDimension({1}));
 
-            PRAGMA_OMP_PARALLEL_FOR
+            //PRAGMA_OMP_PARALLEL_FOR
             for (int r = 0; r < batchSize; r++) {
                 auto row = rows->at(r);
 
@@ -77,14 +77,14 @@ namespace nd4j {
                     int denseIdx = sparse2dense.at(idx);
 
 
-                    float value = row->e<float>(e + 1);
+                    float value = row->e<float>(e);
                     float current = z->e<float>(r, denseIdx);
                     z->p(r, denseIdx, value + current);
                 }
             }
 
 
-            STORE_RESULT(*z);
+            //STORE_RESULT(*z);
 
             return Status::OK();
         }
@@ -93,7 +93,7 @@ namespace nd4j {
             auto inP = inputShape->at(0);
 
             std::vector<Nd4jLong> shape({shape::shapeOf(inP)[0], (Nd4jLong) block.getIArguments()->size()});
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', shape);
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inP), 'c', shape);
             return SHAPELIST(newShape);
         }
 

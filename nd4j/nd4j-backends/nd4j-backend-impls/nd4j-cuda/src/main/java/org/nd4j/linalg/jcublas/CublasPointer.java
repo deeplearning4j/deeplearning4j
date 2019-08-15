@@ -124,65 +124,6 @@ public class CublasPointer implements AutoCloseable {
         this.cudaContext = context;
         this.devicePointer = AtomicAllocator.getInstance().getPointer(array, context);
 
-        /*
-        if(array instanceof IComplexNDArray) {
-            if(array.length() * 2 < array.data().length()  && !array.isVector()) {
-                array = Shape.toOffsetZero(array);
-            }
-        }
-        
-        buffer = (JCudaBuffer) array.data();
-        
-        //the opName of this thread for knowing whether to copy data or not
-        //String opName = Thread.currentThread().getName();
-        this.arr = array;
-        if(array.elementWiseStride() < 0) {
-            this.arr = array.dup();
-            buffer = (JCudaBuffer) this.arr.data();
-            if(this.arr.elementWiseStride() < 0)
-                throw new IllegalStateException("Unable to iterate over buffer");
-        }
-        */
-        //int compLength = arr instanceof IComplexNDArray ? arr.length() * 2 : arr.length();
-        ////int stride = arr instanceof IComplexNDArray ? BlasBufferUtil.getBlasStride(arr) / 2 : BlasBufferUtil.getBlasStride(arr);
-        //no striding for upload if we are using the whole buffer
-        //  System.out.println("Allocation offset: ["+array.offset()+"], length: ["+compLength+"], stride: ["+ stride+"]");
-
-        /*
-                buffer.getPointer(
-                this.arr,
-                stride
-                ,this.arr.offset()
-                ,compLength);
-        */
-
-
-        /**
-         * Neat edge case here.
-         *
-         * The striding will overshoot the original array
-         * when the offset is zero (the case being when offset is zero
-         * sayon a getRow(0) operation.
-         *
-         * We need to allocate the data differently here
-         * due to how the striding works out.
-         */
-        // Copy the data to the device iff the whole buffer hasn't been copied
-        /*
-        
-        //Data is already copied into CUDA buffer during allocation at getPointer
-        
-        if(!buffer.copied(opName)) {
-            ContextHolder.getInstance().getMemoryStrategy().setData(buffer,0,1,buffer.length());
-            //mark the buffer copied
-            buffer.setCopied(opName);
-        
-        }*/
-
-        /*
-        DevicePointerInfo info = buffer.getPointersToContexts().get(Thread.currentThread().getName(), Triple.of(0, buffer.length(), 1));
-        hostPointer = info.getPointers().getHostPointer();
-        */
     }
 
 

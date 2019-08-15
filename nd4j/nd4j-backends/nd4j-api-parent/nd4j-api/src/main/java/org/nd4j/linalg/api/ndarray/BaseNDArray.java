@@ -38,7 +38,7 @@ import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
+import org.nd4j.linalg.api.ops.impl.reduce.HashCode;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.impl.reduce.bool.Any;
 import org.nd4j.linalg.api.ops.impl.reduce.floating.*;
@@ -518,7 +518,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             this.data = internalCreateBuffer(data, offset);
 
-            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+            PerformanceTracker.getInstance().helperRegisterTransaction(0, perfD, data.length * Nd4j.sizeOfDataType(DataType.FLOAT), MemcpyDirection.HOST_TO_HOST);
 
             if (offset >= data.length)
                 throw new IllegalArgumentException("invalid offset: must be < data.length");
@@ -662,7 +662,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -671,7 +671,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -680,7 +680,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -689,7 +689,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data, offset);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -698,16 +698,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         val perfX = PerformanceTracker.getInstance().helperStartTransaction();
 
         val buffer = Nd4j.createBuffer(data, offset);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
-
-        return buffer;
-    }
-
-    protected static DataBuffer internalCreateBuffer(int[] data, long offset) {
-        val perfX = PerformanceTracker.getInstance().helperStartTransaction();
-
-        val buffer = Nd4j.createBuffer(data, offset);
-        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(), MemcpyDirection.HOST_TO_HOST);
+        PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, data.length * Nd4j.sizeOfDataType(buffer.dataType()), MemcpyDirection.HOST_TO_HOST);
 
         return buffer;
     }
@@ -2476,6 +2467,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         // length/data.length can be different in case of Threshold conversion
         if(isEmpty() || isS())
             return false;
+
         return Shape.offset(jvmShapeInfo.javaShapeInformation) > 0
                 || (length() < data().length() && data.dataType() != DataType.INT)
                 || data().originalDataBuffer() != null;
@@ -3293,7 +3285,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         long[] shape = {rows(), other.rank() == 1 ? 1 : other.columns()};
         INDArray result = createUninitialized(this.dataType(), shape, 'f');
         if (result.isScalar())
-            return Nd4j.scalar(Nd4j.getBlasWrapper().dot(this, other)).reshape(1, 1);
+            return Nd4j.scalar(this.dataType(), Nd4j.getBlasWrapper().dot(this, other)).reshape(1, 1);
         return mmuli(other, result);
     }
 
@@ -3691,7 +3683,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray divi(INDArray other) {
-        validateNumericalArray("divi", false);
         return divi(other, this);
     }
 
@@ -3705,30 +3696,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray divi(INDArray other, INDArray result) {
         validateNumericalArray("divi", false);
-        if (other.isScalar()) {
-            return divi(other.getDouble(0), result);
-        }
-
-        if (isScalar()) {
-            return other.rdivi(getDouble(0), result);
-        }
-
-        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
-            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
-
-            Nd4j.exec(new DivOp(new INDArray[]{this, other}, new INDArray[]{result}));
-
-            return result;
-        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
-            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            Nd4j.getExecutioner().exec(new BroadcastDivOp(this,other,result,broadcastDimensions));
-            return result;
-        }
-
-
-        LinAlgExceptions.assertSameShape(other, result);
-        Nd4j.getExecutioner().exec(new OldDivOp(this, other, result));
+        Shape.assertBroadcastable("divi", this, other, result);
+        Nd4j.exec(new DivOp(this, other, result));
         return result;
     }
 
@@ -3740,7 +3709,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray muli(INDArray other) {
-        validateNumericalArray("muli", false);
         return muli(other, this);
     }
 
@@ -3754,29 +3722,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray muli(INDArray other, INDArray result) {
         validateNumericalArray("muli", false);
-        if (other.isScalar()) {
-            return muli(other.getDouble(0), result);
-        }
-        if (isScalar()) {
-            return other.muli(getDouble(0), result);
-        }
-
-        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
-            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
-
-            Nd4j.exec(new MulOp(new INDArray[]{this, other}, new INDArray[]{result}));
-
-            return result;
-        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
-            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            Nd4j.getExecutioner().exec(new BroadcastMulOp(this,other,result,broadcastDimensions));
-            return result;
-        }
-
-        LinAlgExceptions.assertSameShape(other, result);
-
-        Nd4j.getExecutioner().exec(new OldMulOp(this, other, result));
+        Shape.assertBroadcastable("muli", this, other, result);
+        Nd4j.exec(new MulOp(this, other, result));
         return result;
     }
 
@@ -3801,31 +3748,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray subi(INDArray other, INDArray result) {
         validateNumericalArray("subi", false);
-        if (other.isScalar()) {
-            return subi(other.getDouble(0), result);
-        }
-        if (isScalar()) {
-            return other.rsubi(getDouble(0), result);
-        }
-
-        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
-            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
-
-            Nd4j.exec(new SubOp(new INDArray[]{this, other}, new INDArray[]{result}));
-
-            return result;
-        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
-            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            Nd4j.getExecutioner().exec(new BroadcastSubOp(this,other,result,broadcastDimensions));
-            return result;
-        }
-
-
-        LinAlgExceptions.assertSameShape(other, result);
-
-
-        Nd4j.getExecutioner().exec(new OldSubOp(this, other,result));
+        Shape.assertBroadcastable("subi", this, other, result);
+        Nd4j.exec(new SubOp(this, other, result));
         return result;
     }
 
@@ -3850,33 +3774,22 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray addi(INDArray other, INDArray result) {
         validateNumericalArray("addi", false);
-        if (other.isScalar()) {
-            return this.addi(other.getDouble(0), result);
-        }
+        Shape.assertBroadcastable("addi", this, other, result);
+        Nd4j.exec(new AddOp(this, other, result));
+        return result;
+    }
 
-        if (isScalar()) {
-            return other.addi(getDouble(0), result);
-        }
-
-        if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
-            val outShape = Shape.broadcastOutputShape(this.shape(), other.shape());
-            Preconditions.checkArgument(Shape.shapeEquals(outShape, result.shape()), "Result shape doesn't match expectations: " + Arrays.toString(result.shape()));
-
-            Nd4j.exec(new AddOp(new INDArray[]{this, other}, new INDArray[]{result}));
-
-            return result;
-        } else if(!Shape.shapeEquals(this.shape(),other.shape())) {
-            int[] broadcastDimensions = Shape.getBroadcastDimensions(this.shape(),other.shape());
-            result = Nd4j.createUninitialized(this.dataType(), Shape.broadcastOutputShape(this.shape(),other.shape()));
-            Nd4j.getExecutioner().exec(new BroadcastAddOp(this,other,result,broadcastDimensions));
-            return result;
-        } else {
-
-            LinAlgExceptions.assertSameShape(this, other, result);
-
-            Nd4j.getExecutioner().exec(new OldAddOp(this, other, result));
-            return result;
-        }
+    /**
+     * Returns the normmax along the specified dimension
+     *
+     * @param dimension the dimension to getScalar the norm1 along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the norm1 along the specified dimension
+     */
+    @Override
+    public INDArray normmax(boolean keepDims, int... dimension) {
+        validateNumericalArray("normmax", false);
+        return Nd4j.getExecutioner().exec(new NormMax(this, keepDims, dimension));
     }
 
     /**
@@ -3887,8 +3800,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray normmax(int... dimension) {
-        validateNumericalArray("normmax", false);
-        return Nd4j.getExecutioner().exec(new NormMax(this, dimension));
+        return normmax(false, dimension);
     }
 
     /**
@@ -3941,7 +3853,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rdivi(INDArray other, INDArray result) {
         validateNumericalArray("rdivi", false);
-        return other.divi(this, result);
+        Shape.assertBroadcastable("rdivi", this, other, result);
+        Nd4j.exec(new RDivOp(this, other, result));
+        return result;
     }
 
     /**
@@ -3990,7 +3904,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray rsubi(INDArray other, INDArray result) {
         validateNumericalArray("rsubi", false);
-        return other.subi(this, result);
+        Shape.assertBroadcastable("rsubi", this, other, result);
+        Nd4j.exec(new RSubOp(this, other, result));
+        return result;
     }
 
     /**
@@ -4539,7 +4455,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return ret;
         } else {
             INDArray ret = this.dup(order);
-            return ret.reshape(order, shape);
+            return Nd4j.create(ret.data(), shape);
         }
     }
 
@@ -4586,12 +4502,37 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns the product along a given dimension
      *
      * @param dimension the dimension to getScalar the product along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the product along the specified dimension
+     */
+    @Override
+    public INDArray prod(boolean keepDims, int... dimension) {
+        validateNumericalArray("prod", false);
+        return Nd4j.getExecutioner().exec(new Prod(this, keepDims, dimension));
+    }
+
+    /**
+     * Returns the product along a given dimension
+     *
+     * @param dimension the dimension to getScalar the product along
      * @return the product along the specified dimension
      */
     @Override
     public INDArray prod(int... dimension) {
-        validateNumericalArray("prod", false);
-        return Nd4j.getExecutioner().exec(new Prod(this, dimension));
+        return prod(false, dimension);
+    }
+
+    /**
+     * Returns the overall mean of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray mean(boolean keepDims, int... dimension) {
+        validateNumericalArray("mean", false);
+        return Nd4j.getExecutioner().exec(new Mean(this, keepDims, dimension));
     }
 
     /**
@@ -4602,8 +4543,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray mean(int... dimension) {
-        validateNumericalArray("mean", false);
-        return Nd4j.getExecutioner().exec(new Mean(this, dimension));
+        return mean(false, dimension);
     }
 
     @Override
@@ -4613,9 +4553,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray mean(@NonNull INDArray result, int... dimension) {
+    public INDArray mean(@NonNull INDArray result, boolean keepDims, int... dimension) {
         validateNumericalArray("mean", false);
-        return Nd4j.getExecutioner().exec(new Mean(this, result, dimension));
+        return Nd4j.getExecutioner().exec(new Mean(this, result, keepDims, dimension));
+    }
+
+    @Override
+    public INDArray mean(@NonNull INDArray result, int... dimension) {
+        return mean(result, false, dimension);
     }
 
     /**
@@ -4647,12 +4592,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns the overall max of this ndarray
      *
      * @param dimension the dimension to getScalar the mean along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray max(boolean keepDims, int... dimension) {
+        validateNumericalArray("max", false);
+        return Nd4j.getExecutioner().exec(new Max(this, keepDims, dimension));
+    }
+
+    /**
+     * Returns the overall max of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
     public INDArray max(int... dimension) {
-        validateNumericalArray("max", false);
-        return Nd4j.getExecutioner().exec(new Max(this, dimension));
+        return max(false, dimension);
     }
 
     @Override
@@ -4665,12 +4622,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns the overall min of this ndarray
      *
      * @param dimension the dimension to getScalar the mean along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the mean along the specified dimension of this ndarray
+     */
+    @Override
+    public INDArray min(boolean keepDims, int... dimension) {
+        validateNumericalArray("min", false);
+        return Nd4j.getExecutioner().exec(new Min(this, keepDims, dimension));
+    }
+
+    /**
+     * Returns the overall min of this ndarray
+     *
+     * @param dimension the dimension to getScalar the mean along
      * @return the mean along the specified dimension of this ndarray
      */
     @Override
     public INDArray min(int... dimension) {
-        validateNumericalArray("min", false);
-        return Nd4j.getExecutioner().exec(new Min(this, dimension));
+        return min(false, dimension);
     }
 
     @Override
@@ -4738,9 +4707,14 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray sum(@NonNull INDArray result, int... dimension) {
+    public INDArray sum(@NonNull INDArray result, boolean keepDims, int... dimension) {
         validateNumericalArray("sum", true);
-        return Nd4j.getExecutioner().exec(new Sum(this, result, dimension));
+        return Nd4j.getExecutioner().exec(new Sum(this, result, keepDims, dimension));
+    }
+
+    @Override
+    public INDArray sum(@NonNull INDArray result, int... dimension) {
+        return sum(result, false, dimension);
     }
 
 
@@ -4752,8 +4726,21 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public INDArray norm1(int... dimension) {
+        return norm1(false, dimension);
+    }
+
+
+    /**
+     * Returns the norm1 along the specified dimension
+     *
+     * @param dimension the dimension to getScalar the norm1 along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the norm1 along the specified dimension
+     */
+    @Override
+    public INDArray norm1(boolean keepDims, int... dimension) {
         validateNumericalArray("norm1", false);
-        return Nd4j.getExecutioner().exec(new Norm1(this, dimension));
+        return Nd4j.getExecutioner().exec(new Norm1(this, keepDims, dimension));
     }
 
 
@@ -4770,8 +4757,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray std(boolean biasCorrected, int... dimension) {
+        return std(biasCorrected, false, dimension);
+    }
+
+    @Override
+    public INDArray std(boolean biasCorrected, boolean keepDims, int... dimension) {
         validateNumericalArray("std", false);
-        return Nd4j.getExecutioner().exec(new StandardDeviation(this, biasCorrected, dimension));
+        return Nd4j.getExecutioner().exec(new StandardDeviation(this, biasCorrected, keepDims, dimension));
     }
 
     @Override
@@ -4784,12 +4776,24 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * Returns the norm2 along the specified dimension
      *
      * @param dimension the dimension to getScalar the norm2 along
+     * @param keepDims whether to keep reduced dimensions as dimensions of size 1
+     * @return the norm2 along the specified dimension
+     */
+    @Override
+    public INDArray norm2(boolean keepDims, int... dimension) {
+        validateNumericalArray("norm2", false);
+        return Nd4j.getExecutioner().exec(new Norm2(this, keepDims, dimension));
+    }
+
+    /**
+     * Returns the norm2 along the specified dimension
+     *
+     * @param dimension the dimension to getScalar the norm2 along
      * @return the norm2 along the specified dimension
      */
     @Override
     public INDArray norm2(int... dimension) {
-        validateNumericalArray("norm2", false);
-        return Nd4j.getExecutioner().exec(new Norm2(this, dimension));
+        return norm2(false, dimension);
     }
 
 
@@ -5317,6 +5321,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public boolean equals(Object o) {
         return equalsWithEps(o, Nd4j.EPS_THRESHOLD);
+    }
+
+    @Override
+    public int hashCode() {
+        val longHash = Nd4j.exec(new HashCode(this))[0].getLong(0);
+        return Math.abs(longHash) <= Integer.MAX_VALUE ? (int) longHash : (int) (longHash % Integer.MAX_VALUE);
     }
 
     @Override
@@ -5869,13 +5879,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      */
     @Override
     public String toString() {
+        return toString(new NDArrayStrings());
+    }
+
+
+    @Override
+    public String toString(@NonNull NDArrayStrings options){
         if (!isCompressed() && !preventUnpack)
-            return new NDArrayStrings().format(this);
+            return options.format(this);
         else if (isCompressed() && compressDebug)
             return "COMPRESSED ARRAY. SYSTEM PROPERTY compressdebug is true. This is to prevent auto decompression from being triggered.";
         else if (preventUnpack)
             return "Array string unpacking is disabled.";
-        return new NDArrayStrings().format(this);
+        return options.format(this);
+    }
+
+    @Override
+    public String toString(long maxElements, boolean forceSummarize, int precision){
+        return toString(new NDArrayStrings(maxElements, forceSummarize, precision));
+    }
+
+
+    @Override
+    public String toStringFull(){
+        return toString(Long.MAX_VALUE, false, -1 * dataType().precision());
     }
 
     /**
@@ -6050,7 +6077,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     protected void read(ObjectInputStream s) {
         val headerShape = BaseDataBuffer.readHeader(s);
 
-        shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank())], 0);
+        shapeInformation = Nd4j.createBuffer(new int[Shape.shapeInfoLength(rank())]);
         shapeInformation.read(s, headerShape.getLeft(), headerShape.getMiddle(), headerShape.getRight());
 
         setShapeInformation(Pair.create(shapeInformation, shapeInformation.asLong()));
@@ -6646,6 +6673,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalStateException("Cannot perform operation " + opName + " on empty array with datatype " + dataType());
     }
 
+
+
     @Override
     public boolean closeable() {
         if (released || isAttached())
@@ -6684,4 +6713,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray ulike() {
         return Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering());
     }
+
+
 }

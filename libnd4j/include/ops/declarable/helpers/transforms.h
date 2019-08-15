@@ -23,6 +23,7 @@
 
 #include <ops/declarable/helpers/helpers.h>
 #include <helpers/helper_random.h>
+#include <graph/RandomGenerator.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -32,7 +33,7 @@ namespace helpers {
 
 	void trace(nd4j::LaunchContext * context, const NDArray& input, NDArray& output);
 
-	void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::random::RandomBuffer& rng, const bool isInplace);
+	void randomShuffle(nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace);
 
     // auxiliary function which serves for recursion purpose and is used in pad operation
 	// void recursiveLoopForPad(const int mode, NDArray& input, const NDArray& paddings, NDArray& output, std::vector<int> dimensions, int dim, int inIdx, int outIdx, NDArray& padValue);
@@ -49,7 +50,7 @@ namespace helpers {
 
 	void scatterUpdate(nd4j::LaunchContext * context, NDArray& operand, NDArray& updates, const std::vector<int>* intArgs);
 
-	void scatterSimple(const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions);
+	void scatterSimple(nd4j::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions);
 
 	void mergeMaxIndex(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output);
 

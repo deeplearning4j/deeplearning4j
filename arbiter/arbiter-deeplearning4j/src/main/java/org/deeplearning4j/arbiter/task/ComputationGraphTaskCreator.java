@@ -188,10 +188,15 @@ public class ComputationGraphTaskCreator implements TaskCreator {
             //For DataSetIterator: wraps in a MultiDataSetIterator, hence method can be used for both
             MultiDataSetIterator iterator;
             if(dataSource != null){
-                DataSource dsInstance = dataSource.newInstance();
-                if(dataSourceProperties != null)
-                    dsInstance.configure(dataSourceProperties);
-                iterator = ScoreUtil.getMultiIterator(dsInstance.trainData());
+                try {
+                    DataSource dsInstance = dataSource.newInstance();
+                    if (dataSourceProperties != null)
+                        dsInstance.configure(dataSourceProperties);
+                    iterator = ScoreUtil.getMultiIterator(dsInstance.trainData());
+                } catch (Exception e){
+                    throw new RuntimeException("Error instantiating instance of DataSource for class " + dataSource.getName() +
+                            " - no zero-arg constructor?",e);
+                }
             } else {
                 iterator = ScoreUtil.getMultiIterator(dataProvider.trainData(candidate.getDataParameters()));
             }

@@ -346,12 +346,10 @@ TEST_F(ParityOpsTests, ExpandDimsTest1) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(reshaped->isSameShape(z));
-    ASSERT_TRUE(reshaped->equalsTo(z));
+    ASSERT_TRUE(reshaped.isSameShape(z));
+    ASSERT_TRUE(reshaped.equalsTo(z));
 
     delete result;
-    delete reshaped;
-
 }
 
 
@@ -367,12 +365,10 @@ TEST_F(ParityOpsTests, ExpandDimsTest2) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(reshaped->isSameShape(z));
-    ASSERT_TRUE(reshaped->equalsTo(z));
+    ASSERT_TRUE(reshaped.isSameShape(z));
+    ASSERT_TRUE(reshaped.equalsTo(z));
 
     delete result;
-    delete reshaped;
-
 }
 
 
@@ -388,12 +384,10 @@ TEST_F(ParityOpsTests, ExpandDimsTest3) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(reshaped->isSameShape(z));
-    ASSERT_TRUE(reshaped->equalsTo(z));
+    ASSERT_TRUE(reshaped.isSameShape(z));
+    ASSERT_TRUE(reshaped.equalsTo(z));
 
     delete result;
-    delete reshaped;
-
 }
 
 TEST_F(ParityOpsTests, ExpandDimsTest4) {
@@ -408,12 +402,10 @@ TEST_F(ParityOpsTests, ExpandDimsTest4) {
 
     auto z = result->at(0);
 
-    ASSERT_TRUE(reshaped->isSameShape(z));
-    ASSERT_TRUE(reshaped->equalsTo(z));
+    ASSERT_TRUE(reshaped.isSameShape(z));
+    ASSERT_TRUE(reshaped.equalsTo(z));
 
     delete result;
-    delete reshaped;
-
 }
 
 
@@ -651,8 +643,8 @@ TEST_F(ParityOpsTests, Test_Select_2) {
 }
 
 TEST_F(ParityOpsTests, Test_Select_3) {
-
-    auto mask = NDArrayFactory::create<bool>('c', {1, 1}, {false});
+    bool value = false;
+    auto mask = NDArrayFactory::create<bool>('c', {1, 1}, {value});
     auto x = NDArrayFactory::create<float>('c', {1, 1}, {1});
     auto y = NDArrayFactory::create<float>('c', {1, 1}, {2});
     auto exp = NDArrayFactory::create<float>('c', {1, 1}, {2});
@@ -727,6 +719,7 @@ TEST_F(ParityOpsTests, Test_Scatter_Add_1) {
 }
 
 TEST_F(ParityOpsTests, Test_Scatter_Add_2) {
+
     auto vec = NDArrayFactory::create<float>('c', {4}, {1, 2, 3, 4});
     NDArray idc('c', {1, 4}, {0, 1, 2, 3}, nd4j::DataType::INT64);
     auto updates = NDArrayFactory::create<float>('c', {1, 4}, {1, 1, 1, 1});
@@ -1596,36 +1589,79 @@ TEST_F(ParityOpsTests, scatterND_update_test5) {
     delete result;
 }
 
+//////////////////////////////////////////////////////////////////////
 TEST_F(ParityOpsTests, scatter_update_1) {
-    auto matrix  = NDArrayFactory::create_<float>('c', {3, 2});
-    auto updates = NDArrayFactory::create_<float>('c', {2, 2});
-    updates->assign(1.0);
 
-    //updates.printBuffer("Updates");
+    NDArray x('c', {2,2}, {1,2,3,4}, nd4j::DataType::INT32);
+    NDArray updates('c', {2,2}, {10,20,30,40}, nd4j::DataType::INT32);
 
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, matrix);
-    variableSpace->putVariable(-2, updates);
-    variableSpace->putVariable(1, new Variable(&matrix));
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1, -2});
-
-    std::vector<int>* arguments = block->getIArguments();
-    arguments->push_back(0);
-    arguments->push_back(1);
-    arguments->push_back(1);
-    arguments->push_back(2);
-    arguments->push_back(1);
-    arguments->push_back(2);
+    NDArray exp('c', {2,2}, {30,40,10,20}, nd4j::DataType::INT32);
 
     nd4j::ops::scatter_update op;
+    auto results = op.execute({&x, &updates}, {}, {6,   1,1,  2,1,0});
 
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    // x.printBuffer();
 
-    Nd4jStatus result = op.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, result);
+    ASSERT_TRUE(exp.isSameShape(x));
+    ASSERT_TRUE(exp.equalsTo(x));
 
-    delete block;
-    delete variableSpace;
+    delete results;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatter_update_2) {
+
+    NDArray x('c', {2,2}, {1,2,3,4}, nd4j::DataType::INT32);
+    NDArray updates('c', {2,2}, {10,20,30,40}, nd4j::DataType::INT32);
+
+    NDArray exp('c', {2,2}, {20,10,40,30}, nd4j::DataType::INT32);
+
+    nd4j::ops::scatter_update op;
+    auto results = op.execute({&x, &updates}, {}, {6,   1,0,  2,1,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    ASSERT_TRUE(exp.isSameShape(x));
+    ASSERT_TRUE(exp.equalsTo(x));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatter_update_3) {
+
+    NDArray x('c', {2,2,2}, {1,2,3,4,5,6,7,8}, nd4j::DataType::INT32);
+    NDArray updates('c', {2,2,2}, {10,20,30,40,50,60,70,80}, nd4j::DataType::INT32);
+
+    NDArray exp('c', {2,2,2}, {50,60,70,80,10,20,30,40}, nd4j::DataType::INT32);
+
+    nd4j::ops::scatter_update op;
+    auto results = op.execute({&x, &updates}, {}, {6,  2,1,2,  2,1,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    ASSERT_TRUE(exp.isSameShape(x));
+    ASSERT_TRUE(exp.equalsTo(x));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ParityOpsTests, scatter_update_4) {
+
+    NDArray x('c', {2,2,2}, {1,2,3,4,5,6,7,8}, nd4j::DataType::INT32);
+    NDArray updates('c', {2,2,2}, {10,20,30,40,50,60,70,80}, nd4j::DataType::INT32);
+
+    NDArray exp('c', {2,2,2}, {20,2,3,10,60,6,7,50}, nd4j::DataType::INT32);
+
+    nd4j::ops::scatter_update op;
+    auto results = op.execute({&x, &updates}, {}, {6,  1,0,  2,3,0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    ASSERT_TRUE(exp.isSameShape(x));
+    ASSERT_TRUE(exp.equalsTo(x));
+
+    delete results;
+}

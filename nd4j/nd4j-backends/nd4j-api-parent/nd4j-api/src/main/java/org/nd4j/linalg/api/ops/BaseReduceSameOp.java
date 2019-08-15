@@ -58,6 +58,10 @@ public abstract class BaseReduceSameOp extends BaseReduceOp implements ReduceSam
         super(x, dimensions);
     }
 
+    public BaseReduceSameOp(INDArray x, boolean keepDims, int... dimensions) {
+        super(x, keepDims, dimensions);
+    }
+
     protected BaseReduceSameOp() {
         super();
     }

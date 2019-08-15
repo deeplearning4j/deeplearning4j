@@ -289,8 +289,8 @@ TEST_F(ContextTests, test_short_context_1) {
     auto array1 = NDArrayFactory::create<float>('c', {3, 2}, {-1.f, -2.f, -3.f, -4.f, -5.f, -6.f});
     Context ctx(1);
 
-    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), nullptr, nullptr);
-    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), nullptr, nullptr);
+    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), array0.specialBuffer(), array0.specialShapeInfo());
+    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), array1.specialBuffer(), array1.specialShapeInfo());
 
     ASSERT_EQ(2, ctx.width());
 
@@ -303,8 +303,14 @@ TEST_F(ContextTests, test_short_context_1) {
     ASSERT_TRUE(input0->buffer() == array0.buffer());
     ASSERT_TRUE(input0->shapeInfo() == array0.shapeInfo());
 
+    ASSERT_TRUE(input0->specialBuffer() == array0.specialBuffer());
+    ASSERT_TRUE(input0->specialShapeInfo() == array0.specialShapeInfo());
+
     ASSERT_TRUE(input1->buffer() == array1.buffer());
     ASSERT_TRUE(input1->shapeInfo() == array1.shapeInfo());
+
+    ASSERT_TRUE(input1->specialBuffer() == array1.specialBuffer());
+    ASSERT_TRUE(input1->specialShapeInfo() == array1.specialShapeInfo());
 }
 
 TEST_F(ContextTests, test_short_context_2) {
@@ -315,9 +321,9 @@ TEST_F(ContextTests, test_short_context_2) {
     auto exp = NDArrayFactory::create<float>('c', {3, 2}, {2.f, 4.f, 6.f, 8.f, 10.f, 12.f});
     Context ctx(1);
 
-    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), nullptr, nullptr);
-    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), nullptr, nullptr);
-    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), nullptr, nullptr);
+    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), array0.specialBuffer(), array0.specialShapeInfo());
+    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), array1.specialBuffer(), array1.specialShapeInfo());
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
     ASSERT_EQ(2, ctx.width());
 
@@ -334,8 +340,8 @@ TEST_F(ContextTests, test_short_context_3) {
     auto exp = NDArrayFactory::create<float>('c', {3, 2}, {2.f, 4.f, 6.f, 8.f, 10.f, 12.f});
     Context ctx(1);
 
-    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), nullptr, nullptr);
-    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), nullptr, nullptr);
+    ctx.setInputArray(0, array0.buffer(), array0.shapeInfo(), array0.specialBuffer(), array0.specialShapeInfo());
+    ctx.setInputArray(1, array1.buffer(), array1.shapeInfo(), array1.specialBuffer(), array1.specialShapeInfo());
 
     ASSERT_EQ(2, ctx.width());
 

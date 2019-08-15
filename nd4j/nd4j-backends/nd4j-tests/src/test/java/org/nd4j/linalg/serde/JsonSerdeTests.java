@@ -19,6 +19,7 @@ package org.nd4j.linalg.serde;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.NoArgsConstructor;
+import lombok.val;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -58,14 +59,14 @@ public class JsonSerdeTests extends BaseNd4jTest {
                 Nd4j.getRandom().setSeed(12345);
                 INDArray in = Nd4j.rand(DataType.DOUBLE, 3, 4).muli(20).subi(10);
 
-                ObjectMapper om = new ObjectMapper();
+                val om = new ObjectMapper();
 
                 for (DataType dt : new DataType[]{DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.LONG, DataType.INT, DataType.SHORT,
                         DataType.BYTE, DataType.UBYTE, DataType.BOOL, DataType.UTF8}) {
 
                     INDArray arr;
                     if(dt == DataType.UTF8){
-                        arr = Nd4j.create("a", "b", "c", "d", "e", "f", "g", "h", "i", "j", "k", "l").reshape('c', 3, 4);
+                        arr = Nd4j.create("aaaaa", "bbbb", "ccc", "dd", "e", "f", "g", "h", "i", "j", "k", "l").reshape('c', 3, 4);
                     } else {
                         arr = in.castTo(dt);
                     }

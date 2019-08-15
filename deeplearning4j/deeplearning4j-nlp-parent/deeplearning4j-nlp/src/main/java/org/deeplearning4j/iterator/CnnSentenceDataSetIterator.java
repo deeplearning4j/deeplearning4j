@@ -201,7 +201,7 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         List<String> tokens = new ArrayList<>();
         while (t.hasMoreTokens()) {
             String token = t.nextToken();
-            if (!wordVectors.hasWord(token)) {
+            if (!wordVectors.outOfVocabularySupported() && !wordVectors.hasWord(token)) {
                 switch (unknownWordHandling) {
                     case RemoveWord:
                         continue;

@@ -50,8 +50,6 @@ namespace nd4j {
             auto tmp = input->reshape(input->ordering(), shape);
             output->assign(tmp);
 
-            delete tmp;
-
             STORE_RESULT(output);
 
             return Status::OK();
