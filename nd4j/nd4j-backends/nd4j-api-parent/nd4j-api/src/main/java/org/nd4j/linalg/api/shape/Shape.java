@@ -3676,7 +3676,7 @@ public class Shape {
     }
 
     public static boolean isR(@NonNull DataType x) {
-        return x == DataType.FLOAT || x == DataType.HALF || x == DataType.DOUBLE;
+        return x == DataType.FLOAT || x == DataType.HALF || x == DataType.DOUBLE || x == DataType.BFLOAT16;
     }
 
     private static DataType max(@NonNull DataType typeX, @NonNull DataType typeY) {
