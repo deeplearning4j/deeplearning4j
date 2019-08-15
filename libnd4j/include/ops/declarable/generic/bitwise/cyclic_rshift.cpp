@@ -19,7 +19,7 @@
 //
 
 #include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_shift_bits)
+#if NOT_EXCLUDED(OP_cyclic_rshift_bits)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/helpers.h>
@@ -27,11 +27,11 @@
 
 namespace nd4j {
     namespace ops {
-        CONFIGURABLE_OP_IMPL(shift_bits, 1, 1, true, 0, -2) {
+        CONFIGURABLE_OP_IMPL(cyclic_rshift_bits, 1, 1, true, 0, -2) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(block.numI() > 0 || block.width() > 1, 0, "shift_bits: actual shift value is missing");
+            REQUIRE_TRUE(block.numI() > 0 || block.width() > 1, 0, "cyclic_rshift_bits: actual shift value is missing");
 
             uint32_t shift = 0;
             if (block.width() > 1) {
@@ -40,14 +40,14 @@ namespace nd4j {
                 shift = INT_ARG(0);
             };
 
-            REQUIRE_TRUE(shift > 0 && shift < input->sizeOfT() * 8, 0, "shift_bits: can't shift beyond size of data type")
+            helpers::cyclic_rshift_bits(block.launchContext(), *input, *output, shift);
 
-            helpers::shift_bits(block.launchContext(), *input, *output, shift);
+            REQUIRE_TRUE(shift > 0 && shift < input->sizeOfT() * 8, 0, "cyclic_rshift_bits: can't shift beyond size of data type")
 
             return Status::OK();
         }
 
-        DECLARE_TYPES(shift_bits) {
+        DECLARE_TYPES(cyclic_rshift_bits) {
             getOpDescriptor()
                     ->setAllowedInputTypes({ALL_INTS})
                     ->setSameMode(true);

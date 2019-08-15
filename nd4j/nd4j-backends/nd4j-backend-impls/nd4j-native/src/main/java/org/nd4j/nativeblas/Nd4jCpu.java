@@ -21722,7 +21722,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         /**
          * This operation toggles individual bits of each element in array
          * 
-         * PLEASE NOTE: This operation is possible only on integer datatypes
+         * PLEASE NOTE: This operation is possible only on integer data types
          * 
          * \tparam T
          */
@@ -21742,6 +21742,57 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
+//         #endif
+
+
+        /**
+         * This operation shift individual bits of each element in array
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_shift_bits)
+        @Namespace("nd4j::ops") public static class shift_bits extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public shift_bits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public shift_bits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public shift_bits position(long position) {
+                return (shift_bits)super.position(position);
+            }
+        
+                                                                                    public shift_bits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+         * This operation shift individual bits of each element in array
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_cyclic_shift_bits)
+        @Namespace("nd4j::ops") public static class cyclic_shift_bits extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public cyclic_shift_bits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public cyclic_shift_bits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public cyclic_shift_bits position(long position) {
+                return (cyclic_shift_bits)super.position(position);
+            }
+        
+                                                                                    public cyclic_shift_bits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
     
 
