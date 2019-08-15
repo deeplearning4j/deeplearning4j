@@ -23,6 +23,7 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
@@ -75,6 +76,7 @@ public class ComputationGraphConfigurationDeserializer
         boolean requireLegacyRegularizationHandling = requiresRegularizationFromLegacy(layers);
         boolean requiresLegacyWeightInitHandling = requiresWeightInitFromLegacy(layers);
         boolean requiresLegacyActivationHandling = requiresActivationFromLegacy(layers);
+        boolean requiresLegacyLossHandling = requiresLegacyLossHandling(layers);
 
         Long charOffsetEnd = null;
         JsonLocation endLocation = null;
@@ -126,6 +128,10 @@ public class ComputationGraphConfigurationDeserializer
 
                     if(requiresLegacyActivationHandling && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getActivationFn() == null){
                         handleActivationBackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
+                    }
+
+                    if(requiresLegacyLossHandling && layers[layerIdx] instanceof BaseOutputLayer && ((BaseOutputLayer)layers[layerIdx]).getLossFn() == null){
+                        handleLossBackwardCompatibility((BaseOutputLayer) layers[layerIdx],  (ObjectNode)next);
                     }
 
                     if(layers[layerIdx].getIDropout() == null){
