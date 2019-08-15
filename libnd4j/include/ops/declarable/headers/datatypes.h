@@ -30,7 +30,7 @@ namespace nd4j {
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
         #if NOT_EXCLUDED(OP_to_double)
-        DECLARE_OP(to_double, 1, 1, true);
+        DECLARE_CUSTOM_OP(to_double, 1, 1, true, 0, 0);
         #endif
 
         /**
@@ -39,7 +39,7 @@ namespace nd4j {
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
         #if NOT_EXCLUDED(OP_to_float16)
-        DECLARE_OP(to_float16, 1, 1, true);
+        DECLARE_CUSTOM_OP(to_float16, 1, 1, true, 0, 0);
         #endif
 
         /**
@@ -48,7 +48,7 @@ namespace nd4j {
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
         #if NOT_EXCLUDED(OP_to_float32)
-        DECLARE_OP(to_float32, 1, 1, true);
+        DECLARE_CUSTOM_OP(to_float32, 1, 1, true, 0, 0);
         #endif
 
         /**
@@ -57,7 +57,7 @@ namespace nd4j {
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
         #if NOT_EXCLUDED(OP_to_int32)
-        DECLARE_OP(to_int32, 1, 1, true);
+        DECLARE_CUSTOM_OP(to_int32, 1, 1, true, 0, 0);
         #endif
 
         /**
@@ -66,7 +66,7 @@ namespace nd4j {
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
         #if NOT_EXCLUDED(OP_to_int64)
-        DECLARE_OP(to_int64, 1, 1, true);
+        DECLARE_CUSTOM_OP(to_int64, 1, 1, true, 0, 0);
         #endif
 
         /**
@@ -75,7 +75,7 @@ namespace nd4j {
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
         #if NOT_EXCLUDED(OP_to_uint32)
-        DECLARE_OP(to_uint32, 1, 1, true);
+        DECLARE_CUSTOM_OP(to_uint32, 1, 1, true, 0, 0);
         #endif
 
         /**
@@ -84,7 +84,7 @@ namespace nd4j {
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
         #if NOT_EXCLUDED(OP_to_uint64)
-        DECLARE_OP(to_uint64, 1, 1, true);
+        DECLARE_CUSTOM_OP(to_uint64, 1, 1, true, 0, 0);
         #endif
 
         /**

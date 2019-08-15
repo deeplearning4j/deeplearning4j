@@ -27,7 +27,7 @@
 namespace nd4j {
 namespace ops  {
 
-OP_IMPL(mergemaxindex, -1, 1, false) {
+CUSTOM_OP_IMPL(mergemaxindex, -1, 1, false, 0, 0) {
 
     REQUIRE_OK(this->validateInputDimensionsMatch(block));
     auto output = OUTPUT_VARIABLE(0);
@@ -48,6 +48,15 @@ DECLARE_SYN(MergeMaxIndex, mergemaxindex);
         getOpDescriptor()
                 ->setAllowedInputTypes({ALL_INTS, ALL_FLOATS});
     }
+}
+DECLARE_SHAPE_FN(mergemaxindex) {
+    auto in = inputShape->at(0);
+    auto dtype = DataType::INT32;
+    if (block.getIArguments()->size()> 0)
+        dtype = (DataType)INT_ARG(0);
+
+    auto resShape = ShapeBuilders::copyShapeInfoAndType(in, dtype, block.workspace());
+    return SHAPELIST(resShape);
 }
 }
 

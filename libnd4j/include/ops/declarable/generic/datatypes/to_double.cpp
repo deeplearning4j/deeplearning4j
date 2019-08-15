@@ -25,7 +25,7 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(to_double, 1, 1, true) {
+        CUSTOM_OP_IMPL(to_double, 1, 1, true, 0, 0) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
@@ -42,6 +42,12 @@ namespace nd4j {
             ->setAllowedInputTypes(nd4j::DataType::ANY)
             ->setAllowedOutputTypes(nd4j::DataType::DOUBLE);
         }
+
+        DECLARE_SHAPE_FN(to_double) {
+            auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DataType::DOUBLE, true, block.workspace());
+            return SHAPELIST(outShape);
+        }
+
     }
 }
 

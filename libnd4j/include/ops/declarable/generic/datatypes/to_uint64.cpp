@@ -25,7 +25,7 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(to_uint64, 1, 1, true) {
+        CUSTOM_OP_IMPL(to_uint64, 1, 1, true, 0, 0) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
@@ -41,6 +41,10 @@ namespace nd4j {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
                     ->setAllowedOutputTypes(nd4j::DataType::INT8);
+        }
+        DECLARE_SHAPE_FN(to_uint64) {
+            auto outShape = ShapeBuilders::copyShapeInfoAndType(inputShape->at(0), DataType::UINT64, true, block.workspace());
+            return SHAPELIST(outShape);
         }
     }
 }

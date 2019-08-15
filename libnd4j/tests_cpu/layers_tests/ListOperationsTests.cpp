@@ -78,6 +78,71 @@ TEST_F(ListOperationsTests, BasicTest_Stack_1) {
     delete tads;
 }
 
+TEST_F(ListOperationsTests, BasicTest_UnStackList_1) {
+    NDArrayList list(0, true);
+    auto x = NDArrayFactory::create<double>('c', {10, 100});
+    auto tads = x.allTensorsAlongDimension({1});
+    for (int e = 0; e < 10; e++) {
+        auto row = NDArrayFactory::create_<double>('c', {100});
+        row->assign((double) e);
+        //list.write(e, row);
+        tads->at(e)->assign(row);
+        delete row;
+    }
+
+    nd4j::ops::unstack_list op;
+
+    auto result = op.execute(&list, {&x}, {}, {0});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(list.elements(), 10);
+
+//    auto z = result->at(0);
+//    z->printShapeInfo("The first of");
+//    ASSERT_TRUE(exp.isSameShape(z));
+//    ASSERT_TRUE(exp.equalsTo(z));
+    for (int e = 0; e < 10; e++) {
+        auto row = list.read(e);
+        ASSERT_TRUE(row->equalsTo(tads->at(e)));
+        //list.write(e, row);
+    }
+
+    delete result;
+    delete tads;
+}
+
+//TEST_F(ListOperationsTests, BasicTest_UnStackList_2) {
+////    NDArrayList list(0, true);
+//    auto x = NDArrayFactory::create<double>('c', {10, 100});
+//    auto tads = x.allTensorsAlongDimension({1});
+//    for (int e = 0; e < 10; e++) {
+//        auto row = NDArrayFactory::create_<double>('c', {100});
+//        row->assign((double) e);
+//        //list.write(e, row);
+//        tads->at(e)->assign(row);
+//        delete row;
+//    }
+//
+//    nd4j::ops::unstack_list op;
+//
+//    auto result = op.execute(nullptr, {&x}, {}, {0});
+//
+//    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+//    ASSERT_EQ(result->size(), 10);
+//
+//    //    auto z = result->at(0);
+////    z->printShapeInfo("The first of");
+////    ASSERT_TRUE(exp.isSameShape(z));
+////    ASSERT_TRUE(exp.equalsTo(z));
+//    for (int e = 0; e < 10; e++) {
+//        auto row = result->at(e);
+//        ASSERT_TRUE(row->equalsTo(tads->at(e)));
+//        //list.write(e, row);
+//    }
+//
+//    delete result;
+//    delete tads;
+//}
 
 TEST_F(ListOperationsTests, BasicTest_Read_1) {
     NDArrayList list(10);

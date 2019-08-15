@@ -223,21 +223,221 @@ TEST_F(DeclarableOpsTests5, Test_Boolean_diff_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests5, Test_SetSeed_1) {
+    auto x = NDArrayFactory::create<int>('c', {1, 1}, {120});
+    auto y = NDArrayFactory::create<int>(5);
 
+    nd4j::ops::set_seed op;
+    auto result = op.execute({&x, &y}, {}, {120, 5}, {}, false, nd4j::DataType::INT32);
 
+    ASSERT_EQ(Status::OK(), result->status());
+//    result->at(0)->printIndexedBuffer("RES SEED");
+    nd4j::ops::get_seed getOp;
+    auto getRes = getOp.execute({}, {}, {});
+    ASSERT_EQ(Status::OK(), getRes->status());
+//    getRes->at(0)->printIndexedBuffer("Output RES GET SEED");
+//    ASSERT_EQ(result->at(0)->t<bool>(0), true);
+    delete result;
+    delete getRes;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, scatterMul_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
+    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {10, 2, 3, 4});
 
+    nd4j::ops::scatter_mul op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
+    auto z = result->at(0);
 
+    ASSERT_TRUE(exp.equalsTo(z));
 
+    delete result;
+}
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
+    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.10, 2, 3, 4});
 
+    nd4j::ops::scatter_div op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Scatter Div");
+    ASSERT_TRUE(exp.equalsTo(z));
 
+    delete result;
+}
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, scatterSub_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
+    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-9, 1, 3, 4});
 
+    nd4j::ops::scatter_sub op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Scatter Sub");
+    ASSERT_TRUE(exp.equalsTo(z));
 
+    delete result;
+}
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, hardsigmoid_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.7, 0.9, 1, 1});
+
+    nd4j::ops::hardsigmoid op;
+    auto result = op.execute({&matrix}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Hadrdsigmoid 2x2");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, hardsigmoid_test2) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto eps = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.2, 0.4, 0, 0});
+
+    nd4j::ops::hardsigmoid_bp op;
+    auto result = op.execute({&matrix, &eps}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Hadrdsigmoid 2x2");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, hardtanh_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {-1, -1, -1, -1, 0, 1, 1, 1, 1});
+
+    nd4j::ops::hardtanh op;
+    auto result = op.execute({&matrix}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Hardtanh 2x2");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, hardtanh_test2) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {0, 0, 0, 4, 5, 6, 0, 0, 0});
+
+    nd4j::ops::hardtanh_bp op;
+    auto result = op.execute({&matrix, &eps}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Hardtanh_bp 2x2");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, histogram_test1) {
+    auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {3}, {3, 3, 3});
+
+    nd4j::ops::histogram op;
+    auto result = op.execute({&matrix}, {}, {3}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Histogram3");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, histogram_test2) {
+    auto matrix = NDArrayFactory::create<double>('c', {3}, {1, 2, 1});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {4}, {2, 0, 0, 1});
+
+    nd4j::ops::histogram op;
+    auto result = op.execute({&matrix}, {}, {4}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Histogram4");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, Identity_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+//    auto exp = NDArrayFactory::create<Nd4jLong>('c', {3, 3}, {3, 3, 3});
+
+    nd4j::ops::identity op;
+    auto result = op.execute({&matrix}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Histogram3");
+    ASSERT_TRUE(matrix.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, Identity_test2) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1,2,3,4,5,6,7,8,9});
+//    auto exp = NDArrayFactory::create<float>('c', {3,3});
+    nd4j::ops::identity_bp op;
+    auto result = op.execute({&matrix, &eps}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Identity_BP");
+    ASSERT_TRUE(z->equalsTo(eps));
+
+    delete result;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, Log1p_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {4, 3, 2, 1, 0, 1, 2, 3, 4});
+    auto y = NDArrayFactory::create<float>('c', {3,3}, {5,4,3,2,1,2,3,4,5});
+    //  auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1,2,3,4,5,6,7,8,9});
+//    auto exp = NDArrayFactory::create<float>('c', {3,3});
+    nd4j::ops::Log1p op;
+    y.applyTransform(nd4j::transform::Log, nullptr, nullptr);
+    auto result = op.execute({&matrix}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Log1p");
+    ASSERT_TRUE(z->equalsTo(y));
+
+    delete result;
+}
 
 TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
 

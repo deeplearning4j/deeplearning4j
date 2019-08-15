@@ -26,13 +26,19 @@
 namespace nd4j {
 namespace ops {
     LIST_OP_IMPL(unstack_list, 1, 1, 0, 0) {
-        auto input = INPUT_VARIABLE(0);
+        auto outputList = INPUT_LIST(0);
+        auto input = INPUT_VARIABLE(int(outputList != nullptr) );
 
-        auto list = new NDArrayList(0, true);
-        list->unstack(input, 0);
+        if (outputList == nullptr) {
+            outputList = new NDArrayList(0, true);
+            //block.trackList(outputList);
+            setupResultList(outputList, block);
+        }
+        outputList->unstack(input, INT_ARG(0));
 
         //OVERWRITE_RESULT(list);
-        setupResultList(list, block);
+
+        //
         return Status::OK();
     }
 }

@@ -25,7 +25,7 @@ namespace nd4j {
     namespace ops {
         namespace helpers {
             template <typename X, typename Z>
-            void _CUDA_G histogramKernel(void *xBuffer, Nd4jLong *xShapeInfo, void *zBuffer, Nd4jLong *zShapeInfo, void *allocationPointer, void *reductionPointer, Nd4jLong numBins, double min_val, double max_val) {
+            void _CUDA_G histogramKernel(void *xBuffer, Nd4jLong *xShapeInfo, void *zBuffer, Nd4jLong *zShapeInfo, void *allocationPointer, void *reductionPointer, Nd4jLong numBins, X* min_val, X* max_val) {
                 int tid = blockIdx.x * blockDim.x + threadIdx.x;
                 auto dx = reinterpret_cast<X*>(xBuffer);
                 auto result = reinterpret_cast<Z*>(zBuffer);
@@ -42,19 +42,19 @@ namespace nd4j {
                 }
                 __syncthreads();
 
-                Z binSize = (max_val - min_val) / (numBins);
+                X binSize = X((*max_val - *min_val) / numBins);
 
                 for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
-                    bins[e] = (Z) 0.0f;
+                    bins[e] = (Z) 0;
                 }
                 __syncthreads();
 
-                for (int e = tid; e < length; e+= blockDim.x * gridDim.x) {
-                    int idx = (int) ((dx[e] - min_val) / binSize);
-                    if (idx < 0) idx = 0;
-                    else if (idx >= numBins) idx = numBins - 1;
-
-                    nd4j::math::atomics::nd4j_atomicAdd(&bins[idx], (Z) 1.0f);
+                for (int e = tid; e < length; e += blockDim.x * gridDim.x) {
+                    int idx = int((dx[e] - *min_val) / binSize);
+                    idx = math::nd4j_max(idx, 0); //atomicMax(&idx, 0);//atomicMax(&idx, 0);
+                    idx = math::nd4j_min(idx, int(numBins - 1)); //atomicMin(&idx, int(numBins - 1));
+                    nd4j::math::atomics::nd4j_atomicAdd(&bins[idx], (Z)1);
+//                    bins[idx]++;
                 }
                 __syncthreads();
 
@@ -82,7 +82,7 @@ namespace nd4j {
 
                         // nullify shared memory for future accumulation
                         for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
-                            bins[e] = (Z) 0.0f;
+                            bins[e] = (Z) 0;
                         }
 
                         // accumulate reduced bins
@@ -90,7 +90,7 @@ namespace nd4j {
                             Z *ptrBuf = ((Z *)allocationPointer) + (r * numBins);
 
                             for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
-                                bins[e] += ptrBuf[e];
+                                math::atomics::nd4j_atomicAdd(&bins[e], ptrBuf[e]);
                             }
                         }
                         __syncthreads();
@@ -109,24 +109,26 @@ namespace nd4j {
             }
 
             template <typename X, typename Z>
-            static void histogram_(nd4j::LaunchContext *context, void *xBuffer, Nd4jLong *xShapeInfo, void *zBuffer, Nd4jLong *zShapeInfo, Nd4jLong numBins, double min_val, double max_val) {
+            static void histogram_(nd4j::LaunchContext *context, void *xBuffer, Nd4jLong *xShapeInfo, Nd4jLong *dxShapeInfo, void *zBuffer, Nd4jLong *zShapeInfo, Nd4jLong numBins, void* min_val, void* max_val) {
                 int numThreads = 256;
                 int numBlocks = nd4j::math::nd4j_max<int>(256, nd4j::math::nd4j_min<int>(1, shape::length(xShapeInfo) / numThreads));
                 int workspaceSize = numBlocks * numBins;
-                auto tmp = NDArrayFactory::create<Z>('c',{workspaceSize});
+                auto tmp = NDArrayFactory::create<Z>('c', {workspaceSize});
 
-                histogramKernel<X, Z><<<numBlocks, numThreads, 32768, *context->getCudaStream()>>>(xBuffer, xShapeInfo, zBuffer, zShapeInfo, tmp.getSpecialBuffer(), context->getReductionPointer(), numBins, min_val, max_val);
+                histogramKernel<X, Z><<<numBlocks, numThreads, 32768, *context->getCudaStream()>>>(xBuffer, dxShapeInfo, zBuffer, zShapeInfo, tmp.getSpecialBuffer(), context->getReductionPointer(), numBins, reinterpret_cast<X*>(min_val), reinterpret_cast<X*>(max_val));
 
                 cudaStreamSynchronize(*context->getCudaStream());
             }
 
             void histogramHelper(nd4j::LaunchContext *context, NDArray &input, NDArray &output) {
                 Nd4jLong numBins = output.lengthOf();
-                double min_val = input.reduceNumber(reduce::SameOps::Min).e<double>(0);
-                double max_val = input.reduceNumber(reduce::SameOps::Max).e<double>(0);
+                NDArray::registerSpecialUse({&output}, {&input});
 
-                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogram_, (context, input.specialBuffer(), input.specialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), numBins, min_val, max_val), LIBND4J_TYPES, INDEXING_TYPES);
-
+                auto min_val = input.reduceNumber(reduce::SameOps::Min);
+                auto max_val = input.reduceNumber(reduce::SameOps::Max);
+//                min_val.printIndexedBuffer("MIN");
+//                max_val.printIndexedBuffer("MAX");
+                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogram_, (context, input.specialBuffer(), input.shapeInfo(), input.specialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), numBins, min_val.specialBuffer(), max_val.specialBuffer()), LIBND4J_TYPES, INTEGER_TYPES);
                 NDArray::registerSpecialUse({&output}, {&input});
             }
         }

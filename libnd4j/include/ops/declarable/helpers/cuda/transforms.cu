@@ -685,12 +685,11 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
     BUILD_SINGLE_TEMPLATE(template void randomShuffle_, (nd4j::LaunchContext * context, NDArray& input, NDArray& output, nd4j::graph::RandomGenerator& rng, const bool isInplace), LIBND4J_TYPES);
 
 
-
     //////////////////////////////////////////////////////////////////////////
     void eye(nd4j::LaunchContext * context, NDArray& output) {
+
         output.setIdentity();
     }
-
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>

@@ -68,21 +68,21 @@ namespace helpers {
     static __global__ void shouldSelectKernel(T* boxesBuf, Nd4jLong* boxesShape, I* indexBuf, I* selectedIndicesData, double threshold, int numSelected, int i, bool* shouldSelect) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = gridDim.x * blockDim.x;
-        __shared__ bool shouldSelectShared;
+        __shared__ unsigned int shouldSelectShared;
         if (threadIdx.x == 0) {
-            shouldSelectShared = shouldSelect[0];
+            shouldSelectShared = (unsigned int)shouldSelect[0];
         }
         __syncthreads();
         for (int j = numSelected - 1 - tid; j >= 0; j -= step) {
             if (shouldSelectShared) {
                 if (needToSuppressWithThreshold(boxesBuf, boxesShape, indexBuf[i],
                                                                   indexBuf[selectedIndicesData[j]], T(threshold)))
-                    shouldSelectShared = false;
+                    atomicCAS(&shouldSelectShared, 1, 0);
             }
         }
         __syncthreads();
         if (threadIdx.x == 0) {
-            *shouldSelect = shouldSelectShared;
+            *shouldSelect = shouldSelectShared > 0;
         }
     }
 
