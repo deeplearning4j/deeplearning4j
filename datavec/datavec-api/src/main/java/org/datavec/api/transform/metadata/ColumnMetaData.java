@@ -17,7 +17,6 @@
 package org.datavec.api.transform.metadata;
 
 import org.datavec.api.transform.ColumnType;
-import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -32,8 +31,7 @@ import java.io.Serializable;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyMappingHelper.ColumnMetaDataHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ColumnMetaData extends Serializable, Cloneable {
 
     /**
