@@ -308,7 +308,7 @@
         <tensorflow.version>1.14.0</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
-        <commons-compress.version>1.16.1</commons-compress.version>
+        <commons-compress.version>1.18</commons-compress.version>
         <commonsmath.version>3.5</commonsmath.version>
         <commonslang.version>3.6</commonslang.version>
         <commonsio.version>2.5</commonsio.version>
