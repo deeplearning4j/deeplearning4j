@@ -389,21 +389,6 @@ public class Schema implements Serializable {
         }
     }
 
-    private static Schema fromJacksonString(String str, JsonFactory factory) {
-        ObjectMapper om = new ObjectMapper(factory);
-        om.registerModule(new JodaModule());
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        om.enable(SerializationFeature.INDENT_OUTPUT);
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        try {
-            return om.readValue(str, Schema.class);
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     public static class Builder {
         List<ColumnMetaData> columnMetaData = new ArrayList<>();
 

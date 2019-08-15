@@ -74,6 +74,7 @@ public class ComputationGraphConfigurationDeserializer
         boolean attemptIUpdaterFromLegacy = requiresIUpdaterFromLegacy(layers);
         boolean requireLegacyRegularizationHandling = requiresRegularizationFromLegacy(layers);
         boolean requiresLegacyWeightInitHandling = requiresWeightInitFromLegacy(layers);
+        boolean requiresLegacyActivationHandling = requiresActivationFromLegacy(layers);
 
         Long charOffsetEnd = null;
         JsonLocation endLocation = null;
@@ -121,6 +122,10 @@ public class ComputationGraphConfigurationDeserializer
 
                     if(requiresLegacyWeightInitHandling && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getWeightInitFn() == null){
                         handleWeightInitBackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
+                    }
+
+                    if(requiresLegacyActivationHandling && layers[layerIdx] instanceof BaseLayer && ((BaseLayer)layers[layerIdx]).getActivationFn() == null){
+                        handleActivationBackwardCompatibility((BaseLayer)layers[layerIdx], (ObjectNode)next);
                     }
 
                     if(layers[layerIdx].getIDropout() == null){
