@@ -48,7 +48,6 @@ import java.util.List;
  * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = false)
-@JsonDeserialize(using = FrozenLayerDeserializer.class)
 public class FrozenLayer extends Layer {
 
     @Getter
