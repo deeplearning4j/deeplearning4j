@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.layers.samediff.SameDiffVertex;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
@@ -40,6 +41,7 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -172,6 +174,16 @@ public class ComputationGraphConfiguration implements Serializable, Cloneable {
         ComputationGraphConfiguration conf;
         try {
             conf = mapper.readValue(json, ComputationGraphConfiguration.class);
+        } catch (InvalidTypeIdException e){
+            if(e.getMessage().contains("@class")){
+                try{
+                    //JSON may be legacy (1.0.0-alpha or earlier), attempt to load it using old format
+                    return JsonMappers.getLegacyMapper().readValue(json, ComputationGraphConfiguration.class);
+                } catch (IOException e2){
+                    throw new RuntimeException(e2);
+                }
+            }
+            throw new RuntimeException(e);
         } catch (Exception e) {
             //Check if this exception came from legacy deserializer...
             String msg = e.getMessage();
