@@ -342,9 +342,7 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
         ObjectMapper mapper = mapper();
 
         try {
-            String ret = mapper.writeValueAsString(this);
-            return ret;
-
+            return mapper.writeValueAsString(this);
         } catch (org.nd4j.shade.jackson.core.JsonProcessingException e) {
             throw new RuntimeException(e);
         }
