@@ -70,11 +70,7 @@ public class Nd4jSerializer extends Serializer<INDArray> {
     @Override
     public INDArray read(Kryo kryo, Input input, Class<INDArray> type) {
         DataInputStream dis = new DataInputStream(input);
-        try {
-            return Nd4j.read(dis);
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+        return Nd4j.read(dis);
         //Note: input should NOT be closed manually here - may be needed elsewhere (and closing here will cause serialization to fail)
     }
 
