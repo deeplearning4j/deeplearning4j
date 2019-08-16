@@ -1,5 +1,7 @@
 package org.datavec.api.transform.serde.legacy;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.datavec.api.transform.Transform;
 import org.datavec.api.transform.analysis.columns.*;
 import org.datavec.api.transform.condition.BooleanCondition;
@@ -58,10 +60,22 @@ import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
+/**
+ * This class defines a set of Jackson Mixins - which are a way of using a proxy class with annotations to override
+ * the existing annotations.
+ * In 1.0.0-beta, we switched how subtypes were handled in JSON ser/de: from "wrapper object" to "@class field".
+ * We use these mixins to allow us to still load the old format
+ *
+ * @author Alex Black
+ */
 public class LegacyJsonFormat {
 
     private LegacyJsonFormat(){ }
 
+    /**
+     * Get a mapper (minus general config) suitable for loading old format JSON - 1.0.0-alpha and before
+     * @return Object mapper
+     */
     public static ObjectMapper legacyMapper(){
         ObjectMapper om = new ObjectMapper();
         om.addMixIn(Schema.class, SchemaMixin.class);
@@ -84,6 +98,7 @@ public class LegacyJsonFormat {
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
     @JsonSubTypes({@JsonSubTypes.Type(value = Schema.class, name = "Schema"),
             @JsonSubTypes.Type(value = SequenceSchema.class, name = "SequenceSchema")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class SchemaMixin { }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -97,6 +112,7 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = NDArrayMetaData.class, name = "NDArray"),
             @JsonSubTypes.Type(value = StringMetaData.class, name = "String"),
             @JsonSubTypes.Type(value = TimeMetaData.class, name = "Time")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ColumnMetaDataMixin { }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -156,6 +172,7 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = StringListToIndicesNDArrayTransform.class, name = "StringListToIndicesNDArrayTransform"),
             @JsonSubTypes.Type(value = PivotTransform.class, name = "PivotTransform"),
             @JsonSubTypes.Type(value = TextToCharacterIndexTransform.class, name = "TextToCharacterIndexTransform")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class TransformMixin { }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -172,6 +189,7 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = NaNColumnCondition.class, name = "NaNColumnCondition"),
             @JsonSubTypes.Type(value = InfiniteColumnCondition.class, name = "InfiniteColumnCondition"),
             @JsonSubTypes.Type(value = SequenceLengthCondition.class, name = "SequenceLengthCondition")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ConditionMixin { }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -185,6 +203,7 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = NullWritable.class, name = "NullWritable"),
             @JsonSubTypes.Type(value = Text.class, name = "Text"),
             @JsonSubTypes.Type(value = BytesWritable.class, name = "BytesWritable")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class WritableMixin { }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -192,29 +211,33 @@ public class LegacyJsonFormat {
     @JsonSubTypes(value = {@JsonSubTypes.Type(value = ConditionFilter.class, name = "ConditionFilter"),
             @JsonSubTypes.Type(value = FilterInvalidValues.class, name = "FilterInvalidValues"),
             @JsonSubTypes.Type(value = InvalidNumColumns.class, name = "InvalidNumCols")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class FilterMixin { }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
     @JsonSubTypes(value = {@JsonSubTypes.Type(value = NumericalColumnComparator.class, name = "NumericalColumnComparator"),
-            @JsonSubTypes.Type(value = StringComparator.class, name = "StringComparator"),})
+            @JsonSubTypes.Type(value = StringComparator.class, name = "StringComparator")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class SequenceComparatorMixin { }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
     @JsonSubTypes(value = {@JsonSubTypes.Type(value = SequenceSplitTimeSeparation.class, name = "SequenceSplitTimeSeparation"),
             @JsonSubTypes.Type(value = SplitMaxLengthSequence.class, name = "SplitMaxLengthSequence")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class SequenceSplitMixin { }
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
     @JsonSubTypes(value = {@JsonSubTypes.Type(value = TimeWindowFunction.class, name = "TimeWindowFunction"),
-            @JsonSubTypes.Type(value = OverlappingTimeWindowFunction.class,
-                    name = "OverlappingTimeWindowFunction")})
+            @JsonSubTypes.Type(value = OverlappingTimeWindowFunction.class, name = "OverlappingTimeWindowFunction")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class WindowFunctionMixin { }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
     @JsonSubTypes(value = {@JsonSubTypes.Type(value = CalculateSortedRank.class, name = "CalculateSortedRank")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class CalculateSortedRankMixin { }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -223,6 +246,7 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = IntWritableComparator.class, name = "IntWritableComparator"),
             @JsonSubTypes.Type(value = LongWritableComparator.class, name = "LongWritableComparator"),
             @JsonSubTypes.Type(value = TextWritableComparator.class, name = "TextWritableComparator")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class WritableComparatorMixin { }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -233,9 +257,11 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = LongAnalysis.class, name = "LongAnalysis"),
             @JsonSubTypes.Type(value = StringAnalysis.class, name = "StringAnalysis"),
             @JsonSubTypes.Type(value = TimeAnalysis.class, name = "TimeAnalysis")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ColumnAnalysisMixin{ }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
     @JsonSubTypes(value = {@JsonSubTypes.Type(value = StringReducer.class, name = "StringReducer")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class IStringReducerMixin{ }
 }
