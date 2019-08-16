@@ -27,7 +27,7 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(toggle_bits, -1, 1, true) {
+        OP_IMPL(toggle_bits, -1, -1, true) {
 
             for (int i = 0; i < block.width(); i++) {
                 auto x = INPUT_VARIABLE(i);
