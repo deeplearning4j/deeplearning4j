@@ -3326,12 +3326,12 @@ TEST_F(DeclarableOpsTests7, TestRoll_10) {
     ASSERT_EQ(result->status(), Status::OK());
     auto out = result->at(0);
 
-    out->printIndexedBuffer("Output");
+//    out->printIndexedBuffer("Output");
     //exp.printIndexedBuffer("Expect");
 
     ASSERT_TRUE(exp.equalsTo(out));
 
-//    delete result;
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3351,12 +3351,12 @@ TEST_F(DeclarableOpsTests7, TestRoll_11) {
     ASSERT_EQ(result->status(), Status::OK());
     auto out = result->at(0);
 
-    out->printIndexedBuffer("Output");
+//    out->printIndexedBuffer("Output");
     //exp.printIndexedBuffer("Expect");
 
     ASSERT_TRUE(exp.equalsTo(out));
 
-//    delete result;
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3381,7 +3381,7 @@ TEST_F(DeclarableOpsTests7, TestRoll_12) {
 
     ASSERT_TRUE(exp.equalsTo(out));
 
-//    delete result;
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3407,7 +3407,7 @@ TEST_F(DeclarableOpsTests7, TestRoll_13) {
 
     ASSERT_TRUE(exp.equalsTo(out));
 
-//    delete result;
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -3424,15 +3424,15 @@ TEST_F(DeclarableOpsTests7, TestRoll_14) {
 // ----------------------------------------------------------------
     nd4j::ops::roll op;
 
-    auto result = op.execute({&x, &shift, &axis}, {}, {}, {}, true, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x, &shift, &axis}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), Status::OK());
     auto out = result->at(0);
-    out->printIndexedBuffer("Output");
+//    out->printIndexedBuffer("Output");
     //exp.printIndexedBuffer("Expect");
 
     ASSERT_TRUE(exp.equalsTo(out));
 
-//    delete result;
+    delete result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
