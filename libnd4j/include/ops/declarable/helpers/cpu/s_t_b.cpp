@@ -212,8 +212,8 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 
         for(uint j = 1; j <= numOfSpatialDims; ++j) {
 
-            const auto padLeft  = padding->e<uint>(j, 0);
-            const auto padRight = padding->e<uint>(j, 1);
+            const auto padLeft  = padding.e<uint>(j, 0);
+            const auto padRight = padding.e<uint>(j, 1);
 
             within &= (coords[j] >= padLeft && coords[j] < output.sizeAt(j) - padRight);
 
@@ -233,21 +233,21 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 BUILD_SINGLE_TEMPLATE(template void spaceToBatchND_, (const NDArray& input, const NDArray& padding, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
-void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding, NDArray& output, ) {
+void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding, NDArray& output ) {
 
     // 4D example with two spatial dimensions
     // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockShape[0]*blockShape[1], (iH + padBottom + padTop)/blockShape[0], (iW + padLeft + padRight)/blockShape[1], iC]
 
-    const uint rank = iput.rankOf();
+    const uint rank = input.rankOf();
 
-    const uint numOfSpatialDims = blockShape->sizeAt(0);
+    const uint numOfSpatialDims = blockShape.sizeAt(0);
 
     //*** construct reshaping std::vector for first reshape of output array ***//
     std::vector<Nd4jLong> temp(numOfSpatialDims + rank);
 
     int i;
     for(i = 0; i < numOfSpatialDims; ++i)
-        temp[i] = blockShape->e<Nd4jLong>(i);
+        temp[i] = blockShape.e<Nd4jLong>(i);
     temp[i++] = input.sizeAt(0);
     for(int j = 1; j < rank; ++i, ++j)
         temp[i] = output.sizeAt(j);
@@ -280,7 +280,7 @@ void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const ND
         temp[0] = input.sizeAt(0);
 
         for(i = 1; i <= rank; ++i)
-            temp[i] = (i <= numOfSpatialDims) ? output.sizeAt(i) * blockShape->e<Nd4jLong>(i - 1) : output.sizeAt(i);
+            temp[i] = (i <= numOfSpatialDims) ? output.sizeAt(i) * blockShape.e<Nd4jLong>(i - 1) : output.sizeAt(i);
 
         // input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, input.sizeAt(3)
 
