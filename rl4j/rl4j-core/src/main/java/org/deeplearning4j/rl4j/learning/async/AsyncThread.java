@@ -25,12 +25,10 @@ import org.deeplearning4j.rl4j.learning.HistoryProcessor;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.StepCountable;
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingEpochEndEvent;
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingEpochEvent;
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingListenerList;
-import org.deeplearning4j.rl4j.learning.listener.TrainingEpochEndEvent;
+import org.deeplearning4j.rl4j.learning.listener.EpochTrainingResultEvent;
 import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
@@ -62,9 +60,9 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     @Getter @Setter
     private IHistoryProcessor historyProcessor;
 
-    private final AsyncTrainingListenerList listeners;
+    private final TrainingListenerList listeners;
 
-    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, MDP<O, A, AS> mdp, AsyncTrainingListenerList listeners, int threadNumber) {
+    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, MDP<O, A, AS> mdp, TrainingListenerList listeners, int threadNumber) {
         this.mdp = mdp;
         this.listeners = listeners;
         this.threadNumber = threadNumber;
@@ -104,10 +102,9 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
      * TrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
      * Events:
      * <ul>
-     *   <li>{@link TrainingListener#onEpochStart(TrainingEvent) onEpochStart()} is called at the start
-     *   of every epoch.</li>
-     *   <li>{@link TrainingListener#onEpochEnd(TrainingEpochEndEvent) onEpochEnd()} is called at the end of every
-     *   epoch. It will not be called if onEpochStart stops the training.</li>
+     *   <li>{@link TrainingListener#onNewEpoch(TrainingEvent) onNewEpoch()} is called when a new epoch is started.</li>
+     *   <li>{@link TrainingListener#onEpochTrainingResult(EpochTrainingResultEvent) onEpochTrainingResult()} is called at the end of every
+     *   epoch. It will not be called if onNewEpoch() stops the training.</li>
      * </ul>
      */
     @Override
@@ -155,14 +152,14 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     private boolean initWork(RunContext context) {
         initNewEpoch(context);
         preEpoch();
-        return listeners.notifyEpochStarted(buildEvent());
+        return listeners.notifyNewEpoch(buildonNewEpochEvent());
     }
 
     private boolean startNewEpoch(RunContext context) {
         initNewEpoch(context);
         epochCounter++;
         preEpoch();
-        return listeners.notifyEpochStarted(buildEvent());
+        return listeners.notifyNewEpoch(buildonNewEpochEvent());
     }
 
     private boolean finishEpoch(RunContext context) {
@@ -171,7 +168,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
         log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + context.rewards);
 
-        return listeners.notifyEpochFinished(buildEpochEndEvent(statEntry));
+        return listeners.notifyEpochTrainingResult(buildEpochTrainingResultEvent(statEntry));
     }
 
     private void terminateWork() {
@@ -179,12 +176,21 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         getAsyncGlobal().terminate();
     }
 
-    private AsyncTrainingEpochEvent buildEvent() {
-        return new AsyncTrainingEpochEvent(this);
+    /**
+     * An overridable method that builds the event passed to notifyNewEpoch
+     * @return The event that will be passed to notifyNewEpoch
+     */
+    protected TrainingEvent buildonNewEpochEvent() {
+        return new TrainingEvent();
     }
 
-    private AsyncTrainingEpochEndEvent buildEpochEndEvent(IDataManager.StatEntry statEntry) {
-        return new AsyncTrainingEpochEndEvent(this, statEntry);
+    /**
+     * An overridable method that builds the event passed to notifyEpochTrainingResult
+     * @param statEntry An instance of IDataManager.StatEntry
+     * @return The event that will be passed to notifyEpochTrainingResult
+     */
+    protected EpochTrainingResultEvent buildEpochTrainingResultEvent(IDataManager.StatEntry statEntry) {
+        return new EpochTrainingResultEvent(statEntry, getEpochCounter(), getStepCounter());
     }
 
 

@@ -7,7 +7,7 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.support.*;
-import org.deeplearning4j.rl4j.util.DataManagerSyncTrainingListener;
+import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -133,7 +133,7 @@ public class QLearningDiscreteTest {
                                      QLConfiguration conf, IDataManager dataManager, MockExpReplay expReplay,
                                      int epsilonNbStep) {
             super(mdp, dqn, conf, epsilonNbStep);
-            addListener(DataManagerSyncTrainingListener.builder(dataManager).build());
+            addListener(new DataManagerTrainingListener(dataManager));
             setExpReplay(expReplay);
         }
 

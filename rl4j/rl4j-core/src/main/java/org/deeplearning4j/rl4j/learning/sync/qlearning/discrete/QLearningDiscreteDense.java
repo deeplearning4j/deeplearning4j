@@ -23,7 +23,7 @@ import org.deeplearning4j.rl4j.network.dqn.DQNFactoryStdDense;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManagerSyncTrainingListener;
+import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
@@ -36,7 +36,7 @@ public class QLearningDiscreteDense<O extends Encodable> extends QLearningDiscre
     public QLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLearning.QLConfiguration conf,
                     IDataManager dataManager) {
         this(mdp, dqn, conf);
-        addListener(DataManagerSyncTrainingListener.builder(dataManager).build());
+        addListener(new DataManagerTrainingListener(dataManager));
     }
     public QLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLearning.QLConfiguration conf) {
         super(mdp, dqn, conf, conf.getEpsilonNbStep());

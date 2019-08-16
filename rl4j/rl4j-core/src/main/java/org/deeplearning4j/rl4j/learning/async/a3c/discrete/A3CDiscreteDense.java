@@ -20,7 +20,7 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.*;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManagerAsyncTrainingListener;
+import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
@@ -38,7 +38,7 @@ public class A3CDiscreteDense<O extends Encodable> extends A3CDiscrete<O> {
     public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic IActorCritic, A3CConfiguration conf,
                     IDataManager dataManager) {
         this(mdp, IActorCritic, conf);
-        addListener(DataManagerAsyncTrainingListener.builder(dataManager).build());
+        addListener(new DataManagerTrainingListener(dataManager));
     }
     public A3CDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic actorCritic, A3CConfiguration conf) {
         super(mdp, actorCritic, conf);

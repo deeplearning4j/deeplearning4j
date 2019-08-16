@@ -1,6 +1,6 @@
 package org.deeplearning4j.rl4j.learning.async;
 
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingListenerList;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.policy.Policy;
@@ -17,7 +17,7 @@ public class AsyncThreadTest {
     public void when_newEpochStarted_expect_neuralNetworkReset() {
         // Arrange
         TestContext context = new TestContext();
-        context.listener.setRemainingEpochStartCallCount(5);
+        context.listener.setRemainingOnNewEpochCallCount(5);
 
         // Act
         context.sut.run();
@@ -27,31 +27,31 @@ public class AsyncThreadTest {
     }
 
     @Test
-    public void when_epochStartedReturnsStop_expect_threadStopped() {
+    public void when_onNewEpochReturnsStop_expect_threadStopped() {
         // Arrange
         TestContext context = new TestContext();
-        context.listener.setRemainingEpochStartCallCount(1);
+        context.listener.setRemainingOnNewEpochCallCount(1);
 
         // Act
         context.sut.run();
 
         // Assert
-        assertEquals(2, context.listener.onEpochStartCallCount);
-        assertEquals(1, context.listener.onEpochEndCallCount);
+        assertEquals(2, context.listener.onNewEpochCallCount);
+        assertEquals(1, context.listener.onEpochTrainingResultCallCount);
     }
 
     @Test
-    public void when_epochEndReturnsStop_expect_threadStopped() {
+    public void when_epochTrainingResultReturnsStop_expect_threadStopped() {
         // Arrange
         TestContext context = new TestContext();
-        context.listener.setRemainingEpochEndCallCount(1);
+        context.listener.setRemainingOnEpochTrainingResult(1);
 
         // Act
         context.sut.run();
 
         // Assert
-        assertEquals(2, context.listener.onEpochStartCallCount);
-        assertEquals(2, context.listener.onEpochEndCallCount);
+        assertEquals(2, context.listener.onNewEpochCallCount);
+        assertEquals(2, context.listener.onEpochTrainingResultCallCount);
     }
 
     @Test
@@ -92,8 +92,8 @@ public class AsyncThreadTest {
         public final MockObservationSpace observationSpace = new MockObservationSpace();
         public final MockMDP mdp = new MockMDP(observationSpace);
         public final MockAsyncConfiguration config = new MockAsyncConfiguration(5, 2);
-        public final AsyncTrainingListenerList listeners = new AsyncTrainingListenerList();
-        public final MockAsyncTrainingListener listener = new MockAsyncTrainingListener();
+        public final TrainingListenerList listeners = new TrainingListenerList();
+        public final MockTrainingListener listener = new MockTrainingListener();
         public final MockAsyncThread sut = new MockAsyncThread(asyncGlobal, 0, neuralNet, mdp, config, listeners);
 
         public TestContext() {
@@ -108,11 +108,11 @@ public class AsyncThreadTest {
         public int postEpochCallCount = 0;
 
 
-        IAsyncGlobal asyncGlobal;
+        private final IAsyncGlobal asyncGlobal;
         private final MockNeuralNet neuralNet;
         private final AsyncConfiguration conf;
 
-        public MockAsyncThread(IAsyncGlobal asyncGlobal, int threadNumber, MockNeuralNet neuralNet, MDP mdp, AsyncConfiguration conf, AsyncTrainingListenerList listeners) {
+        public MockAsyncThread(IAsyncGlobal asyncGlobal, int threadNumber, MockNeuralNet neuralNet, MDP mdp, AsyncConfiguration conf, TrainingListenerList listeners) {
             super(asyncGlobal, mdp, listeners, threadNumber);
 
             this.asyncGlobal = asyncGlobal;

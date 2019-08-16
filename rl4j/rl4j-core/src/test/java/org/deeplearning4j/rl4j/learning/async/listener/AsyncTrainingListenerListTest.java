@@ -1,6 +1,9 @@
 package org.deeplearning4j.rl4j.learning.async.listener;
 
+import org.deeplearning4j.rl4j.learning.listener.EpochTrainingResultEvent;
+import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -10,82 +13,77 @@ public class AsyncTrainingListenerListTest {
     @Test
     public void when_listIsEmpty_expect_notifyTrainingStartedReturnTrue() {
         // Arrange
-        AsyncTrainingListenerList sut = new AsyncTrainingListenerList();
+        TrainingListenerList sut = new TrainingListenerList();
 
         // Act
         boolean resultTrainingStarted = sut.notifyTrainingStarted(null);
-        boolean resultEpochStarted = sut.notifyEpochStarted(null);
-        boolean resultEpochFinished = sut.notifyEpochFinished(null);
+        boolean resultNewEpoch = sut.notifyNewEpoch(null);
+        boolean resultEpochTrainingResult = sut.notifyEpochTrainingResult(null);
 
         // Assert
         assertTrue(resultTrainingStarted);
-        assertTrue(resultEpochStarted);
-        assertTrue(resultEpochFinished);
+        assertTrue(resultNewEpoch);
+        assertTrue(resultEpochTrainingResult);
     }
 
     @Test
     public void when_firstListerStops_expect_othersListnersNotCalled() {
         // Arrange
-        MockAsyncTrainingListener listener1 = new MockAsyncTrainingListener();
-        listener1.onTrainingProgressResponse = TrainingListener.ListenerResponse.STOP;
-        MockAsyncTrainingListener listener2 = new MockAsyncTrainingListener();
-        AsyncTrainingListenerList sut = new AsyncTrainingListenerList();
+        MockTrainingListener listener1 = new MockTrainingListener();
+        listener1.onTrainingResultResponse = TrainingListener.ListenerResponse.STOP;
+        MockTrainingListener listener2 = new MockTrainingListener();
+        TrainingListenerList sut = new TrainingListenerList();
         sut.add(listener1);
         sut.add(listener2);
 
         // Act
-        sut.notifyTrainingProgress(null);
+        sut.notifyEpochTrainingResult(null);
 
         // Assert
-        assertEquals(1, listener1.onTrainingProgressCallCount);
-        assertEquals(0, listener2.onTrainingProgressCallCount);
+        assertEquals(1, listener1.onEpochTrainingResultCallCount);
+        assertEquals(0, listener2.onEpochTrainingResultCallCount);
     }
 
     @Test
     public void when_allListenersContinue_expect_listReturnsTrue() {
         // Arrange
-        MockAsyncTrainingListener listener1 = new MockAsyncTrainingListener();
-        MockAsyncTrainingListener listener2 = new MockAsyncTrainingListener();
-        AsyncTrainingListenerList sut = new AsyncTrainingListenerList();
+        MockTrainingListener listener1 = new MockTrainingListener();
+        MockTrainingListener listener2 = new MockTrainingListener();
+        TrainingListenerList sut = new TrainingListenerList();
         sut.add(listener1);
         sut.add(listener2);
 
         // Act
-        boolean resultTrainingProgress = sut.notifyTrainingProgress(null);
+        boolean resultTrainingProgress = sut.notifyEpochTrainingResult(null);
 
         // Assert
         assertTrue(resultTrainingProgress);
     }
 
-    private static class MockAsyncTrainingListener implements AsyncTrainingListener {
+    private static class MockTrainingListener implements TrainingListener {
 
-        public int onTrainingProgressCallCount = 0;
-        public ListenerResponse onTrainingProgressResponse = ListenerResponse.CONTINUE;
+        public int onEpochTrainingResultCallCount = 0;
+        public ListenerResponse onTrainingResultResponse = ListenerResponse.CONTINUE;
 
         @Override
-        public ListenerResponse onTrainingProgress(AsyncTrainingEvent event) {
-            ++onTrainingProgressCallCount;
-            return onTrainingProgressResponse;
+        public ListenerResponse onTrainingStart(TrainingEvent event) {
+            return ListenerResponse.CONTINUE;
         }
 
         @Override
-        public ListenerResponse onTrainingStart(AsyncTrainingEvent event) {
-            return null;
-        }
-
-        @Override
-        public void onTrainingEnd() {
+        public void onTrainingEnd(TrainingEvent event) {
 
         }
 
         @Override
-        public ListenerResponse onEpochStart(AsyncTrainingEpochEvent event) {
-            return null;
+        public ListenerResponse onNewEpoch(TrainingEvent event) {
+            return ListenerResponse.CONTINUE;
         }
 
         @Override
-        public ListenerResponse onEpochEnd(AsyncTrainingEpochEndEvent event) {
-            return null;
+        public ListenerResponse onEpochTrainingResult(EpochTrainingResultEvent event) {
+            ++onEpochTrainingResultCallCount;
+            return onTrainingResultResponse;
         }
     }
 

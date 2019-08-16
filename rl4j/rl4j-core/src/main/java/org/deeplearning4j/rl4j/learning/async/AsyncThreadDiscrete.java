@@ -21,7 +21,7 @@ import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingListenerList;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -46,7 +46,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
     @Getter
     private NN current;
 
-    public AsyncThreadDiscrete(IAsyncGlobal<NN> asyncGlobal, MDP<O, Integer, DiscreteSpace> mdp, AsyncTrainingListenerList listeners, int threadNumber) {
+    public AsyncThreadDiscrete(IAsyncGlobal<NN> asyncGlobal, MDP<O, Integer, DiscreteSpace> mdp, TrainingListenerList listeners, int threadNumber) {
         super(asyncGlobal, mdp, listeners, threadNumber);
         synchronized (asyncGlobal) {
             current = (NN)asyncGlobal.getCurrent().clone();

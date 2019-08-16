@@ -22,7 +22,7 @@ import org.deeplearning4j.rl4j.network.dqn.DQNFactoryStdDense;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManagerAsyncTrainingListener;
+import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
@@ -34,7 +34,7 @@ public class AsyncNStepQLearningDiscreteDense<O extends Encodable> extends Async
     public AsyncNStepQLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn,
                     AsyncNStepQLConfiguration conf, IDataManager dataManager) {
         super(mdp, dqn, conf);
-        addListener(DataManagerAsyncTrainingListener.builder(dataManager).build());
+        addListener(new DataManagerTrainingListener(dataManager));
     }
 
     public AsyncNStepQLearningDiscreteDense(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn,

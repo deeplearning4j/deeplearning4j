@@ -23,7 +23,7 @@ import org.deeplearning4j.rl4j.network.dqn.DQNFactoryStdConv;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManagerSyncTrainingListener;
+import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
@@ -38,7 +38,7 @@ public class QLearningDiscreteConv<O extends Encodable> extends QLearningDiscret
     public QLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, HistoryProcessor.Configuration hpconf,
                     QLConfiguration conf, IDataManager dataManager) {
         this(mdp, dqn, hpconf, conf);
-        addListener(DataManagerSyncTrainingListener.builder(dataManager).build());
+        addListener(new DataManagerTrainingListener(dataManager));
     }
     public QLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, HistoryProcessor.Configuration hpconf,
                                  QLConfiguration conf) {

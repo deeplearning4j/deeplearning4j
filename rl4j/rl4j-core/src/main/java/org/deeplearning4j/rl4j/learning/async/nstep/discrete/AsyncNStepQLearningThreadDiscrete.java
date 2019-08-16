@@ -22,7 +22,7 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
 import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.MiniTrans;
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingListenerList;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
@@ -52,7 +52,7 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
 
     public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IAsyncGlobal<IDQN> asyncGlobal,
                                              AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf,
-                                             AsyncTrainingListenerList listeners, int threadNumber) {
+                                             TrainingListenerList listeners, int threadNumber) {
         super(asyncGlobal, mdp, listeners, threadNumber);
         this.conf = conf;
         this.asyncGlobal = asyncGlobal;

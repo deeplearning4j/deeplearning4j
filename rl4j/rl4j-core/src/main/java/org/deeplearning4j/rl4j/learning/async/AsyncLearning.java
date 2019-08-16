@@ -18,14 +18,11 @@ package org.deeplearning4j.rl4j.learning.async;
 
 import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingEvent;
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingListener;
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingListenerList;
 import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -44,22 +41,18 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
                 extends Learning<O, A, AS, NN> {
 
     @Getter(AccessLevel.PROTECTED)
-    private final AsyncTrainingListenerList listeners = new AsyncTrainingListenerList();
+    private final TrainingListenerList listeners = new TrainingListenerList();
 
     public AsyncLearning(AsyncConfiguration conf) {
         super(conf);
-        progressEventInterval = 20000;
     }
 
-    @Setter
-    private int progressEventInterval;
-
     /**
-     * Add a {@link AsyncTrainingListener} listener at the end of the listener list.
+     * Add a {@link TrainingListener} listener at the end of the listener list.
      *
      * @param listener the listener to be added
      */
-    public void addListener(AsyncTrainingListener listener) {
+    public void addListener(TrainingListener listener) {
         listeners.add(listener);
     }
 
@@ -81,16 +74,19 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         return getAsyncGlobal().isTrainingComplete();
     }
 
-    private void launchThreads() {
+    private Thread[] launchThreads() {
         startGlobalThread();
-        for (int i = 0; i < getConfiguration().getNumThread(); i++) {
+        Thread[] threads = new Thread[getConfiguration().getNumThread()];
+        for (int i = 0; i < threads.length; i++) {
             Thread t = newThread(i);
             Nd4j.getAffinityManager().attachThreadToDevice(t,
                             i % Nd4j.getAffinityManager().getNumberOfDevices());
             t.start();
-
+            threads[i] = t;
         }
         log.info("Threads launched.");
+
+        return threads;
     }
 
     /**
@@ -114,30 +110,20 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
      * Events:
      * <ul>
      *   <li>{@link TrainingListener#onTrainingStart(TrainingEvent) onTrainingStart()} is called once when the training starts.</li>
-     *   <li>{@link AsyncTrainingListener#onTrainingProgress(AsyncTrainingEvent) onTrainingProgress()} is called at regular intervals (see setProgressEventInterval(int))</li>
-     *   <li>{@link TrainingListener#onTrainingEnd() onTrainingEnd} is always called at the end of the training, even if the training was cancelled by a listener.</li>
+     *   <li>{@link TrainingListener#onTrainingEnd(TrainingEvent) onTrainingEnd()}  is always called at the end of the training, even if the training was cancelled by a listener.</li>
      * </ul>
      */
     public void train() {
 
             log.info("AsyncLearning training starting.");
 
-            launchThreads();
+            Thread[] threads = launchThreads();
 
-            boolean canContinue = listeners.notifyTrainingStarted(buildEvent());
+            boolean canContinue = listeners.notifyTrainingStarted(buildTrainingStartedEvent());
             if (canContinue) {
                 try {
-                    synchronized (this) {
-                        while (!isTrainingComplete() && getAsyncGlobal().isRunning()) {
-                            getPolicy().play(getMdp(), getHistoryProcessor());
-
-                            canContinue = listeners.notifyTrainingProgress(buildEvent());
-                            if (!canContinue) {
-                                break;
-                            }
-
-                            wait(progressEventInterval);
-                        }
+                    for(Thread t : threads) {
+                        t.join();
                     }
                 } catch (InterruptedException e) {
                     log.error("Training failed.", e);
@@ -145,11 +131,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
             }
 
         terminateTraining();
-        listeners.notifyTrainingFinished();
-    }
-
-    private AsyncTrainingEvent buildEvent() {
-        return new AsyncTrainingEvent(this);
+        listeners.notifyTrainingFinished(buildTrainingFinishedEvent());
     }
 
     protected void terminateTraining() {

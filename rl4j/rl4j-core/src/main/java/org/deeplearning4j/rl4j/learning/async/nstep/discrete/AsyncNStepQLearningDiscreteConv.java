@@ -24,7 +24,7 @@ import org.deeplearning4j.rl4j.network.dqn.DQNFactoryStdConv;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManagerAsyncTrainingListener;
+import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
 /**
@@ -40,7 +40,7 @@ public class AsyncNStepQLearningDiscreteConv<O extends Encodable> extends AsyncN
     public AsyncNStepQLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn,
                     HistoryProcessor.Configuration hpconf, AsyncNStepQLConfiguration conf, IDataManager dataManager) {
         this(mdp, dqn, hpconf, conf);
-        addListener(DataManagerAsyncTrainingListener.builder(dataManager).build());
+        addListener(new DataManagerTrainingListener(dataManager));
     }
     public AsyncNStepQLearningDiscreteConv(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn,
                                            HistoryProcessor.Configuration hpconf, AsyncNStepQLConfiguration conf) {

@@ -18,13 +18,10 @@ package org.deeplearning4j.rl4j.learning.sync;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.listener.TrainingEpochEndEvent;
+import org.deeplearning4j.rl4j.learning.listener.EpochTrainingResultEvent;
 import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
-import org.deeplearning4j.rl4j.learning.sync.listener.SyncTrainingEpochEndEvent;
-import org.deeplearning4j.rl4j.learning.sync.listener.SyncTrainingEvent;
-import org.deeplearning4j.rl4j.learning.sync.listener.SyncTrainingListener;
-import org.deeplearning4j.rl4j.learning.sync.listener.SyncTrainingListenerList;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -41,7 +38,7 @@ import org.deeplearning4j.rl4j.util.IDataManager;
 public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
         extends Learning<O, A, AS, NN> {
 
-    private SyncTrainingListenerList listeners = new SyncTrainingListenerList();
+    private final TrainingListenerList listeners = new TrainingListenerList();
 
     public SyncLearning(LConfiguration conf) {
         super(conf);
@@ -50,9 +47,9 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
     /**
      * Add a listener at the end of the listener list.
      *
-     * @param listener
+     * @param listener The listener to add
      */
-    public void addListener(SyncTrainingListener listener) {
+    public void addListener(TrainingListener listener) {
         listeners.add(listener);
     }
 
@@ -65,50 +62,47 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
      * <p>
      * Listeners<br>
      * For a given event, the listeners are called sequentially in same the order as they were added. If one listener
-     * returns {@link SyncTrainingListener.ListenerResponse SyncTrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
+     * returns {@link TrainingListener.ListenerResponse SyncTrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
      * Events:
      * <ul>
      *   <li>{@link TrainingListener#onTrainingStart(TrainingEvent) onTrainingStart()} is called once when the training starts.</li>
-     *   <li>{@link TrainingListener#onEpochStart(TrainingEvent) onEpochStart()} and {@link TrainingListener#onEpochEnd(TrainingEpochEndEvent) onEpochEnd()} are called for every epoch. onEpochEnd will not be called if onEpochStart stops the training</li>
-     *   <li>{@link TrainingListener#onTrainingEnd() onTrainingEnd()} is always called at the end of the training, even if the training was cancelled by a listener.</li>
+     *   <li>{@link TrainingListener#onNewEpoch(TrainingEvent) onNewEpoch()} and {@link TrainingListener#onEpochTrainingResult(EpochTrainingResultEvent) onEpochTrainingResult()}  are called for every epoch. onEpochTrainingResult will not be called if onNewEpoch stops the training</li>
+     *   <li>{@link TrainingListener#onTrainingEnd(TrainingEvent) onTrainingEnd()} is always called at the end of the training, even if the training was cancelled by a listener.</li>
      * </ul>
      */
     public void train() {
 
         log.info("training starting.");
 
-        boolean canContinue = listeners.notifyTrainingStarted(buildEvent());
+        boolean canContinue = listeners.notifyTrainingStarted(buildTrainingStartedEvent());
         if (canContinue) {
             while (getStepCounter() < getConfiguration().getMaxStep()) {
                 preEpoch();
-                canContinue = listeners.notifyEpochStarted(buildEvent());
+                canContinue = listeners.notifyNewEpoch(buildNewEpochEvent());
                 if (!canContinue) {
                     break;
                 }
 
                 IDataManager.StatEntry statEntry = trainEpoch();
-
-                postEpoch();
-                canContinue = listeners.notifyEpochFinished(buildEndEvent(statEntry));
+                canContinue = listeners.notifyEpochTrainingResult(buildEpochTrainingResultEvent(statEntry));
                 if (!canContinue) {
                     break;
                 }
 
+                postEpoch();
                 log.info("Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
-
                 incrementEpoch();
             }
         }
 
-        listeners.notifyTrainingFinished();
+        listeners.notifyTrainingFinished(buildTrainingFinishedEvent());
     }
 
-    private SyncTrainingEvent buildEvent() {
-        return new SyncTrainingEvent(this);
+    protected TrainingEvent buildNewEpochEvent() {
+        return new TrainingEvent();
     }
-
-    private SyncTrainingEpochEndEvent buildEndEvent(IDataManager.StatEntry statEntry) {
-        return new SyncTrainingEpochEndEvent(this, statEntry);
+    protected EpochTrainingResultEvent buildEpochTrainingResultEvent(IDataManager.StatEntry statEntry) {
+        return new EpochTrainingResultEvent(statEntry, getEpochCounter(), getStepCounter());
     }
 
     protected abstract void preEpoch();

@@ -22,6 +22,7 @@ import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
@@ -150,6 +151,20 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         getNeuralNet().reset();
         return initMdp(getMdp(), getHistoryProcessor());
     }
+
+    /**
+     * An overridable method that builds the event passed to notifyTrainingStarted
+     * @return The event that will be passed to notifyTrainingStarted
+     */
+    protected TrainingEvent buildTrainingStartedEvent() {
+        return new TrainingEvent();
+    }
+
+    /**
+     * An overridable method that builds the event passed to notifyTrainingFinished
+     * @return The event that will be passed to notifyTrainingFinished
+     */
+    protected TrainingEvent buildTrainingFinishedEvent() { return new TrainingEvent(); }
 
     @AllArgsConstructor
     @Value

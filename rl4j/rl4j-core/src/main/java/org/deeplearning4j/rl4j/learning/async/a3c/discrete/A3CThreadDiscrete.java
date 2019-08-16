@@ -22,7 +22,7 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
 import org.deeplearning4j.rl4j.learning.async.MiniTrans;
-import org.deeplearning4j.rl4j.learning.async.listener.AsyncTrainingListenerList;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
@@ -53,7 +53,7 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
     final private Random random;
 
     public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal,
-                             A3CDiscrete.A3CConfiguration a3cc, AsyncTrainingListenerList listeners,
+                             A3CDiscrete.A3CConfiguration a3cc, TrainingListenerList listeners,
                              int threadNumber) {
         super(asyncGlobal, mdp, listeners, threadNumber);
         this.conf = a3cc;
