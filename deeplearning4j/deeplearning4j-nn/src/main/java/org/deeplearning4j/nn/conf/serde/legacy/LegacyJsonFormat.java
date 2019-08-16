@@ -1,5 +1,7 @@
 package org.deeplearning4j.nn.conf.serde.legacy;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.graph.*;
 import org.deeplearning4j.nn.conf.graph.rnn.DuplicateToTimeSeriesVertex;
@@ -21,15 +23,26 @@ import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.*;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.*;
-import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
+/**
+ * This class defines a set of Jackson Mixins - which are a way of using a proxy class with annotations to override
+ * the existing annotations.
+ * In 1.0.0-beta, we switched how subtypes were handled in JSON ser/de: from "wrapper object" to "@class field".
+ * We use these mixins to allow us to still load the old format
+ *
+ * @author Alex Black
+ */
 public class LegacyJsonFormat {
 
     private LegacyJsonFormat(){ }
 
+    /**
+     * Get a mapper (minus general config) suitable for loading old format JSON - 1.0.0-alpha and before
+     * @return Object mapper
+     */
     public static ObjectMapper getMapper100alpha(){
         //After 1.0.0-alpha, we switched from wrapper object to @class for subtype information
         ObjectMapper om = new ObjectMapper();
@@ -51,12 +64,8 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = FeedForwardToCnnPreProcessor.class, name = "feedForwardToCnn"),
             @JsonSubTypes.Type(value = FeedForwardToRnnPreProcessor.class, name = "feedForwardToRnn"),
             @JsonSubTypes.Type(value = RnnToFeedForwardPreProcessor.class, name = "rnnToFeedForward"),
-            @JsonSubTypes.Type(value = RnnToCnnPreProcessor.class, name = "rnnToCnn"),
-//            @JsonSubTypes.Type(value = BinomialSamplingPreProcessor.class, name = "binomialSampling"),
-//            @JsonSubTypes.Type(value = UnitVarianceProcessor.class, name = "unitVariance"),
-//            @JsonSubTypes.Type(value = ZeroMeanAndUnitVariancePreProcessor.class, name = "zeroMeanAndUnitVariance"),
-//            @JsonSubTypes.Type(value = ZeroMeanPrePreProcessor.class, name = "zeroMean"),
-    })
+            @JsonSubTypes.Type(value = RnnToCnnPreProcessor.class, name = "rnnToCnn")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class InputPreProcessorMixin { }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -73,6 +82,7 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = L2Vertex.class, name = "L2Vertex"),
             @JsonSubTypes.Type(value = ScaleVertex.class, name = "ScaleVertex"),
             @JsonSubTypes.Type(value = L2NormalizeVertex.class, name = "L2NormalizeVertex")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class GraphVertexMixin{ }
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -109,8 +119,8 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = MaskLayer.class, name = "MaskLayer"),
             @JsonSubTypes.Type(value = MaskZeroLayer.class, name = "MaskZeroLayer"),
             @JsonSubTypes.Type(value = Cropping1D.class, name = "Cropping1D"),
-            @JsonSubTypes.Type(value = Cropping2D.class, name = "Cropping2D")}
-    )
+            @JsonSubTypes.Type(value = Cropping2D.class, name = "Cropping2D")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class LayerMixin {}
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -119,6 +129,7 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = ExponentialReconstructionDistribution.class, name = "Exponential"),
             @JsonSubTypes.Type(value = CompositeReconstructionDistribution.class, name = "Composite"),
             @JsonSubTypes.Type(value = LossFunctionWrapper.class, name = "LossWrapper")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ReconstructionDistributionMixin {}
 
 
@@ -140,8 +151,7 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = ActivationSoftPlus.class, name = "SoftPlus"),
             @JsonSubTypes.Type(value = ActivationSoftSign.class, name = "SoftSign"),
             @JsonSubTypes.Type(value = ActivationTanH.class, name = "TanH")})
-    @JsonAutoDetect(fieldVisibility = JsonAutoDetect.Visibility.ANY, getterVisibility = JsonAutoDetect.Visibility.NONE,
-            setterVisibility = JsonAutoDetect.Visibility.NONE)
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class IActivationMixin {}
 
     @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
@@ -160,5 +170,6 @@ public class LegacyJsonFormat {
             @JsonSubTypes.Type(value = LossPoisson.class, name = "Poisson"),
             @JsonSubTypes.Type(value = LossSquaredHinge.class, name = "SquaredHinge"),
             @JsonSubTypes.Type(value = LossFMeasure.class, name = "FMeasure")})
+    @NoArgsConstructor(access = AccessLevel.PRIVATE)
     public static class ILossFunctionMixin {}
 }
