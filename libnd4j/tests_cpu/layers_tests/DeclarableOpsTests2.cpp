@@ -373,35 +373,6 @@ TEST_F(DeclarableOpsTests2, NLP_Cbow_Test_1) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests2, Test_Concat_3D_1) {
-    auto x0 = NDArrayFactory::create<double>('c', {1, 100, 150});
-    auto x1 = NDArrayFactory::create<double>('c', {1, 100, 150});
-    auto x2 = NDArrayFactory::create<double>('c', {1, 100, 150});
-    auto x3 = NDArrayFactory::create<double>('c', {1, 100, 150});
-
-    x0.assign(1.0);
-    x1.assign(2.0);
-    x2.assign(3.0);
-    x3.assign(4.0);
-
-    nd4j::ops::concat op;
-    auto result = op.execute({&x0, &x1, &x2, &x3}, {}, {0}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
-    ASSERT_TRUE(4 == numOfTads);
-
-    for (int e = 0; e < numOfTads; e++) {
-        NDArray tad  = (*z)(e, {0});
-        auto mean = tad.meanNumber().e<double>(0);
-        ASSERT_NEAR((double) e+1, mean, 1e-5);
-    }
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests2, YetAnotherMatmulTest_1) {
     auto A = NDArrayFactory::create<float>('c', {3, 3});
     auto B = NDArrayFactory::create<float>('c', {3, 1});

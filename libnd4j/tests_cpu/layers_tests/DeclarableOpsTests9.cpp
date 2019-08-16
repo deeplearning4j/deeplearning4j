@@ -585,6 +585,180 @@ TEST_F(DeclarableOpsTests9, concat_test16) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test17) {
+
+    NDArray x0('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
+    NDArray x1('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
+
+    x0 = 1.;
+    x1 = 2.;
+
+    nd4j::ops::concat op;
+    auto result = op.execute({&x0, &x1}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printShapeInfo();
+    // z->printIndexedBuffer();
+
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    ASSERT_TRUE(2 == numOfTads);
+
+    for (int e = 0; e < numOfTads; ++e) {
+        NDArray tad  = (*z)(e, {0});
+        auto mean = tad.meanNumber().e<double>(0);
+        ASSERT_NEAR((e+1)*1., mean, 1e-5);
+    }
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test18) {
+    std::array<NDArray*, 2000> arrays;
+    Context context(1);
+    Nd4jLong axis = 0;
+
+    // we crate bunch of arrays, filled with specific values
+    for (int e = 0; e < arrays.size(); e++) {
+        auto array = NDArrayFactory::create_<float>('c', {1, 300});
+        array->assign(e);
+        context.setInputArray(e, array, true);
+    }
+
+    auto z = NDArrayFactory::create<float>('c', {2000, 300});
+    context.setOutputArray(0, &z, false);
+    context.setIArguments(&axis, 1);
+
+    nd4j::ops::concat op;
+    op.execute(&context);
+
+    for (int e = 0; e < arrays.size(); e++) {
+        auto row = z.tensorAlongDimension(e, {1});
+
+        ASSERT_NEAR((float) e, row->e<float>(0), 1e-5f);
+
+        delete row;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test19) {
+
+    std::array<NDArray*, 10> arrays;
+    Context context(1);
+    Nd4jLong axis = 0;
+
+    // we crate bunch of arrays, filled with specific values
+    for (int e = 0; e < arrays.size(); e++) {
+        auto array = NDArrayFactory::create_<float>('c', {1, 5, 20});
+        array->assign(e);
+        context.setInputArray(e, array, true);
+    }
+
+    auto z = NDArrayFactory::create<float>('c', {arrays.size(), 5, 20});
+    context.setOutputArray(0, &z, false);
+    context.setIArguments(&axis, 1);
+
+    nd4j::ops::concat op;
+    op.execute(&context);
+
+    for (int e = 0; e < arrays.size(); e++)
+        ASSERT_NEAR((float) e, z(e, {0}).meanNumber().e<float>(0), 1e-5f);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test20) {
+    auto x0 = NDArrayFactory::create<double>('c', {1, 100, 150});
+    auto x1 = NDArrayFactory::create<double>('c', {1, 100, 150});
+    auto x2 = NDArrayFactory::create<double>('c', {1, 100, 150});
+    auto x3 = NDArrayFactory::create<double>('c', {1, 100, 150});
+
+    x0.assign(1.0);
+    x1.assign(2.0);
+    x2.assign(3.0);
+    x3.assign(4.0);
+
+    nd4j::ops::concat op;
+    auto result = op.execute({&x0, &x1, &x2, &x3}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    ASSERT_TRUE(4 == numOfTads);
+
+    for (int e = 0; e < numOfTads; e++) {
+        NDArray tad  = (*z)(e, {0});
+        auto mean = tad.meanNumber().e<double>(0);
+        ASSERT_NEAR((double) e+1, mean, 1e-5);
+    }
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test21) {
+
+    NDArray x0('c', {1,4,5}, nd4j::DataType::FLOAT32);
+    NDArray x1('c', {2,4,5}, nd4j::DataType::FLOAT32);
+    NDArray  z('f', {3,4,5}, nd4j::DataType::FLOAT32);
+
+    x0 = 0.;
+    x1 = 1.;
+
+    nd4j::ops::concat op;
+    auto status = op.execute({&x0, &x1}, {&z}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test22) {
+
+    NDArray x0('c', {1,6}, {1,2,3,4,5,6});
+    NDArray x1('c', {1,6}, {7,8,9,10,11,12});
+    NDArray output('f', {2,6}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {2,6}, {1,2,3,4,5,6,7,8,9,10,11,12});
+
+    nd4j::ops::concat op;
+
+    auto status = op.execute({&x0, &x1}, {&output}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test23) {
+
+    NDArray x0('c', {1,4}, {1,2,3,4});
+    NDArray x1('c', {1,4}, {5,6,7,8});
+    NDArray output('c', {2,4}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {2,4}, {1,2,3,4,5,6,7,8});
+
+    nd4j::ops::concat op;
+
+    auto status = op.execute({&x0, &x1}, {&output}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test24) {
+    auto x = NDArrayFactory::create<double>('c', {2, 1}, {1, 1});
+    auto y = NDArrayFactory::create<double>('c', {2, 1}, {0, 0});
+    auto e = NDArrayFactory::create<double>('c', {2, 2}, {1, 0, 1, 0});
+    auto z = NDArrayFactory::create<double>('c', {2, 2});
+
+    nd4j::ops::concat op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {1}, {});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, tile_bp_test1) {
 
     auto input    = NDArrayFactory::create<double>('c', {2, 3}, {1.,2.,3.,4.,5.,6.});
