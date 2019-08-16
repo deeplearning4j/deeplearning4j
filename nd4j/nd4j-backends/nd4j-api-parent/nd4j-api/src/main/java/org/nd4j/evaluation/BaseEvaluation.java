@@ -42,6 +42,7 @@ import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 import org.nd4j.shade.jackson.databind.module.SimpleModule;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 
@@ -80,7 +81,8 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
                 .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
                 .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
                 .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+                .withCreatorVisibility(JsonAutoDetect.Visibility.ANY)
+        );
         return ret;
     }
 
@@ -107,15 +109,15 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
     public static <T extends IEvaluation> T fromJson(String json, Class<T> clazz) {
         try {
             return objectMapper.readValue(json, clazz);
-        } catch (IllegalArgumentException e) {
-            if (e.getMessage().contains("Invalid type id")) {
+        } catch (InvalidTypeIdException e) {
+            if (e.getMessage().contains("Could not resolve type id")) {
                 try {
                     return (T) attempFromLegacyFromJson(json, e);
                 } catch (Throwable t) {
                     throw new RuntimeException("Cannot deserialize from JSON - JSON is invalid?", t);
                 }
             }
-            throw e;
+            throw new RuntimeException(e);
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -129,7 +131,7 @@ public abstract class BaseEvaluation<T extends BaseEvaluation> implements IEvalu
      * @param json              JSON to attempt to deserialize
      * @param originalException Original exception to be re-thrown if it isn't legacy JSON
      */
-    protected static <T extends IEvaluation> T attempFromLegacyFromJson(String json, IllegalArgumentException originalException) {
+    protected static <T extends IEvaluation> T attempFromLegacyFromJson(String json, InvalidTypeIdException originalException) throws InvalidTypeIdException {
         if (json.contains("org.deeplearning4j.eval.Evaluation")) {
             String newJson = json.replaceAll("org.deeplearning4j.eval.Evaluation", "org.nd4j.evaluation.classification.Evaluation");
             return (T) fromJson(newJson, Evaluation.class);
