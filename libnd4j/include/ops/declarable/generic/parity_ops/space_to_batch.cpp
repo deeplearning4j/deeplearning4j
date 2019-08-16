@@ -39,8 +39,8 @@ CUSTOM_OP_IMPL(space_to_batch, 2, 1, false, 0, 1) {
     const uint blockSize = INT_ARG(0);
     REQUIRE_TRUE(blockSize >= 2, 0, "SpaceToBatch: integer parameter block_size must be >= 2, but got %i instead", blockSize);
 
-    const int rank = input->rankOf();
-    REQUIRE_TRUE(rank == 4, 0, "SpaceToBatch: rank of input array must be equal 4, but got %i instead", rank);
+    REQUIRE_TRUE(input->rankOf() == 4,  0, "SpaceToBatch: rank of input array must be equal 4, but got %i instead",  input->rankOf());
+    REQUIRE_TRUE(output->rankOf() == 4, 0, "SpaceToBatch: rank of output array must be equal 4, but got %i instead", output->rankOf());
 
     const std::string expectedpaddingShape = "[2, 2]";
     const std::string actualpaddingShape = ShapeUtils::shapeAsString(padding);

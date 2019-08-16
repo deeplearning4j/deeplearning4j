@@ -592,6 +592,7 @@ namespace nd4j {
         /**
         *  apply scalar operation to array
         *  extraParams - extra parameters for operation
+        *  returns scalar array
         */
         NDArray reduceNumber(nd4j::reduce::FloatOps ops, void *extraParams = nullptr) const;
         NDArray reduceNumber(nd4j::reduce::SameOps  ops, void *extraParams = nullptr) const;

@@ -96,7 +96,7 @@ template <typename T>
 static void spaceToBatch_(const NDArray& input, NDArray& output, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight) {
 
     // input [bS, H * blockSize - padBottom - padTop, W * blockSize - padLeft - padRight, iC]
-    // output [bs, H * blockSize, W * blockSize, iC]
+    // output [bS, H * blockSize, W * blockSize, iC]
 
     // if (padTop = padBottom = padRight = padLeft = 0) shapes are the same
     // else:
