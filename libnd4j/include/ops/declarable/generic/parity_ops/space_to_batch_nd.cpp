@@ -23,7 +23,7 @@ limitations under the License.
 #include <ops/declarable/helpers/s_t_b.h>
 
 namespace nd4j {
-namespace ops {
+namespace ops  {
 
 
 CUSTOM_OP_IMPL(space_to_batch_nd, 3, 1, false, 0, 0) {
