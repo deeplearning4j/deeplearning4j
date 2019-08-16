@@ -29,6 +29,11 @@ public abstract class BasicAffinityManager implements AffinityManager {
     }
 
     @Override
+    public Integer getDeviceForThread(long threadId) {
+        return 0;
+    }
+
+    @Override
     public Integer getDeviceForArray(INDArray array) {
         return 0;
     }

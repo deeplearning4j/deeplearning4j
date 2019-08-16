@@ -151,17 +151,20 @@ public class ParallelWrapper implements AutoCloseable {
         workerCounter.set(0);
         this.executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(workers, new ThreadFactory() {
             @Override
-            public Thread newThread(@NonNull Runnable r) {
-                Thread t = Executors.defaultThreadFactory().newThread(r);
+            public Thread newThread(@NonNull final Runnable r) {
+                final int cThread = workerCounter.getAndIncrement();
 
-                int cThread = workerCounter.getAndIncrement();
+                Thread t = new Thread(new Runnable() {
+                    @Override
+                    public void run() {
+                        Nd4j.getAffinityManager().unsafeSetDevice(cThread % Nd4j.getAffinityManager().getNumberOfDevices());
+                        r.run();
+                    }
+                });
 
                 t.setName("ParallelWrapper training thread " + cThread);
                 t.setDaemon(true);
                 t.setUncaughtExceptionHandler(handler);
-
-                Nd4j.getAffinityManager().attachThreadToDevice(t,
-                                cThread % Nd4j.getAffinityManager().getNumberOfDevices());
 
                 return t;
             }
