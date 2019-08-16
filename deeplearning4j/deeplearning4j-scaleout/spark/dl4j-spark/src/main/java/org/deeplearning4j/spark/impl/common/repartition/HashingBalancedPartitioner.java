@@ -97,12 +97,13 @@ public class HashingBalancedPartitioner extends Partitioner {
 
     @Override
     public int numPartitions() {
-        return Collections2.filter(partitionWeightsByClass.get(0), new Predicate<Double>() {
-            @Override
-            public boolean apply(Double aDouble) {
-                return aDouble >= 0;
-            }
-        }).size();
+        List<Double> list = partitionWeightsByClass.get(0);
+        int count = 0;
+        for(Double d : list){
+            if(d >= 0)
+                count++;
+        }
+        return count;
     }
 
     @Override

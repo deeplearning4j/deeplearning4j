@@ -352,7 +352,7 @@
         <playframework.version>2.4.8
         </playframework.version>    <!-- Play Framework 2.5 dropped Scala 2.10 support - use 2.4 for Spark compatibility w/ Scala 2.10 -->
         <javax.ws.rs.version>2.0</javax.ws.rs.version>
-        <guava.version>20.0</guava.version>
+        <guava.version>28.0-jre</guava.version>
         <fbs.version>1.2.0-3f79e055</fbs.version>
         <threadly.version>4.10.0</threadly.version>
 
