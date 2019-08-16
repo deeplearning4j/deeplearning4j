@@ -805,6 +805,34 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     }
 
     /**
+     * Floor division operation: elementwise {@code this // x}<br>
+     * If this and x variables have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if this and x have different shapes and are broadcastable, the output shape is broadcast.
+     *
+     * @param name Name of the output variable
+     * @param x    Variable to perform operation with
+     * @return Output (result) SDVariable
+     */
+    public SDVariable fdiv(String name, SDVariable x) {
+        val result = sameDiff.f().floorDiv(this, x);
+        return sameDiff.updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Modulo operation: elementwise {@code this / x}<br>
+     * If this and x variables have equal shape, the output shape is the same as the inputs.<br>
+     * Supports broadcasting: if this and x have different shapes and are broadcastable, the output shape is broadcast.
+     *
+     * @param name Name of the output variable
+     * @param x    Variable to perform operation with
+     * @return Output (result) SDVariable
+     */
+    public SDVariable mod(String name, SDVariable x) {
+        val result = sameDiff.f().mod(this, x);
+        return sameDiff.updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * See {@link #mul(String, double)}
      */
     public SDVariable mul(double scalar) {

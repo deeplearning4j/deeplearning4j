@@ -229,44 +229,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByNorm;
 import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.ATan2;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionBp;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicPartition;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.DynamicStitch;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Fill;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.InvertPermutation;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.IsNonDecreasing;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.IsNumericTensor;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.IsStrictlyIncreasing;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNormBp;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.ListDiff;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixDeterminant;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixInverse;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.MatrixSetDiag;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttention;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.MultiHeadDotProductAttentionBp;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.StandardizeBp;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Trace;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.XwPlusB;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMean;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMin;
@@ -289,25 +252,8 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.SELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxBp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorDivOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RDivOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.RSubOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SquaredDifferenceOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.TruncateDivOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.AddBpOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.DivBpOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.FloorDivBpOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.FloorModBpOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.MulBpOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RDivBpOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RSubBpOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.SubBpOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Xor;
@@ -1317,6 +1263,21 @@ public class DifferentialFunctionFactory {
         return new Xor(sameDiff(), ix, iy).outputVariable();
     }
 
+    public SDVariable shift(SDVariable ix, int shift) {
+        return new ShiftBits(sameDiff(), ix, shift).outputVariable();
+    }
+
+    public SDVariable rshift(SDVariable ix, int shift) {
+        return new RShiftBits(sameDiff(), ix, shift).outputVariable();
+    }
+
+    public SDVariable rotl(SDVariable ix, int shift) {
+        return new CyclicShiftBits(sameDiff(), ix, shift).outputVariable();
+    }
+
+    public SDVariable rotr(SDVariable ix, int shift) {
+        return new CyclicRShiftBits(sameDiff(), ix, shift).outputVariable();
+    }
 
     public SDVariable eq(SDVariable iX, SDVariable i_y) {
         return new EqualTo(sameDiff(), new SDVariable[]{iX, i_y}, false).outputVariable();
@@ -2231,6 +2192,10 @@ public class DifferentialFunctionFactory {
         return Arrays.asList(new MulBpOp(sameDiff(), x, y, grad).outputVariables());
     }
 
+    public List<SDVariable> modBp(SDVariable x, SDVariable y, SDVariable grad) {
+        return Arrays.asList(new ModBpOp(sameDiff(), x, y, grad).outputVariables());
+    }
+
 
     public SDVariable muli(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
@@ -2238,6 +2203,10 @@ public class DifferentialFunctionFactory {
 
     }
 
+    public SDVariable mod(SDVariable differentialFunction, SDVariable i_v) {
+        validateDifferentialFunctionsameDiff(differentialFunction);
+        return new ModOp(sameDiff(), new SDVariable[]{differentialFunction, i_v}, false).outputVariable();
+    }
 
     public SDVariable div(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
