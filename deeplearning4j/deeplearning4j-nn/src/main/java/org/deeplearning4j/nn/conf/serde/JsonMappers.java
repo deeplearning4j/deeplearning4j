@@ -59,36 +59,6 @@ import java.util.List;
 @Slf4j
 public class JsonMappers {
 
-    /**
-     * @deprecated Use {@link DL4JSystemProperties#CUSTOM_REGISTRATION_PROPERTY}
-     */
-    @Deprecated
-    public static String CUSTOM_REGISTRATION_PROPERTY = DL4JSystemProperties.CUSTOM_REGISTRATION_PROPERTY;
-
-    static {
-        String p = System.getProperty(DL4JSystemProperties.CUSTOM_REGISTRATION_PROPERTY);
-        if(p != null && !p.isEmpty()){
-            String[] split = p.split(",");
-            List<Class<?>> list = new ArrayList<>();
-            for(String s : split){
-                try{
-                    Class<?> c = Class.forName(s);
-                    list.add(c);
-                } catch (Throwable t){
-                    log.warn("Error parsing {} system property: class \"{}\" could not be loaded",DL4JSystemProperties.CUSTOM_REGISTRATION_PROPERTY, s, t);
-                }
-            }
-
-            if(list.size() > 0){
-                try {
-                    NeuralNetConfiguration.registerLegacyCustomClassesForJSONList(list);
-                } catch (Throwable t){
-                    log.warn("Error registering custom classes for legacy JSON deserialization ({} system property)",DL4JSystemProperties.CUSTOM_REGISTRATION_PROPERTY, t);
-                }
-            }
-        }
-    }
-
     private static ObjectMapper jsonMapper = new ObjectMapper();
     private static ObjectMapper yamlMapper = new ObjectMapper(new YAMLFactory());
 
@@ -97,22 +67,6 @@ public class JsonMappers {
     static {
         configureMapper(jsonMapper);
         configureMapper(yamlMapper);
-//        configureMapper(jsonMapperLegacyFormatLayer);
-//        configureMapper(jsonMapperLegacyFormatVertex);
-//        configureMapper(jsonMapperLegacyFormatPreproc);
-//        configureMapper(jsonMapperLegacyFormatIActivation);
-//        configureMapper(jsonMapperLegacyFormatILoss);
-//        configureMapper(jsonMapperLegacyFormatReconstruction);
-//
-//        jsonMapperLegacyFormatLayer.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(Layer.class)));
-//        jsonMapperLegacyFormatVertex.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(GraphVertex.class)));
-//        jsonMapperLegacyFormatPreproc.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(InputPreProcessor.class)));
-//        jsonMapperLegacyFormatIActivation.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(IActivation.class)));
-//        jsonMapperLegacyFormatILoss.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(ILossFunction.class)));
-//        jsonMapperLegacyFormatReconstruction.setAnnotationIntrospector(new IgnoreJsonTypeInfoIntrospector(Collections.<Class>singletonList(ReconstructionDistribution.class)));
-//
-//        LegacyIActivationDeserializer.setLegacyJsonMapper(jsonMapperLegacyFormatIActivation);
-//        LegacyILossFunctionDeserializer.setLegacyJsonMapper(jsonMapperLegacyFormatILoss);
     }
 
     /**
@@ -160,70 +114,4 @@ public class JsonMappers {
 
         ret.registerModule(customDeserializerModule);
     }
-
-
-//    /**
-//     * Custom Jackson Introspector to ignore the {@code @JsonTypeYnfo} annotations on layers etc.
-//     * This is so we can deserialize legacy format JSON without recursing infinitely, by selectively ignoring
-//     * a set of JsonTypeInfo annotations
-//     */
-//    @AllArgsConstructor
-//    private static class IgnoreJsonTypeInfoIntrospector extends JacksonAnnotationIntrospector {
-//
-//        private List<Class> classList;
-//
-//        @Override
-//        protected TypeResolverBuilder<?> _findTypeResolver(MapperConfig<?> config, Annotated ann, JavaType baseType) {
-//            if(ann instanceof AnnotatedClass){
-//                AnnotatedClass c = (AnnotatedClass)ann;
-//                Class<?> annClass = c.getAnnotated();
-//
-//                boolean isAssignable = false;
-//                for(Class c2 : classList){
-//                    if(c2.isAssignableFrom(annClass)){
-//                        isAssignable = true;
-//                        break;
-//                    }
-//                }
-//
-//                if( isAssignable ){
-//                    AnnotationMap annotations = (AnnotationMap) ((AnnotatedClass) ann).getAnnotations();
-//                    if(annotations == null || annotations.annotations() == null){
-//                        //Probably not necessary - but here for safety
-//                        return super._findTypeResolver(config, ann, baseType);
-//                    }
-//
-//                    AnnotationMap newMap = null;
-//                    for(Annotation a : annotations.annotations()){
-//                        Class<?> annType = a.annotationType();
-//                        if(annType == JsonTypeInfo.class){
-//                            //Ignore the JsonTypeInfo annotation on the Layer class
-//                            continue;
-//                        }
-//                        if(newMap == null){
-//                            newMap = new AnnotationMap();
-//                        }
-//                        newMap.add(a);
-//                    }
-//                    if(newMap == null)
-//                        return null;
-//
-//                    //Pass the remaining annotations (if any) to the original introspector
-//                    //Up to Jackson 2.8.9 we could use AnnotatedClass ann2 = c.withAnnotations(newMap);
-//                    //This was removed with no obvious replacement, no deprecated tag in the javadoc in any version before
-//                    // replacement. No obvious notes or upgrade path in the release notes either.
-//                    //If anyone knows a way to do this properly - please fix this!
-//                    try {
-//                        Field f = AnnotatedClass.class.getDeclaredField("_classAnnotations");
-//                        f.setAccessible(true);
-//                        f.set(ann, newMap);
-//                    } catch (Throwable t){
-//                        OneTimeLogger.warn(log, "Error modifying annotations - JSON deserialization of legacy formats may fail", t);
-//                    }
-//                    return super._findTypeResolver(config, ann, baseType);
-//                }
-//            }
-//            return super._findTypeResolver(config, ann, baseType);
-//        }
-//    }
 }

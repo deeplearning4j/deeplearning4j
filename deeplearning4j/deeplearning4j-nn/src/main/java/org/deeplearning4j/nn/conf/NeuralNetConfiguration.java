@@ -26,20 +26,14 @@ import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
-import org.deeplearning4j.nn.conf.graph.GraphVertex;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayer;
 import org.deeplearning4j.nn.conf.layers.misc.FrozenLayerWithBackprop;
 import org.deeplearning4j.nn.conf.layers.recurrent.Bidirectional;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
-import org.deeplearning4j.nn.conf.layers.variational.ReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.wrapper.BaseWrapperLayer;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializer;
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyPreprocessorDeserializer;
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyReconstructionDistributionDeserializer;
 import org.deeplearning4j.nn.conf.stepfunctions.StepFunction;
 import org.deeplearning4j.nn.conf.weightnoise.IWeightNoise;
 import org.deeplearning4j.nn.weights.IWeightInit;
@@ -59,10 +53,6 @@ import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
-import org.nd4j.linalg.lossfunctions.ILossFunction;
-import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.serde.json.LegacyIActivationDeserializer;
-import org.nd4j.serde.json.LegacyILossFunctionDeserializer;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
@@ -380,86 +370,6 @@ public class NeuralNetConfiguration implements Serializable, Cloneable {
      */
     public static ObjectMapper mapper() {
         return JsonMappers.getMapper();
-    }
-
-    /**
-     * Set of classes that can be registered for legacy deserialization.
-     */
-    private static List<Class<?>> REGISTERABLE_CUSTOM_CLASSES = (List<Class<?>>) Arrays.<Class<?>>asList(
-            Layer.class,
-            GraphVertex.class,
-            InputPreProcessor.class,
-            IActivation.class,
-            ILossFunction.class,
-            ReconstructionDistribution.class
-    );
-
-    /**
-     * Register a set of classes (Layer, GraphVertex, InputPreProcessor, IActivation, ILossFunction, ReconstructionDistribution
-     * ONLY) for JSON deserialization.<br>
-     * <br>
-     * This is required ONLY when BOTH of the following conditions are met:<br>
-     * 1. You want to load a serialized net, saved in 1.0.0-alpha or before, AND<br>
-     * 2. The serialized net has a custom Layer, GraphVertex, etc (i.e., one not defined in DL4J)<br>
-     * <br>
-     * By passing the classes of these layers here, DL4J should be able to deserialize them, in spite of the JSON
-     * format change between versions.
-     *
-     * @param classes Classes to register
-     */
-    public static void registerLegacyCustomClassesForJSON(Class<?>... classes) {
-        registerLegacyCustomClassesForJSONList(Arrays.<Class<?>>asList(classes));
-    }
-
-    /**
-     * @see #registerLegacyCustomClassesForJSON(Class[])
-     */
-    public static void registerLegacyCustomClassesForJSONList(List<Class<?>> classes){
-        //Default names (i.e., old format for custom JSON format)
-        List<Pair<String,Class>> list = new ArrayList<>();
-        for(Class<?> c : classes){
-            list.add(new Pair<String,Class>(c.getSimpleName(), c));
-        }
-        registerLegacyCustomClassesForJSON(list);
-    }
-
-    /**
-     * Register a set of classes (Layer, GraphVertex, InputPreProcessor, IActivation, ILossFunction, ReconstructionDistribution
-     * ONLY) for JSON deserialization, with custom names.<br>
-     * Using this method directly should never be required (instead: use {@link #registerLegacyCustomClassesForJSON(Class[])}
-     * but is added in case it is required in non-standard circumstances.
-     */
-    public static void registerLegacyCustomClassesForJSON(List<Pair<String,Class>> classes){
-        for(Pair<String,Class> p : classes){
-            String s = p.getFirst();
-            Class c = p.getRight();
-            //Check if it's a valid class to register...
-            boolean found = false;
-            for( Class<?> c2 : REGISTERABLE_CUSTOM_CLASSES){
-                if(c2.isAssignableFrom(c)){
-                    if(c2 == Layer.class){
-                        LegacyLayerDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends Layer>)c);
-                    } else if(c2 == GraphVertex.class){
-                        LegacyGraphVertexDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends GraphVertex>)c);
-                    } else if(c2 == InputPreProcessor.class){
-                        LegacyPreprocessorDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends InputPreProcessor>)c);
-                    } else if(c2 == IActivation.class ){
-                        LegacyIActivationDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends IActivation>)c);
-                    } else if(c2 == ILossFunction.class ){
-                        LegacyILossFunctionDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends ILossFunction>)c);
-                    } else if(c2 == ReconstructionDistribution.class){
-                        LegacyReconstructionDistributionDeserializer.registerLegacyClassSpecifiedName(s, (Class<? extends ReconstructionDistribution>)c);
-                    }
-
-                    found = true;
-                }
-            }
-
-            if(!found){
-                throw new IllegalArgumentException("Cannot register class for legacy JSON deserialization: class " +
-                        c.getName() + " is not a subtype of classes " + REGISTERABLE_CUSTOM_CLASSES);
-            }
-        }
     }
 
     /**
