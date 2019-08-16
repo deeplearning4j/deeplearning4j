@@ -638,6 +638,23 @@ TEST_F(DeclarableOpsTests13, shift_bits_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests13, rshift_bits_1) {
+    auto x = NDArrayFactory::create<int>('c', {5});
+    auto e = x.ulike();
+    x.assign(512);
+    e.assign(32);
+
+    nd4j::ops::rshift_bits op;
+    auto result = op.execute({&x}, {}, {4});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests13, cyclic_shift_bits_1) {
     auto x = NDArrayFactory::create<int>('c', {5});
     auto e = x.ulike();
@@ -645,6 +662,23 @@ TEST_F(DeclarableOpsTests13, cyclic_shift_bits_1) {
     e.assign(512);
 
     nd4j::ops::cyclic_shift_bits op;
+    auto result = op.execute({&x}, {}, {4});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, cyclic_rshift_bits_1) {
+    auto x = NDArrayFactory::create<int>('c', {5});
+    auto e = x.ulike();
+    x.assign(512);
+    e.assign(32);
+
+    nd4j::ops::cyclic_rshift_bits op;
     auto result = op.execute({&x}, {}, {4});
     ASSERT_EQ(Status::OK(), result->status());
 

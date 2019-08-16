@@ -34,6 +34,12 @@ public interface AffinityManager {
      */
     Integer getDeviceForCurrentThread();
 
+    /**
+     * This method returns deviceId for a given thread
+     * @return
+     */
+    Integer getDeviceForThread(long threadId);
+
 
     /**
      * This method returns id of current device for a given INDArray

@@ -296,7 +296,7 @@ public class TensorflowConversion {
      * @return
      */
     public static String defaultDeviceForThread() {
-        Integer deviceForThread = Nd4j.getAffinityManager().getDeviceForThread(Thread.currentThread());
+        Integer deviceForThread = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         String deviceName = null;
         //gpu
         if(Nd4j.getBackend().getClass().getName().contains("JCublasBackend")) {

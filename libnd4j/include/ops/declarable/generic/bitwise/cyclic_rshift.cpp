@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -15,37 +15,42 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 23.11.17.
+// @author raver119@gmail.com
 //
 
 #include <op_boilerplate.h>
-#if NOT_EXCLUDED(OP_toggle_bits)
+#if NOT_EXCLUDED(OP_cyclic_rshift_bits)
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/helpers.h>
-#include <ops/declarable/helpers/toggle_bits.h>
+#include <ops/declarable/helpers/shift.h>
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(toggle_bits, -1, -1, true) {
+        CONFIGURABLE_OP_IMPL(cyclic_rshift_bits, 1, 1, true, 0, -2) {
+            auto input = INPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
 
-            for (int i = 0; i < block.width(); i++) {
-                auto x = INPUT_VARIABLE(i);
-                auto z = OUTPUT_VARIABLE(i);
+            REQUIRE_TRUE(block.numI() > 0 || block.width() > 1, 0, "cyclic_rshift_bits: actual shift value is missing");
 
-                REQUIRE_TRUE(x->dataType() == z->dataType(), 0, "Toggle bits requires input and output to have same type");
-                REQUIRE_TRUE(x->isZ(),0, "Toggle bits requires input and output to be integer type (int8, int16, int32, int64)");
+            uint32_t shift = 0;
+            if (block.width() > 1) {
+                shift = INPUT_VARIABLE(1)->e<uint32_t>(0);
+            } else if (block.numI() > 0) {
+                shift = INT_ARG(0);
+            };
 
-                helpers::__toggle_bits(block.launchContext(), *x, *z);
-            }
+            helpers::cyclic_rshift_bits(block.launchContext(), *input, *output, shift);
+
+            REQUIRE_TRUE(shift > 0 && shift < input->sizeOfT() * 8, 0, "cyclic_rshift_bits: can't shift beyond size of data type")
+
             return Status::OK();
         }
 
-        DECLARE_TYPES(toggle_bits) {
+        DECLARE_TYPES(cyclic_rshift_bits) {
             getOpDescriptor()
                     ->setAllowedInputTypes({ALL_INTS})
-                    ->setAllowedOutputTypes({ALL_INTS})
-                    ->setSameMode(false);
+                    ->setSameMode(true);
         }
     }
 }

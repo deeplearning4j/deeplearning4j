@@ -38,7 +38,7 @@ namespace nd4j {
 
 
         /**
-         * This operation shift individual bits of each element in array
+         * This operation shift individual bits of each element in array to the left: <<
          *
          * PLEASE NOTE: This operation is applicable only to integer data types
          *
@@ -49,7 +49,18 @@ namespace nd4j {
         #endif
 
         /**
-         * This operation shift individual bits of each element in array
+         * This operation shift individual bits of each element in array to the right: >>
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_rshift_bits)
+        DECLARE_CONFIGURABLE_OP(rshift_bits, 1, 1, true, 0, -2);
+        #endif
+
+        /**
+         * This operation shift individual bits of each element in array, shifting to the left
          *
          * PLEASE NOTE: This operation is applicable only to integer data types
          *
@@ -57,6 +68,17 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_cyclic_shift_bits)
         DECLARE_CONFIGURABLE_OP(cyclic_shift_bits, 1, 1, true, 0, -2);
+        #endif
+
+        /**
+         * This operation shift individual bits of each element in array, shifting to the right
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_cyclic_rshift_bits)
+        DECLARE_CONFIGURABLE_OP(cyclic_rshift_bits, 1, 1, true, 0, -2);
         #endif
     }
 }

@@ -40,7 +40,7 @@ namespace nd4j {
                 shift = INT_ARG(0);
             };
 
-            REQUIRE_TRUE(shift > 0 && shift < input->sizeOfT() * 8, 0, "cyclic_shift_bits: can't shift beyond size of data type")
+            REQUIRE_TRUE(shift > 0 && shift < input->sizeOfT() * 8, 0, "shift_bits: can't shift beyond size of data type")
 
             helpers::shift_bits(block.launchContext(), *input, *output, shift);
 
