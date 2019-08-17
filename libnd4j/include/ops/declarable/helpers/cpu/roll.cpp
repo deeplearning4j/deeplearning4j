@@ -85,18 +85,19 @@ namespace helpers {
         }
     }
 
-    void rollFunctorFull(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int shift, std::vector<int> const& axes, bool inplace){
+    void rollFunctorFull(nd4j::LaunchContext * context, NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace){
 
         if (!inplace)
             output->assign(input);
 
         auto source = output; //input;
-        for (int axe: axes) {
+        for (auto i = 0; i < axes.size(); i++) {
+            int axe = axes[i];
             if (axe == source->rankOf() - 1) {// last dimension
                 std::unique_ptr<ResultSet> listOfTensors(source->allTensorsAlongDimension({axe}));
                 std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension({axe}));
                 int fullLen = listOfTensors->size();
-                int theShift = shift;
+                int theShift = shifts[i];
                 if (theShift > 0) {
                     theShift %= fullLen;
                 }
@@ -118,7 +119,7 @@ namespace helpers {
                 int fullLen = listOfTensors->size();
                 int sizeAt = input->sizeAt(axe);
 
-                int theShift = shift;
+                int theShift = shifts[i];
 
                 if (theShift > 0) {
                     theShift %= sizeAt;
