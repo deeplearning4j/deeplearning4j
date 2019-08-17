@@ -37,18 +37,16 @@ import org.deeplearning4j.ui.module.defaultModule.DefaultModule;
 import org.deeplearning4j.ui.module.remote.RemoteReceiverModule;
 import org.deeplearning4j.ui.module.train.TrainModule;
 import org.deeplearning4j.ui.module.tsne.TsneModule;
-import org.deeplearning4j.ui.play.misc.FunctionUtil;
 import org.deeplearning4j.ui.play.staticroutes.Assets;
-import org.deeplearning4j.ui.play.staticroutes.I18NRoute;
-import org.deeplearning4j.ui.play.staticroutes.MultiSessionI18NRoute;
 import org.deeplearning4j.ui.storage.FileStatsStorage;
 import org.deeplearning4j.ui.storage.InMemoryStatsStorage;
 import org.deeplearning4j.ui.storage.impl.QueueStatsStorageListener;
 import org.deeplearning4j.util.DL4JFileUtils;
 import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.primitives.Pair;
+import play.BuiltInComponents;
 import play.Mode;
-import play.api.routing.Router;
+import play.routing.Router;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
@@ -59,6 +57,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static play.mvc.Results.ok;
 
 
 /**
@@ -166,63 +166,6 @@ public class PlayUIServer extends UIServer {
             System.exit(1);
         }
 
-        RoutingDsl routingDsl = new RoutingDsl();
-
-        //Set up index page and assets routing
-        //The definitions and FunctionUtil may look a bit weird here... this is used to translate implementation independent
-        // definitions (i.e., Java Supplier, Function etc interfaces) to the Play-specific versions
-        //This way, routing is not directly dependent ot Play API. Furthermore, Play 2.5 switches to using these Java interfaces
-        // anyway; thus switching 2.5 should be as simple as removing the FunctionUtil calls...
-        if (multiSession) {
-            routingDsl.GET("/setlang/:sessionId/:to").routeTo(FunctionUtil.biFunction(new MultiSessionI18NRoute()));
-        } else {
-            routingDsl.GET("/setlang/:to").routeTo(FunctionUtil.function(new I18NRoute()));
-        }
-        routingDsl.GET("/assets/*file").routeTo(FunctionUtil.function(new Assets(ASSETS_ROOT_DIRECTORY)));
-
-        uiModules.add(new DefaultModule(multiSession)); //For: navigation page "/"
-        uiModules.add(new TrainModule(multiSession, statsStorageLoader, this::getAddress));
-        uiModules.add(new ConvolutionalListenerModule());
-        uiModules.add(new TsneModule());
-        uiModules.add(new SameDiffModule());
-        remoteReceiverModule = new RemoteReceiverModule();
-        uiModules.add(remoteReceiverModule);
-
-        //Check service loader mechanism (Arbiter UI, etc) for modules
-        modulesViaServiceLoader(uiModules);
-
-        for (UIModule m : uiModules) {
-            List<Route> routes = m.getRoutes();
-            for (Route r : routes) {
-                RoutingDsl.PathPatternMatcher ppm = routingDsl.match(r.getHttpMethod().name(), r.getRoute());
-                switch (r.getFunctionType()) {
-                    case Supplier:
-                        ppm.routeTo(FunctionUtil.function0(r.getSupplier()));
-                        break;
-                    case Function:
-                        ppm.routeTo(FunctionUtil.function(r.getFunction()));
-                        break;
-                    case BiFunction:
-                        ppm.routeTo(FunctionUtil.biFunction(r.getFunction2()));
-                        break;
-                    case Function3:
-                    default:
-                        throw new RuntimeException("Not yet implemented");
-                }
-            }
-
-            //Determine which type IDs this module wants to receive:
-            List<String> typeIDs = m.getCallbackTypeIDs();
-            for (String typeID : typeIDs) {
-                List<UIModule> list = typeIDModuleMap.get(typeID);
-                if (list == null) {
-                    list = Collections.synchronizedList(new ArrayList<>());
-                    typeIDModuleMap.put(typeID, list);
-                }
-                list.add(m);
-            }
-        }
-
         String portProperty = System.getProperty(DL4JSystemProperties.UI_SERVER_PORT_PROPERTY);
         if (portProperty != null) {
             try {
@@ -232,6 +175,7 @@ public class PlayUIServer extends UIServer {
                                 portProperty, e);
             }
         }
+
 
         //Set play secret key, if required
         //http://www.playframework.com/documentation/latest/ApplicationSecret
@@ -245,9 +189,9 @@ public class PlayUIServer extends UIServer {
             System.setProperty("play.crypto.secret", base64);
         }
 
-        Router router = routingDsl.build();
+
         try {
-            server = Server.forRouter(router, Mode.PROD, port);
+            server = Server.forRouter(Mode.PROD, port, this::createRouter);
         } catch (Throwable e){
             if(e.getMessage().contains("'play.crypto.provider")){
                 //Usual cause: user's uber-jar does not include application.conf
@@ -282,6 +226,73 @@ public class PlayUIServer extends UIServer {
         }
 
         setStopped(false);
+    }
+
+    protected Router createRouter(BuiltInComponents builtInComponents){
+        RoutingDsl routingDsl = RoutingDsl.fromComponents(builtInComponents);
+
+        //Set up index page and assets routing
+        //The definitions and FunctionUtil may look a bit weird here... this is used to translate implementation independent
+        // definitions (i.e., Java Supplier, Function etc interfaces) to the Play-specific versions
+        //This way, routing is not directly dependent ot Play API. Furthermore, Play 2.5 switches to using these Java interfaces
+        // anyway; thus switching 2.5 should be as simple as removing the FunctionUtil calls...
+        if (multiSession) {
+            routingDsl.GET("/setlang/:sessionId/:to").routingTo((request, sid, to) -> {
+                I18NProvider.getInstance(sid.toString()).setDefaultLanguage(to.toString());
+                return ok();
+            });
+        } else {
+            routingDsl.GET("/setlang/:to").routingTo((request, to) -> {
+                I18NProvider.getInstance().setDefaultLanguage(shutdown.toString());
+                return ok();
+            });
+        }
+        routingDsl.GET("/assets/*file").routingTo((request, file) -> Assets.assetRequest(ASSETS_ROOT_DIRECTORY, file.toString()));
+
+        uiModules.add(new DefaultModule(multiSession)); //For: navigation page "/"
+        uiModules.add(new TrainModule(multiSession, statsStorageLoader, this::getAddress));
+        uiModules.add(new ConvolutionalListenerModule());
+        uiModules.add(new TsneModule());
+        uiModules.add(new SameDiffModule());
+        remoteReceiverModule = new RemoteReceiverModule();
+        uiModules.add(remoteReceiverModule);
+
+        //Check service loader mechanism (Arbiter UI, etc) for modules
+        modulesViaServiceLoader(uiModules);
+
+        for (UIModule m : uiModules) {
+            List<Route> routes = m.getRoutes();
+            for (Route r : routes) {
+                RoutingDsl.PathPatternMatcher ppm = routingDsl.match(r.getHttpMethod().name(), r.getRoute());
+                switch (r.getFunctionType()) {
+                    case Supplier:
+                        ppm.routingTo(request -> r.getSupplier().get());
+                        break;
+                    case Function:
+                        ppm.routingTo((request, arg) -> r.getFunction().apply(arg.toString()));
+                        break;
+                    case BiFunction:
+                        ppm.routingTo((request, arg0, arg1) -> r.getFunction2().apply(arg0.toString(), arg1.toString()));
+                        break;
+                    case Function3:
+                    default:
+                        throw new RuntimeException("Not yet implemented");
+                }
+            }
+
+            //Determine which type IDs this module wants to receive:
+            List<String> typeIDs = m.getCallbackTypeIDs();
+            for (String typeID : typeIDs) {
+                List<UIModule> list = typeIDModuleMap.get(typeID);
+                if (list == null) {
+                    list = Collections.synchronizedList(new ArrayList<>());
+                    typeIDModuleMap.put(typeID, list);
+                }
+                list.add(m);
+            }
+        }
+        Router router = routingDsl.build();
+        return router;
     }
 
     @Override
