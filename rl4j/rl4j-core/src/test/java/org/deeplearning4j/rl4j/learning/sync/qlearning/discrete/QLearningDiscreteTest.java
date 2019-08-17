@@ -1,6 +1,7 @@
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
 import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
+import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
@@ -138,5 +139,10 @@ public class QLearningDiscreteTest {
         protected Pair<INDArray, INDArray> setTarget(ArrayList<Transition<Integer>> transitions) {
             return new Pair<>(Nd4j.create(new double[] { 123.0 }), Nd4j.create(new double[] { 234.0 }));
         }
+
+        public void setExpReplay(IExpReplay<Integer> exp){
+            this.expReplay = exp;
+        }
+
     }
 }

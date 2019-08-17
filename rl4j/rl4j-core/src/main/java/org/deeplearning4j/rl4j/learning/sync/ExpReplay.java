@@ -16,6 +16,8 @@
 
 package org.deeplearning4j.rl4j.learning.sync;
 
+import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 
@@ -50,7 +52,18 @@ public class ExpReplay<A> implements IExpReplay<A> {
         ArrayList<Transition<A>> batch = new ArrayList<>(size);
         int storageSize = storage.size();
         int actualBatchSize = Math.min(storageSize, size);
-        int[] actualIndex = ThreadLocalRandom.current().ints(0, storageSize).distinct().limit(actualBatchSize).toArray();
+
+        int[] actualIndex = new int[actualBatchSize];
+        ThreadLocalRandom r = ThreadLocalRandom.current();
+        IntSet set = new IntOpenHashSet();
+        for( int i=0; i<actualBatchSize; i++ ){
+            int next = r.nextInt(storageSize);
+            while(set.contains(next)){
+                next = r.nextInt(storageSize);
+            }
+            set.add(next);
+            actualIndex[i] = next;
+        }
 
         for (int i = 0; i < actualBatchSize; i ++) {
             Transition<A> trans = storage.get(actualIndex[i]);

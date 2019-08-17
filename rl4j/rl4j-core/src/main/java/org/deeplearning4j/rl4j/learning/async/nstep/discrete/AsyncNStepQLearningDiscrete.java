@@ -55,9 +55,9 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
         mdp.getActionSpace().setSeed(conf.getSeed());
     }
 
-
-    public AsyncThread newThread(int i) {
-        return new AsyncNStepQLearningThreadDiscrete(mdp.newInstance(), asyncGlobal, configuration, i, dataManager);
+    @Override
+    public AsyncThread newThread(int i, int deviceNum) {
+        return new AsyncNStepQLearningThreadDiscrete(mdp.newInstance(), asyncGlobal, configuration, i, dataManager, deviceNum);
     }
 
     public IDQN getNeuralNet() {

@@ -63,8 +63,8 @@ public class A3CDiscreteConv<O extends Encodable> extends A3CDiscrete<O> {
     }
 
     @Override
-    public AsyncThread newThread(int i) {
-        AsyncThread at = super.newThread(i);
+    public AsyncThread newThread(int i, int deviceNum) {
+        AsyncThread at = super.newThread(i, deviceNum);
         at.setHistoryProcessor(hpconf);
         return at;
     }
