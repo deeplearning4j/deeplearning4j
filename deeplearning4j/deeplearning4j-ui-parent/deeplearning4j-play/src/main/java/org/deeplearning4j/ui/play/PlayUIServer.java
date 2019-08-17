@@ -243,7 +243,7 @@ public class PlayUIServer extends UIServer {
             });
         } else {
             routingDsl.GET("/setlang/:to").routingTo((request, to) -> {
-                I18NProvider.getInstance().setDefaultLanguage(shutdown.toString());
+                I18NProvider.getInstance().setDefaultLanguage(to.toString());
                 return ok();
             });
         }
@@ -273,6 +273,12 @@ public class PlayUIServer extends UIServer {
                         break;
                     case BiFunction:
                         ppm.routingTo((request, arg0, arg1) -> r.getFunction2().apply(arg0.toString(), arg1.toString()));
+                        break;
+                    case Request0Function:
+                        ppm.routingTo(request -> r.getRequest0Function().apply(request));
+                        break;
+                    case Request1Function:
+                        ppm.routingTo((request, arg0) -> r.getRequest1Function().apply(request, arg0.toString()));
                         break;
                     case Function3:
                     default:
