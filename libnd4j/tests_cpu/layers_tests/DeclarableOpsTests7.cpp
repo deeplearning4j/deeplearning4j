@@ -3312,6 +3312,130 @@ auto exp = NDArrayFactory::create<double>('c', {2, 3, 3}, {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestRoll_10) {
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+         1., 2., 3.,  4.,  5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.
+    });
+
+    auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+        1., 2., 3.,  4.,  5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.
+    });
+// ----------------------------------------------------------------
+    nd4j::ops::roll op;
+    auto result = op.execute({&x}, {}, {3, 1}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), Status::OK());
+    auto out = result->at(0);
+
+//    out->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
+
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestRoll_11) {
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+         1., 2., 3.,  4.,  5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.
+    });
+    auto shift = NDArrayFactory::create<int>({1,2});
+    auto axis = NDArrayFactory::create<int>({0, 1});
+    auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+         17., 18., 19., 20., 21., 22., 23., 24., 13., 14., 15., 16., 5., 6., 7, 8, 9, 10, 11, 12, 1, 2, 3, 4
+    });
+// ----------------------------------------------------------------
+    nd4j::ops::roll op;
+    NDArray* y = nullptr;
+    auto result = op.execute({&x, &shift, &axis}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), Status::OK());
+    auto out = result->at(0);
+
+//    out->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
+
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestRoll_12) {
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+         1., 2., 3.,  4.,  5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.
+    });
+    auto shift = NDArrayFactory::create<int>({1,1,1});
+    auto axis = NDArrayFactory::create<int>({0, 1, 2});
+
+    auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+         24, 21, 22, 23, 16, 13, 14, 15, 20, 17, 18, 19, 12, 9, 10, 11, 4, 1, 2, 3, 8, 5, 6, 7
+    });
+// ----------------------------------------------------------------
+    nd4j::ops::roll op;
+    NDArray* y = nullptr;
+    auto result = op.execute({&x, &shift, &axis}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), Status::OK());
+    auto out = result->at(0);
+    out->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
+
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestRoll_13) {
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+            1., 2., 3.,  4.,  5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.
+    });
+    auto shift = NDArrayFactory::create<int>(3);
+    auto axis = NDArrayFactory::create<int>(2);
+
+    auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+            2,3,4,1,6,7,8,5,10,11,12,9,14, 15, 16, 13, 18, 19, 20, 17, 22, 23, 24, 21
+    });
+// ----------------------------------------------------------------
+    nd4j::ops::roll op;
+    NDArray* y = nullptr;
+    auto result = op.execute({&x}, {}, {3,2}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), Status::OK());
+    auto out = result->at(0);
+
+//    out->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
+
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestRoll_14) {
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+        1., 2., 3.,  4.,  5., 6., 7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18., 19., 20., 21., 22., 23., 24.
+    });
+    auto shift = NDArrayFactory::create<int>({1,1,1});
+    auto axis = NDArrayFactory::create<int>({0, 1, 2});
+
+    auto exp = NDArrayFactory::create<double>('c', {2, 3, 4}, {
+        24, 21, 22, 23, 16, 13, 14, 15, 20, 17, 18, 19, 12, 9, 10, 11, 4, 1, 2, 3, 8, 5, 6, 7
+    });
+// ----------------------------------------------------------------
+    nd4j::ops::roll op;
+
+    auto result = op.execute({&x, &shift, &axis}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    ASSERT_EQ(result->status(), Status::OK());
+    auto out = result->at(0);
+//    out->printIndexedBuffer("Output");
+    //exp.printIndexedBuffer("Expect");
+
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, percentile_test1) {
 
     const int dim0=5, dim1=5, dim2=4;
