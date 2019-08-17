@@ -18,6 +18,7 @@ package org.deeplearning4j.ui.api;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import play.mvc.Http;
 import play.mvc.Result;
 
 import java.util.function.BiFunction;
@@ -38,17 +39,27 @@ public class Route {
     private final Supplier<Result> supplier;
     private final Function<String, Result> function;
     private final BiFunction<String, String, Result> function2;
+    private final Function<Http.Request, Result> request0Function;
+    private final BiFunction<Http.Request, String, Result> request1Function;
 
     public Route(String route, HttpMethod method, FunctionType functionType, Supplier<Result> supplier) {
-        this(route, method, functionType, supplier, null, null);
+        this(route, method, functionType, supplier, null, null, null, null);
     }
 
     public Route(String route, HttpMethod method, FunctionType functionType, Function<String, Result> function) {
-        this(route, method, functionType, null, function, null);
+        this(route, method, functionType, null, function, null, null, null);
+    }
+
+    public static Route request0Function(String route, HttpMethod httpMethod, Function<Http.Request, Result> function){
+        return new Route(route, httpMethod, FunctionType.Request0Function, null, null, null, function, null);
+    }
+
+    public static Route request1Function(String route, HttpMethod httpMethod, BiFunction<Http.Request, String, Result> function){
+        return new Route(route, httpMethod, FunctionType.Request1Function, null, null, null, null, function);
     }
 
     public Route(String route, HttpMethod method, FunctionType functionType,
                     BiFunction<String, String, Result> function) {
-        this(route, method, functionType, null, null, function);
+        this(route, method, functionType, null, null, function, null, null);
     }
 }
