@@ -36,6 +36,7 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
 
     __shared__ int colRank, imRank, kHeff, kWeff, oH, oW;
     __shared__ Nd4jLong *sharedMem, imLen;
+    __shared__ char imOrder;
 
     if (threadIdx.x == 0) {
 
@@ -51,7 +52,8 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
         imRank = 4;
         colRank = 6;
 
-        imLen = shape::length(imShapeInfo);
+        imLen   = shape::length(imShapeInfo);
+        imOrder = shape::order(imShapeInfo);
     }
 
     __syncthreads();
@@ -63,7 +65,7 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
 
     auto coords = sharedMem + threadIdx.x * colRank;
 
-    shape::index2coords(imRank, imShapeInfo + 1, imInd, imLen, coords);
+    shape::index2coords(imRank, imShapeInfo + 1, imInd, imLen, coords, imOrder);
 
     const auto imOffset = shape::getOffset(0, imShapeInfo + 1, imShapeInfo + imRank + 1, coords, imRank);
 
@@ -182,9 +184,9 @@ __global__ static void col2imCuda2(const void *columns, void *image, const Nd4jL
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
-                                const void* columns, const Nd4jLong* colShapeInfo,
-                                      void* image, const Nd4jLong* imShapeInfo,
-                                const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
+                               const void* columns, const Nd4jLong* colShapeInfo,
+                                     void* image, const Nd4jLong* imShapeInfo,
+                               const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
 
     // col2imCuda2<T><<<512, 512, 1024, *stream>>>(columns, image, colShapeInfo, imShapeInfo, sH, sW, pH, pW, dH, dW);
     col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH, sW, pH, pW, dH, dW);
