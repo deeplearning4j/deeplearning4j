@@ -223,8 +223,6 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
             coords[j] -= padLeft;       // get coordinates for x
         }
 
-
-
         if(within)
             z[zOffset] = x[shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank)];
         else

@@ -44,7 +44,7 @@ __global__ static void batchToSpaceCuda(const void* vx, const Nd4jLong* xShapeIn
           auto z = reinterpret_cast<T*>(vz);
 
     __shared__ int rank;
-    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
 
@@ -53,7 +53,6 @@ __global__ static void batchToSpaceCuda(const void* vx, const Nd4jLong* xShapeIn
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
-        totalThreads = gridDim.x * blockDim.x;
     }
 
     __syncthreads();
@@ -135,7 +134,7 @@ __global__ static void spaceToBatchCuda(const void* vx, const Nd4jLong* xShapeIn
           auto z = reinterpret_cast<T*>(vz);
 
     __shared__ int rank;
-    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
+    __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
 
@@ -144,7 +143,6 @@ __global__ static void spaceToBatchCuda(const void* vx, const Nd4jLong* xShapeIn
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
-        totalThreads = gridDim.x * blockDim.x;
     }
 
     __syncthreads();
@@ -206,6 +204,155 @@ void spaceToBatch(nd4j::LaunchContext* context, const NDArray& input, NDArray& o
         NDArray::prepareSpecialUse({&outputRearranged1}, {&input});
         BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), outputRearranged1.specialBuffer(), outputRearranged1.specialShapeInfo(), padBottom, padTop, padLeft, padRight), LIBND4J_TYPES);
         NDArray::registerSpecialUse({&outputRearranged1}, {&input});
+
+        manager.synchronize();
+
+        if(output.getSpecialBuffer() != outputRearranged1.getSpecialBuffer())
+            outputRearranged0.assign(outputRearranged1);
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename X, typename Y>
+__global__ static void spaceToBatchNDCuda(const void* vx, const Nd4jLong* xShapeInfo,
+                                          const void* vy, const Nd4jLong* yShapeInfo,
+                                                void* vz, const Nd4jLong* zShapeInfo,
+                                          const uint numOfSpatialDims) {
+
+    // x - input, y - padding, z - output
+
+    // 4D example
+    // input [bS, H * blockShape[0] - padBottom - padTop, W * blockShape[1] - padLeft - padRight, iC]
+    // output [bS, H * blockShape[0], W * blockShape[1], iC]
+
+    // if (padTop = padBottom = padRight = padLeft = 0) shapes are the same
+    // else:
+    // iH -> [padBottom, oH - padTop]
+    // iW -> [padLeft,   oW - padRight]
+    // zLen > xLen
+
+    const auto x = reinterpret_cast<const X*>(vx);
+    const auto y = reinterpret_cast<const Y*>(vy);
+          auto z = reinterpret_cast<X*>(vz);
+
+    __shared__ int rank;    // xRank = zRank, yRank = 2;
+    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
+
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+
+        rank  = shape::rank(zShapeInfo);
+        zLen  = shape::length(zShapeInfo);
+        totalThreads = gridDim.x * blockDim.x;
+    }
+
+    __syncthreads();
+
+    auto coords = sharedMem + threadIdx.x * rank;
+
+    const auto i =  + threadIdx.x;
+
+    for (int i = threadIdx.x; i < zLen; i += totalThreads) {
+
+        shape::index2coords(rank, zShapeInfo + 1, i, zLen, coords);
+
+        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+
+        bool within = true;
+
+        for(uint j = 1; j <= numOfSpatialDims; ++j) {
+
+            // yRank = 2, calculate offset manually
+            const auto yOffset  = (j - 1) * yShapeInfo[3];
+            const auto padLeft  = y[yOffset];
+            const auto padRight = y[yOffset + yShapeInfo[4]];
+
+            within &= (coords[j] >= padLeft && coords[j] < shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo))[j] - padRight);
+
+            if(!within)
+                break;
+
+            coords[j] -= padLeft;       // get coordinates for x
+        }
+
+        if(within)
+            z[zOffset] = x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+        else
+            z[zOffset] = 0.f;
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename X, typename Y>
+static void spaceToBatchNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint numOfSpatialDims) {
+
+    spaceToBatchNDCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, numOfSpatialDims);
+}
+BUILD_DOUBLE_TEMPLATE(template void spaceToBatchNDCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding, NDArray& output ) {
+
+    // 4D example with two spatial dimensions
+    // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockShape[0]*blockShape[1], (iH + padBottom + padTop)/blockShape[0], (iW + padLeft + padRight)/blockShape[1], iC]
+
+    const uint rank = input.rankOf();
+
+    const uint numOfSpatialDims = blockShape.sizeAt(0);
+
+    //*** construct reshaping std::vector for first reshape of output array ***//
+    std::vector<Nd4jLong> temp(numOfSpatialDims + rank);
+
+    int i;
+    for(i = 0; i < numOfSpatialDims; ++i)
+        temp[i] = blockShape.e<Nd4jLong>(i);
+    temp[i++] = input.sizeAt(0);
+    for(int j = 1; j < rank; ++i, ++j)
+        temp[i] = output.sizeAt(j);
+
+    NDArray outputRearranged0 = output.reshape(output.ordering(), temp);
+
+    //*** construct permuting std::vector for permutation of output array ***//
+
+    temp[0] = numOfSpatialDims;
+
+    for(i = 1; i <= numOfSpatialDims; ++i) {
+        temp[2*i - 1] = numOfSpatialDims + i;
+        temp[2*i]     = i - 1;
+    }
+    for(i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i)
+        temp[i] = i;
+
+    outputRearranged0.permutei(temp);
+
+    // ****** //
+
+    if(input.lengthOf() == output.lengthOf()) {
+        outputRearranged0.assign(input);
+    }
+    else {
+
+        //*** construct reshaping std::vector for second reshape of output array ***//
+        temp.resize(rank);
+
+        temp[0] = input.sizeAt(0);
+
+        for(i = 1; i < rank; ++i)
+            temp[i] = (i <= numOfSpatialDims) ? output.sizeAt(i) * blockShape.e<Nd4jLong>(i - 1) : output.sizeAt(i);
+
+        NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), temp);
+
+        const int threadsPerBlock = MAX_NUM_THREADS / 4;
+        const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+
+        PointersManager manager(context, "spaceToBatchND");
+
+        NDArray::prepareSpecialUse({&outputRearranged1}, {&input, &padding});
+        BUILD_DOUBLE_SELECTOR(input.dataType(), padding.dataType(), spaceToBatchNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), padding.getSpecialBuffer(), padding.getSpecialShapeInfo(), outputRearranged1.specialBuffer(), outputRearranged1.specialShapeInfo(), numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
+        NDArray::registerSpecialUse({&outputRearranged1}, {&input, &padding});
 
         manager.synchronize();
 
