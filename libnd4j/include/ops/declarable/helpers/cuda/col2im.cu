@@ -36,7 +36,6 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
 
     __shared__ int colRank, imRank, kHeff, kWeff, oH, oW;
     __shared__ Nd4jLong *sharedMem, imLen;
-    __shared__ char imOrder;
 
     if (threadIdx.x == 0) {
 
@@ -52,8 +51,7 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
         imRank = 4;
         colRank = 6;
 
-        imLen   = shape::length(imShapeInfo);
-        imOrder = shape::order(imShapeInfo);
+        imLen = shape::length(imShapeInfo);
     }
 
     __syncthreads();
@@ -65,7 +63,7 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
 
     auto coords = sharedMem + threadIdx.x * colRank;
 
-    shape::index2coords(imRank, imShapeInfo + 1, imInd, imLen, coords, imOrder);
+    shape::index2coords(imRank, imShapeInfo + 1, imInd, imLen, coords);
 
     const auto imOffset = shape::getOffset(0, imShapeInfo + 1, imShapeInfo + imRank + 1, coords, imRank);
 

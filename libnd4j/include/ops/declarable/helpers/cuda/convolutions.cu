@@ -40,7 +40,6 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
 
     __shared__ int colRank, volRank;
     __shared__ Nd4jLong colLen, iD, iH, iW, *sharedMem;
-    __shared__ char colOrder;
 
     if (threadIdx.x == 0) {
 
@@ -50,8 +49,7 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
         volRank = 5;
         colRank = 8;
 
-        colLen   = shape::length(colShapeInfo);
-        colOrder = shape::order(colShapeInfo);
+        colLen = shape::length(colShapeInfo);
 
         iD = volShapeInfo[3];
         iH = volShapeInfo[4];
@@ -67,7 +65,7 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
 
     auto coords = sharedMem + threadIdx.x * colRank;
 
-    shape::index2coords(colRank, colShapeInfo + 1, colInd, colLen, coords, colOrder);
+    shape::index2coords(colRank, colShapeInfo + 1, colInd, colLen, coords);
 
     // const auto colW = coords[7];
     // const auto colH = coords[6];
@@ -126,7 +124,6 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
 
     __shared__ int colRank, volRank, kDeff, kHeff, kWeff, oD, oH, oW;
     __shared__ Nd4jLong *sharedMem, volLen;
-    __shared__ char volOrder;
 
     if (threadIdx.x == 0) {
 
@@ -144,8 +141,7 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
         volRank = 5;
         colRank = 8;
 
-        volLen   = shape::length(volShapeInfo);
-        volOrder = shape::order(volShapeInfo);
+        volLen = shape::length(volShapeInfo);
     }
 
     __syncthreads();
@@ -157,7 +153,7 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
 
     auto coords = sharedMem + threadIdx.x * colRank;
 
-    shape::index2coords(volRank, volShapeInfo + 1, volInd, volLen, coords, volOrder);
+    shape::index2coords(volRank, volShapeInfo + 1, volInd, volLen, coords);
 
     const auto volOffset = shape::getOffset(0, volShapeInfo + 1, volShapeInfo + volRank + 1, coords, volRank);
 
@@ -722,14 +718,12 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
 
     __shared__ int rank, kDeff, kHeff, kWeff, iD, iH, iW, kProd;
     __shared__ Nd4jLong *sharedMem, zLen;
-    __shared__ char zOrder;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-        zLen   = shape::length(zShapeInfo);
-        zOrder = shape::order(zShapeInfo);
+        zLen = shape::length(zShapeInfo);
         rank = 5;
 
         kDeff = kD + (kD - 1) * (dD - 1);
@@ -752,7 +746,7 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords, zOrder);
+    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
 
     const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
 
@@ -877,14 +871,12 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
     Nd4jLong coord2, coord3;
     __shared__ int rank, kHeff, kWeff, iH, iW, kProd;
     __shared__ Nd4jLong *sharedMem, yLen;
-    __shared__ char yOrder;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-        yLen   = shape::length(yShapeInfo);
-        yOrder = shape::order(yShapeInfo);
+        yLen = shape::length(yShapeInfo);
         rank = 4;
 
         kHeff = kH + (kH - 1) * (dH - 1);
@@ -905,7 +897,7 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, yShapeInfo + 1, yInd, yLen, coords, yOrder);
+    shape::index2coords(rank, yShapeInfo + 1, yInd, yLen, coords);
 
     const auto yOffset = shape::getOffset(0, yShapeInfo + 1, yShapeInfo + rank + 1, coords, rank);
 
@@ -1032,14 +1024,12 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
     Nd4jLong coord2, coord3, coord4;
     __shared__ int rank, kDeff, kHeff, kWeff, iD, iH, iW, kProd;
     __shared__ Nd4jLong *sharedMem, yLen;
-    __shared__ char yOrder;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-        yLen   = shape::length(yShapeInfo);
-        yOrder = shape::order(yShapeInfo);
+        yLen = shape::length(yShapeInfo);
         rank = 5;
 
         kDeff = kD + (kD - 1) * (dD - 1);
@@ -1062,7 +1052,7 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, yShapeInfo + 1, yInd, yLen, coords, yOrder);
+    shape::index2coords(rank, yShapeInfo + 1, yInd, yLen, coords);
 
     const auto yOffset = shape::getOffset(0, yShapeInfo + 1, yShapeInfo + rank + 1, coords, rank);
 
@@ -1356,7 +1346,6 @@ __global__ static void upsampling2dCuda(const void* vx, const Nd4jLong* xShapeIn
 
     __shared__ int rank, dimIH;
     __shared__ Nd4jLong *sharedMem, zLen;
-    __shared__ char zOrder;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1364,7 +1353,6 @@ __global__ static void upsampling2dCuda(const void* vx, const Nd4jLong* xShapeIn
 
         dimIH  = isNCHW ? 2 : 1;
         zLen   = shape::length(zShapeInfo);
-        zOrder = shape::order(zShapeInfo);
         rank   = 4;
     }
 
@@ -1377,7 +1365,7 @@ __global__ static void upsampling2dCuda(const void* vx, const Nd4jLong* xShapeIn
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords, zOrder);
+    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
 
     const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
 
@@ -1427,16 +1415,14 @@ __global__ static void upsampling3dCuda(const void* vx, const Nd4jLong* xShapeIn
 
     __shared__ int rank, dimID;
     __shared__ Nd4jLong *sharedMem, zLen;
-    __shared__ char zOrder;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-        dimID  = isNCDHW ? 2 : 1;
-        zLen   = shape::length(zShapeInfo);
-        zOrder = shape::order(zShapeInfo);
-        rank   = 5;
+        dimID = isNCDHW ? 2 : 1;
+        zLen  = shape::length(zShapeInfo);
+        rank  = 5;
     }
 
     __syncthreads();
@@ -1448,7 +1434,7 @@ __global__ static void upsampling3dCuda(const void* vx, const Nd4jLong* xShapeIn
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords, zOrder);
+    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
 
     const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
 
@@ -1500,16 +1486,14 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
     __shared__ int rank, dimIH;
     __shared__ uint factorH, factorW;
     __shared__ Nd4jLong *sharedMem, zLen;
-    __shared__ char zOrder;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-        dimIH  = isNCHW ? 2 : 1;
-        zLen   = shape::length(zShapeInfo);
-        zOrder = shape::order(zShapeInfo);
-        rank   = 4;
+        dimIH = isNCHW ? 2 : 1;
+        zLen  = shape::length(zShapeInfo);
+        rank  = 4;
 
         factorH = xShapeInfo[dimIH + 1] / zShapeInfo[dimIH + 1];
         factorW = xShapeInfo[dimIH + 2] / zShapeInfo[dimIH + 2];
@@ -1524,7 +1508,7 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords, zOrder);
+    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
 
     const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
 
@@ -1575,16 +1559,14 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
     __shared__ int rank, dimID;
     __shared__ uint factorD, factorH, factorW;
     __shared__ Nd4jLong *sharedMem, zLen;
-    __shared__ char zOrder;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-        dimID  = isNCDHW ? 2 : 1;
-        zLen   = shape::length(zShapeInfo);
-        zOrder = shape::order(zShapeInfo);
-        rank   = 5;
+        dimID = isNCDHW ? 2 : 1;
+        zLen  = shape::length(zShapeInfo);
+        rank  = 5;
 
         factorD = xShapeInfo[dimID + 1] / zShapeInfo[dimID + 1];
         factorH = xShapeInfo[dimID + 2] / zShapeInfo[dimID + 2];
@@ -1600,7 +1582,7 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords, zOrder);
+    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
 
     const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
 

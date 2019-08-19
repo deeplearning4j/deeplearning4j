@@ -252,9 +252,7 @@ __global__ static void spaceToBatchNDCuda(const void* vx, const Nd4jLong* xShape
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    const auto i =  + threadIdx.x;
-
-    for (int i = threadIdx.x; i < zLen; i += totalThreads) {
+    for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < zLen; i += totalThreads) {
 
         shape::index2coords(rank, zShapeInfo + 1, i, zLen, coords);
 
