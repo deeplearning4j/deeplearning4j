@@ -136,7 +136,7 @@ public class MaskedReductionUtil {
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(input, negInfMask, withInf, 0, 2));
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
-                INDArray isMax = Nd4j.exec(new IsMax(withInf, 2))[0];
+                INDArray isMax = Nd4j.exec(new IsMax(withInf, withInf.ulike(), 2))[0];
 
                 return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon2d, isMax, 0, 1));
             case AVG:
@@ -296,7 +296,7 @@ public class MaskedReductionUtil {
                 Nd4j.getExecutioner().exec(new BroadcastAddOp(input, negInfMask, withInf, dimensions));
                 //At this point: all the masked out steps have value -inf, hence can't be the output of the MAX op
 
-                INDArray isMax = Nd4j.exec(new IsMax(withInf, 2, 3))[0];
+                INDArray isMax = Nd4j.exec(new IsMax(withInf, withInf.ulike(), 2, 3))[0];
 
                 return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon2d, isMax, 0, 1));
             case AVG:
