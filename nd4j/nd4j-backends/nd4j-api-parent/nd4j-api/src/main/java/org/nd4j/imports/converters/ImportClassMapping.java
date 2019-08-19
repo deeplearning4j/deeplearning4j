@@ -452,6 +452,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp.class,
+            org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAddOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAtan2Op.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldDivOp.class,

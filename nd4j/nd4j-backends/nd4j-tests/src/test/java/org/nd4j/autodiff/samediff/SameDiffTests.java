@@ -3565,6 +3565,17 @@ public class SameDiffTests extends BaseNd4jTest {
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
         assertEquals(115, SD.exec(null, outName).get(outName).getInt(0));
+    }
 
+    @Test
+    public void testMod_1(){
+        val sd = SameDiff.create();
+        val initial = sd.constant("initial", Nd4j.createFromArray(5.f, 6.f, 7.f));
+        val four = sd.constant("four", 4.0f);
+        val mod = initial.mod("mod",  four);
+
+        val e = Nd4j.createFromArray(1.f, 2.f, 3.f);
+
+        assertEquals(e, mod.eval());
     }
 }

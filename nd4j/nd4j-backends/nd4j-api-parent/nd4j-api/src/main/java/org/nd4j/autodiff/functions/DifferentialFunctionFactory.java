@@ -2200,7 +2200,6 @@ public class DifferentialFunctionFactory {
     public SDVariable muli(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
         return new MulOp(sameDiff(), new SDVariable[]{differentialFunction, i_v}, true).outputVariable();
-
     }
 
     public SDVariable mod(SDVariable differentialFunction, SDVariable i_v) {
