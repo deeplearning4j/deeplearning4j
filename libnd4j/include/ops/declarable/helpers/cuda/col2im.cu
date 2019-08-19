@@ -137,12 +137,20 @@ __global__ static void col2imCuda2(const void *columns, void *image, const Nd4jL
 
           for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
               T val = 0;
-              int w_im = i % iW + pW;
-              int h_im = (i / iW) % iH + pH;
-              int c_im = i / (iW * iH);
+              // int w_im = i % iW + pW;
+              // int h_im = (i / iW) % iH + pH;
+              // int c_im = i / (iW * iH);
+              // int b = c_im / iC;
+              // int c = c_im % iC;
 
-              int b = c_im / iC;
-              int c = c_im % iC;
+              int ii = i;
+              int b = ii / (iC * iH * iW);
+              ii %= (iC * iH * iW);
+              int c = ii / (iH * iW);
+              ii %= (iH * iW);
+              int h_im = ii / iW + pH;
+              ii %= iW;
+              int w_im = ii + pW;
 
               // compute the start and end of the output
               // These are the indexes for dimensions ??? in the 6d col matrix
@@ -168,14 +176,23 @@ __global__ static void col2imCuda2(const void *columns, void *image, const Nd4jL
                   }
               }
 
-              int i_f = 0;
-              int i_c = i;
-              for (int dim = 3; dim >= 0; dim--) {
-                  i_f += (i_c % imShape[dim])  * imStride[dim];
-                  i_c = i_c / imShape[dim];
-              }
+              // int i_f = 0;
+              // int i_c = i;
+              // for (int dim = 3; dim >= 0; dim--) {
+              //     i_f += (i_c % imShape[dim])  * imStride[dim];
+              //     i_c = i_c / imShape[dim];
+              // }
 
-              im[i_f] = val;
+              ii = i;
+              b = ii / (iC * iH * iW);
+              ii %= (iC * iH * iW);
+              c = ii / (iH * iW);
+              ii %= (iH * iW);
+              h_im = ii / iW;
+              ii %= iW;
+              w_im = ii;
+
+              im[b*imStride[0] + c * imStride[1] + h_im * imStride[2] + w_im * imStride[3]] = val;
           }
 }
 
