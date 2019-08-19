@@ -18,10 +18,7 @@ package org.deeplearning4j.rl4j.learning.sync;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.listener.EpochTrainingResultEvent;
-import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
-import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
-import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
+import org.deeplearning4j.rl4j.learning.listener.*;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -65,9 +62,9 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
      * returns {@link TrainingListener.ListenerResponse SyncTrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
      * Events:
      * <ul>
-     *   <li>{@link TrainingListener#onTrainingStart(TrainingEvent) onTrainingStart()} is called once when the training starts.</li>
-     *   <li>{@link TrainingListener#onNewEpoch(TrainingEvent) onNewEpoch()} and {@link TrainingListener#onEpochTrainingResult(EpochTrainingResultEvent) onEpochTrainingResult()}  are called for every epoch. onEpochTrainingResult will not be called if onNewEpoch stops the training</li>
-     *   <li>{@link TrainingListener#onTrainingEnd(TrainingEvent) onTrainingEnd()} is always called at the end of the training, even if the training was cancelled by a listener.</li>
+     *   <li>{@link TrainingListener#onTrainingStart(ITrainingEvent) onTrainingStart()} is called once when the training starts.</li>
+     *   <li>{@link TrainingListener#onNewEpoch(IEpochTrainingEvent) onNewEpoch()} and {@link TrainingListener#onEpochTrainingResult(IEpochTrainingResultEvent) onEpochTrainingResult()}  are called for every epoch. onEpochTrainingResult will not be called if onNewEpoch stops the training</li>
+     *   <li>{@link TrainingListener#onTrainingEnd(ITrainingEvent) onTrainingEnd()} is always called at the end of the training, even if the training was cancelled by a listener.</li>
      * </ul>
      */
     public void train() {
@@ -98,11 +95,11 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
         listeners.notifyTrainingFinished(buildTrainingFinishedEvent());
     }
 
-    protected TrainingEvent buildNewEpochEvent() {
-        return new TrainingEvent();
+    protected IEpochTrainingEvent buildNewEpochEvent() {
+        return new EpochTrainingEvent(getEpochCounter(), getStepCounter());
     }
-    protected EpochTrainingResultEvent buildEpochTrainingResultEvent(IDataManager.StatEntry statEntry) {
-        return new EpochTrainingResultEvent(statEntry, getEpochCounter(), getStepCounter());
+    protected IEpochTrainingResultEvent buildEpochTrainingResultEvent(IDataManager.StatEntry statEntry) {
+        return new EpochTrainingResultEvent(getEpochCounter(), getStepCounter(), statEntry);
     }
 
     protected abstract void preEpoch();

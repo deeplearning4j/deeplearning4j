@@ -13,23 +13,12 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
-
 package org.deeplearning4j.rl4j.learning.listener;
 
-import lombok.*;
-import org.deeplearning4j.rl4j.util.IDataManager;
-
 /**
- * This event is raised when an epoch has been completed and contains informations about the epoch.
+ * The base definition of all training events
  *
  * @author Alexandre Boulanger
  */
-public class EpochTrainingResultEvent extends EpochTrainingEvent implements IEpochTrainingResultEvent {
-    @Getter
-    private IDataManager.StatEntry statEntry;
-
-    public EpochTrainingResultEvent(int epochCount, int stepNum, IDataManager.StatEntry statEntry) {
-        super(epochCount, stepNum);
-        this.statEntry = statEntry;
-    }
+public interface ITrainingEvent {
 }

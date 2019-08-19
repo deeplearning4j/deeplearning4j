@@ -1,9 +1,7 @@
 package org.deeplearning4j.rl4j.support;
 
 import lombok.Setter;
-import org.deeplearning4j.rl4j.learning.listener.EpochTrainingResultEvent;
-import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
-import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
+import org.deeplearning4j.rl4j.learning.listener.*;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
 import java.util.ArrayList;
@@ -27,21 +25,21 @@ public class MockTrainingListener implements TrainingListener {
 
 
     @Override
-    public ListenerResponse onTrainingStart(TrainingEvent event) {
+    public ListenerResponse onTrainingStart(ITrainingEvent event) {
         ++onTrainingStartCallCount;
         --remainingTrainingStartCallCount;
         return remainingTrainingStartCallCount < 0 ? ListenerResponse.STOP : ListenerResponse.CONTINUE;
     }
 
     @Override
-    public ListenerResponse onNewEpoch(TrainingEvent event) {
+    public ListenerResponse onNewEpoch(IEpochTrainingEvent event) {
         ++onNewEpochCallCount;
         --remainingOnNewEpochCallCount;
         return remainingOnNewEpochCallCount < 0 ? ListenerResponse.STOP : ListenerResponse.CONTINUE;
     }
 
     @Override
-    public ListenerResponse onEpochTrainingResult(EpochTrainingResultEvent event) {
+    public ListenerResponse onEpochTrainingResult(IEpochTrainingResultEvent event) {
         ++onEpochTrainingResultCallCount;
         --remainingOnEpochTrainingResult;
         statEntries.add(event.getStatEntry());
@@ -49,7 +47,7 @@ public class MockTrainingListener implements TrainingListener {
     }
 
     @Override
-    public void onTrainingEnd(TrainingEvent event) {
+    public void onTrainingEnd(ITrainingEvent event) {
         ++onTrainingEndCallCount;
     }
 }

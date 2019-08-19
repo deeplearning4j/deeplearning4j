@@ -1,9 +1,6 @@
 package org.deeplearning4j.rl4j.learning.async.listener;
 
-import org.deeplearning4j.rl4j.learning.listener.EpochTrainingResultEvent;
-import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
-import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
-import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
+import org.deeplearning4j.rl4j.learning.listener.*;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -66,22 +63,22 @@ public class AsyncTrainingListenerListTest {
         public ListenerResponse onTrainingResultResponse = ListenerResponse.CONTINUE;
 
         @Override
-        public ListenerResponse onTrainingStart(TrainingEvent event) {
+        public ListenerResponse onTrainingStart(ITrainingEvent event) {
             return ListenerResponse.CONTINUE;
         }
 
         @Override
-        public void onTrainingEnd(TrainingEvent event) {
+        public void onTrainingEnd(ITrainingEvent event) {
 
         }
 
         @Override
-        public ListenerResponse onNewEpoch(TrainingEvent event) {
+        public ListenerResponse onNewEpoch(IEpochTrainingEvent event) {
             return ListenerResponse.CONTINUE;
         }
 
         @Override
-        public ListenerResponse onEpochTrainingResult(EpochTrainingResultEvent event) {
+        public ListenerResponse onEpochTrainingResult(IEpochTrainingResultEvent event) {
             ++onEpochTrainingResultCallCount;
             return onTrainingResultResponse;
         }

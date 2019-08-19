@@ -1,9 +1,7 @@
 package org.deeplearning4j.rl4j.util;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.rl4j.learning.listener.EpochTrainingResultEvent;
-import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
-import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
+import org.deeplearning4j.rl4j.learning.listener.*;
 
 /**
  * DataManagerSyncTrainingListener can be added to the listeners of SyncLearning so that the
@@ -17,22 +15,22 @@ public class DataManagerTrainingListener implements TrainingListener {
     }
 
     @Override
-    public ListenerResponse onTrainingStart(TrainingEvent event) {
+    public ListenerResponse onTrainingStart(ITrainingEvent event) {
         return ListenerResponse.CONTINUE;
     }
 
     @Override
-    public void onTrainingEnd(TrainingEvent event) {
+    public void onTrainingEnd(ITrainingEvent event) {
 
     }
 
     @Override
-    public ListenerResponse onNewEpoch(TrainingEvent event) {
+    public ListenerResponse onNewEpoch(IEpochTrainingEvent event) {
         return ListenerResponse.CONTINUE;
     }
 
     @Override
-    public ListenerResponse onEpochTrainingResult(EpochTrainingResultEvent event) {
+    public ListenerResponse onEpochTrainingResult(IEpochTrainingResultEvent event) {
         try {
             dataManager.appendStat(event.getStatEntry());
         } catch (Exception e) {

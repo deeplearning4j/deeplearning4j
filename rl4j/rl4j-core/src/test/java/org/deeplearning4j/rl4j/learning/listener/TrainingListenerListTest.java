@@ -37,7 +37,7 @@ public class TrainingListenerListTest {
         // Act
         sut.notifyTrainingStarted(null);
         sut.notifyNewEpoch(null);
-        sut.notifyEpochTrainingResult(new EpochTrainingResultEvent(null, 0, 0));
+        sut.notifyEpochTrainingResult(new EpochTrainingResultEvent(0, 0, null));
         sut.notifyTrainingFinished(null);
 
         // Assert
@@ -66,7 +66,7 @@ public class TrainingListenerListTest {
         // Act
         boolean resultTrainingStarted = sut.notifyTrainingStarted(null);
         boolean resultNewEpoch = sut.notifyNewEpoch(null);
-        boolean resultEpochTrainingResult = sut.notifyEpochTrainingResult(new EpochTrainingResultEvent(null, 0, 0) );
+        boolean resultEpochTrainingResult = sut.notifyEpochTrainingResult(new EpochTrainingResultEvent(0, 0, null) );
 
         // Assert
         assertTrue(resultTrainingStarted);

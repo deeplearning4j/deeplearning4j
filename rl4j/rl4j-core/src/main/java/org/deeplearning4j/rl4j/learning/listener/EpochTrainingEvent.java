@@ -16,20 +16,20 @@
 
 package org.deeplearning4j.rl4j.learning.listener;
 
-import lombok.*;
-import org.deeplearning4j.rl4j.util.IDataManager;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 
 /**
- * This event is raised when an epoch has been completed and contains informations about the epoch.
+ * This event contains informations about the epoch being handled.
  *
  * @author Alexandre Boulanger
  */
-public class EpochTrainingResultEvent extends EpochTrainingEvent implements IEpochTrainingResultEvent {
+@AllArgsConstructor
+public class EpochTrainingEvent extends TrainingEvent implements IEpochTrainingEvent {
     @Getter
-    private IDataManager.StatEntry statEntry;
-
-    public EpochTrainingResultEvent(int epochCount, int stepNum, IDataManager.StatEntry statEntry) {
-        super(epochCount, stepNum);
-        this.statEntry = statEntry;
-    }
+    private int epochCount;
+    @Getter
+    private int stepNum;
 }
