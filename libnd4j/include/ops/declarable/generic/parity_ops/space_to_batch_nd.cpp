@@ -49,9 +49,11 @@ CUSTOM_OP_IMPL(space_to_batch_nd, 3, 1, false, 0, 0) {
         REQUIRE_TRUE(blockSize >= 2, 0, "SpaceToBatchND: all elements of blockShape array must be >= 2, but got value of %i for element number %i !", blockSize, i);
     }
 
-    const std::string expectedpaddingShape = "[" + std::to_string(numOfSpatialDims) + ", 2]";   // [numOfSpatialDims, 2]
-    const std::string actualpaddingShape = ShapeUtils::shapeAsString(padding);
-    REQUIRE_TRUE(actualpaddingShape == expectedpaddingShape, 0, "SpaceToBatchND: operation expects padding shape to be %s, but got %s instead", expectedpaddingShape.c_str(), actualpaddingShape.c_str());
+    if(padding->sizeAt(0) != numOfSpatialDims || padding->sizeAt(1) != 2) {
+        const std::string expectedpaddingShape = "[" + std::to_string(numOfSpatialDims) + ", 2]";   // [numOfSpatialDims, 2]
+        const std::string actualpaddingShape = ShapeUtils::shapeAsString(padding);
+        REQUIRE_TRUE(false, 0, "SpaceToBatchND: operation expects padding shape to be %s, but got %s instead", expectedpaddingShape.c_str(), actualpaddingShape.c_str());
+    }
 
     // FIXME - should we use this time-consuming validation ?
     for (uint i = 0; i < numOfSpatialDims; ++i) {
@@ -61,8 +63,7 @@ CUSTOM_OP_IMPL(space_to_batch_nd, 3, 1, false, 0, 0) {
         REQUIRE_TRUE((input->sizeAt(i + 1) + padLeft + padRight) % blockSize == 0, 0, "SpaceToBatchND: after padding, spatial dimensions of input array must be divisible by blockSize !");
     }
 
-
-    // helpers::spaceToBatchND(block.launchContext(), *input, blockShape, padding, *output);
+    helpers::spaceToBatchND(block.launchContext(), *input, *blockShape, *padding, *output);
 
     return Status::OK();
 }
@@ -87,9 +88,11 @@ DECLARE_SHAPE_FN(space_to_batch_nd) {
 
     const uint numOfSpatialDims = blockShapeInfo[1];
 
-    const std::string expectedpaddingShape = "[" + std::to_string(numOfSpatialDims) + ", 2]";   // [numOfSpatialDims, 2]
-    const std::string actualpaddingShape = ShapeUtils::shapeAsString(paddingShapeInfo);
-    REQUIRE_TRUE(actualpaddingShape == expectedpaddingShape, 0, "SpaceToBatchND: operation expects padding shape to be %s, but got %s instead", expectedpaddingShape.c_str(), actualpaddingShape.c_str());
+    if(paddingShapeInfo[1] != numOfSpatialDims || paddingShapeInfo[2] != 2) {
+        const std::string expectedpaddingShape = "[" + std::to_string(numOfSpatialDims) + ", 2]";   // [numOfSpatialDims, 2]
+        const std::string actualpaddingShape = ShapeUtils::shapeAsString(paddingShapeInfo);
+        REQUIRE_TRUE(false, 0, "SpaceToBatchND: operation expects padding shape to be %s, but got %s instead", expectedpaddingShape.c_str(), actualpaddingShape.c_str());
+    }
 
     std::vector<Nd4jLong> outShape(inputShapeInfo + 1, inputShapeInfo + 1 + inputShapeInfo[0]);
 

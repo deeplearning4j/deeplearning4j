@@ -212,16 +212,18 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
 
         for(uint j = 1; j <= numOfSpatialDims; ++j) {
 
-            const auto padLeft  = padding.e<uint>(j, 0);
-            const auto padRight = padding.e<uint>(j, 1);
+            const auto padLeft  = padding.e<uint>(j - 1, 0);
+            const auto padRight = padding.e<uint>(j - 1, 1);
 
             within &= (coords[j] >= padLeft && coords[j] < output.sizeAt(j) - padRight);
 
             if(!within)
                 break;
 
-            coords[j] -= padLeft;       // transform coordinates for x
+            coords[j] -= padLeft;       // get coordinates for x
         }
+
+
 
         if(within)
             z[zOffset] = x[shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank)];
@@ -279,10 +281,8 @@ void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const ND
 
         temp[0] = input.sizeAt(0);
 
-        for(i = 1; i <= rank; ++i)
+        for(i = 1; i < rank; ++i)
             temp[i] = (i <= numOfSpatialDims) ? output.sizeAt(i) * blockShape.e<Nd4jLong>(i - 1) : output.sizeAt(i);
-
-        // input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, input.sizeAt(3)
 
         NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), temp);
 
@@ -292,9 +292,6 @@ void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const ND
             outputRearranged0.assign(outputRearranged1);
     }
 }
-
-
-// [batch] + [padded_shape[1] / block_shape[0], block_shape[0], ..., padded_shape[M] / block_shape[M-1], block_shape[M-1]] + remaining_shape
 
 
 /*

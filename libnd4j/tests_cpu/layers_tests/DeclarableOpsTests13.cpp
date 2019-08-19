@@ -689,3 +689,116 @@ TEST_F(DeclarableOpsTests13, cyclic_rshift_bits_1) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, space_to_batch_nd_1) {
+
+    NDArray x('c', {1, 2, 2, 2, 3}, nd4j::DataType::FLOAT32);
+    NDArray blockShape('c', {3}, {2, 2, 2} , nd4j::DataType::INT32);    // three spatial dimensions
+    NDArray paddings('c', {3, 2}, {0, 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
+
+    NDArray exp('c', {8, 1, 1, 1, 3}, nd4j::DataType::FLOAT32);
+
+    x.linspace(1);
+    exp.linspace(1);
+
+    nd4j::ops::space_to_batch_nd op;
+    auto result = op.execute({&x, &blockShape, &paddings}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, space_to_batch_nd_2) {
+
+    NDArray x('c', {2,  2,4,3,  1}, nd4j::DataType::FLOAT32);
+    NDArray blockShape('c', {3}, {2, 2, 3} , nd4j::DataType::INT32);    // three spatial dimensions
+    NDArray paddings('c', {3, 2}, {0,0,  0,2,  2,1} , nd4j::DataType::INT32);
+
+    NDArray exp('c', {24, 1,3,2, 1}, { 0, 2, 0, 8, 0, 0, 0, 26, 0, 32, 0, 0, 0, 3, 0, 9, 0, 0, 0, 27, 0, 33, 0, 0, 1,
+                                        0, 7, 0, 0, 0, 25, 0, 31, 0, 0, 0, 0, 5, 0, 11, 0, 0, 0, 29, 0, 35, 0, 0, 0, 6,
+                                        0, 12, 0, 0, 0, 30, 0, 36, 0, 0, 4, 0, 10, 0, 0, 0, 28, 0, 34, 0, 0, 0, 0, 14,
+                                        0, 20, 0, 0, 0, 38, 0, 44, 0, 0, 0, 15, 0, 21, 0, 0, 0, 39, 0, 45, 0, 0, 13, 0,
+                                        19, 0, 0, 0, 37, 0, 43, 0, 0, 0, 0, 17, 0, 23, 0, 0, 0, 41, 0, 47, 0, 0, 0, 18,
+                                        0, 24, 0, 0, 0, 42, 0, 48, 0, 0, 16, 0, 22, 0, 0, 0, 40, 0, 46, 0, 0, 0}, nd4j::DataType::FLOAT32);
+    x.linspace(1);
+
+    nd4j::ops::space_to_batch_nd op;
+    auto result = op.execute({&x, &blockShape, &paddings}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, space_to_batch_nd_3) {
+
+    NDArray x('c', {2,  2,4,3,  1}, nd4j::DataType::FLOAT32);
+    NDArray blockShape('c', {3}, {2, 2, 3} , nd4j::DataType::INT32);    // three spatial dimensions
+    NDArray paddings('c', {3, 2}, {1,1,  0,2,  2,1} , nd4j::DataType::INT32);
+
+    NDArray exp('c', {24, 2,3,2, 1}, { 0, 0, 0, 0, 0, 0, 0, 14, 0, 20, 0, 0, 0, 0, 0, 0, 0, 0, 0, 38, 0, 44, 0, 0, 0, 0, 0, 0, 0, 0, 0, 15,
+                                        0, 21, 0, 0, 0, 0, 0, 0, 0, 0, 0, 39, 0, 45, 0, 0, 0, 0, 0, 0, 0, 0, 13, 0, 19, 0, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 37, 0, 43, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 17, 0, 23, 0, 0, 0, 0, 0, 0, 0, 0, 0, 41, 0, 47, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 0, 18, 0, 24, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 0, 48, 0, 0, 0, 0, 0, 0, 0, 0, 16, 0,
+                                        22, 0, 0, 0, 0, 0, 0, 0, 0, 0, 40, 0, 46, 0, 0, 0, 0, 2, 0, 8, 0, 0, 0, 0, 0, 0, 0, 0, 0, 26, 0, 32,
+                                        0, 0, 0, 0, 0, 0, 0, 0, 0, 3, 0, 9, 0, 0, 0, 0, 0, 0, 0, 0, 0, 27, 0, 33, 0, 0, 0, 0, 0, 0, 0, 0, 1,
+                                        0, 7, 0, 0, 0, 0, 0, 0, 0, 0, 0, 25, 0, 31, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 5, 0, 11, 0, 0, 0, 0, 0, 0,
+                                        0, 0, 0, 29, 0, 35, 0, 0, 0, 0, 0, 0, 0, 0, 0, 6, 0, 12, 0, 0, 0, 0, 0, 0, 0, 0, 0, 30, 0, 36, 0, 0,
+                                        0, 0, 0, 0, 0, 0, 4, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 28, 0, 34, 0, 0, 0, 0, 0, 0, 0, 0, 0}, nd4j::DataType::FLOAT32);
+    x.linspace(1);
+
+    nd4j::ops::space_to_batch_nd op;
+    auto result = op.execute({&x, &blockShape, &paddings}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+
+
+// //////////////////////////////////////////////////////////////////////
+// TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_4) {
+
+//     const int blockSize = 2;
+//     NDArray x('c', {3, 3*blockSize - 1 - 2, 4*blockSize - 2 - 3, 2}, {147, 148, 219, 220, 149, 150, 11,  12, 83,  84, 13,  14, 155, 156, 227, 228, 157, 158, 171, 172, 243, 244, 173, 174, 35,  36, 107, 108, 37,  38, 179, 180, 251, 252, 181, 182, 195, 196, 267, 268, 197, 198, 59,  60, 131, 132, 61,  62, 203, 204, 275, 276, 205, 206}, nd4j::DataType::FLOAT32);
+//     NDArray paddings = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 2, 3});
+
+//     NDArray exp('c', {3*blockSize*blockSize, 3, 4, 2}, {0,0, 0,0, 0,0, 0,0, 0,0, 11,12, 13,14, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0,
+//         0,0, 0,0, 0,0, 35,36, 37,38, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 59,60, 61,62, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0,
+//         0,0, 0,0, 0,0, 0,0, 83,84, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 107, 108, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0,
+//         0,0, 0,0, 0,0, 0,0, 0,0, 131, 132, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 147, 148, 149, 150, 0,0, 0,0, 155, 156, 157, 158,
+//         0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 171, 172, 173, 174, 0,0, 0,0, 179, 180, 181, 182, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 195, 196,
+//         197, 198, 0,0, 0,0, 203, 204, 205, 206, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 219, 220, 0,0, 0,0, 0,0, 227, 228, 0,0, 0,0, 0,0,
+//         0,0, 0,0, 0,0, 0,0, 243, 244, 0,0, 0,0, 0,0, 251, 252, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 267, 268, 0,0, 0,0, 0,0, 275,
+//         276, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0}, nd4j::DataType::FLOAT32);
+
+//     nd4j::ops::space_to_batch op;
+//     auto result = op.execute({&x, &paddings}, {}, {blockSize});
+//     ASSERT_EQ(Status::OK(), result->status());
+
+//     auto z = result->at(0);
+//     // z->printIndexedBuffer();
+
+//     ASSERT_TRUE(exp.isSameShape(z));
+//     ASSERT_TRUE(exp.equalsTo(z));
+
+//     delete result;
+// }
