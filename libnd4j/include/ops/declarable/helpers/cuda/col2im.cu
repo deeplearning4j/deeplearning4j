@@ -186,8 +186,8 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                      void* image, const Nd4jLong* imShapeInfo,
                                const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
 
-    // col2imCuda2<T><<<512, 512, 1024, *stream>>>(columns, image, colShapeInfo, imShapeInfo, sH, sW, pH, pW, dH, dW);
-    col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH, sW, pH, pW, dH, dW);
+    col2imCuda2<T><<<512, 512, 1024, *stream>>>(columns, image, colShapeInfo, imShapeInfo, sH, sW, pH, pW, dH, dW);
+    //col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH, sW, pH, pW, dH, dW);
 }
 
 //////////////////////////////////////////////////////////////////////////
