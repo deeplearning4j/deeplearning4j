@@ -228,22 +228,23 @@ namespace helpers {
     }
 
     template <typename T>
-    static void rollFunctorFull_(NDArray* input, NDArray* output, int shift, std::vector<int> const& axis, bool inplace){
+    static void rollFunctorFull_(NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace){
         if (!inplace)
             output->assign(input);
 
-        for (int axe: axis) {
+        for (size_t i = 0; i < axes.size(); i++) {
+            int axe = axes[i];
             if (axe == input->rankOf() - 1) { // last dimension
                 std::unique_ptr<ResultSet> listOfTensors(output->allTensorsAlongDimension({axe}));
                 std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension({axe}));
                 int fullLen = listOfTensors->size();
-                int theShift = shift;
-                if (theShift > 0) {
-                    theShift %= fullLen;
-                }
-                else {
-                    theShift -= fullLen * (theShift / fullLen - 1);
-                }
+                int theShift = shifts[i];
+//                if (theShift > 0) {
+//                    theShift %= fullLen;
+//                }
+//                else {
+//                    theShift -= fullLen * (theShift / fullLen - 1);
+//                }
                 for (int k = 0; k < fullLen; k++) {
                     rollFunctorLinear(output->getContext(), listOfTensors->at(k), listOfOutTensors->at(k), theShift, true);
                 }
@@ -258,12 +259,12 @@ namespace helpers {
                 int sizeAt = input->sizeAt(axe);
                 auto tadLength = shape::length(packZ.primaryShapeInfo());
 
-                int theShift = shift;
+                int theShift = shifts[i];
 
-                if (theShift > 0)
-                    theShift %= sizeAt;
-                else
-                    theShift -= sizeAt * (theShift / sizeAt - 1);
+//                if (theShift > 0)
+//                    theShift %= sizeAt;
+//                else
+//                    theShift -= sizeAt * (theShift / sizeAt - 1);
 
                 if (theShift) {
                     for (int dim = 0; dim < numTads / sizeAt; ++dim) {
@@ -307,10 +308,10 @@ namespace helpers {
         }
     }
 
-    void rollFunctorFull(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int shift, std::vector<int> const& axis, bool inplace){
+    void rollFunctorFull(nd4j::LaunchContext * context, NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace){
         input->syncToDevice();
 
-        BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorFull_, (input, output, shift, axis, inplace), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), rollFunctorFull_, (input, output, shifts, axes, inplace), LIBND4J_TYPES);
 
         output->tickWriteDevice();
     }
@@ -324,7 +325,7 @@ namespace helpers {
     }
 
     BUILD_SINGLE_TEMPLATE(template void rollFunctorLinear_, (NDArray* input, NDArray* output, int shift, bool inplace), LIBND4J_TYPES);
-    BUILD_SINGLE_TEMPLATE(template void rollFunctorFull_, (NDArray* input, NDArray* output, int shift, std::vector<int> const& axis, bool inplace), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void rollFunctorFull_, (NDArray* input, NDArray* output, std::vector<int> const& shifts, std::vector<int> const& axes, bool inplace), LIBND4J_TYPES);
 }
 }
 }

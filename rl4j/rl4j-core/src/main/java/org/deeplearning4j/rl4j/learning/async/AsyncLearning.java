@@ -45,7 +45,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     public abstract AsyncConfiguration getConfiguration();
 
-    protected abstract AsyncThread newThread(int i);
+    protected abstract AsyncThread newThread(int i, int deviceAffinity);
 
     protected abstract IAsyncGlobal<NN> getAsyncGlobal();
 
@@ -60,9 +60,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
     public void launchThreads() {
         startGlobalThread();
         for (int i = 0; i < getConfiguration().getNumThread(); i++) {
-            Thread t = newThread(i);
-            Nd4j.getAffinityManager().attachThreadToDevice(t,
-                            i % Nd4j.getAffinityManager().getNumberOfDevices());
+            Thread t = newThread(i, i % Nd4j.getAffinityManager().getNumberOfDevices());
             t.start();
 
         }

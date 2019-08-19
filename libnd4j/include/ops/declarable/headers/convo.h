@@ -260,7 +260,7 @@ namespace nd4j {
          * 0: axis
          */
         #if NOT_EXCLUDED(OP_ismax)
-        DECLARE_CONFIGURABLE_OP(ismax, 1, 1, true, 0, -1);
+        DECLARE_CONFIGURABLE_OP(ismax, 1, 1, true, 0, -2);
         #endif
 
         /**

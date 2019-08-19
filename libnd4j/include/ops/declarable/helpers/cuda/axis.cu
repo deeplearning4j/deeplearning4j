@@ -27,6 +27,8 @@ namespace helpers {
 
     void adjustAxis(Nd4jLong rank, NDArray* axisVector, std::vector<int>& output) {
         output.resize(axisVector->lengthOf());
+        axisVector->tickReadDevice();
+        axisVector->syncToHost();
         for (int e = 0; e < axisVector->lengthOf(); e++) {
                 auto ca = axisVector->e<int>(e);
                 if (ca < 0)

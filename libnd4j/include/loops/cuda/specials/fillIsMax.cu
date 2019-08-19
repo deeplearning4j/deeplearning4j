@@ -25,21 +25,21 @@ namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    __global__ void execFillIsMax(void *vdZ, Nd4jLong length, long idx) {
+    __global__ void execFillIsMax(void *vdZ, Nd4jLong *xShapeInfo, Nd4jLong length, long idx) {
         auto dz = reinterpret_cast<T*>(vdZ);
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
         for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x)
-            dz[i] = (i == idx ? (T) 1 : (T) 0);
+            dz[shape::getIndexOffset(i, xShapeInfo, length)] = (i == idx ? (T) 1 : (T) 0);
     }
 
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
-    __host__ void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong length, long idx) {
-        execFillIsMax<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, length, idx);
+    __host__ void fillIsMaxGeneric(dim3 &launchDims, cudaStream_t *stream, void *dx, Nd4jLong *xShapeInfo, Nd4jLong length, long idx) {
+        execFillIsMax<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(dx, xShapeInfo, length, idx);
         nd4j::DebugHelper::checkErrorCode(stream, "fillIsMax(...) failed");
     }
 
 
-    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT fillIsMaxGeneric, (dim3& launchDims, cudaStream_t *stream, void* dz, Nd4jLong length, long idx), LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT fillIsMaxGeneric, (dim3& launchDims, cudaStream_t *stream, void* dz, Nd4jLong *zShapeInfo, Nd4jLong length, long idx), LIBND4J_TYPES);
 }

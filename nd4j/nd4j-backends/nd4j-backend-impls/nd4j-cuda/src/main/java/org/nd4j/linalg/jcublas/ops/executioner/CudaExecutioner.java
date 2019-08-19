@@ -1308,40 +1308,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val hostXShapeInfo = op.x() == null ? null : AddressRetriever.retrieveHostPointer(op.x().shapeInfoDataBuffer());
         var hostYShapeInfo = op.y() == null ? null : AddressRetriever.retrieveHostPointer(op.y().shapeInfoDataBuffer());
 
-        // IsMax
-        if (op.getOpType() == Op.Type.TRANSFORM_ANY && op.opNum() == 1 && op.extraArgs() != null && op.extraArgs().length > 0) {
-            // for IsMax along dimension we need special temporary buffer
-            dimension = new int[(int) op.extraArgs()[0]];
-
-            for (int i = 0; i < dimension.length; i++) {
-                dimension[i] = (int) op.extraArgs()[i + 1];
-            }
-
-
-            for (int i = 0; i < dimension.length; i++) {
-                if (dimension[i] < 0)
-                    dimension[i] += op.x().rank();
-            }
-            //do op along all dimensions
-            if (dimension.length == op.x().rank())
-                dimension = new int[] {Integer.MAX_VALUE};
-
-            long[] retShape = Shape.wholeArrayDimension(dimension) ? new long[] {}
-                    : ArrayUtil.removeIndex(op.x().shape(), dimension);
-
-            ret = Nd4j.createUninitialized(DataType.LONG, retShape);
-
-            // FIXME: this maybe misleading use of this particular pointer
-            hostYShapeInfo = allocator.getPointer(ret.shapeInfoDataBuffer(), context);
-            retHostShape = allocator.getHostPointer(ret.shapeInfoDataBuffer());
-
-            //dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
-            DataBuffer dimensionBuffer = allocator.getConstantBuffer(dimension);
-            dimensionDevPointer = allocator.getPointer(dimensionBuffer, context);
-            dimensionHostPointer = allocator.getHostPointer(dimensionBuffer);
-
-            retPointer = allocator.getPointer(ret, context);
-        }
 
         if (op.z() == null) {
             ret = Nd4j.createUninitialized(op.resultType(), op.x().shape(), op.x().ordering());
@@ -1364,37 +1330,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer devMaxTadOffsets = null;
 
         op.validateDataTypes(experimentalMode.get());
-
-        // SoftMax, LogSoftMax, SoftMaxDerivative
-        if (op.getOpType() == Op.Type.TRANSFORM_STRICT && (op.opNum() >= 0 && op.opNum() <= 2)) {
-                tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), new int[] {0});
-                tadMaxBuffers = tadManager.getTADOnlyShapeInfo(op.x().rank() == 1 ? op.x().reshape(1, -1) : op.x(), new int[] {1});
-
-                hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
-                devTadShapeInfo = allocator.getPointer(tadBuffers.getFirst(), context);
-
-                hostMaxTadShapeInfo = AddressRetriever.retrieveHostPointer(tadMaxBuffers.getFirst());
-                devMaxTadShapeInfo = allocator.getPointer(tadMaxBuffers.getFirst(), context);
-
-                DataBuffer offsets = tadBuffers.getSecond();
-                devTadOffsets = offsets == null ? null : allocator.getPointer(offsets, context);
-
-                DataBuffer maxOffsets = tadMaxBuffers.getSecond();
-                devMaxTadOffsets = maxOffsets == null ? null : allocator.getPointer(maxOffsets, context);
-        } else if (op.getOpType() == Op.Type.TRANSFORM_ANY && op.opNum() == 1) { // IsMax
-                tadBuffers = tadManager.getTADOnlyShapeInfo(op.z(), dimension);
-
-                hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
-                devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
-
-                DataBuffer offsets = tadBuffers.getSecond();
-                devTadOffsets = offsets == null ? null : allocator.getPointer(offsets, context);
-
-                if (retPointer == null)
-                    retPointer = context.getBufferReduction();
-        }
-
-
 
         Pointer z = allocator.getPointer(op.z(), context);
         Pointer zShapeInfo = allocator.getPointer(op.z().shapeInfoDataBuffer(), context);
@@ -1462,7 +1397,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 case TRANSFORM_FLOAT:
                     nativeOps.execTransformFloat(xShapeInfoHostPointer, op.opNum(),
                             null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
-                           op.z().data().addressPointer(), (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
+                           null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
                             extraArgs);
                     break;
                 case TRANSFORM_BOOL:

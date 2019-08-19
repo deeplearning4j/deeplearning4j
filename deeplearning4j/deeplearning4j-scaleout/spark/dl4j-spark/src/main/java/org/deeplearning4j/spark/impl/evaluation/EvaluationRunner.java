@@ -108,7 +108,7 @@ public class EvaluationRunner {
                 INDArray p;
                 try{
                     p = Nd4j.read(new ByteArrayInputStream(pBytes));
-                } catch (IOException e){
+                } catch (RuntimeException e){
                     throw new RuntimeException(e);  //Should never happen
                 }
                 DeviceLocalNDArray dlp = new DeviceLocalNDArray(p);

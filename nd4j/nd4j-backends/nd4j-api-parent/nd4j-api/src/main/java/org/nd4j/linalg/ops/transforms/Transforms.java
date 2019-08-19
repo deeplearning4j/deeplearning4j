@@ -378,7 +378,7 @@ public class Transforms {
 
 
     public static INDArray asin(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().exec(new ASin(((copy ? in.dup() : in))));
+        return Nd4j.getExecutioner().exec(new ASin(in, (copy ? in.ulike() : in)));
     }
 
     public static INDArray atan(INDArray arr) {
@@ -999,7 +999,8 @@ public class Transforms {
     }
 
     public static INDArray isMax(INDArray input, INDArray output) {
-        return Nd4j.getExecutioner().exec(new IsMax(input, output));
+        Nd4j.getExecutioner().exec(new IsMax(input, output));
+        return output;
     }
 
 
@@ -1035,7 +1036,7 @@ public class Transforms {
      * @return
      */
     public static INDArray sqrt(INDArray ndArray, boolean dup) {
-        return exec(dup ? new Sqrt(ndArray, ndArray.ulike()) : new Sqrt(ndArray));
+        return exec(dup ? new Sqrt(ndArray, ndArray.ulike()) : new Sqrt(ndArray, ndArray));
     }
 
     /**

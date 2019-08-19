@@ -97,13 +97,12 @@ public class SparkADSI extends AsyncDataSetIterator {
 
         context = TaskContext.get();
 
-        this.thread = new SparkPrefetchThread(buffer, iterator, terminator, null);
+        this.thread = new SparkPrefetchThread(buffer, iterator, terminator, null, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
         /**
          * We want to ensure, that background thread will have the same thread->device affinity, as master thread
          */
 
-        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
         thread.setDaemon(true);
         thread.start();
     }
@@ -116,9 +115,8 @@ public class SparkADSI extends AsyncDataSetIterator {
 
     public class SparkPrefetchThread extends AsyncPrefetchThread {
 
-        protected SparkPrefetchThread(BlockingQueue<DataSet> queue, DataSetIterator iterator, DataSet terminator,
-                        MemoryWorkspace workspace) {
-            super(queue, iterator, terminator, workspace);
+        protected SparkPrefetchThread(BlockingQueue<DataSet> queue, DataSetIterator iterator, DataSet terminator, MemoryWorkspace workspace, int deviceId) {
+            super(queue, iterator, terminator, workspace, deviceId);
         }
 
 

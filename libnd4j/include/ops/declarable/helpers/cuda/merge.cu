@@ -48,8 +48,10 @@ namespace nd4j {
                         auto x = reinterpret_cast<T*>(inArrs[i]);
                         auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
                         auto val = x[shape::getIndexOffset(e, xShape, length)];;
-                        if (mVal < val)
-                            mIdx = static_cast<Z>(e);
+                        if (mVal < val) {
+                            mIdx = static_cast<Z>(i);
+                            mVal = val;
+                        }
                     }
                     __syncthreads();
 

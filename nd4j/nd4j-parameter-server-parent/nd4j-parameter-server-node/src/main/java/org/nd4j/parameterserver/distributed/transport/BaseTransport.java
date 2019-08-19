@@ -25,6 +25,7 @@ import io.aeron.logbuffer.Header;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.IdleStrategy;
@@ -349,6 +350,8 @@ public abstract class BaseTransport implements Transport {
                  * only because we want code to be obvious for people
                  */
                 final AtomicBoolean localRunner = new AtomicBoolean(false);
+                val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
                 if (nodeRole == NodeRole.NONE) {
                     throw new ND4JIllegalStateException("No role is set for current node!");
                 } else if (nodeRole == NodeRole.SHARD || nodeRole == NodeRole.BACKUP || nodeRole == NodeRole.MASTER) {
@@ -357,6 +360,7 @@ public abstract class BaseTransport implements Transport {
                     // setting up thread for shard->client communication listener
                     if (messageHandlerForShards != null) {
                         threadB = new Thread(() -> {
+                            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
                             while (runner.get())
                                 idler.idle(subscriptionForShards.poll(messageHandlerForShards, 512));
 
@@ -368,13 +372,13 @@ public abstract class BaseTransport implements Transport {
                     // setting up thread for inter-shard communication listener
                     threadA = new Thread(() -> {
                         localRunner.set(true);
+                        Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
                         while (runner.get())
                             idler.idle(subscriptionForClients.poll(messageHandlerForClients, 512));
                     });
 
                     if (threadB != null) {
-                        Nd4j.getAffinityManager().attachThreadToDevice(threadB,
-                                        Nd4j.getAffinityManager().getDeviceForCurrentThread());
+
                         threadB.setDaemon(true);
                         threadB.setName("VoidParamServer subscription threadB [" + nodeRole + "]");
                         threadB.start();
@@ -389,8 +393,7 @@ public abstract class BaseTransport implements Transport {
                 }
 
                 // all roles have threadA anyway
-                Nd4j.getAffinityManager().attachThreadToDevice(threadA,
-                                Nd4j.getAffinityManager().getDeviceForCurrentThread());
+                //Nd4j.getAffinityManager().attachThreadToDevice(threadA,                                Nd4j.getAffinityManager().getDeviceForCurrentThread());
                 threadA.setDaemon(true);
                 threadA.setName("VoidParamServer subscription threadA [" + nodeRole + "]");
                 threadA.start();

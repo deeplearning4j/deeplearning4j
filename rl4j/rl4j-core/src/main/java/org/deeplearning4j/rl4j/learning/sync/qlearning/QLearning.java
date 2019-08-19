@@ -50,7 +50,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     // final private IExpReplay<A> expReplay;
     @Getter
     @Setter(AccessLevel.PACKAGE)
-    private IExpReplay<A> expReplay;
+    protected IExpReplay<A> expReplay;
 
     public QLearning(QLConfiguration conf) {
         super(conf);

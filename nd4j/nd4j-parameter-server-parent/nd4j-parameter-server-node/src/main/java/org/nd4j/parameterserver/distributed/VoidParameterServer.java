@@ -19,6 +19,7 @@ package org.nd4j.parameterserver.distributed;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -276,9 +277,12 @@ public class VoidParameterServer {
                     processingThreads = new Thread[numThreads];
                     processingRunnables = new Runnable[numThreads];
 
+                    val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+
                     for (int x = 0; x < numThreads; x++) {
                         processingThreads[x] = new Thread(() -> {
                             runner.set(true);
+                            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
                             while (runner.get()) {
                                 try {
                                     //VoidMessage message = transport.takeMessage();
@@ -296,11 +300,6 @@ public class VoidParameterServer {
                             }
                         });
 
-                        //executor.submit(processingRunnables[x);
-
-                        // TODO: maybe find the way to guarantee affinity in some other way, to make different devices usable as well?
-                        Nd4j.getAffinityManager().attachThreadToDevice(processingThreads[x],
-                                        Nd4j.getAffinityManager().getDeviceForCurrentThread());
                         processingThreads[x].setDaemon(true);
                         processingThreads[x].setName("VoidParameterServer messages handling thread");
                         processingThreads[x].start();

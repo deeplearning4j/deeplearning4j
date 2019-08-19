@@ -123,14 +123,236 @@ namespace nd4j {
                 nSamplingKernel<T><<<1,1,128, *stream>>>(vsyn0, vsyn1Neg, vexpTable, vneu1e, alpha, vectorLength, code, expLength, isInference);
             }
 
+            /*
+             * binarySearch - find element in haystack buffer (haystack - sorted device memory)
+             * */
             int binarySearch(const int *haystack, const int needle, const int totalElements) {
-                return 0;
+                int firstIndex = 0;
+                int lastIndex = totalElements - 1;
+                int halfIndex = nd4j::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
+
+                while(haystack[halfIndex] != needle && firstIndex < lastIndex) {
+                    if (needle < haystack[halfIndex]) {
+                        lastIndex = halfIndex - 1;
+                    } else if (needle > haystack[halfIndex]) {
+                        firstIndex = halfIndex + 1;
+                    }
+                    halfIndex = nd4j::math::nd4j_floor<float, int>((lastIndex + firstIndex) / (float) 2);
+                }
+
+                return (haystack[halfIndex] == needle) ? halfIndex : -1;
+            }
+            template <typename T>
+            __global__ void addInfVectorKernel(T* neu1, T* infVector, int vectorLength) {
+                auto start = blockIdx.x * blockDim.x + threadIdx.x;
+                auto step = blockDim.x * gridDim.x;
+
+                for (auto i = start; i < vectorLength; i += step) {
+                    neu1[i] += infVector[i];
+                }
             }
 
-            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable, NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
+            template <typename T>
+            void skipgram_(NDArray& s0, NDArray& s1, NDArray& s1n, NDArray& expTableV, NDArray& negTableV, NDArray& infV, int target, int ngStarter, NDArray& indices, NDArray& codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds) {
+//                    void *vsyn0, void *vsyn1, void *vsyn1Neg, void *vexpTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength) {
+                auto syn0 = reinterpret_cast<T*>(s0.specialBuffer());
+                auto syn1 = reinterpret_cast<T*>(s1.specialBuffer());
+                auto syn1Neg = reinterpret_cast<T*>(s1n.specialBuffer());
+                auto expTable = reinterpret_cast<T*>(expTableV.specialBuffer());
+                auto negTable = reinterpret_cast<T*>(negTableV.specialBuffer());
+                auto infVector = reinterpret_cast<T*>(infV.specialBuffer());
+                const int vocabSize = s0.sizeAt(0);
+                const int vectorLength = s0.sizeAt(1);
+                const int expLength = expTableV.lengthOf();
+                const int negLength = negTableV.lengthOf();
+                indices.tickReadDevice();
+                indices.syncToHost();
+                codes.tickReadDevice();
+                codes.syncToHost();
+                auto stream = s0.getContext()->getCudaStream();
+
+                T* neu1e; // = new T[vectorLength];
+                //memset(neu1e, 0, vectorLength * sizeof(T));
+                auto err = cudaMalloc(&neu1e, sizeof(T) * vectorLength);
+                err = cudaMemset(neu1e, 0, sizeof(T) * vectorLength);
+                // hierarchic softmax goes first (if enabled)
+
+                auto syn0row = infVector != nullptr ? infVector : syn0 + (target * vectorLength);
+                auto irow = 0;
+                if (hsRounds > 0) {
+                    for (int r = 0; r < hsRounds; r++) {
+                        irow = indices.t<int>(r);
+                        if (irow < 0 || irow >= vocabSize)
+                            break;
+
+                        hSoftmax_<T>(syn0row, syn1 + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, codes.t<int8_t>(r), expLength, infVector != nullptr, stream);
+                    }
+                }
+
+                // negative sampling goes second (if enabled)
+                auto nsStarter = ngStarter;
+                irow = nsStarter;
+                if (nsRounds > 0) {
+                    for (int r = 0; r < nsRounds + 1; r++) {
+                        if (r == 0) {
+                            // target is known in advance
+                        } else {
+                            randomValue = randomValue * (unsigned long long) 25214903917 + 11;
+                            auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
+                            irow = idx >= negLength ? -1 : negTableV.e<int>(idx);
+
+                            if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+                            if (irow == nsStarter)
+                                continue;
+                        }
+
+                        nSampling_<T>(syn0row, syn1Neg + (irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr, stream);
+                    }
+                }
+
+                if (infVector == nullptr) {
+                    addInfVectorKernel<T><<<128, 256, 256, *stream>>>(syn0row, neu1e, vectorLength);
+                } else {
+                    addInfVectorKernel<T><<<128, 256, 256, *stream>>>(infVector, neu1e, vectorLength);
+                }
+
+                err = cudaFree(neu1e);
+                if (0 != err) {
+                    throw cuda_exception::build("helpers::skipgram_: Cannot deallocate temp memory for lingual net", err);
+                }
+            }
+            BUILD_SINGLE_TEMPLATE(template void skipgram_, (NDArray& syn0, NDArray& syn1, NDArray& syn1Neg, NDArray& expTable, NDArray& negTable, NDArray& infVector, int target, int ngStarter, NDArray& indices, NDArray& codes, double alpha, Nd4jLong randomValue, const int hsRounds, const int nsRounds), FLOAT_TYPES);
+
+            /*
+             * batched version of skipgram routine
+             * */
+            template <typename T>
+            void skipgramBatchExec_(NDArray &s0, NDArray &s1, NDArray &s1n, NDArray& expTableV, NDArray& negTableV, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int numThreads) {
+//            (NDArray &s0, NDArray &s1, NDArray &s1n, NDArray& expTable, NDArray& negTable, NDArray& infVector, NDArray& targets, NDArray& negStarters, NDArray& indices, NDArray& codes, NDArray& lr, NDArray& nextRandom, const int nsRounds, const bool preciseMode, const int numThreads) {
+                //auto syn0 = reinterpret_cast<T*>(vsyn0);
+                //auto syn1 = reinterpret_cast<T*>(vsyn1);
+                //auto syn1Neg = reinterpret_cast<T*>(vsyn1Neg);
+                auto stream = s0.getContext()->getCudaStream();
+                negTableV.tickReadDevice();
+                negTableV.syncToHost();
+                const auto expTable = reinterpret_cast<T*>(expTableV.specialBuffer());
+                const auto negTable = reinterpret_cast<T*>(negTableV.buffer());
+                const auto infVector = (T*)nullptr; //reinterpret_cast<T*>(infVector.specialBuffer());
+
+                const int vocabSize = s0.sizeAt(0);
+                const int vectorLength = s0.sizeAt(1);
+                const int expLength = expTableV.lengthOf();
+                const int negLength = negTableV.lengthOf();
+
+                //T sneu1e[600];
+
+                //const auto numThreads = omp_get_max_threads();
+                const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
+                const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
+
+                // regular mode provides 0 guarantees for reproducibility
+                auto numTargets = targets.lengthOf();
+                targets.syncToHost();
+                indices.syncToHost();
+                codes.syncToHost();
+                lr.syncToHost();
+                nextRandom.syncToHost();
+                negStarters.tickReadDevice();
+                negStarters.syncToHost();
+                auto bTarget = reinterpret_cast<int*>(targets.buffer()); //targets.bufferAsT<int>();
+                auto bIndices = reinterpret_cast<int*>(indices.buffer()); //indices.bufferAsT<int>();
+                auto bCodes = reinterpret_cast<int8_t*>(codes.buffer()); //codes.bufferAsT<int8_t>();
+
+//                PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads))
+                for (int t = 0; t < numTargets; t++) {
+                    T* neu1e;//lvectorLength <= 600 ? sneu1e : new T[vectorLength];
+                    auto err = cudaMalloc(&neu1e, vectorLength * sizeof(T));
+                    err = cudaMemset(neu1e, 0, vectorLength * sizeof(T));
+                    //memset(neu1e, 0, vectorLength * sizeof(T));
+
+                    auto target = bTarget[t];
+                    auto alpha = lr.e<double>(t);
+                    unsigned long long randomValue = nextRandom.e<Nd4jLong>(t);
+
+                    auto syn0row = reinterpret_cast<T*>(s0.specialBuffer()) + (target * vectorLength);
+
+                    if (hsRounds > 0) {
+                        int irow = 0;
+                        auto cShift = t * idxShift;
+
+                        for (int e = 0; e < hsRounds; e++) {
+                            irow = bIndices[e + cShift];
+                            if (irow < 0 || irow >= vocabSize)
+                                continue;
+
+                            auto syn1row = reinterpret_cast<T*>(s1.getSpecialBuffer()) + (irow * vectorLength);
+                            auto code = bCodes[e + cShift];
+
+                            //nd4j_printf("syn0: [%i]; syn1: [%i]; code: [%i]\n", target, irow, code);
+                            hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, false, stream);
+                        }
+                    }
+
+
+                    if (nsRounds > 0) {
+                        int irow = negStarters.e<int>(t);
+                        int nsStarter = irow;
+                        for (int r = 0; r < nsRounds + 1; r++) {
+                            if (r == 0) {
+                                // target is known in advance
+                            } else {
+                                randomValue = randomValue * (unsigned long long) 25214903917 + 11;
+                                auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
+                                irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+                                if (irow < 0 || irow >= vocabSize)
+                                    irow = randomValue % (vocabSize - 1) + 1;
+
+                                if (irow == nsStarter)
+                                    continue;
+                            }
+                            auto syn1row = reinterpret_cast<T*>(s1n.getSpecialBuffer()) + (irow * vectorLength);
+
+                            nSampling_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, false, stream);
+                        }
+                    }
+                    addInfVectorKernel<T><<<128, 256, 256, *stream>>>(syn0row, neu1e, vectorLength);
+
+                    // optionally release temp arrays
+                    err = cudaFree(neu1e);
+                    if (err != 0) {
+                        break;
+                    }
+//                    if (vectorLength > 600)
+//                        delete[] neu1e;
+                }
+            }
+            BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, NDArray& expTable, NDArray& negTable, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int numThreads), FLOAT_TYPES);
+
+            void skipgram(NDArray &syn0, NDArray &syn1, NDArray &syn1Neg, NDArray &expTable, NDArray &negTable,
+                    NDArray &target, NDArray &ngStarter, int nsRounds, NDArray &indices, NDArray &codes, NDArray &alpha, NDArray &randomValue, NDArray &inferenceVector, const bool preciseMode, const int numWorkers) {
                 auto xType = syn0.dataType();
-
+                // single round case
+                if ((ngStarter.isScalar() && !ngStarter.isEmpty())|| (target.isScalar() && !target.isEmpty())) {
+                    auto hsRounds = codes.lengthOf();
+                    target.syncToHost();
+                    ngStarter.syncToHost();
+                    alpha.syncToHost();
+                    randomValue.syncToHost();
+                    
+                    auto targetV = target.isEmpty() ? -1 : target.e<int>(0);
+                    auto starterV = ngStarter.isEmpty() ? -1 : ngStarter.e<int>(0);
+                    auto alphaV = alpha.e<double>(0);
+                    auto randomV = randomValue.e<Nd4jLong>(0);
+                    BUILD_SINGLE_SELECTOR(xType, skipgram_, (syn0, syn1, syn1Neg, expTable, negTable, inferenceVector, targetV, starterV, indices, codes, alphaV, randomV, hsRounds, nsRounds), FLOAT_TYPES);
+                } else if (ngStarter.isVector() || target.isVector()){
+                    // batch mode
+//                     NDArray& infVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const bool preciseMode, const int numThreads)
+                    BUILD_SINGLE_SELECTOR(xType, skipgramBatchExec_, (syn0, syn1, syn1Neg, expTable, negTable, target, ngStarter, indices, codes, alpha, randomValue, nsRounds, preciseMode, numWorkers), FLOAT_TYPES);
+                } else
+                    throw std::runtime_error("SkipGram: target must have rank 0 or 1");
             }
+
             template <typename T>
             static __global__ void checkContextKernel(int* context, T* syn0, T* neu1, int contextWidth, int vectorLength, int vocabSize) {
                 __shared__ bool hasError;
@@ -154,16 +376,6 @@ namespace nd4j {
                 if (threadIdx.x == 0) {
                     if (hasError)
                     neu1[0] = DataTypeUtils::infOrMax<T>();
-                }
-            }
-
-            template <typename T>
-            __global__ void addInfVectorKernel(T* neu1, T* infVector, int vectorLength) {
-                auto start = blockIdx.x * blockDim.x + threadIdx.x;
-                auto step = blockDim.x * gridDim.x;
-
-                for (auto i = start; i < vectorLength; i += step) {
-                    neu1[i] += infVector[i];
                 }
             }
 

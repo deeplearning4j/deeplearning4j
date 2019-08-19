@@ -11131,7 +11131,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                 REGISTER_C(NAME)
 //                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) {
 //                                                     auto shapeList = SHAPELIST();
-//                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
+//                                                     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width() : this->getOpDescriptor()->getNumberOfOutputs();
+//                                                     for (int e = 0; e < opLimit; e++) {
 //                                                         auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)));
 //                                                         shapeList->push_back(newshape);
 //                                                     }
@@ -11168,7 +11169,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                             REGISTER_C(NAME)
 //                                                             nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) {
 //                                                                 auto shapeList = SHAPELIST();
-//                                                                 for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
+//                                                                 auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width() : this->getOpDescriptor()->getNumberOfOutputs();
+//                                                                 for (int e = 0; e < opLimit; e++) {
 //                                                                     Nd4jLong* newshape;
 //                                                                     COPY_SHAPE(inputShape->at(0), newshape);
 //                                                                     shapeList->push_back(CONSTANT(newshape));
@@ -11191,7 +11193,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //                                                                                 REGISTER_C(NAME)
 //                                                                                 nd4j::ShapeList* nd4j::ops::NAME::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block) {
 //                                                                                     auto shapeList = SHAPELIST();
-//                                                                                     for (int e = 0; e < this->getOpDescriptor()->getNumberOfOutputs(); e++) {
+//                                                                                     auto opLimit = this->getOpDescriptor()->getNumberOfOutputs() < 1 ? block.width() : this->getOpDescriptor()->getNumberOfOutputs();
+//                                                                                     for (int e = 0; e < opLimit; e++) {
 //                                                                                         auto newshape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShape->at(e)), shape::order(inputShape->at(e)), shape::rank(inputShape->at(e)), shape::shapeOf(inputShape->at(e)));
 //                                                                                         shapeList->push_back(newshape);
 //                                                                                     }
@@ -16282,9 +16285,15 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
 //         #endif
-
+        /*
+         * Complete tensor with max indices merged from all input tensors list
+         *
+         * INPUT: tensors with the same shape
+         * OUTPUT: integer tensor with the same shape
+         * INT_ARG: result type (one of int), INT32 by default
+         */
 //         #if NOT_EXCLUDED(OP_mergemaxindex)
-        @Namespace("nd4j::ops") public static class mergemaxindex extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class mergemaxindex extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public mergemaxindex(Pointer p) { super(p); }
@@ -16295,10 +16304,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (mergemaxindex)super.position(position);
             }
         
-                                                    public mergemaxindex() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }
+                                                                                    public mergemaxindex() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
 //         #if NOT_EXCLUDED(OP_mergeadd)
@@ -21722,7 +21731,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         /**
          * This operation toggles individual bits of each element in array
          * 
-         * PLEASE NOTE: This operation is possible only on integer datatypes
+         * PLEASE NOTE: This operation is possible only on integer data types
          * 
          * \tparam T
          */
@@ -21742,6 +21751,107 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     private native void allocate();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
+//         #endif
+
+
+        /**
+         * This operation shift individual bits of each element in array to the left: <<
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_shift_bits)
+        @Namespace("nd4j::ops") public static class shift_bits extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public shift_bits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public shift_bits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public shift_bits position(long position) {
+                return (shift_bits)super.position(position);
+            }
+        
+                                                                                    public shift_bits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+         * This operation shift individual bits of each element in array to the right: >>
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_rshift_bits)
+        @Namespace("nd4j::ops") public static class rshift_bits extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public rshift_bits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public rshift_bits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public rshift_bits position(long position) {
+                return (rshift_bits)super.position(position);
+            }
+        
+                                                                                    public rshift_bits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+         * This operation shift individual bits of each element in array, shifting to the left
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_cyclic_shift_bits)
+        @Namespace("nd4j::ops") public static class cyclic_shift_bits extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public cyclic_shift_bits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public cyclic_shift_bits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public cyclic_shift_bits position(long position) {
+                return (cyclic_shift_bits)super.position(position);
+            }
+        
+                                                                                    public cyclic_shift_bits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+         * This operation shift individual bits of each element in array, shifting to the right
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_cyclic_rshift_bits)
+        @Namespace("nd4j::ops") public static class cyclic_rshift_bits extends DeclarableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public cyclic_rshift_bits(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public cyclic_rshift_bits(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public cyclic_rshift_bits position(long position) {
+                return (cyclic_rshift_bits)super.position(position);
+            }
+        
+                                                                                    public cyclic_rshift_bits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
     
 
@@ -22494,7 +22604,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
 //         #if NOT_EXCLUDED(OP_to_double)
-        @Namespace("nd4j::ops") public static class to_double extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class to_double extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public to_double(Pointer p) { super(p); }
@@ -22505,10 +22615,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (to_double)super.position(position);
             }
         
-                                                    public to_double() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }
+                                                                                    public to_double() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         /**
@@ -22517,7 +22627,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
 //         #if NOT_EXCLUDED(OP_to_float16)
-        @Namespace("nd4j::ops") public static class to_float16 extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class to_float16 extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public to_float16(Pointer p) { super(p); }
@@ -22528,10 +22638,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (to_float16)super.position(position);
             }
         
-                                                    public to_float16() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }
+                                                                                    public to_float16() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         /**
@@ -22540,7 +22650,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
 //         #if NOT_EXCLUDED(OP_to_float32)
-        @Namespace("nd4j::ops") public static class to_float32 extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class to_float32 extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public to_float32(Pointer p) { super(p); }
@@ -22551,10 +22661,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (to_float32)super.position(position);
             }
         
-                                                    public to_float32() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }
+                                                                                    public to_float32() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         /**
@@ -22563,7 +22673,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
 //         #if NOT_EXCLUDED(OP_to_int32)
-        @Namespace("nd4j::ops") public static class to_int32 extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class to_int32 extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public to_int32(Pointer p) { super(p); }
@@ -22574,10 +22684,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (to_int32)super.position(position);
             }
         
-                                                    public to_int32() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }
+                                                                                    public to_int32() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         /**
@@ -22586,7 +22696,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
 //         #if NOT_EXCLUDED(OP_to_int64)
-        @Namespace("nd4j::ops") public static class to_int64 extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class to_int64 extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public to_int64(Pointer p) { super(p); }
@@ -22597,10 +22707,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (to_int64)super.position(position);
             }
         
-                                                    public to_int64() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }
+                                                                                    public to_int64() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         /**
@@ -22609,7 +22719,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
 //         #if NOT_EXCLUDED(OP_to_uint32)
-        @Namespace("nd4j::ops") public static class to_uint32 extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class to_uint32 extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public to_uint32(Pointer p) { super(p); }
@@ -22620,10 +22730,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (to_uint32)super.position(position);
             }
         
-                                                    public to_uint32() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }
+                                                                                    public to_uint32() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         /**
@@ -22632,7 +22742,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * PLEASE NOTE: This op is disabled atm, and reserved for future releases.
          */
 //         #if NOT_EXCLUDED(OP_to_uint64)
-        @Namespace("nd4j::ops") public static class to_uint64 extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class to_uint64 extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public to_uint64(Pointer p) { super(p); }
@@ -22643,10 +22753,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                 return (to_uint64)super.position(position);
             }
         
-                                                    public to_uint64() { super((Pointer)null); allocate(); }
-                                                    private native void allocate();
-                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                }
+                                                                                    public to_uint64() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
 //         #endif
 
         /**

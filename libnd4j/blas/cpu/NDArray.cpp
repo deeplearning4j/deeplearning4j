@@ -100,7 +100,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, const char
 
     std::vector<Nd4jLong> coords(zRank);
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(if(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
     for (Nd4jLong i = 0; i < zLen; ++i) {
 
         shape::index2coords(zRank, target->shapeOf(), i, zLen, coords.data());
@@ -141,7 +141,7 @@ void NDArray::setIdentity() {
             minDim = shape[i];
 
     float v = 1.0f;
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(if(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
     for(int i = 0; i < minDim; ++i)
         templatedSet<float>(buffer(), i*offset, this->dataType(), &v);
 }

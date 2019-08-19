@@ -785,48 +785,9 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
 	auto xType = ArrayOptions::dataType(hXShapeInfo);
 	auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-	switch (opNum) {
-        case transform::IsMax: {
-                bool scalarCheat = false;
-                if (extraParams == nullptr) {
-                    scalarCheat = true;
-                }
+	dim3 launchDims(512, 512, 2048);
 
-                void* special = lc->getAllocationPointer();
-
-                if (scalarCheat) {
-                    auto scalarShape = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(ShapeDescriptor::scalarDescriptor(nd4j::DataType::INT64)); //ShapeBuilders::createScalarShapeInfo(nd4j::DataType::INT64);
-                    /**
-                    * In case of vector-input for IsMax, it just turns into IndexReduce call + further filler call
-                    */
-                    execIndexReduceScalar(lc, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, scalarShape.primaryAsT<Nd4jLong>(), special, scalarShape.specialAsT<Nd4jLong>());
-                    Nd4jLong maxIdx = -119;
-                    nd4j::DebugHelper::checkErrorCode(stream, "IsMax: execIndexReduce(...) failed");
-
-                    cudaMemcpyAsync(&maxIdx, special, sizeof(Nd4jLong), cudaMemcpyDeviceToHost, *stream);
-                    nd4j::DebugHelper::checkErrorCode(stream, "IsMax: cudaMemcpyAsync(...) failed");
-                    int targetIdx = 0;
-
-                    if (shape::order(hXShapeInfo) == 'c' || shape::order(hXShapeInfo) == 'f' && maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1] >= shape::length(hXShapeInfo))
-                        targetIdx = maxIdx;
-                    else
-                        targetIdx = maxIdx * shape::stride(hXShapeInfo)[shape::rank(hXShapeInfo) - 1];
-
-                    dim3 launchDims(1, 512, 1024);
-                    BUILD_SINGLE_SELECTOR(zType, fillIsMaxGeneric, (launchDims, stream, dZ, shape::length(hZShapeInfo), targetIdx), LIBND4J_TYPES);
-
-                    nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
-
-                    //delete[] scalarShape;
-                }
-            }
-            break;
-        default: {
-            dim3 launchDims(512, 512, 16384);
-
-            BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
-        }
-	}
+	BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
 
     // TODO: remove after the release
     auto res = cudaStreamSynchronize(*stream);
@@ -884,7 +845,7 @@ void NativeOpExecutioner::execTransformFloat(nd4j::LaunchContext  *lc,
     if (!DataTypeUtils::isR(zType))
         throw datatype_exception::build("NativeOpExecutioner::execTransformFloat requires Z to have floating point type", zType);
 
-    dim3 launchDims(512, 512, 16384);
+    dim3 launchDims(512, 512, 2048);
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, FLOAT_TYPES);
 
     // TODO: remove after the release

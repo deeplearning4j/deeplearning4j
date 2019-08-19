@@ -1516,7 +1516,7 @@ public class SameDiffTests extends BaseNd4jTest {
         //then dL/dIn = 1 if in_i == min(in) or 0 otherwise
 
         //Note that we don't have an "IsMin" op, so use IsMax(neg(in)) which is equivalent
-        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.neg())).castTo(Nd4j.defaultFloatingPointType());
+        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.neg()))[0].castTo(Nd4j.defaultFloatingPointType());
 
         assertEquals(exp, dLdIn);
     }
@@ -1540,7 +1540,7 @@ public class SameDiffTests extends BaseNd4jTest {
         //If L = max(in)
         //then dL/dIn = 1 if in_i == max(in) or 0 otherwise
 
-        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.dup())).castTo(DataType.DOUBLE);
+        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.dup()))[0].castTo(DataType.DOUBLE);
 
         assertEquals(exp, dLdIn);
     }

@@ -34,7 +34,7 @@ namespace nd4j {
                 auto z = OUTPUT_VARIABLE(i);
 
                 REQUIRE_TRUE(x->dataType() == z->dataType(), 0, "Toggle bits requires input and output to have same type");
-                REQUIRE_TRUE(x->isR(),0, "Toggle bits requires input and output to be integer type (int8, int16, int32, int64)");
+                REQUIRE_TRUE(x->isZ(),0, "Toggle bits requires input and output to be integer type (int8, int16, int32, int64)");
 
                 helpers::__toggle_bits(block.launchContext(), *x, *z);
             }
@@ -44,7 +44,8 @@ namespace nd4j {
         DECLARE_TYPES(toggle_bits) {
             getOpDescriptor()
                     ->setAllowedInputTypes({ALL_INTS})
-                    ->setSameMode(true);
+                    ->setAllowedOutputTypes({ALL_INTS})
+                    ->setSameMode(false);
         }
     }
 }

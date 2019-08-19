@@ -248,8 +248,8 @@ TEST_F(RNGTests, Test_Gaussian_21) {
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngA, &x0, 0.0f, 1.0f);
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), _rngB, &x1, 0.0f, 1.0f);
 
-    x0.printIndexedBuffer("x0");
-    x1.printIndexedBuffer("x1");
+//    x0.printIndexedBuffer("x0");
+//    x1.printIndexedBuffer("x1");
     ASSERT_TRUE(x0.equalsTo(&x1));
 
     ASSERT_FALSE(x0.equalsTo(nexp0));

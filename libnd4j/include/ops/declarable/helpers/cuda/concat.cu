@@ -29,104 +29,102 @@
 #include <PointersManager.h>
 #include <ConstantTadHelper.h>
 
-namespace nd4j {
-    namespace ops {
-        namespace helpers {
+namespace nd4j    {
+namespace ops     {
+namespace helpers {
+
 
 ///////////////////////////////////////////////////////////////////
-            template<typename T>
-            __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
+template<typename T>
+__global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jLong* zShapeInfo, const int axis) {
 
-                __shared__ int arrIdx, blocksPerArr;
+    T* z = reinterpret_cast<T*>(vz);
+    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
+    __shared__ int rank;
 
-                if (threadIdx.x == 0) {
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-                    blocksPerArr = (gridDim.x + numOfArrs - 1) / numOfArrs;     // ceil
-                    arrIdx = blockIdx.x / blocksPerArr;
-                }
-
-                __syncthreads();
-
-                for(int j = arrIdx; j < numOfArrs; j += gridDim.x) {
-
-                    const auto* x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[j]);
-                    auto* z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[j]);
-                    const auto* xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[j];
-                    const auto* zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[j];
-
-                    const auto arrLen = shape::length(xShapeInfo);
-
-                    const auto arrLenPerBlock = (arrLen + blocksPerArr - 1) / blocksPerArr;  // ceil
-
-                    const auto start = (blockIdx.x % blocksPerArr) * arrLenPerBlock;
-                    const auto end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
-
-                    for (Nd4jLong i = start + threadIdx.x; i < end; i += blockDim.x)
-                        z[shape::getIndexOffset(i, zShapeInfo, arrLen)] = x[shape::getIndexOffset(i, xShapeInfo, arrLen)];
-                }
-            }
-
-///////////////////////////////////////////////////////////////////
-            template<typename T>
-            __host__ static void concatCudaLauncher(const int numOfArrs, const cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
-
-                concatCuda<T><<<512, 512, 512, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
-            }
-            BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher,  (const int numOfArrs, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
-
-            //////////////////////////////////////////////////////////////////////////
-            void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
-
-                const int numOfArrs = inArrs.size();
-                for(int i = 0; i < numOfArrs; ++i)
-                    if(!inArrs[i]->isActualOnDeviceSide()) inArrs[i]->syncToDevice();
-
-                const int rank  = inArrs[0]->rankOf();
-                const int rank2 = 2*rank;
-                std::vector<std::vector<Nd4jLong>> indices(numOfArrs, std::vector<Nd4jLong>(rank2,0));
-
-                // take into account indices for first array
-                indices[0][2 * axis + 1] = inArrs[0]->sizeAt(axis);
-
-                // loop through the rest of input arrays
-                for(int i = 1; i < numOfArrs; ++i) {
-                    indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
-                    indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
-                }
-
-                std::vector<NDArray*> outSubArrs(numOfArrs);
-                for(int i = 0; i < numOfArrs; ++i)
-                    outSubArrs[i] = new NDArray(output(indices[i], true));
-
-                // prepare arrays of pointers on buffers and shapes
-                std::vector<void*>     hOutBuffers(numOfArrs), hInBuffers(numOfArrs);
-                std::vector<Nd4jLong*> hOutShapeInfo(numOfArrs), hInShapeInfo(numOfArrs);
-                for(int i = 0; i < numOfArrs; ++i) {
-                    hOutBuffers[i]   = outSubArrs[i]->getSpecialBuffer();
-                    hInBuffers[i]    =     inArrs[i]->getSpecialBuffer();
-                    hOutShapeInfo[i] = outSubArrs[i]->getSpecialShapeInfo();
-                    hInShapeInfo[i]  =     inArrs[i]->getSpecialShapeInfo();
-                }
-
-                // allocate and copy all buffers and shapes arrays to global memory
-                PointersManager manager(context, "helpers::concat");
-                void* dOutBuffers	= manager.replicatePointer(hOutBuffers.data(),   hOutBuffers.size() * sizeof(void*));
-                void* dInBuffers	= manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
-                void* dInShapeInfo  = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
-                void* dOutShapeInfo = manager.replicatePointer(hOutShapeInfo.data(), hOutShapeInfo.size() * sizeof(Nd4jLong*));
-
-                BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (numOfArrs, context->getCudaStream(), dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
-
-                manager.synchronize();
-
-                for(int i = 0; i < numOfArrs; ++i)
-                    delete outSubArrs[i];
-
-                for(int i = 0; i < numOfArrs; ++i)
-                    inArrs[i]->tickReadHost();
-
-                output.tickWriteDevice();
-            }
-        }
+        zLen = shape::length(zShapeInfo);
+        rank = shape::rank(zShapeInfo);
+        totalThreads = gridDim.x * blockDim.x;
     }
+
+    __syncthreads();
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if(tid >= zLen)
+        return;
+
+    auto coords = sharedMem + threadIdx.x * rank;
+
+    shape::index2coords(rank, zShapeInfo + 1, tid, zLen, coords);
+
+    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+
+    int inArrIdx = 0;
+    Nd4jLong *xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[inArrIdx];
+
+    while(coords[axis] >= xShapeInfo[axis + 1]) {
+        coords[axis] -= xShapeInfo[axis + 1];
+        xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[++inArrIdx];
+    }
+
+    const auto* x      = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[inArrIdx]);
+    const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
+
+    z[zOffset] = x[xOffset];
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ static void concatCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
+                                        void* pVx, void* pxShapeInfo, void* vz, Nd4jLong* zShapeInfo, const int axis) {
+
+    concatCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(pVx, pxShapeInfo, vz, zShapeInfo, axis);
+}
+BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, void* pVx, void* pxShapeInfo, void* vz, Nd4jLong* zShapeInfo, const int axis), LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+void concat(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output, const int axis) {
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 4;
+    const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+
+    const int numOfArrs = inArrs.size();
+
+    for(int i = 0; i < numOfArrs; ++i)
+        inArrs[i]->syncToDevice();
+
+    output.syncToDevice();
+
+    // prepare arrays of pointers on buffers and shapes
+    std::vector<void*> hInBuffers(numOfArrs);
+    std::vector<Nd4jLong*> hInShapeInfo(numOfArrs);
+
+    for(int i = 0; i < numOfArrs; ++i) {
+        hInBuffers[i]   = inArrs[i]->getSpecialBuffer();
+        hInShapeInfo[i] = inArrs[i]->getSpecialShapeInfo();
+    }
+
+    PointersManager manager(context, "helpers::concat");
+
+    void* dInBuffers   = manager.replicatePointer(hInBuffers.data(),    hInBuffers.size() * sizeof(void*));
+    void* dInShapeInfo = manager.replicatePointer(hInShapeInfo.data(),  hInShapeInfo.size() * sizeof(Nd4jLong*));
+
+    BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), concatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), dInBuffers, dInShapeInfo, output.specialBuffer(), output.specialShapeInfo(), axis), LIBND4J_TYPES);
+
+    manager.synchronize();
+
+    for(int i = 0; i < numOfArrs; ++i)
+        inArrs[i]->tickReadDevice();
+
+    output.tickWriteDevice();
+}
+
+}
+}
 }

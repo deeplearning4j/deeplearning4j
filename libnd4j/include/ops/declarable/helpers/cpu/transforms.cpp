@@ -562,7 +562,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
     std::vector<Nd4jLong> coords(maxRank);
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(if(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
     for (Nd4jLong i = 0; i < zLen; ++i) {
 
         Nd4jLong *zCoordStart, *xCoordStart;

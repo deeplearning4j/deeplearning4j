@@ -68,7 +68,24 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public Integer getDeviceForCurrentThread() {
-        return NativeOpsHolder.getInstance().getDeviceNativeOps().getDevice();
+        val id = NativeOpsHolder.getInstance().getDeviceNativeOps().getDevice();
+        if (!affinityMap.containsKey(Thread.currentThread().getId()))
+            affinityMap.put(Thread.currentThread().getId(), id);
+
+        return id;
+    }
+
+    /**
+     * This method returns deviceId for a given thread
+     * @return
+     */
+    @Override
+    public Integer getDeviceForThread(long threadId) {
+        val id = affinityMap.get(threadId);
+        if (id == null)
+            throw new RuntimeException("Affinity for thread [" + threadId + "] wasn't defined yet");
+
+        return id;
     }
 
 
