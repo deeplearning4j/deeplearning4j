@@ -23,7 +23,7 @@
 #include <exceptions/cuda_exception.h>
 #include <thread>
 
-thread_local nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
+nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
 
 namespace nd4j {
 

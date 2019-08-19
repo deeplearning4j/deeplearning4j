@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -567,6 +568,17 @@ public class CustomOpsTests extends BaseNd4jTest {
             System.out.println(i);
             Nd4j.getExecutioner().exec(op);
         }
+    }
+
+    @Test
+    public void testMod_1() {
+        val x = Nd4j.createFromArray(5.f, 6.f, 7.f);
+        val y = Nd4j.scalar(4.f);
+        val e = Nd4j.createFromArray(1.f, 2.f, 3.f);
+
+        val z = Nd4j.exec(new ModOp(new INDArray[]{x, y}, new INDArray[]{}))[0];
+
+        assertEquals(e, z);
     }
 
     @Test

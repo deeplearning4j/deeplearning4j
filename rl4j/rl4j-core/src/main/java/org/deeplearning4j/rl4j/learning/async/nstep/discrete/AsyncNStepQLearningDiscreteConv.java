@@ -53,8 +53,8 @@ public class AsyncNStepQLearningDiscreteConv<O extends Encodable> extends AsyncN
     }
 
     @Override
-    public AsyncThread newThread(int i) {
-        AsyncThread at = super.newThread(i);
+    public AsyncThread newThread(int i, int deviceNum) {
+        AsyncThread at = super.newThread(i, deviceNum);
         at.setHistoryProcessor(hpconf);
         return at;
     }

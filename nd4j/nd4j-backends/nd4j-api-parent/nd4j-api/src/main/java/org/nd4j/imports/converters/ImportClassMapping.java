@@ -452,6 +452,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.FloorModOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MergeAddOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp.class,
+            org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAddOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAtan2Op.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldDivOp.class,
@@ -577,7 +578,12 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.random.impl.ProbablisticMerge.class,
             org.nd4j.linalg.api.ops.random.impl.Range.class,
             org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution.class,
-            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class
+            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits.class
+
     );
 
     static {

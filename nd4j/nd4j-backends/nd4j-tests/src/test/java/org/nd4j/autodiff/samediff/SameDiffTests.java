@@ -1516,7 +1516,7 @@ public class SameDiffTests extends BaseNd4jTest {
         //then dL/dIn = 1 if in_i == min(in) or 0 otherwise
 
         //Note that we don't have an "IsMin" op, so use IsMax(neg(in)) which is equivalent
-        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.neg())).castTo(Nd4j.defaultFloatingPointType());
+        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.neg()))[0].castTo(Nd4j.defaultFloatingPointType());
 
         assertEquals(exp, dLdIn);
     }
@@ -1540,7 +1540,7 @@ public class SameDiffTests extends BaseNd4jTest {
         //If L = max(in)
         //then dL/dIn = 1 if in_i == max(in) or 0 otherwise
 
-        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.dup())).castTo(DataType.DOUBLE);
+        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.dup()))[0].castTo(DataType.DOUBLE);
 
         assertEquals(exp, dLdIn);
     }
@@ -3565,6 +3565,17 @@ public class SameDiffTests extends BaseNd4jTest {
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
         assertEquals(115, SD.exec(null, outName).get(outName).getInt(0));
+    }
 
+    @Test
+    public void testMod_1(){
+        val sd = SameDiff.create();
+        val initial = sd.constant("initial", Nd4j.createFromArray(5.f, 6.f, 7.f));
+        val four = sd.constant("four", 4.0f);
+        val mod = initial.mod("mod",  four);
+
+        val e = Nd4j.createFromArray(1.f, 2.f, 3.f);
+
+        assertEquals(e, mod.eval());
     }
 }

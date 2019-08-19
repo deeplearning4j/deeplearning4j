@@ -113,6 +113,14 @@ TEST_F(DataTypesValidationTests, test_bfloat16_rand_1) {
     ASSERT_TRUE(x.sumNumber().e<float>(0) > 0);
 }
 
+TEST_F(DataTypesValidationTests, test_bfloat16_rand_2) {
+    auto x = NDArrayFactory::create<bfloat16>('c', {5, 10});
+    RandomGenerator gen(119, 120);
+    RandomLauncher::fillGaussian(LaunchContext::defaultContext(), gen, &x, 0, 1);
+
+    ASSERT_TRUE(x.sumNumber().e<float>(0) > 0);
+}
+
 TEST_F(DataTypesValidationTests, cast_1) {
 
     float16 x = static_cast<float16>(1.f);

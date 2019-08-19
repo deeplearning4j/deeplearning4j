@@ -44,8 +44,8 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
     @Getter
     private NN current;
 
-    public AsyncThreadDiscrete(IAsyncGlobal<NN> asyncGlobal, int threadNumber) {
-        super(asyncGlobal, threadNumber);
+    public AsyncThreadDiscrete(IAsyncGlobal<NN> asyncGlobal, int threadNumber, int deviceNum) {
+        super(asyncGlobal, threadNumber, deviceNum);
         synchronized (asyncGlobal) {
             current = (NN)asyncGlobal.getCurrent().clone();
         }

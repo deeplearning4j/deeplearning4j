@@ -1236,7 +1236,7 @@ public class DifferentialFunctionFactory {
     }
 
     public SDVariable isMax(SDVariable ix) {
-        return new IsMax(sameDiff(), ix, false).outputVariable();
+        return new IsMax(sameDiff(), ix).outputVariable();
     }
 
     public SDVariable replaceWhere(SDVariable to, SDVariable from, Condition condition) {
@@ -2200,7 +2200,6 @@ public class DifferentialFunctionFactory {
     public SDVariable muli(SDVariable differentialFunction, SDVariable i_v) {
         validateDifferentialFunctionsameDiff(differentialFunction);
         return new MulOp(sameDiff(), new SDVariable[]{differentialFunction, i_v}, true).outputVariable();
-
     }
 
     public SDVariable mod(SDVariable differentialFunction, SDVariable i_v) {

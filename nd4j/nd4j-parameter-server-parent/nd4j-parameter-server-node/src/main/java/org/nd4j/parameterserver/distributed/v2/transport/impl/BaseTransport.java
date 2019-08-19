@@ -107,10 +107,16 @@ public abstract  class BaseTransport  implements Transport {
 
     protected final ThreadPoolExecutor executorService = (ThreadPoolExecutor) Executors.newFixedThreadPool(Math.max(2, Runtime.getRuntime().availableProcessors()), new ThreadFactory() {
         @Override
-        public Thread newThread(@NonNull Runnable r) {
-            val t = Executors.defaultThreadFactory().newThread(r);
+        public Thread newThread(@NonNull final Runnable r) {
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    Nd4j.getAffinityManager().unsafeSetDevice(0);
+                    r.run();
+                }
+            });
+
             t.setDaemon(true);
-            Nd4j.getAffinityManager().attachThreadToDevice(t, 0);
             return t;
         }
     });

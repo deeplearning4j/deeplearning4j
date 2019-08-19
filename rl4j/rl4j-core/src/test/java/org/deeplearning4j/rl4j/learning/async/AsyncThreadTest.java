@@ -194,7 +194,7 @@ public class AsyncThreadTest {
         private final IDataManager dataManager;
 
         public MockAsyncThread(IAsyncGlobal asyncGlobal, int threadNumber, MockNeuralNet neuralNet, MDP mdp, AsyncConfiguration conf, IDataManager dataManager) {
-            super(asyncGlobal, threadNumber);
+            super(asyncGlobal, threadNumber, 0);
 
             this.asyncGlobal = asyncGlobal;
             this.neuralNet = neuralNet;

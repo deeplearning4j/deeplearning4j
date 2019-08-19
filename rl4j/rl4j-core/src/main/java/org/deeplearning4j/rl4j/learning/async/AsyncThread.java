@@ -32,6 +32,7 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.Constants;
 import org.deeplearning4j.rl4j.util.IDataManager;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
@@ -48,6 +49,8 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
                 extends Thread implements StepCountable {
 
     private int threadNumber;
+    @Getter
+    protected final int deviceNum;
     @Getter @Setter
     private int stepCounter = 0;
     @Getter @Setter
@@ -57,8 +60,9 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     @Getter
     private int lastMonitor = -Constants.MONITOR_FREQ;
 
-    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, int threadNumber) {
+    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, int threadNumber, int deviceNum) {
         this.threadNumber = threadNumber;
+        this.deviceNum = deviceNum;
     }
 
     public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
@@ -87,6 +91,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     @Override
     public void run() {
+        Nd4j.getAffinityManager().unsafeSetDevice(deviceNum);
 
 
         try {

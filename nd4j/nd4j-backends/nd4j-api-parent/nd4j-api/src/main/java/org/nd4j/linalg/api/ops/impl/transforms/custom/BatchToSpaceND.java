@@ -28,68 +28,66 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * N-dimensional space to batch operation. Transforms data from a tensor from M spatial dimensions into batch dimension
- * according to the "blocks" specified (a vector of length M). Afterwards the spatial dimensions are optionally padded,
- * as specified in "padding", a tensor of dim (M, 2), denoting the padding range.
+ * N-dimensional batch to space operation. Transforms data from a tensor from batch dimension into M spatial dimensions
+ * according to the "blocks" specified (a vector of length M). Afterwards the spatial dimensions are optionally cropped,
+ * as specified in "crops", a tensor of dim (M, 2), denoting the crop range.
  * <p>
  * Example:
- * input:         [[[[1], [2]], [[3], [4]]]]
- * input shape:   [1, 2, 2, 1]
- * blocks:        [2, 2]
- * padding:       [[0, 0], [0, 0]]
+ * input:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
+ * input shape:  [4, 1, 1, 1]
+ * blocks:       [2, 2]
+ * crops:        [[0, 0], [0, 0]]
  * <p>
- * output:        [[[[1]]], [[[2]]], [[[3]]], [[[4]]]]
- * output shape:  [4, 1, 1, 1]
- * *
+ * output:       [[[[1], [2]], [[3], [4]]]]
+ * output shape: [1, 2, 2, 1]
  *
  * @author Max Pumperla
  */
-public class SpaceToBatch extends DynamicCustomOp {
+public class BatchToSpaceND extends DynamicCustomOp {
 
-    protected int[] blocks;
-    protected int[][] padding;
+    private int[] blocks;
+    private int[][] crops;
 
-    public SpaceToBatch() {
+    public BatchToSpaceND() {
     }
 
-    public SpaceToBatch(SameDiff sameDiff, SDVariable[] args, int[] blocks, int[][] padding, boolean inPlace) {
+    public BatchToSpaceND(SameDiff sameDiff, SDVariable[] args, int[] blocks, int[][] crops, boolean inPlace) {
         super(null, sameDiff, args, inPlace);
 
         this.blocks = blocks;
-        this.padding = padding;
+        this.crops = crops;
 
         for (val b : blocks)
             addIArgument(b);
 
-        for (int e = 0; e < padding.length; e++)
-            addIArgument(padding[e][0], padding[e][1]);
+        for (int e = 0; e < crops.length; e++)
+            addIArgument(crops[e][0], crops[e][1]);
     }
 
     @Override
     public String opName() {
-        return "space_to_batch";
+        return "batch_to_space_nd";
     }
 
     @Override
     public String onnxName() {
-        return "space_to_batch";
+        return "batch_to_space_nd";
     }
 
     @Override
     public String tensorflowName() {
-        return "SpaceToBatch";
+        return "BatchToSpaceND";
     }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        // Inverse of space to batch is batch to space with same blocks and crops as padding
+        // Inverse of batch to space is space to batch with same blocks and padding as crops
         SDVariable gradient = sameDiff.setupFunction(i_v.get(0));
-        return Arrays.asList(sameDiff.cnn().batchToSpace(gradient, blocks, padding));
+        return Arrays.asList(sameDiff.cnn().spaceToBatch(gradient, blocks, crops));
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         return Collections.singletonList(dataTypes.get(0));
     }
-
 }

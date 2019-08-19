@@ -262,7 +262,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         labelCountsEachClass.addi(labels2d.sum(0).castTo(labelCountsEachClass.dataType()));
         //For prediction counts: do an IsMax op, but we need to take masking into account...
-        INDArray isPredictedClass = Nd4j.getExecutioner().exec(new IsMax(p.dup(), 1));
+        INDArray isPredictedClass = Nd4j.getExecutioner().exec(new IsMax(p, p.ulike(), 1))[0];
         if (maskArray != null) {
             LossUtil.applyMask(isPredictedClass, maskArray);
         }

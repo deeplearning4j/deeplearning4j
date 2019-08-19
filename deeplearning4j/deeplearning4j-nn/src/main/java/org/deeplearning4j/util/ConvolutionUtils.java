@@ -639,7 +639,7 @@ public class ConvolutionUtils {
 
         INDArray output = Nd4j.createUninitialized(new int[]{(int)in.size(0), 1, outH, 1}, 'c');
 
-        DynamicCustomOp op = new MaxPooling2D(in, output, Pooling2DConfig.builder()
+        DynamicCustomOp op = new MaxPooling2D(reshaped4d, output, Pooling2DConfig.builder()
                 .kH(k[0]).kW(k[1])
                 .sH(s[0]).sW(s[1])
                 .pH(pad == null ? 0 : pad[0]).pW(pad == null ? 0 : pad[1])

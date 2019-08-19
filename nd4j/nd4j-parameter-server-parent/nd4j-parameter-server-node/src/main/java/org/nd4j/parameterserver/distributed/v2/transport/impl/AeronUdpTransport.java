@@ -150,11 +150,19 @@ public class AeronUdpTransport extends BaseTransport implements AutoCloseable {
     // this executor service han
     protected ExecutorService messagesExecutorService = Executors.newFixedThreadPool(SENDER_THREADS + MESSAGE_THREADS + SUBSCRIPTION_THREADS, new ThreadFactory() {
         @Override
-        public Thread newThread(@NonNull Runnable r) {
-            val t = Executors.defaultThreadFactory().newThread(r);
+        public Thread newThread(@NonNull final Runnable r) {
+            val t = new Thread(new Runnable() {
+
+                @Override
+                public void run() {
+                    //TODO implement support for multi-GPU masters
+                    Nd4j.getAffinityManager().unsafeSetDevice(0);   //Associate thread with device 0 (no-op for CPU)
+                    r.run();
+                }
+            });
+
             t.setDaemon(true);
-            //TODO implement support for multi-GPU masters
-            Nd4j.getAffinityManager().attachThreadToDevice(t, 0);   //Associate thread with device 0 (no-op for CPU)
+            t.setName("MessagesExecutorService thread");
             return t;
         }
     });
