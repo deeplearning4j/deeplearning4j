@@ -44,15 +44,15 @@ import java.util.List;
  *
  * @author Max Pumperla
  */
-public class SpaceToBatch extends DynamicCustomOp {
+public class SpaceToBatchND extends DynamicCustomOp {
 
     protected int[] blocks;
     protected int[][] padding;
 
-    public SpaceToBatch() {
+    public SpaceToBatchND() {
     }
 
-    public SpaceToBatch(SameDiff sameDiff, SDVariable[] args, int[] blocks, int[][] padding, boolean inPlace) {
+    public SpaceToBatchND(SameDiff sameDiff, SDVariable[] args, int[] blocks, int[][] padding, boolean inPlace) {
         super(null, sameDiff, args, inPlace);
 
         this.blocks = blocks;
@@ -67,17 +67,17 @@ public class SpaceToBatch extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "space_to_batch";
+        return "space_to_batch_nd";
     }
 
     @Override
     public String onnxName() {
-        return "space_to_batch";
+        return "space_to_batch_nd";
     }
 
     @Override
     public String tensorflowName() {
-        return "SpaceToBatch";
+        return "SpaceToBatchND";
     }
 
     @Override

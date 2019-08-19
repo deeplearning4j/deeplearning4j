@@ -975,69 +975,6 @@ TEST_F(JavaInteropTests, zeta_test10) {
     ASSERT_EQ(e, z);
 }
 
-TEST_F(JavaInteropTests, Test_Is_Max_1) {
-    auto arrayX = NDArrayFactory::create<float>({1, 2, 1, 1});
-    auto arrayZ = NDArrayFactory::create<bool>({0, 0, 0, 0});
-    auto arrayE = NDArrayFactory::create<bool>({0, 1, 0, 0});
-
-    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
-
-    Nd4jPointer* extraPointers = nullptr;
-    #ifdef __CUDABLAS__
-        extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
-    #endif
-
-    NDArray::prepareSpecialUse({&arrayZ}, {&arrayX});
-    execTransformAny(extraPointers, transform::IsMax,
-                          arrayX.buffer(), arrayX.shapeInfo(), arrayX.getSpecialBuffer(), arrayX.getSpecialShapeInfo(),
-                          arrayZ.buffer(), arrayZ.shapeInfo(), arrayZ.getSpecialBuffer(), arrayZ.getSpecialShapeInfo(),
-                          nullptr);
-
-    NDArray::registerSpecialUse({&arrayZ}, {&arrayX});
-    ASSERT_EQ(arrayE, arrayZ);
-
-    delete []extraPointers;
-}
-
-TEST_F(JavaInteropTests, Test_Is_Max_1_2) {
-    auto arrayX = NDArrayFactory::create<float>({1, 2, 1, 1});
-    auto arrayZ = NDArrayFactory::create<float>({0, 0, 0, 0});
-    auto arrayE = NDArrayFactory::create<float>({0, 1, 0, 0});
-
-    nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext();
-
-    Nd4jPointer* extraPointers = nullptr;
-    #ifdef __CUDABLAS__
-        extraPointers = new Nd4jPointer[7] {nullptr, context->getCudaStream(), context->getScalarPointer(), nullptr, context->getCudaSpecialStream(), context->getReductionPointer(), context->getAllocationPointer()};
-    #endif
-
-    NDArray::prepareSpecialUse({&arrayZ}, {&arrayX});
-    execTransformAny(extraPointers, transform::IsMax,
-                         arrayX.buffer(), arrayX.shapeInfo(), arrayX.getSpecialBuffer(), arrayX.getSpecialShapeInfo(),
-                         arrayZ.buffer(), arrayZ.shapeInfo(), arrayZ.getSpecialBuffer(), arrayZ.getSpecialShapeInfo(),
-                         nullptr);
-    //arrayZ.printIndexedBuffer("JAVA ISMAX1");
-    NDArray::registerSpecialUse({&arrayZ}, {&arrayX});
-    ASSERT_EQ(arrayE, arrayZ);
-    delete []extraPointers;
-}
-
-TEST_F(JavaInteropTests, Test_Is_Max_2) {
-    auto arrayX = NDArrayFactory::create<float>('c', {3, 2, 3}, {1, 10, 2, 3, 4, 5, -10, -9, -8, -7, -6, -5, 4, 3, 2, 1, 0, -1});
-    auto arrayZ = NDArrayFactory::create<bool>('c', {3, 2, 3});
-    Nd4jLong tad[] = {2, 2, 3, 3, 1, 524288, -1, 99};
-    Nd4jLong off[] = {0, 6, 12};
-    Nd4jLong *ex[] = {tad, off};
-    float ea[] = {2, 1, 2};
-
-    NDArray::prepareSpecialUse({&arrayZ}, {&arrayX});
-    execTransformBool(reinterpret_cast<void **>(ex), transform::IsMax,
-                          arrayX.buffer(), arrayX.shapeInfo(), arrayX.getSpecialBuffer(), arrayX.getSpecialShapeInfo(),
-                          arrayZ.buffer(), arrayZ.shapeInfo(), arrayZ.getSpecialBuffer(), arrayZ.getSpecialShapeInfo(),
-                          ea);
-    NDArray::registerSpecialUse({&arrayZ}, {&arrayX});
-}
-
 TEST_F(JavaInteropTests, Test_IAMax_1) {
     auto arrayX = NDArrayFactory::create<float>({-0.24f, -0.26f, -0.07f, -0.01f});
     auto arrayZ = arrayX.indexReduceNumber(indexreduce::IndexAbsoluteMax, nullptr);

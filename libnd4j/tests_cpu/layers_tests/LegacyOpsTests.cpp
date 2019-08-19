@@ -367,49 +367,6 @@ TEST_F(LegacyOpsTests, IndexReduceTests_2) {
     delete result;
 }
 
-TEST_F(LegacyOpsTests, Test_IsMax_1) {
-    if (!Environment::getInstance()->isCPU())
-        return;
-
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 2, 2, 2});
-    auto z = NDArrayFactory::create<double>('c', {2, 2, 2, 2, 2, 2});
-    x.linspace(1.0);
-    z.assign(-589);
-
-    double extra[] = {1.0, 0.0};
-
-    NativeOpExecutioner::execTransformAny(nullptr, transform::IsMax, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-            z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), extra, nullptr, nullptr);
-
-    // z.printIndexedBuffer("z");
-    for (Nd4jLong e = 0; e < z.lengthOf(); e++) {
-        ASSERT_TRUE(z.e<double>(e) >= 0);
-    }
-}
-
-TEST_F(LegacyOpsTests, Test_IsMax_2) {
-    if (!Environment::getInstance()->isCPU())
-        return;
-
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 2, 2, 2, 2});
-    auto z = NDArrayFactory::create<bool>('c', {2, 2, 2, 2, 2, 2});
-    x.linspace(1.0);
-    z.assign(false);
-
-    double extra[] = {1.0, 0.0};
-
-    NativeOpExecutioner::execTransformAny(nullptr, transform::IsMax, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
-            z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), extra, nullptr, nullptr);
-
-    // z.printIndexedBuffer("z");
- for (Nd4jLong e = 0; e < z.lengthOf(); e++) {
-     if (e >= z.lengthOf() / 2)
-         ASSERT_TRUE(z.e<bool>(e));
-     else
-         ASSERT_FALSE(z.e<bool>(e));
- }
-}
-
 TEST_F(LegacyOpsTests, BroadcastingTests_1) {
     auto x = NDArrayFactory::create<double>('c', {5, 5});
     x.assign(0.0f);

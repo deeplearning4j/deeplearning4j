@@ -653,36 +653,7 @@ void execTransformAny(Nd4jPointer *extraPointers,int opNum,
     auto streamSpecial = reinterpret_cast<cudaStream_t&>(extraPointers[4]);
     LaunchContext lc(stream, streamSpecial, extraPointers[5], extraPointers[3], reinterpret_cast<int*>(extraPointers[6]));
 
-    // FIXME: remove this once all operations are enabled
-    if (opNum == nd4j::transform::IsMax && extraParams != nullptr) {
-        auto hostYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
-        auto hostTShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[19]);
-        auto tadMaxShapeInfo = reinterpret_cast<Nd4jLong *> (extraPointers[10]);
-        auto tadMaxOffsets = reinterpret_cast<Nd4jLong *> (extraPointers[11]);
-        int *dimension = reinterpret_cast<int *> (extraPointers[15]);
-        int *hDimension = reinterpret_cast<int *> (extraPointers[16]);
-        int dimensionLength = getDeviceId(extraPointers[18]);
-        auto special = reinterpret_cast<double *>(extraPointers[17]);
-
-        auto cshape = ShapeBuilders::createVectorShapeInfo(nd4j::DataType::INT32, dimensionLength);
-
-        // we call for IMax on specified dimension
-        execIndexReduce(extraPointers, indexreduce::IndexMax, nullptr, hXShapeInfo, dX, dXShapeInfo, extraParams, nullptr, hostTShapeInfo, special, hostYShapeInfo, hDimension, cshape, dimension, nullptr);
-
-        DEBUG_KERNEL(stream, opNum);
-
-        dim3 launchDims(256, 256, 16384);
-        auto zType = ArrayOptions::dataType(hZShapeInfo);
-
-        // at this point, all IMax indexes are gathered, and we execute filler
-        BUILD_SINGLE_SELECTOR(zType, fillDimensionalIsMaxGeneric, (launchDims, stream, special, dZ, dZShapeInfo, tadMaxShapeInfo, dimension, dimensionLength, tadMaxOffsets), LIBND4J_TYPES);
-
-        nd4j::DebugHelper::checkErrorCode(stream, "Legacy IsMax(...) failed");
-
-        delete[] cshape;
-    } else {
-        NativeOpExecutioner::execTransformAny(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, nullptr, nullptr);
-    }
+    NativeOpExecutioner::execTransformAny(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, nullptr, nullptr);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -712,7 +683,7 @@ void execTransformFloat(Nd4jPointer *extraPointers,int opNum,
     auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
 
     LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execTransformFloat(&lc, opNum, hX, hXShapeInfo, dZ, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+    NativeOpExecutioner::execTransformFloat(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
 }
 
 
