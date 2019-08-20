@@ -71,4 +71,12 @@ namespace nd4j {
     int ContextBuffers::deviceId() {
         return _deviceId;
     }
+
+    void* ContextBuffers::execStream() {
+        return _execStream;
+    }
+
+    void* ContextBuffers::specialStream() {
+        return _specialStream;
+    }
 }

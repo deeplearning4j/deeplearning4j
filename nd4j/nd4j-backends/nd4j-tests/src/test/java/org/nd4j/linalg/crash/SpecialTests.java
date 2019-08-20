@@ -198,27 +198,43 @@ public class SpecialTests extends BaseNd4jTest {
 
         val list = new CopyOnWriteArrayList<INDArray>();
         val threads = new ArrayList<Thread>();
-        for (int e = 0; e< Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
+        val devices = Nd4j.getAffinityManager().getNumberOfDevices();
+        for (int e = 0; e < devices; e++) {
             val f = e;
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    log.info("Current device: {}", deviceId);
                     for (int i = 0; i < 10; i++) {
-                        list.add(Nd4j.create(100, 100).assign(1.0f));
+                        val ar = Nd4j.create(100, 100).assign(1.0f);
+
+                        assertEquals(deviceId, Nd4j.getAffinityManager().getDeviceForArray(ar));
+                        list.add(ar);
                         Nd4j.getExecutioner().commit();
                     }
                 }
             });
 
             t.start();
+            t.join();
             threads.add(t);
+
+            log.info("------------------------");
         }
 
         for (val t:threads)
             t.join();
 
-        for (val a:list)
-            assertEquals(1.0f, a.meanNumber().floatValue(), 1e-5);
+        for (val a:list) {
+            val device = Nd4j.getAffinityManager().getDeviceForArray(a);
+            try {
+                assertEquals(1.0f, a.meanNumber().floatValue(), 1e-5);
+            } catch (Exception e) {
+                log.error("Failed for array from device [{}]", device);
+                throw e;
+            }
+        }
     }
 
     @Test

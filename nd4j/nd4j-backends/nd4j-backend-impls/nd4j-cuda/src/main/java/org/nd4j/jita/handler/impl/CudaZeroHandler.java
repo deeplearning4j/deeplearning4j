@@ -819,10 +819,10 @@ public class CudaZeroHandler implements MemoryHandler {
         val ohPtr = dstPoint.getHostPointer();
 
         // FIXME: cross-thread access, might cause problems
-        if (!dstPoint.isActualOnHostSide())
+        if (dstPoint.getHostPointer() != null && !dstPoint.isActualOnHostSide())
             AtomicAllocator.getInstance().synchronizeHostData(buffer);
 
-        if (!dstPoint.isActualOnHostSide())
+        if (dstPoint.getHostPointer() != null && !dstPoint.isActualOnHostSide())
             throw new RuntimeException("Buffer synchronization failed");
 
         if (buffer.isAttached() || dstPoint.isAttached()) {
@@ -832,10 +832,14 @@ public class CudaZeroHandler implements MemoryHandler {
 
             if (workspace == null) {
                 // if we're out of workspace, we should mark our buffer as detached, so gc will pick it up eventually
-                val pairH = alloc(AllocationStatus.HOST, dstPoint, dstPoint.getShape(), false);
+                // host part is optional
+                if (dstPoint.getHostPointer() != null) {
+                    val pairH = alloc(AllocationStatus.HOST, dstPoint, dstPoint.getShape(), false);
+                    dstPoint.getPointers().setHostPointer(pairH.getHostPointer());
+                }
+
                 val pairD = alloc(AllocationStatus.DEVICE, dstPoint, dstPoint.getShape(), false);
                 dstPoint.getPointers().setDevicePointer(pairD.getDevicePointer());
-                dstPoint.getPointers().setHostPointer(pairH.getHostPointer());
 
                 //log.info("New host pointer: {}; Old host pointer: {}", dstPoint.getHostPointer().address(), ohPtr.address());
 
@@ -869,7 +873,11 @@ public class CudaZeroHandler implements MemoryHandler {
                 Nd4j.getMemoryManager().memcpy(nBuffer, buffer);
 
                 dstPoint.getPointers().setDevicePointer(nBuffer.getAllocationPoint().getDevicePointer());
-                dstPoint.getPointers().setHostPointer(nBuffer.getAllocationPoint().getHostPointer());
+
+                if (dstPoint.getHostPointer() != null) {
+                    dstPoint.getPointers().setHostPointer(nBuffer.getAllocationPoint().getHostPointer());
+                }
+
                 dstPoint.setDeviceId(deviceId);
 
                 dstPoint.tickDeviceRead();
@@ -885,6 +893,17 @@ public class CudaZeroHandler implements MemoryHandler {
             throw new RuntimeException("Can't relocateObject() for constant buffer");
         } else {
             //                log.info("Free relocateObject: deviceId: {}, pointer: {}", deviceId, dstPoint.getPointers().getDevicePointer().address());
+            val context = getCudaContext();
+            if (dstPoint.getHostPointer() == null) {
+                ((BaseCudaDataBuffer) buffer).lazyAllocateHostPointer();
+
+                if (nativeOps.memcpyAsync(dstPoint.getHostPointer(), dstPoint.getDevicePointer(),
+                        buffer.length() * buffer.getElementSize(), 2, context.getSpecialStream()) == 0)
+                    throw new ND4JIllegalStateException("memcpyAsync failed");
+
+                context.syncSpecialStream();
+            }
+
             memoryProvider.free(dstPoint);
             deviceMemoryTracker.subFromAllocation(Thread.currentThread().getId(), dstPoint.getDeviceId(), AllocationUtils.getRequiredMemory(dstPoint.getShape()));
 
@@ -893,7 +912,6 @@ public class CudaZeroHandler implements MemoryHandler {
 
             val profD = PerformanceTracker.getInstance().helperStartTransaction();
 
-            CudaContext context = getCudaContext();
             if (nativeOps.memcpyAsync(dstPoint.getDevicePointer(), dstPoint.getHostPointer(),
                             buffer.length() * buffer.getElementSize(), 1, context.getSpecialStream()) == 0)
                 throw new ND4JIllegalStateException("memcpyAsync failed");

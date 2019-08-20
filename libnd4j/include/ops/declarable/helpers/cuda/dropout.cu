@@ -135,8 +135,9 @@ namespace helpers {
         auto step = blockDim.x * gridDim.x;
 
         for (int e = tid; e < len; e += step) {
-            if (output[shape::getIndexOffset(e, outputShape, len)] != T(0.))
-                output[shape::getIndexOffset(e, outputShape, len)] = T(input[shape::getIndexOffset(e, gradOutShape, len)] / probValue);
+            const auto zOffset = shape::getIndexOffset(e, outputShape, len);
+            if (output[zOffset] != T(0.))
+                output[zOffset] = T(input[shape::getIndexOffset(e, gradOutShape, len)] / probValue);
 
         }
     }

@@ -53,4 +53,8 @@ namespace nd4j {
         // return context for current device
         return LaunchContext::_contexts[0].get();
     }
+
+    void LaunchContext::swapContextBuffers(ContextBuffers &buffers) {
+        //
+    }
 }

@@ -19,6 +19,7 @@
 //
 
 #include <execution/ContextBuffers.h>
+#include <exceptions/cuda_exception.h>
 #include <logger.h>
 #include <AffinityManager.h>
 
@@ -45,6 +46,18 @@ namespace nd4j {
 
             if (_allocationPointer != nullptr)
                 cudaFree(_reductionPointer);
+
+            auto _cudaStream = reinterpret_cast<cudaStream_t*>(_execStream);
+            auto _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(_specialStream);
+
+            cudaStreamSynchronize(*_cudaStream);
+            cudaStreamSynchronize(*_cudaSpecialStream);
+
+            cudaStreamDestroy(*_cudaStream);
+            cudaStreamDestroy(*_cudaSpecialStream);
+
+            delete _cudaStream;
+            delete _cudaSpecialStream;
         }
     }
 
@@ -69,6 +82,19 @@ namespace nd4j {
         res = cudaMalloc(reinterpret_cast<void**>(&_allocationPointer), 1024 * 1024 * 8);
         if (res != 0)
             throw std::runtime_error("_allocationPointer allocation failed");
+
+        _execStream  = new cudaStream_t();
+        _specialStream = new cudaStream_t();
+        if (nullptr == _execStream || nullptr == _specialStream)
+            throw std::runtime_error("Failed to allocate memory for new CUDA stream");
+
+        res = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_execStream));
+        if (res != 0)
+            throw cuda_exception::build("Failed to create default CUDA stream with launch context", res);
+
+        res = cudaStreamCreate(reinterpret_cast<cudaStream_t*>(_specialStream));
+        if (res != 0)
+            throw cuda_exception::build("Failed to create special CUDA stream with launch context", res);
 
         _allocated = true;
     }
@@ -112,5 +138,19 @@ namespace nd4j {
 
     int ContextBuffers::deviceId() {
         return _deviceId;
+    }
+
+    void* ContextBuffers::execStream() {
+        if (_execStream == nullptr)
+            initialize();
+
+        return _execStream;
+    }
+
+    void* ContextBuffers::specialStream() {
+        if (_specialStream == nullptr)
+            initialize();
+
+        return _specialStream;
     }
 }

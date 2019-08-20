@@ -21,6 +21,7 @@
 #include <logger.h>
 #include <execution/AffinityManager.h>
 #include <exceptions/cuda_exception.h>
+#include <LaunchContext.h>
 
 thread_local int globalThreadToDevice = -1;
 
@@ -98,10 +99,13 @@ namespace nd4j {
         if (res != 0)
             throw cuda_exception::build("cudaSetDevice failed", res);
 
+        auto previousDeviceId = globalThreadToDevice;
+
         // update thread-device affinity
         globalThreadToDevice = deviceId;
 
-        // TODO: update context buffers?
+        ContextBuffers newBuffers;
+        LaunchContext::swapContextBuffers(newBuffers);
     }
 
     std::atomic<int> AffinityManager::_lastDevice;// = std::atomic<int>(initialV);

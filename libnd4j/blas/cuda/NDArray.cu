@@ -55,7 +55,19 @@ void* NDArray::getPlatformBuffer() const    { return getSpecialBuffer(); }
 Nd4jLong* NDArray::getPlatformShapeInfo() const { return getSpecialShapeInfo(); }
 Nd4jLong* NDArray::platformShapeInfo()          { return specialShapeInfo(); }
 
-void NDArray::syncToDevice() const          { _buffer->syncToSpecial();  }
+void NDArray::syncToDevice() const          {
+    auto currentDeviceId = AffinityManager::currentDeviceId();
+    if (currentDeviceId != _deviceId) {
+        // first of all we update shapeInfo
+        const_cast<NDArray*>(this)->setShapeInfo(this->getShapeInfo());
+
+        // now we actually migrate data buffer
+        _buffer->migrate();
+    }
+
+    _buffer->syncToSpecial();
+}
+
 void NDArray::syncToHost() const            { _buffer->syncToPrimary(getContext()); }
 void NDArray::tickWriteHost() const         { _buffer->writePrimary();   }
 void NDArray::tickWriteDevice() const       { _buffer->writeSpecial();   }

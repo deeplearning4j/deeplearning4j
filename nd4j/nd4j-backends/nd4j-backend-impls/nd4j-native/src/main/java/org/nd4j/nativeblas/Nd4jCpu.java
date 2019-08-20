@@ -22808,6 +22808,72 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #endif
 
+// Parsed from execution/ContextBuffers.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef LIBND4J_CONTEXTBUFFERS_H
+// #define LIBND4J_CONTEXTBUFFERS_H
+
+// #include <dll.h>
+// #include <pointercast.h>
+    @Namespace("nd4j") @NoOffset public static class ContextBuffers extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public ContextBuffers(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public ContextBuffers(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public ContextBuffers position(long position) {
+            return (ContextBuffers)super.position(position);
+        }
+    
+        public ContextBuffers() { super((Pointer)null); allocate(); }
+        private native void allocate();
+        public ContextBuffers(Pointer rPointer, Pointer sPointer, Pointer aPointer, @Cast("bool") boolean isOwner/*=false*/) { super((Pointer)null); allocate(rPointer, sPointer, aPointer, isOwner); }
+        private native void allocate(Pointer rPointer, Pointer sPointer, Pointer aPointer, @Cast("bool") boolean isOwner/*=false*/);
+        public ContextBuffers(Pointer rPointer, Pointer sPointer, Pointer aPointer) { super((Pointer)null); allocate(rPointer, sPointer, aPointer); }
+        private native void allocate(Pointer rPointer, Pointer sPointer, Pointer aPointer);
+
+        public native Pointer reductionBuffer();
+        public native Pointer scalarBuffer();
+        public native Pointer allocationBuffer();
+
+        public native Pointer execStream();
+        public native Pointer specialStream();
+
+        public native void setReductionBuffer(Pointer pointer);
+        public native void setScalarBuffer(Pointer pointer);
+        public native void setAllocationBuffer(Pointer pointer);
+
+        public native void triggerOwnership(@Cast("bool") boolean isOwner);
+
+        public native int deviceId();
+    }
+
+
+
+// #endif //DEV_TESTS_CONTEXTBUFFERS_H
+
+
 // Parsed from execution/LaunchContext.h
 
 /*******************************************************************************
@@ -22871,6 +22937,9 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     	public native void setDeviceID(int deviceID);
 
 	    public static native LaunchContext defaultContext();
+
+
+    	public static native void swapContextBuffers(@ByRef ContextBuffers buffers);
 
 }
 

@@ -31,6 +31,7 @@
 #include <AffinityManager.h>
 
 #include <exceptions/datatype_exception.h>
+#include <exceptions/cuda_exception.h>
 #include <helpers/CudaLaunchHelper.h>
 // FIXME: we need cuda-specific implementations
 #include <GraphExecutioner.h>
@@ -965,11 +966,7 @@ int registerEvent(Nd4jPointer event, Nd4jPointer stream) {
 }
 
 int setDevice(int deviceId) {
-	auto dZ = cudaSetDevice(deviceId);
-	checkCudaErrors(dZ);
-	if (dZ != 0)
-		throw std::runtime_error("cudaSetDevice(...) failed");
-
+	AffinityManager::setCurrentDevice(deviceId);
 	return 1;
 }
 
@@ -1024,16 +1021,15 @@ Nd4jLong getDeviceTotalMemory(int device) {
 }
 
 int memcpySync(Nd4jPointer dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4jPointer reserved) {
-
 	return memcpyAsync(dst, src, size, flags, reserved);
 }
 
 int memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4jPointer reserved) {
-	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(reserved);
+	auto pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
 	cudaMemcpyKind 	kind;
 
-	DEBUG_KERNEL(pStream, 0);
+	//nd4j::DebugHelper::checkErrorCode(pStream, "Preliminary sync failed");
 
 	switch (flags) {
 		case 0: {
@@ -1047,25 +1043,22 @@ int memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4j
 		case 2: {
 				kind = cudaMemcpyDeviceToHost;
 			}
+            break;
 		case 3: {
-			kind = cudaMemcpyDeviceToDevice;
-		}
+			    kind = cudaMemcpyDeviceToDevice;
+		    }
 			break;
-		default: {
-
-			printf("UNDEFINED MEMCPY!\n");
-			break;
-		}
+		default:
+			throw nd4j::cuda_exception::build("UNDEFINED MEMCPY!\n", 119);
 	}
 
-	cudaError_t dZ = cudaMemcpyAsync(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)), static_cast<size_t>(size), kind, *pStream);
+	auto dZ = cudaMemcpyAsync(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)), static_cast<size_t>(size), kind, *pStream);
+    //auto dZ = cudaMemcpy(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)), static_cast<size_t>(size), kind);
 	if (dZ != 0) {
-        checkCudaErrors(dZ);
-		printf("Failed on [%lu] -> [%lu], size: [%i], direction: [%i], dZ: [%i]\n", src, dst, size, flags, static_cast<int>(dZ));
+        printf("Failed on [%lu] -> [%lu], size: [%i], direction: [%i], dZ: [%i]\n", src, dst, size, flags, static_cast<int>(dZ));
         fflush(stdout);
         fflush(stderr);
-        throw std::runtime_error("cudaMemcpyAsync(...) failed");
-		//return 0L;
+        throw nd4j::cuda_exception::build("cudaMemcpyAsync(...) failed", dZ);
 	}
 
 	return 1;
@@ -3256,7 +3249,7 @@ void tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
     auto e = cudaStreamSynchronize(stream);
 
     if (e != 0)
-        throw std::runtime_error("tryPointer failed");
+        throw nd4j::cuda_exception::build("tryPointer failed", e);
 
     cudaStreamDestroy(stream);
 }

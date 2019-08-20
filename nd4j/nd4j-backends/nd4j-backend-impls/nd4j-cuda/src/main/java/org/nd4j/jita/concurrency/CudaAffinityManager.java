@@ -68,11 +68,7 @@ public class CudaAffinityManager extends BasicAffinityManager {
      */
     @Override
     public Integer getDeviceForCurrentThread() {
-        val id = NativeOpsHolder.getInstance().getDeviceNativeOps().getDevice();
-        if (!affinityMap.containsKey(Thread.currentThread().getId()))
-            affinityMap.put(Thread.currentThread().getId(), id);
-
-        return id;
+        return NativeOpsHolder.getInstance().getDeviceNativeOps().getDevice();
     }
 
     /**
@@ -205,7 +201,6 @@ public class CudaAffinityManager extends BasicAffinityManager {
         int currentDeviceId = getDeviceForCurrentThread();
 
         if (currentDeviceId != deviceId.intValue()) {
-            Nd4j.getMemoryManager().releaseCurrentContext();
             unsafeSetDevice(deviceId);
         }
 
@@ -215,7 +210,6 @@ public class CudaAffinityManager extends BasicAffinityManager {
         INDArray result = Nd4j.createArrayFromShapeBuffer(newDataBuffer, newShapeBuffer);
 
         if (currentDeviceId != deviceId.intValue()) {
-            Nd4j.getMemoryManager().releaseCurrentContext();
             unsafeSetDevice(currentDeviceId);
         }
 
@@ -238,7 +232,6 @@ public class CudaAffinityManager extends BasicAffinityManager {
         int currentDeviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
         if (currentDeviceId != deviceId) {
-            Nd4j.getMemoryManager().releaseCurrentContext();
             Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
         }
 
@@ -246,7 +239,6 @@ public class CudaAffinityManager extends BasicAffinityManager {
         AtomicAllocator.getInstance().memcpy(dstBuffer, buffer);
 
         if (currentDeviceId != deviceId) {
-            Nd4j.getMemoryManager().releaseCurrentContext();
             Nd4j.getAffinityManager().unsafeSetDevice(currentDeviceId);
         }
 
