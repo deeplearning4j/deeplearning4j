@@ -51,8 +51,7 @@ CUSTOM_OP_IMPL(space_to_batch_nd, 3, 1, false, 0, 0) {
 
     if(padding->sizeAt(0) != numOfSpatialDims || padding->sizeAt(1) != 2) {
         const std::string expectedpaddingShape = "[" + std::to_string(numOfSpatialDims) + ", 2]";   // [numOfSpatialDims, 2]
-        const std::string actualpaddingShape = ShapeUtils::shapeAsString(padding);
-        REQUIRE_TRUE(false, 0, "SpaceToBatchND: operation expects padding shape to be %s, but got %s instead", expectedpaddingShape.c_str(), actualpaddingShape.c_str());
+        REQUIRE_TRUE(false, 0, "SpaceToBatchND: operation expects padding shape to be %s, but got %s instead", expectedpaddingShape.c_str(), ShapeUtils::shapeAsString(padding).c_str());
     }
 
     // FIXME - should we use this time-consuming validation ?
@@ -90,8 +89,7 @@ DECLARE_SHAPE_FN(space_to_batch_nd) {
 
     if(paddingShapeInfo[1] != numOfSpatialDims || paddingShapeInfo[2] != 2) {
         const std::string expectedpaddingShape = "[" + std::to_string(numOfSpatialDims) + ", 2]";   // [numOfSpatialDims, 2]
-        const std::string actualpaddingShape = ShapeUtils::shapeAsString(paddingShapeInfo);
-        REQUIRE_TRUE(false, 0, "SpaceToBatchND: operation expects padding shape to be %s, but got %s instead", expectedpaddingShape.c_str(), actualpaddingShape.c_str());
+        REQUIRE_TRUE(false, 0, "SpaceToBatchND: operation expects padding shape to be %s, but got %s instead", expectedpaddingShape.c_str(), ShapeUtils::shapeAsString(paddingShapeInfo).c_str());
     }
 
     std::vector<Nd4jLong> outShape(inputShapeInfo + 1, inputShapeInfo + 1 + inputShapeInfo[0]);

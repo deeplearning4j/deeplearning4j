@@ -628,6 +628,9 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_batch_to_space)
         DECLARE_CUSTOM_OP(batch_to_space, 2, 1, false, 0, 1);
         #endif
+        #if NOT_EXCLUDED(OP_batch_to_space_nd)
+        DECLARE_CUSTOM_OP(batch_to_space_nd, 3, 1, false, 0, 0);
+        #endif
 
         /**
          * top_k operation returns a vector of k top values for
