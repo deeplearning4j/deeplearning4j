@@ -18208,6 +18208,24 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+//         #if NOT_EXCLUDED(OP_space_to_batch_nd)
+        @Namespace("nd4j::ops") public static class space_to_batch_nd extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public space_to_batch_nd(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public space_to_batch_nd(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public space_to_batch_nd position(long position) {
+                return (space_to_batch_nd)super.position(position);
+            }
+        
+                                                                                    public space_to_batch_nd() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
         /**
          *
          *

@@ -32,13 +32,8 @@ namespace helpers {
     static __global__ void dropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probVal, int inLen, nd4j::graph::RandomGenerator* nodeRng) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
-        __shared__ T const* input;
-        __shared__ T* output;
-
-        if (threadIdx.x == 0) {
-            input = reinterpret_cast<T const*>(inputBuf);
-            output = reinterpret_cast<T*>(outputBuf);
-        }
+        T const* input = reinterpret_cast<T const*>(inputBuf);
+        T* output = reinterpret_cast<T*>(outputBuf);
 
         for (Nd4jLong e = 0; e < inLen; ++e) {
             T val = nodeRng->relativeT(e, T(0.f), T(1.f));
@@ -134,6 +129,7 @@ namespace helpers {
             output = reinterpret_cast<T*>(outputBuf);
             input = reinterpret_cast<T*>(gradOutBuf);
         }
+        __syncthreads();
 
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
@@ -159,13 +155,8 @@ namespace helpers {
     static __global__ void alphaDropoutSimpleKernel(void const* inputBuf, Nd4jLong const* inputShape, void* outputBuf, Nd4jLong* outputShape, double probValue, double alpha, double alpha1, double beta, int inLen, nd4j::graph::RandomGenerator* nodeRng) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
-        __shared__ T const* input;
-        __shared__ T* output;
-
-        if (threadIdx.x == 0) {
-            input = reinterpret_cast<T const*>(inputBuf);
-            output = reinterpret_cast<T*>(outputBuf);
-        }
+        T const* input = reinterpret_cast<T const*>(inputBuf);
+        T* output = reinterpret_cast<T*>(outputBuf);
 
         for (auto e = tid; e < inLen; e += step) {
             T val = nodeRng->relativeT(e, T(0.f), T(1.f));
@@ -209,7 +200,7 @@ namespace helpers {
             std::vector<Nd4jLong> dims(reduceShape->lengthOf());
             reduceShape->syncToHost(); // to ensure that follows are actual
             bool fit = true;
-//            PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(fit))
+
             for( int i = 0; i < dims.size(); i++ ) {
                 if (fit) {
                     dims[i] = reduceShape->e<Nd4jLong>(i);
@@ -225,9 +216,9 @@ namespace helpers {
             REQUIRE_TRUE(fit, 0, "alpha_dropout: Noise shape should fit to input rank.");
             std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), context.launchContext()));
             chunk->assign(1.f);
-            //chunk->applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
-            //NativeOpExecutioner::execRandom(random::DropOutInverted, rng, chunk->buffer(), chunk->shapeInfo(), chunk->buffer(), chunk->shapeInfo(), &prob);
+
             alphaDropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), seed, probValue, alpha, alpha1, beta);
+
             // broadcast chunk to full matrix
             std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
             dropOutMultiplier->assign(1.f);

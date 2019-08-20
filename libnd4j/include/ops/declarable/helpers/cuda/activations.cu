@@ -52,7 +52,6 @@ __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 		xzRank = shape::rank(xShapeInfo);
 		yRank  = shape::rank(yShapeInfo);
 	}
-
 	__syncthreads();
 
 	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -132,7 +131,6 @@ __global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeI
 		inRank     = shape::rank(inShapeInfo);
 		alphaRank  = shape::rank(alphaShapeInfo);
 	}
-
 	__syncthreads();
 
 	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;

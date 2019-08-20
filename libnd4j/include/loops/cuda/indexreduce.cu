@@ -231,7 +231,6 @@ namespace functions {
 
                 xLength = shape::length(xShapeInfo);
             }
-
             __syncthreads();
 
             if (!resultScalar) {
@@ -267,6 +266,7 @@ namespace functions {
                         if (threadIdx.x == 0) {
                             result[r] = sPartials[threadIdx.x].index;
                         }
+                        __syncthreads();
                     }
                 } else {
 
@@ -287,6 +287,7 @@ namespace functions {
                         if (threadIdx.x == 0) {
                             result[i] = sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
                         }
+                        __syncthreads();
                     }
                 }
             } else {

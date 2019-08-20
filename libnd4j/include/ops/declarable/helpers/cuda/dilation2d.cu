@@ -62,7 +62,6 @@ __global__ static void dilation2dCuda(const void* vx, const Nd4jLong* xShapeInfo
         kH = yShapeInfo[1];
         kW = yShapeInfo[2];
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;

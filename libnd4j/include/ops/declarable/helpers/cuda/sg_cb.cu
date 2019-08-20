@@ -375,8 +375,9 @@ namespace nd4j {
                 }
                 if (threadIdx.x == 0) {
                     if (hasError)
-                    neu1[0] = DataTypeUtils::infOrMax<T>();
+                        neu1[0] = DataTypeUtils::infOrMax<T>();
                 }
+                __syncthreads();
             }
 
             template <typename T>

@@ -44,7 +44,6 @@ __global__ static void im2colCuda(const void *image, void *columns,
     __shared__ int imRank, colRank;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
@@ -56,7 +55,6 @@ __global__ static void im2colCuda(const void *image, void *columns,
         iH = imShapeInfo[3];
         iW = imShapeInfo[4];
     }
-
     __syncthreads();
 
     const auto colInd = threadIdx.x + blockIdx.x * blockDim.x;

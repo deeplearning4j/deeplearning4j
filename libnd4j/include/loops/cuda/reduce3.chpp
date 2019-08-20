@@ -125,7 +125,6 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 	__shared__ Z* sPartials;
 
 	if (threadIdx.x == 0) {
-
 		extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
 
@@ -137,7 +136,6 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 		else
 			extraZ[2] = (Z) 0.0f;
 	}
-
     __syncthreads();
 
 	sPartials[threadIdx.x] = OpType::startingValue(x);
@@ -377,7 +375,6 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 	__shared__ char yTadOrder;
 
 	if(threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sPartials = reinterpret_cast<Z*>(shmem);
 

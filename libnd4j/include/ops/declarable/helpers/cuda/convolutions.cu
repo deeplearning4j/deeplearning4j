@@ -43,7 +43,6 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
     __shared__ Nd4jLong *sharedMem;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
@@ -56,7 +55,6 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
         iH = volShapeInfo[4];
         iW = volShapeInfo[5];
     }
-
     __syncthreads();
 
     const auto colInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -127,7 +125,6 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
     __shared__ Nd4jLong *sharedMem, volLen;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
@@ -144,7 +141,6 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
 
         volLen = shape::length(volShapeInfo);
     }
-
     __syncthreads();
 
     const auto volInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -404,7 +400,6 @@ static __global__ void avgPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
     __shared__ int bS, iC, oH, oW, iH, iW, strideB, strideC, strideY, strideX, strideOB, strideOC, strideOY, strideOX, length, kHEff, kWEff;
 
     if (threadIdx.x == 0) {
-
         bS = shape::sizeAt(xShapeInfo, 0);
         iC = shape::sizeAt(xShapeInfo, 1);
         oH = shape::sizeAt(zShapeInfo, 2);
@@ -428,7 +423,6 @@ static __global__ void avgPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
         kHEff = kH + (kH-1)*(dH-1);
         kWEff = kW + (kW-1)*(dW-1);
     }
-
     __syncthreads();
 
     int tid = blockIdx.x * gridDim.x + threadIdx.x;
@@ -501,7 +495,6 @@ static __global__ void pnormPooling2dCuda(const void *vx, const Nd4jLong *xShape
     __shared__ bool fOrder;
 
     if (threadIdx.x == 0) {
-
         bS = shape::sizeAt(xShapeInfo, 0);
         iC = shape::sizeAt(xShapeInfo, 1);
         oH = shape::sizeAt(zShapeInfo, 2);
@@ -525,7 +518,6 @@ static __global__ void pnormPooling2dCuda(const void *vx, const Nd4jLong *xShape
         kHEff = kH + (kH-1)*(dH-1);
         kWEff = kW + (kW-1)*(dW-1);
     }
-
     __syncthreads();
 
     int tid = blockIdx.x * gridDim.x + threadIdx.x;
@@ -594,7 +586,6 @@ static __global__ void maxPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
     __shared__ bool fOrder;
 
     if (threadIdx.x == 0) {
-
         bS = shape::sizeAt(xShapeInfo, 0);
         iC = shape::sizeAt(xShapeInfo, 1);
         oH = shape::sizeAt(zShapeInfo, 2);
@@ -618,7 +609,6 @@ static __global__ void maxPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
         kHEff = kH + (kH-1)*(dH-1);
         kWEff = kW + (kW-1)*(dW-1);
     }
-
     __syncthreads();
 
     int tid = blockIdx.x * gridDim.x + threadIdx.x;
@@ -737,7 +727,6 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
 
         kProd = kD * kH * kW;
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -888,7 +877,6 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
         kProd = kH * kW;
     }
-
     __syncthreads();
 
     const auto yInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1043,7 +1031,6 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
         kProd = kD * kH * kW;
     }
-
     __syncthreads();
 
     const auto yInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1356,7 +1343,6 @@ __global__ static void upsampling2dCuda(const void* vx, const Nd4jLong* xShapeIn
         zLen = shape::length(zShapeInfo);
         rank = 4;
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1425,7 +1411,6 @@ __global__ static void upsampling3dCuda(const void* vx, const Nd4jLong* xShapeIn
         zLen = shape::length(zShapeInfo);
         rank = 5;
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1499,7 +1484,6 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
         factorH = xShapeInfo[dimIH + 1] / zShapeInfo[dimIH + 1];
         factorW = xShapeInfo[dimIH + 2] / zShapeInfo[dimIH + 2];
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1573,7 +1557,6 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
         factorH = xShapeInfo[dimID + 2] / zShapeInfo[dimID + 2];
         factorW = xShapeInfo[dimID + 3] / zShapeInfo[dimID + 3];
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;

@@ -1183,7 +1183,6 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
     __shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenZ, arrLenPerBlock, start, end;
 
     if (threadIdx.x == 0) {
-
         blocksPerArr = (gridDim.x - gridDim.x % numOfArrs) / numOfArrs;     // floor
         arrIdx = blockIdx.x / blocksPerArr;
         if (arrIdx >= numOfArrs)
@@ -1200,8 +1199,8 @@ __global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShape
         start = arrLenPerBlock * (blockIdx.x % blocksPerArr);
         end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
     }
-
     __syncthreads();
+
     for (Nd4jLong i = threadIdx.x + start; i < end; i += blockDim.x) {
         auto zOffset = shape::getIndexOffset(i, zShapeInfo, arrLenZ);
         auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLen);
@@ -3165,7 +3164,6 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
             arrLenX = shape::length(xShapeInfo);
             arrLenY = shape::length(yShapeInfo);
         }
-
         __syncthreads();
 
         if (arrLenX != arrLenY)

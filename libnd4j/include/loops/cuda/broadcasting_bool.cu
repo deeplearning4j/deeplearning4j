@@ -185,7 +185,6 @@ namespace functions {
             __shared__ Nd4jLong zEWS;
       
             if (threadIdx.x == 0) {
-
    	            tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                 numTads = shape::length(xShapeInfo) / tadLength;

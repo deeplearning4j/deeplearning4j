@@ -39,8 +39,7 @@ __global__ static void zetaCuda(const void *vx, const Nd4jLong *xShapeInfo,
     
     if (threadIdx.x == 0)         
         len = shape::length(xShapeInfo);    
-
-    __syncthreads();    
+    __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
     const auto totalThreads = gridDim.x * blockDim.x;

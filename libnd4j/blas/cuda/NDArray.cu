@@ -78,7 +78,6 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
     __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
         areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
@@ -87,7 +86,6 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
         zLen  = shape::length(zShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * zRank;
@@ -153,14 +151,12 @@ __global__ static void identityMatrixCuda(void* vx, const Nd4jLong* xShapeInfo, 
     __shared__ Nd4jLong len, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
         rank = shape::rank(xShapeInfo);
         len  = shape::length(xShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * rank;

@@ -149,7 +149,6 @@ __global__ static void sruBICuda(const void* vx,    const Nd4jLong* xShapeInfo,
 
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;

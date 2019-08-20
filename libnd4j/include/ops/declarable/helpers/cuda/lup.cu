@@ -57,14 +57,8 @@ namespace helpers {
 //    }
     template <typename T>
     static __global__ void invertKernelLow(void* invertedBuf, Nd4jLong* invertedShape, void* inputBuf, Nd4jLong* inputShape, Nd4jLong n) {
-        __shared__ T* inverted;
-        __shared__ T* input;
-
-        if (threadIdx.x == 0) {
-            inverted = reinterpret_cast<T*>(invertedBuf);
-            input = reinterpret_cast<T*>(inputBuf);
-        }
-        __syncthreads();
+        T* inverted = reinterpret_cast<T*>(invertedBuf);
+        T* input = reinterpret_cast<T*>(inputBuf);
 
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
@@ -84,14 +78,8 @@ namespace helpers {
 
     template <typename T>
     static __global__ void upvertKernel(void* invertedBuf, Nd4jLong* invertedShape, void* inputBuf, Nd4jLong* inputShape, Nd4jLong n) {
-        __shared__ T* inverted;
-        __shared__ T* input;
-
-        if (threadIdx.x == 0) {
-            inverted = reinterpret_cast<T*>(invertedBuf);
-            input = reinterpret_cast<T*>(inputBuf);
-        }
-        __syncthreads();
+        T* inverted = reinterpret_cast<T*>(invertedBuf);
+        T* input = reinterpret_cast<T*>(inputBuf);
 
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
@@ -107,14 +95,8 @@ namespace helpers {
 
     template <typename T>
     static __global__ void upvertKernelUp(void* invertedBuf, Nd4jLong* invertedShape, void* inputBuf, Nd4jLong* inputShape, Nd4jLong n) {
-        __shared__ T* inverted;
-        __shared__ T* input;
-
-        if (threadIdx.x == 0) {
-            inverted = reinterpret_cast<T*>(invertedBuf);
-            input = reinterpret_cast<T*>(inputBuf);
-        }
-        __syncthreads();
+        T* inverted = reinterpret_cast<T*>(invertedBuf);
+        T* input = reinterpret_cast<T*>(inputBuf);
 
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
@@ -135,17 +117,8 @@ namespace helpers {
 
     template <typename T>
     static __global__ void invertLowKernel(void* invertedBuf, Nd4jLong* invertedShape, void* inputBuf, Nd4jLong* inputShape, Nd4jLong n) {
-        __shared__ T* inverted;
-        __shared__ T* input;
-
-        if (threadIdx.x == 0) {
-            inverted = reinterpret_cast<T*>(invertedBuf);
-            input = reinterpret_cast<T*>(inputBuf);
-        }
-        __syncthreads();
-
-//        auto start = threadIdx.x + blockIdx.x * blockDim.x;
-//        auto step = blockDim.x * gridDim.x;
+        T* inverted = reinterpret_cast<T*>(invertedBuf);
+        T* input = reinterpret_cast<T*>(inputBuf);
 
         for (int i = blockIdx.x + 2; i < n; i += gridDim.x) {
             for (int j = i - 2; j >= 0; --j)
@@ -166,17 +139,8 @@ namespace helpers {
 
     template <typename T>
     static __global__ void invertUpKernel(void* invertedBuf, Nd4jLong* invertedShape, void* inputBuf, Nd4jLong* inputShape, Nd4jLong n) {
-        __shared__ T* inverted;
-        __shared__ T* input;
-
-        if (threadIdx.x == 0) {
-            inverted = reinterpret_cast<T*>(invertedBuf);
-            input = reinterpret_cast<T*>(inputBuf);
-        }
-        __syncthreads();
-
-//        auto start = threadIdx.x + blockIdx.x * blockDim.x;
-//        auto step = blockDim.x * gridDim.x;
+        T* inverted = reinterpret_cast<T*>(invertedBuf);;
+        T* input = reinterpret_cast<T*>(inputBuf);
 
         for (int i = n - blockIdx.x - 2; i >= 0; i -= gridDim.x) {
             for (int j = i + 2; j < n; j++)
@@ -366,11 +330,8 @@ namespace helpers {
 
     template <typename F>
     static __global__ void fillUpPermutation(void* output, Nd4jLong* shape, int* source, int rowNum) {
-        __shared__ F* permutation;
+        F* permutation = reinterpret_cast<F*>(output);
 
-        if (threadIdx.x == 0) {
-            permutation = reinterpret_cast<F*>(output);
-        }
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
         for (auto i = start; i < rowNum; i += step) {
@@ -709,13 +670,8 @@ namespace helpers {
     template <typename F>
     __global__ void adjustResultsKernel(F* dArray, Nd4jLong* shape, Nd4jLong* offsets, Nd4jLong batchSize, Nd4jLong n) {
         //auto i = blockIdx.x * blockDim.x + threadIdx.x;
-        __shared__ Nd4jLong* shapeOf;
-        __shared__ Nd4jLong* strideOf;
-        if (blockIdx.x == 0 && threadIdx.x == 0) {
-            shapeOf = shape::shapeOf(shape);
-            strideOf = shape::stride(shape);
-        }
-        __syncthreads();
+        Nd4jLong* shapeOf = shape::shapeOf(shape);
+        Nd4jLong* strideOf = shape::stride(shape);
 
         for (auto i = blockIdx.x; i < batchSize; i+= gridDim.x) {
             auto current = dArray + offsets[i];

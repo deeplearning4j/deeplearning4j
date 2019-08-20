@@ -76,7 +76,6 @@ __global__ static void gatherCuda(const int numOfSubArrs,
     for (int i = blockIdx.x; i < numOfSubArrs; i += gridDim.x) {
 
         if (threadIdx.x == 0) {
-
             x = reinterpret_cast<const X*>(vx) + xOffsets[y[shape::getIndexOffset(i, yShapeInfo, numOfSubArrs)]];
             z = reinterpret_cast<X*>(vz) + zOffsets[i];
         }

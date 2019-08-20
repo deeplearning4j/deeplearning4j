@@ -47,7 +47,6 @@ __global__ static void batchToSpaceCuda(const void* vx, const Nd4jLong* xShapeIn
     __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
@@ -55,7 +54,6 @@ __global__ static void batchToSpaceCuda(const void* vx, const Nd4jLong* xShapeIn
         zLen  = shape::length(zShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * rank;
@@ -138,7 +136,6 @@ __global__ static void spaceToBatchCuda(const void* vx, const Nd4jLong* xShapeIn
     __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
@@ -146,7 +143,6 @@ __global__ static void spaceToBatchCuda(const void* vx, const Nd4jLong* xShapeIn
         zLen  = shape::length(zShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * rank;

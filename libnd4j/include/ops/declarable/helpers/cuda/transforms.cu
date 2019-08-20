@@ -135,6 +135,7 @@ __global__ static void traceCuda(const void* vx, const Nd4jLong* xShapeInfo, voi
 
         if (threadIdx.x == 0)
             z[zOffset] = *sharedMem;
+        __syncthreads();
     }
 
 }

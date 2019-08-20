@@ -50,7 +50,6 @@ __global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jL
         rank = shape::rank(zShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
