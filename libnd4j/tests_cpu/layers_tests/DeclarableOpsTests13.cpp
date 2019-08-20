@@ -772,33 +772,78 @@ TEST_F(DeclarableOpsTests13, space_to_batch_nd_3) {
     delete result;
 }
 
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, batch_to_space_nd_1) {
+
+    NDArray x('c', {8, 1, 1, 1, 3}, nd4j::DataType::FLOAT32);
+
+    NDArray blockShape('c', {3}, {2, 2, 2} , nd4j::DataType::INT32);    // three spatial dimensions
+    NDArray crop('c', {3, 2}, {0, 0, 0, 0, 0, 0} , nd4j::DataType::INT32);
+
+    NDArray exp('c', {1, 2, 2, 2, 3}, nd4j::DataType::FLOAT32);
+
+    x.linspace(1);
+    exp.linspace(1);
+
+    nd4j::ops::batch_to_space_nd op;
+    auto result = op.execute({&x, &blockShape, &crop}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, batch_to_space_nd_2) {
+
+    NDArray x('c', {24, 1,3,2, 1}, nd4j::DataType::FLOAT32);
+    NDArray blockShape('c', {3}, {2, 2, 3} , nd4j::DataType::INT32);    // three spatial dimensions
+    NDArray crop('c', {3, 2}, {0,0,  0,2,  2,1} , nd4j::DataType::INT32);
+
+    NDArray exp('c', {2,  2,4,3,  1}, {25, 2, 14, 61, 38, 50, 27, 4, 16, 63, 40, 52, 97, 74, 86, 133, 110, 122, 99, 76, 88, 135, 112, 124,
+                                      31, 8, 20, 67, 44, 56, 33, 10, 22, 69, 46, 58, 103, 80, 92, 139, 116, 128, 105, 82, 94, 141, 118, 130}, nd4j::DataType::FLOAT32);
+    x.linspace(1);
+
+    nd4j::ops::batch_to_space_nd op;
+    auto result = op.execute({&x, &blockShape, &crop}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, batch_to_space_nd_3) {
+
+    NDArray x('c', {24, 2,3,2, 1}, nd4j::DataType::FLOAT32);
+    NDArray blockShape('c', {3}, {2, 2, 3} , nd4j::DataType::INT32);    // three spatial dimensions
+    NDArray crop('c', {3, 2}, {1,1,  0,2,  2,1} , nd4j::DataType::INT32);
+
+    NDArray exp('c', {2,  2,4,3,  1}, {193, 146, 170, 265, 218, 242, 195, 148, 172, 267, 220, 244, 55, 8, 32, 127, 80, 104, 57, 10, 34, 129, 82,
+                                    106, 205, 158, 182, 277, 230, 254, 207, 160, 184, 279, 232, 256, 67, 20, 44, 139, 92, 116, 69, 22, 46, 141, 94, 118}, nd4j::DataType::FLOAT32);
+    x.linspace(1);
+
+    nd4j::ops::batch_to_space_nd op;
+    auto result = op.execute({&x, &blockShape, &crop}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
 
 
-// //////////////////////////////////////////////////////////////////////
-// TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_4) {
 
-//     const int blockSize = 2;
-//     NDArray x('c', {3, 3*blockSize - 1 - 2, 4*blockSize - 2 - 3, 2}, {147, 148, 219, 220, 149, 150, 11,  12, 83,  84, 13,  14, 155, 156, 227, 228, 157, 158, 171, 172, 243, 244, 173, 174, 35,  36, 107, 108, 37,  38, 179, 180, 251, 252, 181, 182, 195, 196, 267, 268, 197, 198, 59,  60, 131, 132, 61,  62, 203, 204, 275, 276, 205, 206}, nd4j::DataType::FLOAT32);
-//     NDArray paddings = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 2, 3});
-
-//     NDArray exp('c', {3*blockSize*blockSize, 3, 4, 2}, {0,0, 0,0, 0,0, 0,0, 0,0, 11,12, 13,14, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0,
-//         0,0, 0,0, 0,0, 35,36, 37,38, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 59,60, 61,62, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0,
-//         0,0, 0,0, 0,0, 0,0, 83,84, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 107, 108, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0,
-//         0,0, 0,0, 0,0, 0,0, 0,0, 131, 132, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 147, 148, 149, 150, 0,0, 0,0, 155, 156, 157, 158,
-//         0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 171, 172, 173, 174, 0,0, 0,0, 179, 180, 181, 182, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 195, 196,
-//         197, 198, 0,0, 0,0, 203, 204, 205, 206, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 219, 220, 0,0, 0,0, 0,0, 227, 228, 0,0, 0,0, 0,0,
-//         0,0, 0,0, 0,0, 0,0, 243, 244, 0,0, 0,0, 0,0, 251, 252, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 267, 268, 0,0, 0,0, 0,0, 275,
-//         276, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0}, nd4j::DataType::FLOAT32);
-
-//     nd4j::ops::space_to_batch op;
-//     auto result = op.execute({&x, &paddings}, {}, {blockSize});
-//     ASSERT_EQ(Status::OK(), result->status());
-
-//     auto z = result->at(0);
-//     // z->printIndexedBuffer();
-
-//     ASSERT_TRUE(exp.isSameShape(z));
-//     ASSERT_TRUE(exp.equalsTo(z));
-
-//     delete result;
-// }

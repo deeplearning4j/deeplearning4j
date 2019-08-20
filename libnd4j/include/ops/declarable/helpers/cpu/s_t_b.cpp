@@ -90,6 +90,112 @@ void batchToSpace(nd4j::LaunchContext* context, const NDArray& input, NDArray& o
     }
 }
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& output, const uint numOfSpatialDims) {
+
+    // input [bS, H * blockShape[0], W * blockShape[1], iC]
+    // output [bS, H * blockShape[0] - cropBottom - cropTop, W * blockShape[1] - cropLeft - cropRight, iC]
+
+    // if (cropTop = cropBottom = cropRight = cropLeft = 0) shapes are the same
+    // else:
+    // oH -> [cropBottom, iH - cropTop]
+    // oW -> [cropLeft,   iH - cropRight]
+    // xLen >= zLen
+
+    const T* x = input.bufferAsT<T>();
+          T* z = output.bufferAsT<T>();
+
+    const int rank = input.rankOf();
+    const Nd4jLong xLen = input.lengthOf();
+
+    std::vector<Nd4jLong> coords(rank);
+
+    // loop through input array
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
+
+    for (Nd4jLong i = 0; i < xLen; ++i) {
+
+        shape::index2coords(rank, input.shapeOf(), i, xLen, coords.data());
+
+        const auto xOffset = shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank);
+
+        bool within = true;
+
+        for(uint j = 1; j <= numOfSpatialDims; ++j) {
+
+            const auto cropLeft  = crop.e<uint>(j - 1, 0);
+            const auto cropRight = crop.e<uint>(j - 1, 1);
+
+            within &= (coords[j] >= cropLeft && coords[j] < input.sizeAt(j) - cropRight);
+
+            if(!within)
+                break;
+
+            coords[j] -= cropLeft;       // get coordinates for x
+        }
+
+        if(within)
+            z[shape::getOffset(0, output.shapeOf(), output.stridesOf(), coords.data(), rank)] = x[xOffset];
+    }
+}
+
+BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_, (const NDArray& input, const NDArray& crop, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+void batchToSpaceND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& crop, NDArray& output) {
+
+    // 4D example, numOfSpatialDims = 2 - two spatial dimensions
+    // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  - cropBottom, iW*blockShape[1] - cropLeft - cropRight, iC]
+
+    const uint rank = input.rankOf();
+    const uint numOfSpatialDims = blockShape.sizeAt(0);
+
+    //*** construct reshaping std::vector for first reshape of input array ***//
+
+    std::vector<Nd4jLong> temp(numOfSpatialDims + rank);
+
+    int i;
+    for(i = 0; i < numOfSpatialDims; ++i)
+        temp[i] = blockShape.e<Nd4jLong>(i);
+    temp[i++] = output.sizeAt(0);
+    for(int j = 1; j < rank; ++i, ++j)
+        temp[i] = input.sizeAt(j);
+
+    NDArray inputRearranged0 = input.reshape(input.ordering(), temp);
+
+    //*** construct permuting std::vector for permutation of input array ***//
+
+    temp[0] = numOfSpatialDims;
+
+    for(i = 1; i <= numOfSpatialDims; ++i) {
+        temp[2*i - 1] = numOfSpatialDims + i;
+        temp[2*i]     = i - 1;
+    }
+    for(i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i)
+        temp[i] = i;
+
+    inputRearranged0.permutei(temp);
+
+
+    if(input.lengthOf() == output.lengthOf()) {
+        output.assign(inputRearranged0);
+    }
+    else {
+        //*** construct reshaping std::vector for second reshape of input array ***//
+
+        temp.resize(rank);
+
+        temp[0] = output.sizeAt(0);
+
+        for(i = 1; i < rank; ++i)
+            temp[i] = (i <= numOfSpatialDims) ? input.sizeAt(i) * blockShape.e<Nd4jLong>(i - 1) : input.sizeAt(i);
+
+        NDArray inputRearranged1 = inputRearranged0.reshape(input.ordering(), temp);
+
+        BUILD_SINGLE_SELECTOR(input.dataType(), batchToSpaceND_, (inputRearranged1, crop, output, numOfSpatialDims), LIBND4J_TYPES);
+    }
+}
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>

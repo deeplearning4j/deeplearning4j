@@ -33,6 +33,8 @@ namespace helpers {
 
     void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding, NDArray& output);
 
+    void batchToSpaceND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& crop, NDArray& output);
+
 /*
     // this method MUST be platform-specific
 
