@@ -5880,9 +5880,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testScalar_2() {
-        val scalar = Nd4j.trueScalar(2.0f);
-        val scalar2 = Nd4j.trueScalar(2.0f);
-        val scalar3 = Nd4j.trueScalar(3.0f);
+        val scalar = Nd4j.scalar(2.0f);
+        val scalar2 = Nd4j.scalar(2.0f);
+        val scalar3 = Nd4j.scalar(3.0f);
 
         assertTrue(scalar.isScalar());
         assertEquals(1, scalar.length());
@@ -5917,7 +5917,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testVectorScalar_2() {
         val vector = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5});
-        val scalar = Nd4j.trueScalar(2.0f);
+        val scalar = Nd4j.scalar(2.0f);
         val exp = Nd4j.trueVector(new float[]{3, 4, 5, 6, 7});
 
         vector.addi(scalar);
@@ -5927,7 +5927,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testReshapeScalar() {
-        val scalar = Nd4j.trueScalar(2.0f);
+        val scalar = Nd4j.scalar(2.0f);
         val newShape = scalar.reshape(1, 1, 1, 1);
 
         assertEquals(4, newShape.rank());
@@ -5958,7 +5958,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test(expected = IllegalStateException.class)
     public void testTranspose2() {
-        val scalar = Nd4j.trueScalar(2.f);
+        val scalar = Nd4j.scalar(2.f);
 
         assertArrayEquals(new long[]{}, scalar.shape());
         assertArrayEquals(new long[]{}, scalar.stride());
@@ -5991,8 +5991,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testScalarSqueeze() {
         val scalar = Nd4j.create(new float[]{2.0f}, new long[]{1, 1});
-        val output = Nd4j.trueScalar(0.0f);
-        val exp = Nd4j.trueScalar(2.0f);
+        val output = Nd4j.scalar(0.0f);
+        val exp = Nd4j.scalar(2.0f);
         val op = DynamicCustomOp.builder("squeeze")
                 .addInputs(scalar)
                 .addOutputs(output)
@@ -6012,8 +6012,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         assertArrayEquals(new long[]{1}, scalar.shape());
 
-        val output = Nd4j.trueScalar(0.0f);
-        val exp = Nd4j.trueScalar(2.0f);
+        val output = Nd4j.scalar(0.0f);
+        val exp = Nd4j.scalar(2.0f);
         val op = DynamicCustomOp.builder("squeeze")
                 .addInputs(scalar)
                 .addOutputs(output)
@@ -6113,7 +6113,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testValueArrayOf_2() {
         val scalar = Nd4j.valueArrayOf(new long[] {}, 2f);
-        val exp = Nd4j.trueScalar(2f);
+        val exp = Nd4j.scalar(2f);
 
         assertArrayEquals(exp.shape(), scalar.shape());
         assertEquals(exp, scalar);
@@ -6873,7 +6873,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
         val exp_2 = Nd4j.create(new double[]{0.0, 1.0, 2.0}, new long[]{3});
         val exp_3 = Nd4j.create(new double[]{1.0, 2.0, 3.0}, new long[]{3});
         val arrayX = Nd4j.create(new double[]{1.0, 2.0, 3.0}, new long[]{3});
-        val arrayY = Nd4j.trueScalar(1.0);
+        val arrayY = Nd4j.scalar(1.0);
 
         val arrayZ_1 = arrayX.add(arrayY);
         assertEquals(exp_1, arrayZ_1);

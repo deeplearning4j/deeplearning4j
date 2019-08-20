@@ -3737,19 +3737,6 @@ public class Nd4j {
     }
 
     /**
-     * This method creates new 0D INDArray, aka scalar.
-     *
-     * PLEASE NOTE: Temporary method, added to ensure backward compatibility
-     * @param scalar data for INDArray.
-     * @return new INDArray
-     * * @deprecated Use Nd4j.scalar methods, such as {@link #scalar(double)} or {@link #scalar(DataType, Number)}
-     */
-    @Deprecated
-    public static INDArray trueScalar(Number scalar) {
-        return INSTANCE.trueScalar(scalar);
-    }
-
-    /**
      * @deprecated Use {@link #createFromArray(boolean...)}
      */
     @Deprecated
@@ -5087,9 +5074,35 @@ public class Nd4j {
      * @param value the value to initialize the scalar with
      * @return the created ndarray
      */
-    @SuppressWarnings("deprecation")
     public static INDArray scalar(DataType dataType, Number value) {
-        return INSTANCE.trueScalar(dataType, value);
+        val ws = Nd4j.getMemoryManager().getCurrentWorkspace();
+
+        switch (dataType) {
+            case DOUBLE:
+                return INSTANCE.create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case FLOAT:
+            case BFLOAT16:
+            case HALF:
+                return INSTANCE.create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT32:
+            case INT:
+                return INSTANCE.create(new int[] {value.intValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT64:
+            case LONG:
+                return INSTANCE.create(new long[] {value.longValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UINT16:
+            case SHORT:
+                return INSTANCE.create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case BYTE:
+                return INSTANCE.create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case UBYTE:
+                return INSTANCE.create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType, ws);
+            case BOOL:
+                return INSTANCE.create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, dataType, ws);
+
+            default:
+                throw new UnsupportedOperationException("Unsupported data type used: " + dataType);
+        }
     }
 
     /**

@@ -79,7 +79,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
-                dLdOut = Nd4j.trueScalar(0.5);
+                dLdOut = Nd4j.scalar(0.5);
             }
             INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5);
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
@@ -164,7 +164,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
-                dLdOut = Nd4j.trueScalar(0.5);
+                dLdOut = Nd4j.scalar(0.5);
             }
             INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), 0.5 / preReduceInput.length());
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
@@ -178,7 +178,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testMeanBP_Rank1() {
-        INDArray dLdOut = Nd4j.trueScalar(0.5);
+        INDArray dLdOut = Nd4j.scalar(0.5);
         INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
         INDArray dLdInExp = Nd4j.valueArrayOf(new long[]{3}, 0.5/3);
 
@@ -261,7 +261,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
-                dLdOut = Nd4j.trueScalar(0.5);
+                dLdOut = Nd4j.scalar(0.5);
             }
             INDArray dLdInExpected = Nd4j.zeros(preReduceInput.shape());
             dLdInExpected.putScalar(new int[]{2, 2}, 0.5);   //Minimum value: position at [2,2]
@@ -343,7 +343,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
-                dLdOut = Nd4j.trueScalar(0.5);
+                dLdOut = Nd4j.scalar(0.5);
             }
             INDArray dLdInExpected = Nd4j.zeros(preReduceInput.shape());
             dLdInExpected.putScalar(new int[]{2, 2}, 0.5);   //Maximum value: position at [2,2]
@@ -415,7 +415,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
-                dLdOut = Nd4j.trueScalar(0.5);
+                dLdOut = Nd4j.scalar(0.5);
             }
             double prod = preReduceInput.prodNumber().doubleValue();
             INDArray dLdInExpected = Nd4j.valueArrayOf(preReduceInput.shape(), prod).divi(preReduceInput).muli(0.5);
@@ -500,7 +500,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
                 if (keepDims) {
                     dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
                 } else {
-                    dLdOut = Nd4j.trueScalar(0.5);
+                    dLdOut = Nd4j.scalar(0.5);
                 }
 
                 double stdev = preReduceInput.stdNumber(biasCorrected).doubleValue();
@@ -523,7 +523,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
 
     @Test
     public void testStdevBP_Rank1() {
-        INDArray dLdOut = Nd4j.trueScalar(0.5);
+        INDArray dLdOut = Nd4j.scalar(0.5);
         INDArray preReduceInput = Nd4j.create(new double[]{2,3,4}, new long[]{3});
         double stdev = preReduceInput.stdNumber(true).doubleValue();
         double mean = preReduceInput.meanNumber().doubleValue();
@@ -602,7 +602,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
                 if (keepDims) {
                     dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
                 } else {
-                    dLdOut = Nd4j.trueScalar(0.5);
+                    dLdOut = Nd4j.scalar(0.5);
                 }
 
                 double var = preReduceInput.var(biasCorrected).getDouble(0);
@@ -811,7 +811,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
-                dLdOut = Nd4j.trueScalar(0.5);
+                dLdOut = Nd4j.scalar(0.5);
             }
             INDArray dLdInExpected = sgn.muli(0.5);
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);
@@ -873,7 +873,7 @@ public class ReductionBpOpValidation extends BaseOpValidation {
             if (keepDims) {
                 dLdOut = Nd4j.valueArrayOf(new long[]{1, 1}, 0.5);
             } else {
-                dLdOut = Nd4j.trueScalar(0.5);
+                dLdOut = Nd4j.scalar(0.5);
             }
             INDArray dLdInExpected = sgn.mul(max).mul(0.5);
             INDArray dLdIn = Nd4j.createUninitialized(3, 4);

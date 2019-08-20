@@ -991,12 +991,6 @@ public interface NDArrayFactory {
     INDArray empty(DataType type);
 
     @Deprecated
-    INDArray trueScalar(Number value);
-
-    @Deprecated
-    INDArray trueScalar(DataType dataType, Number value);
-
-    @Deprecated
     INDArray trueVector(boolean[] data);
     @Deprecated
     INDArray trueVector(byte[] data);

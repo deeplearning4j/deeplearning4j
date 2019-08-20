@@ -104,7 +104,7 @@ public class MixedDataTypesTests extends BaseNd4jTest {
 
     @Test
     public void testBasicCreation_5() {
-        val scalar = Nd4j.trueScalar(new Integer(1));
+        val scalar = Nd4j.scalar(new Integer(1));
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
         assertEquals(1, scalar.length());
@@ -114,7 +114,7 @@ public class MixedDataTypesTests extends BaseNd4jTest {
 
     @Test
     public void testBasicCreation_6() {
-        val scalar = Nd4j.trueScalar(1);
+        val scalar = Nd4j.scalar(1);
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
         assertEquals(1, scalar.length());
@@ -124,7 +124,7 @@ public class MixedDataTypesTests extends BaseNd4jTest {
 
     @Test
     public void testBasicCreation_7() {
-        val scalar = Nd4j.trueScalar(1L);
+        val scalar = Nd4j.scalar(1L);
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
         assertEquals(1, scalar.length());

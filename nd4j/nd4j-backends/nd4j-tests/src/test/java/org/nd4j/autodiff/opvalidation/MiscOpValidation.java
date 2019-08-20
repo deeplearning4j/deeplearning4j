@@ -504,7 +504,7 @@ public class MiscOpValidation extends BaseOpValidation {
             double exp = Nd4j.diag(in).sumNumber().doubleValue();
 
             TestCase tc = new TestCase(sd)
-                    .expected(trace, Nd4j.trueScalar(exp))
+                    .expected(trace, Nd4j.scalar(exp))
                     .testName(Arrays.toString(inShape));
 
             String err = OpValidation.validate(tc);
@@ -1296,7 +1296,7 @@ public class MiscOpValidation extends BaseOpValidation {
                 if(shape.length > 0){
                     arr = Nd4j.rand(shape);
                 } else {
-                    arr = Nd4j.trueScalar(Nd4j.rand(new int[]{1,1}).getDouble(0));
+                    arr = Nd4j.scalar(Nd4j.rand(new int[]{1,1}).getDouble(0));
                 }
                 SDVariable var = sd.var("in", arr);
                 SDVariable xLike;
@@ -1388,7 +1388,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
                     INDArray inArr;
                     if (shape == null) {
-                        inArr = Nd4j.trueScalar(1.0);
+                        inArr = Nd4j.scalar(1.0);
                     } else {
                         inArr = Nd4j.linspace(1, 12, 12, DataType.DOUBLE).reshape(shape);
                     }
