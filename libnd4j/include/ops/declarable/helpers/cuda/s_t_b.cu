@@ -38,7 +38,7 @@ __global__ static void batchToSpaceCuda(const void* vx, const Nd4jLong* xShapeIn
     // else:
     // oH -> [cropBottom, iH - cropTop]
     // oW -> [cropLeft,   iH - cropRight]
-    // xLen > zLen
+    // xLen >= zLen
 
     const auto x = reinterpret_cast<const T*>(vx);
           auto z = reinterpret_cast<T*>(vz);
@@ -116,6 +116,139 @@ void batchToSpace(nd4j::LaunchContext* context, const NDArray& input, NDArray& o
         manager.synchronize();
     }
 }
+
+
+
+///////////////////////////////////////////////////////////////////
+template<typename X, typename Y>
+__global__ static void batchToSpaceNDCuda(const void* vx, const Nd4jLong* xShapeInfo,
+                                          const void* vy, const Nd4jLong* yShapeInfo,
+                                                void* vz, const Nd4jLong* zShapeInfo,
+                                          const uint numOfSpatialDims) {
+
+    // 4D example, numOfSpatialDims = 2
+    // input [bS, H * blockShape[0], W * blockShape[1], iC]
+    // output [bS, H * blockShape[0] - cropBottom - cropTop, W * blockShape[1] - cropLeft - cropRight, iC]
+
+    // if (cropTop = cropBottom = cropRight = cropLeft = 0) shapes are the same
+    // else:
+    // oH -> [cropBottom, iH - cropTop]
+    // oW -> [cropLeft,   iH - cropRight]
+    // xLen >= zLen
+
+    const auto x = reinterpret_cast<const X*>(vx);
+    const auto y = reinterpret_cast<const Y*>(vy);
+          auto z = reinterpret_cast<X*>(vz);
+
+    __shared__ int rank;
+    __shared__ Nd4jLong zLen, *sharedMem;
+
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+
+        rank  = shape::rank(zShapeInfo);
+        zLen  = shape::length(zShapeInfo);
+    }
+
+    __syncthreads();
+
+    auto coords = sharedMem + threadIdx.x * rank;
+
+    for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
+
+        shape::index2coords(rank, zShapeInfo + 1, i, zLen, coords);
+
+        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+
+        // evaluate spatial coordinates for x
+        for(uint j = 1; j <= numOfSpatialDims; ++j) {
+            const auto yOffset  = (j - 1) * yShapeInfo[3];  // yRank = 2, calculate offset manually
+            coords[j] += y[yOffset];                        // add crop left
+        }
+
+        const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
+
+        z[zOffset] = x[xOffset];
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename X,typename Y>
+static void batchToSpaceNDCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint numOfSpatialDims) {
+
+    batchToSpaceNDCuda<X,Y><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, numOfSpatialDims);
+}
+BUILD_DOUBLE_TEMPLATE(template void batchToSpaceNDCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const uint numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+void batchToSpaceND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& crop, NDArray& output) {
+
+    // 4D example, numOfSpatialDims = 2 - two spatial dimensions
+    // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  - cropBottom, iW*blockShape[1] - cropLeft - cropRight, iC]
+
+    const uint rank = input.rankOf();
+    const uint numOfSpatialDims = blockShape.sizeAt(0);
+
+    //*** construct reshaping std::vector for first reshape of input array ***//
+
+    std::vector<Nd4jLong> temp(numOfSpatialDims + rank);
+
+    int i;
+    for(i = 0; i < numOfSpatialDims; ++i)
+        temp[i] = blockShape.e<Nd4jLong>(i);
+    temp[i++] = output.sizeAt(0);
+    for(int j = 1; j < rank; ++i, ++j)
+        temp[i] = input.sizeAt(j);
+
+    NDArray inputRearranged0 = input.reshape(input.ordering(), temp);
+
+    //*** construct permuting std::vector for permutation of input array ***//
+
+    temp[0] = numOfSpatialDims;
+
+    for(i = 1; i <= numOfSpatialDims; ++i) {
+        temp[2*i - 1] = numOfSpatialDims + i;
+        temp[2*i]     = i - 1;
+    }
+    for(i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i)
+        temp[i] = i;
+
+    inputRearranged0.permutei(temp);
+
+
+    if(input.lengthOf() == output.lengthOf()) {
+
+        output.assign(inputRearranged0);
+    }
+    else {
+        //*** construct reshaping std::vector for second reshape of input array ***//
+
+        temp.resize(rank);
+
+        temp[0] = output.sizeAt(0);
+
+        for(i = 1; i < rank; ++i)
+            temp[i] = (i <= numOfSpatialDims) ? input.sizeAt(i) * blockShape.e<Nd4jLong>(i - 1) : input.sizeAt(i);
+
+        NDArray inputRearranged1 = inputRearranged0.reshape(input.ordering(), temp);
+
+        const int threadsPerBlock = MAX_NUM_THREADS / 4;
+        const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+        const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * output.rankOf() + 128;
+
+        PointersManager manager(context, "batchToSpaceND");
+
+        NDArray::prepareSpecialUse({&output}, {&inputRearranged1, &crop});
+        BUILD_DOUBLE_SELECTOR(input.dataType(), crop.dataType(), batchToSpaceNDCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), inputRearranged1.getSpecialBuffer(), inputRearranged1.getSpecialShapeInfo(), crop.getSpecialBuffer(), crop.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), numOfSpatialDims), LIBND4J_TYPES, INTEGER_TYPES);
+        NDArray::registerSpecialUse({&output}, {&inputRearranged1, &crop});
+
+        manager.synchronize();
+    }
+}
+
+
 
 ///////////////////////////////////////////////////////////////////
 template<typename T>

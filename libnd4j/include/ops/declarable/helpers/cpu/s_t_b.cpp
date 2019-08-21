@@ -107,36 +107,24 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
           T* z = output.bufferAsT<T>();
 
     const int rank = input.rankOf();
-    const Nd4jLong xLen = input.lengthOf();
+    const Nd4jLong zLen = output.lengthOf();
 
     std::vector<Nd4jLong> coords(rank);
 
     // loop through input array
     PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
 
-    for (Nd4jLong i = 0; i < xLen; ++i) {
+    for (Nd4jLong i = 0; i < zLen; ++i) {
 
-        shape::index2coords(rank, input.shapeOf(), i, xLen, coords.data());
+        shape::index2coords(rank, output.shapeOf(), i, zLen, coords.data());
 
-        const auto xOffset = shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank);
+        const auto zOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), coords.data(), rank);
 
-        bool within = true;
+        // evaluate spatial coordinates for x
+        for(uint j = 1; j <= numOfSpatialDims; ++j)
+            coords[j] += crop.e<uint>(j - 1, 0);       // add crop left
 
-        for(uint j = 1; j <= numOfSpatialDims; ++j) {
-
-            const auto cropLeft  = crop.e<uint>(j - 1, 0);
-            const auto cropRight = crop.e<uint>(j - 1, 1);
-
-            within &= (coords[j] >= cropLeft && coords[j] < input.sizeAt(j) - cropRight);
-
-            if(!within)
-                break;
-
-            coords[j] -= cropLeft;       // get coordinates for x
-        }
-
-        if(within)
-            z[shape::getOffset(0, output.shapeOf(), output.stridesOf(), coords.data(), rank)] = x[xOffset];
+        z[zOffset] = x[shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank)];
     }
 }
 
