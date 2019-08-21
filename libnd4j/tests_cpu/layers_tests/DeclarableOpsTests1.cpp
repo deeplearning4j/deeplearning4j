@@ -1783,40 +1783,6 @@ TEST_F(DeclarableOpsTests1, Reshape7){
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, Repeat1) {
-
-    float eBuffer[8] = {1.0,2.0,1.0,2.0,3.0,4.0,3.0,4.0};
-    Nd4jLong eShape[8] = {2, 4, 2, 2, 1, 0, 1, 99};
-    ArrayOptions::setDataType(eShape, nd4j::DataType::FLOAT32);
-    auto x = NDArrayFactory::create_<float>('c', {2, 2});
-    auto exp = new NDArray(eBuffer, eShape);
-    for (int e = 0; e < x->lengthOf(); e++)
-        x->p(e, e + 1);
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    variableSpace->putVariable(1, new Variable());
-
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();
-    *arguments = {2};           // set repeats
-    arguments->push_back(0);    // set dimension
-
-    nd4j::ops::repeat repeat;
-
-    Nd4jStatus status = repeat.execute(block);
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    auto result = variableSpace->getVariable(block->getNodeId())->getNDArray();
-
-    ASSERT_TRUE(exp->equalsTo(result));
-
-    delete exp;
-    delete block;
-    delete variableSpace;
-}
-
-//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, Transpose1) {
 
     auto x = NDArrayFactory::create_<float>('c', {3,5,2});

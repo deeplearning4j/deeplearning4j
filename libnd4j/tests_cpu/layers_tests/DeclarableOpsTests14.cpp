@@ -450,3 +450,93 @@ TEST_F(DeclarableOpsTests14, test_empty_tanh_5) {
 
     delete result;
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_1) {
+
+    NDArray x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArray e('c', {4, 3}, {1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {2, 0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_2) {
+
+    NDArray x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArray e('c', {2, 6}, {1, 1, 2, 2, 3, 3,4, 4, 5, 5, 6, 6});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {2, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_3) {
+
+    NDArray x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArray e('c', {2, 6}, {1, 2, 2, 3, 3, 3,4, 5, 5, 6, 6, 6});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {1,2,3,  1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_4) {
+
+    NDArray x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArray e('c', {7, 3}, {1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {3,4,  0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_5) {
+
+    NDArray x('c', {2, 3, 4}, {1, 2, 3, 4, 5, 6, 7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    NDArray e('c', {2, 4, 4}, {1,  2,  3,  4, 5,  6,  7,  8, 5,  6,  7,  8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 17, 18, 19, 20, 21, 22, 23, 24});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {1,2,1,  1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}

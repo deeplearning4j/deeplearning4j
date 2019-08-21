@@ -319,7 +319,7 @@ namespace nd4j {
         *  dimension - dimension along which to repeat elements
         *  repeats - number of repetitions
         */
-        NDArray* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
+        NDArray* repeat(int dimension, const std::vector<int>& repeats) const;
 
         /**
          * This method fills this array with zeros

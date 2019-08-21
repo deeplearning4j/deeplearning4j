@@ -365,7 +365,7 @@ void NDArray::tile(NDArray& target) const {
 
 //////////////////////////////////////////////////////////////////////////
 // create new  array by repeating it the number of times given by reps
-NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
+NDArray* NDArray::repeat(int dimension, const std::vector<int>& repeats) const {
     auto outShape = ShapeUtils::evalRepeatShape(dimension, repeats, *this);
 
     // the size of outShape == rank

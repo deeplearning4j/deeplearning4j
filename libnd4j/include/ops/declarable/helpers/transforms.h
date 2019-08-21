@@ -74,6 +74,7 @@ namespace helpers {
 
 	void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps);
 
+	void repeat(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const std::vector<int>& repeat, const int axis);
 }
 }
 }

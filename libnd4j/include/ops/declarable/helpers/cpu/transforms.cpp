@@ -1263,12 +1263,57 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
     }
 }
 
-    void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
-        BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (gradO, gradI, reps), FLOAT_TYPES);
+void tileBP(nd4j::LaunchContext * context, const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps) {
+    BUILD_SINGLE_SELECTOR(gradI.dataType(), tileBP_, (gradO, gradI, reps), FLOAT_TYPES);
+}
+
+
+BUILD_SINGLE_TEMPLATE(template void tileBP_, (const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps), FLOAT_TYPES);
+
+////////////////////////////////////////////////////////////////////////
+template<typename X, typename Z>
+static void repeat_(const NDArray& input, NDArray& output, const std::vector<int>& repeats, const int axis) {
+
+    const X* x = input.bufferAsT<X>();
+          Z* z = output.bufferAsT<Z>();
+
+    const int rank    = input.rankOf();    // xRank = zRank
+    const int zLen    = output.lengthOf(); // xLen <= zLen
+    const int repSize = repeats.size();
+
+    std::vector<Nd4jLong> coords(rank);
+
+    // loop through input array
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
+    for (Nd4jLong i = 0; i < zLen; ++i) {
+
+        shape::index2coords(rank, output.shapeOf(), i, zLen, coords.data());
+
+        const auto zOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), coords.data(), rank);
+
+        if(repSize > 1) {
+            for (uint j = 0; j < repSize; ++j) {
+                coords[axis] -= repeats[j];
+                if (coords[axis] < 0) {
+                    coords[axis] = j;
+                    break;
+                }
+            }
+        }
+        else
+            coords[axis] /= repeats[0];
+
+        z[zOffset] = x[shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank)];
     }
+}
+
+////////////////////////////////////////////////////////////////////////
+void repeat(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const std::vector<int>& repeat, const int axis) {
+
+    BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), repeat_, (input, output, repeat, axis), LIBND4J_TYPES, LIBND4J_TYPES);
+}
 
 
-    BUILD_SINGLE_TEMPLATE(template void tileBP_, (const NDArray& gradO /*input*/, NDArray& gradI /*output*/, const std::vector<Nd4jLong> reps), FLOAT_TYPES);
 
 }
 }
