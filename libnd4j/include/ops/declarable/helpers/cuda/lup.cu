@@ -177,7 +177,9 @@ namespace helpers {
     }
 
     void invertLowerMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
+        NDArray::prepareSpecialUse({invertedMatrix}, {inputMatrix});
         BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), invertLowerMatrix_, (inputMatrix, invertedMatrix), FLOAT_NATIVE);
+        NDArray::registerSpecialUse({invertedMatrix}, {inputMatrix});
     }
 
     template <typename T>
@@ -195,7 +197,9 @@ namespace helpers {
     }
 
     void invertUpperMatrix(NDArray* inputMatrix, NDArray* invertedMatrix) {
+        NDArray::prepareSpecialUse({invertedMatrix}, {inputMatrix});
         BUILD_SINGLE_SELECTOR(inputMatrix->dataType(), invertUpperMatrix_, (inputMatrix, invertedMatrix), FLOAT_NATIVE);
+        NDArray::prepareSpecialUse({invertedMatrix}, {inputMatrix});
     }
 
 //    template <typename T>
@@ -242,11 +246,7 @@ namespace helpers {
 
     template <typename T, typename F>
     static __global__ void determinantKernel(T* compound, T* result, Nd4jLong len) {
-        __shared__ F tempRes;
-        if (blockIdx.x == 0) {
-            tempRes = (F)result[0];
-        }
-        __syncthreads();
+        F tempRes = (F)result[0];
 
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = blockDim.x * gridDim.x;
@@ -256,18 +256,14 @@ namespace helpers {
         }
         __syncthreads();
 
-        if (blockIdx.x == 0) {
+        if (threadIdx.x == 0) {
             result[0] = (T)tempRes;
         }
     }
 
         template <typename T, typename F>
         static __global__ void determinantLogKernel(T* compound, T* result, Nd4jLong len) {
-            __shared__ F tempRes;
-            if (blockIdx.x == 0) {
-                tempRes = (F)result[0];
-            }
-            __syncthreads();
+            F tempRes =  (F)result[0];
 
             auto start = blockIdx.x * blockDim.x + threadIdx.x;
             auto step = blockDim.x * gridDim.x;
@@ -277,7 +273,7 @@ namespace helpers {
             }
             __syncthreads();
 
-            if (blockIdx.x == 0) {
+            if (threadIdx.x == 0) {
                 result[0] = (T)math::nd4j_log<F,F>(math::nd4j_abs(tempRes));
             }
         }
@@ -520,7 +516,9 @@ namespace helpers {
     }
 
     int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input});
         BUILD_SINGLE_SELECTOR(input->dataType(), return determinant_, (context, input, output), FLOAT_NATIVE);
+        NDArray::registerSpecialUse({output}, {input});
     }
 
     template <typename T>
@@ -568,7 +566,9 @@ namespace helpers {
     }
 
     int logAbsDeterminant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input});
         BUILD_SINGLE_SELECTOR(input->dataType(), return logAbsDeterminant_, (context, input, output), FLOAT_NATIVE);
+        NDArray::registerSpecialUse({output}, {input});
     }
 
     template <typename T>
@@ -631,26 +631,27 @@ namespace helpers {
         auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {output->rankOf() - 2, output->rankOf() - 1});
         auto stream = context->getCudaStream();
 
-//        PRAGMA_OMP_PARALLEL_FOR
         for (auto i = 0LL; i < packX.numberOfTads(); i++) {
-            fillMatrix<T, T><<<1, n2, 128, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), i * n2, n);
+            fillMatrix<T, T><<<1, n2, 1024, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), i * n2, n);
             matrix.tickWriteDevice();
             compound.assign(matrix);
             lup_<T>(context, &compound, nullptr, nullptr);
-            fillLowerUpperKernel<T><<<n, n, 128>>>(lower.specialBuffer(), lower.specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), compound.specialBuffer(), compound.specialShapeInfo(), n);
+            fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower.specialBuffer(), lower.specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), compound.specialBuffer(), compound.specialShapeInfo(), n);
             matrix.assign(0);
             invertUpperMatrix(&upper, &matrix); // U^{-1}
             compound.assign(0);
             invertLowerMatrix(&lower, &compound); // L{-1}
 
             nd4j::MmulHelper::mmul(&matrix, &compound, &upper, 1.0, 0.0);
-            returnMatrix<T, T><<<1, n2, 128, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), i * n2, n);
+            returnMatrix<T, T><<<1, n2, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), i * n2, n);
         }
         return Status::OK();
     }
 
     int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input});
         BUILD_SINGLE_SELECTOR(input->dataType(), return inverse_, (context, input, output), FLOAT_NATIVE);
+        NDArray::registerSpecialUse({output}, {input});
     }
 
     bool checkCholeskyInput(nd4j::LaunchContext * context, NDArray const* input) {
@@ -795,10 +796,12 @@ namespace helpers {
         double* output = outputBuf;
         double* input = inputBuf;
 
+        Nd4jLong* shapeOf = shape::shapeOf(tadShape);
+        Nd4jLong* strideOf = shape::stride(tadShape);
+
         for (auto i = blockIdx.x; i < batchNum; i += gridDim.x) {
             double* current = input + tadOffsets[i];
-            Nd4jLong* shapeOf = shape::shapeOf(tadShape);
-            Nd4jLong* strideOf = shape::stride(tadShape);
+
             auto zIndex = shape::getIndexOffset(i, outputShape, batchNum);
             for (auto e = threadIdx.x; e < n; e += blockDim.x) {
                 Nd4jLong diag[] = {e, e};

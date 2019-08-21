@@ -1057,6 +1057,9 @@ inline __device__ uint64_t nd4j_atomicAdd<uint64_t>(uint64_t* address, uint64_t 
 
 template <>
 inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)  {
+#if __CUDA_ARCH__ >= 700
+    atomicAdd(reinterpret_cast<__half*>(address), val.data);
+#else
 	int* address_as_ull = (int*) address;
 
 	long addr = (long) address;
@@ -1086,6 +1089,7 @@ inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)
 
 	if (!misaligned) return old.B.H;
 	else return old.B.L;
+#endif
 }
 
 template <>

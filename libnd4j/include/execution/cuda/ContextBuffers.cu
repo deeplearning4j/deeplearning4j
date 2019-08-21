@@ -30,13 +30,13 @@
 
 namespace nd4j {
     ContextBuffers::ContextBuffers() {
-        nd4j_printf("Creating ContextBuffers for device [%i]\n", AffinityManager::currentDeviceId());
+        //nd4j_printf("Creating ContextBuffers for device [%i]\n", AffinityManager::currentDeviceId());
         _deviceId = AffinityManager::currentDeviceId();
     }
 
     ContextBuffers::~ContextBuffers() {
         if (_allocated) {
-            nd4j_printf("Releasing ContextBuffers\n","");
+            //nd4j_printf("Releasing ContextBuffers\n","");
 
             if (_allocationPointer != nullptr)
                 cudaFree(_allocationPointer);
@@ -69,7 +69,7 @@ namespace nd4j {
     }
 
     void ContextBuffers::initialize() {
-        nd4j_printf("Initializing buffers on deviceId [%i]\n", AffinityManager::currentNativeDeviceId());
+        //nd4j_printf("Initializing buffers on deviceId [%i]\n", AffinityManager::currentNativeDeviceId());
 
         auto res = cudaMalloc(reinterpret_cast<void**>(&_reductionPointer), 1024 * 1024 * 8);
         if (res != 0)

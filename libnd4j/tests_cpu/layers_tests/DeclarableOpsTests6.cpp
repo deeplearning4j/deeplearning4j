@@ -1846,8 +1846,8 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_3) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    //z->printIndexedBuffer("Output ");
-    //exp.printIndexedBuffer("Expected ");
+    exp.printIndexedBuffer("Expected ");
+    z->printIndexedBuffer("Output ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
