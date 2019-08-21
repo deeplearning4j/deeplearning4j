@@ -50,4 +50,9 @@ public class ActivationParameterSpaceAdapter extends ParameterSpaceAdapter<Activ
     protected ParameterSpace<Activation> underlying() {
         return activation;
     }
+
+    @Override
+    protected String underlyingName() {
+        return "activation";
+    }
 }

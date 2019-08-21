@@ -656,7 +656,7 @@ TEST_F(DeclarableOpsTests9, concat_test19) {
         context.setInputArray(e, array, true);
     }
 
-    auto z = NDArrayFactory::create<float>('c', {arrays.size(), 5, 20});
+    auto z = NDArrayFactory::create<float>('c', {(Nd4jLong) arrays.size(), 5, 20});
     context.setOutputArray(0, &z, false);
     context.setIArguments(&axis, 1);
 

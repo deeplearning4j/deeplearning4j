@@ -52,8 +52,10 @@ public class DropoutLayerSpace extends LayerSpace<DropoutLayer> {
 
     @Override
     public List<ParameterSpace> collectLeaves() {
-        return Collections.<ParameterSpace>singletonList(dropOut);
+        return dropOut.collectLeaves();
     }
+
+
 
     @Override
     public boolean isLeaf() {
