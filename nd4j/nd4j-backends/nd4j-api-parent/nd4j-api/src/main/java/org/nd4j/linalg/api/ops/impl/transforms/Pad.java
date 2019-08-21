@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -49,6 +50,14 @@ public class Pad extends DynamicCustomOp {
 
     public Pad(SameDiff sd, SDVariable in, SDVariable padding, Mode mode, double padValue) {
         super(sd, new SDVariable[]{in, padding}, false);
+        Preconditions.checkState(padding.dataType().isIntType(), "Padding array must be an integer datatype, got %s", padding.dataType());
+        this.mode = mode;
+        addIArgument(mode.ordinal());
+        addTArgument(padValue);
+    }
+
+    public Pad(@NonNull INDArray in, @NonNull INDArray padding, INDArray out, @NonNull Mode mode, double padValue){
+        super(null, new INDArray[]{in, padding}, out == null ? null : new INDArray[]{out});
         Preconditions.checkState(padding.dataType().isIntType(), "Padding array must be an integer datatype, got %s", padding.dataType());
         this.mode = mode;
         addIArgument(mode.ordinal());

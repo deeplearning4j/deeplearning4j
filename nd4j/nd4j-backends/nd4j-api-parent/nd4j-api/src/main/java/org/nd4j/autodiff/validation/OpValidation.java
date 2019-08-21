@@ -79,7 +79,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
-import org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.GELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELUDerivative;
@@ -94,7 +93,6 @@ import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
 import org.tensorflow.framework.OpDef;
@@ -464,7 +462,7 @@ public class OpValidation {
         //i.e., don't double count if a SameDiff instance has multiple copies of the same op type
 
         //Collect coverage information for backprop:
-        DifferentialFunction[] functions = sd.functions();
+        DifferentialFunction[] functions = sd.ops();
         Set<Class> backpropSeen = new HashSet<>();
         for (DifferentialFunction df : functions) {
             backpropSeen.add(df.getClass());
@@ -481,7 +479,7 @@ public class OpValidation {
         if (testCase.fwdTestFns() != null) {
             for (String s : testCase.fwdTestFns().keySet()) {
                 //Determine the differential function that this variable is the output of, if any
-                DifferentialFunction df = sd.getVariableOutputFunction(s);
+                DifferentialFunction df = sd.getVariableOutputOp(s);
                 if (df != null) {
                     if (seen == null)
                         seen = new HashSet<>();

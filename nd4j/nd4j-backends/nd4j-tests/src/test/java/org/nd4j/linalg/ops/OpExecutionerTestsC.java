@@ -55,7 +55,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.HistogramFixedWidth;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LogSoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Exp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.Log;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SetRange;
@@ -236,7 +236,7 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         INDArray x = Nd4j.ones(5);
         INDArray xDup = x.dup();
         INDArray solution = Nd4j.valueArrayOf(5, 1.0);
-        opExecutioner.exec(new OldMulOp(x, xDup, x));
+        opExecutioner.exec(new MulOp(x, xDup, x));
         assertEquals(solution, x);
     }
 

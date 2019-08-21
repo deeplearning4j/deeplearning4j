@@ -325,7 +325,7 @@ public abstract class AbstractSession<T, O> {
                 }
 
 
-            } else if (sameDiff.getVariableOutputFunction(varToExec.getVariable()) != null) {
+            } else if (sameDiff.getVariableOutputOp(varToExec.getVariable()) != null) {
                 //Variable is the output of an op -> execute op
                 String opName = sameDiff.getVariables().get(varToExec.getVariable()).getOutputOfOp();
 
@@ -336,7 +336,7 @@ public abstract class AbstractSession<T, O> {
 
 
                 //Post execution: work out what is now available for exec
-                String[] opOutputVarNames = sameDiff.getFunctionById(opName).outputVariablesNames();
+                String[] opOutputVarNames = sameDiff.getOpById(opName).outputVariablesNames();
 
                 Preconditions.checkState(opOutputValues.length == opOutputVarNames.length, "Unexpected number of outputs from executed op %s:" +
                                 " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.length,
@@ -423,10 +423,10 @@ public abstract class AbstractSession<T, O> {
         //Note subgraph initially should include placeholders and constants
         while (!processingQueue.isEmpty()) {
             String varName = processingQueue.remove();
-            String opName = (sameDiff.getVariableOutputFunction(varName) == null ? null : sameDiff.getVariableOutputFunction(varName).getOwnName());
+            String opName = (sameDiff.getVariableOutputOp(varName) == null ? null : sameDiff.getVariableOutputOp(varName).getOwnName());
 
             if (!subgraph.contains(varName)) {
-                String[] opInputs = opName == null ? null : sameDiff.getInputsForFunction(sameDiff.getFunctionById(opName));
+                String[] opInputs = opName == null ? null : sameDiff.getInputsForOp(sameDiff.getOpById(opName));
                 List<String> controlDeps = sameDiff.getVariables().get(varName).getControlDeps();
                 int numInputs = (opInputs == null ? 0 : opInputs.length);
                 if (controlDeps != null) {
@@ -457,7 +457,7 @@ public abstract class AbstractSession<T, O> {
 
             if (opName != null) {
                 //To execute op - and hence get this variable: need inputs to that op
-                String[] inputs = sameDiff.getInputsForFunction(sameDiff.getFunctionById(opName));
+                String[] inputs = sameDiff.getInputsForOp(sameDiff.getOpById(opName));
                 for (String s2 : inputs) {
                     if (!subgraph.contains(s2)) {
                         processingQueue.add(s2);
@@ -501,7 +501,7 @@ public abstract class AbstractSession<T, O> {
         if (inputForOps != null) {
             for (String opName : inputForOps) {
 
-                DifferentialFunction fn = sameDiff.getFunctionById(opName);
+                DifferentialFunction fn = sameDiff.getOpById(opName);
                 if (fn instanceof Merge) {
                     //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
                     List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
@@ -888,7 +888,7 @@ public abstract class AbstractSession<T, O> {
             //Mark that outVar needs this specific executedVar (i.e., specific frame/iteration)
             //However, in the case of enter nodes, they are available for ALL iterations (used in loop conditions, for example)
             Variable v = sameDiff.getVariables().get(inputVar.getVariable());
-            boolean isEnter = sameDiff.getVariableOutputFunction(v.getVariable().getVarName()) instanceof Enter;
+            boolean isEnter = sameDiff.getVariableOutputOp(v.getVariable().getVarName()) instanceof Enter;
 
             if(isEnter){
                 VarId iter0 = forVariable;

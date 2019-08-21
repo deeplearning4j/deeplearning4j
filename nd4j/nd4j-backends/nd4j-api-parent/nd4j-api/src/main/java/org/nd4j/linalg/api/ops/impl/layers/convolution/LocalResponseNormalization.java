@@ -77,6 +77,16 @@ public class LocalResponseNormalization extends DynamicCustomOp {
     }
 
     @Override
+    public boolean isConfigProperties() {
+        return true;
+    }
+
+    @Override
+    public String configFieldName(){
+        return "config";
+    }
+
+    @Override
     public String opName() {
         return "lrn";
     }

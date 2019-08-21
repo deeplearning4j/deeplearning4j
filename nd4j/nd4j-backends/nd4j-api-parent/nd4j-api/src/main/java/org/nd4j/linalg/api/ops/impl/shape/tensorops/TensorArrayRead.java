@@ -72,7 +72,7 @@ public class TensorArrayRead extends BaseTensorOp {
             dt = importDataType;
         } else {
             SDVariable tArr = arg(0);
-            DifferentialFunction op = sameDiff.getVariableOutputFunction(tArr.getVarName());
+            DifferentialFunction op = sameDiff.getVariableOutputOp(tArr.getVarName());
             TensorArray t3 = (TensorArray) op;
             dt = t3.getTensorArrayDataType();
         }

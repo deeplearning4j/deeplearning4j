@@ -136,7 +136,7 @@ public class While extends DifferentialFunction implements CustomOp {
         this.trueBody = trueBody;
         this.blockName = blockName;
         this.dummyResult =  parent.var("dummyresult-" + UUID.randomUUID().toString(),new ZeroInitScheme('f'), DataType.FLOAT, 1);
-        parent.putFunctionForId(getOwnName(),this);
+        parent.putOpForId(getOwnName(),this);
 
         parent.addArgsFor(inputVars,this);
         parent.addOutgoingFor(new SDVariable[]{dummyResult},this);
@@ -457,7 +457,7 @@ public class While extends DifferentialFunction implements CustomOp {
 
         //the output of the condition should always be a singular scalar
         //this is a safe assumption
-        val conditionVars = scopeCondition.functions();
+        val conditionVars = scopeCondition.ops();
         if(conditionVars.length < 1) {
             throw new ND4JIllegalArgumentException("No functions found!");
         }

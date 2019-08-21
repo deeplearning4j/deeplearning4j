@@ -59,13 +59,13 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNorma
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.IsNonDecreasing;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.IsNumericTensor;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.IsStrictlyIncreasing;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Min;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -1759,11 +1759,11 @@ public class SameDiffTests extends BaseNd4jTest {
                     break;
                 case 7:
                     t = sd.max(in1, in2);
-                    expOut = Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup()));
+                    expOut = Nd4j.getExecutioner().exec(new Max(ia, ib, ia.dup()))[0];
                     break;
                 case 8:
                     t = sd.min(in1, in2);
-                    expOut = Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup()));
+                    expOut = Nd4j.getExecutioner().exec(new Min(ia, ib, ia.dup()))[0];
                     break;
                 case 9:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));

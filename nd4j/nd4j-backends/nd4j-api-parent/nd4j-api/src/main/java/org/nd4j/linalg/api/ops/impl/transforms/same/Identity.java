@@ -20,6 +20,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
@@ -38,6 +39,10 @@ public class Identity extends BaseDynamicTransformOp {
 
     public Identity(SameDiff sd, SDVariable input){
         super(sd, new SDVariable[]{input}, false);
+    }
+
+    public Identity(INDArray x, INDArray z){
+        super(new INDArray[]{x}, new INDArray[]{z});
     }
 
     public Identity(){ }

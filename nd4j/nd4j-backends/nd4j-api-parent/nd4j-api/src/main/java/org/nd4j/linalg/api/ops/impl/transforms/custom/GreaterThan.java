@@ -47,7 +47,9 @@ public class GreaterThan extends BaseDynamicTransformOp {
         super(inputs, outputs);
     }
 
-
+    public GreaterThan(INDArray x, INDArray y, INDArray z){
+        this(new INDArray[]{x, y}, new INDArray[]{z});
+    }
 
     @Override
     public String opName() {

@@ -61,6 +61,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.bool.MatchConditionTransform;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.EqualTo;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThan;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThan;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.NotEqualTo;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Negative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -1638,7 +1639,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray lt(INDArray other) {
         validateNumericalArray("less than (lt)", false);
         if (Shape.shapeEquals(this.shape(), other.shape())) {
-            return Nd4j.getExecutioner().exec(new OldLessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+            return Nd4j.getExecutioner().exec(new LessThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())))[0];
         } else if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
             return Nd4j.exec(new LessThan(new INDArray[]{this, other}, new INDArray[]{Nd4j.createUninitialized(DataType.BOOL, Shape.broadcastOutputShape(this.shape(), other.shape()))}))[0];
         } else
@@ -1655,13 +1656,13 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray neq(INDArray other) {
         Preconditions.checkState(!isEmpty(), "Cannot perform operation neq (not equal) on empty array");
-        return Nd4j.getExecutioner().exec(new OldNotEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+        return Nd4j.getExecutioner().exec(new NotEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())))[0];
     }
 
     @Override
     public INDArray eq(INDArray other) {
         if (Shape.shapeEquals(this.shape(), other.shape())) {
-            return Nd4j.getExecutioner().exec(new OldEqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+            return Nd4j.getExecutioner().exec(new EqualTo(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())))[0];
         } else if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
             return Nd4j.exec(new EqualTo(new INDArray[]{this, other}, new INDArray[]{Nd4j.createUninitialized(DataType.BOOL, Shape.broadcastOutputShape(this.shape(), other.shape()))}))[0];
         } else
@@ -1672,7 +1673,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     public INDArray gt(INDArray other) {
         validateNumericalArray("greater than (gt)", false);
         if (Shape.shapeEquals(this.shape(), other.shape())) {
-            return Nd4j.getExecutioner().exec(new OldGreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())));
+            return Nd4j.getExecutioner().exec(new GreaterThan(this, other, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering())))[0];
         } else if (Shape.areShapesBroadcastable(this.shape(), other.shape())) {
             return Nd4j.exec(new GreaterThan(new INDArray[]{this, other}, new INDArray[]{Nd4j.createUninitialized(DataType.BOOL, Shape.broadcastOutputShape(this.shape(), other.shape()))}))[0];
         } else
@@ -5989,7 +5990,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
             return result;
         } else {
-            OldFModOp op = new OldFModOp(this, denominator, result);
+            FModOp op = new FModOp(this, denominator, result);
             Nd4j.getExecutioner().exec(op);
             return result;
         }
@@ -6011,7 +6012,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray fmodi(INDArray denominator) {
         validateNumericalArray("fmodi", false);
-        OldFModOp op = new OldFModOp(this, denominator, this);
+        FModOp op = new FModOp(this, denominator, this);
         Nd4j.getExecutioner().exec(op);
         return this;
     }

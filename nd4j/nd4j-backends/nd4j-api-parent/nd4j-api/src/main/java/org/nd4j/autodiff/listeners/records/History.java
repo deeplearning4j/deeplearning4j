@@ -16,8 +16,8 @@
 
 package org.nd4j.autodiff.listeners.records;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 import lombok.Getter;
@@ -49,11 +49,11 @@ public class History {
 
     public History(List<EvaluationRecord> training, List<EvaluationRecord> validation, LossCurve loss,
             long trainingTimeMillis, List<Long> validationTimesMillis){
-        trainingHistory = ImmutableList.copyOf(training);
-        validationHistory = ImmutableList.copyOf(validation);
+        trainingHistory = Collections.unmodifiableList(training);
+        validationHistory = Collections.unmodifiableList(validation);
         this.lossCurve = loss;
         this.trainingTimeMillis = trainingTimeMillis;
-        this.validationTimesMillis = ImmutableList.copyOf(validationTimesMillis);
+        this.validationTimesMillis = Collections.unmodifiableList(validationTimesMillis);
     }
 
     /**

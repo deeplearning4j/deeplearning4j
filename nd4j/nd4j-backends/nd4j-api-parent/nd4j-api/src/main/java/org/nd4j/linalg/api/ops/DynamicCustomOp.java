@@ -25,11 +25,9 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -208,7 +206,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public SDVariable[] outputVariables(String baseName) {
         if (this.outputVariables == null) {
-            val outputNames = sameDiff.getOutputsForFunction(this);
+            val outputNames = sameDiff.getOutputsForOp(this);
             //no need to dynamically create if already exists
             if (outputNames != null) {
                 outputVariables = new SDVariable[outputNames.length];
@@ -233,7 +231,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             }
 
             outputVariables = newVars;
-            if (sameDiff.getOutputsForFunction(this) == null)
+            if (sameDiff.getOutputsForOp(this) == null)
                 sameDiff.addOutgoingFor(outputVariables, this);
             return newVars;
         }
@@ -524,7 +522,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 throw new ND4JIllegalStateException("Op [" + opName() + "] failure for [" + this.getOwnName() + "]: Number of inputs is invalid for execution. "
                         + numInputArguments() + " were provided but " + descriptor.getNumInputs() + " are required for execution");
             } else {
-                String[] inputNames = sameDiff.getInputsForFunction(this);
+                String[] inputNames = sameDiff.getInputsForOp(this);
                 String[] arrayShapes = new String[inputNames.length];
                 for( int i=0; i<inputNames.length; i++ ){
                     INDArray arr = sameDiff.getVariable(inputNames[i]).getArr();

@@ -16,8 +16,8 @@
 
 package org.nd4j.autodiff.listeners.records;
 
-import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
 import lombok.NonNull;
@@ -35,7 +35,7 @@ public class LossCurve {
     private INDArray lossValues;
 
     public LossCurve(List<Loss> losses){
-        lossNames = ImmutableList.copyOf(losses.get(0).getLossNames());
+        lossNames = Collections.unmodifiableList(losses.get(0).getLossNames());
         int numLossValues = losses.get(0).lossValues().length;
         lossValues = Nd4j.create(DataType.FLOAT, losses.size(), losses.get(0).lossValues().length);
 

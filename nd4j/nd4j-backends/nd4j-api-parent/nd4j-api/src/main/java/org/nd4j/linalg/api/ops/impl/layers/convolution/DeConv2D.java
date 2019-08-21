@@ -68,7 +68,7 @@ public class DeConv2D extends DynamicCustomOp {
         }
 
         addArgs();
-        sameDiff.putFunctionForId(this.getOwnName(), this);
+        sameDiff.putOpForId(this.getOwnName(), this);
         sameDiff.addArgsFor(inputs, this);
     }
 

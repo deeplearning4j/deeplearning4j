@@ -23,6 +23,7 @@ import com.google.common.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -39,12 +40,12 @@ import org.nd4j.evaluation.IMetric;
 @Getter
 public class EvaluationRecord {
 
-    private ImmutableMap<String, List<IEvaluation>> evaluations;
+    private Map<String, List<IEvaluation>> evaluations;
     private Map<Class<? extends IEvaluation>, IEvaluation> classEvaluations = new HashMap<>();
     private boolean isEmpty = true;
 
     public EvaluationRecord(Map<String, List<IEvaluation>> evaluations) {
-        this.evaluations = ImmutableMap.copyOf(evaluations);
+        this.evaluations = Collections.unmodifiableMap(evaluations);
 
         for (List<IEvaluation> le : evaluations.values()) {
             for (IEvaluation e : le) {
@@ -68,7 +69,7 @@ public class EvaluationRecord {
     /**
      * Get all evaluations
      */
-    public ImmutableMap<String, List<IEvaluation>> evaluations() {
+    public Map<String, List<IEvaluation>> evaluations() {
         return evaluations;
     }
 

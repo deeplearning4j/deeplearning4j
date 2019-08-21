@@ -70,7 +70,7 @@ public class Conv2D extends DynamicCustomOp {
                                     config.getSH(), config.getPH(), config.getDW());
         addArgs();
         if(sameDiff != null) {
-            sameDiff.putFunctionForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
+            sameDiff.putOpForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
             sameDiff.addArgsFor(inputFunctions, this);
         }
     }

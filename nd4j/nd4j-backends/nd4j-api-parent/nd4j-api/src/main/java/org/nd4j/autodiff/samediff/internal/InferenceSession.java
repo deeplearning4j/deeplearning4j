@@ -16,7 +16,6 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
-import com.google.common.collect.ImmutableMap;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -121,12 +120,12 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         if(listeners != null && listeners.size() > 0){
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
 
-            ImmutableMap.Builder<String, INDArray> namedOutsBuilder = ImmutableMap.builder();
+            Map<String, INDArray> namedOutsBuilder = new HashMap<>();
 
             for(int i = 0 ; i < out.length ; i++)
                 namedOutsBuilder.put(sdOp.outputsOfOp.get(i), out[i]);
 
-            Map<String, INDArray> namedOuts = namedOutsBuilder.build();
+            Map<String, INDArray> namedOuts = Collections.unmodifiableMap(namedOutsBuilder);
 
             for(Listener l : listeners){
                 if(l.isActive(at.operation())) {
@@ -223,7 +222,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             //Merge avairable for forward pass when any of its inputs are available. When multiple are available, behaviour
             // is undefined
             Merge m = (Merge) op;
-            String[] in = sameDiff.getInputsForFunction(op);
+            String[] in = sameDiff.getInputsForOp(op);
             for (String s : in) {
                 VarId vid = newVarId(s, outputFrameIter);
                 if (nodeOutputs.containsKey(vid)) {
@@ -275,10 +274,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.getVarName());
 
-                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                while(sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter){
                     //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayRead
                     //TODO also TensorArrayWrite, scatter, etc??
-                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
                     v = newVarId(inTensorArray.getVarName(), v.getParentFrame());
                 }
 
@@ -300,10 +299,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 Preconditions.checkState(tArr != null, "Could not find input %s", inTensorArray.getVarName());
 
-                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                while(sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter){
                     //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayWrite
                     //TODO also TensorArrayScatter, etc??
-                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
                     tArr = newVarId(inTensorArray.getVarName(), tArr.getParentFrame());
                 }
 
@@ -405,7 +404,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 //Input 2: The values to scatter
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-                TensorArray ta = (TensorArray) sameDiff.getVariableOutputFunction(inTensorArray.getVarName());
+                TensorArray ta = (TensorArray) sameDiff.getVariableOutputOp(inTensorArray.getVarName());
                 VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
                 if(tArr == null && allIterInputs != null){
                     tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
@@ -526,7 +525,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     public DifferentialFunction getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                                      Set<String> constAndPhInputs, Map<String,INDArray> placeholderValues) {
 
-        DifferentialFunction df = sameDiff.getFunctionById(opName);
+        DifferentialFunction df = sameDiff.getOpById(opName);
 
         //TODO We should clone these ops - probably - as we don't want them shared between threads/sessions!
         //But let's only clone them *once* and cache in inference session - not on every exec

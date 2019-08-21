@@ -107,7 +107,7 @@ public class If extends DifferentialFunction implements CustomOp {
               SameDiffFunctionDefinition falseBody) {
 
         this.sameDiff = parent;
-        parent.putFunctionForId(getOwnName(),this);
+        parent.putOpForId(getOwnName(),this);
         this.inputVars = inputVars;
         this.predicate = predicate;
 

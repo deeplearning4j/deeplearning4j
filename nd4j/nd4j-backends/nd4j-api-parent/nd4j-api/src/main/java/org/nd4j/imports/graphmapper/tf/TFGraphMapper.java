@@ -16,14 +16,11 @@
 
 package org.nd4j.imports.graphmapper.tf;
 
-import com.github.os72.protobuf351.Descriptors;
 import com.github.os72.protobuf351.Message;
 import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.bytedeco.javacpp.indexer.Bfloat16Indexer;
-import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -41,19 +38,14 @@ import org.nd4j.imports.graphmapper.OpImportFilter;
 import org.nd4j.imports.graphmapper.OpImportOverride;
 import org.nd4j.imports.graphmapper.tf.tensors.TFTensorMapper;
 import org.nd4j.imports.graphmapper.tf.tensors.TFTensorMappers;
-import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
-import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.*;
 import org.tensorflow.framework.DataType;
 
 import java.io.*;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.util.*;
 
 /**
@@ -661,7 +653,7 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
                     newInstance.initFromTensorFlow(tfNode, diff, getAttrMap(tfNode), importState.getGraph());
                     mapProperties(newInstance, tfNode, importState.getGraph(), importState.getSameDiff(), newInstance.mappingsForFunction());
-                    importState.getSameDiff().putFunctionForId(newInstance.getOwnName(), newInstance);
+                    importState.getSameDiff().putOpForId(newInstance.getOwnName(), newInstance);
                     //ensure we can track node name to function instance later.
                     diff.setBaseNameForFunctionInstanceId(tfNode.getName(), newInstance);
                 } catch (Exception e) {

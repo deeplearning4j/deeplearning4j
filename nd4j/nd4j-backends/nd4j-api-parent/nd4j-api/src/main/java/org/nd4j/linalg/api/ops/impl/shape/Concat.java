@@ -151,7 +151,7 @@ public class Concat extends DynamicCustomOp {
             removeInputArgument(inputArgs[inputArguments().length - 1]);
         }
 
-        sameDiff.removeArgFromFunction(input,this);
+        sameDiff.removeArgFromOp(input,this);
     }
 
     @Override

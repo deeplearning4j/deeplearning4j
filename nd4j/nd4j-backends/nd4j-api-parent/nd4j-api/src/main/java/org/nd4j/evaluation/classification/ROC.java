@@ -31,7 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -708,8 +708,8 @@ public class ROC extends BaseEvaluation<ROC> {
                     itp = isTruePositive;
                     ifp = isFalsePositive;
                 } else {
-                    isTruePositive = Nd4j.getExecutioner().exec(new OldMulOp(predictedClass1, positiveActualClassColumn, itp));
-                    isFalsePositive = Nd4j.getExecutioner().exec(new OldMulOp(predictedClass1, negativeActualClassColumn, ifp));
+                    isTruePositive = Nd4j.getExecutioner().exec(new MulOp(predictedClass1, positiveActualClassColumn, itp))[0];
+                    isFalsePositive = Nd4j.getExecutioner().exec(new MulOp(predictedClass1, negativeActualClassColumn, ifp))[0];
                 }
 
                 //Counts for this batch:

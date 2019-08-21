@@ -732,9 +732,9 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         }
 
         val functions = new HashMap<String, DifferentialFunction>();
-        for (val func: tg.functions()) {
+        for (val func: tg.ops()) {
             val ownName = func.getOwnName();
-            val outName = func.outputVariables()[0].getVarName();
+            String outName = func.outputVariables()[0].getVarName();
 
             assertTrue("Missing ownName: [" + ownName +"]",variables.containsKey(ownName));
             assertEquals(ownName, outName);

@@ -26,7 +26,6 @@ import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
-import org.nd4j.graph.DataType;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -520,7 +519,7 @@ public abstract class DifferentialFunction {
      * @return the arguments for a given function
      */
     public  SDVariable[] args() {
-        return sameDiff.getInputVariablesForFunction(this);
+        return sameDiff.getInputVariablesForOp(this);
     }
 
     /**
@@ -661,7 +660,7 @@ public abstract class DifferentialFunction {
             }
 
             if(sameDiff != null && !(this instanceof SDVariable))
-                sameDiff.putFunctionForId(ownName,this);
+                sameDiff.putOpForId(ownName,this);
         }
     }
 

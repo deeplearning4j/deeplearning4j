@@ -30,6 +30,10 @@ import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarNot;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.transforms.bool.BooleanNot;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.ATan2;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
@@ -37,7 +41,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAtan2Op;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.PowPairwise;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Or;
@@ -104,7 +107,7 @@ public class Transforms {
 
 
     public static INDArray reverse(INDArray x, boolean dup) {
-        return Nd4j.getExecutioner().exec(new OldReverse(x, dup ? x.ulike() : x));
+        return Nd4j.getExecutioner().exec(new Reverse(x, dup ? x.ulike() : x))[0];
     }
 
     /**
@@ -140,14 +143,15 @@ public class Transforms {
 
     /**
      * Atan2 operation, new INDArray instance will be returned
-     * Note the order of x and y parameters is opposite to that of java.lang.Math.atan2
+     * Note the order of x and y parameters is opposite to that of {@link java.lang.Math#atan2(double, double)}
      *
      * @param x the abscissa coordinate
      * @param y the ordinate coordinate
      * @return the theta from point (r, theta) when converting (x,y) from to cartesian to polar coordinates
      */
     public static INDArray atan2(@NonNull INDArray x, @NonNull INDArray y) {
-        return Nd4j.getExecutioner().exec(new OldAtan2Op(x, y, x.ulike()));
+        // Switched on purpose, to match OldATan2 (which the javadoc was written for)
+        return Nd4j.getExecutioner().exec(new ATan2(y, x, x.ulike()))[0];
     }
 
     /**
@@ -789,7 +793,7 @@ public class Transforms {
      * @return
      */
     public static INDArray lessThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(new OldLessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())));
+        return Nd4j.getExecutioner().exec(new LessThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())))[0];
 
     }
 
@@ -801,7 +805,7 @@ public class Transforms {
      * @return
      */
     public static INDArray greaterThanOrEqual(INDArray first, INDArray ndArray, boolean dup) {
-        return exec(new OldGreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())));
+        return Nd4j.getExecutioner().exec(new GreaterThanOrEqual(first, ndArray, Nd4j.createUninitialized(DataType.BOOL, first.shape(), first.ordering())))[0];
 
     }
 
@@ -986,7 +990,7 @@ public class Transforms {
      * @return
      */
     public static INDArray identity(INDArray ndArray, boolean dup) {
-        return exec(dup ? new OldIdentity(ndArray, ndArray.ulike()) : new OldIdentity(ndArray));
+        return Nd4j.getExecutioner().exec(dup ? new Identity(ndArray, ndArray.ulike()) : new Identity(ndArray, ndArray))[0];
     }
 
     public static INDArray isMax(INDArray input, DataType dataType) {

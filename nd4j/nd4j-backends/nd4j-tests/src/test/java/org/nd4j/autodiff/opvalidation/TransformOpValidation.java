@@ -38,10 +38,10 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Min;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
@@ -1008,7 +1008,7 @@ public class TransformOpValidation extends BaseOpValidation {
             }
 
 
-            DifferentialFunction[] funcs = sd.functions();
+            DifferentialFunction[] funcs = sd.ops();
             String name = opName == null ? funcs[0].opName() : opName;
 
 
@@ -1141,11 +1141,11 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 14:
                     t = sd.max(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new Max(ia, ib, ia.dup()))[0]);
                     break;
                 case 15:
                     t = sd.min(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new Min(ia, ib, ia.dup()))[0]);
                     break;
                 case 16:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
@@ -1199,7 +1199,7 @@ public class TransformOpValidation extends BaseOpValidation {
             }
 
 
-            DifferentialFunction[] funcs = sd.functions();
+            DifferentialFunction[] funcs = sd.ops();
             String name = (opName == null ? funcs[0].opName() : opName);
 
             String msg = "test: " + i + " - " + name;

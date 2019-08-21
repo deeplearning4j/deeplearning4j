@@ -361,7 +361,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
     }
 
     protected void initOutputVariables(SameDiff sd, DifferentialFunction df) {
-        String[] outNames = sd.getOutputsForFunction(df);
+        String[] outNames = sd.getOutputsForOp(df);
         SDVariable[] outVars;
         if (outNames == null) {
             outVars = sd.generateOutputVariableForOp(df, df.getOwnName() != null ? df.getOwnName() : df.opName(), true);

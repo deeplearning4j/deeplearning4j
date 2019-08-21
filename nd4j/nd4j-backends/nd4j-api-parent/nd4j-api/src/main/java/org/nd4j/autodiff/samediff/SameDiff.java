@@ -466,8 +466,11 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Set the current {@link Listener} instances.
-     * Note that
+     * Set the current SameDiff-wide {@link Listener} instances.
+     *
+     * Note that this will overwrite the current listener list.
+     * If you want to use additional listeners for a single operation,
+     * use the listener arguments in those methods (e.g. {@link #fit()} and {@link FitConfig#listeners(Listener...)}).
      *
      * @param listeners Listeners
      */
@@ -476,19 +479,37 @@ public class SameDiff extends SDBaseOps {
         addListeners(listeners);
     }
 
+    /**
+     * See {@link #setListeners(Listener...)}.
+     */
     public void setListeners(Collection<? extends Listener> listeners) {
         this.listeners.clear();
         addListeners(listeners);
     }
 
+
+    /**
+     * Add SameDiff-wide {@link Listener} instances.
+     *
+     * If you want to use additional listeners for a single operation,
+     * use the listener arguments in those methods (e.g. {@link #fit()} and {@link FitConfig#listeners(Listener...)}).
+     *
+     * @param listeners Listeners
+     */
     public void addListeners(Listener... listeners) {
         addListeners(Arrays.asList(listeners));
     }
 
+    /**
+     * See {@link #addListeners(Listener...)}.
+     */
     public void addListeners(Collection<? extends Listener> listeners) {
         this.listeners.addAll(listeners);
     }
 
+    /**
+     * Gets the current SameDiff-wide listeners.
+     */
     public List<Listener> getListeners() {
         return listeners;
     }
@@ -585,6 +606,9 @@ public class SameDiff extends SDBaseOps {
     }
 
 
+    /**
+     * Gets all operations in a given name scope.
+     */
     public List<SameDiffOp> getOpsInScope(NameScope scope) {
         ArrayList<SameDiffOp> ops = new ArrayList<>();
         for (SameDiffOp v : this.ops.values()) {
@@ -594,6 +618,16 @@ public class SameDiff extends SDBaseOps {
         return ops;
     }
 
+    /**
+     * See {@link #getOpsInScope(NameScope)}.
+     */
+    public List<SameDiffOp> getOpsInScope(String scope){
+        return getOpsInScope(new NameScope(this, scope));
+    }
+
+    /**
+     * Gets all variables in a given name scope.
+     */
     public List<SDVariable> getVariablesInScope(NameScope scope) {
         ArrayList<SDVariable> vars = new ArrayList<>();
         for (SDVariable v : variables()) {
@@ -601,6 +635,13 @@ public class SameDiff extends SDBaseOps {
                 vars.add(v);
         }
         return vars;
+    }
+
+    /**
+     * See {@link #getVariablesInScope(NameScope)}.
+     */
+    public List<SDVariable> getVariablesInScope(String scope){
+        return getVariablesInScope(new NameScope(this, scope));
     }
 
     /**
@@ -638,8 +679,8 @@ public class SameDiff extends SDBaseOps {
                     function.getSameDiff());
             clone.setSameDiff(sameDiff);
             clone.setOwnName(function.getOwnName());
-            if (sameDiff.functionExists(function.getOwnName()))
-                sameDiff.putFunctionForId(function.getOwnName(), function);
+            if (sameDiff.opExists(function.getOwnName()))
+                sameDiff.putOpForId(function.getOwnName(), function);
             newFunctions.put(function.getOwnName(), clone);
 
             val argsForFunction = function.args();
@@ -672,17 +713,21 @@ public class SameDiff extends SDBaseOps {
      * @param id the function id to test for
      * @return true if the function id exists, false otherwise
      */
-    public boolean functionExists(String id) {
+    public boolean opExists(String id) {
         return ops.containsKey(id);
     }
 
-    public DifferentialFunction functionOutputFor(String varName) {
-        if (variables.get(varName).getOutputOfOp() == null)
+    /**
+     * Get the differential function (if any) that this variable is the output for
+     *
+     * @param variableName Name of the variable
+     * @return The differential function that this variable is an output of, or null if it is not the output of a function
+     */
+    public DifferentialFunction getVariableOutputOp(String variableName) {
+        Preconditions.checkState(variables.containsKey(variableName), "No variable with name \"%s\" found in graph", variableName);
+        if (variables.get(variableName).getOutputOfOp() == null)
             return null;
-        String outName = variables.get(varName).getOutputOfOp();
-        if (outName == null)
-            return null;
-        return ops.get(outName).getOp();
+        return ops.get(variables.get(variableName).getOutputOfOp()).getOp();
     }
 
     /**
@@ -691,7 +736,7 @@ public class SameDiff extends SDBaseOps {
      * @param id the id of the function
      * @return the function for the given id if it exists
      */
-    public DifferentialFunction getFunctionById(@NonNull String id) {
+    public DifferentialFunction getOpById(@NonNull String id) {
         if (!ops.containsKey(id)) {
             throw new ND4JIllegalStateException("No function with id " + id + " found!");
         }
@@ -705,7 +750,7 @@ public class SameDiff extends SDBaseOps {
      * @param id       the id of the function
      * @param function the function
      */
-    public void putFunctionForId(String id, DifferentialFunction function) {
+    public void putOpForId(String id, DifferentialFunction function) {
         if (ops.containsKey(id) && ops.get(id).getOp() == null) {
             throw new ND4JIllegalStateException("Function by id already exists!");
         } else if (function instanceof SDVariable) {
@@ -726,7 +771,7 @@ public class SameDiff extends SDBaseOps {
      * @param function the function to get the inputs for
      * @return the input ids for a given function
      */
-    public String[] getInputsForFunction(DifferentialFunction function) {
+    public String[] getInputsForOp(DifferentialFunction function) {
         if (!ops.containsKey(function.getOwnName()))
             throw new ND4JIllegalStateException("Illegal function instance id found " + function.getOwnName());
         List<String> inputs = ops.get(function.getOwnName()).getInputsToOp();
@@ -739,7 +784,7 @@ public class SameDiff extends SDBaseOps {
      * @param function the function to get the outputs for
      * @return the outputs ids for a given function
      */
-    public String[] getOutputsForFunction(DifferentialFunction function) {
+    public String[] getOutputsForOp(DifferentialFunction function) {
         if (!ops.containsKey(function.getOwnName()))
             throw new ND4JIllegalStateException("Illegal function instance id found " + function.getOwnName());
         List<String> outputs = ops.get(function.getOwnName()).getOutputsOfOp();
@@ -753,8 +798,8 @@ public class SameDiff extends SDBaseOps {
      * @param function the function reference to get the output variable(s) for
      * @return the output variables for the given function
      */
-    public SDVariable[] getOutputVariablesForFunction(DifferentialFunction function) {
-        val inputs = getOutputsForFunction(function);
+    public SDVariable[] getOutputVariablesForOp(DifferentialFunction function) {
+        val inputs = getOutputsForOp(function);
         if (inputs == null) {
             throw new ND4JIllegalStateException("No inputs found for function " + function);
         }
@@ -774,8 +819,8 @@ public class SameDiff extends SDBaseOps {
      * @param function the function reference to get the input variable(s) for
      * @return the input variables for the given function
      */
-    public SDVariable[] getInputVariablesForFunction(DifferentialFunction function) {
-        val inputs = getInputsForFunction(function);
+    public SDVariable[] getInputVariablesForOp(DifferentialFunction function) {
+        val inputs = getInputsForOp(function);
         if (inputs == null) {
             throw new ND4JIllegalStateException("No inputs found for function " + function);
         }
@@ -792,6 +837,10 @@ public class SameDiff extends SDBaseOps {
     }
 
 
+    /**
+     * Set the stored {@link INDArray} for a variable.  Only works if the variable is of type
+     * {@link VariableType#CONSTANT}, {@link VariableType#PLACEHOLDER}, or {@link VariableType#VARIABLE}.
+     */
     public void setArrayForVariable(@NonNull String varName, @NonNull INDArray arr) {
         Preconditions.checkState(variables.containsKey(varName), "No variable with name \"%s\" exists", varName);
 
@@ -830,6 +879,9 @@ public class SameDiff extends SDBaseOps {
         return variableNameToShape.get(varName);
     }
 
+    /**
+     * See {@link #getShapeForVarName(String)}, but returns the shape descriptor.
+     */
     public LongShapeDescriptor getShapeDescriptorForVarName(String varName) {
         if (getVariable(varName).getArr() != null) {
             return getVariable(varName).getArr().shapeDescriptor();
@@ -861,6 +913,9 @@ public class SameDiff extends SDBaseOps {
     }
 
 
+    /**
+     * Sets the shape descriptor for a variable.
+     */
     public void putShapeForVarName(String varName, LongShapeDescriptor shape) {
         val v = getVariable(varName);
         putShapeForVarName(varName, shape.getShape());
@@ -1559,19 +1614,6 @@ public class SameDiff extends SDBaseOps {
 
     }
 
-    /**
-     * Get the differential function (if any) that this variable is the output for
-     *
-     * @param variableName Name of the variable
-     * @return The differential function that this variable is an output of, or null if it is not the output of a function
-     */
-    public DifferentialFunction getVariableOutputFunction(String variableName) {
-        Preconditions.checkState(variables.containsKey(variableName), "No variable with name \"%s\" found in graph", variableName);
-        if (variables.get(variableName).getOutputOfOp() == null)
-            return null;
-        return ops.get(variables.get(variableName).getOutputOfOp()).getOp();
-    }
-
 
     /**
      * Returns true if this function already has defined arguments
@@ -1628,7 +1670,7 @@ public class SameDiff extends SDBaseOps {
      *
      * @return Array of differential functions
      */
-    public DifferentialFunction[] functions() {
+    public DifferentialFunction[] ops() {
         List<DifferentialFunction> out = new ArrayList<>(ops.size());
         for (SameDiffOp op : ops.values()) {
             out.add(op.getOp());
@@ -3143,10 +3185,18 @@ public class SameDiff extends SDBaseOps {
                 placeholders, batch, requiredActivations, activeListeners, at);
     }
 
+    /**
+     * See {@link #one(String, DataType, int...)}.
+     * Uses the DataType of the Nd4j default floating point type ({@link Nd4j#defaultFloatingPointType()}).
+     */
     public SDVariable one(String name, int... shape) {
         return one(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
+    /**
+     * See {@link #one(String, DataType, long...)}.
+     * Uses the DataType of the Nd4j default floating point type ({@link Nd4j#defaultFloatingPointType()}).
+     */
     public SDVariable one(String name, long... shape) {
         return one(name, Nd4j.defaultFloatingPointType(), shape);
     }
@@ -3174,11 +3224,18 @@ public class SameDiff extends SDBaseOps {
         return var(name, new ConstantInitScheme('f', 1.0), dataType, shape);
     }
 
-
+    /**
+     * See {@link #zero(String, DataType, long...)}.
+     * Uses the DataType of the Nd4j default floating point type ({@link Nd4j#defaultFloatingPointType()}).
+     */
     public SDVariable zero(String name, long... shape) {
         return zero(name, Nd4j.defaultFloatingPointType(), shape);
     }
 
+    /**
+     * See {@link #zero(String, DataType, int...)}.
+     * Uses the DataType of the Nd4j default floating point type ({@link Nd4j#defaultFloatingPointType()}).
+     */
     public SDVariable zero(String name, int... shape) {
         return zero(name, Nd4j.defaultFloatingPointType(), shape);
     }
@@ -3293,6 +3350,18 @@ public class SameDiff extends SDBaseOps {
     }
 
     //TODO only allowing null datatype for TF import (it's fixed in a later step) - don't want this in the public API!
+
+    /**
+     * Variable initialization with a specified {@link WeightInitScheme}
+     * This method creates VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
+     *
+     * @param name             the name of the variable
+     * @param variableType     the SameDiff variable type of the variable (e.g. CONSTANT, PLACEHOLDER, etc.)
+     * @param weightInitScheme the weight initialization scheme
+     * @param dataType         the data type of the variable (float, int, etc)
+     * @param shape            the shape of the array to be created
+     * @return the created variable
+     */
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
                           org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
 
@@ -3932,7 +4001,7 @@ public class SameDiff extends SDBaseOps {
      * @param varName  the variable name to remove
      * @param function the function to remove the argument from
      */
-    public void removeArgFromFunction(String varName, DifferentialFunction function) {
+    public void removeArgFromOp(String varName, DifferentialFunction function) {
         val args = function.args();
 
         for (int i = 0; i < args.length; i++) {
@@ -4324,7 +4393,7 @@ public class SameDiff extends SDBaseOps {
             }
 
             //Update the internal state: outgoing variables for function
-            if (getOutputsForFunction(function) == null)
+            if (getOutputsForOp(function) == null)
                 addOutgoingFor(ret, function);
 
             return ret;
@@ -4357,7 +4426,7 @@ public class SameDiff extends SDBaseOps {
 
 
             //Update the internal state: outgoing variables for function
-            if (getOutputsForFunction(function) == null)
+            if (getOutputsForOp(function) == null)
                 addOutgoingFor(ret, function);
 
             return ret;
@@ -4428,7 +4497,9 @@ public class SameDiff extends SDBaseOps {
                 .build();
     }
 
-
+    /**
+     * Create a new TensorArray.
+     */
     public TensorArray tensorArray(DataType dataType) {
         TensorArray ta = new TensorArray(this, dataType);
         SDVariable[] outVars = ta.outputVariables();
@@ -4439,7 +4510,6 @@ public class SameDiff extends SDBaseOps {
      * @param functionName
      * @param with
      */
-
     public SDVariable invokeFunctionOn(String functionName, SameDiff with) {
         SameDiff instance = sameDiffFunctionInstances.get(functionName);
         SDVariable ret = instance.invokeGraphOn(with);
@@ -5746,6 +5816,13 @@ public class SameDiff extends SDBaseOps {
         return bufferBuilder.dataBuffer();
     }
 
+    /**
+     * See {@link #asFlatGraph(long, ExecutorConfiguration, boolean)}.
+     *
+     * Uses the default {@link ExecutorConfiguration} with output mode as
+     * {@link OutputMode#VARIABLE_SPACE}, execution mode as {@link ExecutionMode#SEQUENTIAL},
+     * with profiling disabled and gather timings enabled.
+     */
     public FlatGraph asFlatGraph(boolean includeUpdaterState) {
         return FlatGraph.getRootAsFlatGraph(this.asFlatBuffers(includeUpdaterState));
     }
@@ -5764,6 +5841,10 @@ public class SameDiff extends SDBaseOps {
     /**
      * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
      * all arrays as a ByteBuffer containing the FlatBuffers format data
+     *
+     * Uses the default {@link ExecutorConfiguration} with output mode as
+     * {@link OutputMode#VARIABLE_SPACE}, execution mode as {@link ExecutionMode#SEQUENTIAL},
+     * with profiling disabled and gather timings enabled.
      *
      * @param includeUpdaterState If true: include the updater state (state for updaters such as Adam, Nesterov, AdaGrad etc)
      * @return a ByteBuffer holding the exported FlatBuffers representation of the graph
@@ -5870,7 +5951,11 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * This method converts SameDiff instance to FlatBuffers and saves it to file which can be restored later<br>
-     * This includes the updater state, if applicable
+     * This includes the updater state, if applicable.
+     *
+     * Uses the default {@link ExecutorConfiguration} with output mode as
+     * {@link OutputMode#VARIABLE_SPACE}, execution mode as {@link ExecutionMode#SEQUENTIAL},
+     * with profiling disabled and gather timings enabled.
      *
      * @param file File to save the FlatBuffers serialized graph (including arrays) to
      */
@@ -5878,6 +5963,13 @@ public class SameDiff extends SDBaseOps {
         asFlatFile(file, true);
     }
 
+    /**
+     * See {@link #asFlatFile(File, ExecutorConfiguration, boolean)}.
+     *
+     * Uses the default {@link ExecutorConfiguration} with output mode as
+     * {@link OutputMode#VARIABLE_SPACE}, execution mode as {@link ExecutionMode#SEQUENTIAL},
+     * with profiling disabled and gather timings enabled.
+     */
     public void asFlatFile(@NonNull File file, boolean withUpdaterState) throws IOException {
         val fb = asFlatBuffers(withUpdaterState);
         val offset = fb.position();
@@ -5943,6 +6035,8 @@ public class SameDiff extends SDBaseOps {
      * instance from a byte buffers
      * instance.
      *
+     * See {@link #fromFlatBuffers(ByteBuffer, boolean)}.  Loads updater state (loadUpdaterState is true).
+     *
      * @param bbIn the input byte buffer
      * @return the created samediff instance
      * @throws IOException
@@ -5951,6 +6045,16 @@ public class SameDiff extends SDBaseOps {
         return fromFlatBuffers(bbIn, true);
     }
 
+    /**
+     * Create a {@link SameDiff}
+     * instance from a byte buffers
+     * instance.
+     *
+     * @param bbIn the input byte buffer
+     * @param loadUpdaterState If true, load the updater state (Adam etc state). For training, use true. For inference, use false
+     * @return the created samediff instance
+     * @throws IOException
+     */
     public static SameDiff fromFlatBuffers(ByteBuffer bbIn, boolean loadUpdaterState) throws IOException {
 
         FlatGraph fg = FlatGraph.getRootAsFlatGraph(bbIn);
@@ -6287,7 +6391,7 @@ public class SameDiff extends SDBaseOps {
     public String summary() {
 
         Map<String, SDVariable> varMap = variableMap();
-        DifferentialFunction[] functions = functions();
+        DifferentialFunction[] functions = ops();
 
 
         int countVarsWithArrays = 0;
@@ -6324,7 +6428,7 @@ public class SameDiff extends SDBaseOps {
             if (outputOf == null) {
                 outputOf = "<none>";
             } else {
-                DifferentialFunction d = getFunctionById(outputOf);
+                DifferentialFunction d = getOpById(outputOf);
                 outputOf = d.getOwnName() + "(" + d.opName() + ")";
             }
             outputOfFn.put(s, outputOf);
@@ -6412,7 +6516,7 @@ public class SameDiff extends SDBaseOps {
             for (Map.Entry<String, SameDiff> e : sameDiffFunctionInstances.entrySet()) {
                 SameDiff sd = e.getValue();
                 int vars = sd.variableMap().size();
-                int fns = (sd.functions() == null ? 0 : sd.functions().length);
+                int fns = (sd.ops() == null ? 0 : sd.ops().length);
                 int defFns = sd.definedFunctionNames().size();
 
                 sb.append(String.format(format, e.getKey(), String.valueOf(vars), String.valueOf(fns), String.valueOf(defFns))).append("\n");
@@ -6422,11 +6526,16 @@ public class SameDiff extends SDBaseOps {
         return sb.toString();
     }
 
-
+    /**
+     * Calculate data types for the variables in the graph
+     */
     public Map<String, org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes() {
         return calculateOutputDataTypes(false);
     }
 
+    /**
+     * Calculate data types for the variables in the graph
+     */
     public Map<String, org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(boolean dynamicUpdate) {
         List<String> allVars = new ArrayList<>(variables.keySet());
         DataTypesSession session = new DataTypesSession(this, dynamicUpdate);

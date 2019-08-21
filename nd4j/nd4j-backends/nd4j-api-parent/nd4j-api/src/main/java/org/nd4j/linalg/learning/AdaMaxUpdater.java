@@ -20,7 +20,7 @@ import lombok.Data;
 import lombok.NonNull;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -104,7 +104,7 @@ public class AdaMaxUpdater implements GradientUpdater<AdaMax> {
         //u = max(B_2 * u, |grad|)
         u.muli(config.getBeta2());
         Transforms.abs(gradient, false); //In-place should be OK here, original gradient values aren't used again later
-        Nd4j.getExecutioner().exec(new OldMax(u, gradient, u));
+        Nd4j.getExecutioner().exec(new Max(u, gradient, u));
 
         double beta1t = FastMath.pow(config.getBeta1(), iteration + 1);
 

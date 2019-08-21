@@ -62,7 +62,7 @@ public class DepthwiseConv2D extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         this.config = config;
         addArgs();
-        sameDiff.putFunctionForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
+        sameDiff.putOpForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
         sameDiff.addArgsFor(inputFunctions, this);
     }
 

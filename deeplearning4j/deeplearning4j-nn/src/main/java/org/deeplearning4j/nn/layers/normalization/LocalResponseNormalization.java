@@ -23,10 +23,9 @@ import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.deeplearning4j.nn.layers.LayerHelper;
-import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLocalResponseNormalizationHelper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -187,7 +186,7 @@ public class LocalResponseNormalization
 
         // gx = gy * unitScale**-beta - 2 * alpha * beta * sumPart/unitScale * a^i_{x,y}    - rearranged for more in-place ops
         INDArray nextEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, epsilon.dataType(), epsilon.shape(), epsilon.ordering());
-        Nd4j.getExecutioner().exec(new OldMulOp(epsilon, scale, nextEpsilon));
+        Nd4j.getExecutioner().exec(new MulOp(epsilon, scale, nextEpsilon));
         nextEpsilon.subi(sumPart.muli(input).divi(unitScale).muli(2 * alpha * beta));
         return new Pair<>(retGradient, nextEpsilon);
     }
@@ -257,7 +256,7 @@ public class LocalResponseNormalization
             unitScale = sumPart.mul(alpha).addi(k);
             // y = x * unitScale**-beta
             scale = Transforms.pow(unitScale, -beta, true);
-            Nd4j.getExecutioner().exec(new OldMulOp(input, scale, activations));
+            Nd4j.getExecutioner().exec(new MulOp(input, scale, activations));
         } else {
             // unitScale = (k + alpha * sum_{j=max(0, i - n/2)}^{max(N-1, i + n/2)} (a^j_{x,y})^2 )
             sumPart.muli(alpha, activations).addi(k);

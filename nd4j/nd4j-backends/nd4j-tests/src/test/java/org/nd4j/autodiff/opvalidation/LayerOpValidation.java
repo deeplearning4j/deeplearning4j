@@ -16,6 +16,13 @@
 
 package org.nd4j.autodiff.opvalidation;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.junit.Ignore;
@@ -32,20 +39,19 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.*;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LayerNorm;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.ops.transforms.Transforms;
-
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 
 @Slf4j
 public class LayerOpValidation extends BaseOpValidation {
@@ -311,7 +317,7 @@ public class LayerOpValidation extends BaseOpValidation {
             SDVariable loss = sd.mean("loss", out);
 
             log.info("Starting test: " + msg);
-            TestCase tc = new TestCase(sd);
+            TestCase tc = new TestCase(sd).gradientCheck(true);
             String error = OpValidation.validate(tc);
             if (error != null) {
                 failed.add(msg);
@@ -344,7 +350,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
             String msg = Arrays.toString(inSizeNCHW);
 
-            TestCase tc = new TestCase(sd).testName(msg);
+            TestCase tc = new TestCase(sd).gradientCheck(true).testName(msg);
             String error = OpValidation.validate(tc);
             if (error != null) {
                 failed.add(msg);
@@ -552,7 +558,7 @@ public class LayerOpValidation extends BaseOpValidation {
                     SDVariable loss = sd.standardDeviation("loss", out, true);
 
                     log.info("Starting test: " + msg);
-                    TestCase tc = new TestCase(sd);
+                    TestCase tc = new TestCase(sd).gradientCheck(true);
                     tc.testName(msg);
                     String error = OpValidation.validate(tc);
                     if (error != null) {
@@ -660,7 +666,7 @@ public class LayerOpValidation extends BaseOpValidation {
 //        System.out.println(sd.getFunction("grad").summary());
 
         //Gradient check:
-        TestCase tc = new TestCase(sd);
+        TestCase tc = new TestCase(sd).gradientCheck(true);
         String err = OpValidation.validate(tc);
         assertNull(err);
     }
@@ -705,7 +711,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         SDVariable loss = out.std(true);
         //Gradient check:
-        TestCase tc = new TestCase(sd);
+        TestCase tc = new TestCase(sd).gradientCheck(true);
         String err = OpValidation.validate(tc);
         assertNull(err);
     }
@@ -798,7 +804,7 @@ public class LayerOpValidation extends BaseOpValidation {
             exp.putScalar(next, max);
         }
 
-        assertNull(OpValidation.validate(new TestCase(sd)
+        assertNull(OpValidation.validate(new TestCase(sd).gradientCheck(true)
                 .expected(outPool, exp)));
     }
 
@@ -856,7 +862,7 @@ public class LayerOpValidation extends BaseOpValidation {
         }
 
         assertNull(OpValidation.validate(new TestCase(sd)
-                .expected(outPool, exp)));
+                .expected(outPool, exp).gradientCheck(true)));
 
     }
 
@@ -887,16 +893,12 @@ public class LayerOpValidation extends BaseOpValidation {
                 .build();
 
         SDVariable out = sd.cnn().avgPooling3d(in, pooling3DConfig);
-        out = sd.nn().tanh("out", out);
+        out = sd.nn().tanh("loss", out).shape().rename("out");
 
-        INDArray outArr = sd.execAndEndResult();
-        val outShape = outArr.shape();
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 4, 4, 4}, outShape);
+        INDArray outArr = Nd4j.createFromArray(mb, nIn, 4, 4, 4L);
 
-        SDVariable loss = out.std(true);
-        //Gradient check:
-        TestCase tc = new TestCase(sd);
+        TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(true);
         String err = OpValidation.validate(tc);
         assertNull(err);
     }
@@ -927,12 +929,16 @@ public class LayerOpValidation extends BaseOpValidation {
                 .build();
 
         SDVariable out = sd.cnn().maxPooling3d(in, pooling3DConfig);
-        out = sd.nn().tanh("out", out);
+        out = sd.nn().tanh("loss", out).shape().rename("out");
 
-        INDArray outArr = sd.execAndEndResult();
-        val outShape = outArr.shape();
+        sd.setLossVariables("loss");
+
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        assertArrayEquals(new long[]{mb, nIn, 27, 27, 27}, outShape);
+        INDArray outArr = Nd4j.createFromArray(mb, nIn, 27, 27, 27L);
+
+        TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(true);
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
     @Test
@@ -958,13 +964,58 @@ public class LayerOpValidation extends BaseOpValidation {
                 .build();
 
         SDVariable out = sd.cnn().conv1d(in, w, conv1DConfig);
-        out = sd.nn().tanh("out", out);
+        out = sd.nn().tanh("loss", out).shape().rename("out");
 
-        INDArray outArr = sd.execAndEndResult();
-        INDArray iOut = out.getArr();
+        sd.setLossVariables("loss");
+
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 27}, outShape);
+        INDArray outArr = Nd4j.createFromArray(mb, nOut, 27L);
+        TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(false);
+        String err = OpValidation
+                .validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testConv1dForward(){
+        int nIn = 2;
+        int nOut = 1;
+        int kernel = 3;
+        int batchSize = 10;
+        int sequenceSize = 5;
+
+        SameDiff sd = SameDiff.create();
+
+        INDArray inArr = Nd4j.linspace(0, nIn * batchSize * sequenceSize, nIn * batchSize * sequenceSize)
+                .reshape(batchSize, nIn, sequenceSize);
+
+        INDArray wArr = Nd4j.linspace(0, kernel * nIn * nOut, kernel * nIn * nOut)
+                .reshape(kernel, nIn, nOut);
+
+        SDVariable in = sd.var("in", inArr);
+        SDVariable w = sd.var("w", wArr);
+
+        SDVariable res = sd.cnn.conv1d(in, w, Conv1DConfig.builder().k(kernel).build());
+
+        INDArray expected = Nd4j.createFromArray(
+                new double[][][]{
+                        {{82.42424f, 100.60606f, 118.78788f}},
+                        {{264.2424f, 282.4242f, 300.6061f}},
+                        {{446.0606f, 464.2424f, 482.424f}},
+                        {{627.8788f, 646.0606f, 664.2424f}},
+                        {{809.6970f, 827.8788f, 846.0606f}},
+                        {{991.5152f, 1009.69696f, 1027.8788f}},
+                        {{1173.3333f, 1191.5152f, 1209.6970f}},
+                        {{1355.1515f, 1373.3333f, 1391.5153f}},
+                        {{1536.9697f, 1555.1515f, 1573.3333f}},
+                        {{1718.7878f, 1736.9697f, 1755.1515f}}
+                }
+        );
+
+        TestCase tc = new TestCase(sd).gradientCheck(false).expectedOutput(res.getVarName(), expected);
+        String err = OpValidation.validate(tc);
+
+        assertNull(err);
     }
 
 
@@ -1000,17 +1051,61 @@ public class LayerOpValidation extends BaseOpValidation {
                 .build();
 
         SDVariable out = sd.cnn().conv3d(in, w, b, conv3DConfig);
-        out = sd.nn().tanh("out", out);
+        out = sd.nn().tanh("loss", out).shape().rename("out");
 
-        INDArray outArr = sd.execAndEndResult();
+        sd.setLossVariables("loss");
+
         //Expected output size, NOT same mode: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
         //Expected output size, WITH same mode: out = in/stride
-        val outShape = outArr.shape();
-        assertArrayEquals(new long[]{mb, nOut, 5, 5, 5}, outShape);
+        INDArray outArr = Nd4j.createFromArray(mb, nOut, 5, 5, 5L);
 
-        SDVariable loss = out.std(true);
-        //Gradient check:
-        TestCase tc = new TestCase(sd);
+        TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(true);
+        String err = OpValidation
+                .validate(tc);
+        assertNull(err);
+    }
+
+    @Test
+    public void testDeConv3dBasic() {
+        int nIn = 4;
+        int nOut = 3;
+        int kH = 2;
+        int kW = 2;
+        int kD = 2;
+
+        int mb = 3;
+        int imgH = 5;
+        int imgW = 5;
+        int imgT = 5;
+
+        SameDiff sd = SameDiff.create();
+        INDArray inArr = Nd4j.rand(new long[]{mb, nIn, 5, 5, 5});
+        INDArray wArr = Nd4j.rand(kD, kH, kW, nOut, nIn);
+
+        SDVariable in = sd.var("in", inArr);
+        SDVariable w = sd.var("W", wArr);
+
+        DeConv3DConfig conv3DConfig = DeConv3DConfig.builder()
+                .kH(kH).kW(kW).kD(kD)
+                .sD(1).sH(1).sW(1)
+                .dH(1).dW(1).dD(1)
+                .isSameMode(true)
+                .dataFormat(DeConv3DConfig.NCDHW)
+                .build();
+
+        SDVariable out = sd.cnn().deconv3d(in, w, conv3DConfig);
+        out = sd.nn().tanh("loss", out).shape().rename("out");
+
+        sd.setLossVariables("loss");
+
+        //Expected conv3d size, NOT same mode: out = (in - k)/d + 1 = (28-2+0)/1+1 = 27
+        //Expected conv3d size, WITH same mode: out = in/stride
+        // reversed this for deconv3d
+        INDArray outArr = Nd4j.createFromArray(new long[]{mb, nOut, imgT, imgH, imgW});
+
+        TestCase tc = new TestCase(sd)
+                .expectedOutput("out", outArr)
+                .gradientCheck(true);
         String err = OpValidation.validate(tc);
         assertNull(err);
     }
@@ -1181,23 +1276,23 @@ public class LayerOpValidation extends BaseOpValidation {
         List<String> failed = new ArrayList<>();
 
         for (boolean ncdhw : new boolean[]{true, false}) {
-                int nIn = inSizeNCDHW[1];
-                int[] shape = (ncdhw ? inSizeNCDHW : ncdhwToNdhwc(inSizeNCDHW));
+            int nIn = inSizeNCDHW[1];
+            int[] shape = (ncdhw ? inSizeNCDHW : ncdhwToNdhwc(inSizeNCDHW));
 
-                SameDiff sd = SameDiff.create();
-                SDVariable in = sd.var("in", shape);
+            SameDiff sd = SameDiff.create();
+            SDVariable in = sd.var("in", shape);
 
-                SDVariable out;
-                String msg = "0 - conv3d+bias+same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
+            SDVariable out;
+            String msg = "0 - conv3d+bias+same, ncdhw=" + ncdhw + " - input " + Arrays.toString(shape);
 
-                SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
-                SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
-                out = sd.cnn().conv3d(in, w0, b0, Conv3DConfig.builder()
-                        .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
-                        .isSameMode(true)
-                        .kH(2).kW(2).kD(2)
-                        .sD(1).sH(1).sW(-1).dW(-1)
-                        .build());
+            SDVariable w0 = sd.var("w0", Nd4j.rand(new int[]{2, 2, 2, nIn, 3}).muli(10));  //[kD, kH, kW, iC, oC]
+            SDVariable b0 = sd.var("b0", Nd4j.rand(new long[]{3}).muli(10));
+            out = sd.cnn().conv3d(in, w0, b0, Conv3DConfig.builder()
+                    .dataFormat(ncdhw ? Conv3DConfig.NCDHW : Conv3DConfig.NDHWC)
+                    .isSameMode(true)
+                    .kH(2).kW(2).kD(2)
+                    .sD(1).sH(1).sW(-1).dW(-1)
+                    .build());
         }
     }
 

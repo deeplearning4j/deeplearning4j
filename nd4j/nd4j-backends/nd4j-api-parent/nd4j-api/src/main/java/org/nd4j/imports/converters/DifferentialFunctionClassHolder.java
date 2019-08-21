@@ -68,17 +68,6 @@ public class DifferentialFunctionClassHolder {
         add("sameDiff");
         add("ownName");
     }};
-    private static final Set<String> classesWithConfig = new LinkedHashSet<String>(){{
-        add(AvgPooling2D.class.getName());
-        add(Conv2D.class.getName());
-        add(Conv3D.class.getName());
-        add(LocalResponseNormalization.class.getName());
-        add(MaxPooling2D.class.getName());
-        add(Pooling2D.class.getName());
-        add(Pooling3D.class.getName());
-        add(DepthwiseConv2D.class.getName());
-        add(DeConv2DTF.class.getName());
-    }};
     //When determining fields/properties, where should we terminate the search?
     //We don't wan to include every single field from every single superclass
     private static final Set<Class> classesToIgnore = new HashSet<>(Arrays.<Class>asList(
@@ -165,15 +154,36 @@ public class DifferentialFunctionClassHolder {
                 Map<String, Field> fieldNames = new LinkedHashMap<>();
                 Class<? extends DifferentialFunction> current = df.getClass();
                 val fields = new ArrayList<Field>();
+                boolean isFirst = true;
+
                 while (current.getSuperclass() != null && !classesToIgnore.contains(current.getSuperclass())) {
-                    if (classesWithConfig.contains(current.getName())) {
 
-                        val fieldName = "config";
+                    if (df.isConfigProperties() && isFirst) {
 
-                        val configField = current.getDeclaredField(fieldName);
-                        if (configField == null) {
-                            continue;
+                        String fieldName = df.configFieldName();
+
+                        if(fieldName == null)
+                            fieldName = "config";
+
+                        Field configField = null;
+                        try{
+                            configField = current.getDeclaredField(fieldName);
+                        } catch (NoSuchFieldException e){
+                            Class<?> currentConfig = current.getSuperclass();
+
+                            // find a config field in superclasses
+                            while(currentConfig.getSuperclass() != null){
+                                try {
+                                    configField = currentConfig.getDeclaredField(fieldName);
+                                    break;
+                                } catch (NoSuchFieldException e2){
+                                    currentConfig = currentConfig.getSuperclass();
+                                }
+                            }
                         }
+
+                        if(configField == null)
+                            continue;
 
                         val configFieldClass = configField.getType();
 
@@ -206,6 +216,7 @@ public class DifferentialFunctionClassHolder {
 
                     // do something with current's fields
                     current = (Class<? extends DifferentialFunction>) current.getSuperclass();
+                    isFirst = false;
 
                 }
 

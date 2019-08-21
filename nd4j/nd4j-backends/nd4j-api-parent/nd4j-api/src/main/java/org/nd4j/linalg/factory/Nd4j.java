@@ -57,8 +57,10 @@ import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
 import org.nd4j.linalg.api.ops.impl.shape.Diag;
 import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
 import org.nd4j.linalg.api.ops.impl.shape.Stack;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad;
+import org.nd4j.linalg.api.ops.impl.transforms.Pad.Mode;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
 import org.nd4j.linalg.api.ops.impl.shape.Tile;
-import org.nd4j.linalg.api.ops.impl.transforms.same.OldReverse;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.impl.*;
 import org.nd4j.linalg.api.rng.DefaultRandom;
@@ -182,93 +184,69 @@ public class Nd4j {
         nd4j.initContext();
     }
 
-    public enum PadMode {
-        CONSTANT, EDGE, LINEAR_RAMP, MAXIMUM, MEAN, MEDIAN, MINIMUM, REFLECT, SYMMETRIC, WRAP
-
-    }
-
     /**
-     * See {@link #pad(INDArray, int[][], List, PadMode)} with zero padding. (zeros for constantValues).
+     * See {@link #pad(INDArray, INDArray)}.  Uses 0 padding.
      */
-    public static INDArray pad(INDArray toPad, int[][] padWidth, PadMode padMode) {
-        return pad(toPad, padWidth, ArrayUtil.zerosMatrix(toPad.shape()), padMode);
+    public static INDArray pad(@NonNull INDArray toPad, @NonNull int[][] padWidth){
+        return pad(toPad, Nd4j.createFromArray(padWidth));
     }
 
     /**
-     * Pad the given ndarray to the size along each dimension
+     * See {@link #pad(INDArray, INDArray)}.  Uses 0 padding, and uses padWidth for all dimensions.
+     */
+    public static INDArray pad(@NonNull INDArray toPad, @NonNull int... padWidth){
+        return pad(toPad, padWidth, Mode.CONSTANT, 0);
+    }
+
+    /**
+     * See {@link #pad(INDArray, INDArray, Pad.Mode, double)} with zero padding (zeros for padValue).
+     */
+    public static INDArray pad(INDArray toPad, INDArray padding) {
+        return pad(toPad, padding, Mode.CONSTANT, 0);
+    }
+
+    /**
+     * See {@link #pad(INDArray, INDArray, Mode, double)}.
+     */
+    public static INDArray pad(@NonNull INDArray toPad, @NonNull int[][] padWidth, @NonNull Pad.Mode padMode, double padValue){
+        return pad(toPad, Nd4j.createFromArray(padWidth), padMode, padValue);
+    }
+
+    /**
+     * See {@link #pad(INDArray, INDArray, Mode, double)}, uses padWidth for all dimensions.
+     */
+    public static INDArray pad(@NonNull INDArray toPad, @NonNull int[] padWidth, @NonNull Pad.Mode padMode, double padValue){
+        int[][] pads = new int[toPad.rank()][padWidth.length];
+        for(int i = 0 ; i < pads.length ; i++){
+            pads[i] = padWidth;
+        }
+        return pad(toPad, pads, padMode, padValue);
+    }
+
+    /**
+     * Pad the given ndarray to the size along each dimension.
+     *
      * @param toPad the ndarray to pad
      * @param padWidth the width to pad along each dimension
-     * @param constantValues the values to append for each dimension
      * @param padMode the mode to pad in
+     * @param padValue the value used during padding.  Only used when padMode is {@link Pad.Mode#CONSTANT}.
      * @return the padded ndarray
      * based on the specified mode
      */
-    public static INDArray pad(INDArray toPad, int[][] padWidth, List<double[]> constantValues, PadMode padMode) {
-        if (padMode == PadMode.CONSTANT) {
-            if (padWidth.length < toPad.rank())
-                throw new IllegalArgumentException("Please specify a pad width for each dimension");
+    public static INDArray pad(@NonNull INDArray toPad, @NonNull INDArray padWidth, @NonNull Pad.Mode padMode, double padValue) {
 
-            List<int[]> sizes = new ArrayList<>();
-            for (int i = 0; i < toPad.rank(); i++) {
-                sizes.add(padWidth[i]);
-            }
+        Preconditions.checkArgument(toPad.rank() == padWidth.size(0),
+                "Must provide padding values for each dimension.  Expected %s pairs for a rank %s array, got %s",
+                toPad.rank(), toPad.rank(), padWidth.size(0));
 
-            return padImpl(toPad, sizes, constantValues);
+        long[] newShape = new long[toPad.rank()];
+        for(int i = 0 ; i < newShape.length ; i++){
+            newShape[i] = toPad.size(i) + padWidth.getRow(i).sumNumber().intValue();
         }
-        throw new UnsupportedOperationException();
-    }
+        INDArray out = Nd4j.createUninitialized(toPad.dataType(), newShape);
+        Pad op = new Pad(toPad, padWidth, out, padMode, padValue);
 
-    /**
-     * See {@link #pad(INDArray, int[][], List, PadMode)} with a 1D int[] for padWidth.
-     */
-    public static INDArray pad(INDArray toPad, int[] padWidth, List<double[]> constantValues, PadMode padMode) {
-        if (padMode == PadMode.CONSTANT) {
-            if (padWidth.length < toPad.rank())
-                throw new IllegalArgumentException("Please specify a pad width for each dimension");
-
-            toPad = Nd4j.stripOnes(toPad);
-
-            List<int[]> sizes = new ArrayList<>();
-            for (int i = 0; i < toPad.rank(); i++) {
-                sizes.add(padWidth);
-            }
-
-            return padImpl(toPad, sizes, constantValues);
-        }
-        throw new UnsupportedOperationException();
-    }
-
-    // common code for pad(INDArray, int[],   List<double[]>, PadMode) and
-    //                 pad(INDArray, int[][], List<double[]>, PadMode)
-    private static INDArray padImpl(INDArray toPad, List<int[]> sizes, List<double[]> constantValues){
-
-        INDArray ret = toPad;
-        for (int i = 0; i < toPad.rank(); i++) {
-            int[] pad = sizes.get(i);
-            double[] constant = constantValues.get(i);
-            int padBefore = pad[0];
-            int padAfter = pad[1];
-            if (constant.length < 2) {
-                double val = constant[0];
-                constant = new double[2];
-                constant[0] = val;
-                constant[1] = val;
-            }
-
-            double beforeVal = constant[0];
-            double afterVal = constant[1];
-            ret = Nd4j.prepend(ret, padBefore, beforeVal, i);
-            ret = Nd4j.append(ret, padAfter, afterVal, i);
-
-        }
-        return ret;
-    }
-
-    /**
-     * See {@link #pad(INDArray, int[][], List, PadMode)} with a 1D int[] for padWidth and zero padding.
-     */
-    public static INDArray pad(INDArray toPad, int[] padWidth, PadMode padMode) {
-        return pad(toPad, padWidth, ArrayUtil.zerosMatrix(padWidth), padMode);
+        return Nd4j.getExecutioner().exec(op)[0];
     }
 
     /**
@@ -2639,7 +2617,7 @@ public class Nd4j {
      * @return the reversed matrix
      */
     public static INDArray reverse(INDArray reverse) {
-        return Nd4j.getExecutioner().exec(new OldReverse(reverse));
+        return Nd4j.getExecutioner().exec(new Reverse(reverse))[0];
     }
 
     /**
@@ -5961,28 +5939,7 @@ public class Nd4j {
         }
 
     }
-
-    /**
-     * This method returns maximal allowed number of threads for Nd4j.
-     * If value wasn't set in advance, max(1, availableProcessor) will be returned
-     * @return maximal allowed number of threads
-     */
-    public static int numThreads() {
-        val v = numThreads.get();
-        if (v <= 0)
-            return Math.max(1, Runtime.getRuntime().availableProcessors() / 2);
-        else
-            return v;
-    }
-
-    /**
-     * This method sets maximal allowed number of threads for Nd4j
-     * @param numthreads maximal allowed number of threads
-     */
-    public static void setNumThreads(int numthreads) {
-        numThreads.set(numthreads);
-    }
-
+  
     public static DataType defaultFloatingPointType() {
         return defaultFloatingPointDataType.get();
     }
