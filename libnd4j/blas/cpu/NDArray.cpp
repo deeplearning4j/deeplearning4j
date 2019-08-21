@@ -400,7 +400,6 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
     }
 }
 
-
 //////////////////////////////////////////////////////////////////////////
 // create new array by repeating it the number of times given by repeats
 NDArray* NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
@@ -417,7 +416,7 @@ NDArray* NDArray::repeat(const int axis, const std::vector<int>& repeats) const 
 void NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) const {
 
     if(!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *this)))
-        throw std::invalid_argument("NDArray::repeat(int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of target array!");
+        throw std::invalid_argument("NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of target array!");
 
     BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), repeat_, (*this, target, repeats, axis), LIBND4J_TYPES, LIBND4J_TYPES);
 }
