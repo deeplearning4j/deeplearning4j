@@ -52,3 +52,20 @@ TEST_F(DeclarableOpsTests16, test_repeat_119) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests16, test_scatter_update_119) {
+    auto x = NDArrayFactory::create<float>('c', {3}, {1, 1, 1});
+    auto y = NDArrayFactory::create<int>(0);
+    auto w = NDArrayFactory::create<float>(3.0f);
+    auto e = NDArrayFactory::create<float>('c', {3}, {3.f, 1.f, 1.f});
+
+    nd4j::ops::scatter_upd op;
+    auto result = op.execute({&x, &y, &w}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}

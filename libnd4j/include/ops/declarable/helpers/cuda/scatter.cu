@@ -183,7 +183,7 @@ __global__ static void scatterLockCuda(const int opCode,
 
     __shared__ bool vectorCase;
     if(threadIdx.x == 0)
-        vectorCase = yTadLen == xLen && shape::rank(xShapeInfo) == 1;
+        vectorCase = yTadLen == xLen && shape::rank(xShapeInfo) <= 1;
     __syncthreads();
 
     for (int e = 0; e < xLen; e++) {

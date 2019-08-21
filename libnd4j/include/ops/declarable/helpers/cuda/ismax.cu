@@ -62,7 +62,7 @@ static void ismax_(nd4j::LaunchContext * context, const NDArray* input, NDArray*
         int dimensionLength = dimensions.size();
         std::vector<int> copy(dimensions);
 
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), copy.data(), copy.size());
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), copy.data(), copy.size());
 
         auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
 

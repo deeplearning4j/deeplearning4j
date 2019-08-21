@@ -312,7 +312,8 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     Nd4jLong product = 1;
     for(const auto& item : reps)
         product *= item;
-    if(product == 0)
+
+    if(product < 1)
         throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
     int rankOld = rankOf();
@@ -350,6 +351,10 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
+
+    auto repProd = shape::prodLong(reps.data(), reps.size());
+    if (repProd < 1)
+        throw std::runtime_error("NDArray::tile: reps can't contain 0s");
 
     // evaluate true tile shapeInfo for comparison with target shapeInfo
     auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());

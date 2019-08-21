@@ -125,9 +125,12 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
         //to the back.
         //permuted version of the input shape info for setting up the tad problem
         auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
+        auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), const_cast<int*>(dimensions.data()), dimensionsLength);
+
 
         auto tadShapeShapeInfo = tadPack.primaryShapeInfo();
         auto tadOffsets = tadPack.primaryOffsets();
+        auto zOfsets = tadPackZ.platformOffsets();
 
         int tadLength = shape::length(tadShapeShapeInfo);
         int tads = tadPack.numberOfTads();
@@ -137,7 +140,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
         num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
 
         auto tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
-        auto zEWS = tadEWS;
+        auto zEWS = shape::elementWiseStride(tadPackZ.primaryShapeInfo());
 
         int span = (tads / num_threads) + 8;
 
@@ -151,7 +154,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
             for (int r = start; r < end; r++) {
                 if (tadEWS > 0 && zEWS > 0 && dimensionsLength == 1) {
                     auto rX = const_cast<NDArray*>(input)->bufferAsT<X>() + tadOffsets[r];
-                    auto rZ = output->bufferAsT<Z>() + tadOffsets[r];
+                    auto rZ = output->bufferAsT<Z>() + zOfsets[r];
 
                     auto maxValue = rX[0];
                     int maxIdx = 0;
@@ -168,7 +171,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                             rZ[i] = maxIdx == i ? (Z) 1 : (Z) 0;
                         }
                     } 
-                    else {
+                    else if (tadEWS > 1 && zEWS > 1) {
                         for (int i = 0; i < tadLength; i++) {
                             if (rX[i * tadEWS] > maxValue) {
                                 maxIdx = i;
@@ -179,6 +182,20 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         PRAGMA_OMP_SIMD
                         for (int i = 0; i < tadLength; i++) {
                             rZ[i * zEWS] = maxIdx == i ? (Z) 1 : (Z) 0;
+                        }
+                    } else {
+                        for (int i = 0; i < tadLength; i++) {
+                            auto xOffset = shape::getIndexOffset(i, tadShapeShapeInfo, tadLength);
+                            if (rX[xOffset] > maxValue) {
+                                maxIdx = i;
+                                maxValue = rX[xOffset];
+                            }
+                        }
+
+                        PRAGMA_OMP_SIMD
+                        for (int i = 0; i < tadLength; i++) {
+                            auto zOffset = shape::getIndexOffset(i, tadPackZ.primaryShapeInfo(), tadLength);
+                            rZ[zOffset] = maxIdx == i ? (Z) 1 : (Z) 0;
                         }
                     }
                 } 
