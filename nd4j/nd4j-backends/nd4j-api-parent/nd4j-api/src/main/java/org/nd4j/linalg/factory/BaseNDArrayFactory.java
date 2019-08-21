@@ -1329,13 +1329,19 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(Number value) {
-        if (Nd4j.dataType() == DataType.DOUBLE)
-            return scalar(value.doubleValue(), 0);
-        if (Nd4j.dataType() == DataType.FLOAT || Nd4j.dataType() == DataType.HALF)
-            return scalar(value.floatValue(), 0);
-        if (Nd4j.dataType() == DataType.INT)
-            return scalar(value.intValue(), 0);
-        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
+        if (value instanceof Double)
+            return create(new double[]{value.doubleValue()}, new long[0], new long[0], DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Float)
+            return create(new float[]{value.floatValue()}, new long[0], new long[0], DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Long)
+            return create(new long[]{value.longValue()}, new long[0], new long[0], DataType.LONG, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Integer)
+            return create(new int[]{value.intValue()}, new long[0], new long[0], DataType.INT, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Short)
+            return create(new short[]{value.shortValue()}, new long[0], new long[0], DataType.SHORT, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Byte)
+            return create(new byte[]{value.byteValue()}, new long[0], new long[0], DataType.BYTE, Nd4j.getMemoryManager().getCurrentWorkspace());
+        throw new IllegalStateException("Unknown instance of Number: [" + value.getClass().getCanonicalName() + "]");
     }
 
     /**

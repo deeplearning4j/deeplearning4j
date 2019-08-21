@@ -3599,6 +3599,7 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
 // #include <ShapeDescriptor.h>
 // #include <helpers/ConstantShapeHelper.h>
 // #include <array/DataBuffer.h>
+// #include <execution/AffinityManager.h>
 
 
     @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(float arg0, @Const @ByRef NDArray arg1);
@@ -18203,24 +18204,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public space_to_batch() { super((Pointer)null); allocate(); }
-                                                                                    private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
-                                                                                }
-//         #endif
-
-//         #if NOT_EXCLUDED(OP_space_to_batch_nd)
-        @Namespace("nd4j::ops") public static class space_to_batch_nd extends DeclarableCustomOp {
-            static { Loader.load(); }
-            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
-            public space_to_batch_nd(Pointer p) { super(p); }
-            /** Native array allocator. Access with {@link Pointer#position(long)}. */
-            public space_to_batch_nd(long size) { super((Pointer)null); allocateArray(size); }
-            private native void allocateArray(long size);
-            @Override public space_to_batch_nd position(long position) {
-                return (space_to_batch_nd)super.position(position);
-            }
-        
-                                                                                    public space_to_batch_nd() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

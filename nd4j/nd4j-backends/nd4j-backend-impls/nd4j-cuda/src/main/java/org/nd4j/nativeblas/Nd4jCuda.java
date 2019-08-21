@@ -3599,6 +3599,7 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
 // #include <ShapeDescriptor.h>
 // #include <helpers/ConstantShapeHelper.h>
 // #include <array/DataBuffer.h>
+// #include <execution/AffinityManager.h>
 
 
     @Namespace("nd4j") public static native @ByVal @Name("operator -") NDArray subtract(float arg0, @Const @ByRef NDArray arg1);
