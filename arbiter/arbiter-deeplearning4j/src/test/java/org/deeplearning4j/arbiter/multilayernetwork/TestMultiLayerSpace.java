@@ -31,6 +31,7 @@ import org.deeplearning4j.arbiter.optimize.api.score.ScoreFunction;
 import org.deeplearning4j.arbiter.optimize.api.termination.MaxCandidatesCondition;
 import org.deeplearning4j.arbiter.optimize.api.termination.TerminationCondition;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
+import org.deeplearning4j.arbiter.optimize.generator.GridSearchCandidateGenerator;
 import org.deeplearning4j.arbiter.optimize.generator.RandomSearchGenerator;
 import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.continuous.ContinuousParameterSpace;
@@ -705,5 +706,64 @@ public class TestMultiLayerSpace {
 
 
         MultiLayerConfiguration conf = mls.getValue(new double[nParams]).getMultiLayerConfiguration();
+    }
+
+
+    @Test
+    public void testIssue8082(){
+        ParameterSpace<Double> learningRateHyperparam = new DiscreteParameterSpace<>(0.003, 0.005, 0.01, 0.05);
+        ParameterSpace<Integer> layerSizeHyperparam1 = new DiscreteParameterSpace<>(32, 64, 96, 128);
+        ParameterSpace<Integer> layerSizeHyperparam2 = new DiscreteParameterSpace<>(32, 64, 96, 128);
+        ParameterSpace<Double> dropoutHyperparam = new DiscreteParameterSpace<>(0.8, 0.9);
+
+        MultiLayerSpace mls = new MultiLayerSpace.Builder()
+                .updater(new AdamSpace(learningRateHyperparam))
+                .weightInit(WeightInit.XAVIER)
+                .l2(0.0001)
+                .addLayer(new DenseLayerSpace.Builder()
+                        .nIn(10)
+                        .nOut(layerSizeHyperparam1)
+                        .build())
+                .addLayer(new BatchNormalizationSpace.Builder()
+                        .nOut(layerSizeHyperparam1)
+                        .activation(Activation.RELU)
+                        .build())
+                .addLayer(new DropoutLayerSpace.Builder()
+                        .dropOut(dropoutHyperparam)
+                        .build())
+                .addLayer(new DenseLayerSpace.Builder()
+                        .nOut(layerSizeHyperparam2)
+                        .build())
+                .addLayer(new BatchNormalizationSpace.Builder()
+                        .nOut(layerSizeHyperparam2)
+                        .activation(Activation.RELU)
+                        .build())
+                .addLayer(new DropoutLayerSpace.Builder()
+                        .dropOut(dropoutHyperparam)
+                        .build())
+                .addLayer(new OutputLayerSpace.Builder()
+                        .nOut(10)
+                        .activation(Activation.SOFTMAX)
+                        .lossFunction(LossFunction.MCXENT)
+                        .build())
+                .build();
+
+        assertEquals(4, mls.getNumParameters());
+
+        for( int discreteCount : new int[]{1, 5}) {
+            GridSearchCandidateGenerator generator = new GridSearchCandidateGenerator(mls, discreteCount, GridSearchCandidateGenerator.Mode.Sequential, null);
+
+            int expCandidates = 4 * 4 * 4 * 2;
+            assertEquals(expCandidates, generator.getTotalNumCandidates());
+
+            int count = 0;
+            while (generator.hasMoreCandidates()) {
+                generator.getCandidate();
+                count++;
+            }
+
+
+            assertEquals(expCandidates, count);
+        }
     }
 }

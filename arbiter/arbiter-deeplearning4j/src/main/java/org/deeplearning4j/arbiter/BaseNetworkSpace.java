@@ -44,10 +44,7 @@ import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 /**
  * This is an abstract ParameterSpace for both MultiLayerNetworks (MultiLayerSpace) and ComputationGraph (ComputationGraphSpace)
@@ -212,18 +209,30 @@ public abstract class BaseNetworkSpace<T> extends AbstractParameterSpace<T> {
     @Override
     public List<ParameterSpace> collectLeaves() {
         Map<String, ParameterSpace> global = getNestedSpaces();
-        List<ParameterSpace> list = new ArrayList<>();
-        list.addAll(global.values());
-
         //Note: Results on previous line does NOT include the LayerSpaces, therefore we need to add these manually...
         //This is because the type is a list, not a ParameterSpace
+        LinkedList<ParameterSpace> stack = new LinkedList<>();
+        stack.add(this);
 
         for (LayerConf layerConf : layerSpaces) {
             LayerSpace ls = layerConf.getLayerSpace();
-            list.addAll(ls.collectLeaves());
+            stack.addAll(ls.collectLeaves());
         }
 
-        return list;
+        List<ParameterSpace> out = new ArrayList<>();
+        while (!stack.isEmpty()) {
+            ParameterSpace next = stack.removeLast();
+            if (next.isLeaf()) {
+                out.add(next);
+            } else {
+                Map<String, ParameterSpace> m = next.getNestedSpaces();
+                ParameterSpace[] arr = m.values().toArray(new ParameterSpace[m.size()]);
+                for (int i = arr.length - 1; i >= 0; i--) {
+                    stack.add(arr[i]);
+                }
+            }
+        }
+        return out;
     }
 
 

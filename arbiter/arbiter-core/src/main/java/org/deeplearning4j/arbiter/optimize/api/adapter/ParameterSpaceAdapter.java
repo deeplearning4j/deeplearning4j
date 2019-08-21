@@ -19,6 +19,7 @@ package org.deeplearning4j.arbiter.optimize.api.adapter;
 import lombok.AllArgsConstructor;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +38,8 @@ public abstract class ParameterSpaceAdapter<F, T> implements ParameterSpace<T> {
 
     protected abstract ParameterSpace<F> underlying();
 
+    protected abstract String underlyingName();
+
 
     @Override
     public T getValue(double[] parameterValues) {
@@ -50,17 +53,21 @@ public abstract class ParameterSpaceAdapter<F, T> implements ParameterSpace<T> {
 
     @Override
     public List<ParameterSpace> collectLeaves() {
+        ParameterSpace p = underlying();
+        if(p.isLeaf()){
+            return Collections.singletonList(p);
+        }
         return underlying().collectLeaves();
     }
 
     @Override
     public Map<String, ParameterSpace> getNestedSpaces() {
-        return underlying().getNestedSpaces();
+        return Collections.singletonMap(underlyingName(), (ParameterSpace)underlying());
     }
 
     @Override
     public boolean isLeaf() {
-        return underlying().isLeaf();
+        return false;   //Underlying may be a leaf, however
     }
 
     @Override

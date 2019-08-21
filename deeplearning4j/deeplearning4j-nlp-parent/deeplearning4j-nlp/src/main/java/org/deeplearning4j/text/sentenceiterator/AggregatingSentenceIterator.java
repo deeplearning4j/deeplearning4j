@@ -100,7 +100,15 @@ public class AggregatingSentenceIterator implements SentenceIterator {
             return this;
         }
 
+        /**
+         * @deprecated Use {@link #sentencePreProcessor(SentencePreProcessor)}
+         */
+        @Deprecated
         public Builder addSentencePreProcessor(@NonNull SentencePreProcessor preProcessor) {
+            return sentencePreProcessor(preProcessor);
+        }
+
+        public Builder sentencePreProcessor(@NonNull SentencePreProcessor preProcessor) {
             this.preProcessor = preProcessor;
             return this;
         }
