@@ -196,7 +196,7 @@ TEST_F(MultiDataTypeTests, ndarray_repeat_test1) {
     NDArray y('c', {2, 4}, nd4j::DataType::HALF);
     NDArray exp('c', {2, 4}, {0.5, 0.5, 1.5, 1.5, 2.5, 2.5, 3.5, 3.5}, nd4j::DataType::HALF);
 
-    x.repeat(1, y);
+    x.repeat(1, {2}, y);
 
     ASSERT_EQ(y, exp);
 }

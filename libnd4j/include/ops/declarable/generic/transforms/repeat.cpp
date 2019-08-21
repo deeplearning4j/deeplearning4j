@@ -22,7 +22,6 @@
 #if NOT_EXCLUDED(OP_repeat)
 
 #include <ops/declarable/CustomOperations.h>
-#include<ops/declarable/helpers/transforms.h>
 
 namespace nd4j {
 namespace ops  {
@@ -44,7 +43,7 @@ CUSTOM_OP_IMPL(repeat, 1, 1, true, 0, -1) {
 
     REQUIRE_TRUE(repeats.size() == 1 || repeats.size() == input->sizeAt(axis), 0, "CUSTOM REPEAT OP: wrong axis argument, size of repeats vector must be 1 or equal to dimension at given axis, but got repeats.size = %i and axis = %i !", repeats.size(), axis);
 
-    helpers::repeat(block.launchContext(), *input, *output, repeats, axis);
+    input->repeat(axis, repeats, *output);
 
 	return Status::OK();
 }
