@@ -438,6 +438,7 @@ public class AtomicAllocator implements Allocator {
         Long allocId = objectsTracker.getAndIncrement();
         point.setObjectId(allocId);
         point.setConstant(true);
+        point.setDeviceId(Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
         allocationsMap.put(allocId, point);
 

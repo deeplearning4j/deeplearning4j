@@ -47,14 +47,12 @@ __global__ static void batchToSpaceCuda(const void* vx, const Nd4jLong* xShapeIn
     __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * rank;
@@ -270,14 +268,12 @@ __global__ static void spaceToBatchCuda(const void* vx, const Nd4jLong* xShapeIn
     __shared__ Nd4jLong zLen, *sharedMem;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
         rank  = shape::rank(zShapeInfo);
         zLen  = shape::length(zShapeInfo);
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * rank;

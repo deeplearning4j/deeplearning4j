@@ -217,7 +217,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         if (threadIdx.x == 0) {
                             z[r] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]);
                         }
-
+                        __syncthreads();
                     }
                 }
                 else {
@@ -285,8 +285,8 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         SummaryStatsData<X> *pBuffer = (SummaryStatsData<X>*) reductionBuffer;
                         pBuffer[blockIdx.x] = sPartials[0];
                     }
-                    __syncthreads();
                     __threadfence();
+                    __syncthreads();
 
                     if (tid == 0) {
                         unsigned int ticket = atomicInc(&tc[16384], gridDim.x);

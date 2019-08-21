@@ -1408,7 +1408,7 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testScatterOpsScalar(){
         for(String s : new String[]{"add", "sub", "mul", "div"}) {
             INDArray ref = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(10, 3);
-            INDArray indices = Nd4j.trueScalar(5);
+            INDArray indices = Nd4j.scalar(5);
             INDArray upd = Nd4j.create(new double[]{10, 20, 30});
 
             //The non-scalar case works:
@@ -1452,7 +1452,7 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testPad(){
         INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);
         INDArray pad = Nd4j.create(new double[]{1,1}, new long[]{1,2}).castTo(DataType.LONG);
-        INDArray value = Nd4j.trueScalar(10.0);
+        INDArray value = Nd4j.scalar(10.0);
 
         INDArray out = Nd4j.create(new long[]{7});
 

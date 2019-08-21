@@ -122,10 +122,13 @@
                         <includePath>${libnd4jhome}/include</includePath>
                         <includePath>${libnd4jhome}/include/helpers</includePath>
                         <includePath>${libnd4jhome}/include/array</includePath>
-                        <includePath>${libnd4jhome}/include/memory</includePath>
-                        <includePath>${libnd4jhome}/include/graph</includePath>
                         <includePath>${libnd4jhome}/include/cnpy</includePath>
+                        <includePath>${libnd4jhome}/include/execution</includePath>
+                        <includePath>${libnd4jhome}/include/exceptions</includePath>
+                        <includePath>${libnd4jhome}/include/graph</includePath>
                         <includePath>${libnd4jhome}/include/indexing</includePath>
+                        <includePath>${libnd4jhome}/include/memory</includePath>
+                        <includePath>${libnd4jhome}/include/performance</includePath>
                     </includePaths>
                     <linkPaths>
                         <linkPath>${libnd4jhome}/blasbuild/cuda/blas</linkPath>

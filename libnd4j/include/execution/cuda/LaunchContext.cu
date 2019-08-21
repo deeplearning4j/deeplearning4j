@@ -35,8 +35,8 @@ namespace nd4j {
 ////////////////////////////////////////////////////////////////////////
 LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer, void* scalarPointer, int* allocationPointer)  {
 
-	_cudaStream 	   = cudaStream;
-	_cudaSpecialStream = &specialCudaStream; // ideal is = new cudaStream_t; *_cudaSpecialStream = specialCudaStream;
+	//_cudaStream 	   = cudaStream;
+	//_cudaSpecialStream = &specialCudaStream; // ideal is = new cudaStream_t; *_cudaSpecialStream = specialCudaStream;
 	//_reductionPointer  = reductionPointer;
 	//_scalarPointer     = scalarPointer;
 	//_allocationPointer = allocationPointer;
@@ -46,14 +46,7 @@ LaunchContext::LaunchContext(cudaStream_t *cudaStream, cudaStream_t& specialCuda
 
 LaunchContext::~LaunchContext() {
     if (_isAllocated) {
-        cudaStreamSynchronize(*_cudaStream);
-        cudaStreamSynchronize(*_cudaSpecialStream);
 
-        cudaStreamDestroy(*_cudaStream);
-        cudaStreamDestroy(*_cudaSpecialStream);
-
-        delete _cudaStream;
-        delete _cudaSpecialStream;
     }
 }
 
@@ -64,32 +57,16 @@ LaunchContext::LaunchContext() {
     _deviceID = 0;
 
     _isAllocated = true;
-    _cudaStream  = new cudaStream_t();
-    _cudaSpecialStream = new cudaStream_t();
-    if (nullptr == _cudaStream || nullptr == _cudaSpecialStream)
-        throw std::runtime_error("Failed to allocate memory for new CUDA stream");
-
-    cudaError_t err = cudaStreamCreate(_cudaStream);
-    if (err != 0)
-        throw cuda_exception::build("Failed to create default CUDA stream with launch context", err);
-
-    err = cudaStreamCreate(_cudaSpecialStream);
-    if (err != 0)
-        throw cuda_exception::build("Failed to create special CUDA stream with launch context", err);
 
     _cublasHandle = CublasHelper::getInstance()->handle();
 
     _cusolverHandle = CublasHelper::getInstance()->solver();
-
-    auto res = cudaStreamSynchronize(*_cudaStream);
-    if (res != 0)
-        throw cuda_exception::build("Initial sync failed", res);
 }
 
     LaunchContext::LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer scalarPointer, Nd4jPointer allocationPointer) {
         _isAllocated = false;
-        _cudaStream = reinterpret_cast<cudaStream_t*>(cudaStream);
-        _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(cudaStream);
+        //_cudaStream = reinterpret_cast<cudaStream_t*>(cudaStream);
+       // _cudaSpecialStream = reinterpret_cast<cudaStream_t*>(cudaStream);
         //_reductionPointer = reductionPointer;
         //_scalarPointer = scalarPointer;
         //_allocationPointer = reinterpret_cast<int *>(allocationPointer);
@@ -148,11 +125,11 @@ LaunchContext::LaunchContext() {
     };
 
     cudaStream_t* LaunchContext::getCudaStream() const {
-        return _cudaStream;
+        return reinterpret_cast<cudaStream_t*>(contextBuffers.execStream());
     };
 
     cudaStream_t* LaunchContext::getCudaSpecialStream() const {
-        return _cudaSpecialStream;
+        return reinterpret_cast<cudaStream_t*>(contextBuffers.specialStream());;
     };
 
 
@@ -169,14 +146,18 @@ LaunchContext::LaunchContext() {
     };
 
     void LaunchContext::setCudaStream(cudaStream_t* cudaStream)  {
-        _cudaStream = cudaStream;
+        //_cudaStream = cudaStream;
     };
 
     void LaunchContext::setCudaSpecialStream(cudaStream_t* cudaStream)  {
-        _cudaSpecialStream = cudaStream;
+        //_cudaSpecialStream = cudaStream;
     };
 
     void LaunchContext::setCublasHandle(void *handle) {
         _cublasHandle = handle;
+    };
+
+    void LaunchContext::swapContextBuffers(ContextBuffers &buffers) {
+        contextBuffers = buffers;
     };
 }

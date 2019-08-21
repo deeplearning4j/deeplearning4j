@@ -55,7 +55,19 @@ void* NDArray::getPlatformBuffer() const    { return getSpecialBuffer(); }
 Nd4jLong* NDArray::getPlatformShapeInfo() const { return getSpecialShapeInfo(); }
 Nd4jLong* NDArray::platformShapeInfo()          { return specialShapeInfo(); }
 
-void NDArray::syncToDevice() const          { _buffer->syncToSpecial();  }
+void NDArray::syncToDevice() const          {
+    auto currentDeviceId = AffinityManager::currentDeviceId();
+    if (currentDeviceId != _deviceId) {
+        // first of all we update shapeInfo
+        const_cast<NDArray*>(this)->setShapeInfo(this->getShapeInfo());
+
+        // now we actually migrate data buffer
+        _buffer->migrate();
+    }
+
+    _buffer->syncToSpecial();
+}
+
 void NDArray::syncToHost() const            { _buffer->syncToPrimary(getContext()); }
 void NDArray::tickWriteHost() const         { _buffer->writePrimary();   }
 void NDArray::tickWriteDevice() const       { _buffer->writeSpecial();   }
@@ -78,7 +90,6 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
     __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
         areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
@@ -87,7 +98,6 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
         zLen  = shape::length(zShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * zRank;
@@ -153,14 +163,12 @@ __global__ static void identityMatrixCuda(void* vx, const Nd4jLong* xShapeInfo, 
     __shared__ Nd4jLong len, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
         rank = shape::rank(xShapeInfo);
         len  = shape::length(xShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * rank;
@@ -304,7 +312,8 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     Nd4jLong product = 1;
     for(const auto& item : reps)
         product *= item;
-    if(product == 0)
+
+    if(product < 1)
         throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
     int rankOld = rankOf();
@@ -342,6 +351,10 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
 //////////////////////////////////////////////////////////////////////////
 // change an array by repeating it the number of times given by reps.
 void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
+
+    auto repProd = shape::prodLong(reps.data(), reps.size());
+    if (repProd < 1)
+        throw std::runtime_error("NDArray::tile: reps can't contain 0s");
 
     // evaluate true tile shapeInfo for comparison with target shapeInfo
     auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());

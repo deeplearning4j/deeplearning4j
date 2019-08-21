@@ -93,6 +93,7 @@ __global__ static void prefixPerBlockCuda(scalar::Ops op,
 
         if (threadIdx.x == 0)
             shared[blockDim2 - 1] = (op == scalar::Add) ? 0 : 1;
+        __syncthreads();
 
         for (uint d = 1; d < blockDim2; d *= 2) {
 

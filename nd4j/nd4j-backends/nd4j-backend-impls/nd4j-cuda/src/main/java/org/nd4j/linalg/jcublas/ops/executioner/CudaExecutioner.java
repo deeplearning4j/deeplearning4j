@@ -233,7 +233,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
                         + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
 
-        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+        val context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
@@ -2490,6 +2490,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         ((CudaOpContext) context).setCudaStream(ctx.getOldStream(), ctx.getBufferReduction(), ctx.getBufferAllocation());
 
         nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());
+
+        for (val arr:op.outputArguments())
+            AtomicAllocator.getInstance().registerAction(ctx, arr);
+
+        AtomicAllocator.getInstance().registerAction(ctx, null, op.inputArguments());
 
         profilingConfigurableHookOut(op, st);
 

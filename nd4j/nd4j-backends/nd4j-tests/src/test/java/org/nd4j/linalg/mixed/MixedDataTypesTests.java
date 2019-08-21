@@ -104,7 +104,7 @@ public class MixedDataTypesTests extends BaseNd4jTest {
 
     @Test
     public void testBasicCreation_5() {
-        val scalar = Nd4j.trueScalar(new Integer(1));
+        val scalar = Nd4j.scalar(Integer.valueOf(1));
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
         assertEquals(1, scalar.length());
@@ -113,8 +113,58 @@ public class MixedDataTypesTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testBasicCreation_5_0() {
+        val scalar = Nd4j.scalar(Long.valueOf(1));
+        assertNotNull(scalar);
+        assertEquals(0, scalar.rank());
+        assertEquals(1, scalar.length());
+        assertEquals(DataType.LONG, scalar.dataType());
+        assertEquals(1.0, scalar.getInt(0), 1e-5);
+    }
+
+    @Test
+    public void testBasicCreation_5_1() {
+        val scalar = Nd4j.scalar(Double.valueOf(1));
+        assertNotNull(scalar);
+        assertEquals(0, scalar.rank());
+        assertEquals(1, scalar.length());
+        assertEquals(DataType.DOUBLE, scalar.dataType());
+        assertEquals(1.0, scalar.getDouble(0), 1e-5);
+    }
+
+    @Test
+    public void testBasicCreation_5_2() {
+        val scalar = Nd4j.scalar(Float.valueOf(1));
+        assertNotNull(scalar);
+        assertEquals(0, scalar.rank());
+        assertEquals(1, scalar.length());
+        assertEquals(DataType.FLOAT, scalar.dataType());
+        assertEquals(1.0, scalar.getDouble(0), 1e-5);
+    }
+
+    @Test
+    public void testBasicCreation_5_3() {
+        val scalar = Nd4j.scalar(Short.valueOf((short) 1));
+        assertNotNull(scalar);
+        assertEquals(0, scalar.rank());
+        assertEquals(1, scalar.length());
+        assertEquals(DataType.SHORT, scalar.dataType());
+        assertEquals(1.0, scalar.getDouble(0), 1e-5);
+    }
+
+    @Test
+    public void testBasicCreation_5_4() {
+        val scalar = Nd4j.scalar(Byte.valueOf((byte) 1));
+        assertNotNull(scalar);
+        assertEquals(0, scalar.rank());
+        assertEquals(1, scalar.length());
+        assertEquals(DataType.BYTE, scalar.dataType());
+        assertEquals(1.0, scalar.getDouble(0), 1e-5);
+    }
+
+    @Test
     public void testBasicCreation_6() {
-        val scalar = Nd4j.trueScalar(1);
+        val scalar = Nd4j.scalar(1);
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
         assertEquals(1, scalar.length());
@@ -124,7 +174,7 @@ public class MixedDataTypesTests extends BaseNd4jTest {
 
     @Test
     public void testBasicCreation_7() {
-        val scalar = Nd4j.trueScalar(1L);
+        val scalar = Nd4j.scalar(1L);
         assertNotNull(scalar);
         assertEquals(0, scalar.rank());
         assertEquals(1, scalar.length());

@@ -27,10 +27,12 @@
 namespace nd4j {
     class ND4J_EXPORT ContextBuffers {
     private:
-        void* _reductionPointer;
-        void* _scalarPointer;
-        void* _allocationPointer;
-        bool _allocated = true;
+        void* _reductionPointer = nullptr;
+        void* _scalarPointer = nullptr;
+        void* _allocationPointer = nullptr;
+        void* _execStream = nullptr;
+        void* _specialStream = nullptr;
+        bool _allocated = false;
 
         int _deviceId = -1;
 
@@ -43,6 +45,9 @@ namespace nd4j {
         void* reductionBuffer();
         void* scalarBuffer();
         void* allocationBuffer();
+
+        void* execStream();
+        void* specialStream();
 
         void setReductionBuffer(void* pointer);
         void setScalarBuffer(void* pointer);

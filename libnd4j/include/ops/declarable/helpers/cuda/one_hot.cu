@@ -46,7 +46,6 @@ __global__ static void onehotCuda(const void *vx, const Nd4jLong *xShapeInfo, vo
     __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
         xRank = shape::rank(xShapeInfo);
@@ -54,10 +53,9 @@ __global__ static void onehotCuda(const void *vx, const Nd4jLong *xShapeInfo, vo
         zLen  = shape::length(zShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
+    __syncthreads();
 
     auto coord = sharedMem + threadIdx.x * zRank;
-
-    __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 

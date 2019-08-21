@@ -234,12 +234,12 @@ public class ReductionOpValidation extends BaseOpValidation {
                 case 10:
                     loss = sd.math().countNonZero("loss", input);
                     name = "countNonZero";
-                    tc.expectedOutput("loss", Nd4j.trueScalar(inputArr.length()));
+                    tc.expectedOutput("loss", Nd4j.scalar(inputArr.length()));
                     break;
                 case 11:
                     loss = sd.math().countZero("loss", input);
                     name = "countZero";
-                    tc.expectedOutput("loss", Nd4j.trueScalar(0));
+                    tc.expectedOutput("loss", Nd4j.scalar(0));
                     break;
                 case 12:
                     loss = sd.math().amax("loss", input);
@@ -280,21 +280,21 @@ public class ReductionOpValidation extends BaseOpValidation {
                     name = "sqnorm";
                     loss = sd.squaredNorm("loss", input);
                     double norm2 = inputArr.norm2Number().doubleValue();
-                    tc.expected("loss", Nd4j.trueScalar(norm2 * norm2));
+                    tc.expected("loss", Nd4j.scalar(norm2 * norm2));
                     break;
                 case 19:
                     inputArr = Nd4j.rand(minibatch, nOut);
                     name = "logEntropy";
                     loss = sd.math().logEntropy("loss", input);
                     double logEntropy = inputArr.logEntropyNumber().doubleValue();
-                    tc.expected(loss, Nd4j.trueScalar(logEntropy));
+                    tc.expected(loss, Nd4j.scalar(logEntropy));
                     break;
                 case 20:
                     inputArr = Nd4j.rand(minibatch, nOut);
                     name = "shannonEntropy";
                     loss = sd.math().shannonEntropy("loss", input);
                     double shannonEntropy = inputArr.shannonEntropyNumber().doubleValue();
-                    tc.expected(loss, Nd4j.trueScalar(shannonEntropy));
+                    tc.expected(loss, Nd4j.scalar(shannonEntropy));
                     if (OpValidationSuite.IGNORE_FAILING) {
                         continue;
                     }

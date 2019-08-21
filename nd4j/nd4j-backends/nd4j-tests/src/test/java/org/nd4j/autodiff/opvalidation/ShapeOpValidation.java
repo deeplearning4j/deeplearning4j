@@ -1030,7 +1030,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         //Case 1: shape is provided + scalar
 
         sd = SameDiff.create();
-        ia = Nd4j.trueScalar(3.0);
+        ia = Nd4j.scalar(3.0);
         in = sd.var(ia);
         constant = sd.constant(in, 3,4,5);
         INDArray exp = Nd4j.valueArrayOf(new long[]{3,4,5}, 3.0);
@@ -1169,7 +1169,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         double d = new LUDecomposition(CheckUtil.convertToApacheMatrix(in)).getDeterminant();
 
 
-        INDArray outExp = Nd4j.trueScalar(d);
+        INDArray outExp = Nd4j.scalar(d);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(md.getVarName(), outExp));
@@ -1193,7 +1193,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(d, d2, 1e-5);
 
 
-        INDArray outExp = Nd4j.trueScalar(d);
+        INDArray outExp = Nd4j.scalar(d);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(md.getVarName(), outExp));
@@ -1224,7 +1224,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 - a[0][0] * a[1][2] * a[2][1];
         assertEquals(d, d2, 1e-6);          //Manual calc and Apache commons both match:    0.03589524995561552
 
-        INDArray outExp = Nd4j.trueScalar(d);
+        INDArray outExp = Nd4j.scalar(d);
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expected(md.getVarName(), outExp));
@@ -1247,7 +1247,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         //System.out.println(d);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(md.getVarName(), Nd4j.trueScalar(d)));
+                .expected(md.getVarName(), Nd4j.scalar(d)));
         assertNull(err);
     }
 
@@ -1792,7 +1792,7 @@ public class ShapeOpValidation extends BaseOpValidation {
     @Test
     public void testSplit1(){
         INDArray in = Nd4j.linspace(1,10,10).reshape(10);
-        INDArray axis = Nd4j.trueScalar(-1);
+        INDArray axis = Nd4j.scalar(-1);
 
         INDArray out1 = Nd4j.create(new long[]{5});
         INDArray out2 = Nd4j.create(new long[]{5});

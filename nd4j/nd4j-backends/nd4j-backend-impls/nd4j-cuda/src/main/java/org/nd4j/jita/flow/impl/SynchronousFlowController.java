@@ -188,12 +188,14 @@ public class SynchronousFlowController implements FlowController {
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) result).setShapeInfoDataBuffer(
-                                Nd4j.getConstantHandler().relocateConstantSpace(result.shapeInfoDataBuffer()));
+                ((JCublasNDArray) result).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(result.shape(), result.stride(), result.elementWiseStride(), result.ordering(), result.dataType(), result.isEmpty()));
             }
 
             allocator.getAllocationPoint(result).setCurrentContext(context);
         }
+
+        if (operands == null)
+            return context;
 
         for (INDArray operand : operands) {
             if (operand == null || operand.isEmpty())
@@ -213,8 +215,7 @@ public class SynchronousFlowController implements FlowController {
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) operand).setShapeInfoDataBuffer(
-                                Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
+                ((JCublasNDArray) operand).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(operand.shape(), operand.stride(), operand.elementWiseStride(), operand.ordering(), operand.dataType(), operand.isEmpty()));
             }
 
             prepareDelayedMemory(operand);

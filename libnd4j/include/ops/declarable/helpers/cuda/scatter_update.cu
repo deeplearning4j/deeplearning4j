@@ -56,7 +56,6 @@ namespace nd4j {
                         arrLenX = shape::length(xShapeInfo);
                         arrLenY = shape::length(yShapeInfo);
                     }
-
                     __syncthreads();
 
                     if (arrLenX != arrLenY)

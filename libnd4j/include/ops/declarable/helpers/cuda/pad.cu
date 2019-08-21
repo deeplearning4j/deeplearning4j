@@ -51,7 +51,6 @@ namespace nd4j {
                 __shared__ Nd4jLong zLen, yLen, totalThreads, *coords, *xShape, *zShape, *xStride, *zStride, shift1, shift2, yStride0;
 
                 if (threadIdx.x == 0) {
-
                     extern __shared__ unsigned char shmem[];
                     coords    = reinterpret_cast<Nd4jLong*>(shmem);
                     zLen     = shape::length(zShapeInfo);

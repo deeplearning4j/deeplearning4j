@@ -52,8 +52,6 @@ class ND4J_EXPORT LaunchContext {
 
 #ifndef __JAVACPP_HACK__
 
-		cudaStream_t* _cudaStream = nullptr;
-		cudaStream_t* _cudaSpecialStream = nullptr;
 		void* _cublasHandle = nullptr;
 		void* _cusolverHandle = nullptr;
 
@@ -101,6 +99,9 @@ class ND4J_EXPORT LaunchContext {
     	void setDeviceID(int deviceID) { _deviceID = deviceID; }
 
 	    static LaunchContext* defaultContext();
+
+
+    	static void swapContextBuffers(ContextBuffers &buffers);
 
 };
 

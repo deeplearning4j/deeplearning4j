@@ -39,6 +39,7 @@
 #include <ShapeDescriptor.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <array/DataBuffer.h>
+#include <execution/AffinityManager.h>
 
 
 namespace nd4j {
@@ -142,6 +143,11 @@ namespace nd4j {
         *  type of array elements
         */
         nd4j::DataType _dataType = FLOAT32;
+
+        /**
+         * deviceID where this NDArray belongs to
+         */
+        int _deviceId = AffinityManager::currentDeviceId();
 
         template<typename T>
         std::string toStringValue(T value);

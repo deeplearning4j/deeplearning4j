@@ -48,18 +48,16 @@ namespace nd4j {
 
         for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
             auto tadOffsetForBlock = tadOffsets[r];
-
-            int highestElement = (int) dX[r];
+            auto highestElement = dX[r];
 
             if (dimensionLength > 1 || tadEWS < 1) {
 
-                for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-
+                for (Nd4jLong e = threadIdx.x; e < tadLength; e += blockDim.x) {
                     auto xOffset = tadOffsetForBlock + shape::getIndexOffset(e, tadOnlyShapeInfo, tadLength);
                     dZ[xOffset] = (e == highestElement ? (T) 1 : (T) 0);
                 }
             } else {
-                for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
+                for (Nd4jLong e = threadIdx.x; e < tadLength; e += blockDim.x) {
                     // so, we just set dZ[e] for each TAD. Sure, e should be replaced with
                     auto idx = tadOffsetForBlock + (e * tadEWS);
                     dZ[idx] = (e == highestElement ? (T) 1 : (T) 0);

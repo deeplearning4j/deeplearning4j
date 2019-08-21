@@ -47,7 +47,6 @@ namespace nd4j {
                 __shared__ Nd4jLong zLen, totalThreads, *sharedMem;
 
                 if (threadIdx.x == 0) {
-
                     extern __shared__ unsigned char shmem[];
                     sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
@@ -61,7 +60,6 @@ namespace nd4j {
 
                     totalThreads = gridDim.x * blockDim.x;
                 }
-
                 __syncthreads();
 
                 auto coord = sharedMem + threadIdx.x * maxRank;

@@ -38,7 +38,6 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
     __shared__ Nd4jLong *sharedMem, imLen;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
@@ -53,7 +52,6 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
 
         imLen = shape::length(imShapeInfo);
     }
-
     __syncthreads();
 
     const auto imInd = threadIdx.x + blockIdx.x * blockDim.x;

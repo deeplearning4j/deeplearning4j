@@ -61,7 +61,6 @@ namespace nd4j {
 
             static __global__ void lastStep(Nd4jLong* resultBuf, Nd4jLong* tempBufferA, Nd4jLong* tempResult, Nd4jLong length, Nd4jLong blockSize) {
                 if (threadIdx.x == 0) {
-
                     if (length <= blockSize)
                         *resultBuf = *tempBufferA;
                     else

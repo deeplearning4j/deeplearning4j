@@ -17,6 +17,7 @@
 package org.nd4j.linalg.jcublas;
 
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.enums.CudaConstants;
@@ -54,7 +55,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Adam Gibson
  * @author raver119@gmail.com
  */
-
+@Slf4j
 public class JCublasNDArray extends BaseNDArray {
 
 
@@ -737,14 +738,12 @@ public class JCublasNDArray extends BaseNDArray {
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
 
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+            val buffer = Nd4j.createBuffer(this.dataType(), this.lengthLong(), false);
 
-            AllocationPoint pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
-            AllocationPoint pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
+            val pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
+            val pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
 
-//            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-
-            CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
+            val context = AtomicAllocator.getInstance().getFlowController().prepareAction(pointDst, pointSrc);
 
             MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;
             val perfD = PerformanceTracker.getInstance().helperStartTransaction();
@@ -764,14 +763,12 @@ public class JCublasNDArray extends BaseNDArray {
             PerformanceTracker.getInstance().helperRegisterTransaction(pointDst.getDeviceId(), perfD, pointDst.getNumberOfBytes(), direction);
 
             if (pointDst.getDeviceId() != Nd4j.getMemoryManager().getCurrentWorkspace().getDeviceId()) {
-                //log.info("Swapping [{}] -> [{}]", pointDst.getDeviceId(), Nd4j.getMemoryManager().getCurrentWorkspace().getDeviceId());
                 pointDst.setDeviceId(Nd4j.getMemoryManager().getCurrentWorkspace().getDeviceId());
             }
 
             copy = Nd4j.createArrayFromShapeBuffer(buffer, this.shapeInfoDataBuffer());
 
             // tag buffer as valid on device side
-            pointDst.tickHostRead();
             pointDst.tickDeviceWrite();
 
             AtomicAllocator.getInstance().getFlowController().registerAction(context, pointDst, pointSrc);

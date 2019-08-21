@@ -47,7 +47,6 @@ static void _CUDA_G adjustSaturationCuda(const void* vx, const Nd4jLong* xShapeI
         xDimCstride = shape::stride(xShapeInfo)[dimC];
         zDimCstride = shape::stride(zShapeInfo)[dimC];
     }
-
     __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;

@@ -53,7 +53,6 @@ __global__ static void batchnormCuda(const void* vx, const Nd4jLong* xShapeInfo,
     __shared__ Nd4jLong minLen, tadLen, totalThreads;
 
     if (threadIdx.x == 0) {
-
         totalThreads = gridDim.x * blockDim.x;
 
         minLen = shape::length(meanShapeInfo);
@@ -116,7 +115,6 @@ __global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo
 
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem    = reinterpret_cast<Nd4jLong*>(shmem);
         totalThreads = gridDim.x * blockDim.x;

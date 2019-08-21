@@ -252,11 +252,6 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray trueScalar(Number value) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public INDArray create(float[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
         return null;
     }

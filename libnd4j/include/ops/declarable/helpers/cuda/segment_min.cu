@@ -257,6 +257,7 @@ namespace helpers {
             gradOut = reinterpret_cast<T*>(eps);
             gradLen = shape::length(epsShape);
         }
+        __syncthreads();
 
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = gridDim.x * blockDim.x;
@@ -302,6 +303,7 @@ namespace helpers {
             gradLen = shape::length(epsShape);
             currentLen = shape::length(outTad);
         }
+        __syncthreads();
 
         for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
             auto yIndex = shape::getIndexOffset(i, indicesShape, yLen);

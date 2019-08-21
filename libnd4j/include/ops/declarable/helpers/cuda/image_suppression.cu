@@ -88,12 +88,9 @@ namespace helpers {
 
     template <typename I>
     static __global__ void copyIndices(void* indices,  void* indicesLong, Nd4jLong len) {
-        __shared__ I* indexBuf;
-        __shared__ Nd4jLong* srcBuf;
-        if (threadIdx.x == 0) {
-            indexBuf = reinterpret_cast<I*>(indices);
-            srcBuf = reinterpret_cast<Nd4jLong*>(indicesLong);
-        }
+        I* indexBuf = reinterpret_cast<I*>(indices);
+        Nd4jLong* srcBuf = reinterpret_cast<Nd4jLong*>(indicesLong);;
+
         auto tid = threadIdx.x + blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
 

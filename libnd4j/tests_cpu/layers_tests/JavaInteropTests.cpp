@@ -1161,6 +1161,34 @@ TEST_F(JavaInteropTests, test_bfloat16_rng) {
     ASSERT_TRUE(z.sumNumber().e<float>(0) > 0);
 }
 
+TEST_F(JavaInteropTests, test_ismax_view) {
+    auto original = NDArrayFactory::create<double>('c', {2, 3, 40});
+    auto v = original.subarray({NDIndex::all(), NDIndex::all(), NDIndex::interval(0, 40, 2)});
+    v->assign(1.0);
+
+    auto e = v->ulike();
+    auto t = e.tensorAlongDimension(0, {0, 1});
+    t->assign(1.0);
+
+    auto z = v->ulike();
+
+
+    Nd4jLong iArgs[] = {2L, 0L};
+    Context ctx(1);
+    ctx.setInputArray(0, v->buffer(), v->shapeInfo(), v->specialBuffer(), v->specialShapeInfo());
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+    ctx.setIArguments(iArgs, 1);
+
+    nd4j::ops::ismax op;
+    op.execute(&ctx);
+
+    z.printIndexedBuffer("z");
+    ASSERT_EQ(e, z);
+
+    delete v;
+    delete t;
+}
+
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     auto pl = nd4j::graph::readFlatBuffers("./resources/gru_dynamic_mnist.fb");

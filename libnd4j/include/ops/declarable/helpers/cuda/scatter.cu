@@ -183,7 +183,7 @@ __global__ static void scatterLockCuda(const int opCode,
 
     __shared__ bool vectorCase;
     if(threadIdx.x == 0)
-        vectorCase = yTadLen == xLen && shape::rank(xShapeInfo) == 1;
+        vectorCase = yTadLen == xLen && shape::rank(xShapeInfo) <= 1;
     __syncthreads();
 
     for (int e = 0; e < xLen; e++) {
@@ -308,7 +308,6 @@ __global__ static void scatterCuda(const int opCode,
     __shared__ Nd4jLong yLen, totalThreads, *coord;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         coord = reinterpret_cast<Nd4jLong*>(shmem);
         yLen = shape::length(yShapeInfo);
@@ -317,7 +316,6 @@ __global__ static void scatterCuda(const int opCode,
         yRank = shape::rank(yShapeInfo);
         zRank = shape::rank(zShapeInfo);
     }
-
     __syncthreads();
 
     auto xCoord = coord + threadIdx.x * (xRank + yRank + zRank);
@@ -455,12 +453,10 @@ __global__ static void scatterNDLockCuda(const int opCode,
     __shared__ int xLastDim;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         zTadCoords = reinterpret_cast<Nd4jLong*>(shmem);
         xLastDim = xTadShapeInfo[1];   // xTad has rank = 1 always
     }
-
     __syncthreads();
 
     Nd4jLong* zTadCoordsPerThread = zTadCoords + threadIdx.x * xLastDim;
@@ -598,7 +594,6 @@ __global__ static void scatterNDCuda(const int opCode,
     __shared__ Nd4jLong yLen, totalThreads, *coord;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         coord = reinterpret_cast<Nd4jLong*>(shmem);
         yLen = shape::length(yShapeInfo);
@@ -608,7 +603,6 @@ __global__ static void scatterNDCuda(const int opCode,
         zRank = shape::rank(zShapeInfo);
         xLastDim = xShapeInfo[xRank];
     }
-
     __syncthreads();
 
     auto xCoord = coord + threadIdx.x * (xRank + yRank + zRank);
@@ -752,7 +746,6 @@ __global__ void scatterForLossCuda(const void *vx, const Nd4jLong *xShapeInfo,
         xLen  = shape::length(xShapeInfo);
         xRank = shape::rank(xShapeInfo);
     }
-
     __syncthreads();
 
     const auto xInd = threadIdx.x + blockIdx.x * blockDim.x;

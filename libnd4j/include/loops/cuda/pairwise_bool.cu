@@ -49,7 +49,6 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 	__shared__ Nd4jLong len;
 
 	if (threadIdx.x == 0) {
-		
 		xEws = shape::elementWiseStride(xShapeInfo);
 		yEws = shape::elementWiseStride(yShapeInfo);
     	zEws = shape::elementWiseStride(zShapeInfo);

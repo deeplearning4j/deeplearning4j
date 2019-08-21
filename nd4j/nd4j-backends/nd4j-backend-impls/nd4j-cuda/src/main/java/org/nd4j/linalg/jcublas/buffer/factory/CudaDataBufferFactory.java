@@ -25,6 +25,7 @@ import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.LongBuffer;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -92,6 +93,8 @@ public class CudaDataBufferFactory implements DataBufferFactory {
                 return new CudaByteDataBuffer(underlyingBuffer, length, offset);
             case BOOL:
                 return new CudaBoolDataBuffer(underlyingBuffer, length, offset);
+            case UTF8:
+                return new Utf8Buffer(underlyingBuffer, length, offset);
             default:
                 throw new ND4JIllegalStateException("Unknown data buffer type: " + underlyingBuffer.dataType().toString());
         }

@@ -1280,62 +1280,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(new double[] {value}, new int[0], new int[0], offset);
     }
 
-    @Override
-    public INDArray trueScalar(DataType dataType, Number value) {
-        val ws = Nd4j.getMemoryManager().getCurrentWorkspace();
-
-        switch (dataType) {
-            case DOUBLE:
-                return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, dataType, ws);
-            case FLOAT:
-                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
-            case BFLOAT16:
-                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
-            case HALF:
-                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, dataType, ws);
-            case UINT32:
-            case INT:
-                return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, dataType, ws);
-            case UINT64:
-            case LONG:
-                return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, dataType, ws);
-            case UINT16:
-            case SHORT:
-                return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType, ws);
-            case BYTE:
-                return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, dataType, ws);
-            case UBYTE:
-                return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, dataType, ws);
-            case BOOL:
-                val b = value.byteValue();
-                val arr = create(new byte[] {b}, new long[] {}, new long[] {}, dataType, ws);
-                return arr;
-
-            default:
-                throw new UnsupportedOperationException("Unsupported data type used: " + dataType);
-        }
-    }
-
-    @Override
-    public INDArray trueScalar(Number value) {
-        val ws = Nd4j.getMemoryManager().getCurrentWorkspace();
-
-        if (value instanceof Double || value instanceof AtomicDouble)   /* note that org.nd4j.linalg.primitives.AtomicDouble extends com.google.common.util.concurrent.AtomicDouble */
-                return create(new double[] {value.doubleValue()}, new long[] {}, new long[] {}, DataType.DOUBLE, ws);
-        else if (value instanceof Float)
-                return create(new float[] {value.floatValue()}, new long[] {}, new long[] {}, DataType.FLOAT, ws);
-        else if (value instanceof Long || value instanceof AtomicLong)
-                return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, DataType.LONG, ws);
-        else if (value instanceof Integer || value instanceof AtomicInteger)
-                return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, DataType.INT, ws);
-        else if (value instanceof Short)
-            return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, DataType.SHORT, ws);
-        else if (value instanceof Byte)
-            return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, DataType.BYTE, ws);
-        else
-                throw new UnsupportedOperationException("Unsupported data type: [" + value.getClass().getSimpleName() + "]");
-    }
-
     public INDArray trueVector(boolean[] data) {
         return create(data, new long[] {data.length}, new long[]{1}, DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
@@ -1364,8 +1308,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(data, new long[] {data.length}, new long[]{1}, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-
-
     /**
      * Create a scalar nd array with the specified value and offset
      *
@@ -1387,13 +1329,19 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(Number value) {
-        if (Nd4j.dataType() == DataType.DOUBLE)
-            return scalar(value.doubleValue(), 0);
-        if (Nd4j.dataType() == DataType.FLOAT || Nd4j.dataType() == DataType.HALF)
-            return scalar(value.floatValue(), 0);
-        if (Nd4j.dataType() == DataType.INT)
-            return scalar(value.intValue(), 0);
-        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
+        if (value instanceof Double)
+            return create(new double[]{value.doubleValue()}, new long[0], new long[0], DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Float)
+            return create(new float[]{value.floatValue()}, new long[0], new long[0], DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Long)
+            return create(new long[]{value.longValue()}, new long[0], new long[0], DataType.LONG, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Integer)
+            return create(new int[]{value.intValue()}, new long[0], new long[0], DataType.INT, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Short)
+            return create(new short[]{value.shortValue()}, new long[0], new long[0], DataType.SHORT, Nd4j.getMemoryManager().getCurrentWorkspace());
+        else if (value instanceof Byte)
+            return create(new byte[]{value.byteValue()}, new long[0], new long[0], DataType.BYTE, Nd4j.getMemoryManager().getCurrentWorkspace());
+        throw new IllegalStateException("Unknown instance of Number: [" + value.getClass().getCanonicalName() + "]");
     }
 
     /**
@@ -1404,12 +1352,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(float value) {
-        if (Nd4j.dataType() == DataType.FLOAT || Nd4j.dataType() == DataType.HALF)
-            return create(new float[] {value}, new int[0], new int[0], 0);
-        else if (Nd4j.dataType() == DataType.DOUBLE)
-            return scalar((double) value);
-        else
-            return scalar((int) value);
+            return create(new float[] {value}, new long[0], new long[0], DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     /**
@@ -1420,10 +1363,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(double value) {
-        if (Nd4j.dataType() == DataType.DOUBLE)
-            return create(new double[] {value}, new int[0], new int[0], 0);
-        else
-            return scalar((float) value);
+        return create(new double[] {value}, new long[0], new long[0], DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Override
