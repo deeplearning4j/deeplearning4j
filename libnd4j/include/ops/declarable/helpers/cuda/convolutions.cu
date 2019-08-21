@@ -39,8 +39,7 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
           T* col = reinterpret_cast<T*>(columns);
 
     __shared__ int colRank, volRank;
-    __shared__ Nd4jLong colLen, iD, iH, iW;
-    __shared__ Nd4jLong *sharedMem;
+    __shared__ Nd4jLong colLen, iD, iH, iW, *sharedMem;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
@@ -1339,9 +1338,9 @@ __global__ static void upsampling2dCuda(const void* vx, const Nd4jLong* xShapeIn
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-        dimIH = isNCHW ? 2 : 1;
-        zLen = shape::length(zShapeInfo);
-        rank = 4;
+        dimIH  = isNCHW ? 2 : 1;
+        zLen   = shape::length(zShapeInfo);
+        rank   = 4;
     }
     __syncthreads();
 
@@ -1408,8 +1407,8 @@ __global__ static void upsampling3dCuda(const void* vx, const Nd4jLong* xShapeIn
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
         dimID = isNCDHW ? 2 : 1;
-        zLen = shape::length(zShapeInfo);
-        rank = 5;
+        zLen  = shape::length(zShapeInfo);
+        rank  = 5;
     }
     __syncthreads();
 
@@ -1478,8 +1477,8 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
         dimIH = isNCHW ? 2 : 1;
-        zLen = shape::length(zShapeInfo);
-        rank = 4;
+        zLen  = shape::length(zShapeInfo);
+        rank  = 4;
 
         factorH = xShapeInfo[dimIH + 1] / zShapeInfo[dimIH + 1];
         factorW = xShapeInfo[dimIH + 2] / zShapeInfo[dimIH + 2];
@@ -1550,8 +1549,8 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
         dimID = isNCDHW ? 2 : 1;
-        zLen = shape::length(zShapeInfo);
-        rank = 5;
+        zLen  = shape::length(zShapeInfo);
+        rank  = 5;
 
         factorD = xShapeInfo[dimID + 1] / zShapeInfo[dimID + 1];
         factorH = xShapeInfo[dimID + 2] / zShapeInfo[dimID + 2];

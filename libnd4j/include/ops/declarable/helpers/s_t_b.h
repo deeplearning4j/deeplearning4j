@@ -31,6 +31,10 @@ namespace helpers {
 
     void spaceToBatch(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight, const uint blockSize);
 
+    void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding, NDArray& output);
+
+    void batchToSpaceND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& crop, NDArray& output);
+
 /*
     // this method MUST be platform-specific
 

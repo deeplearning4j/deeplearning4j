@@ -30,7 +30,6 @@ limitations under the License.
 ==============================================================================*/
 
 //
-// @author raver119@gmail.com, created on 19.01.18.
 // @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
@@ -63,9 +62,8 @@ CUSTOM_OP_IMPL(batch_to_space, 2, 1, false, 0, 1) {
     REQUIRE_TRUE(rank == 4, 0, "BatchToSpace: rank of input array must be equal 4, but got %i instead", rank);
     REQUIRE_TRUE(dim0 % (blockSize * blockSize) == 0, 0, "BatchToSpace: first dimension of input array must be divisible by blockSize * blockSize (that is by %i), but got first dimension equal to %i", blockSize * blockSize, dim0);
 
-    const std::string expectedCropShape = "[2, 2]";
-    const std::string actualCropShape = ShapeUtils::shapeAsString(crop);
-    REQUIRE_TRUE(actualCropShape == expectedCropShape, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead", actualCropShape.c_str());
+    if(crop->sizeAt(0) != 2 || crop->sizeAt(1) != 2)
+        REQUIRE_TRUE(false, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead", ShapeUtils::shapeAsString(crop).c_str());
 
     const uint cropBottom = crop->e<uint>(0,0);
     const uint cropTop    = crop->e<uint>(0,1);
@@ -104,9 +102,8 @@ DECLARE_SHAPE_FN(batch_to_space) {
     REQUIRE_TRUE(rank == 4, 0, "BatchToSpace: rank of input array must be equal 4, but got %i instead", rank);
     REQUIRE_TRUE(dim0 % (blockSize * blockSize) == 0, 0, "BatchToSpace: first dimension of input array must be divisible by blockSize * blockSize (that is by %i), but got first dimension equal to %i", blockSize * blockSize, dim0);
 
-    const std::string expectedCropShape = "[2, 2]";
-    const std::string actualCropShape = ShapeUtils::shapeAsString(cropShapeInfo);
-    REQUIRE_TRUE(actualCropShape == expectedCropShape, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead", actualCropShape.c_str());
+    if(cropShapeInfo[1] != 2 || cropShapeInfo[2] != 2)
+        REQUIRE_TRUE(false, 0, "BatchToSpace: operation expects crop shape to be {2, 2}, but got %s instead", ShapeUtils::shapeAsString(cropShapeInfo).c_str());
 
     const uint cropBottom = INPUT_VARIABLE(1)->e<Nd4jLong>(0,0);
     const uint cropTop    = INPUT_VARIABLE(1)->e<Nd4jLong>(0,1);

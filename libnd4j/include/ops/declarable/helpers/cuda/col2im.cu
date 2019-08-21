@@ -135,10 +135,10 @@ __global__ static void col2imCuda2(const void *columns, void *image, const Nd4jL
 
           for (int i = (blockDim.x * blockIdx.x) + threadIdx.x; i < n; i += blockDim.x * gridDim.x) {
               T val = 0;
+
               int w_im = i % iW + pW;
               int h_im = (i / iW) % iH + pH;
               int c_im = i / (iW * iH);
-
               int b = c_im / iC;
               int c = c_im % iC;
 
@@ -180,9 +180,9 @@ __global__ static void col2imCuda2(const void *columns, void *image, const Nd4jL
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
-                                const void* columns, const Nd4jLong* colShapeInfo,
-                                      void* image, const Nd4jLong* imShapeInfo,
-                                const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
+                               const void* columns, const Nd4jLong* colShapeInfo,
+                                     void* image, const Nd4jLong* imShapeInfo,
+                               const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
 
     col2imCuda2<T><<<512, 512, 1024, *stream>>>(columns, image, colShapeInfo, imShapeInfo, sH, sW, pH, pW, dH, dW);
     //col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH, sW, pH, pW, dH, dW);

@@ -13,8 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 //
-// @author raver119@gmail.com, created on 19.01.18.
 // @author Yurii Shyrma (iuriish@yahoo.com)
+// @author raver119@gmail.com
 //
 
 #include <op_boilerplate.h>
@@ -39,12 +39,11 @@ CUSTOM_OP_IMPL(space_to_batch, 2, 1, false, 0, 1) {
     const uint blockSize = INT_ARG(0);
     REQUIRE_TRUE(blockSize >= 2, 0, "SpaceToBatch: integer parameter block_size must be >= 2, but got %i instead", blockSize);
 
-    const int rank = input->rankOf();
-    REQUIRE_TRUE(rank == 4, 0, "SpaceToBatch: rank of input array must be equal 4, but got %i instead", rank);
+    REQUIRE_TRUE(input->rankOf() == 4,  0, "SpaceToBatch: rank of input array must be equal 4, but got %i instead",  input->rankOf());
+    REQUIRE_TRUE(output->rankOf() == 4, 0, "SpaceToBatch: rank of output array must be equal 4, but got %i instead", output->rankOf());
 
-    const std::string expectedpaddingShape = "[2, 2]";
-    const std::string actualpaddingShape = ShapeUtils::shapeAsString(padding);
-    REQUIRE_TRUE(actualpaddingShape == expectedpaddingShape, 0, "SpaceToBatch: operation expects padding shape to be {2, 2}, but got %s instead", actualpaddingShape.c_str());
+    if(padding->sizeAt(0) != 2 || padding->sizeAt(1) != 2)
+        REQUIRE_TRUE(false, 0, "SpaceToBatch: operation expects padding shape to be {2, 2}, but got %s instead", ShapeUtils::shapeAsString(padding).c_str());
 
     const uint padBottom = padding->e<uint>(0,0);
     const uint padTop    = padding->e<uint>(0,1);
@@ -78,9 +77,8 @@ DECLARE_SHAPE_FN(space_to_batch) {
     const int rank = inputShapeInfo[0];
     REQUIRE_TRUE(rank == 4, 0, "SpaceToBatch: rank of input array must be equal 4, but got %i instead", rank);
 
-    const std::string expectedpaddingShape = "[2, 2]";
-    const std::string actualpaddingShape = ShapeUtils::shapeAsString(paddingShapeInfo);
-    REQUIRE_TRUE(actualpaddingShape == expectedpaddingShape, 0, "SpaceToBatch: operation expects padding shape to be {2, 2}, but got %s instead", actualpaddingShape.c_str());
+    if(paddingShapeInfo[1] != 2 || paddingShapeInfo[1] != 2)
+        REQUIRE_TRUE(false, 0, "SpaceToBatch: operation expects padding shape to be {2, 2}, but got %s instead", ShapeUtils::shapeAsString(paddingShapeInfo).c_str());
 
     const uint padBottom = INPUT_VARIABLE(1)->e<Nd4jLong>(0,0);
     const uint padTop    = INPUT_VARIABLE(1)->e<Nd4jLong>(0,1);
