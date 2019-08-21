@@ -2346,6 +2346,18 @@ TEST_F(DeclarableOpsTests1, IsMax3) {
     delete result;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, IsMax4) {
+    auto x = NDArrayFactory::create<double>('c', {6}, {0, 0, 0, 2, 2, 0});
+    auto z = NDArrayFactory::create<bool>('c', {6});
+    auto e = NDArrayFactory::create<bool>('c', {6}, {false, false, false, true, false, false});
+
+    nd4j::ops::ismax op;
+    auto result = op.execute({&x}, {&z}, {}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+
+    ASSERT_EQ(e, z);
+}
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, CompactLaunchTests1) {
