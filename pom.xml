@@ -244,6 +244,7 @@
         <jaxb.version>2.2.11</jaxb.version>
         <jets3t.version>0.7.1</jets3t.version>
         <jetty.version>9.4.10.v20180503</jetty.version>
+        <jersey.version>2.29</jersey.version>
         <jsch.version>0.1.51</jsch.version>
         <leveldb.version>1.8</leveldb.version>
         <lz4.version>1.3.0</lz4.version>
