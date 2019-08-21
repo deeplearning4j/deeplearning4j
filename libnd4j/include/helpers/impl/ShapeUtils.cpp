@@ -281,37 +281,21 @@ Nd4jLong* ShapeUtils::evalReduceShapeInfo(const char order, std::vector<int>& di
 
 //////////////////////////////////////////////////////////////////////////
 // evaluate shape for array which is result of repeat operation applied to arr
-    std::vector<Nd4jLong> ShapeUtils::evalRepeatShape(int dimension, const std::vector<Nd4jLong>& repeats, const NDArray& arr) {
+std::vector<Nd4jLong> ShapeUtils::evalRepeatShape(int axis, const std::vector<int>& repeats, const NDArray& arr) {
 
-    int rank = arr.rankOf();
+    if (axis < 0)
+        axis += arr.rankOf();
 
-    if (dimension < 0)
-        dimension += rank;
+    if(repeats.size() != 1 && repeats.size() != arr.sizeAt(axis))
+        throw std::invalid_argument("ShapeUtils::evalRepeatShape: size of repeats vector must be 1 or equal to dimension at given axis !");
 
-    std::vector<Nd4jLong> reps;
+    std::vector<Nd4jLong> outShape = arr.getShapeAsVector();
 
-    if ((int) reps.size() < rank) {
-        if (dimension > 0) {
-            for (int e = 0; e < rank - (int) repeats.size(); e++)
-                reps.push_back(1);
+    if(repeats.size() == 1)
+        outShape[axis] *= repeats[0];
 
-            for (auto r: repeats)
-                reps.push_back(r);
-        } else {
-            for (auto r: repeats)
-                reps.push_back(r);
-
-            for (int e = 0; e < rank - (int) repeats.size(); e++)
-                reps.push_back(1);
-        }
-    }/* else {
-        for (auto r: repeats)
-            reps.push_back(r);
-    }*/
-
-    std::vector<Nd4jLong> outShape(rank);
-    for (int i = 0; i < rank; i++)
-        outShape[i] = arr.sizeAt(i) * reps.at(i);
+    else
+        outShape[axis] = std::accumulate(repeats.begin(), repeats.end(), 0);
 
     return outShape;
 }

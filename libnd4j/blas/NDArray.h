@@ -316,10 +316,10 @@ namespace nd4j {
 
         /**
         *  create a new array by replicating current array by repeats times along given dimension
-        *  dimension - dimension along which to repeat elements
+        *  axis - axis along which to repeat elements
         *  repeats - number of repetitions
         */
-        NDArray* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
+        NDArray* repeat(const int axis, const std::vector<int>& repeats) const;
 
         /**
          * This method fills this array with zeros
@@ -344,9 +344,10 @@ namespace nd4j {
 
         /**
         *  fill target array by repeating current array
-        *  dimension - dimension along which to repeat elements
+        *  axis - axis along which to repeat elements
+        *  repeats - vector containing numbers of repetition for elements at given axis
         */
-        void repeat(int dimension, NDArray& target) const;
+        void repeat(const int axis, const std::vector<int>& repeats, NDArray& target) const;
 
         /**
         *  creates array which points on certain sub-range of this array, sub-range is defined by given indices

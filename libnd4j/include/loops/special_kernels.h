@@ -89,17 +89,6 @@ namespace nd4j {
     template <typename X, typename Y>
     _CUDA_H void tileKernelHH(void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, Nd4jLong ews, cudaStream_t *stream);
 
-    template <typename T>
-    _CUDA_H void repeatKernelH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength, Nd4jLong outputLength,
-                       Nd4jLong *tadOnlyInputShapeInfo, Nd4jLong *tadInputOffsets,
-                       Nd4jLong *tadOnlyOutputShapeInfo,Nd4jLong *tadOutputOffsets,
-                       cudaStream_t stream);
-
-    template <typename X, typename Y>
-    _CUDA_H void repeatKernelHH(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
-                        Nd4jLong *tadOnlyInputShapeInfo, Nd4jLong *tadInputOffsets,
-                        Nd4jLong *tadOnlyOutputShapeInfo,Nd4jLong *tadOutputOffsets,
-                        cudaStream_t stream);
 
     class NDArray;
     template <typename T>

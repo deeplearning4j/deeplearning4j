@@ -39,20 +39,6 @@ public:
     }
 };
 
-TEST_F(DeclarableOpsTests16, test_repeat_119) {
-    auto x = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 4, 5, 6});
-    auto e = NDArrayFactory::create<double>('c', {4, 3}, {1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6});
-
-    nd4j::ops::repeat op;
-    auto result = op.execute({&x}, {}, {2, 0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-    ASSERT_EQ(e, *z);
-
-    delete result;
-}
-
 TEST_F(DeclarableOpsTests16, test_scatter_update_119) {
     auto x = NDArrayFactory::create<float>('c', {3}, {1, 1, 1});
     auto y = NDArrayFactory::create<int>(0);
