@@ -264,6 +264,21 @@ public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
         assertEquals(expLabels, ds.getLabels());
         assertEquals(expectedFeatureMask, ds.getFeaturesMaskArray());
         assertNull(ds.getLabelsMaskArray());
+
+
+        //Sanity check on single sentence loading:
+        INDArray allKnownWords = dsi.loadSingleSentence("these balance");
+        INDArray withUnknown = dsi.loadSingleSentence("these NOVALID");
+        assertNotNull(allKnownWords);
+        assertNotNull(withUnknown);
+
+        try {
+            dsi.loadSingleSentence("NOVALID AlsoNotInVocab");
+            fail("Expected exception");
+        } catch (Throwable t){
+            String m = t.getMessage();
+            assertTrue(m, m.contains("RemoveWord") && m.contains("vocabulary"));
+        }
     }
 
     @Test
@@ -323,5 +338,57 @@ public class TestCnnSentenceDataSetIterator extends BaseDL4JTest {
         assertEquals(expLabels, ds.getLabels());
         assertEquals(expectedFeatureMask, ds.getFeaturesMaskArray());
         assertNull(ds.getLabelsMaskArray());
+    }
+
+
+    @Test
+    public void testCnnSentenceDataSetIteratorUseUnknownVector() throws Exception {
+
+        WordVectors w2v = WordVectorSerializer
+                .readWord2VecModel(new ClassPathResource("word2vec/googleload/sample_vec.bin").getFile());
+
+        List<String> sentences = new ArrayList<>();
+        sentences.add("these balance Database model");
+        sentences.add("into same THISWORDDOESNTEXIST are");
+        //Last 2 sentences - no valid words
+        sentences.add("NOVALID WORDSHERE");
+        sentences.add("!!!");
+
+        List<String> labelsForSentences = Arrays.asList("Positive", "Negative", "Positive", "Negative");
+
+
+        LabeledSentenceProvider p = new CollectionLabeledSentenceProvider(sentences, labelsForSentences, null);
+        CnnSentenceDataSetIterator dsi = new CnnSentenceDataSetIterator.Builder(CnnSentenceDataSetIterator.Format.CNN1D)
+                .unknownWordHandling(CnnSentenceDataSetIterator.UnknownWordHandling.UseUnknownVector)
+                .sentenceProvider(p).wordVectors(w2v)
+                .useNormalizedWordVectors(true)
+                .maxSentenceLength(256).minibatchSize(4).sentencesAlongHeight(false).build();
+
+        assertTrue(dsi.hasNext());
+        DataSet ds = dsi.next();
+
+        assertFalse(dsi.hasNext());
+
+        INDArray f = ds.getFeatures();
+        assertEquals(4, f.size(0));
+
+        INDArray unknown = w2v.getWordVectorMatrix(w2v.getUNK());
+        if(unknown == null)
+            unknown = Nd4j.create(DataType.FLOAT, f.size(1));
+
+        assertEquals(unknown, f.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(0)));
+        assertEquals(unknown, f.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(1)));
+        assertEquals(unknown.like(), f.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(3)));
+
+        assertEquals(unknown, f.get(NDArrayIndex.point(3), NDArrayIndex.all(), NDArrayIndex.point(0)));
+        assertEquals(unknown.like(), f.get(NDArrayIndex.point(2), NDArrayIndex.all(), NDArrayIndex.point(1)));
+
+        //Sanity check on single sentence loading:
+        INDArray allKnownWords = dsi.loadSingleSentence("these balance");
+        INDArray withUnknown = dsi.loadSingleSentence("these NOVALID");
+        INDArray allUnknown = dsi.loadSingleSentence("NOVALID AlsoNotInVocab");
+        assertNotNull(allKnownWords);
+        assertNotNull(withUnknown);
+        assertNotNull(allUnknown);
     }
 }

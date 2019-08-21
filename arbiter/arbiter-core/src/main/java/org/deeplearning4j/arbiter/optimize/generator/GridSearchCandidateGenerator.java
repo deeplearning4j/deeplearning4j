@@ -17,10 +17,12 @@
 package org.deeplearning4j.arbiter.optimize.generator;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.math3.random.RandomAdaptor;
 import org.deeplearning4j.arbiter.optimize.api.Candidate;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
+import org.deeplearning4j.arbiter.optimize.parameter.FixedValue;
 import org.deeplearning4j.arbiter.optimize.parameter.discrete.DiscreteParameterSpace;
 import org.deeplearning4j.arbiter.optimize.parameter.integer.IntegerParameterSpace;
 import org.deeplearning4j.arbiter.util.LeafUtils;
@@ -65,6 +67,7 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
     private final Mode mode;
 
     private int[] numValuesPerParam;
+    @Getter
     private int totalNumCandidates;
     private Queue<Integer> order;
 
@@ -123,6 +126,8 @@ public class GridSearchCandidateGenerator extends BaseCandidateGenerator {
                 int max = ips.getMax();
                 //Discretize, as some integer ranges are much too large to search (i.e., num. neural network units, between 100 and 1000)
                 numValuesPerParam[i] = Math.min(max - min + 1, discretizationCount);
+            } else if (ps instanceof FixedValue){
+                numValuesPerParam[i] = 1;
             } else {
                 numValuesPerParam[i] = discretizationCount;
             }
