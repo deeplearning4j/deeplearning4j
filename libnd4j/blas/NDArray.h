@@ -39,7 +39,7 @@
 #include <ShapeDescriptor.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <array/DataBuffer.h>
-#include <AffinityManager.h>
+#include <execution/AffinityManager.h>
 
 
 namespace nd4j {
