@@ -245,8 +245,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
 
             //TODO: handle fixed beta/gamma case...
-            INDArray dBeta = epsilon.sum(0); //dL/dBeta = sum_examples dL/dOut
-            INDArray dGamma = epsilon.mul(xHat).sum(0); //dL/dGamma = sum_examples dL/dOut .* xHat
+            INDArray dBeta = epsilon.sum(true, 0); //dL/dBeta = sum_examples dL/dOut
+            INDArray dGamma = epsilon.mul(xHat).sum(true, 0); //dL/dGamma = sum_examples dL/dOut .* xHat
             INDArray dxhat;
             if (layerConf.isLockGammaBeta()) {
                 dxhat = epsilon.mul(layerConf.getGamma());
@@ -257,11 +257,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
 
             //dL/dVariance
-            INDArray dLdVar = dxhat.mul(xMu).sum(0).muli(-0.5).muli(Transforms.pow(std, -3.0, true)); //Shape: [1, miniBatch]
+            INDArray dLdVar = dxhat.mul(xMu).sum(true, 0).muli(-0.5).muli(Transforms.pow(std, -3.0, true)); //Shape: [1, miniBatch]
 
             //dL/dmu
-            INDArray dxmu1 = dxhat.sum(0).divi(std).negi();
-            INDArray dxmu2 = xMu.sum(0).muli(-2.0 / batchSize).muli(dLdVar);
+            INDArray dxmu1 = dxhat.sum(true, 0).divi(std).negi();
+            INDArray dxmu2 = xMu.sum(true, 0).muli(-2.0 / batchSize).muli(dLdVar);
 
             INDArray dLdmu = dxmu1.addi(dxmu2); //Shape: [1, nOut]
 
