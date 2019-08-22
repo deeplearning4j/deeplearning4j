@@ -38,7 +38,7 @@ public class TestReverse extends BaseNd4jTest {
     @Test
     public void testReverse(){
 
-        INDArray in = Nd4j.trueVector(new double[]{1,2,3,4,5,6});
+        INDArray in = Nd4j.createFromArray(new double[]{1,2,3,4,5,6});
         INDArray out = Nd4j.create(DataType.DOUBLE, 6);
 
         DynamicCustomOp op = DynamicCustomOp.builder("reverse")
@@ -55,7 +55,7 @@ public class TestReverse extends BaseNd4jTest {
     @Test
     public void testReverse2(){
 
-        INDArray in = Nd4j.trueVector(new double[]{1,2,3,4,5,6});
+        INDArray in = Nd4j.createFromArray(new double[]{1,2,3,4,5,6});
         INDArray axis = Nd4j.scalar(0);
         INDArray out = Nd4j.create(DataType.DOUBLE, 6);
 

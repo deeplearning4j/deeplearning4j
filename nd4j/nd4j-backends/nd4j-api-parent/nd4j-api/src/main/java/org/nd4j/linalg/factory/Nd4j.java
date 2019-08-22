@@ -3715,46 +3715,6 @@ public class Nd4j {
     }
 
     /**
-     * @deprecated Use {@link #createFromArray(boolean...)}
-     */
-    @Deprecated
-    public static INDArray trueVector(boolean[] data) {
-        return INSTANCE.trueVector(data);
-    }
-
-    /**
-     * @deprecated Use {@link #createFromArray(long...)}
-     */
-    @Deprecated
-    public static INDArray trueVector(long[] data) {
-        return INSTANCE.trueVector(data);
-    }
-
-    /**
-     * @deprecated Use {@link #createFromArray(int...)}
-     */
-    @Deprecated
-    public static INDArray trueVector(int[] data) {
-        return INSTANCE.trueVector(data);
-    }
-
-    /**
-     * @deprecated Use {@link #createFromArray(float...)}
-     */
-    @Deprecated
-    public static INDArray trueVector(float[] data) {
-        return INSTANCE.trueVector(data);
-    }
-
-    /**
-     * @deprecated Use {@link #createFromArray(double...)}
-     */
-    @Deprecated
-    public static INDArray trueVector(double[] data) {
-        return INSTANCE.trueVector(data);
-    }
-
-    /**
      * This method creates "empty" INDArray with datatype determined by {@link #dataType()}
      *
      * @return Empty INDArray

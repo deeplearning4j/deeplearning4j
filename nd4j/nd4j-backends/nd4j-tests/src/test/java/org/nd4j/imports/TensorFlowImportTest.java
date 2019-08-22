@@ -132,7 +132,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         log.info(graph.asFlatPrint());
         val result = graph.execAndEndResult();
 
-        val exp = Nd4j.trueVector(new long[]{2, 2, 2});
+        val exp = Nd4j.createFromArray(new long[]{2, 2, 2});
 
         assertEquals(exp, result);
     }

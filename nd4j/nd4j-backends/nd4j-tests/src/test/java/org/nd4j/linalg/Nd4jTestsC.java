@@ -5899,9 +5899,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVector_1() {
-        val vector = Nd4j.trueVector(new float[] {1, 2, 3, 4, 5});
-        val vector2 = Nd4j.trueVector(new float[] {1, 2, 3, 4, 5});
-        val vector3 = Nd4j.trueVector(new float[] {1, 2, 3, 4, 6});
+        val vector = Nd4j.createFromArray(new float[] {1, 2, 3, 4, 5});
+        val vector2 = Nd4j.createFromArray(new float[] {1, 2, 3, 4, 5});
+        val vector3 = Nd4j.createFromArray(new float[] {1, 2, 3, 4, 6});
 
         assertFalse(vector.isScalar());
         assertEquals(5, vector.length());
@@ -5916,9 +5916,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVectorScalar_2() {
-        val vector = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5});
+        val vector = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
         val scalar = Nd4j.scalar(2.0f);
-        val exp = Nd4j.trueVector(new float[]{3, 4, 5, 6, 7});
+        val exp = Nd4j.createFromArray(new float[]{3, 4, 5, 6, 7});
 
         vector.addi(scalar);
 
@@ -5937,7 +5937,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testReshapeVector() {
-        val vector = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5, 6});
+        val vector = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5, 6});
         val newShape = vector.reshape(3, 2);
 
         assertEquals(2, newShape.rank());
@@ -5946,7 +5946,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test(expected = IllegalStateException.class)
     public void testTranspose1() {
-        val vector = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5, 6});
+        val vector = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5, 6});
 
         assertArrayEquals(new long[]{6}, vector.shape());
         assertArrayEquals(new long[]{1}, vector.stride());
@@ -6030,8 +6030,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testVectorSqueeze() {
         val vector = Nd4j.create(new float[]{1, 2, 3, 4, 5, 6}, new long[]{1, 6});
-        val output = Nd4j.trueVector(new float[] {0, 0, 0, 0, 0, 0});
-        val exp = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5, 6});
+        val output = Nd4j.createFromArray(new float[] {0, 0, 0, 0, 0, 0});
+        val exp = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5, 6});
 
         val op = DynamicCustomOp.builder("squeeze")
                 .addInputs(vector)
@@ -6078,11 +6078,11 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
     @Test
     public void testVectorScalarConcat() {
-        val vector = Nd4j.trueVector(new float[] {1, 2});
+        val vector = Nd4j.createFromArray(new float[] {1, 2});
         val scalar = Nd4j.scalar(3.0f);
 
-        val output = Nd4j.trueVector(new float[]{0, 0, 0});
-        val exp = Nd4j.trueVector(new float[]{1, 2, 3});
+        val output = Nd4j.createFromArray(new float[]{0, 0, 0});
+        val exp = Nd4j.createFromArray(new float[]{1, 2, 3});
 
         val op = DynamicCustomOp.builder("concat")
                 .addInputs(vector, scalar)
@@ -6103,7 +6103,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testValueArrayOf_1() {
         val vector = Nd4j.valueArrayOf(new long[] {5}, 2f, DataType.FLOAT);
-        val exp = Nd4j.trueVector(new float[]{2, 2, 2, 2, 2});
+        val exp = Nd4j.createFromArray(new float[]{2, 2, 2, 2, 2});
 
         assertArrayEquals(exp.shape(), vector.shape());
         assertEquals(exp, vector);
@@ -6123,7 +6123,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
     @Test
     public void testArrayCreation() {
         val vector = Nd4j.create(new float[]{1, 2, 3}, new long[] {3}, 'c');
-        val exp = Nd4j.trueVector(new float[]{1, 2, 3});
+        val exp = Nd4j.createFromArray(new float[]{1, 2, 3});
 
         assertArrayEquals(exp.shape(), vector.shape());
         assertEquals(exp, vector);
@@ -6964,8 +6964,8 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray arr = Nd4j.create(new boolean[][]{{false,true,false},{false,false,true},{false,false,true}});
         INDArray[] exp = new INDArray[]{
-                Nd4j.trueVector(new long[]{0,1,2}),
-                Nd4j.trueVector(new long[]{1,2,2})};
+                Nd4j.createFromArray(new long[]{0,1,2}),
+                Nd4j.createFromArray(new long[]{1,2,2})};
 
         INDArray[] act = Nd4j.where(arr, null, null);
 
@@ -6980,9 +6980,9 @@ public class Nd4jTestsC extends BaseNd4jTest {
         arr.putScalar(1,2,1,1.0);
         arr.putScalar(2,2,1,1.0);
         INDArray[] exp = new INDArray[]{
-                Nd4j.trueVector(new long[]{0,1,2}),
-                Nd4j.trueVector(new long[]{1,2,2}),
-                Nd4j.trueVector(new long[]{0,1,1})
+                Nd4j.createFromArray(new long[]{0,1,2}),
+                Nd4j.createFromArray(new long[]{1,2,2}),
+                Nd4j.createFromArray(new long[]{0,1,1})
         };
 
         INDArray[] act = Nd4j.where(arr, null, null);

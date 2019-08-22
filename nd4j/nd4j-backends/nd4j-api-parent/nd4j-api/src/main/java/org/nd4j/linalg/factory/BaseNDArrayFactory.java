@@ -17,7 +17,6 @@
 package org.nd4j.linalg.factory;
 
 
-import com.google.common.util.concurrent.AtomicDouble;
 import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.*;
@@ -25,13 +24,13 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.random.impl.Range;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.*;
@@ -1236,26 +1235,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(shape, Nd4j.getStrides(shape), 0);
     }
 
-
-    /**
-     * Create a scalar ndarray with the specified offset
-     *
-     * @param value  the value to initialize the scalar with
-     * @param offset the offset of the ndarray
-     * @return the created ndarray
-     */
-    @Override
-    public INDArray scalar(Number value, long offset) {
-        if (Nd4j.dataType() == DataType.DOUBLE)
-            return scalar(value.doubleValue(), offset);
-        if (Nd4j.dataType() == DataType.FLOAT || Nd4j.dataType() == DataType.HALF)
-            return scalar(value.floatValue(), offset);
-        if (Nd4j.dataType() == DataType.INT)
-            return scalar(value.intValue(), offset);
-        throw new IllegalStateException("Illegal data opType " + Nd4j.dataType());
-    }
-
-
     /**
      * Create a scalar nd array with the specified value and offset
      *
@@ -1320,7 +1299,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(new int[] {value}, new long[0], new long[0], DataType.INT, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
-
     /**
      * Create a scalar ndarray with the specified offset
      *
@@ -1329,30 +1307,22 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      */
     @Override
     public INDArray scalar(Number value) {
-        if (value instanceof Double)
-            return create(new double[]{value.doubleValue()}, new long[0], new long[0], DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (value instanceof Float)
-            return create(new float[]{value.floatValue()}, new long[0], new long[0], DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (value instanceof Long)
-            return create(new long[]{value.longValue()}, new long[0], new long[0], DataType.LONG, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (value instanceof Integer)
-            return create(new int[]{value.intValue()}, new long[0], new long[0], DataType.INT, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (value instanceof Short)
-            return create(new short[]{value.shortValue()}, new long[0], new long[0], DataType.SHORT, Nd4j.getMemoryManager().getCurrentWorkspace());
-        else if (value instanceof Byte)
-            return create(new byte[]{value.byteValue()}, new long[0], new long[0], DataType.BYTE, Nd4j.getMemoryManager().getCurrentWorkspace());
-        throw new IllegalStateException("Unknown instance of Number: [" + value.getClass().getCanonicalName() + "]");
-    }
+        MemoryWorkspace  ws = Nd4j.getMemoryManager().getCurrentWorkspace();
 
-    /**
-     * Create a scalar nd array with the specified value and offset
-     *
-     * @param value the value of the scalar
-     *              =     * @return the scalar nd array
-     */
-    @Override
-    public INDArray scalar(float value) {
-            return create(new float[] {value}, new long[0], new long[0], DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
+        if (value instanceof Double || value instanceof AtomicDouble)   /* note that org.nd4j.linalg.primitives.AtomicDouble extends com.google.common.util.concurrent.AtomicDouble */
+            return scalar(value.doubleValue());
+        else if (value instanceof Float)
+            return scalar(value.floatValue());
+        else if (value instanceof Long || value instanceof AtomicLong)
+            return create(new long[] {value.longValue()}, new long[] {}, new long[] {}, DataType.LONG, ws);
+        else if (value instanceof Integer || value instanceof AtomicInteger)
+            return create(new int[] {value.intValue()}, new long[] {}, new long[] {}, DataType.INT, ws);
+        else if (value instanceof Short)
+            return create(new short[] {value.shortValue()}, new long[] {}, new long[] {}, DataType.SHORT, ws);
+        else if (value instanceof Byte)
+            return create(new byte[] {value.byteValue()}, new long[] {}, new long[] {}, DataType.BYTE, ws);
+        else
+            throw new UnsupportedOperationException("Unsupported data type: [" + value.getClass().getSimpleName() + "]");
     }
 
     /**
@@ -1364,6 +1334,11 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray scalar(double value) {
         return create(new double[] {value}, new long[0], new long[0], DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
+    }
+
+    @Override
+    public INDArray scalar(float value) {
+        return create(new float[] {value}, new long[0], new long[0], DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
     }
 
     @Override

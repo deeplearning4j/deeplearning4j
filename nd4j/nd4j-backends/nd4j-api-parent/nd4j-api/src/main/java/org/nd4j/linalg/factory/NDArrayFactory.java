@@ -950,16 +950,6 @@ public interface NDArrayFactory {
     INDArray create(int[] shape);
 
     /**
-     * Create a scalar ndarray with the specified offset
-     *
-     * @param value  the value to initialize the scalar with
-     * @param offset the offset of the ndarray
-     * @return the created ndarray
-     */
-    INDArray scalar(Number value, long offset);
-
-
-    /**
      * Create a scalar nd array with the specified value and offset
      *
      * @param value  the value of the scalar
