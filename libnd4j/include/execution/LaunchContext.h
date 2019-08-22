@@ -98,6 +98,8 @@ class ND4J_EXPORT LaunchContext {
     	int getDeviceID() const {return _deviceID;}
     	void setDeviceID(int deviceID) { _deviceID = deviceID; }
 
+    	static bool isInitialized();
+    	static void releaseBuffers();
 	    static LaunchContext* defaultContext();
 
 

@@ -34,9 +34,55 @@ namespace nd4j {
         _deviceId = AffinityManager::currentDeviceId();
     }
 
-    ContextBuffers::~ContextBuffers() {
+    ContextBuffers::ContextBuffers(const ContextBuffers &other) {
+        release();
+
+        this->_initialized = other._initialized;
+        this->_allocated = other._allocated;
+        this->_deviceId = other._deviceId;
+
+        this->_specialStream = other._specialStream;
+        this->_execStream = other._execStream;
+        this->_allocationPointer = other._allocationPointer;
+        this->_reductionPointer = other._reductionPointer;
+        this->_scalarPointer = other._scalarPointer;
+    }
+
+    ContextBuffers& ContextBuffers::operator=(const ContextBuffers& other) {
+        release();
+
+        this->_initialized = other._initialized;
+        this->_allocated = other._allocated;
+        this->_deviceId = other._deviceId;
+
+        this->_specialStream = other._specialStream;
+        this->_execStream = other._execStream;
+        this->_allocationPointer = other._allocationPointer;
+        this->_reductionPointer = other._reductionPointer;
+        this->_scalarPointer = other._scalarPointer;
+
+        return *this;
+    }
+
+    ContextBuffers& ContextBuffers::operator=(ContextBuffers&& other) {
+        release();
+
+        this->_initialized = other._initialized;
+        this->_allocated = other._allocated;
+        this->_deviceId = other._deviceId;
+
+        this->_specialStream = other._specialStream;
+        this->_execStream = other._execStream;
+        this->_allocationPointer = other._allocationPointer;
+        this->_reductionPointer = other._reductionPointer;
+        this->_scalarPointer = other._scalarPointer;
+
+        return *this;
+    }
+
+    void ContextBuffers::release() {
         if (_allocated) {
-            //nd4j_printf("Releasing ContextBuffers\n","");
+            //nd4j_printf("Releasing ContextBuffers on device [%i]\n", _deviceId);
 
             if (_allocationPointer != nullptr)
                 cudaFree(_allocationPointer);
@@ -58,7 +104,22 @@ namespace nd4j {
 
             delete _cudaStream;
             delete _cudaSpecialStream;
+
+            //////
+            _allocated = false;
+            _initialized = false;
+            _deviceId = -1;
+
+            this->_specialStream = nullptr;
+            this->_execStream = nullptr;
+            this->_allocationPointer = nullptr;
+            this->_reductionPointer = nullptr;
+            this->_scalarPointer = nullptr;
         }
+    }
+
+    ContextBuffers::~ContextBuffers() {
+        release();
     }
 
     ContextBuffers::ContextBuffers(void* rPointer, void* sPointer, void* aPointer, bool isOwner) {
@@ -69,19 +130,20 @@ namespace nd4j {
     }
 
     void ContextBuffers::initialize() {
-        //nd4j_printf("Initializing buffers on deviceId [%i]\n", AffinityManager::currentNativeDeviceId());
+        _deviceId = AffinityManager::currentNativeDeviceId();
+        //nd4j_printf("Initializing buffers on deviceId [%i]\n", _deviceId);
 
         auto res = cudaMalloc(reinterpret_cast<void**>(&_reductionPointer), 1024 * 1024 * 8);
         if (res != 0)
-            throw std::runtime_error("_reductionPointer allocation failed");
+            throw cuda_exception::build("_reductionPointer allocation failed", res);
 
         res = cudaMalloc(reinterpret_cast<void**>(&_scalarPointer), 16);
         if (res != 0)
-            throw std::runtime_error("_scalarPointer allocation failed");
+            throw cuda_exception::build("_scalarPointer allocation failed", res);
 
         res = cudaMalloc(reinterpret_cast<void**>(&_allocationPointer), 1024 * 1024 * 8);
         if (res != 0)
-            throw std::runtime_error("_allocationPointer allocation failed");
+            throw cuda_exception::build("_allocationPointer allocation failed", res);
 
         _execStream  = new cudaStream_t();
         _specialStream = new cudaStream_t();
@@ -97,6 +159,7 @@ namespace nd4j {
             throw cuda_exception::build("Failed to create special CUDA stream with launch context", res);
 
         _allocated = true;
+        _initialized = true;
     }
 
     void* ContextBuffers::reductionBuffer() {
@@ -153,4 +216,9 @@ namespace nd4j {
 
         return _specialStream;
     }
+
+    bool ContextBuffers::isInitialized() {
+        return _initialized;
+    }
 }
+

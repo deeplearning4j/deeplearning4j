@@ -659,8 +659,8 @@ public class CudaZeroHandler implements MemoryHandler {
         //log.info("Buffer MemCpy called");
         //log.info("Memcpy buffer: {} bytes ", dstBuffer.length() * dstBuffer.getElementSize());
         CudaContext context = getCudaContext();
-        AllocationPoint dstPoint = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
-        AllocationPoint srcPoint = ((BaseCudaDataBuffer) srcBuffer).getAllocationPoint();
+        val dstPoint = ((BaseCudaDataBuffer) dstBuffer).getAllocationPoint();
+        val srcPoint = ((BaseCudaDataBuffer) srcBuffer).getAllocationPoint();
 
         Pointer dP = null; //new CudaPointer(dstPoint.getPointers().getHostPointer().address());
         Pointer sP = null;

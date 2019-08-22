@@ -3865,12 +3865,12 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
 
         /**
         *  create a new array by replicating current array by repeats times along given dimension
-        *  dimension - dimension along which to repeat elements
+        *  axis - axis along which to repeat elements
         *  repeats - number of repetitions
         */
-        public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongPointer repeats);
-        public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongBuffer repeats);
-        public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
+        public native NDArray repeat(int axis, @StdVector IntPointer repeats);
+        public native NDArray repeat(int axis, @StdVector IntBuffer repeats);
+        public native NDArray repeat(int axis, @StdVector int[] repeats);
 
         /**
          * This method fills this array with zeros
@@ -3894,9 +3894,12 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
 
         /**
         *  fill target array by repeating current array
-        *  dimension - dimension along which to repeat elements
+        *  axis - axis along which to repeat elements
+        *  repeats - vector containing numbers of repetition for elements at given axis
         */
-        public native void repeat(int dimension, @ByRef NDArray target);
+        public native void repeat(int axis, @StdVector IntPointer repeats, @ByRef NDArray target);
+        public native void repeat(int axis, @StdVector IntBuffer repeats, @ByRef NDArray target);
+        public native void repeat(int axis, @StdVector int[] repeats, @ByRef NDArray target);
 
         /**
         *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
@@ -18209,6 +18212,24 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+//         #if NOT_EXCLUDED(OP_space_to_batch_nd)
+        @Namespace("nd4j::ops") public static class space_to_batch_nd extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public space_to_batch_nd(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public space_to_batch_nd(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public space_to_batch_nd position(long position) {
+                return (space_to_batch_nd)super.position(position);
+            }
+        
+                                                                                    public space_to_batch_nd() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
         /**
          *
          *
@@ -18226,6 +18247,23 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public batch_to_space() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+//         #if NOT_EXCLUDED(OP_batch_to_space_nd)
+        @Namespace("nd4j::ops") public static class batch_to_space_nd extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public batch_to_space_nd(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public batch_to_space_nd(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public batch_to_space_nd position(long position) {
+                return (batch_to_space_nd)super.position(position);
+            }
+        
+                                                                                    public batch_to_space_nd() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
@@ -22831,10 +22869,16 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     
         public ContextBuffers() { super((Pointer)null); allocate(); }
         private native void allocate();
+        public ContextBuffers(@Const @ByRef ContextBuffers other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const @ByRef ContextBuffers other);
         public ContextBuffers(Pointer rPointer, Pointer sPointer, Pointer aPointer, @Cast("bool") boolean isOwner/*=false*/) { super((Pointer)null); allocate(rPointer, sPointer, aPointer, isOwner); }
         private native void allocate(Pointer rPointer, Pointer sPointer, Pointer aPointer, @Cast("bool") boolean isOwner/*=false*/);
         public ContextBuffers(Pointer rPointer, Pointer sPointer, Pointer aPointer) { super((Pointer)null); allocate(rPointer, sPointer, aPointer); }
         private native void allocate(Pointer rPointer, Pointer sPointer, Pointer aPointer);
+
+        public native @ByRef @Name("operator =") ContextBuffers put(@Const @ByRef ContextBuffers other);
+
+        public native void release();
 
         public native Pointer reductionBuffer();
         public native Pointer scalarBuffer();
@@ -22850,6 +22894,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         public native void triggerOwnership(@Cast("bool") boolean isOwner);
 
         public native int deviceId();
+
+        public native @Cast("bool") boolean isInitialized();
     }
 
 
@@ -22919,6 +22965,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     	public native int getDeviceID();
     	public native void setDeviceID(int deviceID);
 
+    	public static native @Cast("bool") boolean isInitialized();
+    	public static native void releaseBuffers();
 	    public static native LaunchContext defaultContext();
 
 

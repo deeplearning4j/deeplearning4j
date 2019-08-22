@@ -95,17 +95,26 @@ namespace nd4j {
     }
 
     void AffinityManager::setCurrentDevice(int deviceId) {
+        auto previousDeviceId = globalThreadToDevice;
+        if (previousDeviceId >= 0 && LaunchContext::isInitialized()) {
+            auto res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaStream());
+            if (res != 0)
+                throw cuda_exception::build("setCurrentDevice -> sync failed", res);
+
+            res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaSpecialStream());
+            if (res != 0)
+                throw cuda_exception::build("setCurrentDevice -> specialSync failed", res);
+        }
+
         auto res = cudaSetDevice(deviceId);
         if (res != 0)
             throw cuda_exception::build("cudaSetDevice failed", res);
 
-        auto previousDeviceId = globalThreadToDevice;
-
         // update thread-device affinity
         globalThreadToDevice = deviceId;
 
-        ContextBuffers newBuffers;
-        LaunchContext::swapContextBuffers(newBuffers);
+        // discard existing stuff
+        LaunchContext::releaseBuffers();
     }
 
     std::atomic<int> AffinityManager::_lastDevice;// = std::atomic<int>(initialV);

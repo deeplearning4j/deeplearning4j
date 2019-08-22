@@ -36,6 +36,10 @@ namespace nd4j {
         _allocated = isOwner;
     }
 
+    ContextBuffers::ContextBuffers(const ContextBuffers &other) {
+        //
+    }
+
     void ContextBuffers::initialize() {
         // no-op
     }
@@ -78,5 +82,21 @@ namespace nd4j {
 
     void* ContextBuffers::specialStream() {
         return _specialStream;
+    }
+
+    bool ContextBuffers::isInitialized() {
+        return true;
+    }
+
+    void ContextBuffers::release() {
+        //
+    }
+
+    ContextBuffers& ContextBuffers::operator=(const ContextBuffers& other) {
+        return *this;
+    }
+
+    ContextBuffers& ContextBuffers::operator=(ContextBuffers&& other) {
+        return *this;
     }
 }

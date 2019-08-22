@@ -57,4 +57,12 @@ namespace nd4j {
     void LaunchContext::swapContextBuffers(ContextBuffers &buffers) {
         //
     }
+
+    bool LaunchContext::isInitialized() {
+        return true;
+    }
+
+    void LaunchContext::releaseBuffers() {
+        //
+    }
 }
