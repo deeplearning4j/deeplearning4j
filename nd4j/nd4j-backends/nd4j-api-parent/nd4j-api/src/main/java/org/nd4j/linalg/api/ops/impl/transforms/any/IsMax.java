@@ -79,4 +79,10 @@ public class IsMax extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(f().zerosLike(arg()));
     }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        //Also supports other types if say float array is provided as output array
+        return Collections.singletonList(DataType.BOOL);
+    }
 }

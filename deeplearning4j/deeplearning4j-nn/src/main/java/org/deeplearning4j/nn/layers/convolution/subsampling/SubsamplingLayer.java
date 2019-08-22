@@ -172,7 +172,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 b = DynamicCustomOp.builder("maxpool2d_bp");
                 break;
             case AVG:
-                b = DynamicCustomOp.builder("maxpool2d_bp");
+                b = DynamicCustomOp.builder("avgpool2d_bp");
                 if(layerConf().isAvgPoolIncludePadInDivisor()){
                     //Mostly this is a legacy case - beta4 and earlier models.
                     extra = 1;    //Divide by "number present" excluding padding

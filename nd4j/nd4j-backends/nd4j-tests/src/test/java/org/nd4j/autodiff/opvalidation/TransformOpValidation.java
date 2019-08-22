@@ -1249,7 +1249,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 2:
                     //TODO: IsMax supports both bool and float out: https://github.com/deeplearning4j/deeplearning4j/issues/6872
                     inArr = Nd4j.create(new double[]{-3,5,0,2});
-                    exp = Nd4j.create(new boolean[]{false,true,false,false}).castTo(DataType.DOUBLE);
+                    exp = Nd4j.create(new boolean[]{false,true,false,false});
                     out = sd.math().isMax(in);
                     break;
                 case 3:

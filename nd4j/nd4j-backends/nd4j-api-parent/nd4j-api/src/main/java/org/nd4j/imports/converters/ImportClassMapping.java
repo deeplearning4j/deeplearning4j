@@ -350,9 +350,12 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.custom.ATan2.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.Assign.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpace.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.BatchToSpaceND.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.Choose.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.Dilation2D.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttention.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.DotProductAttentionBp.class,
@@ -396,8 +399,11 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseSequence.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.ReverseV2.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatch.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.SpaceToBatchND.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.StandardizeBp.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.Svd.class,
@@ -457,6 +463,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.DivBpOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.FloorDivBpOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.FloorModBpOp.class,
+            org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.ModBpOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.MulBpOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RDivBpOp.class,
             org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.RSubBpOp.class,
@@ -559,11 +566,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.random.impl.ProbablisticMerge.class,
             org.nd4j.linalg.api.ops.random.impl.Range.class,
             org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution.class,
-            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class,
-            org.nd4j.linalg.api.ops.impl.transforms.custom.ShiftBits.class,
-            org.nd4j.linalg.api.ops.impl.transforms.custom.RShiftBits.class,
-            org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicShiftBits.class,
-            org.nd4j.linalg.api.ops.impl.transforms.custom.CyclicRShiftBits.class
+            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class
 
     );
 
