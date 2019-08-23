@@ -6719,7 +6719,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public boolean wasClosed() {
-        if (released || data().wasClosed())
+        // data can be null if that's empty array
+        if (released || (data() != null && data().wasClosed()))
             return true;
 
         return false;

@@ -644,6 +644,20 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    public void isMax4d_2dims(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.rand(DataType.FLOAT, 3, 3, 4, 4).permute(0, 2, 3, 1);
+
+        INDArray out_permutedIn = in.like();
+        INDArray out_dupedIn = in.like();
+
+        Nd4j.exec(new IsMax(in.dup(), out_dupedIn, 2, 3));
+        Nd4j.exec(new IsMax(in, out_permutedIn, 2, 3));
+
+        assertEquals(out_dupedIn, out_permutedIn);
+    }
+
+    @Test
     public void testSizeTypes(){
         List<DataType> failed = new ArrayList<>();
         for(DataType dt : new DataType[]{DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE,
