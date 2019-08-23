@@ -616,14 +616,23 @@ public abstract class BaseDataBuffer implements DataBuffer {
      */
     @Override
     public Indexer indexer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return indexer;
     }
 
     @Override
     public Pointer pointer() {
-        if (underlyingDataBuffer() != null && underlyingDataBuffer() != this)
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
+        if (underlyingDataBuffer() != null && underlyingDataBuffer() != this) {
+            if (underlyingDataBuffer().wasClosed())
+                throw new IllegalStateException("You can't use DataBuffer once it was released");
+
             return underlyingDataBuffer().pointer();
-        else {
+        } else {
             if (underlyingDataBuffer() != null)
                 if (((BaseDataBuffer) underlyingDataBuffer()).released)
                     throw new IllegalStateException("Underlying buffer was released via close() call");
@@ -923,6 +932,8 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Pointer addressPointer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
 
         if (offset() > 0) {
             Pointer ret;
@@ -968,6 +979,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public long address() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return pointer().address() + getElementSize() * offset();
     }
 
@@ -1409,6 +1423,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public double getDouble(long i) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         if (indexer == null) {
             throw new IllegalStateException("Indexer must never be null");
         }
@@ -1444,6 +1461,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public long getLong(long i) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         switch (dataType()) {
             case FLOAT:
                 return (long) ((FloatIndexer) indexer).get(offset() + i);
@@ -1480,6 +1500,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
      * @return
      */
     protected short getShort(long i) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         switch (dataType()) {
             case DOUBLE:
                 return (short) ((DoubleIndexer) indexer).get(offset() + i);
@@ -1518,6 +1541,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public float getFloat(long i) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         switch (dataType()) {
             case DOUBLE:
                 return (float) ((DoubleIndexer) indexer).get(offset() + i);
@@ -1550,6 +1576,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public int getInt(long i) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         switch (dataType()) {
             case DOUBLE:
                 return (int) ((DoubleIndexer) indexer).get(offset() + i);
@@ -1582,6 +1611,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public Number getNumber(long i) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         if (dataType() == DataType.DOUBLE)
             return getDouble(i);
         else if (dataType() == DataType.INT)
@@ -1685,6 +1717,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, float element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         switch (dataType()) {
             case BOOL:
                 ((BooleanIndexer) indexer).put(offset() + i, element == 0.0 ? false : true);
@@ -1732,6 +1767,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, double element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         switch (dataType()) {
             case BOOL:
                 ((BooleanIndexer) indexer).put(offset() + i,  element > 0.0);
@@ -1779,6 +1817,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, int element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         switch (dataType()) {
             case BOOL:
                 ((BooleanIndexer) indexer).put(offset() + i, element == 0 ? false : true);
@@ -1826,6 +1867,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, boolean element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         switch (dataType()) {
             case BOOL:
                 ((BooleanIndexer) indexer).put(offset() + i, element);
@@ -1873,6 +1917,9 @@ public abstract class BaseDataBuffer implements DataBuffer {
 
     @Override
     public void put(long i, long element) {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         switch (dataType()) {
             case BOOL:
                 ((BooleanIndexer) indexer).put(offset() + i, element == 0 ? false : true);
@@ -2666,5 +2713,11 @@ public abstract class BaseDataBuffer implements DataBuffer {
     @Override
     public long platformAddress() {
         return address();
+    }
+
+
+    @Override
+    public boolean wasClosed() {
+        return released;
     }
 }

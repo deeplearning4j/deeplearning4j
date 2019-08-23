@@ -6697,6 +6697,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (released || isEmpty())
             return;
 
+        Nd4j.getExecutioner().commit();
+
         if (!closeable())
             throw new ND4JIllegalStateException("Can't release this INDArray");
 
@@ -6715,5 +6717,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering());
     }
 
+    @Override
+    public boolean wasClosed() {
+        if (released || data().wasClosed())
+            return true;
 
+        return false;
+    }
 }

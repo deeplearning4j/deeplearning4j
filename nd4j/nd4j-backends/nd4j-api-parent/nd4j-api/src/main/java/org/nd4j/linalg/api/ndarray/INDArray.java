@@ -2832,6 +2832,12 @@ public interface INDArray extends Serializable, AutoCloseable {
     void close();
 
     /**
+     * This method checks if array or its buffer was closed before
+     * @return true if was closed, false otherwise
+     */
+    boolean wasClosed();
+
+    /**
      * This method returns empty array with the same dtype/order/shape as this one
      * @return
      */

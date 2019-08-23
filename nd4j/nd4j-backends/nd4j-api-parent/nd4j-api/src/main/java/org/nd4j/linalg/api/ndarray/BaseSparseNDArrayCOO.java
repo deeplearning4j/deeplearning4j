@@ -1219,6 +1219,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
+    public boolean wasClosed() {
+        return false;
+    }
+
+    @Override
     public boolean isS() {
         return false;
     }
