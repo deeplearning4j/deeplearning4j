@@ -22,8 +22,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Table;
 import com.google.common.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
-import com.rits.cloning.Cloner;
-import com.rits.cloning.IFastCloner;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
@@ -43,8 +41,6 @@ import org.nd4j.autodiff.samediff.config.OutputConfig;
 import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
-import org.nd4j.autodiff.util.cloner.DataBufferFastCloner;
-import org.nd4j.autodiff.util.cloner.INDArrayFastCloner;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
@@ -52,14 +48,15 @@ import org.nd4j.evaluation.classification.ROC;
 import org.nd4j.graph.*;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
-import org.nd4j.linalg.api.buffer.factory.DataBufferFactory;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.*;
+import org.nd4j.linalg.api.ops.BaseOp;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
@@ -68,7 +65,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.collection.IntArrayKeyMap;
-import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
@@ -272,7 +268,6 @@ public class SameDiff extends SDBaseOps {
     private Map<String, SameDiffFunctionDefinition> sameDiffFunctionDefinitionMap;
     private Map<String, SameDiff> sameDiffFunctionInstances;
     private Set<String> placeHolderFunctions;
-    private static Cloner cloner = newCloner();
     private static Map<String, Method> opMethods;
 
     private Table<String, String, String> fieldVariableResolutionMapping;
@@ -313,36 +308,6 @@ public class SameDiff extends SDBaseOps {
                 opMethods.put(method.getName(), method);
             }
         }
-    }
-
-    /**
-     * @return New cloner object. NOTE: INTENDED FOR DEVELOPER USE ONLY
-     */
-    public static Cloner newCloner() {
-        Cloner cloner = new Cloner();
-
-        //Implement custom cloning for INDArrays (default can have problems with off-heap and pointers)
-        //Sadly: the cloner library does NOT support interfaces here, hence we need to use the actual classes
-        //cloner.registerFastCloner(INDArray.class, new INDArrayFastCloner());  //Does not work due to interface
-        IFastCloner fc = new INDArrayFastCloner();
-        cloner.registerFastCloner(Nd4j.getBackend().getNDArrayClass(), fc);
-
-        //Same thing with DataBuffers: off heap -> cloner library chokes on them, but need to know the concrete
-        // buffer classes, not just the interface
-        IFastCloner fc2 = new DataBufferFastCloner();
-        DataBufferFactory d = Nd4j.getDataBufferFactory();
-        doReg(cloner, fc2, d.intBufferClass());
-        doReg(cloner, fc2, d.longBufferClass());
-        doReg(cloner, fc2, d.halfBufferClass());
-        doReg(cloner, fc2, d.floatBufferClass());
-        doReg(cloner, fc2, d.doubleBufferClass());
-        doReg(cloner, fc2, CompressedDataBuffer.class);
-        return cloner;
-    }
-
-    private static void doReg(Cloner cl, IFastCloner fc, Class<?> c) {
-        if (c != null)
-            cl.registerFastCloner(c, fc);
     }
 
 
@@ -653,7 +618,7 @@ public class SameDiff extends SDBaseOps {
         Map<Integer, Integer> thisVertexIdToNew = new HashMap<>();
         int idx = 1;
         for (val var : variables()) {
-            SDVariable clone = cloner.deepCloneDontCloneInstances(var, var.getSameDiff());
+            SDVariable clone = var.clone(this);
             SDVariable newVar = sameDiff.var(clone);
             if (var.getArr() != null && var.getVariableType() != VariableType.ARRAY) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
@@ -666,17 +631,19 @@ public class SameDiff extends SDBaseOps {
 
         }
 
+        Map<String,Integer> reverseMap = new HashMap<>();
+        int count = 0;
+        for( Variable v : variables.values()){
+            reverseMap.put(v.getName(), count++);
+        }
 
         val newFunctions = new LinkedHashMap<String, DifferentialFunction>();
         for (SameDiffOp op : ops.values()) {
             DifferentialFunction function = op.getOp();
-            if (function instanceof SDVariable) {
-                continue;
-            }
 
-            DifferentialFunction clone = cloner.deepCloneDontCloneInstances(
-                    function,
-                    function.getSameDiff());
+            //Clone the op
+            DifferentialFunction clone = FlatBuffersMapper.cloneViaSerialize(this, function, reverseMap);
+
             clone.setSameDiff(sameDiff);
             clone.setOwnName(function.getOwnName());
             if (sameDiff.opExists(function.getOwnName()))
@@ -685,7 +652,6 @@ public class SameDiff extends SDBaseOps {
 
             val argsForFunction = function.args();
             val outputsForFunction = function.outputVariables();
-
 
             //note that these have the same variable names
             sameDiff.addArgsFor(argsForFunction, clone);
@@ -703,7 +669,6 @@ public class SameDiff extends SDBaseOps {
         }
 
         return sameDiff.variables().get(sameDiff.variables().size() - 1);
-
     }
 
 
@@ -753,13 +718,9 @@ public class SameDiff extends SDBaseOps {
     public void putOpForId(String id, DifferentialFunction function) {
         if (ops.containsKey(id) && ops.get(id).getOp() == null) {
             throw new ND4JIllegalStateException("Function by id already exists!");
-        } else if (function instanceof SDVariable) {
-            throw new ND4JIllegalStateException("Function must not be a variable!");
         }
 
-        if (ops.containsKey(id)) {
-
-        } else {
+        if (!ops.containsKey(id)) {
             ops.put(id, SameDiffOp.builder().name(id).op(function).build());
         }
     }
@@ -1735,11 +1696,12 @@ public class SameDiff extends SDBaseOps {
      * @return The cloned SameDiff instance
      */
     public SameDiff dup() {
-        Cloner cloner = newCloner();
-        SameDiff clone = cloner.deepClone(this);
-        //TODO don't clone sessions in the first place!
-        clone.sessions.clear();
-        return clone;
+        ByteBuffer bb = asFlatBuffers(true);
+        try {
+            return fromFlatBuffers(bb);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
 
@@ -3285,6 +3247,12 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(!variables.containsKey(name), "Variable with name \"%s\" already exists", name);
         if (name == null || name.length() < 1)
             name = getNewVarName();
+        if(constant.isView()) {
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()){
+                constant = constant.dup();
+            }
+        }
+
         SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType(), null);
         name = v.getVarName();
         variables.put(name, Variable.builder().name(name).variable(v).build());
@@ -3604,13 +3572,7 @@ public class SameDiff extends SDBaseOps {
         }
 
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType(), new NDArraySupplierInitScheme(arr));
-
         associateArrayWithVariable(arr, ret);
-        if (ArrayUtil.prod(arr.shape()) == 1) {
-            try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                ret.setScalarValue(Nd4j.scalar(arr.getDouble(0)));
-            }
-        }
 
         addVariable(ret);
         if (getShapeForVarName(name) == null)
@@ -3782,7 +3744,7 @@ public class SameDiff extends SDBaseOps {
         if (trainingConfig != null && initializedTraining) {
             //Add updater state for this variable: updaterState, updaterViews, updaterMap
             for (SDVariable v : constants) {
-                if (!updaterMap.containsKey(v.getOwnName())) {
+                if (!updaterMap.containsKey(v.getVarName())) {
                     //Create new updater state
                     INDArray arr = v.getArr();
                     long thisSize = trainingConfig.getUpdater().stateSize(arr.length());
@@ -4387,7 +4349,6 @@ public class SameDiff extends SDBaseOps {
                     org.nd4j.linalg.api.buffer.DataType dataType = isImport ? null : outputDataTypes.get(i);
                     var = var(generateNewVarName(baseName, i), VariableType.ARRAY, null, dataType, (long[]) null);
                 }
-                var.setOutputIndex(i);
                 var.setCreator(function);
                 ret[i] = var;
             }
@@ -4420,7 +4381,6 @@ public class SameDiff extends SDBaseOps {
                 checkGet = var(baseName, VariableType.ARRAY, null, dataType, (long[]) null);
             }
 
-            checkGet.setOutputIndex(0);
             checkGet.setCreator(function);
             ret[0] = checkGet;
 
@@ -4824,9 +4784,6 @@ public class SameDiff extends SDBaseOps {
 
                 for (SameDiffOp op : allFunctions) {
                     DifferentialFunction func = op.getOp();
-                    if (func instanceof SDVariable) {
-                        continue;
-                    }
 
                     val args = func.args();
                     for (val arg : args)
@@ -5430,187 +5387,6 @@ public class SameDiff extends SDBaseOps {
         }
     }
 
-    protected int asFlatNode(@NonNull DifferentialFunction node, @NonNull FlatBufferBuilder bufferBuilder, List<SDVariable> variables,
-                             Map<String, Integer> reverseMap, Map<String, Integer> forwardMap, Map<String, Integer> framesMap, AtomicInteger idCounter, Integer id) {
-        val opName = node.opName();
-        val hash = FlatBuffersMapper.getOpNum(node.opName(), node.opType());
-        //log.info("Exporting node: [{}:<{}> ; OpType: {}; Hash/opNum: {}]", node.opName(), node.tensorflowName(), node.opType(), hash);
-
-        double[] extras;
-        if (node.opType() == Op.Type.CUSTOM) {
-            CustomOp op = (CustomOp) node;
-            extras = op.tArgs();
-        } else {
-            Object[] eArgs = node.getExtraArgs();
-            extras = eArgs != null ? new double[eArgs.length] : new double[0];
-            for (int e = 0; e < extras.length; e++) {
-                extras[e] = ((Number) eArgs[e]).doubleValue();
-            }
-        }
-
-        boolean[] boolArgs = null;
-        long[] extraBits = null;
-        if (node.opType() == Op.Type.CUSTOM) {
-            DynamicCustomOp dynamicCustomOp = (DynamicCustomOp) node;
-            extraBits = dynamicCustomOp.iArgs();
-            boolArgs = dynamicCustomOp.bArgs();
-        } else if (node instanceof Enter) {
-            // in case of Enter node we'll be storing unique frame reference
-            val frameName = ((Enter) node).getFrameName();
-            if (!framesMap.containsKey(frameName))
-                framesMap.put(frameName, idCounter.incrementAndGet());
-
-            extraBits = new long[]{framesMap.get(frameName).intValue()};
-        } else
-            extraBits = new long[]{};
-
-        if (node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_LONG) {
-            val op = (ReduceOp) node;
-
-            boolArgs = new boolean[2];
-            boolArgs[0] = op.isKeepDims();
-            boolArgs[1] = true; // always new format
-        } else if (node.opType() == Op.Type.INDEXREDUCE) {
-            val op = (IndexAccumulation) node;
-
-            boolArgs = new boolean[2];
-            boolArgs[0] = op.isKeepDims();
-            boolArgs[1] = true; // always new format
-        }
-
-        val inPaired = new ArrayList<Integer>();
-
-        int[] outputIds = null;
-        SDVariable[] outputVertexId = null;
-
-        try {
-            outputVertexId = node.outputVariables();
-            outputIds = new int[outputVertexId.length];
-            for (int i = 0; i < outputIds.length; i++) {
-                outputIds[i] = variables.indexOf(outputVertexId[i]);
-            }
-        } catch (ND4UnresolvedOutputVariables e) {
-
-            outputIds = new int[0];
-            outputVertexId = null;
-        } catch (Exception e) {
-            throw new ND4JIllegalStateException(e);
-        }
-
-
-        SDVariable[] inputs = node.args();
-        for (SDVariable input : inputs) {
-            String varName = input.getVarName();
-            int outIdx;
-            if (this.variables.get(varName).getOutputOfOp() != null) {
-                DifferentialFunction df = ops.get(this.variables.get(varName).getOutputOfOp()).getOp();
-                outIdx = ops.get(df.getOwnName()).getOutputsOfOp().indexOf(varName);
-            } else {
-                outIdx = 0;
-            }
-
-            if (!reverseMap.containsKey(varName)) {
-                if (varName.contains("NextIteration")) {
-                    // forward declaration: Merge node in case of loop will be referring to NextIteration node, which wasn't announced yet
-                    int fwdNodeId = idCounter.incrementAndGet();
-                    forwardMap.put(varName, fwdNodeId);
-                    reverseMap.put(varName, fwdNodeId);
-                } else {
-                    throw new ND4JIllegalStateException("Unknown variable used in input: [" + varName + "]");
-                }
-            }
-
-            int nodeId = reverseMap.get(varName);
-            inPaired.add(IntPair.createIntPair(bufferBuilder, nodeId, outIdx));
-        }
-
-        log.trace("Own Name: {}", node.getOwnName());
-        int ownId = id != null ? id : idCounter.incrementAndGet();  //forwardMap.containsKey(node.getOwnName()) ? forwardMap.get(node.getOwnName()) : idCounter.incrementAndGet();
-        String[] outNames = node.outputVariablesNames();
-        for (String s : outNames) {
-            if (!reverseMap.containsKey(s)) {
-                reverseMap.put(s, ownId);
-            }
-        }
-
-        int[] dims;
-        if (node.opType() == Op.Type.REDUCE_FLOAT || node.opType() == Op.Type.REDUCE_SAME || node.opType() == Op.Type.REDUCE_BOOL || node.opType() == Op.Type.REDUCE_LONG || node.opType() == Op.Type.INDEXREDUCE || node.opType() == Op.Type.REDUCE3) {
-            dims = node.getDimensions();
-            if (dims == null)
-                dims = new int[0];
-        } else {
-            dims = new int[0];
-        }
-        Map<String, Object> fnProps = node.propertiesForFunction();
-        int[] flatProperties = FlatBuffersMapper.mapFunctionPropertiesToFlatProperties(bufferBuilder, fnProps);
-        int propIdx = FlatNode.createPropertiesVector(bufferBuilder, flatProperties);
-
-        int nodesIn = FlatNode.createInputVector(bufferBuilder, new int[]{});
-        int nodesInPaired = FlatNode.createInputPairedVector(bufferBuilder, Ints.toArray(inPaired));
-        int nodesOut = FlatNode.createOutputVector(bufferBuilder, outputIds);
-        int extraz = FlatNode.createExtraParamsVector(bufferBuilder, extras);
-        int integerArgs = FlatNode.createExtraIntegerVector(bufferBuilder, extraBits);
-        int bArgs = FlatNode.createExtraBoolsVector(bufferBuilder, boolArgs != null ? boolArgs : new boolean[0]);
-        int dimensions = FlatNode.createDimensionsVector(bufferBuilder, dims);
-        int fname = bufferBuilder.createString(node.getOwnName());
-        int scopeName = bufferBuilder.createString("");
-        int scalar = 0;
-        if (node instanceof ScalarOp) {
-            ScalarOp sOp = (ScalarOp) node;
-            INDArray s = sOp.scalar();
-            if (s != null) {
-                scalar = s.toFlatArray(bufferBuilder);
-            }
-        }
-
-
-        if (node.opType() == null)
-            log.warn("Null-op node: {}", node);
-
-
-        List<String> outVarNames = node.getSameDiff().ops.get(node.getOwnName()).getOutputsOfOp();
-        int[] outVarNamesStringsOffsets = new int[outVarNames == null ? 0 : outVarNames.size()];
-        for (int i = 0; i < outVarNamesStringsOffsets.length; i++) {
-            outVarNamesStringsOffsets[i] = bufferBuilder.createString(outVarNames.get(i));
-        }
-        int outVarNamesOffset = FlatNode.createOutputNamesVector(bufferBuilder, outVarNamesStringsOffsets);
-
-        int opNameOffset = bufferBuilder.createString(opName);
-
-        byte[] outTypes = new byte[outVarNames.size()];
-        int i = 0;
-        for (String s : outVarNames) {
-            SDVariable v = getVariable(s);
-            outTypes[i++] = FlatBuffersMapper.getDataTypeAsByte(v.dataType());
-        }
-        int outTypesOffset = FlatNode.createOutputTypesVector(bufferBuilder, outTypes);
-
-        int flatNode = FlatNode.createFlatNode(
-                bufferBuilder,
-                ownId,
-                fname,
-                FlatBuffersMapper.getFlatOpType(node.opType()),
-                hash,
-                propIdx,
-                nodesIn,
-                nodesInPaired,
-                nodesOut,
-                extraz,
-                integerArgs,
-                bArgs,
-                dimensions,
-                -1,     //Device
-                0,      //Scope ID
-                scopeName,      //Scope name
-                outVarNamesOffset,
-                opNameOffset,
-                outTypesOffset,   //Output types
-                scalar
-        );
-
-        return flatNode;
-    }
-
     /**
      * This method exports the current SameDiff instance into FlatBuffers format, returning the array ops and
      * all arrays as a ByteBuffer containing the FlatBuffers format data
@@ -5702,7 +5478,7 @@ public class SameDiff extends SDBaseOps {
         for (SameDiffOp op : ops.values()) {
             DifferentialFunction func = op.getOp();
             Integer fnId = idxForOps.get(func);
-            flatNodes.add(asFlatNode(func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
+            flatNodes.add(FlatBuffersMapper.asFlatNode(this, func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
         }
 
         // we're dumping scopes now
@@ -5738,7 +5514,7 @@ public class SameDiff extends SDBaseOps {
             //add functions
             for (SameDiffOp op : scope.getValue().ops.values()) {
                 DifferentialFunction func = op.getOp();
-                flatNodes.add(asFlatNode(func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter, null));
+                flatNodes.add(FlatBuffersMapper.asFlatNode(this, func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter, null));
             }
         }
 

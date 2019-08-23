@@ -124,7 +124,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling3D.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2DDerivative.class,
-            org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3DDerivative.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D.class,
             org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2DDerivative.class,

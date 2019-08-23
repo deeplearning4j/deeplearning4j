@@ -16,7 +16,6 @@
 
 package org.nd4j.autodiff.functions;
 
-import com.rits.cloning.Cloner;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,6 +24,7 @@ import lombok.val;
 import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
@@ -659,7 +659,7 @@ public abstract class DifferentialFunction {
                 this.ownName = sameDiff.getOpName(opName());
             }
 
-            if(sameDiff != null && !(this instanceof SDVariable))
+            if(sameDiff != null)
                 sameDiff.putOpForId(ownName,this);
         }
     }
@@ -772,8 +772,7 @@ public abstract class DifferentialFunction {
      * @return
      */
     public  DifferentialFunction dup() {
-        Cloner cloner = SameDiff.newCloner();
-        return cloner.deepClone(this);
+        return FlatBuffersMapper.cloneViaSerialize(sameDiff, this);
     }
 
 

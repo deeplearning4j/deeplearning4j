@@ -26,6 +26,7 @@ import org.nd4j.graph.*;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -327,5 +328,46 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 assertEquals(a1, a2);
             }
         }
+    }
+
+
+    @Test
+    public void pooling3DSerialization(){
+        SameDiff sd = SameDiff.create();
+
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 28, 28);
+        SDVariable o = sd.cnn.maxPooling3d("pool", x, Pooling3DConfig.builder().build());
+
+        ByteBuffer bbSerialized = sd.asFlatBuffers(true);
+
+        SameDiff deserialized;
+        try{
+            deserialized = SameDiff.fromFlatBuffers(bbSerialized);
+        } catch (IOException e){
+            throw new RuntimeException("IOException deserializing from FlatBuffers", e);
+        }
+        assertEquals(
+                sd.getVariableOutputOp("pool").getClass(),
+                deserialized.getVariableOutputOp("pool").getClass());
+    }
+
+    @Test
+    public void pooling3DSerialization2(){
+        SameDiff sd = SameDiff.create();
+
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 28, 28);
+        SDVariable o = sd.cnn.avgPooling3d("pool", x, Pooling3DConfig.builder().build());
+
+        ByteBuffer bbSerialized = sd.asFlatBuffers(true);
+
+        SameDiff deserialized;
+        try{
+            deserialized = SameDiff.fromFlatBuffers(bbSerialized);
+        } catch (IOException e){
+            throw new RuntimeException("IOException deserializing from FlatBuffers", e);
+        }
+        assertEquals(
+                sd.getVariableOutputOp("pool").getClass(),
+                deserialized.getVariableOutputOp("pool").getClass());
     }
 }

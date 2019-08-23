@@ -43,8 +43,12 @@ public class MaxPooling3D extends Pooling3D {
     public MaxPooling3D() {
     }
 
-    public MaxPooling3D(SameDiff sameDiff, SDVariable input, INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
-        super(sameDiff, new SDVariable[]{input}, new INDArray[]{arrayInput}, new INDArray[]{arrayOutput}, false, config, Pooling3DType.MAX);
+    public MaxPooling3D(SameDiff sameDiff, SDVariable input, Pooling3DConfig config) {
+        super(sameDiff, new SDVariable[]{input}, null, null, false, config, Pooling3DType.MAX);
+    }
+
+    public MaxPooling3D(SameDiff sameDiff, INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
+        super(sameDiff, null, new INDArray[]{arrayInput}, wrapOrNull(arrayOutput), false, config, Pooling3DType.MAX);
     }
 
     @Override

@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
-import lombok.Builder;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -31,7 +30,6 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.lang.reflect.Field;
 import java.util.*;
 
 
@@ -39,7 +37,7 @@ import java.util.*;
  * Pooling3D operation
  */
 @Slf4j
-public class Pooling3D extends DynamicCustomOp {
+public abstract class Pooling3D extends DynamicCustomOp {
     protected Pooling3DConfig config;
 
     public enum Pooling3DType {
@@ -56,7 +54,6 @@ public class Pooling3D extends DynamicCustomOp {
 
     public Pooling3D() {}
 
-    @Builder(builderMethodName = "builder")
     public Pooling3D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] inputArrays, INDArray[] outputs,boolean inPlace,
                      Pooling3DConfig pooling3DConfig, Pooling3DType type) {
         super(null,sameDiff, inputs, inPlace);
@@ -113,11 +110,6 @@ public class Pooling3D extends DynamicCustomOp {
         addIArgument(0);                                    //0 == "exclude padding from average count"
         addIArgument(config.isNCDHW() ? 0 : 1);
 
-    }
-
-    @Override
-    public String opName() {
-        return getPoolingPrefix() + "pool3dnew";
     }
 
     @Override

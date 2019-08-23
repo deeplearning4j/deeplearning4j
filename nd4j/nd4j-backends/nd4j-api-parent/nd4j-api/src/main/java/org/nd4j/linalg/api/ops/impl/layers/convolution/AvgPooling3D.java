@@ -43,8 +43,12 @@ public class AvgPooling3D extends Pooling3D {
     public AvgPooling3D() {
     }
 
-    public AvgPooling3D(SameDiff sameDiff, SDVariable input, INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
-        super(sameDiff, new SDVariable[]{input}, new INDArray[]{arrayInput}, new INDArray[]{arrayOutput}, false, config, Pooling3DType.MAX);
+    public AvgPooling3D(SameDiff sameDiff, SDVariable input, Pooling3DConfig config) {
+        super(sameDiff, new SDVariable[]{input}, null, null, false, config, Pooling3DType.AVG);
+    }
+
+    public AvgPooling3D(SameDiff sameDiff,INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
+        super(sameDiff, null, new INDArray[]{arrayInput}, wrapOrNull(arrayOutput), false, config, Pooling3DType.AVG);
     }
 
     @Override

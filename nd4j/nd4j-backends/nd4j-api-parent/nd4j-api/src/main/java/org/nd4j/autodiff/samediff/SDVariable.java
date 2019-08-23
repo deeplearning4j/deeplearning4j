@@ -59,15 +59,16 @@ import java.util.Map;
 @Data
 @NoArgsConstructor
 @Slf4j
-public class SDVariable extends DifferentialFunction implements Serializable {
+public class SDVariable implements Serializable {
 
+    protected SameDiff sameDiff;
 
     @Getter
     @Setter
-    private String varName;
+    protected String varName;
     @Getter
     @Setter
-    private VariableType variableType;
+    protected VariableType variableType;
 
     @Getter
     @Setter
@@ -78,21 +79,19 @@ public class SDVariable extends DifferentialFunction implements Serializable {
     @Setter
     protected DataType dataType;
 
-    private int outputIndex = 0;
-
     private DifferentialFunction creator;
 
     // autogen_tag::sdvars::start
 
 
     public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType, WeightInitScheme weightInitScheme){
-        super(sameDiff, new Object[0]);
         Preconditions.checkState(weightInitScheme == null || varType == VariableType.VARIABLE, "Weight initalization schemes can only be applied to VARIABLE type" +
                 " SDVariables - variable \"%s\" is of type %s but was provided a weight initialization scheme %s", varName, varType, weightInitScheme);
         Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
 
         varName = sameDiff.generateNewVarName(varName, 0, true);
 
+        this.sameDiff = sameDiff;
         this.varName = varName;
         this.variableType = varType;
         this.dataType = dataType;
@@ -112,44 +111,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return variableType == VariableType.CONSTANT;
     }
 
-
-    @Override
-    public String opName() {
-        return "variable";
-    }
-
-    @Override
-    public SDVariable[] outputVariables() {
-        return new SDVariable[] {this};
-    }
-
-    @Override
-    public SDVariable arg() {
-        return this;
-    }
-
-    @Override
-    public SDVariable[] args() {
-        return new SDVariable[] {this};
-    }
-
-    @Override
-    public SDVariable[] outputVariables(String baseName) {
-        return new SDVariable[] {this};
-    }
-
-
-
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-
-    }
-
-    @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
-
-    }
 
 
 
@@ -256,11 +217,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.getGradForVariable(getVarName());
     }
 
-    @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        throw new ND4JIllegalStateException("Unable to differentiate a variable! Must be a function.");
-    }
-
 
     /**
      * Returns the shape of this variable
@@ -339,7 +295,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return Negated variable
      */
     public SDVariable neg(){
-        return f().neg(this);
+        return sameDiff.f().neg(this);
     }
 
     /**
@@ -906,7 +862,7 @@ public class SDVariable extends DifferentialFunction implements Serializable {
      * @return Output variable
      */
     public SDVariable pow(String varName, double scalar) {
-        SDVariable ret = f().pow(this, scalar);
+        SDVariable ret = sameDiff.f().pow(this, scalar);
         return sameDiff.updateVariableNameAndReference(ret, varName);
     }
 
@@ -1015,12 +971,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         return sameDiff.updateVariableNameAndReference(function,varName);
 
     }
-
-    @Override
-    public Op.Type opType() {
-        return Op.Type.RETURN;
-    }
-
 
     /**
      * See {@link #squaredDifference(String, SDVariable)}
@@ -1563,16 +1513,6 @@ public class SDVariable extends DifferentialFunction implements Serializable {
                 (variableType == VariableType.PLACEHOLDER && shape != null ? ",shape=" + Arrays.toString(shape): "") + ")";
     }
 
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
-    }
-
     /**
      * Add a control dependency for this variable on the specified variable.<br>
      * Control depnedencies can be used to enforce the execution order.
@@ -1754,5 +1694,16 @@ public class SDVariable extends DifferentialFunction implements Serializable {
         result = 31 * result + (variableType != null ? variableType.hashCode() : 0);
         result = 31 * result + (dataType != null ? dataType.hashCode() : 0);
         return result;
+    }
+
+    public SDVariable clone(SameDiff sd){
+        SDVariable v = new SDVariable();
+        v.varName = varName;
+        v.variableType = variableType;
+        v.weightInitScheme = weightInitScheme;
+        v.shape = shape == null ? null : shape.clone();
+        v.dataType = dataType;
+        v.sameDiff = sd;
+        return v;
     }
 }

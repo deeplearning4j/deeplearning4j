@@ -164,13 +164,15 @@ public class Linear extends BaseModule {
 
         if(forward == null) {
             //bias needs to be added yet
-            if(args.length > 1)
+            if(args.length > 1) {
+                /*
                 forward =  f().add(new Mmul(sameDiff, input[0],args()[0],
                         MMulTranspose.builder()
                                 .transposeA(false)
                                 .transposeB(true)
                                 .build()).outputVariables()[0],args()[1]);
-            else {
+             */
+            } else {
                 forward = new Mmul(sameDiff, input[0],args()[0],
                         MMulTranspose.builder().transposeA(false).transposeB(true).build());
             }

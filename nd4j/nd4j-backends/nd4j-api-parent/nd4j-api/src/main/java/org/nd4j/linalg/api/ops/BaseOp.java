@@ -202,12 +202,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public void setX(INDArray x) {
         if (x == null) {
             if (args() != null && args().length >= 1) {
-                DifferentialFunction firstArg = args()[0];
-                if (firstArg instanceof SDVariable) {
-                    SDVariable sdVariable = (SDVariable) firstArg;
-                    if (sdVariable.getArr() != null)
-                        this.x = sdVariable.getArr();
-                }
+                SDVariable firstArg = args()[0];
+                if (firstArg.getArr() != null)
+                    this.x = firstArg.getArr();
             } else
                 throw new ND4JIllegalStateException("Unable to set null array for x. Also unable to infer from differential function arguments");
         } else
@@ -238,12 +235,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public void setY(INDArray y) {
         if (y == null) {
             if (args() != null && args().length > 1) {
-                DifferentialFunction firstArg = args()[1];
-                if (firstArg instanceof SDVariable) {
-                    SDVariable sdVariable = (SDVariable) firstArg;
-                    if (sdVariable.getArr() != null)
-                        this.y = sdVariable.getArr();
-                }
+                SDVariable firstArg = args()[1];
+                if (firstArg.getArr() != null)
+                    this.y = firstArg.getArr();
             } else
                 throw new ND4JIllegalStateException("Unable to set null array for y. Also unable to infer from differential function arguments");
         } else

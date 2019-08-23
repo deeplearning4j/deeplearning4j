@@ -56,7 +56,7 @@ public class TestOpMapping extends BaseNd4jTest {
 
         for(Class<? extends DifferentialFunction> c : subTypes){
 
-            if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers()) || c == SDVariable.class || ILossFunction.class.isAssignableFrom(c))
+            if(Modifier.isAbstract(c.getModifiers()) || Modifier.isInterface(c.getModifiers()) || ILossFunction.class.isAssignableFrom(c))
                 continue;
 
             DifferentialFunction df;

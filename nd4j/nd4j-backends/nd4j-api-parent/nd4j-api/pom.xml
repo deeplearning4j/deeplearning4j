@@ -167,11 +167,6 @@
             <artifactId>objenesis</artifactId>
             <version>${objenesis.version}</version>
         </dependency>
-        <dependency>
-            <groupId>uk.com.robust-it</groupId>
-            <artifactId>cloning</artifactId>
-            <version>1.9.3</version>
-        </dependency>
 
 
         <!-- oshi: Used for collecting system information for system info reporting -->
