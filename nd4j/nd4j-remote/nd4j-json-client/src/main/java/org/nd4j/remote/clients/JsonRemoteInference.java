@@ -24,10 +24,12 @@ import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.json.JSONObject;
-import org.nd4j.remote.clients.serde.JsonDeserializer;
-import org.nd4j.remote.clients.serde.JsonSerializer;
+import org.nd4j.remote.clients.serde.*;
 
 import java.io.IOException;
+import java.io.InputStream;
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -49,21 +51,57 @@ import java.util.concurrent.TimeoutException;
 @Slf4j
 public class JsonRemoteInference<I, O> {
     private String endpointAddress;
+    // JSON serializer/deserializer and binary serializer/deserializer are mutually exclusive.
     private JsonSerializer<I> serializer;
     private JsonDeserializer<O> deserializer;
+    private BinarySerializer<I> binarySerializer;
+    private BinaryDeserializer<O> binaryDeserializer;
+
+    private final static String APPLICATION_JSON = "application/json";
+    private final static String APPLICATION_OCTET_STREAM = "application/octet-stream";
 
     @Builder
-    public JsonRemoteInference(@NonNull String endpointAddress, @NonNull JsonSerializer<I> inputSerializer, @NonNull JsonDeserializer<O> outputDeserializer) {
+    public JsonRemoteInference(@NonNull String endpointAddress,
+                               JsonSerializer<I> inputSerializer, JsonDeserializer<O> outputDeserializer,
+                               BinarySerializer<I> inputBinarySerializer, BinaryDeserializer<O> outputBinaryDeserializer) {
+
         this.endpointAddress = endpointAddress;
         this.serializer = inputSerializer;
         this.deserializer = outputDeserializer;
+        this.binarySerializer = inputBinarySerializer;
+        this.binaryDeserializer = outputBinaryDeserializer;
+
+        if (serializer != null && binarySerializer != null || serializer == null && binarySerializer == null)
+            throw new IllegalStateException("Binary and JSON serializers/deserializers are mutually exclusive and mandatory.");
     }
+
 
     private O processResponse(HttpResponse<String> response) throws IOException {
         if (response.getStatus() != 200)
             throw new IOException("Inference request returned bad error code: " + response.getStatus());
 
         O result = deserializer.deserialize(response.getBody());
+
+        if (result == null) {
+            throw new IOException("Deserialization failed!");
+        }
+        return result;
+    }
+
+    private O processResponseBinary(HttpResponse<InputStream> response) throws IOException {
+        if (response.getStatus() != 200)
+            throw new IOException("Inference request returned bad error code: " + response.getStatus());
+
+        List<String> values = response.getHeaders().get("Content-Length");
+        if (values == null || values.size() < 1) {
+            throw new IOException("Content-Length is required for binary data");
+        }
+
+        String strLength = values.get(0);
+        byte[] bytes = new byte[Integer.parseInt(strLength)];
+        response.getBody().read(bytes);
+        O result = binaryDeserializer.deserialize(bytes);
+
         if (result == null) {
             throw new IOException("Deserialization failed!");
         }
@@ -79,12 +117,30 @@ public class JsonRemoteInference<I, O> {
      */
     public O predict(I input) throws IOException {
         try {
-            val stringResult = Unirest.post(endpointAddress)
-                    .header("Content-Type", "application/json")
-                    .header("Accept", "application/json")
-                    .body(new JSONObject(serializer.serialize(input))).asString();
+            if (binarySerializer != null && binaryDeserializer != null) {
+                HttpResponse<InputStream> response =
+                        Unirest.post(endpointAddress)
+                                .header("Content-Type", APPLICATION_OCTET_STREAM)
+                                .header("Accept", APPLICATION_OCTET_STREAM)
+                                .body(binarySerializer.serialize(input)).asBinary();
+                return processResponseBinary(response);
+            }
+            else if (binarySerializer != null && binaryDeserializer == null) {
+                HttpResponse<String> response =
+                        Unirest.post(endpointAddress)
+                                .header("Content-Type", APPLICATION_OCTET_STREAM)
+                                .header("Accept", APPLICATION_OCTET_STREAM)
+                                .body(binarySerializer.serialize(input)).asString();
+                return processResponse(response);
+            }
+            else {
+                HttpResponse<String> response = Unirest.post(endpointAddress)
+                                .header("Content-Type", APPLICATION_JSON)
+                                .header("Accept", APPLICATION_JSON)
+                                .body(new JSONObject(serializer.serialize(input))).asString();
+                return processResponse(response);
+            }
 
-            return processResponse(stringResult);
         } catch (UnirestException e) {
             throw new IOException(e);
         }
@@ -96,11 +152,19 @@ public class JsonRemoteInference<I, O> {
      * @return
      */
     public Future<O> predictAsync(I input) {
-        val stringResult = Unirest.post(endpointAddress)
+
+        Future<HttpResponse<String>> response = binarySerializer != null ?
+                Unirest.post(endpointAddress)
+                .header("Content-Type", "application/octet-stream")
+                .header("Accept", "application/octet-stream")
+                .body(binarySerializer.serialize(input)).asStringAsync() :
+
+                Unirest.post(endpointAddress)
                 .header("Content-Type", "application/json")
                 .header("Accept", "application/json")
                 .body(new JSONObject(serializer.serialize(input))).asStringAsync();
-        return new InferenceFuture(stringResult);
+
+        return new InferenceFuture(response);
     }
 
     /**
@@ -151,3 +215,4 @@ public class JsonRemoteInference<I, O> {
         }
     }
 }
+

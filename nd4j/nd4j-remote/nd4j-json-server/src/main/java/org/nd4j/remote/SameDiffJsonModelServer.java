@@ -26,6 +26,8 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.remote.clients.serde.BinaryDeserializer;
+import org.nd4j.remote.clients.serde.BinarySerializer;
 import org.nd4j.remote.clients.serde.JsonDeserializer;
 import org.nd4j.remote.clients.serde.JsonSerializer;
 import org.nd4j.adapters.InferenceAdapter;
@@ -51,6 +53,8 @@ public class SameDiffJsonModelServer<I, O> {
     protected SameDiff sdModel;
     protected final JsonSerializer<O> serializer;
     protected final JsonDeserializer<I> deserializer;
+    protected final BinarySerializer<O> binarySerializer;
+    protected final BinaryDeserializer<I> binaryDeserializer;
     protected final InferenceAdapter<I, O> inferenceAdapter;
     protected final int port;
 
@@ -64,9 +68,18 @@ public class SameDiffJsonModelServer<I, O> {
     protected String[] orderedInputNodes;
     protected String[] orderedOutputNodes;
 
-    protected SameDiffJsonModelServer(@NonNull InferenceAdapter<I, O> inferenceAdapter, @NonNull JsonSerializer<O> serializer, @NonNull JsonDeserializer<I> deserializer, int port) {
+    protected SameDiffJsonModelServer(@NonNull InferenceAdapter<I, O> inferenceAdapter,
+                                      JsonSerializer<O> serializer, JsonDeserializer<I> deserializer,
+                                      BinarySerializer<O> binarySerializer, BinaryDeserializer<I> binaryDeserializer,
+                                      int port) {
         Preconditions.checkArgument(port > 0 && port < 65535, "TCP port must be in range of 0..65535");
+        Preconditions.checkArgument(serializer == null && binarySerializer == null ||
+                                        serializer != null && binarySerializer == null ||
+                                        serializer == null && binarySerializer != null,
+                                "JSON and binary serializers/deserializers are mutually exclusive and mandatory.");
 
+        this.binarySerializer = binarySerializer;
+        this.binaryDeserializer = binaryDeserializer;
         this.inferenceAdapter = inferenceAdapter;
         this.serializer = serializer;
         this.deserializer = deserializer;
@@ -74,8 +87,11 @@ public class SameDiffJsonModelServer<I, O> {
     }
 
     //@Builder
-    public SameDiffJsonModelServer(SameDiff sdModel, @NonNull InferenceAdapter<I, O> inferenceAdapter, @NonNull JsonSerializer<O> serializer, @NonNull JsonDeserializer<I> deserializer, int port, String[] orderedInputNodes, @NonNull String[] orderedOutputNodes) {
-        this(inferenceAdapter, serializer, deserializer, port);
+    public SameDiffJsonModelServer(SameDiff sdModel, @NonNull InferenceAdapter<I, O> inferenceAdapter,
+                                   JsonSerializer<O> serializer, JsonDeserializer<I> deserializer,
+                                   BinarySerializer<O> binarySerializer, BinaryDeserializer<I> binaryDeserializer,
+                                   int port, String[] orderedInputNodes, @NonNull String[] orderedOutputNodes) {
+        this(inferenceAdapter, serializer, deserializer, binarySerializer, binaryDeserializer, port);
         this.sdModel = sdModel;
         this.orderedInputNodes = orderedInputNodes;
         this.orderedOutputNodes = orderedOutputNodes;
@@ -282,7 +298,7 @@ public class SameDiffJsonModelServer<I, O> {
                 } else
                     throw new IllegalArgumentException("Either InferenceAdapter<I,O> or InputAdapter<I> + OutputAdapter<O> should be configured");
             }
-            return new SameDiffJsonModelServer<I,O>(sameDiff, inferenceAdapter, serializer, deserializer, port, orderedInputNodes, orderedOutputNodes);
+            return new SameDiffJsonModelServer<I,O>(sameDiff, inferenceAdapter, serializer, deserializer, null, null, port, orderedInputNodes, orderedOutputNodes);
         }
     }
 }
