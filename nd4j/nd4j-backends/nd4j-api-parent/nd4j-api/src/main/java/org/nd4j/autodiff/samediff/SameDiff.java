@@ -807,9 +807,9 @@ public class SameDiff extends SDBaseOps {
 
         SDVariable v = getVariable(varName);
         if (v.isConstant()) {
-            constantArrays.put(varName, new DeviceLocalNDArray(arr));
+            constantArrays.put(varName, new DeviceLocalNDArray(arr, true));
         } else if (v.getVariableType() == VariableType.VARIABLE) {
-            variablesArrays.put(varName, new DeviceLocalNDArray(arr));
+            variablesArrays.put(varName, new DeviceLocalNDArray(arr, true));
         } else if (v.isPlaceHolder()) {
             long tid = Thread.currentThread().getId();
             if (!placeholdersPerThread.containsKey(tid)) {
@@ -1033,10 +1033,10 @@ public class SameDiff extends SDBaseOps {
 
         switch (variable.getVariableType()) {
             case VARIABLE:
-                variablesArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
+                variablesArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr, true));  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
                 break;
             case CONSTANT:
-                constantArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr));
+                constantArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr, true));
                 break;
             case ARRAY:
                 // FIXME: remove this before release
@@ -1074,6 +1074,29 @@ public class SameDiff extends SDBaseOps {
                     sd.associateArrayWithVariable(arr, v);
                 }
             }
+        }
+    }
+
+    /**
+     * Update the constant or variable type SDVariable with the values from the specified
+     * array. Note that unlike {@link #associateArrayWithVariable(INDArray, String)} this method will take the
+     * values from the argument array and assign it to the current array.
+     * The actual array (INDArray object) will not be stored or otherwise used within the SameDiff instance.
+     * @param arr      Array values to set
+     * @param variable Variable to update the array of. Must be CONSTANT or VARIBLE type SDVariable
+     */
+    public void assignArray(@NonNull INDArray arr, @NonNull SDVariable variable){
+        Preconditions.checkState(variable.getVariableType() == VariableType.VARIABLE || variable.getVariableType() == VariableType.CONSTANT,
+                "assignArray method can only be used with VARIBLE or CONSTANT type SDVariables, variable \"%s\" has type %s", variable.getVarName(), variable.getVariableType());
+
+        //DeviceLocal doesn't work with views
+        if(arr.isView())
+            arr = arr.dup();
+
+        if(variable.getVariableType() == VariableType.VARIABLE ){
+            variablesArrays.get(variable.getVarName()).update(arr);
+        } else {
+            constantArrays.get(variable.getVarName()).update(arr);
         }
     }
 
@@ -3256,7 +3279,7 @@ public class SameDiff extends SDBaseOps {
         SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType(), null);
         name = v.getVarName();
         variables.put(name, Variable.builder().name(name).variable(v).build());
-        constantArrays.put(name, new DeviceLocalNDArray(constant));
+        constantArrays.put(name, new DeviceLocalNDArray(constant, true));   //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
         return v;
     }
 
@@ -3630,7 +3653,7 @@ public class SameDiff extends SDBaseOps {
             INDArray arr = variable.getArr();
             Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
 
-            constantArrays.put(n, new DeviceLocalNDArray(arr));
+            constantArrays.put(n, new DeviceLocalNDArray(arr, true));   //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
             variablesArrays.remove(n);
             if (!placeholdersPerThread.isEmpty()) {
                 for (Map<String, INDArray> m : placeholdersPerThread.values()) {
@@ -3728,7 +3751,7 @@ public class SameDiff extends SDBaseOps {
             INDArray arr = variable.getArr();
             Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
 
-            variablesArrays.put(n, new DeviceLocalNDArray(arr));
+            variablesArrays.put(n, new DeviceLocalNDArray(arr, true));  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
             constantArrays.remove(n);
             if (!placeholdersPerThread.isEmpty()) {
                 for (Map<String, INDArray> m : placeholdersPerThread.values()) {
@@ -3807,13 +3830,13 @@ public class SameDiff extends SDBaseOps {
                     DeviceLocalNDArray dl = variablesArrays.remove(e.getKey());
                     INDArray arr = dl.get();
                     INDArray newArr = arr.castTo(d);
-                    variablesArrays.put(e.getKey(), new DeviceLocalNDArray(newArr));
+                    variablesArrays.put(e.getKey(), new DeviceLocalNDArray(newArr, true));  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
                     break;
                 case CONSTANT:
                     DeviceLocalNDArray dl2 = constantArrays.remove(e.getKey());
                     INDArray arr2 = dl2.get();
                     INDArray newArr2 = arr2.castTo(d);
-                    constantArrays.put(e.getKey(), new DeviceLocalNDArray(newArr2));
+                    constantArrays.put(e.getKey(), new DeviceLocalNDArray(newArr2, true));  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
                     break;
                 case PLACEHOLDER:
                     Map<String, INDArray> m = placeholdersPerThread.get(Thread.currentThread().getId());
