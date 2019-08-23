@@ -26,6 +26,7 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
+    nd4j::LaunchContext* defaultContext = nd4j::LaunchContext::defaultContext();
 
     template <typename T>
     static void swapRows_(NDArray* matrix, int theFirst, int theSecond) {
@@ -114,7 +115,7 @@ namespace helpers {
 
         NDArray determinant = NDArrayFactory::create<T>(1.f);
         NDArray compoundMatrix = *input; // copy
-        NDArray permutationMatrix(input, false, input->getContext()); // has same shape as input and contiguous strides
+        NDArray permutationMatrix(input, false, defaultContext); // has same shape as input and contiguous strides
         permutationMatrix.setIdentity();
 
         T pivotValue; // = T(0.0);
@@ -170,7 +171,7 @@ namespace helpers {
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
-        auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getContext()); //, block.getWorkspace());
+        auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), defaultContext); //, block.getWorkspace());
 
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row)
@@ -184,6 +185,7 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template int determinant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
     int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+        defaultContext = context;
         BUILD_SINGLE_SELECTOR(input->dataType(), return determinant_, (input, output), FLOAT_TYPES);
     }
 
@@ -193,7 +195,7 @@ template <typename T>
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
-        NDArray matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getContext()); //, block.getWorkspace());
+        NDArray matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), defaultContext); //, block.getWorkspace());
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
                 matrix.p(row, input->e<T>(k));
@@ -220,11 +222,11 @@ template <typename T>
         auto totalCount = output->lengthOf() / n2;
 
         output->assign(0.f); // fill up output tensor with zeros
-        auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
-        auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
-        auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext());
-        auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext());
-        auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext());
+        auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), defaultContext); //, block.getWorkspace());
+        auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), defaultContext); //, block.getWorkspace());
+        auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), defaultContext);
+        auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), defaultContext);
+        auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), defaultContext);
 
         for (int e = 0; e < totalCount; e++) {
             if (e)
@@ -266,6 +268,7 @@ template <typename T>
     }
 
     int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
+        defaultContext = context;
         BUILD_SINGLE_SELECTOR(input->dataType(), return inverse_, (input, output), FLOAT_TYPES);
     }
 
@@ -308,8 +311,8 @@ template <typename T>
         if (!inplace)
              output->assign(0.f); // fill up output tensor with zeros only inplace=false
 
-        std::unique_ptr<NDArray> matrix(NDArrayFactory::create_('c', {n, n}, input->dataType(), input->getContext())); //, block.getWorkspace());
-        std::unique_ptr<NDArray> lowerMatrix(NDArrayFactory::create_('c',{n, n}, input->dataType(), input->getContext()));
+        std::unique_ptr<NDArray> matrix(NDArrayFactory::create_('c', {n, n}, input->dataType(), defaultContext)); //, block.getWorkspace());
+        std::unique_ptr<NDArray> lowerMatrix(NDArrayFactory::create_('c',{n, n}, input->dataType(), defaultContext));
 
         for (int e = 0; e < totalCount; e++) {
 
@@ -343,6 +346,7 @@ template <typename T>
     }
 
     int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
+        defaultContext = context;
         BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (input, output, inplace), FLOAT_TYPES);
     }
 

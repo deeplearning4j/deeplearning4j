@@ -9363,15 +9363,28 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #include <NDArray.h>
 // #include <dll.h>
- 
+
 @Namespace("nd4j") @NoOffset public static class OpArgsHolder extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
     public OpArgsHolder(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public OpArgsHolder(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public OpArgsHolder position(long position) {
+        return (OpArgsHolder)super.position(position);
+    }
 
 
-	
+    // default constructor
+	public OpArgsHolder() { super((Pointer)null); allocate(); }
+	private native void allocate();
 
+    // copy constructor
+    public OpArgsHolder(@Const @ByRef OpArgsHolder other) { super((Pointer)null); allocate(other); }
+    private native void allocate(@Const @ByRef OpArgsHolder other);
+
+    // constructor
     public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
     private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
     public OpArgsHolder(@Const @ByRef NDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
@@ -9386,6 +9399,13 @@ public static final int PREALLOC_SIZE = 33554432;
     private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
     public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
     private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
+
+    // move constructor
+
+    // assignment operator
+    public native @ByRef @Name("operator =") OpArgsHolder put(@Const @ByRef OpArgsHolder other);
+
+    // move assignment operator
 
     public native @Const @ByRef NDArrayVector getInArrs();
 
@@ -9406,8 +9426,8 @@ public static final int PREALLOC_SIZE = 33554432;
     public native int getNumBArgs();
 
     public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
-    public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs); 
-    
+    public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs);
+
 }
 
 

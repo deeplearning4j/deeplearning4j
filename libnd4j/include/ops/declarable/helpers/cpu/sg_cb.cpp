@@ -19,8 +19,6 @@
 //
 
 #include <ops/declarable/helpers/sg_cb.h>
-#include <AveragingArrayProxy.h>
-#include <helpers/AveragingArrayProxy.h>
 #include <specials.h>
 
 #define HS_MAX_EXP 6.0f

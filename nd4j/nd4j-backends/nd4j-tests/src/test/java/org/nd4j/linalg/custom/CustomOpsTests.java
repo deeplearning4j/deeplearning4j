@@ -45,6 +45,7 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -548,6 +549,8 @@ public class CustomOpsTests extends BaseNd4jTest {
         Nd4j.exec(op);  //Execution is OK
     }
 
+
+
     @Test
     public void testDepthwise(){
         INDArray input = Nd4j.create(DataType.DOUBLE, 1,3,8,8);
@@ -625,6 +628,49 @@ public class CustomOpsTests extends BaseNd4jTest {
         System.out.println(out);
     }
 
+    @Test
+    public void testUpsampling2dBackprop(){
+
+        Nd4j.getRandom().setSeed(12345);
+        int c = 2;
+        int[] sz = {2,2};
+        long[] inSize = {1, c, 3, 3};
+        INDArray eps = Nd4j.rand(DataType.FLOAT, 1, c, sz[0] * inSize[2], sz[1] * inSize[3]);
+
+        INDArray input = Nd4j.create(inSize);    //Unused, not sure why this is even an arg...
+        INDArray exp = Nd4j.create(DataType.FLOAT, inSize);
+
+        for( int ch=0; ch<c; ch++ ) {
+            for( int h=0; h<eps.size(2); h++ ){
+                for( int w=0; w<eps.size(3); w++ ){
+                    int[] from = new int[]{0, ch, h, w};
+                    int[] to = new int[]{0, ch, h/sz[0], w/sz[1]};
+                    float add = eps.getFloat(from);
+                    float current = exp.getFloat(to);
+                    exp.putScalar(to, current + add);
+                }
+            }
+        }
+
+        System.out.println("Eps:");
+        System.out.println(eps.shapeInfoToString());
+        System.out.println(Arrays.toString(eps.data().asFloat()));
+
+        System.out.println("Expected:");
+        System.out.println(exp.shapeInfoToString());
+        System.out.println(Arrays.toString(exp.data().asFloat()));
+
+        DynamicCustomOp op = DynamicCustomOp.builder("upsampling2d_bp")
+                .addInputs(input, eps)
+                .addOutputs(exp.ulike())
+                .addIntegerArguments(1) //1 = NCHW
+                .build();
+
+        Nd4j.exec(op);
+
+        INDArray act = op.getOutputArgument(0);
+        assertEquals(exp, act);
+    }
 
     @Test
     public void testIsMaxView(){

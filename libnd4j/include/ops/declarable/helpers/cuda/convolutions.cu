@@ -1496,8 +1496,10 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
 
     const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
 
-    const Nd4jLong zCoord2 = coords[dimIH];
-    const Nd4jLong zCoord3 = coords[dimIH + 1];
+    z[zOffset] = 0;
+
+    const Nd4jLong zCoord2 = coords[dimIH]     * factorH;
+    const Nd4jLong zCoord3 = coords[dimIH + 1] * factorW;
 
     for(coords[dimIH] = zCoord2; coords[dimIH] < zCoord2 + factorH; ++coords[dimIH])
         for(coords[dimIH + 1] = zCoord3; coords[dimIH + 1] < zCoord3 + factorW; ++coords[dimIH + 1])
@@ -1569,9 +1571,11 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
 
     const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
 
-    const Nd4jLong zCoord2 = coords[dimID];
-    const Nd4jLong zCoord3 = coords[dimID + 1];
-    const Nd4jLong zCoord4 = coords[dimID + 2];
+    z[zOffset] = 0;
+
+    const Nd4jLong zCoord2 = coords[dimID]     * factorD;
+    const Nd4jLong zCoord3 = coords[dimID + 1] * factorH;
+    const Nd4jLong zCoord4 = coords[dimID + 2] * factorW;
 
     for(coords[dimID] = zCoord2; coords[dimID] < zCoord2 + factorD; ++coords[dimID])
         for(coords[dimID + 1] = zCoord3; coords[dimID + 1] < zCoord3 + factorH; ++coords[dimID + 1])
