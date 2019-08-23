@@ -124,8 +124,10 @@ DECLARE_SHAPE_FN(concat) {
     for(int i = 0; i < block.width(); ++i) {
 
         if(inputShape->at(i)[0] == 0) {
-            // FIXME, use this instead: block.dataType()
-            arrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
+            if (shape::isEmpty(inputShape->at(i)))
+                arrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(0, INPUT_VARIABLE(0)->dataType()));
+            else
+                arrShapes.push_back(ConstantShapeHelper::getInstance()->vectorShapeInfo(1, INPUT_VARIABLE(0)->dataType()));
         }
         else{
             arrShapes.push_back(inputShape->at(i));
@@ -165,7 +167,9 @@ DECLARE_SHAPE_FN(concat) {
     }
 
     for(int i = 1; i < numOfArrs; ++i)
-        outShapeInfo[axis + 1] += arrShapes[i][axis + 1];
+        if (!shape::isEmpty(arrShapes[i])) {
+            outShapeInfo[axis + 1] += arrShapes[i][axis + 1];
+        }
 
     ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes[0], shape::order(arrShapes[0]));
 

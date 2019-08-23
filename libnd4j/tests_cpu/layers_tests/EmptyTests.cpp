@@ -107,6 +107,46 @@ TEST_F(EmptyTests, Test_Concat_2) {
     delete result;
 }
 
+TEST_F(EmptyTests, Test_Concat_3) {
+    auto empty = NDArrayFactory::empty<float>(); //NDArrayFactory::empty_<float>();
+    auto scalar1 =  NDArrayFactory::create<float>(1.0f);
+    auto scalar2  = NDArrayFactory::create<float>(2.0f);
+    auto exp = NDArrayFactory::create<float>('c', {2}, {1.f, 2.f});
+
+    ASSERT_TRUE(empty.isEmpty());
+
+    nd4j::ops::concat op;
+    auto result = op.execute({&empty, &scalar1, &scalar2}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    z->printIndexedBuffer("z");
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
+TEST_F(EmptyTests, Test_Concat_4) {
+    auto empty = NDArrayFactory::empty<float>(); //NDArrayFactory::empty_<float>();
+    auto scalar1 =  NDArrayFactory::create<float>(1.0f);
+    auto scalar2  = NDArrayFactory::create<float>(2.0f);
+    auto exp = NDArrayFactory::create<float>('c', {2}, {1.f, 2.f});
+
+    ASSERT_TRUE(empty.isEmpty());
+
+    nd4j::ops::concat op;
+    auto result = op.execute({&scalar1, &empty, &scalar2}, {}, {0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    z->printIndexedBuffer("z");
+    ASSERT_EQ(exp, *z);
+
+    delete result;
+}
+
 TEST_F(EmptyTests, Test_Reshape_1) {
     auto vector = NDArrayFactory::create<float>('c', {1}, {119.0f});
     auto exp = NDArrayFactory::create<float>(119.f);
