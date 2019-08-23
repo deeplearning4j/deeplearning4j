@@ -84,8 +84,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                 if (length < ELEMENT_THRESHOLD) {
 
                     for (int i = 0; i < length; i++) {
-                        if (currMax < input->e<X>(i*eleStride)) {
-                            currMax = input->e<X>(i*eleStride);
+                        if (currMax < input->e<X>(i)) {
+                            currMax = input->e<X>(i);
                             maxIdx = i;
                         }
                         output->p<Z>(i, 0.f);
@@ -97,8 +97,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         int maxIdxLocal = maxIdx;
                         auto currMaxLocal = currMax;
                         for (int i = 0; i < length; i++) {
-                            if (currMaxLocal < input->e<X>(i*eleStride)) {
-                                currMaxLocal = input->e<X>(i*eleStride);
+                            if (currMaxLocal < input->e<X>(i)) {
+                                currMaxLocal = input->e<X>(i);
                                        maxIdxLocal = i;
                             }
                             output->p<Z>(i, 0.f);

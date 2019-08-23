@@ -2489,7 +2489,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val ctx = AtomicAllocator.getInstance().getDeviceContext();
         ((CudaOpContext) context).setCudaStream(ctx.getOldStream(), ctx.getBufferReduction(), ctx.getBufferAllocation());
 
-        nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());
+        val status = nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());
+        if (status != 0)
+            throw new RuntimeException("Op [" + op.opName() + "] execution failed");
 
         for (val arr:op.outputArguments())
             AtomicAllocator.getInstance().registerAction(ctx, arr);
