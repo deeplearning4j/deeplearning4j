@@ -50,7 +50,7 @@ Note there are multiple combinations of cuDNN and CUDA supported. At this time t
 	</tr>
 	<tr><td>9.2</td><td>7.2</td></tr>
 	<tr><td>10.0</td><td>7.4</td></tr>
-	<tr><td>10.1</td><td>7.5</td></tr>
+	<tr><td>10.1</td><td>7.6</td></tr>
 </table>
 
  
@@ -61,25 +61,25 @@ Alternatively, in the case of CUDA 10.1, cuDNN comes bundled with the "redist" p
 	 <dependency>
 	     <groupId>org.bytedeco</groupId>
 	     <artifactId>cuda</artifactId>
-	     <version>10.1-7.5-1.5</version>
+	     <version>10.1-7.6-1.5.1</version>
 	     <classifier>linux-x86_64-redist</classifier>
 	 </dependency>
 	 <dependency>
 	     <groupId>org.bytedeco</groupId>
 	     <artifactId>cuda</artifactId>
-	     <version>10.1-7.5-1.5</version>
+	     <version>10.1-7.6-1.5.1</version>
 	     <classifier>linux-ppc64le-redist</classifier>
 	 </dependency>
 	 <dependency>
 	     <groupId>org.bytedeco</groupId>
 	     <artifactId>cuda</artifactId>
-	     <version>10.1-7.5-1.5</version>
+	     <version>10.1-7.6-1.5.1</version>
 	     <classifier>macosx-x86_64-redist</classifier>
 	 </dependency>
 	 <dependency>
 	     <groupId>org.bytedeco</groupId>
 	     <artifactId>cuda</artifactId>
-	     <version>10.1-7.5-1.5</version>
+	     <version>10.1-7.6-1.5.1</version>
 	     <classifier>windows-x86_64-redist</classifier>
 	 </dependency>
 
