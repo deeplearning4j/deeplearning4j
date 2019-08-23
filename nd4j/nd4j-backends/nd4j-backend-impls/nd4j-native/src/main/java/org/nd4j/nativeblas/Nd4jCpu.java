@@ -11557,6 +11557,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native OpDescriptor setAllowedOutputTypes(int index, @Cast("nd4j::DataType") int dtype);
             public native OpDescriptor setAllowedInputTypes(@Cast("nd4j::DataType") int dtype);
             public native OpDescriptor setAllowedOutputTypes(@Cast("nd4j::DataType") int dtype);
+            public native OpDescriptor allowOverride(@Cast("bool") boolean reallyAllow);
             public native OpDescriptor setSameMode(@Cast("bool") boolean reallySame);
             public native OpDescriptor setInputType(int idx, @Cast("nd4j::DataType") int dtype);
             public native OpDescriptor setOutputType(int idx, @Cast("nd4j::DataType") int dtype);

@@ -55,3 +55,15 @@ TEST_F(DeclarableOpsTests16, test_scatter_update_119) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests16, test_size_dtype_1) {
+    auto x = NDArrayFactory::create<float>('c', {3}, {1, 1, 1});
+    auto z = NDArrayFactory::create<float>(0.0f);
+    auto e = NDArrayFactory::create<float>(3.0f);
+
+    nd4j::ops::size op;
+    auto status = op.execute({&x}, {&z}, {}, {}, {});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}

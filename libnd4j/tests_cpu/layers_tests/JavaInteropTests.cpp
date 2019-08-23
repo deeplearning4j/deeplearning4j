@@ -1189,6 +1189,22 @@ TEST_F(JavaInteropTests, test_ismax_view) {
     delete t;
 }
 
+TEST_F(JavaInteropTests, test_size_dtype_1) {
+    auto x = NDArrayFactory::create<float>('c', {3}, {1, 1, 1});
+    auto z = NDArrayFactory::create<float>(0.0f);
+    auto e = NDArrayFactory::create<float>(3.0f);
+
+    Context ctx(1);
+    ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+    nd4j::ops::size op;
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
+}
+
 /*
 TEST_F(JavaInteropTests, Test_Results_Conversion_1) {
     auto pl = nd4j::graph::readFlatBuffers("./resources/gru_dynamic_mnist.fb");

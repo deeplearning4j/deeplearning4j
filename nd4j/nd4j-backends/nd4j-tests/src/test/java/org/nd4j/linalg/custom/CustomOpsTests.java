@@ -44,6 +44,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -640,5 +641,35 @@ public class CustomOpsTests extends BaseNd4jTest {
         Nd4j.exec(new IsMax(row, result2, 1));              //C++ exception
 
         assertEquals(result1, result2);
+    }
+
+    @Test
+    public void testSizeTypes(){
+        List<DataType> failed = new ArrayList<>();
+        for(DataType dt : new DataType[]{DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE,
+                DataType.UINT64, DataType.UINT32, DataType.UINT16, DataType.UBYTE,
+                DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.BFLOAT16}) {
+
+            INDArray in = Nd4j.create(DataType.FLOAT, 100);
+            INDArray out = Nd4j.scalar(dt, 0);
+            INDArray e = Nd4j.scalar(dt, 100);
+
+            DynamicCustomOp op = DynamicCustomOp.builder("size")
+                    .addInputs(in)
+                    .addOutputs(out)
+                    .build();
+
+            try {
+                Nd4j.exec(op);
+
+                assertEquals(e, out);
+            } catch (Throwable t){
+                failed.add(dt);
+            }
+        }
+
+        if(!failed.isEmpty()){
+            fail("Failed datatypes: " + failed.toString());
+        }
     }
 }

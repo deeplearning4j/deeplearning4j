@@ -31,7 +31,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isScalar(), 0, "Rank output should be scalar");
 
-            output->assign(input->rankOf());
+            output->p(0, input->rankOf());
+            output->syncToDevice();
 
             return Status::OK();
         }
@@ -43,7 +44,8 @@ namespace nd4j {
         DECLARE_TYPES(rank) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_INTS});
+                    ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
+                    ->allowOverride(true);
         }
     }
 }
