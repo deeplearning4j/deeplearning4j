@@ -29,6 +29,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>jackson</module>
+        <module>protobuf</module>
     </modules>
 
     <properties>

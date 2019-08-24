@@ -31,10 +31,35 @@
 
     <build>
         <plugins>
+
+            <!-- AB 2019/08/24 This plugin is to be added TEMPORARILY due to a change in the filenames of the generated ONNX -->
+            <!-- Normal "mvn clean" etc won't delete these files, and any users who have built ND4J even once before the
+                 change will run into a compilation error. This can be removed after a few weeks.-->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>1.8</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>run</goal>
+                        </goals>
+                        <configuration>
+                            <target>
+                                <delete file="${project.build.sourceDirectory}/onnx/OnnxMlProto3.java" />
+                                <delete file="${project.build.sourceDirectory}/onnx/OnnxOperatorsProto3.java" />
+                                <delete file="${project.build.sourceDirectory}/onnx/OnnxProto3.java" />
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
             <plugin>
                 <groupId>com.github.os72</groupId>
                 <artifactId>protoc-jar-maven-plugin</artifactId>
-                <version>3.5.1.1</version>
+                <version>3.8.0</version>
                 <executions>
                     <execution>
                         <id>tensorflow</id>
@@ -43,30 +68,14 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
-                            <type>java-shaded</type>
-                            <protocVersion>3.5.1</protocVersion>
+                            <protocVersion>3.8.0</protocVersion>
+                            <extension>.proto</extension>
                             <includeDirectories>
                                 <include>src/main/protobuf/tf</include>
+                                <include>src/main/protobuf/onnx</include>
                             </includeDirectories>
                             <inputDirectories>
                                 <include>src/main/protobuf/tf/tensorflow</include>
-                            </inputDirectories>
-                            <addSources>main</addSources>
-                            <cleanOutputFolder>false</cleanOutputFolder>
-                            <outputDirectory>src/main/java/</outputDirectory>
-                        </configuration>
-                    </execution>
-                    <execution>
-                        <id>onnx</id>
-                        <phase>generate-sources</phase>
-                        <goals>
-                            <goal>run</goal>
-                        </goals>
-                        <configuration>
-                            <type>java-shaded</type>
-                            <extension>.proto3</extension>
-                            <protocVersion>3.5.1</protocVersion>
-                            <inputDirectories>
                                 <include>src/main/protobuf/onnx</include>
                             </inputDirectories>
                             <addSources>main</addSources>
@@ -76,6 +85,32 @@
                     </execution>
                 </executions>
             </plugin>
+
+            <plugin>
+                <groupId>com.google.code.maven-replacer-plugin</groupId>
+                <artifactId>replacer</artifactId>
+                <version>1.5.3</version>
+                <configuration>
+                    <includes>
+                        <include>${project.build.sourceDirectory}/org/tensorflow/**</include>
+                        <include>${project.build.sourceDirectory}/tensorflow/**</include>
+                        <include>${project.build.sourceDirectory}/onnx/**</include>
+                    </includes>
+                    <token>com.google.protobuf.</token>
+                    <value>org.nd4j.shade.protobuf.</value>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>replace-imports</id>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>replace</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
+
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -148,19 +183,14 @@
             <version>${flatbuffers.version}</version>
         </dependency>
 
-        <!-- Note that this is shaded flatbuffers, see the protoc declaration above
-        mentioning java-shaded as the type for why we use this instead of google's (mainly due ot other systems packaging
-        their own older protobuf versions-->
+        <!-- Note that this is shaded protobuf. We use this instead of google's version mainly due ot other systems packaging
+        their own older (incompatible) protobuf versions-->
         <dependency>
-            <groupId>com.github.os72</groupId>
-            <artifactId>protobuf-java-shaded-351</artifactId>
-            <version>0.9</version>
+            <groupId>org.nd4j</groupId>
+            <artifactId>protobuf</artifactId>
+            <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.os72</groupId>
-            <artifactId>protobuf-java-util-shaded-351</artifactId>
-            <version>0.9</version>
-        </dependency>
+
 
         <dependency>
             <groupId>org.objenesis</groupId>

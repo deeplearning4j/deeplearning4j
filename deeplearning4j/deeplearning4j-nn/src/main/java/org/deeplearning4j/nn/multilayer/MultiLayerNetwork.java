@@ -1242,17 +1242,18 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         boolean traceLog = log.isTraceEnabled();
 
+        Throwable t = null;
         try {
             for (int i = 0; i <= layerIndex; i++) {
                 LayerWorkspaceMgr mgr = (i % 2 == 0 ? mgrEven : mgrOdd);
 
-                if(traceLog){
+                if (traceLog) {
                     log.trace("About to forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
                 //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
                 //Hence: put inputs in working memory
-                if(i == 0 && wsm != WorkspaceMode.NONE){
+                if (i == 0 && wsm != WorkspaceMode.NONE) {
                     mgr.setWorkspace(ArrayType.INPUT, WS_LAYER_WORKING_MEM, WS_LAYER_WORKING_MEM_CONFIG);
                 }
 
@@ -1268,7 +1269,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     temp.setPreviousWorkspace(initialWorkspace);
 
 
-                    if(i == 0 && input.isAttached()){
+                    if (i == 0 && input.isAttached()) {
                         //Don't leverage out of async DataSetIterator workspaces
                         mgr.setNoLeverageOverride(input.data().getParentWorkspace().getId());
                     }
@@ -1279,8 +1280,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, true, "Output of layer (inference)");
                     }
 
-                    if ( i == layerIndex ) {
-                        if(outputWorkspace != null && !(outputWorkspace instanceof DummyWorkspace)){
+                    if (i == layerIndex) {
+                        if (outputWorkspace != null && !(outputWorkspace instanceof DummyWorkspace)) {
                             //Place activations in user-specified workspace
                             mgr.setWorkspace(ArrayType.ACTIVATIONS, outputWorkspace.getId(), outputWorkspace.getWorkspaceConfiguration());
                         } else {
@@ -1289,15 +1290,15 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         }
                     }
 
-                    if(fwdPassType == FwdPassType.STANDARD){
+                    if (fwdPassType == FwdPassType.STANDARD) {
                         //Standard feed-forward case
                         input = layers[i].activate(input, train, mgr);
-                    } else if(fwdPassType == FwdPassType.RNN_TIMESTEP){
+                    } else if (fwdPassType == FwdPassType.RNN_TIMESTEP) {
                         //rnnTimeStep case
                         if (layers[i] instanceof RecurrentLayer) {
                             input = ((RecurrentLayer) layers[i]).rnnTimeStep(reshapeTimeStepInput(input), mgr);
-                        } else if(layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer)layers[i]).getUnderlying() instanceof RecurrentLayer){
-                            RecurrentLayer rl = ((RecurrentLayer) ((BaseWrapperLayer)layers[i]).getUnderlying());
+                        } else if (layers[i] instanceof BaseWrapperLayer && ((BaseWrapperLayer) layers[i]).getUnderlying() instanceof RecurrentLayer) {
+                            RecurrentLayer rl = ((RecurrentLayer) ((BaseWrapperLayer) layers[i]).getUnderlying());
                             input = rl.rnnTimeStep(reshapeTimeStepInput(input), mgr);
                         } else if (layers[i] instanceof MultiLayerNetwork) {
                             input = ((MultiLayerNetwork) layers[i]).rnnTimeStep(reshapeTimeStepInput(input));
@@ -1311,34 +1312,51 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     //Validation: Exception if invalid (bad layer implementation)
                     validateArrayWorkspaces(mgr, input, ArrayType.ACTIVATIONS, i, false, "Output of layer (inference)");
 
-                    if(wsActCloseNext != null){
+                    if (wsActCloseNext != null) {
                         wsActCloseNext.close();
                     }
                     wsActCloseNext = temp;
                     temp = null;
                 }
 
-                if(traceLog){
+                if (traceLog) {
                     log.trace("Completed forward pass: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
                 //Edge case: for first layer with dropout, inputs can't be in previous workspace (as it hasn't been opened yet)
                 //Hence: put inputs in working memory -> set back to default for next use of workspace mgr
-                if(i == 0 && wsm != WorkspaceMode.NONE){
+                if (i == 0 && wsm != WorkspaceMode.NONE) {
                     mgr.setWorkspace(ArrayType.INPUT, WS_LAYER_ACT_2, WS_LAYER_ACT_X_CONFIG);            //Inputs should always be in the previous WS
                 }
             }
-
+        } catch (Throwable t2){
+            t = t2;
         } finally {
             if(wsActCloseNext != null){
-                wsActCloseNext.close();
+                try {
+                    wsActCloseNext.close();
+                } catch (Throwable t2){
+                    if(t != null){
+                        log.error("Encountered second exception while trying to close workspace after initial exception");
+                        log.error("Original exception:", t);
+                        throw t2;
+                    }
+                }
             }
             if(temp != null){
                 //Should only be non-null on exception
                 while(temp.isScopeActive()){
                     //For safety, should never occur in theory: a single close() call may not be sufficient, if
                     // workspace scope was borrowed and not properly closed when exception occurred
-                    temp.close();
+                    try{
+                        temp.close();
+                    } catch (Throwable t2){
+                        if(t != null){
+                            log.error("Encountered second exception while trying to close workspace after initial exception");
+                            log.error("Original exception:", t);
+                            throw t2;
+                        }
+                    }
                 }
             }
 
@@ -1871,13 +1889,14 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
         boolean traceLog = log.isTraceEnabled();
 
+        Throwable t = null;
         try {
             for (int i = layers.length - 1; i >= 0; i--) {
                 if (layers[i] instanceof FrozenLayer) {
                     break;
                 }
 
-                if(traceLog){
+                if (traceLog) {
                     log.trace("About to backprop: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
 
@@ -1897,7 +1916,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                 //Open activation gradients WS *then* BP working memory, so BP working memory is opened last for use in layers
                 wsActGradTemp = workspaceMgr.notifyScopeEntered(ArrayType.ACTIVATION_GRAD);
-                try(MemoryWorkspace wsBPWorking = workspaceMgr.notifyScopeEntered(ArrayType.BP_WORKING_MEM)){
+                try (MemoryWorkspace wsBPWorking = workspaceMgr.notifyScopeEntered(ArrayType.BP_WORKING_MEM)) {
 
                     //Note that because we're opening activation workspaces not in a simple nested order, we'll manually
                     // override the previous workspace setting. Otherwise, when we close these workspaces, the "current"
@@ -1907,7 +1926,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
                     INDArray eps = (i == layers.length - 1 ? epsilon : currPair.getRight());  //eps is null for OutputLayer
 
-                    if(!tbptt){
+                    if (!tbptt) {
                         //Standard case
                         currPair = layers[i].backpropGradient(eps, workspaceMgr);
                     } else {
@@ -1920,7 +1939,7 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         }
                     }
 
-                    if(currPair.getSecond() != null) {
+                    if (currPair.getSecond() != null) {
                         //Edge case: may be null for Embedding layer, for example
                         validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, i,
                                 false, "Backprop");
@@ -1936,38 +1955,56 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                         currPair = new Pair<>(currPair.getFirst(),
                                 this.layerWiseConfigurations.getInputPreProcess(i)
                                         .backprop(currPair.getSecond(), getInputMiniBatchSize(), workspaceMgr));
-                        if (i > 0 && currPair.getSecond() != null){
+                        if (i > 0 && currPair.getSecond() != null) {
                             validateArrayWorkspaces(workspaceMgr, currPair.getSecond(), ArrayType.ACTIVATION_GRAD, i,
                                     true, "Backprop");
                         }
                     }
 
-                    if(i == 0 ){
-                        if(returnInputActGrad && currPair.getSecond() != null){
+                    if (i == 0) {
+                        if (returnInputActGrad && currPair.getSecond() != null) {
                             currPair.setSecond(currPair.getSecond().detach());
                         } else {
                             currPair.setSecond(null);
                         }
                     }
 
-                    if(wsActGradCloseNext != null){
+                    if (wsActGradCloseNext != null) {
                         wsActGradCloseNext.close();
                     }
                     wsActGradCloseNext = wsActGradTemp;
                     wsActGradTemp = null;
                 }
 
-                if(traceLog){
+                if (traceLog) {
                     log.trace("Completed backprop: {} - {}", i, layers[i].getClass().getSimpleName());
                 }
             }
+        } catch (Throwable thr ){
+            t = thr;
         } finally {
             if(wsActGradCloseNext != null){
-                wsActGradCloseNext.close();
+                try {
+                    wsActGradCloseNext.close();
+                } catch (Throwable t2){
+                    if(t != null){
+                        log.error("Encountered second exception while trying to close workspace after initial exception");
+                        log.error("Original exception:", t);
+                        throw t2;
+                    }
+                }
             }
-            if(wsActGradTemp != null){
+            if(wsActGradTemp != null) {
                 //Should only be non-null on exception
-                wsActGradTemp.close();
+                try {
+                    wsActGradTemp.close();
+                } catch (Throwable t2) {
+                    if (t != null) {
+                        log.error("Encountered second exception while trying to close workspace after initial exception");
+                        log.error("Original exception:", t);
+                        throw t2;
+                    }
+                }
             }
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
         }

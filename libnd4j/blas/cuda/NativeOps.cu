@@ -866,9 +866,10 @@ void initializeFunctions(Nd4jPointer *functions) {
 Nd4jPointer mallocHost(Nd4jLong memorySize, int flags) {
 	Nd4jPointer pointer;
 	// cudaHostAllocMapped |cudaHostAllocPortable
-	cudaError_t res = cudaHostAlloc(reinterpret_cast<void **>(&pointer), memorySize, cudaHostAllocDefault);
+	auto res = cudaHostAlloc(reinterpret_cast<void **>(&pointer), memorySize, cudaHostAllocDefault);
 	if (res != 0)
-		pointer = 0L;
+		throw nd4j::cuda_exception::build("cudaHostAlloc(...) failed", res);
+
 	return pointer;
 }
 
@@ -884,7 +885,7 @@ Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
 	Nd4jPointer pointer;
 	auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
 	if (res != 0)
-		pointer = 0L;
+		throw nd4j::cuda_exception::build("cudaMalloc(...) failed", res);
 	return pointer;
 }
 
@@ -894,9 +895,9 @@ Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
  * @param pointer pointer that'll be freed
  */
 int freeHost(Nd4jPointer pointer) {
-	cudaError_t res = cudaFreeHost(reinterpret_cast<void *>(pointer));
+	auto res = cudaFreeHost(reinterpret_cast<void *>(pointer));
 	if (res != 0)
-		pointer = 0L;
+		throw nd4j::cuda_exception::build("cudaFreeHost(...) failed", res);
 	return 1L;
 }
 
@@ -907,9 +908,10 @@ int freeHost(Nd4jPointer pointer) {
  * @param ptrToDeviceId pointer to deviceId.
  */
 int freeDevice(Nd4jPointer pointer, int deviceId) {
-	cudaError_t res = cudaFree(reinterpret_cast<void *>(pointer));
+	auto res = cudaFree(reinterpret_cast<void *>(pointer));
 	if (res != 0)
-		pointer = 0L;
+		throw nd4j::cuda_exception::build("cudaFree(...) failed", res);
+
 	return 1L;
 }
 
@@ -934,7 +936,7 @@ Nd4jPointer createStream() {
     auto stream = new cudaStream_t();
     auto dZ = cudaStreamCreate(stream);
     if (dZ != 0)
-        throw std::runtime_error("cudaStreamCreate(...) failed");
+        throw nd4j::cuda_exception::build("cudaStreamCreate(...) failed", dZ);
 
     return stream;
 }
@@ -944,23 +946,21 @@ Nd4jPointer createEvent() {
 
 	CHECK_ALLOC(nativeEvent, "Failed to allocate new CUDA event buffer", sizeof(cudaEvent_t));
 
-	cudaError_t dZ = cudaEventCreateWithFlags(reinterpret_cast<cudaEvent_t *>(&nativeEvent), cudaEventDisableTiming);
-	checkCudaErrors(dZ);
+	auto dZ = cudaEventCreateWithFlags(reinterpret_cast<cudaEvent_t *>(&nativeEvent), cudaEventDisableTiming);
 	if (dZ != 0)
-		throw std::runtime_error("cudaEventCreateWithFlags(...) failed");
+		throw nd4j::cuda_exception::build("cudaEventCreateWithFlags(...) failed", dZ);
 
 
 	return nativeEvent;
 }
 
 int registerEvent(Nd4jPointer event, Nd4jPointer stream) {
-	cudaEvent_t *pEvent = reinterpret_cast<cudaEvent_t *>(&event);
-	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(stream);
+	auto pEvent = reinterpret_cast<cudaEvent_t *>(&event);
+	auto pStream = reinterpret_cast<cudaStream_t *>(stream);
 
-	cudaError_t dZ = cudaEventRecord(*pEvent, *pStream);
-	checkCudaErrors(dZ);
+    auto dZ = cudaEventRecord(*pEvent, *pStream);
 	if (dZ != 0)
-		throw std::runtime_error("cudaEventRecord(...) failed");
+		throw nd4j::cuda_exception::build("cudaEventRecord(...) failed", dZ);
 
 	return 1;
 }
@@ -1065,53 +1065,48 @@ int memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4j
 }
 
 int memsetSync(Nd4jPointer dst, int value, Nd4jLong size, int flags, Nd4jPointer reserved) {
-	cudaError_t dZ = cudaMemset(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size));
-	checkCudaErrors(dZ);
+	auto dZ = cudaMemset(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size));
 	if (dZ != 0)
-		throw std::runtime_error("cudaMemset(...) failed");
+		throw nd4j::cuda_exception::build("cudaMemset(...) failed", dZ);
 
 	return 1;
 }
 
 int memsetAsync(Nd4jPointer dst, int value, Nd4jLong size, int flags, Nd4jPointer reserved) {
-	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(reserved);
+	auto pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
-	cudaError_t dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), *pStream);
-	checkCudaErrors(dZ);
+	auto dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), *pStream);
 	if (dZ != 0)
-		throw std::runtime_error("cudaMemsetAsync(...) failed");
+		throw nd4j::cuda_exception::build("cudaMemsetAsync(...) failed", dZ);
 
 	return 1;
 }
 
 int destroyEvent(Nd4jPointer event) {
-	cudaEvent_t *pEvent = reinterpret_cast<cudaEvent_t *>(&event);
-	cudaError_t dZ = cudaEventDestroy(*pEvent);
-	checkCudaErrors(dZ);
+	auto pEvent = reinterpret_cast<cudaEvent_t *>(&event);
+	auto dZ = cudaEventDestroy(*pEvent);
 	if (dZ != 0)
-		throw std::runtime_error("cudaEvenDestroy(...) failed");
+		throw nd4j::cuda_exception::build("cudaEvenDestroy(...) failed", dZ);
 
 	return 1;
 }
 
 int streamSynchronize(Nd4jPointer stream) {
-	cudaStream_t *pStream = reinterpret_cast<cudaStream_t *>(stream);
+	auto pStream = reinterpret_cast<cudaStream_t *>(stream);
 
-	cudaError_t dZ = cudaStreamSynchronize(*pStream);
-	checkCudaErrors(dZ);
+	auto dZ = cudaStreamSynchronize(*pStream);
 	if (dZ != 0)
-        throw std::runtime_error("cudaStreamSynchronize(...) failed");
+        throw nd4j::cuda_exception::build("cudaStreamSynchronize(...) failed", dZ);
 
 	return 1L;
 }
 
 int eventSynchronize(Nd4jPointer event) {
-	cudaEvent_t *pEvent = reinterpret_cast<cudaEvent_t *>(&event);
+	auto pEvent = reinterpret_cast<cudaEvent_t *>(&event);
 
-	cudaError_t dZ = cudaEventSynchronize(*pEvent);
-	checkCudaErrors(dZ);
+	auto  dZ = cudaEventSynchronize(*pEvent);
 	if (dZ != 0)
-        throw std::runtime_error("cudaEventSynchronize(...) failed");
+        throw nd4j::cuda_exception::build("cudaEventSynchronize(...) failed", dZ);
 
 	return 1L;
 }
@@ -2697,13 +2692,16 @@ int execCustomOp2(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer opConte
 
     auto result = op->execute(context);
 
-    // FIXME: remove once CUDA backend is 100% ready
+    auto res = cudaStreamSynchronize(*context->launchContext()->getCudaStream());
+    if (res != 0)
+        throw nd4j::cuda_exception::build("customOp execution failed", res);
+
     for (auto v:context->fastpath_in()) {
-        v->makeBothActual();
+        v->syncToDevice();
     }
 
     for (auto v:context->fastpath_out()) {
-        v->makeBothActual();
+        v->syncToDevice();
     }
 
     return result;

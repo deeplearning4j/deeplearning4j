@@ -732,4 +732,20 @@ public class CustomOpsTests extends BaseNd4jTest {
             fail("Failed datatypes: " + failed.toString());
         }
     }
+
+    @Test
+    public void testMaxPool2Dbp_1() {
+        val x = Nd4j.create(DataType.HALF, 2,3,16,16).assign(Double.NaN);
+        val y = Nd4j.create(DataType.HALF, 2,3,8,8).assign(Double.NaN);
+        val z = Nd4j.create(DataType.HALF, 2,3,16,16);
+
+        val op = DynamicCustomOp.builder("maxpool2d_bp")
+                .addInputs(x, y)
+                .addOutputs(z)
+                .addIntegerArguments(2, 2, 2, 2, 8,8, 1,1,1, 0,0)
+                .build();
+
+        Nd4j.exec(op);
+        Nd4j.getExecutioner().commit();
+    }
 }

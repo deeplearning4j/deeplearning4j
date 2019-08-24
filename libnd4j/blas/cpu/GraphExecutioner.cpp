@@ -54,6 +54,7 @@
 #include <graph/ExecutionResult.h>
 #include <exceptions/graph_execution_exception.h>
 #include <exceptions/no_results_exception.h>
+#include <graph/FlatUtils.h>
 
 namespace nd4j{
 namespace graph {
@@ -575,15 +576,9 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
             continue;
 
 
-        NDArray* array = var->getNDArray();
-        auto byteVector = array->asByteVector();
+        auto array = var->getNDArray();
 
-        auto fBuffer = builder.CreateVector(byteVector);
-        auto fShape = builder.CreateVector(array->getShapeInfoAsFlatVector());
-
-        auto bo = static_cast<nd4j::graph::ByteOrder>(BitwiseUtils::asByteOrder());
-
-        auto fArray = CreateFlatArray(builder, fShape, fBuffer, static_cast<nd4j::graph::DataType>(array->dataType()), bo);
+        auto fArray = FlatUtils::toFlatArray(builder, *array);
 
         auto fName = builder.CreateString(*(var->getName()));
         auto id = CreateIntPair(builder, var->id(), var->index());
