@@ -907,6 +907,8 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
         /*** max ***/
         case 0: {
+            coord2 = hstart;
+            coord3 = hend;
 
             T max = -DataTypeUtils::max<T>();
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
