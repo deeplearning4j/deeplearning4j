@@ -16,8 +16,8 @@
 
 package org.nd4j.imports.graphmapper;
 
-import com.github.os72.protobuf351.Message;
-import com.github.os72.protobuf351.TextFormat;
+import org.nd4j.shade.protobuf.Message;
+import org.nd4j.shade.protobuf.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;

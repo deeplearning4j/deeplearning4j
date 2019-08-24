@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -52,7 +52,7 @@ public class TensorArraySplit extends BaseTensorOp {
 
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
     }
 
     @Override

@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
@@ -101,10 +101,10 @@ public abstract class DifferentialFunction {
 
     /**
      * Initialize the function from the given
-     * {@link onnx.OnnxProto3.NodeProto}
+     * {@link onnx.Onnx.NodeProto}
      * @param node
      */
-    public DifferentialFunction(SameDiff sameDiff,onnx.OnnxProto3.NodeProto node,Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public DifferentialFunction(SameDiff sameDiff,onnx.Onnx.NodeProto node,Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         this.sameDiff = sameDiff;
         setInstanceId();
         initFromOnnx(node, sameDiff, attributesForNode, graph);
@@ -731,13 +731,13 @@ public abstract class DifferentialFunction {
 
     /**
      * Iniitialize the function from the given
-     * {@link onnx.OnnxProto3.NodeProto}
+     * {@link onnx.Onnx.NodeProto}
      * @param node
      * @param initWith
      * @param attributesForNode
      * @param graph
      */
-    public abstract void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph);
+    public abstract void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph);
 
 
 
