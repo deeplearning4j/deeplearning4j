@@ -36,6 +36,8 @@ namespace nd4j {
             static std::pair<Nd4jLong, Nd4jLong> fromLongPair(LongPair* pair);
 
             static NDArray* fromFlatArray(const nd4j::graph::FlatArray* flatArray);
+
+            static flatbuffers::Offset<FlatArray> toFlatArray(flatbuffers::FlatBufferBuilder &builder, NDArray &array);
         };
     }
 }

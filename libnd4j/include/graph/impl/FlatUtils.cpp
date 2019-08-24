@@ -102,5 +102,16 @@ namespace nd4j {
             delete[] newShape;
             return array;
         }
+
+        flatbuffers::Offset<FlatArray> FlatUtils::toFlatArray(flatbuffers::FlatBufferBuilder &builder, NDArray &array) {
+            auto byteVector = array.asByteVector();
+
+            auto fBuffer = builder.CreateVector(byteVector);
+            auto fShape = builder.CreateVector(array.getShapeInfoAsFlatVector());
+
+            auto bo = static_cast<nd4j::graph::ByteOrder>(BitwiseUtils::asByteOrder());
+
+            return CreateFlatArray(builder, fShape, fBuffer, static_cast<nd4j::graph::DataType>(array.dataType()), bo);
+        }
     }
 }
