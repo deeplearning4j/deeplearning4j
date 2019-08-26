@@ -70,7 +70,6 @@ TEST_F(DeclarableOpsTests16, scatter_upd_2) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printBuffer();
 
     ASSERT_EQ(e, *z);
 
