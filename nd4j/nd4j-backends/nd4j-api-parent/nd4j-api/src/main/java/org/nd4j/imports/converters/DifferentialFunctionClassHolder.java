@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -368,6 +369,8 @@ public class DifferentialFunctionClassHolder {
                 return Merge.class;
             case Switch.OP_NAME:
                 return Switch.class;
+            case ExternalErrorsFunction.OP_NAME:
+                return ExternalErrorsFunction.class;
             default:
                 if(customOpHashToClasses.containsKey(customOpHash)){
                     return customOpHashToClasses.get(customOpHash).get(name);

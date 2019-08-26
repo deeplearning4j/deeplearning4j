@@ -2077,7 +2077,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             }
 
 
-            loop.execCustomOp2(null, op.opHash(), context.contextPointer());
+            val status = loop.execCustomOp2(null, op.opHash(), context.contextPointer());
+            if (status != 0)
+                throw new RuntimeException("Op [" + op.opName() + "] execution failed");
 
             if (context.getOutputArrays().isEmpty())
                 return new INDArray[0];

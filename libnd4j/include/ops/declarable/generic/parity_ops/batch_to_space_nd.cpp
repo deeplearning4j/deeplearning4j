@@ -61,12 +61,6 @@ CUSTOM_OP_IMPL(batch_to_space_nd, 3, 1, false, 0, 0) {
     const auto product = blockShape->reduceNumber(nd4j::reduce::Prod).e<Nd4jLong>(0);
     REQUIRE_TRUE(input->sizeAt(0) % product == 0, 0, "BatchToSpaceND: first dimension of input array must be divisible by product of blockShape array elements (= %lld), but got first dimension equal to %i", product, input->sizeAt(0));
 
-    // FIXME - should we use this time-consuming validation ?
-    for (uint i = 0; i < numOfSpatialDims; ++i) {
-        const Nd4jLong blockSize = blockShape->e<Nd4jLong>(i);
-        REQUIRE_TRUE(blockSize >= 2, 0, "BatchToSpaceND: all elements of blockShape array must be >= 2, but got value of %i for element number %i !", blockSize, i);
-    }
-
     if(crop->sizeAt(0) != numOfSpatialDims || crop->sizeAt(1) != 2) {
         const std::string expectedCropShape = "[" + std::to_string(numOfSpatialDims) + ", 2]";   // [numOfSpatialDims, 2]
         REQUIRE_TRUE(false, 0, "BatchToSpaceND: operation expects padding shape to be %s, but got %s instead", expectedCropShape.c_str(), ShapeUtils::shapeAsString(crop).c_str());

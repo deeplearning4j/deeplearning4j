@@ -518,7 +518,7 @@ public class LayerOpValidation extends BaseOpValidation {
                                     .build());
                             break;
                         case 2:
-                            //pooling3d - average, same
+                            //pooling3d - average, no same
                             msg = "2 - pooling 3d, average, same";
                             out = sd.cnn().avgPooling3d(in, Pooling3DConfig.builder()
                                     .kH(2).kW(2).kD(2)
@@ -528,8 +528,8 @@ public class LayerOpValidation extends BaseOpValidation {
                             break;
                         case 3:
                             //pooling 3d - max, no same
-                            msg = "3 - pooling 3d, max, no same";
-                            out = sd.cnn().avgPooling3d(in, Pooling3DConfig.builder()
+                            msg = "3 - pooling 3d, max, same";
+                            out = sd.cnn().maxPooling3d(in, Pooling3DConfig.builder()
                                     .kH(2).kW(2).kD(2)
                                     .sH(1).sW(1).sD(1)
                                     .isSameMode(true)
@@ -898,7 +898,7 @@ public class LayerOpValidation extends BaseOpValidation {
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
         INDArray outArr = Nd4j.createFromArray(mb, nIn, 4, 4, 4L);
 
-        TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(true);
+        TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(false);
         String err = OpValidation.validate(tc);
         assertNull(err);
     }
@@ -911,9 +911,9 @@ public class LayerOpValidation extends BaseOpValidation {
         int kD = 2;
 
         int mb = 3;
-        int imgH = 28;
-        int imgW = 28;
-        int imgD = 28;
+        int imgH = 5;
+        int imgW = 5;
+        int imgD = 5;
 
         SameDiff sd = SameDiff.create();
         INDArray inArr = Nd4j.create(mb, nIn, imgD, imgH, imgW);
@@ -934,9 +934,9 @@ public class LayerOpValidation extends BaseOpValidation {
         sd.setLossVariables("loss");
 
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
-        INDArray outArr = Nd4j.createFromArray(mb, nIn, 27, 27, 27L);
+        INDArray outArr = Nd4j.createFromArray(mb, nIn, 4, 4, 4L);
 
-        TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(true);
+        TestCase tc = new TestCase(sd).expectedOutput("out", outArr).gradientCheck(false);
         String err = OpValidation.validate(tc);
         assertNull(err);
     }

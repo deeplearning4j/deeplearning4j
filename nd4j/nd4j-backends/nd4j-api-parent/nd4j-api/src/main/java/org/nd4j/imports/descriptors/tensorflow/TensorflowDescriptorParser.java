@@ -16,7 +16,7 @@
 
 package org.nd4j.imports.descriptors.tensorflow;
 
-import com.github.os72.protobuf351.TextFormat;
+import org.nd4j.shade.protobuf.TextFormat;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.tensorflow.framework.OpDef;

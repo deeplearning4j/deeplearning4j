@@ -41,45 +41,44 @@ import org.nd4j.linalg.string.NDArrayStrings;
  */
 public interface INDArray extends Serializable, AutoCloseable {
     /**
-     * Returns the shape information debugging
-     * information
-     * @return the shape information debugging information
+     * Returns the shape information debugging information
+     * @return the shape information.
      */
     String shapeInfoToString();
 
     /**
      * Shape info
-     * @return
+     * @return Shape info
      */
     DataBuffer shapeInfoDataBuffer();
 
     /**
      * Sparse info
-     * @return
+     * @return Sparse info.
      */
     DataBuffer sparseInfoDataBuffer();
 
     /**
      * Shape info
-     * @return
+     * @return Shape info
      */
     LongBuffer shapeInfo();
 
     /**
-     * Returns true if this array is a view or not
-     * @return
+     * Check if this array is a view or not.
+     * @return true if array is a view.
      */
     boolean isView();
 
     /**
-     * Returns true if this array is sparse
-     * @return
+     * Check if this array is sparse
+     * @return true if this array is sparse.
      */
     boolean isSparse();
 
     /**
-     * Returns true if this array is compressed, and false otherwise
-     * @return
+     * Check if this array is compressed.
+     * @return true if this array is compressed.
      */
     boolean isCompressed();
 
@@ -87,10 +86,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      * This method marks INDArray instance as compressed
      * PLEASE NOTE: Do not use this method unless you 100% have to
      *
-     * @param reallyCompressed
+     * @param reallyCompressed new value for compressed.
      */
     void markAsCompressed(boolean reallyCompressed);
-
 
     /**
      * Returns the rank of the ndarray (the number of dimensions).
@@ -2830,6 +2828,12 @@ public interface INDArray extends Serializable, AutoCloseable {
      * PLEASE NOTE: This method is NOT safe by any means
      */
     void close();
+
+    /**
+     * This method checks if array or its buffer was closed before
+     * @return true if was closed, false otherwise
+     */
+    boolean wasClosed();
 
     /**
      * This method returns empty array with the same dtype/order/shape as this one

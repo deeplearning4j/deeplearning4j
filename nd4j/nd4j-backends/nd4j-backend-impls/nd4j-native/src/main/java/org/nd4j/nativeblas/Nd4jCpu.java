@@ -3865,12 +3865,12 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
 
         /**
         *  create a new array by replicating current array by repeats times along given dimension
-        *  dimension - dimension along which to repeat elements
+        *  axis - axis along which to repeat elements
         *  repeats - number of repetitions
         */
-        public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongPointer repeats);
-        public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector LongBuffer repeats);
-        public native NDArray repeat(int dimension, @Cast("Nd4jLong*") @StdVector long[] repeats);
+        public native NDArray repeat(int axis, @StdVector IntPointer repeats);
+        public native NDArray repeat(int axis, @StdVector IntBuffer repeats);
+        public native NDArray repeat(int axis, @StdVector int[] repeats);
 
         /**
          * This method fills this array with zeros
@@ -3894,9 +3894,12 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
 
         /**
         *  fill target array by repeating current array
-        *  dimension - dimension along which to repeat elements
+        *  axis - axis along which to repeat elements
+        *  repeats - vector containing numbers of repetition for elements at given axis
         */
-        public native void repeat(int dimension, @ByRef NDArray target);
+        public native void repeat(int axis, @StdVector IntPointer repeats, @ByRef NDArray target);
+        public native void repeat(int axis, @StdVector IntBuffer repeats, @ByRef NDArray target);
+        public native void repeat(int axis, @StdVector int[] repeats, @ByRef NDArray target);
 
         /**
         *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
@@ -9057,15 +9060,28 @@ public static final int PREALLOC_SIZE = 33554432;
 
 // #include <NDArray.h>
 // #include <dll.h>
- 
+
 @Namespace("nd4j") @NoOffset public static class OpArgsHolder extends Pointer {
     static { Loader.load(); }
     /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
     public OpArgsHolder(Pointer p) { super(p); }
+    /** Native array allocator. Access with {@link Pointer#position(long)}. */
+    public OpArgsHolder(long size) { super((Pointer)null); allocateArray(size); }
+    private native void allocateArray(long size);
+    @Override public OpArgsHolder position(long position) {
+        return (OpArgsHolder)super.position(position);
+    }
 
 
-	
+    // default constructor
+	public OpArgsHolder() { super((Pointer)null); allocate(); }
+	private native void allocate();
 
+    // copy constructor
+    public OpArgsHolder(@Const @ByRef OpArgsHolder other) { super((Pointer)null); allocate(other); }
+    private native void allocate(@Const @ByRef OpArgsHolder other);
+
+    // constructor
     public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
     private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoublePointer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongPointer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
     public OpArgsHolder(@Const @ByRef NDArrayVector inArrs) { super((Pointer)null); allocate(inArrs); }
@@ -9080,6 +9096,13 @@ public static final int PREALLOC_SIZE = 33554432;
     private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector DoubleBuffer tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector LongBuffer iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector BooleanPointer bArgs/*=std::vector<bool>()*/);
     public OpArgsHolder(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/) { super((Pointer)null); allocate(inArrs, tArgs, iArgs, bArgs); }
     private native void allocate(@Const @ByRef NDArrayVector inArrs, @StdVector double[] tArgs/*=std::vector<double>()*/, @Cast("Nd4jLong*") @StdVector long[] iArgs/*=std::vector<Nd4jLong>()*/, @Cast("bool*") @StdVector boolean[] bArgs/*=std::vector<bool>()*/);
+
+    // move constructor
+
+    // assignment operator
+    public native @ByRef @Name("operator =") OpArgsHolder put(@Const @ByRef OpArgsHolder other);
+
+    // move assignment operator
 
     public native @Const @ByRef NDArrayVector getInArrs();
 
@@ -9100,8 +9123,8 @@ public static final int PREALLOC_SIZE = 33554432;
     public native int getNumBArgs();
 
     public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs, @Cast("const bool") boolean isInPlace/*=false*/);
-    public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs); 
-    
+    public native @ByVal OpArgsHolder createArgsHolderForBP(@Const @ByRef NDArrayVector inGradArrs);
+
 }
 
 
@@ -11554,6 +11577,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native OpDescriptor setAllowedOutputTypes(int index, @Cast("nd4j::DataType") int dtype);
             public native OpDescriptor setAllowedInputTypes(@Cast("nd4j::DataType") int dtype);
             public native OpDescriptor setAllowedOutputTypes(@Cast("nd4j::DataType") int dtype);
+            public native OpDescriptor allowOverride(@Cast("bool") boolean reallyAllow);
             public native OpDescriptor setSameMode(@Cast("bool") boolean reallySame);
             public native OpDescriptor setInputType(int idx, @Cast("nd4j::DataType") int dtype);
             public native OpDescriptor setOutputType(int idx, @Cast("nd4j::DataType") int dtype);
@@ -18209,6 +18233,24 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+//         #if NOT_EXCLUDED(OP_space_to_batch_nd)
+        @Namespace("nd4j::ops") public static class space_to_batch_nd extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public space_to_batch_nd(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public space_to_batch_nd(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public space_to_batch_nd position(long position) {
+                return (space_to_batch_nd)super.position(position);
+            }
+        
+                                                                                    public space_to_batch_nd() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
         /**
          *
          *
@@ -18226,6 +18268,23 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public batch_to_space() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+//         #if NOT_EXCLUDED(OP_batch_to_space_nd)
+        @Namespace("nd4j::ops") public static class batch_to_space_nd extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public batch_to_space_nd(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public batch_to_space_nd(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public batch_to_space_nd position(long position) {
+                return (batch_to_space_nd)super.position(position);
+            }
+        
+                                                                                    public batch_to_space_nd() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
@@ -22831,10 +22890,16 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     
         public ContextBuffers() { super((Pointer)null); allocate(); }
         private native void allocate();
+        public ContextBuffers(@Const @ByRef ContextBuffers other) { super((Pointer)null); allocate(other); }
+        private native void allocate(@Const @ByRef ContextBuffers other);
         public ContextBuffers(Pointer rPointer, Pointer sPointer, Pointer aPointer, @Cast("bool") boolean isOwner/*=false*/) { super((Pointer)null); allocate(rPointer, sPointer, aPointer, isOwner); }
         private native void allocate(Pointer rPointer, Pointer sPointer, Pointer aPointer, @Cast("bool") boolean isOwner/*=false*/);
         public ContextBuffers(Pointer rPointer, Pointer sPointer, Pointer aPointer) { super((Pointer)null); allocate(rPointer, sPointer, aPointer); }
         private native void allocate(Pointer rPointer, Pointer sPointer, Pointer aPointer);
+
+        public native @ByRef @Name("operator =") ContextBuffers put(@Const @ByRef ContextBuffers other);
+
+        public native void release();
 
         public native Pointer reductionBuffer();
         public native Pointer scalarBuffer();
@@ -22850,6 +22915,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         public native void triggerOwnership(@Cast("bool") boolean isOwner);
 
         public native int deviceId();
+
+        public native @Cast("bool") boolean isInitialized();
     }
 
 
@@ -22919,6 +22986,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     	public native int getDeviceID();
     	public native void setDeviceID(int deviceID);
 
+    	public static native @Cast("bool") boolean isInitialized();
+    	public static native void releaseBuffers();
 	    public static native LaunchContext defaultContext();
 
 

@@ -13,18 +13,20 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+package org.nd4j.remote.clients.serde;
 
-package org.nd4j.autodiff.util.cloner;
+/**
+ * This interface describes basic binary deserializer interface used for remote inference
+ * @param <T> type of the deserializable class
+ *
+ * @author Alexander Stoyakin
+ */
+public interface BinaryDeserializer<T> {
 
-import com.rits.cloning.IDeepCloner;
-import com.rits.cloning.IFastCloner;
-import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Map;
-
-public class INDArrayFastCloner implements IFastCloner {
-    @Override
-    public Object clone(Object o, IDeepCloner iDeepCloner, Map<Object, Object> map) {
-        return ((INDArray) o).dup();
-    }
+        /**
+         * This method deserializes binary data to arbitrary object.
+         * @param byte buffer
+         * @return deserialized object
+         */
+        T deserialize(byte[] buffer);
 }

@@ -69,9 +69,6 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
         double[] l1 = new double[]{0.0, 0.0, 0.01, 0.01, 0.0};
         double[] l2 = new double[]{0.0, 0.02, 0.00, 0.02, 0.0};
         double[] wd = new double[]{0.0, 0.0, 0.0, 0.0, 0.03};
-//        double[] l1 = new double[]{0.0};
-//        double[] l2 = new double[]{0.0};
-//        double[] wd = new double[]{0.03};
 
         for (String u : new String[]{"sgd", "adam", "nesterov", "adamax", "amsgrad"}) {
             for(int i=0; i<l1.length; i++ ) {

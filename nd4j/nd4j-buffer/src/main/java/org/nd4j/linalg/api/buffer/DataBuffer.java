@@ -703,4 +703,10 @@ public interface DataBuffer extends Serializable, AutoCloseable {
      * PLEASE NOTE: This method is NOT safe by any means
      */
     void close();
+
+    /**
+     * This method checks if array or its buffer was closed before
+     * @return true if was closed, false otherwise
+     */
+    boolean wasClosed();
 }

@@ -14,17 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.autodiff.util.cloner;
+package org.nd4j.remote.clients.serde;
 
-import com.rits.cloning.IDeepCloner;
-import com.rits.cloning.IFastCloner;
-import org.nd4j.linalg.api.buffer.DataBuffer;
+/**
+ * This interface describes basic binary serializer interface used for remote inference
+ * @param <T> type of the serializable class
+ *
+ * @author Alexander Stoyakin
+ */
+public interface BinarySerializer<T> {
 
-import java.util.Map;
-
-public class DataBufferFastCloner implements IFastCloner {
-    @Override
-    public Object clone(Object o, IDeepCloner iDeepCloner, Map<Object, Object> map) {
-        return ((DataBuffer)o).dup();
-    }
+    /**
+     * This method serializes given object into byte buffer
+     *
+     * @param o object to be serialized
+     * @return
+     */
+    byte[] serialize(T o);
 }

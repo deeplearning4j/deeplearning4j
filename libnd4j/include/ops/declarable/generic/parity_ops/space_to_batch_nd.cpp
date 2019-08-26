@@ -43,12 +43,6 @@ CUSTOM_OP_IMPL(space_to_batch_nd, 3, 1, false, 0, 0) {
 
     REQUIRE_TRUE(input->rankOf() == output->rankOf(), 0, "SpaceToBatchND: rank of input and output array must be the same, but got %i and %i correspondingly !", input->rankOf(), output->rankOf());
 
-    // FIXME - should we use this time-consuming validation ?
-    for (uint i = 0; i < numOfSpatialDims; ++i) {
-        const Nd4jLong blockSize = blockShape->e<Nd4jLong>(i);
-        REQUIRE_TRUE(blockSize >= 2, 0, "SpaceToBatchND: all elements of blockShape array must be >= 2, but got value of %i for element number %i !", blockSize, i);
-    }
-
     if(padding->sizeAt(0) != numOfSpatialDims || padding->sizeAt(1) != 2) {
         const std::string expectedpaddingShape = "[" + std::to_string(numOfSpatialDims) + ", 2]";   // [numOfSpatialDims, 2]
         REQUIRE_TRUE(false, 0, "SpaceToBatchND: operation expects padding shape to be %s, but got %s instead", expectedpaddingShape.c_str(), ShapeUtils::shapeAsString(padding).c_str());

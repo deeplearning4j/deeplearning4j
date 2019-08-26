@@ -160,4 +160,12 @@ LaunchContext::LaunchContext() {
     void LaunchContext::swapContextBuffers(ContextBuffers &buffers) {
         contextBuffers = buffers;
     };
+
+    void LaunchContext::releaseBuffers() {
+        contextBuffers.release();
+    }
+
+    bool LaunchContext::isInitialized() {
+        return contextBuffers.isInitialized();
+    }
 }

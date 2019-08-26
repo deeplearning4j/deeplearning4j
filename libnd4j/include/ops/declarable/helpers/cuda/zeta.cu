@@ -33,19 +33,19 @@ __global__ static void zetaCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
     const auto x = reinterpret_cast<const T*>(vx);
     const auto q = reinterpret_cast<const T*>(vq);
-          auto z = reinterpret_cast<T*>(vz);    
+          auto z = reinterpret_cast<T*>(vz);
 
     __shared__ Nd4jLong len;
-    
-    if (threadIdx.x == 0)         
-        len = shape::length(xShapeInfo);    
+
+    if (threadIdx.x == 0)
+        len = shape::length(xShapeInfo);
     __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
     const auto totalThreads = gridDim.x * blockDim.x;
 
     for (int i = tid; i < len; i += totalThreads) {
-            
+
         const auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
         const auto qOffset = shape::getIndexOffset(i, qShapeInfo, len);
         const auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
@@ -65,10 +65,10 @@ void zeta(nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDA
 
     if(!x.isActualOnDeviceSide()) x.syncToDevice();
     if(!q.isActualOnDeviceSide()) q.syncToDevice();
-        
-    int threadsPerBlock = MAX_NUM_THREADS;
+
+    int threadsPerBlock = MAX_NUM_THREADS / 2;
     int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    
+
     BUILD_SINGLE_SELECTOR(x.dataType(), zetaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), q.getSpecialBuffer(), q.getSpecialShapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo()), FLOAT_TYPES);
 
     x.tickReadHost();

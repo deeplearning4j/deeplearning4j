@@ -87,6 +87,10 @@ namespace nd4j {
             std::map<int, std::vector<nd4j::DataType>> _outputTypes;
             std::map<int, std::vector<nd4j::DataType>> _inputTypes;
 
+
+            // field for ops that allow data type override at runtime
+            bool _dtypeOverride = false;
+
             bool checkDataTypesMatch(nd4j::DataType needle, std::vector<nd4j::DataType> &haystack) const;
         public:
             // default constructor
@@ -164,6 +168,7 @@ namespace nd4j {
             OpDescriptor* setAllowedOutputTypes(int index, nd4j::DataType dtype);
             OpDescriptor* setAllowedInputTypes(nd4j::DataType dtype);
             OpDescriptor* setAllowedOutputTypes(nd4j::DataType dtype);
+            OpDescriptor* allowOverride(bool reallyAllow);
             OpDescriptor* setSameMode(bool reallySame);
             OpDescriptor* setInputType(int idx, nd4j::DataType dtype);
             OpDescriptor* setOutputType(int idx, nd4j::DataType dtype);

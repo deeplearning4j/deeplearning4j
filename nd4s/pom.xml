@@ -29,7 +29,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.nd4j</groupId>
-    <artifactId>nd4s</artifactId>
+    <artifactId>nd4s_${scala.binary.version}</artifactId>
     <packaging>jar</packaging>
 
     <name>nd4s</name>

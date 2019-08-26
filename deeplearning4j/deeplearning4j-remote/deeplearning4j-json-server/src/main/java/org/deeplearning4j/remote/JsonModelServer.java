@@ -34,6 +34,8 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.remote.SameDiffJsonModelServer;
+import org.nd4j.remote.clients.serde.BinaryDeserializer;
+import org.nd4j.remote.clients.serde.BinarySerializer;
 import org.nd4j.remote.clients.serde.JsonDeserializer;
 import org.nd4j.remote.clients.serde.JsonSerializer;
 
@@ -70,28 +72,40 @@ public class JsonModelServer<I, O> extends SameDiffJsonModelServer<I, O> {
 
     protected boolean enabledParallel = true;
 
-    protected JsonModelServer(@NonNull SameDiff sdModel, InferenceAdapter<I, O> inferenceAdapter, JsonSerializer<O> serializer, JsonDeserializer<I> deserializer, int port, String[] orderedInputNodes, String[] orderedOutputNodes) {
-        super(sdModel, inferenceAdapter, serializer, deserializer, port, orderedInputNodes, orderedOutputNodes);
+    protected JsonModelServer(@NonNull SameDiff sdModel, InferenceAdapter<I, O> inferenceAdapter,
+                              JsonSerializer<O> serializer, JsonDeserializer<I> deserializer,
+                              BinarySerializer<O> binarySerializer, BinaryDeserializer<I> binaryDeserializer,
+                              int port, String[] orderedInputNodes, String[] orderedOutputNodes) {
+        super(sdModel, inferenceAdapter, serializer, deserializer, binarySerializer, binaryDeserializer, port, orderedInputNodes, orderedOutputNodes);
     }
 
-    protected JsonModelServer(@NonNull ComputationGraph cgModel, InferenceAdapter<I, O> inferenceAdapter, JsonSerializer<O> serializer, JsonDeserializer<I> deserializer, int port, @NonNull InferenceMode inferenceMode, int numWorkers) {
-        super(inferenceAdapter, serializer, deserializer, port);
+    protected JsonModelServer(@NonNull ComputationGraph cgModel, InferenceAdapter<I, O> inferenceAdapter,
+                              JsonSerializer<O> serializer, JsonDeserializer<I> deserializer,
+                              BinarySerializer<O> binarySerializer, BinaryDeserializer<I> binaryDeserializer,
+                              int port, @NonNull InferenceMode inferenceMode, int numWorkers) {
+        super(inferenceAdapter, serializer, deserializer, binarySerializer, binaryDeserializer, port);
 
         this.cgModel = cgModel;
         this.inferenceMode = inferenceMode;
         this.numWorkers = numWorkers;
     }
 
-    protected JsonModelServer(@NonNull MultiLayerNetwork mlnModel, InferenceAdapter<I, O> inferenceAdapter, JsonSerializer<O> serializer, JsonDeserializer<I> deserializer, int port, @NonNull InferenceMode inferenceMode, int numWorkers) {
-        super(inferenceAdapter, serializer, deserializer, port);
+    protected JsonModelServer(@NonNull MultiLayerNetwork mlnModel, InferenceAdapter<I, O> inferenceAdapter,
+                              JsonSerializer<O> serializer, JsonDeserializer<I> deserializer,
+                              BinarySerializer<O> binarySerializer, BinaryDeserializer<I> binaryDeserializer,
+                              int port, @NonNull InferenceMode inferenceMode, int numWorkers) {
+        super(inferenceAdapter, serializer, deserializer, binarySerializer, binaryDeserializer, port);
 
         this.mlnModel = mlnModel;
         this.inferenceMode = inferenceMode;
         this.numWorkers = numWorkers;
     }
 
-    protected JsonModelServer(@NonNull ParallelInference pi, InferenceAdapter<I, O> inferenceAdapter, JsonSerializer<O> serializer, JsonDeserializer<I> deserializer, int port) {
-        super(inferenceAdapter, serializer, deserializer, port);
+    protected JsonModelServer(@NonNull ParallelInference pi, InferenceAdapter<I, O> inferenceAdapter,
+                              JsonSerializer<O> serializer, JsonDeserializer<I> deserializer,
+                              BinarySerializer<O> binarySerializer, BinaryDeserializer<I> binaryDeserializer,
+                              int port) {
+        super(inferenceAdapter, serializer, deserializer, binarySerializer, binaryDeserializer, port);
 
         this.parallelInference = pi;
     }
@@ -136,19 +150,23 @@ public class JsonModelServer<I, O> extends SameDiffJsonModelServer<I, O> {
                         .build();
             }
             servingServlet = new DL4jServlet.Builder<I, O>(parallelInference)
-                    .parallelEnabled(true)
-                    .serializer(serializer)
-                    .deserializer(deserializer)
-                    .inferenceAdapter(inferenceAdapter)
-                    .build();
+                        .parallelEnabled(true)
+                        .serializer(serializer)
+                        .deserializer(deserializer)
+                        .binarySerializer(binarySerializer)
+                        .binaryDeserializer(binaryDeserializer)
+                        .inferenceAdapter(inferenceAdapter)
+                        .build();
         }
         else {
             servingServlet = new DL4jServlet.Builder<I, O>(model)
-                    .parallelEnabled(false)
-                    .serializer(serializer)
-                    .deserializer(deserializer)
-                    .inferenceAdapter(inferenceAdapter)
-                    .build();
+                        .parallelEnabled(false)
+                        .serializer(serializer)
+                        .deserializer(deserializer)
+                        .binarySerializer(binarySerializer)
+                        .binaryDeserializer(binaryDeserializer)
+                        .inferenceAdapter(inferenceAdapter)
+                        .build();
         }
         start(port, servingServlet);
     }
@@ -175,6 +193,8 @@ public class JsonModelServer<I, O> extends SameDiffJsonModelServer<I, O> {
         private InferenceAdapter<I, O> inferenceAdapter;
         private JsonSerializer<O> serializer;
         private JsonDeserializer<I> deserializer;
+        private BinarySerializer<O> binarySerializer;
+        private BinaryDeserializer<I> binaryDeserializer;
 
         private InputAdapter<I> inputAdapter;
         private OutputAdapter<O> outputAdapter;
@@ -238,7 +258,9 @@ public class JsonModelServer<I, O> extends SameDiffJsonModelServer<I, O> {
         }
 
         /**
-         * This method allows you to specify serializer
+         * This method allows you to specify JSON serializer.
+         * Incompatible with {@link #outputBinarySerializer(BinarySerializer)}
+         * Only one serializer - deserializer pair can be used by client and server.
          *
          * @param serializer
          * @return
@@ -249,13 +271,41 @@ public class JsonModelServer<I, O> extends SameDiffJsonModelServer<I, O> {
         }
 
         /**
-         * This method allows you to specify deserializer
+         * This method allows you to specify JSON deserializer.
+         * Incompatible with {@link #inputBinaryDeserializer(BinaryDeserializer)}
+         * Only one serializer - deserializer pair can be used by client and server.
          *
          * @param deserializer
          * @return
          */
         public Builder<I,O> inputDeserializer(@NonNull JsonDeserializer<I> deserializer) {
             this.deserializer = deserializer;
+            return this;
+        }
+
+        /**
+         * This method allows you to specify binary serializer.
+         * Incompatible with {@link #outputSerializer(JsonSerializer)}
+         * Only one serializer - deserializer pair can be used by client and server.
+         *
+         * @param serializer
+         * @return
+         */
+        public Builder<I,O> outputBinarySerializer(@NonNull BinarySerializer<O> serializer) {
+            this.binarySerializer = serializer;
+            return this;
+        }
+
+        /**
+         * This method allows you to specify binary deserializer
+         * Incompatible with {@link #inputDeserializer(JsonDeserializer)}
+         * Only one serializer - deserializer pair can be used by client and server.
+         *
+         * @param deserializer
+         * @return
+         */
+        public Builder<I,O> inputBinaryDeserializer(@NonNull BinaryDeserializer<I> deserializer) {
+            this.binaryDeserializer = deserializer;
             return this;
         }
 
@@ -375,17 +425,24 @@ public class JsonModelServer<I, O> extends SameDiffJsonModelServer<I, O> {
                     throw new IllegalArgumentException("Either InferenceAdapter<I,O> or InputAdapter<I> + OutputAdapter<O> should be configured");
             }
 
+            JsonModelServer server = null;
             if (sdModel != null) {
-                Preconditions.checkArgument(orderedOutputNodes != null && orderedOutputNodes.length > 0, "For SameDiff model serving OutputNodes should be defined");
-                return new JsonModelServer<I, O>(sdModel, inferenceAdapter, serializer, deserializer, port, orderedInputNodes, orderedOutputNodes);
-            } else if (cgModel != null)
-                return new JsonModelServer<I,O>(cgModel, inferenceAdapter, serializer, deserializer, port, inferenceMode, numWorkers);
-            else if (mlnModel != null)
-                return new JsonModelServer<I,O>(mlnModel, inferenceAdapter, serializer, deserializer, port, inferenceMode, numWorkers);
-            else if (pi != null)
-                return new JsonModelServer<I,O>(pi, inferenceAdapter, serializer, deserializer, port);
-            else
-                throw new IllegalStateException("No models were defined for JsonModelServer");
+                server = new JsonModelServer<I, O>(sdModel, inferenceAdapter, serializer, deserializer, binarySerializer, binaryDeserializer, port, orderedInputNodes, orderedOutputNodes);
+            }
+            else if (cgModel != null) {
+                server = new JsonModelServer<I, O>(cgModel, inferenceAdapter, serializer, deserializer, binarySerializer, binaryDeserializer, port, inferenceMode, numWorkers);
+            }
+            else if (mlnModel != null) {
+                server = new JsonModelServer<I, O>(mlnModel, inferenceAdapter, serializer, deserializer, binarySerializer, binaryDeserializer, port, inferenceMode, numWorkers);
+            }
+            else if (pi != null) {
+                 server = new JsonModelServer<I, O>(pi, inferenceAdapter, serializer, deserializer, binarySerializer, binaryDeserializer, port);
+            }
+              else
+                 throw new IllegalStateException("No models were defined for JsonModelServer");
+
+            server.enabledParallel = parallelMode;
+            return server;
         }
     }
 

@@ -16,7 +16,7 @@
 
 package org.nd4j.tensorflow.conversion;
 
-import com.github.os72.protobuf351.util.JsonFormat;
+import org.nd4j.shade.protobuf.util.JsonFormat;
 import org.apache.commons.io.IOUtils;
 import org.junit.Ignore;
 import org.junit.Test;

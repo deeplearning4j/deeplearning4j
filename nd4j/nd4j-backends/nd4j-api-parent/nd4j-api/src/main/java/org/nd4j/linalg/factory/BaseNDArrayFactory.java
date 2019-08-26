@@ -1259,34 +1259,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
         return create(new double[] {value}, new int[0], new int[0], offset);
     }
 
-    public INDArray trueVector(boolean[] data) {
-        return create(data, new long[] {data.length}, new long[]{1}, DataType.BOOL, Nd4j.getMemoryManager().getCurrentWorkspace());
-    }
-
-    public INDArray trueVector(byte[] data) {
-        return create(data, new long[] {data.length}, new long[]{1}, DataType.BYTE, Nd4j.getMemoryManager().getCurrentWorkspace());
-    }
-
-    public INDArray trueVector(short[] data) {
-        return create(data, new long[] {data.length}, new long[]{1}, DataType.SHORT, Nd4j.getMemoryManager().getCurrentWorkspace());
-    }
-
-    public INDArray trueVector(int[] data) {
-        return create(data, new long[] {data.length}, new long[]{1}, DataType.INT, Nd4j.getMemoryManager().getCurrentWorkspace());
-    }
-
-    public INDArray trueVector(long[] data) {
-        return create(data, new long[] {data.length}, new long[]{1}, DataType.LONG, Nd4j.getMemoryManager().getCurrentWorkspace());
-    }
-
-    public INDArray trueVector(float[] data) {
-        return create(data, new long[] {data.length}, new long[]{1}, DataType.FLOAT, Nd4j.getMemoryManager().getCurrentWorkspace());
-    }
-
-    public INDArray trueVector(double[] data) {
-        return create(data, new long[] {data.length}, new long[]{1}, DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
-    }
-
     /**
      * Create a scalar nd array with the specified value and offset
      *

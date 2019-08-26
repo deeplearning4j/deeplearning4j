@@ -142,21 +142,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    /**
-     * Returns true if this array is compressed, and false otherwise
-     * @return
-     */
     @Override
     public boolean isCompressed() {
         return compressed;
     }
 
-    /**
-     * This method marks INDArray instance as compressed
-     * PLEASE NOTE: Do not use this method unless you 100% have to
-     *
-     * @param reallyCompressed
-     */
     @Override
     public void markAsCompressed(boolean reallyCompressed) {
         this.compressed = reallyCompressed;
@@ -949,17 +939,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public int elementWiseStride() {
-        /*
-        if(Shape.elementWiseStride(shapeInfo()) < 0 && !attemptedToFindElementWiseStride) {
-            INDArray reshapeAttempt = Shape.newShapeNoCopy(this,new int[]{1,length()}, ordering() == 'f');
-            if(reshapeAttempt != null && reshapeAttempt.elementWiseStride() > 0) {
-               Shape.setElementWiseStride(shapeInfo(), reshapeAttempt.stride(-1));
-               this.shapeInformation = Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride(), offset(),reshapeAttempt.stride(-1), ordering());
-            }
-            attemptedToFindElementWiseStride = true;
-        
-        }
-        */
         return Shape.elementWiseStride(shapeInfoDataBuffer());
     }
 
@@ -5349,12 +5328,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return jvmShapeInfo.shape;
     }
 
-    /**
-     * Returns the shape information debugging
-     * information
-     *
-     * @return the shape information debugging information
-     */
     @Override
     public String shapeInfoToString() {
         return Shape.shapeToString(this);
@@ -6697,6 +6670,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (released || isEmpty())
             return;
 
+        Nd4j.getExecutioner().commit();
+
         if (!closeable())
             throw new ND4JIllegalStateException("Can't release this INDArray");
 
@@ -6715,5 +6690,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering());
     }
 
+    @Override
+    public boolean wasClosed() {
+        // data can be null if that's empty array
+        if (released || (data() != null && data().wasClosed()))
+            return true;
 
+        return false;
+    }
 }

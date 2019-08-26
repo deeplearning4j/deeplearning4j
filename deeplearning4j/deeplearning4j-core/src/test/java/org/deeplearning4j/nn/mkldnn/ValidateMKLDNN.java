@@ -57,56 +57,62 @@ public class ValidateMKLDNN extends BaseDL4JTest {
             for (ConvolutionMode cm : new ConvolutionMode[]{ConvolutionMode.Same, ConvolutionMode.Truncate}) {
                 for (int[] kernel : new int[][]{{2, 2}, {2, 3}}) {
                     for (int[] stride : new int[][]{{1, 1}, {2, 2}}) {
+                        for (PoolingType pt : new PoolingType[]{PoolingType.MAX, PoolingType.AVG}) {
 
-                        inputSize[0] = minibatch;
-                        INDArray f = Nd4j.rand(DataType.FLOAT, inputSize);
-                        INDArray l = TestUtils.randomOneHot(minibatch, 10).castTo(DataType.FLOAT);
+                            inputSize[0] = minibatch;
+                            INDArray f = Nd4j.rand(DataType.FLOAT, inputSize);
+                            INDArray l = TestUtils.randomOneHot(minibatch, 10).castTo(DataType.FLOAT);
 
-                        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                                .updater(new Adam(0.01))
-                                .convolutionMode(cm)
-                                .seed(12345)
-                                .list()
-                                .layer(new ConvolutionLayer.Builder().activation(Activation.TANH)
-                                        .kernelSize(kernel)
-                                        .stride(stride)
-                                        .padding(0,0)
-                                        .nOut(3)
-                                        .build())
-                                .layer(new SubsamplingLayer.Builder()
-                                        .kernelSize(kernel)
-                                        .stride(stride)
-                                        .padding(0,0)
-                                        .build())
-                                .layer(new ConvolutionLayer.Builder().activation(Activation.TANH)
-                                        .kernelSize(kernel)
-                                        .stride(stride)
-                                        .padding(0,0)
-                                        .nOut(3)
-                                        .build())
-                                .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                                .setInputType(InputType.convolutional(inputSize[2], inputSize[3], inputSize[1]))
-                                .build();
+                            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                                    .updater(new Adam(0.01))
+                                    .convolutionMode(cm)
+                                    .seed(12345)
+                                    .list()
+                                    .layer(new ConvolutionLayer.Builder().activation(Activation.TANH)
+                                            .kernelSize(kernel)
+                                            .stride(stride)
+                                            .padding(0, 0)
+                                            .nOut(3)
+                                            .build())
+                                    .layer(new SubsamplingLayer.Builder()
+                                            .poolingType(pt)
+                                            .kernelSize(kernel)
+                                            .stride(stride)
+                                            .padding(0, 0)
+                                            .build())
+                                    .layer(new ConvolutionLayer.Builder().activation(Activation.TANH)
+                                            .kernelSize(kernel)
+                                            .stride(stride)
+                                            .padding(0, 0)
+                                            .nOut(3)
+                                            .build())
+                                    .layer(new OutputLayer.Builder().nOut(10).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                                    .setInputType(InputType.convolutional(inputSize[2], inputSize[3], inputSize[1]))
+                                    .build();
 
-                        MultiLayerNetwork netWith = new MultiLayerNetwork(conf.clone());
-                        netWith.init();
+                            MultiLayerNetwork netWith = new MultiLayerNetwork(conf.clone());
+                            netWith.init();
 
-                        MultiLayerNetwork netWithout = new MultiLayerNetwork(conf.clone());
-                        netWithout.init();
+                            MultiLayerNetwork netWithout = new MultiLayerNetwork(conf.clone());
+                            netWithout.init();
 
-                        LayerHelperValidationUtil.TestCase tc = LayerHelperValidationUtil.TestCase.builder()
-                                .allowHelpersForClasses(Arrays.<Class<?>>asList(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class,
-                                        org.deeplearning4j.nn.layers.convolution.ConvolutionLayer.class))
-                                .testForward(true)
-                                .testScore(true)
-                                .testBackward(true)
-                                .testTraining(true)
-                                .features(f)
-                                .labels(l)
-                                .data(new SingletonDataSetIterator(new DataSet(f,l)))
-                                .build();
+                            String name = pt + ", mb=" + minibatch + ", cm=" + cm + ", kernel=" + Arrays.toString(kernel) + ", stride=" + Arrays.toString(stride);
+                            LayerHelperValidationUtil.TestCase tc = LayerHelperValidationUtil.TestCase.builder()
+                                    .testName(name)
+                                    .allowHelpersForClasses(Arrays.<Class<?>>asList(org.deeplearning4j.nn.layers.convolution.subsampling.SubsamplingLayer.class,
+                                            org.deeplearning4j.nn.layers.convolution.ConvolutionLayer.class))
+                                    .testForward(true)
+                                    .testScore(true)
+                                    .testBackward(true)
+                                    .testTraining(true)
+                                    .features(f)
+                                    .labels(l)
+                                    .data(new SingletonDataSetIterator(new DataSet(f, l)))
+                                    .build();
 
-                        LayerHelperValidationUtil.validateMLN(netWith, tc);
+                            System.out.println("Starting test: " + name);
+                            LayerHelperValidationUtil.validateMLN(netWith, tc);
+                        }
                     }
                 }
             }

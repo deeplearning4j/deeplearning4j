@@ -20,7 +20,7 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.{ Conv2DConfig, Lo
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.{ OldMax, OldMin }
+import org.nd4j.linalg.api.ops.impl.transforms.custom.{ Max, Min }
 import org.nd4j.linalg.api.ops.impl.transforms.custom._
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution
 import org.nd4j.linalg.api.shape.LongShapeDescriptor

@@ -544,6 +544,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     @Override
     public long address() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return allocationPoint.getPointers().getHostPointer().address();
     }
 
@@ -554,6 +557,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer pointer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         // FIXME: very bad thing,
         lazyAllocateHostPointer();
 
@@ -1109,6 +1115,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer addressPointer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return AtomicAllocator.getInstance().getHostPointer(this);
     }
 
@@ -1562,7 +1571,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     protected void release() {
-        AtomicAllocator.getInstance().freeMemory(allocationPoint);
+        if (!released) {
+            AtomicAllocator.getInstance().freeMemory(allocationPoint);
+            allocationPoint.setReleased(true);
+        }
         released = true;
     }
 

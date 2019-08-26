@@ -476,19 +476,36 @@ std::vector<Nd4jLong> NDArray::getShapeInfoAsVector() {
 ////////////////////////////////////////////////////////////////////////
 std::vector<int8_t> NDArray::asByteVector() {
 
-    std::vector<int8_t> result((unsigned long long) this->lengthOf() * sizeOfT());
 
-    if (this->isView()) {
-        auto tmp = this->dup(this->ordering());
 
-        memcpy(result.data(), tmp->getBuffer(), (unsigned long long) lengthOf() * sizeOfT());
+    if (isS()) {
+        // string data type requires special treatment
+        syncToHost();
+        auto numWords = this->lengthOf();
+        auto offsetsBuffer = this->bufferAsT<Nd4jLong>();
+        auto headerLength = ShapeUtils::stringBufferHeaderRequirements(numWords);
+        auto dataLength = offsetsBuffer[numWords];
+        std::vector<int8_t> result(headerLength + dataLength);
 
-        delete tmp;
+        memcpy(result.data(), getBuffer(), headerLength + dataLength);
+
+        return result;
+    } else {
+        // all other types are linear
+        std::vector<int8_t> result((unsigned long long) this->lengthOf() * sizeOfT());
+
+        if (this->isView()) {
+            auto tmp = this->dup(this->ordering());
+            syncToHost();
+            memcpy(result.data(), tmp->getBuffer(), (unsigned long long) lengthOf() * sizeOfT());
+
+            delete tmp;
+        } else {
+            syncToHost();
+            memcpy(result.data(), getBuffer(), (unsigned long long) lengthOf() * sizeOfT());
+        }
+        return result;
     }
-    else {
-        memcpy(result.data(), getBuffer(), (unsigned long long) lengthOf() * sizeOfT());
-    }
-    return result;
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1584,9 +1601,7 @@ std::string* NDArray::bufferAsT() const {
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 T* NDArray::bufferAsT() const {
-    if (isS())
-        throw std::runtime_error("You can't use this method on String array");
-
+    // FIXME: do we REALLY want sync here?
     syncToHost();
 
     return reinterpret_cast<T*>(getBuffer());
@@ -3202,20 +3217,39 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
     } else if (!shape::equalsSoft(getShapeInfo(), other->getShapeInfo()))
         return false;
 
-    NDArray tmp(nd4j::DataType::FLOAT32, getContext()); // scalar = 0
+    if (isS()) {
+        // string is special case, we'll compare them one by one, considering both arrays are guaranteed to have the same length
+        for (int e = 0; e < this->lengthOf(); e++) {
+            auto s1 = this->e<std::string>(e);
+            auto s2 = other->e<std::string>(e);
 
-    ExtraArguments extras({eps});
+            if (s1 != s2)
+                return false;
+        }
 
-    NDArray::prepareSpecialUse({&tmp}, {this, other});
-    NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, getBuffer(), getShapeInfo(), getSpecialBuffer(), getSpecialShapeInfo(), extras.argumentsAsT(DataType::FLOAT32), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(), tmp.specialBuffer(), tmp.specialShapeInfo());
-    NDArray::registerSpecialUse({&tmp}, {this, other});
+        return true;
+    } else {
+        // regular numeric types
+        NDArray tmp(nd4j::DataType::FLOAT32, getContext()); // scalar = 0
 
-    synchronize("NDArray::equalsTo");
+        ExtraArguments extras({eps});
 
-    if (tmp.e<int>(0) > 0)
-        return false;
+        NDArray::prepareSpecialUse({&tmp}, {this, other});
+        NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, getBuffer(), getShapeInfo(),
+                                               getSpecialBuffer(), getSpecialShapeInfo(),
+                                               extras.argumentsAsT(DataType::FLOAT32), other->getBuffer(),
+                                               other->getShapeInfo(), other->getSpecialBuffer(),
+                                               other->getSpecialShapeInfo(), tmp.buffer(), tmp.shapeInfo(),
+                                               tmp.specialBuffer(), tmp.specialShapeInfo());
+        NDArray::registerSpecialUse({&tmp}, {this, other});
 
-    return true;
+        synchronize("NDArray::equalsTo");
+
+        if (tmp.e<int>(0) > 0)
+            return false;
+
+        return true;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////

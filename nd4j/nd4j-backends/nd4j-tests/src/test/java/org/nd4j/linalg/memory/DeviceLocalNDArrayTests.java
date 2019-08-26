@@ -29,6 +29,7 @@ import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.assertEquals;
 
@@ -67,6 +68,105 @@ public class DeviceLocalNDArrayTests extends BaseNd4jTest {
         }
     }
 
+    @Test
+    public void testDeviceLocalUpdate_1() throws Exception {
+        val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        if (numDevices < 2)
+            return;
+
+        val array = Nd4j.createFromArray(1.f, 2.f, 3.f, 4.f);
+
+        val deviceLocal = new DeviceLocalNDArray(array);
+        for (int e = 0; e < numDevices; e++) {
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    deviceLocal.get().add(1.f);
+                    Nd4j.getExecutioner().commit();;
+                }
+            });
+
+            t.start();
+            t.join();
+        }
+
+        val counter = new AtomicInteger(0);
+
+        val update = Nd4j.createFromArray(5.f, 5.f, 5.f, 5.f);
+        deviceLocal.update(update);
+
+        for (int e = 0; e < numDevices; e++) {
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    assertEquals(5.f, deviceLocal.get().meanNumber().floatValue(), 1e-5f);
+                    counter.incrementAndGet();
+                }
+            });
+
+            t.start();
+            t.join();
+        }
+
+        assertEquals(numDevices, counter.get());
+    }
+
+
+    @Test
+    public void testDelayedDeviceLocalUpdate_1() throws Exception {
+        val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        if (numDevices < 2)
+            return;
+
+        val array = Nd4j.createFromArray(5.f, 5.f, 5.f, 5.f);
+
+        val deviceLocal = new DeviceLocalNDArray(array, true);
+        val counter = new AtomicInteger(0);
+
+        for (int e = 0; e < numDevices; e++) {
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    assertEquals(5.f, deviceLocal.get().meanNumber().floatValue(), 1e-5f);
+                    counter.incrementAndGet();
+                }
+            });
+
+            t.start();
+            t.join();
+        }
+
+        assertEquals(numDevices, counter.get());
+    }
+
+    @Test
+    public void testDelayedDeviceLocalUpdate_2() throws Exception {
+        val numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
+        if (numDevices < 2)
+            return;
+
+        val array = Nd4j.createFromArray(5.f, 5.f, 5.f, 5.f);
+
+        val deviceLocal = new DeviceLocalNDArray(array, true);
+        val counter = new AtomicInteger(0);
+
+        deviceLocal.update(Nd4j.createFromArray(4.f, 4.f, 4.f, 4.f));
+
+        for (int e = 0; e < numDevices; e++) {
+            val t = new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    assertEquals(4.f, deviceLocal.get().meanNumber().floatValue(), 1e-5f);
+                    counter.incrementAndGet();
+                }
+            });
+
+            t.start();
+            t.join();
+        }
+
+        assertEquals(numDevices, counter.get());
+    }
 
     @Override
     public char ordering() {

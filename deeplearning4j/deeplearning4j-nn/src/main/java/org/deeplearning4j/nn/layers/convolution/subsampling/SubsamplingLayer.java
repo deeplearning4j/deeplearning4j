@@ -289,8 +289,14 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 b = DynamicCustomOp.builder("maxpool2d");
                 break;
             case AVG:
-                b = DynamicCustomOp.builder("maxpool2d");
-                extra = 1;    //Divide by kH*kW not "number present" to match backward pass     -- TODO change this to support both legacy behaviour (deserialized nets) and "exclude" by default for new nets
+                b = DynamicCustomOp.builder("avgpool2d");
+                if(layerConf().isAvgPoolIncludePadInDivisor()){
+                    //Mostly this is a legacy case - beta4 and earlier models.
+                    extra = 1;    //Divide by "number present" excluding padding
+                } else {
+                    //Default behaviour
+                    extra = 0;    //Divide by kH*kW not "number present"
+                }
                 break;
             case PNORM:
                 b = DynamicCustomOp.builder("pnormpool2d");

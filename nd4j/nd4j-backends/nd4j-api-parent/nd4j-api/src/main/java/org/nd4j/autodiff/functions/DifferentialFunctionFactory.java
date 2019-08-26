@@ -48,25 +48,7 @@ import org.nd4j.linalg.api.ops.impl.indexaccum.IMax;
 import org.nd4j.linalg.api.ops.impl.indexaccum.IMin;
 import org.nd4j.linalg.api.ops.impl.indexaccum.LastIndex;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.AvgPooling2D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Col2Im;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv1D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv2D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Conv3D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv2D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.DeConv3DDerivative;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.DepthToSpace;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2col;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Im2colBp;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.LocalResponseNormalization;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling3D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.SConv2D;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.SpaceToDepth;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2d;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.Upsampling2dDerivative;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
@@ -590,7 +572,7 @@ public class DifferentialFunctionFactory {
      */
     public SDVariable avgPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
         pooling3DConfig.setType(Pooling3D.Pooling3DType.AVG);
-        return pooling3d(input, pooling3DConfig);
+        return new AvgPooling3D(sameDiff(), input, pooling3DConfig).outputVariable();
     }
 
 
@@ -603,17 +585,7 @@ public class DifferentialFunctionFactory {
      */
     public SDVariable maxPooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
         pooling3DConfig.setType(Pooling3D.Pooling3DType.MAX);
-        return pooling3d(input, pooling3DConfig);
-    }
-
-    public SDVariable pooling3d(SDVariable input, Pooling3DConfig pooling3DConfig) {
-        Pooling3D pool3d = Pooling3D.builder()
-                .inputs(new SDVariable[]{input})
-                .sameDiff(sameDiff())
-                .pooling3DConfig(pooling3DConfig)
-                .type(pooling3DConfig.getType())
-                .build();
-        return pool3d.outputVariable();
+        return new MaxPooling3D(sameDiff(), input, pooling3DConfig).outputVariable();
     }
 
 

@@ -33,14 +33,21 @@ namespace nd4j {
         void* _execStream = nullptr;
         void* _specialStream = nullptr;
         bool _allocated = false;
+        bool _initialized = false;
 
         int _deviceId = -1;
 
         void initialize();
     public:
         ContextBuffers();
+        ContextBuffers(const ContextBuffers &other);
         ContextBuffers(void* rPointer, void* sPointer, void* aPointer, bool isOwner = false);
         ~ContextBuffers();
+
+        ContextBuffers& operator=(const ContextBuffers& other);
+        ContextBuffers& operator=(ContextBuffers&& other);
+
+        void release();
 
         void* reductionBuffer();
         void* scalarBuffer();
@@ -56,6 +63,8 @@ namespace nd4j {
         void triggerOwnership(bool isOwner);
 
         int deviceId();
+
+        bool isInitialized();
     };
 }
 

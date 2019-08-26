@@ -35,7 +35,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(dim < input->rankOf(), 0, "Size_At: Dim can't be higher then input rank")
 
-            output->assign(input->sizeAt(dim));
+            output->p(0, input->sizeAt(dim));
+            output->syncToDevice();
 
             return Status::OK();
         }
@@ -47,7 +48,8 @@ namespace nd4j {
         DECLARE_TYPES(size_at) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes(DataType::INT64);
+                    ->setAllowedOutputTypes(DataType::INT64)
+                    ->allowOverride(true);
         }
     }
 }

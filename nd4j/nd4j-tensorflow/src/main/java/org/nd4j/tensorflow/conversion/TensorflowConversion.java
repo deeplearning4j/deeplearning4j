@@ -16,7 +16,7 @@
 
 package org.nd4j.tensorflow.conversion;
 
-import com.github.os72.protobuf351.InvalidProtocolBufferException;
+import org.nd4j.shade.protobuf.InvalidProtocolBufferException;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;

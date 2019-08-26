@@ -84,8 +84,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                 if (length < ELEMENT_THRESHOLD) {
 
                     for (int i = 0; i < length; i++) {
-                        if (currMax < input->e<X>(i*eleStride)) {
-                            currMax = input->e<X>(i*eleStride);
+                        if (currMax < input->e<X>(i)) {
+                            currMax = input->e<X>(i);
                             maxIdx = i;
                         }
                         output->p<Z>(i, 0.f);
@@ -97,8 +97,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         int maxIdxLocal = maxIdx;
                         auto currMaxLocal = currMax;
                         for (int i = 0; i < length; i++) {
-                            if (currMaxLocal < input->e<X>(i*eleStride)) {
-                                currMaxLocal = input->e<X>(i*eleStride);
+                            if (currMaxLocal < input->e<X>(i)) {
+                                currMaxLocal = input->e<X>(i);
                                        maxIdxLocal = i;
                             }
                             output->p<Z>(i, 0.f);
@@ -152,7 +152,6 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
             if (end > tads) end = tads;
 
             for (int r = start; r < end; r++) {
-                if (tadEWS > 0 && zEWS > 0 && dimensionsLength == 1) {
                     auto rX = const_cast<NDArray*>(input)->bufferAsT<X>() + tadOffsets[r];
                     auto rZ = output->bufferAsT<Z>() + zOfsets[r];
 
@@ -198,44 +197,6 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                             rZ[zOffset] = maxIdx == i ? (Z) 1 : (Z) 0;
                         }
                     }
-                } 
-                else {
-                    int tadsPerThread = tads / TAD_THRESHOLD;
-                    int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                    num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-                    Nd4jLong offset = tadOffsets[r];
-                    Nd4jLong shapeIter[MAX_RANK];
-                    Nd4jLong coord[MAX_RANK];
-                    int dim;
-                    Nd4jLong xStridesIter[MAX_RANK];
-                    Nd4jLong resultStridesIter[MAX_RANK];
-                    Nd4jLong *xShape = shape::shapeOf(tadShapeShapeInfo);
-                    Nd4jLong *xStride = shape::stride(tadShapeShapeInfo);
-                    Nd4jLong *resultStride = shape::stride(tadShapeShapeInfo);
-                    int rank = shape::rank(tadShapeShapeInfo);
-                    auto xPointer = const_cast<NDArray*>(input)->bufferAsT<X>() + offset;
-                    auto resultPointer = output->bufferAsT<Z>() + offset;
-                    auto maxValue = xPointer[0];
-
-                    auto maxCursor = resultPointer;
-                    Nd4jPointer maxCursorLong = reinterpret_cast<Nd4jPointer>(maxCursor);
-                    
-                    if (PrepareTwoRawArrayIter<X,Z>(rank, xShape, xPointer, xStride, resultPointer, resultStride, &rank, shapeIter, &xPointer, xStridesIter, &resultPointer, resultStridesIter) >= 0) {
-                        ND4J_RAW_ITER_START(dim, rank, coord, shapeIter); 
-                        {
-                            if (maxValue < xPointer[0]) {
-                                maxCursor = resultPointer;
-                                maxCursorLong = reinterpret_cast<Nd4jPointer>(resultPointer);
-                                maxValue = xPointer[0];
-                            }
-                            resultPointer[0] = (Z) 0;
-                        }
-                        ND4J_RAW_ITER_TWO_NEXT(dim, rank, coord, shapeIter, xPointer, xStridesIter, resultPointer, resultStridesIter);
-                        maxCursor = reinterpret_cast<Z*>(maxCursorLong);
-                        maxCursor[0] = (Z) 1;
-                    }
-                }
             }
         }
     }

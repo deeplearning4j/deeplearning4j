@@ -31,7 +31,8 @@ namespace nd4j {
 
             REQUIRE_TRUE(output->isScalar(), 0, "Size output should be scalar");
 
-            output->assign(input->lengthOf());
+            output->p(0, input->lengthOf());
+            output->syncToDevice();
 
             return Status::OK();
         }
@@ -42,7 +43,8 @@ namespace nd4j {
         DECLARE_TYPES(size) {
             getOpDescriptor()
                     ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_INTS});
+                    ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS})
+                    ->allowOverride(true);
         }
     }
 }

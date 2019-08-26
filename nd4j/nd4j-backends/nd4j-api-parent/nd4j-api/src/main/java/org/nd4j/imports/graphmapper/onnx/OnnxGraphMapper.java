@@ -16,13 +16,13 @@
 
 package org.nd4j.imports.graphmapper.onnx;
 
-import com.github.os72.protobuf351.ByteString;
-import com.github.os72.protobuf351.Message;
+import org.nd4j.shade.protobuf.ByteString;
+import org.nd4j.shade.protobuf.Message;
 import com.google.common.primitives.Floats;
 import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -52,7 +52,7 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
-public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, OnnxProto3.NodeProto, OnnxProto3.AttributeProto,  onnx.OnnxProto3.TypeProto.Tensor> {
+public class OnnxGraphMapper extends BaseGraphMapper<Onnx.GraphProto, Onnx.NodeProto, Onnx.AttributeProto,  onnx.Onnx.TypeProto.Tensor> {
     private static OnnxGraphMapper INSTANCE = new OnnxGraphMapper();
 
 
@@ -64,9 +64,9 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     @Override
     public void dumpBinaryProtoAsText(InputStream inputFile, File outputFile) {
         try {
-            OnnxProto3.ModelProto graphDef = OnnxProto3.ModelProto.parseFrom(inputFile);
+            Onnx.ModelProto graphDef = Onnx.ModelProto.parseFrom(inputFile);
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputFile,true));
-            for(OnnxProto3.NodeProto node : graphDef.getGraph().getNodeList()) {
+            for(Onnx.NodeProto node : graphDef.getGraph().getNodeList()) {
                 bufferedWriter.write(node.toString() + "\n");
             }
 
@@ -88,7 +88,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
      * @param node
      * @param graph
      */
-    public void initFunctionFromProperties(String mappedTfName, DifferentialFunction on, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.NodeProto node, OnnxProto3.GraphProto graph) {
+    public void initFunctionFromProperties(String mappedTfName, DifferentialFunction on, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.NodeProto node, Onnx.GraphProto graph) {
         val properties = on.mappingsForFunction();
         val tfProperties = properties.get(mappedTfName);
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
@@ -170,18 +170,18 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public boolean isOpIgnoreException(OnnxProto3.NodeProto node) {
+    public boolean isOpIgnoreException(Onnx.NodeProto node) {
         return false;
     }
 
     @Override
-    public String getTargetMappingForOp(DifferentialFunction function, OnnxProto3.NodeProto node) {
+    public String getTargetMappingForOp(DifferentialFunction function, Onnx.NodeProto node) {
         return function.opName();
     }
 
 
     @Override
-    public void mapProperty(String name, DifferentialFunction on, OnnxProto3.NodeProto node, OnnxProto3.GraphProto graph, SameDiff sameDiff, Map<String, Map<String, PropertyMapping>> propertyMappingsForFunction) {
+    public void mapProperty(String name, DifferentialFunction on, Onnx.NodeProto node, Onnx.GraphProto graph, SameDiff sameDiff, Map<String, Map<String, PropertyMapping>> propertyMappingsForFunction) {
         val mapping = propertyMappingsForFunction.get(name).get(getTargetMappingForOp(on, node));
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(on);
         /**
@@ -263,7 +263,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public OnnxProto3.NodeProto getNodeWithNameFromGraph(OnnxProto3.GraphProto graph, String name) {
+    public Onnx.NodeProto getNodeWithNameFromGraph(Onnx.GraphProto graph, String name) {
         for(int i = 0; i < graph.getNodeCount(); i++) {
             val node = graph.getNode(i);
             if(node.getName().equals(name))
@@ -274,21 +274,21 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public boolean isPlaceHolderNode(OnnxProto3.TypeProto.Tensor node) {
+    public boolean isPlaceHolderNode(Onnx.TypeProto.Tensor node) {
         return false;
     }
 
     @Override
-    public List<String> getControlDependencies(OnnxProto3.NodeProto node) {
+    public List<String> getControlDependencies(Onnx.NodeProto node) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 
     @Override
     public void dumpBinaryProtoAsText(File inputFile, File outputFile) {
         try {
-            OnnxProto3.ModelProto graphDef = OnnxProto3.ModelProto.parseFrom(new BufferedInputStream(new FileInputStream(inputFile)));
+            Onnx.ModelProto graphDef = Onnx.ModelProto.parseFrom(new BufferedInputStream(new FileInputStream(inputFile)));
             BufferedWriter bufferedWriter = new BufferedWriter(new FileWriter(outputFile,true));
-            for(OnnxProto3.NodeProto node : graphDef.getGraph().getNodeList()) {
+            for(Onnx.NodeProto node : graphDef.getGraph().getNodeList()) {
                 bufferedWriter.write(node.toString());
             }
 
@@ -316,12 +316,12 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public Map<String,onnx.OnnxProto3.TypeProto.Tensor> variablesForGraph(OnnxProto3.GraphProto graphProto) {
+    public Map<String,onnx.Onnx.TypeProto.Tensor> variablesForGraph(Onnx.GraphProto graphProto) {
         /**
          * Need to figure out why
          * gpu_0/conv1_1 isn't present in VGG
          */
-        Map<String,onnx.OnnxProto3.TypeProto.Tensor> ret = new HashMap<>();
+        Map<String,onnx.Onnx.TypeProto.Tensor> ret = new HashMap<>();
         for(int i = 0; i < graphProto.getInputCount(); i++) {
             ret.put(graphProto.getInput(i).getName(),graphProto.getInput(i).getType().getTensorType());
         }
@@ -356,19 +356,19 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public String translateToSameDiffName(String name, OnnxProto3.NodeProto node) {
+    public String translateToSameDiffName(String name, Onnx.NodeProto node) {
         return null;
     }
 
 
-    protected void addDummyTensor(String name, Map<String, OnnxProto3.TypeProto.Tensor> to) {
-        OnnxProto3.TensorShapeProto.Dimension dim =  OnnxProto3.TensorShapeProto.Dimension.
+    protected void addDummyTensor(String name, Map<String, Onnx.TypeProto.Tensor> to) {
+        Onnx.TensorShapeProto.Dimension dim =  Onnx.TensorShapeProto.Dimension.
                 newBuilder()
                 .setDimValue(-1)
                 .build();
-        OnnxProto3.TypeProto.Tensor typeProto = OnnxProto3.TypeProto.Tensor.newBuilder()
+        Onnx.TypeProto.Tensor typeProto = Onnx.TypeProto.Tensor.newBuilder()
                 .setShape(
-                        OnnxProto3.TensorShapeProto.newBuilder()
+                        Onnx.TensorShapeProto.newBuilder()
                                 .addDim(dim)
                                 .addDim(dim).build())
                 .build();
@@ -377,23 +377,23 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
     @Override
     public Message.Builder getNewGraphBuilder() {
-        return OnnxProto3.GraphProto.newBuilder();
+        return Onnx.GraphProto.newBuilder();
     }
 
     @Override
-    public OnnxProto3.GraphProto parseGraphFrom(byte[] inputStream) throws IOException {
-        return OnnxProto3.ModelProto.parseFrom(inputStream).getGraph();
+    public Onnx.GraphProto parseGraphFrom(byte[] inputStream) throws IOException {
+        return Onnx.ModelProto.parseFrom(inputStream).getGraph();
     }
 
     @Override
-    public OnnxProto3.GraphProto parseGraphFrom(InputStream inputStream) throws IOException {
-        return OnnxProto3.ModelProto.parseFrom(inputStream).getGraph();
+    public Onnx.GraphProto parseGraphFrom(InputStream inputStream) throws IOException {
+        return Onnx.ModelProto.parseFrom(inputStream).getGraph();
     }
 
     @Override
-    public void mapNodeType(OnnxProto3.NodeProto tfNode, ImportState<OnnxProto3.GraphProto, OnnxProto3.TypeProto.Tensor> importState,
-                            OpImportOverride<OnnxProto3.GraphProto, OnnxProto3.NodeProto, OnnxProto3.AttributeProto> opImportOverride,
-                            OpImportFilter<OnnxProto3.GraphProto, OnnxProto3.NodeProto, OnnxProto3.AttributeProto> opFilter) {
+    public void mapNodeType(Onnx.NodeProto tfNode, ImportState<Onnx.GraphProto, Onnx.TypeProto.Tensor> importState,
+                            OpImportOverride<Onnx.GraphProto, Onnx.NodeProto, Onnx.AttributeProto> opImportOverride,
+                            OpImportFilter<Onnx.GraphProto, Onnx.NodeProto, Onnx.AttributeProto> opFilter) {
         val differentialFunction = DifferentialFunctionClassHolder.getInstance().getOpWithOnnxName(tfNode.getOpType());
         if(differentialFunction == null) {
             throw new NoOpNameFoundException("No op name found " + tfNode.getOpType());
@@ -425,13 +425,13 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public DataType dataTypeForTensor(OnnxProto3.TypeProto.Tensor tensorProto, int outputNum) {
+    public DataType dataTypeForTensor(Onnx.TypeProto.Tensor tensorProto, int outputNum) {
        return nd4jTypeFromOnnxType(tensorProto.getElemType());
     }
 
     @Override
-    public boolean isStringType(OnnxProto3.TypeProto.Tensor tensor) {
-        return tensor.getElemType() == OnnxProto3.TensorProto.DataType.STRING;
+    public boolean isStringType(Onnx.TypeProto.Tensor tensor) {
+        return tensor.getElemType() == Onnx.TensorProto.DataType.STRING;
     }
 
 
@@ -440,7 +440,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
      * @param dataType the data type to convert
      * @return the nd4j type for the onnx type
      */
-    public DataType nd4jTypeFromOnnxType(OnnxProto3.TensorProto.DataType dataType) {
+    public DataType nd4jTypeFromOnnxType(Onnx.TensorProto.DataType dataType) {
         switch (dataType) {
             case DOUBLE: return DataType.DOUBLE;
             case FLOAT: return DataType.FLOAT;
@@ -452,8 +452,8 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public String getAttrValueFromNode(OnnxProto3.NodeProto nodeProto, String key) {
-        for(OnnxProto3.AttributeProto attributeProto : nodeProto.getAttributeList()) {
+    public String getAttrValueFromNode(Onnx.NodeProto nodeProto, String key) {
+        for(Onnx.AttributeProto attributeProto : nodeProto.getAttributeList()) {
             if(attributeProto.getName().equals(key)) {
                 return attributeProto.getS().toString();
             }
@@ -463,29 +463,29 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public long[] getShapeFromAttribute(OnnxProto3.AttributeProto attributeProto) {
+    public long[] getShapeFromAttribute(Onnx.AttributeProto attributeProto) {
         return Longs.toArray(attributeProto.getT().getDimsList());
     }
 
     @Override
-    public boolean isPlaceHolder(OnnxProto3.TypeProto.Tensor nodeType) {
+    public boolean isPlaceHolder(Onnx.TypeProto.Tensor nodeType) {
         return false;
     }
 
     @Override
-    public boolean isConstant(OnnxProto3.TypeProto.Tensor nodeType) {
+    public boolean isConstant(Onnx.TypeProto.Tensor nodeType) {
         return false;
     }
 
 
     @Override
-    public INDArray getNDArrayFromTensor(String tensorName, OnnxProto3.TypeProto.Tensor tensorProto, OnnxProto3.GraphProto graph) {
+    public INDArray getNDArrayFromTensor(String tensorName, Onnx.TypeProto.Tensor tensorProto, Onnx.GraphProto graph) {
         DataType type = dataTypeForTensor(tensorProto, 0);
         if(!tensorProto.isInitialized()) {
             throw new ND4JIllegalStateException("Unable to retrieve ndarray. Tensor was not initialized");
         }
 
-        OnnxProto3.TensorProto tensor = null;
+        Onnx.TensorProto tensor = null;
         for(int i = 0; i < graph.getInitializerCount(); i++) {
             val initializer = graph.getInitializer(i);
             if(initializer.getName().equals(tensorName)) {
@@ -508,7 +508,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
         return arr;
     }
 
-    public INDArray mapTensorProto(OnnxProto3.TensorProto tensor) {
+    public INDArray mapTensorProto(Onnx.TensorProto tensor) {
         if(tensor == null)
             return null;
 
@@ -527,7 +527,7 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
     }
 
     @Override
-    public long[] getShapeFromTensor(onnx.OnnxProto3.TypeProto.Tensor tensorProto) {
+    public long[] getShapeFromTensor(onnx.Onnx.TypeProto.Tensor tensorProto) {
         val ret = new long[Math.max(2,tensorProto.getShape().getDimCount())];
         int dimCount = tensorProto.getShape().getDimCount();
         if(dimCount >= 2)
@@ -548,11 +548,11 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
     /**
      * Get the shape from a tensor proto.
-     * Note that this is different from {@link #getShapeFromTensor(OnnxProto3.TensorProto)}
+     * Note that this is different from {@link #getShapeFromTensor(Onnx.TensorProto)}
      * @param tensorProto the tensor to get the shape from
      * @return
      */
-    public long[] getShapeFromTensor(OnnxProto3.TensorProto tensorProto) {
+    public long[] getShapeFromTensor(Onnx.TensorProto tensorProto) {
         val ret = new long[Math.max(2,tensorProto.getDimsCount())];
         int dimCount = tensorProto.getDimsCount();
         if(dimCount >= 2)
@@ -577,74 +577,74 @@ public class OnnxGraphMapper extends BaseGraphMapper<OnnxProto3.GraphProto, Onnx
 
 
     @Override
-    public String getInputFromNode(OnnxProto3.NodeProto node, int index) {
+    public String getInputFromNode(Onnx.NodeProto node, int index) {
         return node.getInput(index);
     }
 
     @Override
-    public int numInputsFor(OnnxProto3.NodeProto nodeProto) {
+    public int numInputsFor(Onnx.NodeProto nodeProto) {
         return nodeProto.getInputCount();
     }
 
 
     @Override
-    public long[] getShapeFromAttr(OnnxProto3.AttributeProto attr) {
+    public long[] getShapeFromAttr(Onnx.AttributeProto attr) {
         return Longs.toArray(attr.getT().getDimsList());
     }
 
     @Override
-    public Map<String, OnnxProto3.AttributeProto> getAttrMap(OnnxProto3.NodeProto nodeProto) {
-        Map<String,OnnxProto3.AttributeProto> proto = new HashMap<>();
+    public Map<String, Onnx.AttributeProto> getAttrMap(Onnx.NodeProto nodeProto) {
+        Map<String,Onnx.AttributeProto> proto = new HashMap<>();
         for(int i = 0; i < nodeProto.getAttributeCount(); i++) {
-            OnnxProto3.AttributeProto attributeProto = nodeProto.getAttribute(i);
+            Onnx.AttributeProto attributeProto = nodeProto.getAttribute(i);
             proto.put(attributeProto.getName(),attributeProto);
         }
         return proto;
     }
 
     @Override
-    public String getName(OnnxProto3.NodeProto nodeProto) {
+    public String getName(Onnx.NodeProto nodeProto) {
         return nodeProto.getName();
     }
 
     @Override
-    public boolean alreadySeen(OnnxProto3.NodeProto nodeProto) {
+    public boolean alreadySeen(Onnx.NodeProto nodeProto) {
         return false;
     }
 
     @Override
-    public boolean isVariableNode(OnnxProto3.NodeProto nodeProto) {
+    public boolean isVariableNode(Onnx.NodeProto nodeProto) {
         return nodeProto.getOpType().contains("Var");
     }
 
     @Override
-    public boolean shouldSkip(OnnxProto3.NodeProto opType) {
+    public boolean shouldSkip(Onnx.NodeProto opType) {
         return false;
     }
 
     @Override
-    public boolean hasShape(OnnxProto3.NodeProto nodeProto) {
+    public boolean hasShape(Onnx.NodeProto nodeProto) {
         return false;
     }
 
     @Override
-    public long[] getShape(OnnxProto3.NodeProto nodeProto) {
+    public long[] getShape(Onnx.NodeProto nodeProto) {
         return null;
     }
 
     @Override
-    public INDArray getArrayFrom(OnnxProto3.NodeProto nodeProto, OnnxProto3.GraphProto graph) {
+    public INDArray getArrayFrom(Onnx.NodeProto nodeProto, Onnx.GraphProto graph) {
 
         return null;
     }
 
     @Override
-    public String getOpType(OnnxProto3.NodeProto nodeProto) {
+    public String getOpType(Onnx.NodeProto nodeProto) {
         return nodeProto.getOpType();
     }
 
     @Override
-    public List<OnnxProto3.NodeProto> getNodeList(OnnxProto3.GraphProto graphProto) {
+    public List<Onnx.NodeProto> getNodeList(Onnx.GraphProto graphProto) {
         return graphProto.getNodeList();
     }
 

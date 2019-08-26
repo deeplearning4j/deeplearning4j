@@ -21,6 +21,8 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.remote.clients.serde.BinaryDeserializer;
+import org.nd4j.remote.clients.serde.BinarySerializer;
 import org.nd4j.remote.clients.serde.JsonDeserializer;
 import org.nd4j.remote.clients.serde.JsonSerializer;
 import org.nd4j.adapters.InferenceAdapter;
@@ -35,6 +37,7 @@ import java.io.InputStreamReader;
 import java.util.LinkedHashMap;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
+import static javax.ws.rs.core.MediaType.APPLICATION_OCTET_STREAM;
 
 /**
  * This servlet provides SameDiff model serving capabilities
@@ -50,9 +53,14 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 @Builder
 public class SameDiffServlet<I, O> implements ModelServingServlet<I, O> {
 
+    protected static final String typeJson = APPLICATION_JSON;
+    protected static final String typeBinary = APPLICATION_OCTET_STREAM;
+
     protected SameDiff sdModel;
     protected JsonSerializer<O> serializer;
     protected JsonDeserializer<I> deserializer;
+    protected BinarySerializer<O> binarySerializer;
+    protected BinaryDeserializer<I> binaryDeserializer;
     protected InferenceAdapter<I, O> inferenceAdapter;
 
     protected String[] orderedInputNodes;
@@ -60,13 +68,35 @@ public class SameDiffServlet<I, O> implements ModelServingServlet<I, O> {
 
     protected final static String SERVING_ENDPOINT = "/v1/serving";
     protected final static String LISTING_ENDPOINT = "/v1";
-    protected final static int PAYLOAD_SIZE_LIMIT = 10 * 1024; // TODO: should be customizable
+    protected final static int PAYLOAD_SIZE_LIMIT = 10 * 1024 * 1024; // TODO: should be customizable
 
-    protected SameDiffServlet(@NonNull InferenceAdapter<I, O> inferenceAdapter, @NonNull JsonSerializer<O> serializer, @NonNull JsonDeserializer<I> deserializer){
+    protected SameDiffServlet(@NonNull InferenceAdapter<I, O> inferenceAdapter, JsonSerializer<O> serializer, JsonDeserializer<I> deserializer){
         this.serializer = serializer;
         this.deserializer = deserializer;
         this.inferenceAdapter = inferenceAdapter;
     }
+
+    protected SameDiffServlet(@NonNull InferenceAdapter<I, O> inferenceAdapter,
+                              BinarySerializer<O> serializer, BinaryDeserializer<I> deserializer){
+        this.binarySerializer = serializer;
+        this.binaryDeserializer = deserializer;
+        this.inferenceAdapter = inferenceAdapter;
+    }
+
+    protected SameDiffServlet(@NonNull InferenceAdapter<I, O> inferenceAdapter,
+                              JsonSerializer<O> jsonSerializer, JsonDeserializer<I> jsonDeserializer,
+                              BinarySerializer<O> binarySerializer, BinaryDeserializer<I> binaryDeserializer){
+
+        this.serializer = jsonSerializer;
+        this.deserializer = jsonDeserializer;
+        this.binarySerializer = binarySerializer;
+        this.binaryDeserializer = binaryDeserializer;
+        this.inferenceAdapter = inferenceAdapter;
+
+        if (serializer != null && binarySerializer != null || serializer == null && binarySerializer == null)
+            throw new IllegalStateException("Binary and JSON serializers/deserializers are mutually exclusive and mandatory.");
+    }
+
 
     @Override
     public void init(ServletConfig servletConfig) throws ServletException {
@@ -108,7 +138,7 @@ public class SameDiffServlet<I, O> implements ModelServingServlet<I, O> {
     protected boolean validateRequest(HttpServletRequest request, HttpServletResponse response)
                                                                             throws IOException{
         val contentType = request.getContentType();
-        if (!StringUtils.equals(contentType, APPLICATION_JSON)) {
+        if (!StringUtils.equals(contentType, typeJson)) {
             sendBadContentType(contentType, response);
             int contentLength = request.getContentLength();
             if (contentLength > PAYLOAD_SIZE_LIMIT) {
@@ -125,7 +155,7 @@ public class SameDiffServlet<I, O> implements ModelServingServlet<I, O> {
         String path = request.getPathInfo();
         if (path.equals(LISTING_ENDPOINT)) {
             val contentType = request.getContentType();
-            if (!StringUtils.equals(contentType, APPLICATION_JSON)) {
+            if (!StringUtils.equals(contentType, typeJson)) {
                 sendBadContentType(contentType, response);
             }
             processorReturned = processor.listEndpoints();
@@ -147,7 +177,7 @@ public class SameDiffServlet<I, O> implements ModelServingServlet<I, O> {
         String path = request.getPathInfo();
         if (path.equals(SERVING_ENDPOINT)) {
             val contentType = request.getContentType();
-            /*Preconditions.checkArgument(StringUtils.equals(contentType, APPLICATION_JSON),
+            /*Preconditions.checkArgument(StringUtils.equals(contentType, typeJson),
                     "Content type is " + contentType);*/
             if (validateRequest(request,response)) {
                 val stream = request.getInputStream();

@@ -264,6 +264,12 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
     }
 
     @Override
+    public boolean wasClosed() {
+        return false;
+    }
+
+
+    @Override
     public int underlyingRank() {
         return rank;
     }
