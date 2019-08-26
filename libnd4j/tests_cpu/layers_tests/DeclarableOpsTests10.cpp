@@ -940,24 +940,6 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test6) {
     delete results;
 }
 
-// @Test
-//     public void testHistogramFixedWidth(){
-//         //Bins: [-inf, 0.2), [0.2, 0.4), [0.4, 0.6), [0.6, 0.8), [0.8, inf]
-//         INDArray in = Nd4j.createFromArray(0.0, 0.1, 0.1, 0.3, 0.5, 0.5, 0.9);
-//         INDArray range = Nd4j.createFromArray(0.0, 1.0);
-//         INDArray n = Nd4j.scalar(5);
-
-//         INDArray out = Nd4j.create(DataType.INT, 5);
-
-//         Nd4j.exec(DynamicCustomOp.builder("histogram_fixed_width")
-//                 .addInputs(in, range, n)
-//                 .addOutputs(out)
-//                 .build());
-
-//         INDArray exp = Nd4j.createFromArray(3, 1, 2, 0, 1);
-//         assertEquals(exp, out);
-//     }
-
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_1) {
 
