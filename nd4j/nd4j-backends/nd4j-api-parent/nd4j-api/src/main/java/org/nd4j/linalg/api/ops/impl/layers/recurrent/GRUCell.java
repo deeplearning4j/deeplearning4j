@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;

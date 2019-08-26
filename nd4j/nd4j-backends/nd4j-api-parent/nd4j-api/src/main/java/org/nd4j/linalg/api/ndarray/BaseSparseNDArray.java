@@ -328,12 +328,10 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return sparseInformation;
     }
 
-
     @Override
     public LongBuffer shapeInfo() {
         return null;
     }
-
 
     @Override
     public boolean isCompressed() {
@@ -363,7 +361,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public int[] sparseOffsets() {
         return Shape.sparseOffsets(sparseInformation);
     }
-
 
     @Override
     public int stride(int dimension) {

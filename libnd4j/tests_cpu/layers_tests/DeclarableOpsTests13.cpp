@@ -845,5 +845,44 @@ TEST_F(DeclarableOpsTests13, batch_to_space_nd_3) {
     delete result;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, mergemax_1) {
+
+    NDArray x1('c', {5, 5}, nd4j::DataType::FLOAT32);
+    NDArray x2('c', {5, 5}, nd4j::DataType::FLOAT32);
+    NDArray x3('c', {5, 5}, nd4j::DataType::FLOAT32);
+    NDArray e('c', {5, 5}, nd4j::DataType::FLOAT32);
+    x1.assign(3);
+    x2.assign(1);
+    x3.assign(2);
+    e.assign(3);
+
+
+    nd4j::ops::mergemax op;
+    auto result = op.execute({&x1, &x2, &x3}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printBuffer();
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, mergemax_2) {
+
+    NDArray x1('c', {1, 3}, {0., 1, 2}, nd4j::DataType::FLOAT32);
+    NDArray x2('c', {1, 1}, {1.}, nd4j::DataType::FLOAT32);
+    NDArray out('c', {1, 3}, {-1., -1, -1}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::mergemax op;
+    auto status = op.execute({&x1, &x2}, {&out}, {}, {}, {});
+
+    ASSERT_EQ(20, status);
+}
+
 
 

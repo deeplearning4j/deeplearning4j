@@ -44,7 +44,7 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 1) {
         auto input = INPUT_VARIABLE(i);
         auto currentRank = input->rankOf();
 
-// TODO: follow two lines are accordingly with current tf.concat spec. Commented for compatibility with legacy
+// TODO: follow two lines are in accordance to current tf.concat spec. Commented for compatibility with legacy
 //        REQUIRE_TRUE(currentRank > 0, 0, "Rank of input variable %i must be greater 0, but is %lld instead.", i, currentRank);
 //        REQUIRE_TRUE(theFirstRank == currentRank, 0, "Number of dimensions in concat should be equals, but for %i input variable %lld != %lld appears.", i, currentRank, theFirstRank);
         if(!input->isEmpty()) {

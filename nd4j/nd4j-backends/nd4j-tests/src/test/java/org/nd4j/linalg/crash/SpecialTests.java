@@ -551,15 +551,13 @@ public class SpecialTests extends BaseNd4jTest {
         int[] inputShape = new int[]{1, 2, 2, 1};
 
         int M = 2;
-        int[] blockShape = new int[]{M, 1};
-        int[] paddingShape = new int[]{M, 2};
 
         INDArray input = Nd4j.randn(inputShape).castTo(DataType.DOUBLE);
-        INDArray blocks = Nd4j.create(new float[]{2, 2}, blockShape).castTo(DataType.INT);
-        INDArray padding = Nd4j.create(new float[]{0, 0, 0, 0}, paddingShape).castTo(DataType.INT);
+        INDArray blocks = Nd4j.createFromArray(2, 2);
+        INDArray padding = Nd4j.createFromArray(0, 0, 0, 0).reshape(2,2);
 
         INDArray expOut = Nd4j.create(DataType.DOUBLE, miniBatch, 1, 1, 1);
-        val op = DynamicCustomOp.builder("space_to_batch")
+        val op = DynamicCustomOp.builder("space_to_batch_nd")
                 .addInputs(input, blocks, padding)
                 .addOutputs(expOut).build();
         Nd4j.getExecutioner().execAndReturn(op);
@@ -573,15 +571,13 @@ public class SpecialTests extends BaseNd4jTest {
         int[] inputShape = new int[]{miniBatch, 1, 1, 1};
 
         int M = 2;
-        int[] blockShape = new int[]{M, 1};
-        int[] cropShape = new int[]{M, 2};
 
         INDArray input = Nd4j.randn(inputShape).castTo(DataType.DOUBLE);
-        INDArray blocks = Nd4j.create(new float[]{2, 2}, blockShape).castTo(DataType.INT);
-        INDArray crops = Nd4j.create(new float[]{0, 0, 0, 0}, cropShape).castTo(DataType.INT);
+        INDArray blocks = Nd4j.createFromArray(2, 2);
+        INDArray crops = Nd4j.createFromArray(0, 0, 0, 0).reshape(2,2);
 
         INDArray expOut = Nd4j.create(DataType.DOUBLE, 1, 2, 2, 1);
-        DynamicCustomOp op = DynamicCustomOp.builder("batch_to_space")
+        DynamicCustomOp op = DynamicCustomOp.builder("batch_to_space_nd")
                 .addInputs(input, blocks, crops)
                 .addOutputs(expOut).build();
         Nd4j.getExecutioner().execAndReturn(op);

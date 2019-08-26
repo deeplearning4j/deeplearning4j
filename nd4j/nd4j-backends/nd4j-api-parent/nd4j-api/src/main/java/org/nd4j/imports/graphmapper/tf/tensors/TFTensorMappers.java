@@ -1,6 +1,6 @@
 package org.nd4j.imports.graphmapper.tf.tensors;
 
-import com.github.os72.protobuf351.Descriptors;
+import org.nd4j.shade.protobuf.Descriptors;
 import org.bytedeco.javacpp.indexer.Bfloat16ArrayIndexer;
 import org.bytedeco.javacpp.indexer.HalfIndexer;
 import org.nd4j.linalg.api.buffer.DataType;

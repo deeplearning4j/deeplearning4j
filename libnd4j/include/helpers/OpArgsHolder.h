@@ -26,27 +26,42 @@
 #include <dll.h>
 
 namespace nd4j {
- 
+
 class ND4J_EXPORT OpArgsHolder {
 
-private: 
+private:
+
 	std::vector<NDArray*> _inArrs = std::vector<NDArray*>();
-    std::vector<double>           _tArgs  = std::vector<double>();
-    std::vector<Nd4jLong>    _iArgs  = std::vector<Nd4jLong>();
-    std::vector<bool>        _bArgs  = std::vector<bool>();
+    std::vector<double>   _tArgs  = std::vector<double>();
+    std::vector<Nd4jLong> _iArgs  = std::vector<Nd4jLong>();
+    std::vector<bool>     _bArgs  = std::vector<bool>();
+
+    std::vector<bool> _isArrAlloc = std::vector<bool>();
 
     int _numInArrs = _inArrs.size();
     int _numTArgs  = _tArgs.size();
     int _numIArgs  = _iArgs.size();
     int _numBArgs  = _bArgs.size();
-    std::vector<bool> _isArrAlloc = std::vector<bool>();
 
 public:
 
-	OpArgsHolder() = delete;
+    // default constructor
+	OpArgsHolder();
 
-    OpArgsHolder(const std::vector<NDArray*>& inArrs, const std::vector<double>& tArgs = std::vector<double>(), const std::vector<Nd4jLong>& iArgs = std::vector<Nd4jLong>(), const std::vector<bool>& bArgs = std::vector<bool>())
-    			: _inArrs(inArrs), _tArgs(tArgs), _iArgs(iArgs), _bArgs(bArgs) { }
+    // copy constructor
+    OpArgsHolder(const OpArgsHolder& other);
+
+    // constructor
+    OpArgsHolder(const std::vector<NDArray*>& inArrs, const std::vector<double>& tArgs = std::vector<double>(), const std::vector<Nd4jLong>& iArgs = std::vector<Nd4jLong>(), const std::vector<bool>& bArgs = std::vector<bool>());
+
+    // move constructor
+    OpArgsHolder(OpArgsHolder&& other) noexcept;
+
+    // assignment operator
+    OpArgsHolder& operator=(const OpArgsHolder& other);
+
+    // move assignment operator
+    OpArgsHolder& operator=(OpArgsHolder&& other) noexcept;
 
     const std::vector<NDArray*>& getInArrs() const
     {return _inArrs; }
@@ -77,8 +92,8 @@ public:
 
     OpArgsHolder createArgsHolderForBP(const std::vector<NDArray*>& inGradArrs, const bool isInPlace = false) const;
 
-    ~OpArgsHolder() noexcept; 
-    
+    ~OpArgsHolder() noexcept;
+
 };
 
 

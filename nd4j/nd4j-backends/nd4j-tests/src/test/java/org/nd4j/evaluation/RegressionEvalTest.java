@@ -291,7 +291,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         for (Metric m : Metric.values()) {
             double d1 = e4d.scoreForMetric(m);
             double d2 = e2d.scoreForMetric(m);
-            assertEquals(m.toString(), d2, d1, 1e-6);
+            assertEquals(m.toString(), d2, d1, 1e-5);
         }
     }
 
@@ -385,7 +385,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         for(Metric m : Metric.values()){
             double d1 = e4d_m1.scoreForMetric(m);
             double d2 = e2d_m1.scoreForMetric(m);
-            assertEquals(m.toString(), d2, d1, 1e-6);
+            assertEquals(m.toString(), d2, d1, 1e-5);
         }
 
         //Check per-output masking:

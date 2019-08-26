@@ -1147,8 +1147,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             // gradO has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
             // gradI has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
 
-            gradI.nullify();
-
             const T* x = gradO.bufferAsT<T>();
                   T* z = gradI.bufferAsT<T>();
 
@@ -1182,8 +1180,10 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
                             const auto zOffset = b*zStride0 + c*zStride1 + h*zStride2 + w*zStride3;
 
-                            for(uint xh = h; xh < h + factorH; ++xh)
-                                for(uint xw = w; xw < w + factorW; ++xw)
+                            z[zOffset] = 0;
+
+                            for(uint xh = h * factorH; xh < h * factorH + factorH; ++xh)
+                                for(uint xw = w * factorW; xw < w * factorW + factorW; ++xw)
                                     z[zOffset] += x[b*xStride0 + c*xStride1 + xh*xStride2 + xw*xStride3];
                         }
                     }
@@ -1197,8 +1197,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
             // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
             // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
-
-            gradI.nullify();
 
             const T* x = gradO.bufferAsT<T>();
                   T* z = gradI.bufferAsT<T>();
@@ -1238,9 +1236,11 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
                                 const auto zOffset = b*zStride0 + c*zStride1 + d*zStride2 + h*zStride3 + w*zStride4;
 
-                                for(uint xd = d; xd < d + factorD; ++xd)
-                                    for(uint xh = h; xh < h + factorH; ++xh)
-                                        for(uint xw = w; xw < w + factorW; ++xw)
+                                z[zOffset] = 0;
+
+                                for(uint xd = d * factorD; xd < d * factorD + factorD; ++xd)
+                                    for(uint xh = h * factorH; xh < h * factorH + factorH; ++xh)
+                                        for(uint xw = w * factorW; xw < w * factorW + factorW; ++xw)
                                             z[zOffset] += x[b*xStride0 + c*xStride1 + xd*xStride2 + xh*xStride3 + xw*xStride4];
                             }
                         }

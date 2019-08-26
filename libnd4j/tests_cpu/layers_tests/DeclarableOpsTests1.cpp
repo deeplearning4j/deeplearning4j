@@ -641,40 +641,6 @@ TEST_F(DeclarableOpsTests1, ClipByValue1) {
 }
 
 //////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests1, MergeMaxTest1) {
-
-    auto x = NDArrayFactory::create_<float>('c', {5, 5});
-    auto y = NDArrayFactory::create_<float>('c', {5, 5});
-    auto z = NDArrayFactory::create_<float>('c', {5, 5});
-    auto exp = NDArrayFactory::create<float>('c', {5, 5});
-    x->assign(3);
-    y->assign(1);
-    z->assign(2);
-    exp.assign(3);
-
-    auto zu = NDArrayFactory::create<float>('c', {5, 5});
-
-    auto variableSpace = new VariableSpace();
-    variableSpace->putVariable(-1, x);
-    variableSpace->putVariable(-2, y);
-    variableSpace->putVariable(-3, z);
-    variableSpace->putVariable(1, new Variable(NDArrayFactory::create_<float>('c', {5, 5})));
-    auto block = new Context(1, variableSpace, false);
-    block->fillInputs({-1, -2, -3});
-
-    nd4j::ops::mergemax merge;
-
-    merge.execute(block);
-
-    auto res = variableSpace->getVariable(1)->getNDArray();
-
-    ASSERT_TRUE(res->equalsTo(&exp));
-
-    delete block;
-    delete variableSpace;
-}
-
-//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, MergeAvgTest1) {
 
     auto x = NDArrayFactory::create_<float>('c', {5, 5});

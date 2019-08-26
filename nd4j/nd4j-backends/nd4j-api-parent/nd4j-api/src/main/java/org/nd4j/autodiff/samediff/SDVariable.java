@@ -19,7 +19,7 @@ package org.nd4j.autodiff.samediff;
 import java.util.Objects;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;

@@ -341,7 +341,7 @@ elseif(CPU_BLAS)
         endif()
     endif()
 
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(APPLE))
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(APPLE) AND NOT(WIN32))
         SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -rdynamic -Wl,-export-dynamic")
         SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -export-dynamic")
     endif()

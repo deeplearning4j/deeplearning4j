@@ -103,7 +103,6 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -153,7 +152,6 @@ public class Nd4j {
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
     private static DeallocatorService deallocatorService;
-    private static final AtomicInteger numThreads = new AtomicInteger(-1);
     private static AtomicReference<DataType> defaultFloatingPointDataType;
 
     private static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
@@ -4755,7 +4753,7 @@ public class Nd4j {
      * @param toStrip the ndarray to newShapeNoCopy
      * @return the reshaped ndarray
      */
-    @SuppressWarnings("WeakerAccess") // Needs tests if part of public API.
+    @SuppressWarnings({"unused"}) // Needs tests if part of public API.
     public static INDArray stripOnes(INDArray toStrip) {
         if (toStrip.isVector())
             return toStrip;
