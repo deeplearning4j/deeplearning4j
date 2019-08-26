@@ -2110,6 +2110,38 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testConcatEmpty2(){
+        INDArray empty10a = Nd4j.create(DataType.INT, 1, 0);
+        INDArray empty10b = Nd4j.create(DataType.INT, 1, 0);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("concat")
+                .addInputs(empty10a, empty10b)
+                .addIntegerArguments(0) //axis = 0
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+        assertArrayEquals(new long[]{2, 0}, l.get(0).getShape());
+        assertEquals(DataType.INT, l.get(0).dataType());
+
+        op.addOutputArgument(Nd4j.create(DataType.INT, 2, 0));
+        Nd4j.exec(op);
+
+
+        op = DynamicCustomOp.builder("concat")
+                .addInputs(empty10a, empty10b)
+                .addIntegerArguments(1) //axis = 1
+                .build();
+        l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+        assertArrayEquals(new long[]{1, 0}, l.get(0).getShape());
+        op.addOutputArgument(Nd4j.create(DataType.INT, 1, 0));
+        Nd4j.exec(op);
+    }
+
+    @Test
     public void testEmptyGather(){
         /*
         tf.reset_default_graph()
@@ -2434,4 +2466,5 @@ public class ShapeOpValidation extends BaseOpValidation {
                 .addInputs(Nd4j.createFromArray(1, 0))
                 .build();
     }
+
 }
