@@ -37,6 +37,7 @@
 #include <vector>
 #include <mutex>
 #include <execution/ContextBuffers.h>
+#include <execution/ErrorReference.h>
 
 
 
@@ -97,9 +98,12 @@ class ND4J_EXPORT LaunchContext {
 
     	int getDeviceID() const {return _deviceID;}
     	void setDeviceID(int deviceID) { _deviceID = deviceID; }
+        sd::ErrorReference* errorReference();
 
     	static bool isInitialized();
     	static void releaseBuffers();
+
+
 	    static LaunchContext* defaultContext();
 
 

@@ -68,21 +68,6 @@ int minThreads = 32;
 
 __constant__ char deviceConstantMemory[49152];
 
-typedef struct {
-    long streamId;
-    long callId;
-} __syncInfo;
-
-typedef __syncInfo SyncInfo;
-
-
-// this method isn't used, left here for legacy and caution purposes
-// TLDR: don't use this way, it sucks
-void CUDART_CB syncCallback(cudaStream_t stream, cudaError_t status, void *data){
-    SyncInfo *sync = reinterpret_cast<SyncInfo *>(data);
-
-    //printf("Finished stream: [%i], kernel call: [%i]\n", sync->streamId, sync->callId);
-}
 
 // this method just does type conversion in fancy way
 int getDeviceId(Nd4jPointer ptrToDeviceId) {
@@ -250,9 +235,14 @@ void execPairwiseTransform( Nd4jPointer *extraPointers,
         								void *hZ, Nd4jLong *hZShapeInfo,
         								void *dZ, Nd4jLong *dZShapeInfo,
         								void *extraParams) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execPairwiseTransform(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execPairwiseTransform(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY,
+                                                   dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -265,9 +255,14 @@ void execPairwiseTransformBool(Nd4jPointer *extraPointers,
         								void *hZ, Nd4jLong *hZShapeInfo,
         								void *dZ, Nd4jLong *dZShapeInfo,
         								void *extraParams) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execPairwiseBoolTransform(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execPairwiseBoolTransform(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo,
+                                                       dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -279,9 +274,14 @@ void execSummaryStatsScalar(Nd4jPointer *extraPointers,
                                        void *hZ, Nd4jLong *hZShapeInfo,
                                        void *dZ, Nd4jLong *dZShapeInfo,
                                        bool biasCorrected) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execSummaryStatsScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, biasCorrected);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execSummaryStatsScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ,
+                                                    hZShapeInfo, dZ, dZShapeInfo, biasCorrected);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -295,24 +295,30 @@ void execBroadcastBool(Nd4jPointer *extraPointers,
         						void *dZ, Nd4jLong *dZShapeInfo,
         						void *hDimension, Nd4jLong *hDimensionShape,
 		void *dDimension, Nd4jLong *dDimensionShape) {
+    try {
+        //Nd4jLong *tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
+        //Nd4jLong *tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+        //Nd4jLong *tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
+        //Nd4jLong *tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
 
-	//Nd4jLong *tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    //Nd4jLong *tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    //Nd4jLong *tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
-    //Nd4jLong *tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+        auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
+        auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
+        auto tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
+        auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
 
-	auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-	auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-	auto tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-	auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execBroadcastBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
-
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execBroadcastBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY,
+                                               dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension,
+                                               dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ,
+                                               tadOffsetsZ);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -338,38 +344,33 @@ void   execBroadcast(
 		void *dZ, Nd4jLong *dZShapeInfo,
 		void *hDimension, Nd4jLong *hDimensionShape,
 		void *dDimension, Nd4jLong *dDimensionShape) {
-/*
-    cudaEvent_t start;
-    cudaEventCreateWithFlags(&start, cudaEventDisableTiming);
-    timespec tsX;
-    timespec tsY;
-    clock_gettime(CLOCK_REALTIME, &tsX);
-*/
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-	auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-	auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-	auto tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
-	auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
+        auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
+        auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
+        auto tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[12]);
+        auto tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[13]);
 
-	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-	auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+        auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+        auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("F3 opNum:[%i]\n", opNum);
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("F3 opNum:[%i]\n", opNum);
 
-	//Nd4jLong *tadOnlyShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[0]);
-    //Nd4jLong *tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
-    //Nd4jLong *tadOnlyShapeInfoZ = reinterpret_cast<Nd4jLong *>(extraPointers[2]);
-    //Nd4jLong *tadOffsetsZ = reinterpret_cast<Nd4jLong *>(extraPointers[3]);
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execBroadcast(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execBroadcast(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY,
+                                           dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength,
+                                           tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -390,9 +391,14 @@ void execReduceFloat(Nd4jPointer *extraPointers,
 							void *extraParams,
 							void *hZ, Nd4jLong *hZShapeInfo,
 							void *dZ, Nd4jLong *dZShapeInfo) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execReduceFloatScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execReduceFloatScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ,
+                                                   hZShapeInfo, dZ, dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -403,9 +409,14 @@ void execReduceSame(Nd4jPointer *extraPointers,
                                 void *extraParams,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduceSameScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execReduceSameScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ,
+                                                  hZShapeInfo, dZ, dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -418,13 +429,22 @@ void execReduceSame2(Nd4jPointer *extraPointers,
                             void *dZ, Nd4jLong *dZShapeInfo,
 							   void *hDimension, Nd4jLong *hDimensionShape,
 							   void *dDimension, Nd4jLong *dDimensionShape) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-	auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo,
+                                                                                reinterpret_cast<int *>(hDimension),
+                                                                                shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduceSame(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execReduceSame(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo,
+                                            dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(),
+                                            tadPack.specialOffsets());
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -437,13 +457,22 @@ void execReduceLong2(Nd4jPointer *extraPointers,
                             void *dZ, Nd4jLong *dZShapeInfo,
 							   void *hDimension, Nd4jLong *hDimensionShape,
 							   void *dDimension, Nd4jLong *dDimensionShape) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo,
+                                                                                reinterpret_cast<int *>(hDimension),
+                                                                                shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduceLong(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execReduceLong(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo,
+                                            dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(),
+                                            tadPack.specialOffsets());
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -454,30 +483,37 @@ void   execReduceLong(Nd4jPointer *extraPointers,
                                 void *extraParams,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo) {
+    try {
+        auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
+        auto dTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
-    auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto dTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("LF7 opNum:[%i]\n", opNum);
 
-    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        printf("LF7 opNum:[%i]\n", opNum);
+        auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-    auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+        auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+        if (zType != nd4j::DataType::INT64)
+            throw datatype_exception::build("execReduceLong wrong Z data type", nd4j::DataType::INT64, zType);
 
-    if (zType != nd4j::DataType::INT64)
-        throw datatype_exception::build("execReduceLong wrong Z data type", nd4j::DataType::INT64, zType);
+        auto xLength = shape::length(hXShapeInfo);
+        auto blockWidth = 256;
+        auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+        dim3 launchDims(numBlocks, blockWidth, 32768);
 
-    auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 256;
-    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-    dim3 launchDims(numBlocks, blockWidth, 32768);
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction,
+                              ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
+                                                 dZ, dZShapeInfo, hXShapeInfo, nullptr, 0, reductionPointer,
+                                                 dTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceLongFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hXShapeInfo, nullptr, 0, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, LONG_TYPES);
-
-    nd4j::DebugHelper::checkErrorCode(stream, "execReduceLong(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "execReduceLong(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -490,13 +526,22 @@ void execReduceBool2(Nd4jPointer *extraPointers,
                             void *dZ, Nd4jLong *dZShapeInfo,
 							   void *hDimension, Nd4jLong *hDimensionShape,
 							   void *dDimension, Nd4jLong *dDimensionShape) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo,
+                                                                                reinterpret_cast<int *>(hDimension),
+                                                                                shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execReduceBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execReduceBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo,
+                                            dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(),
+                                            tadPack.specialOffsets());
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -507,30 +552,37 @@ void   execReduceBool(Nd4jPointer *extraPointers,
                                 void *extraParams,
                                 void *hZ, Nd4jLong *hZShapeInfo,
                                 void *dZ, Nd4jLong *dZShapeInfo) {
+    try {
+        auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
+        auto dTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
 
-    auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    auto hTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[9]);
-	auto dTADShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("BF7 opNum:[%i]\n", opNum);
 
-    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        printf("BF7 opNum:[%i]\n", opNum);
+        auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
 
-    auto reductionPointer = reinterpret_cast<void *>(extraPointers[4]);
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+        auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+        if (zType != nd4j::DataType::BOOL)
+            throw std::runtime_error("execReduceBool requires Z operand to have BOOL type");
 
-    if (zType != nd4j::DataType::BOOL)
-        throw std::runtime_error("execReduceBool requires Z operand to have BOOL type");
+        auto xLength = shape::length(hXShapeInfo);
+        auto blockWidth = 256;
+        auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
+        dim3 launchDims(numBlocks, blockWidth, 32768);
 
-    auto xLength = shape::length(hXShapeInfo);
-    auto blockWidth = 256;
-    auto numBlocks = CudaLaunchHelper::getReductionBlocks(xLength, blockWidth);
-    dim3 launchDims(numBlocks, blockWidth, 32768);
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction,
+                              ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams,
+                                                 dZ, dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer,
+                                                 dTADShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::reduce::ReduceBoolFunction, ::execReduceScalar(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, extraParams, dZ, dZShapeInfo, hZShapeInfo, nullptr, 0, reductionPointer, dTADShapeInfo), LIBND4J_TYPES, BOOL_TYPES);
-
-    nd4j::DebugHelper::checkErrorCode(stream, "execReduceBool(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "execReduceBool(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -554,13 +606,22 @@ void execIndexReduce(Nd4jPointer *extraPointers,
         						 void *dZ, Nd4jLong *dZShapeInfo,
 								 void *hDimension, Nd4jLong *hDimensionShape,
 		void *dDimension, Nd4jLong *dDimensionShape) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo,
+                                                                                reinterpret_cast<int *>(hDimension),
+                                                                                shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execIndexReduce(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execIndexReduce(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo,
+                                             dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(),
+                                             tadPack.specialOffsets());
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -582,13 +643,22 @@ void execReduceFloat2(Nd4jPointer *extraPointers,
 								void *dZ, Nd4jLong *dZShapeInfo,
 								void *hDimension, Nd4jLong *hDimensionShape,
 		void *dDimension, Nd4jLong *dDimensionShape) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo,
+                                                                                reinterpret_cast<int *>(hDimension),
+                                                                                shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduceFloat(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(), tadPack.specialOffsets());
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execReduceFloat(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo,
+                                             dZ, dZShapeInfo, dimension, dimensionLength, tadPack.specialShapeInfo(),
+                                             tadPack.specialOffsets());
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -607,9 +677,14 @@ void execIndexReduceScalar(
         void *extraParams,
         void *hZ, Nd4jLong *hZShapeInfo,
 		void *dZ, Nd4jLong *dZShapeInfo){
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execIndexReduceScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execIndexReduceScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ,
+                                                   hZShapeInfo, dZ, dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -619,12 +694,17 @@ void execTransformSame(Nd4jPointer *extraPointers,int opNum,
                                    void *hZ, Nd4jLong *hZShapeInfo,
                                    void *dZ, Nd4jLong *dZShapeInfo,
                                    void *extraParams) {
+    try {
+        auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
+        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execTransformSame(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execTransformSame(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ,
+                                               dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -634,12 +714,17 @@ void execTransformBool(Nd4jPointer *extraPointers,int opNum,
 								  void *hZ, Nd4jLong *hZShapeInfo,
 								  void *dZ, Nd4jLong *dZShapeInfo,
 								  void *extraParams) {
+    try {
+        auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
+        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
 
-	auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[0] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[1] : nullptr);
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execTransformBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execTransformBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ,
+                                               dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -649,12 +734,18 @@ void execTransformAny(Nd4jPointer *extraPointers,int opNum,
 								  void *hZ, Nd4jLong *hZShapeInfo,
 								  void *dZ, Nd4jLong *dZShapeInfo,
 								  void *extraParams) {
+    try {
+        auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        auto streamSpecial = reinterpret_cast<cudaStream_t &>(extraPointers[4]);
+        LaunchContext lc(stream, streamSpecial, extraPointers[5], extraPointers[3],
+                         reinterpret_cast<int *>(extraPointers[6]));
 
-    auto stream = reinterpret_cast<cudaStream_t*>(extraPointers[1]);
-    auto streamSpecial = reinterpret_cast<cudaStream_t&>(extraPointers[4]);
-    LaunchContext lc(stream, streamSpecial, extraPointers[5], extraPointers[3], reinterpret_cast<int*>(extraPointers[6]));
-
-    NativeOpExecutioner::execTransformAny(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, nullptr, nullptr);
+        NativeOpExecutioner::execTransformAny(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ,
+                                              dZShapeInfo, extraParams, nullptr, nullptr);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -664,12 +755,17 @@ void execTransformStrict(Nd4jPointer *extraPointers,int opNum,
                                   void *hZ, Nd4jLong *hZShapeInfo,
                                   void *dZ, Nd4jLong *dZShapeInfo,
                                   void *extraParams) {
+    try {
+        auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
+        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
 
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execTransformStrict(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execTransformStrict(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ,
+                                                 dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -679,54 +775,18 @@ void execTransformFloat(Nd4jPointer *extraPointers,int opNum,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo,
                                     void *extraParams) {
+    try {
+        auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
+        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
 
-    auto tadShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[10] : nullptr);
-    auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers != nullptr ? extraPointers[11] : nullptr);
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execTransformFloat(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execTransformFloat(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ,
+                                                dZShapeInfo, extraParams, tadShapeInfo, tadOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
-
-
-/**
- * Append an input array
- * to the end of a flat array
- * in a particular order
- * @param offset the offset of the array to start at
- * @param order the order
- * @param dZ the dZ array
- * @param dZShapeInfo the shape info for te array
- * @param input the input for the array
- * @param inputShapeInfo the shape information for that array
- */
-void flatten(Nd4jPointer *extraPointers,
-						int offset,
-						char order,
-						void *hZ, Nd4jLong *hZShapeInfo,
-						void *dZ, Nd4jLong *dZShapeInfo,
-						void *hInput, Nd4jLong *hInputShapeInfo,
-						void *dInput, Nd4jLong *dInputShapeInfo) {
-
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-	auto hYShapeInfo = reinterpret_cast<Nd4jLong *>(extraPointers[7]);
-
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("F22 opNum:[7]\n");
-
-	// int *allocPointer = reinterpret_cast<int *>(extraPointers[3]);
-
-	dim3 launchDims(256, 256, 2048);
-
-	if (nd4j::Environment::getInstance()->isVerbose() && launchDims.x == 1)
-		printf("AF222 opNum:[7]\n");
-
-	auto type = nd4j::ArrayOptions::dataType(hInputShapeInfo);
-    BUILD_SINGLE_SELECTOR(type, flattenKernelGeneric, (launchDims, stream, extraPointers, offset, order, dZ, dZShapeInfo, dInput, dInputShapeInfo), LIBND4J_TYPES);
-
-	DEBUG_KERNEL(stream, -1);
-}
-
-
 
 void checkP2P() {
 	int curDevice = 0;
@@ -821,23 +881,28 @@ bool isP2PAvailable() {
 
 
 void initializeDevicesAndFunctions() {
-	int devCnt = 0;
-	cudaGetDeviceCount(&devCnt);
-	deviceProperties = new cudaDeviceProp[devCnt];
-	for (int i = 0; i < devCnt; i++) {
-		cudaSetDevice(i);
-		cudaGetDeviceProperties(&deviceProperties[i], i);
+    try {
+        int devCnt = 0;
+        cudaGetDeviceCount(&devCnt);
+        deviceProperties = new cudaDeviceProp[devCnt];
+        for (int i = 0; i < devCnt; i++) {
+            cudaSetDevice(i);
+            cudaGetDeviceProperties(&deviceProperties[i], i);
 
-		cudaDeviceSetLimit(cudaLimitStackSize, 4096);
-	}
+            cudaDeviceSetLimit(cudaLimitStackSize, 4096);
+        }
 
-	cudaSetDevice(0);
+        cudaSetDevice(0);
 
-	checkP2P();
+        checkP2P();
 
-	// enabling p2p gpu access if it's supported
-	if (supportedP2P && devCnt > 1)
-    	enableP2P(allowedP2P);
+        // enabling p2p gpu access if it's supported
+        if (supportedP2P && devCnt > 1)
+            enableP2P(allowedP2P);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void initializeFunctions(Nd4jPointer *functions) {
@@ -867,8 +932,10 @@ Nd4jPointer mallocHost(Nd4jLong memorySize, int flags) {
 	Nd4jPointer pointer;
 	// cudaHostAllocMapped |cudaHostAllocPortable
 	auto res = cudaHostAlloc(reinterpret_cast<void **>(&pointer), memorySize, cudaHostAllocDefault);
-	if (res != 0)
-		throw nd4j::cuda_exception::build("cudaHostAlloc(...) failed", res);
+	if (res != 0) {
+	    nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
+	    nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaHostAlloc failed");
+    }
 
 	return pointer;
 }
@@ -884,8 +951,11 @@ Nd4jPointer mallocHost(Nd4jLong memorySize, int flags) {
 Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
 	Nd4jPointer pointer;
 	auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
-	if (res != 0)
-		throw nd4j::cuda_exception::build("cudaMalloc(...) failed", res);
+	if (res != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMalloc failed");
+	}
+
 	return pointer;
 }
 
@@ -896,8 +966,11 @@ Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
  */
 int freeHost(Nd4jPointer pointer) {
 	auto res = cudaFreeHost(reinterpret_cast<void *>(pointer));
-	if (res != 0)
-		throw nd4j::cuda_exception::build("cudaFreeHost(...) failed", res);
+	if (res != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaFreeHost failed");
+    }
+
 	return 1L;
 }
 
@@ -909,10 +982,14 @@ int freeHost(Nd4jPointer pointer) {
  */
 int freeDevice(Nd4jPointer pointer, int deviceId) {
 	auto res = cudaFree(reinterpret_cast<void *>(pointer));
-	if (res != 0)
-		throw nd4j::cuda_exception::build("cudaFree(...) failed", res);
 
-	return 1L;
+	// we're intentionally skipping
+	if (res != 0 && res != 1) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaFree failed");
+	}
+
+	return res == 0 ? 1L : 0L;
 }
 
 
@@ -921,22 +998,13 @@ Nd4jPointer createContext() {
 }
 
 Nd4jPointer createStream() {
-    /*
-	Nd4jPointer nativeStream = (Nd4jPointer) malloc(sizeof(cudaStream_t));
 
-	CHECK_ALLOC(nativeStream, "Failed to allocate memory for new CUDA stream", sizeof(cudaStream_t));
-
-	cudaError_t dZ = cudaStreamCreate(reinterpret_cast<cudaStream_t *>(&nativeStream));
-	checkCudaErrors(dZ);
-	if (dZ != 0)
-		throw std::runtime_error("cudaStreamCreate(...) failed");
-
-	return nativeStream;
-     */
     auto stream = new cudaStream_t();
     auto dZ = cudaStreamCreate(stream);
-    if (dZ != 0)
-        throw nd4j::cuda_exception::build("cudaStreamCreate(...) failed", dZ);
+    if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaStreamCreate failed");
+    }
 
     return stream;
 }
@@ -947,9 +1015,10 @@ Nd4jPointer createEvent() {
 	CHECK_ALLOC(nativeEvent, "Failed to allocate new CUDA event buffer", sizeof(cudaEvent_t));
 
 	auto dZ = cudaEventCreateWithFlags(reinterpret_cast<cudaEvent_t *>(&nativeEvent), cudaEventDisableTiming);
-	if (dZ != 0)
-		throw nd4j::cuda_exception::build("cudaEventCreateWithFlags(...) failed", dZ);
-
+	if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventCreateWithFlags failed");
+	}
 
 	return nativeEvent;
 }
@@ -959,8 +1028,10 @@ int registerEvent(Nd4jPointer event, Nd4jPointer stream) {
 	auto pStream = reinterpret_cast<cudaStream_t *>(stream);
 
     auto dZ = cudaEventRecord(*pEvent, *pStream);
-	if (dZ != 0)
-		throw nd4j::cuda_exception::build("cudaEventRecord(...) failed", dZ);
+	if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventRecord failed");
+	}
 
 	return 1;
 }
@@ -1048,8 +1119,11 @@ int memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4j
 			    kind = cudaMemcpyDeviceToDevice;
 		    }
 			break;
-		default:
-			throw nd4j::cuda_exception::build("UNDEFINED MEMCPY!\n", 119);
+		default: {
+            nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+            nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("UNDEFNED MEMCPY");
+            return 0;
+		}
 	}
 
 	auto dZ = cudaMemcpyAsync(reinterpret_cast<void *>(dst), const_cast<const void *>(reinterpret_cast<void *>(src)), static_cast<size_t>(size), kind, *pStream);
@@ -1058,7 +1132,8 @@ int memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4j
         printf("Failed on [%lu] -> [%lu], size: [%i], direction: [%i], dZ: [%i]\n", src, dst, size, flags, static_cast<int>(dZ));
         fflush(stdout);
         fflush(stderr);
-        throw nd4j::cuda_exception::build("cudaMemcpyAsync(...) failed", dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpyAsync failed");
 	}
 
 	return 1;
@@ -1066,8 +1141,10 @@ int memcpyAsync(Nd4jPointer dst, Nd4jPointer src, Nd4jLong size, int flags, Nd4j
 
 int memsetSync(Nd4jPointer dst, int value, Nd4jLong size, int flags, Nd4jPointer reserved) {
 	auto dZ = cudaMemset(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size));
-	if (dZ != 0)
-		throw nd4j::cuda_exception::build("cudaMemset(...) failed", dZ);
+	if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemset failed");
+	}
 
 	return 1;
 }
@@ -1076,8 +1153,10 @@ int memsetAsync(Nd4jPointer dst, int value, Nd4jLong size, int flags, Nd4jPointe
 	auto pStream = reinterpret_cast<cudaStream_t *>(reserved);
 
 	auto dZ = cudaMemsetAsync(reinterpret_cast<void *>(dst), value, static_cast<size_t>(size), *pStream);
-	if (dZ != 0)
-		throw nd4j::cuda_exception::build("cudaMemsetAsync(...) failed", dZ);
+	if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemsetAsync failed");
+	}
 
 	return 1;
 }
@@ -1085,8 +1164,10 @@ int memsetAsync(Nd4jPointer dst, int value, Nd4jLong size, int flags, Nd4jPointe
 int destroyEvent(Nd4jPointer event) {
 	auto pEvent = reinterpret_cast<cudaEvent_t *>(&event);
 	auto dZ = cudaEventDestroy(*pEvent);
-	if (dZ != 0)
-		throw nd4j::cuda_exception::build("cudaEvenDestroy(...) failed", dZ);
+	if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventDestroy failed");
+	}
 
 	return 1;
 }
@@ -1095,8 +1176,10 @@ int streamSynchronize(Nd4jPointer stream) {
 	auto pStream = reinterpret_cast<cudaStream_t *>(stream);
 
 	auto dZ = cudaStreamSynchronize(*pStream);
-	if (dZ != 0)
-        throw nd4j::cuda_exception::build("cudaStreamSynchronize(...) failed", dZ);
+	if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaStreamSynchronize failed");
+	}
 
 	return 1L;
 }
@@ -1105,8 +1188,10 @@ int eventSynchronize(Nd4jPointer event) {
 	auto pEvent = reinterpret_cast<cudaEvent_t *>(&event);
 
 	auto  dZ = cudaEventSynchronize(*pEvent);
-	if (dZ != 0)
-        throw nd4j::cuda_exception::build("cudaEventSynchronize(...) failed", dZ);
+	if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaEventSynchronize failed");
+	}
 
 	return 1L;
 }
@@ -1162,268 +1247,6 @@ const char * getDeviceName(int device) {
     return deviceProperties[device].name;
 }
 
-///////////////////////////////////////////////////////////////////
-template<typename T>
-__global__ static void concatCuda(const int numOfArrs, void* pVx,  void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
-
-    __shared__ int arrIdx, blocksPerArr;
-    __shared__ T *x, *z;
-    __shared__ Nd4jLong *zShapeInfo, *xShapeInfo, arrLen, arrLenZ, arrLenPerBlock, start, end;
-
-    if (threadIdx.x == 0) {
-        blocksPerArr = (gridDim.x - gridDim.x % numOfArrs) / numOfArrs;     // floor
-        arrIdx = blockIdx.x / blocksPerArr;
-        if (arrIdx >= numOfArrs)
-            arrIdx = numOfArrs - 1;
-        x = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[arrIdx]);
-        z = reinterpret_cast<T*>(reinterpret_cast<void**>(pVz)[arrIdx]);
-        xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[arrIdx];
-        zShapeInfo = reinterpret_cast<Nd4jLong**>(pzShapeInfo)[arrIdx];
-
-        arrLen = shape::length(xShapeInfo);
-        arrLenZ = shape::length(zShapeInfo);
-        arrLenPerBlock = (arrLen + blocksPerArr - arrLen % blocksPerArr) / blocksPerArr;  // ceil
-
-        start = arrLenPerBlock * (blockIdx.x % blocksPerArr);
-        end   = (start + arrLenPerBlock) > arrLen ? arrLen : (start + arrLenPerBlock);
-    }
-    __syncthreads();
-
-    for (Nd4jLong i = threadIdx.x + start; i < end; i += blockDim.x) {
-        auto zOffset = shape::getIndexOffset(i, zShapeInfo, arrLenZ);
-        auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLen);
-        //printf("z[%i][%lld] = x[%i][%lld]\n", arrIdx, zOffset, arrIdx, xOffset);
-        z[zOffset] = x[xOffset];
-    }
-}
-template<typename T>
-__host__ static void concatCudaLauncher(const int numOfArrs, cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo) {
-    //int blocks = numOfArrs * 16; // >> 1 << 2);
-    //nd4j_printf("gridDim.x is %i\n", blocks);
-    //if (blocks > 8192)
-    //    blocks = 8192; // restrict grid dims to 8K max
-    concatCuda<T><<<numOfArrs, 128, 512, *stream>>>(numOfArrs, pVx, pxShapeInfo, pVz, pzShapeInfo);
-    nd4j::DebugHelper::checkErrorCode(stream, "concat(...) failed");
-}
-BUILD_SINGLE_TEMPLATE(template void concatCudaLauncher, (const int numOfArrs, cudaStream_t *stream,  void* pVx, void* pxShapeInfo, void* pVz, void* pzShapeInfo), LIBND4J_TYPES);
-
-static void
-specialBufferAndShapeWithOffset(void* vZ, Nd4jLong* hZShapeInfo, Nd4jLong* dZShapeInfo, std::vector<Nd4jLong> const& idx, void*& outBuffer, Nd4jLong*& outShape) {
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-    const int rank = shape::rank(hZShapeInfo);
-    Nd4jLong* newShape = new Nd4jLong[shape::shapeInfoLength(rank)];
-    //ALLOCATE(newShape, nullptr, , Nd4jLong)
-    auto shapeSize = shape::shapeInfoByteLength(rank);
-    memcpy(newShape, hZShapeInfo, shapeSize);
-
-    auto shapeOf = shape::shapeOf(newShape);
-    auto stridesOf = shape::stride(newShape);
-
-    Nd4jLong offset(0), subArrLen(1);
-    int n(2), first, last, stride;
-
-    for (int d = rank - 1; d >= 0; --d) {
-
-        if (idx[n * d] != idx[n * d + 1]) {
-            auto axeDim = shape::sizeAt(hZShapeInfo, d);
-            first  = idx[n * d]     >= 0 ? idx[n * d]     : idx[n * d]     + axeDim + 1;
-            last   = idx[n * d + 1] >= 0 ? idx[n * d + 1] : idx[n * d + 1] + axeDim + 1;
-            stride = 1;
-
-            shapeOf[d] = (last - first + stride - 1) / stride;      // ceil (last - first) / stride;
-            offset += first * stridesOf[d];
-
-            if(shapeOf[d] != 1)
-                stridesOf[d] *= stride;
-        }
-
-        subArrLen *= shapeOf[d];
-    }
-
-    // check if there is possibility to set ews = 1
-    //shape::setEws(newShape, subArrLen);
-
-    //makeBothBuffersActual();
-    outBuffer = (void*)((int8_t*)vZ + offset * DataTypeUtils::sizeOfElement(zType));
-    cudaError_t err = cudaMalloc(&outShape, shapeSize);
-    if (err != 0) {
-        printf("Cannot allocate memory with error %d\n", err);
-        throw std::runtime_error("Cannot allocate memory for shape");
-    }
-    cudaMemcpy(outShape, newShape, shapeSize, cudaMemcpyHostToDevice);
-    delete [] newShape;
-}
-
-/**
-  * Concatneate multi array of the same shape together
-  * along a particular dimension
-  */
-void concat(
-        Nd4jPointer *extraPointers,
-        int dimension,
-        int numArrays,
-        Nd4jPointer *data, Nd4jPointer *inputShapeInfo,
-        Nd4jPointer *ddata, Nd4jPointer *dinputShapeInfo,
-        void *hZ, Nd4jLong *hZShapeInfo,
-        void *dZ, Nd4jLong *dZShapeInfo,
-        Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-
-    auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-
-    auto hXShapeInfo = hZShapeInfo;
-    auto hShapePointers = reinterpret_cast<Nd4jLong **>(inputShapeInfo);
-    auto dShapePointers = reinterpret_cast<Nd4jLong **>(dinputShapeInfo);
-    // numArrays will be used as number of TADs, so each block process 1 input
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-    auto axis = dimension;
-
-    const int rank  = shape::rank(hZShapeInfo); //reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]));
-    const int rank2 = 2 * rank;
-    std::vector<std::vector<Nd4jLong>> indices(numArrays, std::vector<Nd4jLong>(rank2,0));
-
-    // take into account indices for first array
-    auto axisSize = shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[0]), axis);
-    indices[0][2 * axis + 1] = axisSize;
-
-    for(int i = 1; i < numArrays; ++i) {
-        indices[i][2 * axis]     = indices[i-1][2 * axis + 1];                                // index start from
-        indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + shape::sizeAt(reinterpret_cast<Nd4jLong*>(inputShapeInfo[i]), axis);      // index end with (excluding)
-    }
-
-    std::vector<void*> outSubArrsBuffs(numArrays);
-    std::vector<Nd4jLong*> outSubArrsShapes(numArrays);
-    for(int i = 0; i < numArrays; ++i) {
-        specialBufferAndShapeWithOffset(dZ, hZShapeInfo, dZShapeInfo, indices[i], outSubArrsBuffs[i], outSubArrsShapes[i]);
-    }
-
-    LaunchContext context(stream);
-    PointersManager manager(&context, "concat");
-    void* dOutBuffers	= manager.replicatePointer(outSubArrsBuffs.data(),  outSubArrsBuffs.size() * sizeof(void*));
-    void* dInBuffers	= manager.replicatePointer(ddata,    numArrays * sizeof(void*));
-    void* dInShapeInfo  = manager.replicatePointer(dShapePointers,  numArrays * sizeof(Nd4jLong*));
-    void* dOutShapeInfo = manager.replicatePointer(outSubArrsShapes.data(), outSubArrsShapes.size() * sizeof(Nd4jLong*));
-
-    BUILD_SINGLE_SELECTOR(zType, concatCudaLauncher, (numArrays, stream, dInBuffers, dInShapeInfo, dOutBuffers, dOutShapeInfo), LIBND4J_TYPES);
-    manager.synchronize();
-
-    cudaError_t err;
-    for(int i = 0; i < numArrays; ++i) {
-        err = cudaFree(outSubArrsShapes[i]);
-        if (err != 0) {
-            printf("Error %d occured when shape %i was deallocating.\n", err, i);
-            throw std::runtime_error("Cannot deallocate memory for shapes.");
-        }
-    }
-}
-
-/**
-  * Concatneate multi array of the same shape together
-  * along a particular dimension
-  */
-// void concat(
-//		Nd4jPointer *extraPointers,
-//        int dimension,
-//        int numArrays,
-//        Nd4jPointer *data, Nd4jPointer *inputShapeInfo,
-//		Nd4jPointer *ddata, Nd4jPointer *dinputShapeInfo,
-//		void *hZ, Nd4jLong *hZShapeInfo,
-//        void *dZ, Nd4jLong *dZShapeInfo,
-//		Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-//
-//	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-//	auto hXShapeInfo = hZShapeInfo;
-//	auto hShapePointers = reinterpret_cast<Nd4jLong **>(inputShapeInfo);
-//	// numArrays will be used as number of TADs, so each block process 1 input
-//
-//	int smem = 8192;
-//	bool isVstack = false;
-//	bool isScalar = true;
-//	bool isHstack = false;
-//
-//	for (int i = 0; i < numArrays; i++) {
-//		if (!shape::isScalar(hShapePointers[i])) {
-//			isScalar = false;
-//			break;
-//		}
-//	}
-//
-//	if (!isScalar && dimension == 0 && shape::rank(hZShapeInfo) == 2 && shape::order(hZShapeInfo) == 'c' ) {
-//		isVstack = true;
-//        for (int i = 0; i < numArrays; i++) {
-//			if (!shape::isVector(hShapePointers[i]) || shape::elementWiseStride(hShapePointers[i]) <= 0 ||
-//				shape::order(hShapePointers[i]) != 'c') {
-//				isVstack = false;
-//				break;
-//			}
-//		}
-//	}
-//
-//    // let's try to fit N-dimensional vstack
-//    if (!isVstack && !isScalar && dimension == 0 && shape::order(hXShapeInfo) == 'c') {
-//		auto length0 = shape::length(hShapePointers[0]);
-//        isVstack = true;
-//        for (int i = 0; i < numArrays; i++) {
-//            if (shape::elementWiseStride(hShapePointers[i]) <= 0 || shape::order(hShapePointers[i]) != 'c' || length0 != shape::length(hShapePointers[i])) {
-//                isVstack = false;
-//                break;
-//            }
-//        }
-//    }
-//
-//	if (!isScalar && !isVstack && dimension == 1 && shape::isVector(hZShapeInfo)) {
-//		isHstack = true;
-//		for (int i = 0; i < numArrays; i++) {
-//			if (!shape::isVector(hShapePointers[i]) || shape::elementWiseStride(hShapePointers[i]) <= 0) {
-//				isHstack = false;
-//				break;
-//			}
-//		}
-//	}
-//
-//	if (isScalar) {
-//		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//			printf("Going scalar concat\n");
-//
-//		dim3 launchDims(128, 128, 16384);
-//		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-//		BUILD_SINGLE_SELECTOR(zType, concatKernelScalarGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), dZ), LIBND4J_TYPES);
-//
-//	} else if (isVstack) {
-//		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//			printf("Going VStack concat\n");
-//
-//		dim3 launchDims(128, 512, 16384);
-//		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-//		BUILD_SINGLE_SELECTOR(zType, concatKernelVStackGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), reinterpret_cast<Nd4jPointer *>(dinputShapeInfo[0]), dZ, dZShapeInfo), LIBND4J_TYPES);
-//
-//	} else if (isHstack) {
-//		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//			printf("Going HStack concat\n");
-//
-//		dim3 launchDims(128, 128, 16384);
-//		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-//		BUILD_SINGLE_SELECTOR(zType, concatKernelHStackGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), reinterpret_cast<Nd4jPointer *>(dinputShapeInfo[0]), dZ, dZShapeInfo), LIBND4J_TYPES);
-//	} else {
-//		if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//			printf("Going generic concat\n");
-//
-//        auto devZTadShape = reinterpret_cast<Nd4jLong *>(extraPointers[10]);
-//		auto devZOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[11]);
-//
-//		dim3 launchDims(128, 128, 8192);
-//		auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-//		BUILD_SINGLE_SELECTOR(zType, concatKernelGeneric, (launchDims, stream, numArrays, reinterpret_cast<Nd4jPointer *>(ddata[0]), reinterpret_cast<Nd4jPointer *>(dinputShapeInfo[0]), dZ, dZShapeInfo,  reinterpret_cast<Nd4jPointer *>(tadPointers[0]), reinterpret_cast<Nd4jPointer *>(offsetPointers[0]), devZTadShape, devZOffsets), LIBND4J_TYPES);
-//	}
-//	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-//		printf("sharedMemory requested for concatFloat: [%i], registers: [%i]\n", smem, funcAttributes[31].numRegs);
-//
-//    cudaError_t res = cudaStreamSynchronize(*stream);
-//    checkCudaErrors(res);
-//    nd4j::DebugHelper::checkErrorCode(stream, "Legacy ConcatFloat(...) failed");
-//}
-
-
-
 void specialConcat(
         Nd4jPointer *extraPointers,
         int dimension,
@@ -1432,8 +1255,14 @@ void specialConcat(
         Nd4jPointer *inputShapeInfo,
         void *dZ,
         Nd4jLong *dZShapeInfo, Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers) {
-
-    BUILD_SINGLE_SELECTOR(ArrayOptions::dataType(dZShapeInfo), nd4j::SpecialMethods ,::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, dZ, dZShapeInfo), LIBND4J_TYPES);
+    try {
+        BUILD_SINGLE_SELECTOR(ArrayOptions::dataType(dZShapeInfo), nd4j::SpecialMethods,
+                              ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, dZ, dZShapeInfo),
+                              LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -1441,9 +1270,15 @@ void specialConcat(
  * This method saves
  */
 nd4j::TadPack* tadOnlyShapeInfo(Nd4jLong *dXShapeInfo, int *dimension, int dimensionLength) {
-	auto pack = new TadPack();
-	*pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(dXShapeInfo, dimension, dimensionLength);
-    return pack;
+    try {
+        auto pack = new TadPack();
+        *pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(dXShapeInfo, dimension, dimensionLength);
+        return pack;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 Nd4jLong* getPrimaryShapeInfo(nd4j::TadPack* pack) {
@@ -1489,11 +1324,11 @@ int memcpyConstantAsync(Nd4jLong dst, Nd4jPointer src, Nd4jLong size, int flags,
 		}
 			break;
 	}
-	//cudaError_t dZ = cudaMemcpyAsync((void *) dst, (const void *) src, (size_t) size, kind, *pStream);
-	cudaError_t dZ = cudaMemcpyToSymbolAsync(deviceConstantMemory, const_cast<const void *>(src), size, dst, kind, *pStream);
-	checkCudaErrors(dZ);
-	if (dZ != 0)
-        throw std::runtime_error("cudaMemcpyToSymbolAsync(...) failed");
+	auto dZ = cudaMemcpyToSymbolAsync(deviceConstantMemory, const_cast<const void *>(src), size, dst, kind, *pStream);
+	if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMemcpyToSymbolAsync failed");
+	}
 
 	return 1;
 }
@@ -1502,8 +1337,10 @@ Nd4jPointer getConstantSpace() {
 	Nd4jPointer dConstAddr;
 	cudaError_t dZ = cudaGetSymbolAddress(reinterpret_cast<void **>(&dConstAddr), deviceConstantMemory);
 
-	if (dZ != 0)
-        throw std::runtime_error("cudaGetSymbolAddress(...) failed");
+	if (dZ != 0) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(dZ);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaGetSymbolAddress failed");
+	}
 
 	return dConstAddr;
 }
@@ -1519,13 +1356,19 @@ void pullRows(Nd4jPointer *extraPointers,
 						 Nd4jLong *tadOffsets,
 						 Nd4jLong *zTadShapeInfo,
 						 Nd4jLong *zTadOffsets) {
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        dim3 launchDims(64, 256, 1024);
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+        BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric,
+                              (launchDims, stream, dX, dZ, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets),
+                              LIBND4J_TYPES);
 
-	cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-	dim3 launchDims(64, 256, 1024);
-	auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, pullRowsKernelGeneric, (launchDims, stream, dX, dZ, n, indexes, tadShapeInfo, tadOffsets,  zTadShapeInfo,  zTadOffsets), LIBND4J_TYPES);
-
-	DEBUG_KERNEL(stream, -1);
+        DEBUG_KERNEL(stream, -1);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -1537,25 +1380,31 @@ void average(Nd4jPointer *extras,
 						int n,
 						Nd4jLong length,
 						bool propagate) {
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
+        int mode = getDeviceId(extras[3]);
 
-	cudaStream_t * stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-	int mode = getDeviceId(extras[3]);
+        auto dX = reinterpret_cast<void **>(dx);
 
-	auto dX = reinterpret_cast<void **>(dx);
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("averageFloat called\n");
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("averageFloat called\n");
-
-	auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
-	// launching on gpu
-	if (mode == 0) {
-		dim3 launchDims(256, 256, 4096);
-    	BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (launchDims, stream, dX, dz, n, length, propagate), LIBND4J_TYPES);
-        nd4j::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
-	} else {
-		// launching on host memory
-        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(x, z, zShapeInfo, n, length, propagate), LIBND4J_TYPES);
-	}
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+        // launching on gpu
+        if (mode == 0) {
+            dim3 launchDims(256, 256, 4096);
+            BUILD_SINGLE_SELECTOR(xType, averagingKernelGeneric, (launchDims, stream, dX, dz, n, length, propagate),
+                                  LIBND4J_TYPES);
+            nd4j::DebugHelper::checkErrorCode(stream, "AverageFloat(...) failed");
+        } else {
+            // launching on host memory
+            BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(x, z, zShapeInfo, n, length, propagate),
+                                  LIBND4J_TYPES);
+        }
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void accumulate(Nd4jPointer *extras,
@@ -1565,25 +1414,31 @@ void accumulate(Nd4jPointer *extras,
 						   void *dz, Nd4jLong *dzShapeInfo,
 						   int n,
 						   Nd4jLong length) {
+    try {
+        auto stream = reinterpret_cast<cudaStream_t *>(extras[1]);
+        int mode = getDeviceId(extras[3]);
 
-	auto stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-	int mode = getDeviceId(extras[3]);
+        auto dX = reinterpret_cast<void **>(dx);
 
-	auto dX = reinterpret_cast<void **>(dx);
+        if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+            printf("accumulateFloat called\n");
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("accumulateFloat called\n");
-	auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
-
-	// launching on gpu
-	if (mode == 0) {
-		dim3 launchDims(n, 256, 16384);
-        BUILD_SINGLE_SELECTOR(xType, accumulateKernelGeneric, (launchDims, stream, dX, dz, n,length), LIBND4J_TYPES);
-        nd4j::DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
-	} else {
-		// launching on host memory
-        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(x, z, zShapeInfo, n, length), LIBND4J_TYPES);
-	}
+        // launching on gpu
+        if (mode == 0) {
+            dim3 launchDims(n, 256, 16384);
+            BUILD_SINGLE_SELECTOR(xType, accumulateKernelGeneric, (launchDims, stream, dX, dz, n, length),
+                                  LIBND4J_TYPES);
+            nd4j::DebugHelper::checkErrorCode(stream, "AccumulateFloat(...) failed");
+        } else {
+            // launching on host memory
+            BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(x, z, zShapeInfo, n, length),
+                                  LIBND4J_TYPES);
+        }
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -1596,49 +1451,28 @@ void shuffle(Nd4jPointer *extras,
 						int *shuffleMap,
 						Nd4jPointer *tadShapeInfo,
 						Nd4jPointer *tadOffsets) {
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
+        auto dX = reinterpret_cast<void **>(dx);
+        auto dZ = reinterpret_cast<void **>(dz);
+        auto xShape = reinterpret_cast<Nd4jLong **>(xShapeInfo);
+        auto dxShape = reinterpret_cast<Nd4jLong **>(dXShapeInfo);
+        auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong **>(tadShapeInfo);
+        auto tadOffset = reinterpret_cast<Nd4jLong **>(tadOffsets);
 
-    auto dX = reinterpret_cast<void **>(dx);
-    auto dZ = reinterpret_cast<void **>(dz);
-    auto xShape = reinterpret_cast<Nd4jLong **>(xShapeInfo);
-    auto dxShape = reinterpret_cast<Nd4jLong **>(dXShapeInfo);
-    auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong **>(tadShapeInfo);
-    auto tadOffset = reinterpret_cast<Nd4jLong **>(tadOffsets);
+        auto xType = nd4j::ArrayOptions::dataType(xShape[0]);
+        dim3 launchDims(256, 512, 8192);
+        BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric,
+                              (launchDims, stream, dX, dxShape, dZ, N, shuffleMap, tadOnlyShapeInfo, tadOffset),
+                              LIBND4J_TYPES);
 
-    auto xType = nd4j::ArrayOptions::dataType(xShape[0]);
-    dim3 launchDims(256, 512, 8192);
-    BUILD_SINGLE_SELECTOR(xType, shuffleKernelGeneric, (launchDims, stream, dX, dxShape, dZ, N, shuffleMap,  tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
-
-    nd4j::DebugHelper::checkErrorCode(stream, "shuffle(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "shuffle(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
-
-/*
-void execMetaPredicateShape(Nd4jPointer *extras,
-	                                  const int opTypeA,
-	                                  const int opNumA,
-	                                  const int opTypeB,
-	                                  const int opNumB,
-	                                  Nd4jLong N,
-	                                  void *hX, Nd4jLong *hXShapeInfo,
-                                      void *dX, Nd4jLong *dXShapeInfo,
-                                      void *hY, Nd4jLong *hYShapeInfo,
-                                      void *dY, Nd4jLong *dYShapeInfo,
-                                      void *hZ, Nd4jLong *hZShapeInfo,
-                                      void *dZ, Nd4jLong *dZShapeInfo,
-	                                  void *extraA,
-	                                  void *extraB,
-	                                  double scalarA,
-	                                  double scalarB) {
-
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, functions::grid::GRIDShaped, ::execMetaPredicateShaped(stream, extras, opTypeA, opNumA, opTypeB, opNumB, N, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraA, extraB, scalarA, scalarB), LIBND4J_TYPES);
-    // functions::grid::GRIDShaped<float>::execMetaPredicateShaped(stream, extras, opTypeA, opNumA, opTypeB, opNumB, N, dX, dXShapeInfo, dy, dYShapeInfo, dz, zShapeInfo, extraA, extraB, scalarA, scalarB);
-
-	DEBUG_KERNEL(stream, opNumA);
-}
-*/
 
 bool isExperimentalEnabled() {
     return nd4j::Environment::getInstance()->isExperimentalBuild();
@@ -1670,9 +1504,14 @@ void execSummaryStats(Nd4jPointer *extraPointers,
                                  void *hZ, Nd4jLong *hZShapeInfo,
                                  void *dZ, Nd4jLong *dZShapeInfo,
                                  bool biasCorrected) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execSummaryStats(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, biasCorrected);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execSummaryStats(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ,
+                                              hZShapeInfo, dZ, dZShapeInfo, biasCorrected);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1686,11 +1525,18 @@ void execSummaryStatsTad(Nd4jPointer *extraPointers,
 								 void *hDimension, Nd4jLong *hDimensionShape, void *dDimension, Nd4jLong *dDimensionShape,
                                  bool biasCorrected,
 								 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execSummaryStats(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, biasCorrected);
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execSummaryStats(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ,
+                                              hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo,
+                                              tadOffsets, biasCorrected);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1703,9 +1549,14 @@ void execReduce3(Nd4jPointer *extraPointers,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execReduce3(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execReduce3(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY,
+                                         dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1721,35 +1572,35 @@ void execReduce3Tad(Nd4jPointer *extraPointers,
 							void *hDimension, Nd4jLong *hDimensionShape, void *dDimension, Nd4jLong *dDimensionShape,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-	// if (extraPointers == nullptr || extraPointers[2] == 0)
- //        NativeOpExecutioner::execReduce3(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
- //    else {
- //        // going tad-ways
- //        auto tadShapeInfo = reinterpret_cast<Nd4jLong *> (extraPointers[0]);
- //        auto tadOffsets = reinterpret_cast<Nd4jLong *>(extraPointers[1]);
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo,
+                                                                                reinterpret_cast<int *>(hDimension),
+                                                                                shape::length(hDimensionShape));
+        auto tadLength = shape::length(tadPack.primaryShapeInfo());
+        auto yLength = shape::length(hYShapeInfo);
+        auto xLength = shape::length(hXShapeInfo);
 
- //        NativeOpExecutioner::execReduce3TAD(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets);
- //    }
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
 
-    // nd4j_printf("Starting...\n","");
+        if (tadLength == yLength || tadLength == xLength) {
+            // nd4j_printf("== way\n","");
+            NativeOpExecutioner::execReduce3(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo,
+                                             dY,
+                                             dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength,
+                                             tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
+        } else
+            NativeOpExecutioner::execReduce3TAD(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY,
+                                                hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo,
+                                                dimension, dimensionLength, tadOnlyShapeInfo, yTadOffsets,
+                                                yTadOnlyShapeInfo, yTadOffsets);
 
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, reinterpret_cast<int*>(hDimension), shape::length(hDimensionShape));
-    auto tadLength = shape::length(tadPack.primaryShapeInfo());
-    auto yLength = shape::length(hYShapeInfo);
-    auto xLength = shape::length(hXShapeInfo);
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-
-    if (tadLength == yLength || tadLength == xLength) {
-        // nd4j_printf("== way\n","");
-        NativeOpExecutioner::execReduce3(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY,
-                                         dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength,
-                                         tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
-    } else
-        NativeOpExecutioner::execReduce3TAD(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, yTadOffsets, yTadOnlyShapeInfo, yTadOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1761,9 +1612,14 @@ void execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
                                   void *dY, Nd4jLong *dYShapeInfo,
                                   void *hZ, Nd4jLong *hZShapeInfo,
                                   void *dZ, Nd4jLong *dZShapeInfo) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execReduce3Scalar(&lc, opNum,hX,hXShapeInfo,dX, dXShapeInfo,extraParams,hY,hYShapeInfo,dY,dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execReduce3Scalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY,
+                                               hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1776,9 +1632,15 @@ void execScalarBool(Nd4jPointer *extraPointers,
 							void *hScalar, Nd4jLong *hScalarShapeInfo,
 							void *dScalar, Nd4jLong *dScalarShapeInfo,
 							void *extraParams) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execScalarBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo, extraParams);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execScalarBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ,
+                                            dZShapeInfo, hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo,
+                                            extraParams);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1794,11 +1656,19 @@ void execScalarBoolTad(Nd4jPointer *extraPointers,
 							   void *hDimension, Nd4jLong *hDimensionShape, void *dDimension, Nd4jLong *dDimensionShape,
                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execScalarBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalars, hScalarShapeInfo, dScalars, dScalarShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execScalarBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo,
+                                            dZ, dZShapeInfo, hScalars, hScalarShapeInfo, dScalars, dScalarShapeInfo,
+                                            dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ,
+                                            tadOffsetsZ);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1811,9 +1681,14 @@ void execScalar(Nd4jPointer *extraPointers,
 						void *hScalar, Nd4jLong *hScalarShapeInfo,
 						void *dScalar, Nd4jLong *dScalarShapeInfo,
 						void *extraParams) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-	NativeOpExecutioner::execScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo, extraParams);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execScalar(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo,
+                                        hScalar, hScalarShapeInfo, dScalar, dScalarShapeInfo, extraParams);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1830,27 +1705,36 @@ void execScalarTad(Nd4jPointer *extraPointers,
 						   void *dDimension, Nd4jLong *dDimensionShape,
                      Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                      Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+        auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
+        auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-	if (yType != xType && yType != nd4j::DataType::BOOL && !isExperimentalEnabled())
-		throw nd4j::datatype_exception::build("execScalar both operands must have same data type", xType, yType);
+        if (yType != xType && yType != nd4j::DataType::BOOL && !isExperimentalEnabled())
+            throw nd4j::datatype_exception::build("execScalar both operands must have same data type", xType, yType);
 
-	dim3 launchDims(256, 256, 16384);
+        dim3 launchDims(256, 256, 16384);
 
 #ifdef __ND4J_EXPERIMENTAL__
-    BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-	BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform,
+                                     ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ,
+                                                                 dZShapeInfo, dScalars, extraParams, dimension,
+                                                                 dimensionLength, tadShapeInfo, tadOffsets,
+                                                                 tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
 #endif
 
-	DEBUG_KERNEL(stream, opNum);
+        DEBUG_KERNEL(stream, opNum);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execAggregate(Nd4jPointer *extraPointers,
@@ -1866,16 +1750,23 @@ void execAggregate(Nd4jPointer *extraPointers,
                                    void *realArguments,
                                    int numRealArguments,
                                    nd4j::DataType dtype) {
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        int numBlocks = getDeviceId(extraPointers[2]);
+        int numThreads = getDeviceId(extraPointers[3]);
+        int shmem = getDeviceId(extraPointers[4]);
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    int numBlocks = getDeviceId(extraPointers[2]);
-    int numThreads = getDeviceId(extraPointers[3]);
-    int shmem = getDeviceId(extraPointers[4]);
+        dim3 launchDims = dim3(numBlocks, numThreads, shmem);
 
-    dim3 launchDims = dim3(numBlocks, numThreads, shmem);
-
-    BUILD_SINGLE_SELECTOR(dtype, functions::aggregate::AggregatedFunction, ::aggregateKernelGeneric(launchDims, stream, opNum, arguments, numArguments, shapes, numShapes, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), FLOAT_TYPES);
-    nd4j::DebugHelper::checkErrorCode(stream, "execAggregateFloat(...) failed");
+        BUILD_SINGLE_SELECTOR(dtype, functions::aggregate::AggregatedFunction,
+                              ::aggregateKernelGeneric(launchDims, stream, opNum, arguments, numArguments, shapes,
+                                                       numShapes, indexArguments, numIndexArguments, intArrays,
+                                                       numIntArrays, realArguments, numRealArguments), FLOAT_TYPES);
+        nd4j::DebugHelper::checkErrorCode(stream, "execAggregateFloat(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void batchExecutor(Nd4jPointer *extraPointers,
@@ -1897,17 +1788,25 @@ void execAggregateBatch(Nd4jPointer *extraPointers,
 									int maxIntArrays, int maxIntArraySize,
 									int maxIdx, int maxReals,
 									void *ptrToArguments, nd4j::DataType dtype) {
-    // not implemented yet
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    int numBlocks = getDeviceId(extraPointers[2]);
-    int numThreads = getDeviceId(extraPointers[3]);
-    int shmem = getDeviceId(extraPointers[4]);
+    try {
+        // not implemented yet
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        int numBlocks = getDeviceId(extraPointers[2]);
+        int numThreads = getDeviceId(extraPointers[3]);
+        int shmem = getDeviceId(extraPointers[4]);
 
-    dim3 launchDims = dim3(numAggregates, numThreads, shmem);
+        dim3 launchDims = dim3(numAggregates, numThreads, shmem);
 
-	BUILD_SINGLE_SELECTOR(dtype, functions::aggregate::AggregatedFunction, ::aggregateBatchKernelGeneric(launchDims, stream, opNum, numAggregates, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(dtype, functions::aggregate::AggregatedFunction,
+                              ::aggregateBatchKernelGeneric(launchDims, stream, opNum, numAggregates, maxArgs,
+                                                            maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals,
+                                                            ptrToArguments), FLOAT_TYPES);
 
-	DEBUG_KERNEL(stream, opNum);
+        DEBUG_KERNEL(stream, opNum);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1917,9 +1816,13 @@ void execRandom(Nd4jPointer *extraPointers,
                           void *hZ, Nd4jLong *hZShapeInfo,
                           void *dZ, Nd4jLong *dZShapeInfo,
                           void *extraArguments) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execRandom(&lc, opNum, stateHost, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1929,9 +1832,14 @@ void execRandom2(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost,
 						   void *hZ, Nd4jLong *hZShapeInfo,
 						   void *dZ, Nd4jLong *dZShapeInfo,
 						   void *extraArguments) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execRandom(&lc, opNum, stateHost, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ,
+                                        dZShapeInfo, extraArguments);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1943,9 +1851,14 @@ void execRandom3(Nd4jPointer *extraPointers, int opNum, Nd4jPointer stateHost,
 							void *hZ, Nd4jLong *hZShapeInfo,
 							void *dZ, Nd4jLong *dZShapeInfo,
 							void *extraArguments) {
-
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execRandom(&lc, opNum, stateHost, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execRandom(&lc, opNum, stateHost, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY,
+                                        dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -2053,13 +1966,19 @@ void tear(Nd4jPointer *extras,
 					 Nd4jLong *zShapeInfo,
 					 Nd4jLong *tadShapeInfo,
 					 Nd4jLong *tadOffsets) {
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
+        dim3 launchDims(512, 512, 512);
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+        BUILD_SINGLE_SELECTOR(xType, tearKernelGeneric,
+                              (launchDims, stream, dX, dXShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets),
+                              LIBND4J_TYPES);
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
-    dim3 launchDims(512, 512, 512);
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, tearKernelGeneric, (launchDims, stream, dX, dXShapeInfo, targets, zShapeInfo, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
-
-    nd4j::DebugHelper::checkErrorCode(stream, "tearFloat(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "tearFloat(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -2146,56 +2065,72 @@ void prescanArrayRecursive(Nd4jPointer *extras, int *dZ, int *dX, int numElement
 
 
 void encodeThresholdP1(Nd4jPointer *extras, void *dx, Nd4jLong *hXShapeInfo, Nd4jLong N, int *dz, float threshold) {
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extras[1]);
+        int blockSize = 1024;
+        int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    int blockSize = 1024;
-    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+        dim3 launchDims(numBlocks, blockSize, 1024);
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+        BUILD_SINGLE_SELECTOR(xType, encoderKernelP1Generic, (launchDims, stream, dx, N, dz, threshold), LIBND4J_TYPES);
 
-    dim3 launchDims(numBlocks, blockSize, 1024);
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, encoderKernelP1Generic, (launchDims, stream, dx, N, dz, threshold), LIBND4J_TYPES);
-
-    nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP1Float(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP1Float(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
 
 void encodeThresholdP2Int(Nd4jPointer *extraPointers, int *dx, Nd4jLong N, int *dz) {
-
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    //encoderKernelP2Float<<<numBlocks, blockSize , 1024 * sizeof(float), *stream>>>(dx, N, dz);
-    prescanArrayRecursive(extraPointers, dz, dx + 1, (int) N, 0);
-    nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP2Int(...) failed");
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        //encoderKernelP2Float<<<numBlocks, blockSize , 1024 * sizeof(float), *stream>>>(dx, N, dz);
+        prescanArrayRecursive(extraPointers, dz, dx + 1, (int) N, 0);
+        nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP2Int(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void encodeThresholdP3(Nd4jPointer *extraPointers, void *dx, Nd4jLong *hXShapeInfo, int *offsets, Nd4jLong N, int *dz){
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        int blockSize = 1024;
+        int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    int blockSize = 1024;
-    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+        dim3 launchDims(numBlocks, blockSize, 4096);
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+        BUILD_SINGLE_SELECTOR(xType, encoderKernelP3Generic, (launchDims, stream, dx, offsets, N, dz), LIBND4J_TYPES);
 
-    dim3 launchDims(numBlocks, blockSize, 4096);
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, encoderKernelP3Generic, (launchDims, stream, dx, offsets, N, dz), LIBND4J_TYPES);
-
-    nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP3Float(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "encodeThresholdP3Float(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void decodeThreshold(Nd4jPointer *extraPointers, void *dx, Nd4jLong N, void *dz, Nd4jLong *zShapeInfo){
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        // we probably want to have smaller blocks here, memory writes are misaligned anyway
+        int blockSize = 128;
+        int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
 
-    // we probably want to have smaller blocks here, memory writes are misaligned anyway
-    int blockSize = 128;
-    int numBlocks = N / blockSize + (N % blockSize ? 1 : 0);
+        dim3 launchDims(numBlocks, blockSize, 1024);
+        auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
+        BUILD_SINGLE_SELECTOR(zType, decoderKernelGeneric, (launchDims, stream, dx, N, dz), LIBND4J_TYPES);
 
-    dim3 launchDims(numBlocks, blockSize, 1024);
-    auto zType = nd4j::ArrayOptions::dataType(zShapeInfo);
-    BUILD_SINGLE_SELECTOR(zType, decoderKernelGeneric, (launchDims, stream, dx, N, dz), LIBND4J_TYPES);
-
-    nd4j::DebugHelper::checkErrorCode(stream, "decodeThresholdFloat(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "decodeThresholdFloat(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2212,11 +2147,18 @@ void execReduce3All(Nd4jPointer *extraPointers,
 							   		void *dDimension, Nd4jLong *dDimensionShape,
 									Nd4jLong *xTadShapeInfo, Nd4jLong *xOffsets,
 									Nd4jLong *yTadShapeInfo, Nd4jLong *yOffsets) {
-	auto dimension = reinterpret_cast<int *>(dDimension);
-	int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(dDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    NativeOpExecutioner::execReduce3All(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        NativeOpExecutioner::execReduce3All(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY,
+                                            hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension,
+                                            dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -2224,57 +2166,65 @@ void sort(Nd4jPointer *extraPointers,
 					 void *x, Nd4jLong *xShapeInfo,
 					 void *dX, Nd4jLong *dXShapeInfo,
 					 bool descending) {
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-
-    auto xLength = shape::length(xShapeInfo);
-    auto xEWS = shape::elementWiseStride(xShapeInfo);
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+        auto xLength = shape::length(xShapeInfo);
+        auto xEWS = shape::elementWiseStride(xShapeInfo);
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
 
-    // check if xLength is a power of 2, and use bitonic sort, if that's the case
-    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
-        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
-        int numBlocks = xLength / numThreads;
-        if (xLength % numThreads > 0 || numBlocks == 0)
-            numBlocks++;
+        // check if xLength is a power of 2, and use bitonic sort, if that's the case
+        if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
 
-        dim3 launchDims(numBlocks, numThreads, 32768);
+            dim3 launchDims(numBlocks, numThreads, 32768);
 
-        for (int k = 2; k <= xLength; k = 2*k) {
-            for (int j = k >> 1; j > 0; j = j >> 1) {
-				BUILD_SINGLE_SELECTOR(xType, bitonicSortStepGeneric, (launchDims, stream, dX, dXShapeInfo, j, k, xLength, descending), LIBND4J_TYPES);
-			}
+            for (int k = 2; k <= xLength; k = 2 * k) {
+                for (int j = k >> 1; j > 0; j = j >> 1) {
+                    BUILD_SINGLE_SELECTOR(xType, bitonicSortStepGeneric,
+                                          (launchDims, stream, dX, dXShapeInfo, j, k, xLength, descending),
+                                          LIBND4J_TYPES);
+                }
+            }
+        } else {
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
+
+            numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
+            dim3 launchDims(numBlocks, numThreads, 32768);
+
+            int max = 2, dg = 0;
+            while (max < xLength) {
+                max <<= 1;
+                dg++;
+            }
+            max <<= 1;
+
+            for (int window = 2; window < max; window <<= 1) {
+                int n = window;
+                int rev = 0;
+                do {
+                    int half = n >> 1;
+                    BUILD_SINGLE_SELECTOR(xType, bitonicArbitraryStepGeneric,
+                                          (launchDims, stream, dX, dXShapeInfo, n, xLength, rev, descending),
+                                          LIBND4J_TYPES);
+                    n >>= 1;
+                    rev = 1;
+                } while (n > 1);
+            }
         }
-    } else {
-    	int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
-    	int numBlocks = xLength / numThreads;
-    	if (xLength % numThreads > 0 || numBlocks == 0)
-    		numBlocks++;
 
-    	numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
-    	dim3 launchDims(numBlocks, numThreads, 32768);
-
-    	int max = 2, dg = 0;
-    	while (max < xLength) {
-    		max <<= 1;
-    		dg++;
-    	}
-    	max <<= 1;
-
-    	for (int window = 2; window < max; window<<=1) {
-    		int n = window;
-    		int rev = 0;
-    		do{
-    			int half = n >> 1;
-    			BUILD_SINGLE_SELECTOR(xType, bitonicArbitraryStepGeneric, (launchDims, stream, dX, dXShapeInfo, n, xLength, rev, descending), LIBND4J_TYPES);
-    			n>>=1;
-    			rev = 1;
-    		} while(n > 1);
-    	}
+        nd4j::DebugHelper::checkErrorCode(stream, "sort(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
-
-    nd4j::DebugHelper::checkErrorCode(stream, "sort(...) failed");
 }
 
 
@@ -2284,55 +2234,64 @@ void sortByKey(Nd4jPointer *extraPointers,
                void *y, Nd4jLong *yShapeInfo,
                void *dy, Nd4jLong *dyShapeInfo,
                bool descending) {
+    try {
+        auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-    auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-
-    auto xLength = shape::length(xShapeInfo);
-    auto xEWS = shape::elementWiseStride(xShapeInfo);
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+        auto xLength = shape::length(xShapeInfo);
+        auto xEWS = shape::elementWiseStride(xShapeInfo);
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+        auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
 
 
-    // check if xLength is a power of 2, and use bitonic sort, if that's the case
-    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
-        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
-        int numBlocks = xLength / numThreads;
-        if (xLength % numThreads > 0 || numBlocks == 0)
-            numBlocks++;
+        // check if xLength is a power of 2, and use bitonic sort, if that's the case
+        if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
 
-        dim3 launchDims(numBlocks, numThreads, 32768);
+            dim3 launchDims(numBlocks, numThreads, 32768);
 
-        for (int k = 2; k <= xLength; k = 2*k) {
-            for (int j = k >> 1; j > 0; j = j >> 1) {
-                BUILD_DOUBLE_SELECTOR(xType, yType, bitonicSortStepGenericKey, (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, j, k, xLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+            for (int k = 2; k <= xLength; k = 2 * k) {
+                for (int j = k >> 1; j > 0; j = j >> 1) {
+                    BUILD_DOUBLE_SELECTOR(xType, yType, bitonicSortStepGenericKey,
+                                          (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, j, k, xLength, descending),
+                                          LIBND4J_TYPES, LIBND4J_TYPES);
+                }
+            }
+        } else {
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
+
+            numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
+            dim3 launchDims(numBlocks, numThreads, 32768);
+
+            int max = 2, dg = 0;
+            while (max < xLength) {
+                max <<= 1;
+                dg++;
+            }
+            max <<= 1;
+
+            for (int window = 2; window < max; window <<= 1) {
+                int n = window;
+                int rev = 0;
+                do {
+                    int half = n >> 1;
+                    BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericKey,
+                                          (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, n, xLength, rev, descending),
+                                          LIBND4J_TYPES, LIBND4J_TYPES);
+                    n >>= 1;
+                    rev = 1;
+                } while (n > 1);
             }
         }
-    } else {
-        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
-        int numBlocks = xLength / numThreads;
-        if (xLength % numThreads > 0 || numBlocks == 0)
-            numBlocks++;
 
-        numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
-        dim3 launchDims(numBlocks, numThreads, 32768);
-
-        int max = 2, dg = 0;
-        while (max < xLength) {
-            max <<= 1;
-            dg++;
-        }
-        max <<= 1;
-
-        for (int window = 2; window < max; window<<=1) {
-            int n = window;
-            int rev = 0;
-            do{
-                int half = n >> 1;
-                BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericKey, (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, n, xLength, rev, descending), LIBND4J_TYPES, LIBND4J_TYPES);
-                n>>=1;
-                rev = 1;
-            } while(n > 1);
-        }
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
 }
 
@@ -2342,54 +2301,63 @@ void sortByValue(Nd4jPointer *extraPointers,
                  void *y, Nd4jLong *yShapeInfo,
                  void *dy, Nd4jLong *dyShapeInfo,
                  bool descending) {
-    auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+    try {
+        auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-    auto xLength = shape::length(xShapeInfo);
-    auto xEWS = shape::elementWiseStride(xShapeInfo);
-    auto xType = nd4j::ArrayOptions::dataType(yShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(xShapeInfo);
+        auto xLength = shape::length(xShapeInfo);
+        auto xEWS = shape::elementWiseStride(xShapeInfo);
+        auto xType = nd4j::ArrayOptions::dataType(yShapeInfo);
+        auto yType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
 
-    // check if xLength is a power of 2, and use bitonic sort, if that's the case
-    if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
-        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
-        int numBlocks = xLength / numThreads;
-        if (xLength % numThreads > 0 || numBlocks == 0)
-            numBlocks++;
+        // check if xLength is a power of 2, and use bitonic sort, if that's the case
+        if ((xLength != 0) && ((xLength & (xLength - 1)) == 0) && (xLength <= 1024 * 1024 * 10)) {
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
 
-        dim3 launchDims(numBlocks, numThreads, 32768);
+            dim3 launchDims(numBlocks, numThreads, 32768);
 
-        for (int k = 2; k <= xLength; k = 2*k) {
-            for (int j = k >> 1; j > 0; j = j >> 1) {
-                BUILD_DOUBLE_SELECTOR(xType, yType, bitonicSortStepGenericKey, (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, j, k, xLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+            for (int k = 2; k <= xLength; k = 2 * k) {
+                for (int j = k >> 1; j > 0; j = j >> 1) {
+                    BUILD_DOUBLE_SELECTOR(xType, yType, bitonicSortStepGenericKey,
+                                          (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, j, k, xLength, descending),
+                                          LIBND4J_TYPES, LIBND4J_TYPES);
+                }
+            }
+        } else {
+            int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
+            int numBlocks = xLength / numThreads;
+            if (xLength % numThreads > 0 || numBlocks == 0)
+                numBlocks++;
+
+            numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
+            dim3 launchDims(numBlocks, numThreads, 32768);
+
+            int max = 2, dg = 0;
+            while (max < xLength) {
+                max <<= 1;
+                dg++;
+            }
+            max <<= 1;
+
+            for (int window = 2; window < max; window <<= 1) {
+                int n = window;
+                int rev = 0;
+                do {
+                    int half = n >> 1;
+                    BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericKey,
+                                          (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, n, xLength, rev, descending),
+                                          LIBND4J_TYPES, LIBND4J_TYPES);
+                    n >>= 1;
+                    rev = 1;
+                } while (n > 1);
             }
         }
-    } else {
-        int numThreads = nd4j::math::nd4j_min<int>(512, xLength);
-        int numBlocks = xLength / numThreads;
-        if (xLength % numThreads > 0 || numBlocks == 0)
-            numBlocks++;
-
-        numBlocks = nd4j::math::nd4j_min<int>(512, numBlocks);
-        dim3 launchDims(numBlocks, numThreads, 32768);
-
-        int max = 2, dg = 0;
-        while (max < xLength) {
-            max <<= 1;
-            dg++;
-        }
-        max <<= 1;
-
-        for (int window = 2; window < max; window<<=1) {
-            int n = window;
-            int rev = 0;
-            do{
-                int half = n >> 1;
-                BUILD_DOUBLE_SELECTOR(xType, yType, bitonicArbitraryStepGenericKey, (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, n, xLength, rev, descending), LIBND4J_TYPES, LIBND4J_TYPES);
-                n>>=1;
-                rev = 1;
-            } while(n > 1);
-        }
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
 }
 
@@ -2403,15 +2371,23 @@ void sortTadByKey(Nd4jPointer *extraPointers,
                              int *dimension,
                              int dimensionLength,
                              bool descending) {
-    auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    auto context = extraPointers[0] == 0 ? LaunchContext::defaultContext(): reinterpret_cast<LaunchContext*>(extraPointers[0]);
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
-    dim3 launchDims((int) tadPack.numberOfTads(), 256, 2048);
-    auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
-    BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey, (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, nullptr, dimensionLength, tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending), LIBND4J_TYPES, LIBND4J_TYPES);
+    try {
+        auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        auto context = extraPointers[0] == 0 ? LaunchContext::defaultContext()
+                                             : reinterpret_cast<LaunchContext *>(extraPointers[0]);
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        dim3 launchDims((int) tadPack.numberOfTads(), 256, 2048);
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+        auto yType = nd4j::ArrayOptions::dataType(yShapeInfo);
+        BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
+                              (launchDims, stream, dX, dXShapeInfo, dy, dyShapeInfo, nullptr, dimensionLength, tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending),
+                              LIBND4J_TYPES, LIBND4J_TYPES);
 
-    nd4j::DebugHelper::checkErrorCode(stream, "sortTadKey(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "sortTadKey(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void sortTadByValue(Nd4jPointer *extraPointers,
@@ -2422,16 +2398,24 @@ void sortTadByValue(Nd4jPointer *extraPointers,
                                int *dimension,
                                int dimensionLength,
                                bool descending) {
-    auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    auto context = extraPointers[0] == 0 ? LaunchContext::defaultContext(): reinterpret_cast<LaunchContext*>(extraPointers[0]);
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
-    dim3 launchDims((int) tadPack.numberOfTads(), 256, 2048);
-    auto xType = nd4j::ArrayOptions::dataType(yShapeInfo);
-    auto yType = nd4j::ArrayOptions::dataType(xShapeInfo);
+    try {
+        auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        auto context = extraPointers[0] == 0 ? LaunchContext::defaultContext()
+                                             : reinterpret_cast<LaunchContext *>(extraPointers[0]);
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        dim3 launchDims((int) tadPack.numberOfTads(), 256, 2048);
+        auto xType = nd4j::ArrayOptions::dataType(yShapeInfo);
+        auto yType = nd4j::ArrayOptions::dataType(xShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey, (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, nullptr, dimensionLength, tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(xType, yType, oesTadGenericKey,
+                              (launchDims, stream, dy, dyShapeInfo, dX, dXShapeInfo, nullptr, dimensionLength, tadPack.platformShapeInfo(), tadPack.platformOffsets(), descending),
+                              LIBND4J_TYPES, LIBND4J_TYPES);
 
-    nd4j::DebugHelper::checkErrorCode(stream, "sortTadValue(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "sortTadValue(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -2443,15 +2427,23 @@ void sortTad(Nd4jPointer *extraPointers,
 						Nd4jLong *tadShapeInfo,
 						Nd4jLong *tadOffsets,
 						bool descending) {
-    // to be implemented
-    auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    auto context = extraPointers[0] == 0 ? LaunchContext::defaultContext(): reinterpret_cast<LaunchContext*>(extraPointers[0]);
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
-    dim3 launchDims((int) tadPack.numberOfTads(), 512, 33768);
-	auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, oesTadGeneric, (launchDims, stream, dX, dXShapeInfo, nullptr, dimensionLength, tadShapeInfo, tadOffsets, descending), LIBND4J_TYPES);
+    try {
+        // to be implemented
+        auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        auto context = extraPointers[0] == 0 ? LaunchContext::defaultContext()
+                                             : reinterpret_cast<LaunchContext *>(extraPointers[0]);
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeInfo, dimension, dimensionLength);
+        dim3 launchDims((int) tadPack.numberOfTads(), 512, 33768);
+        auto xType = nd4j::ArrayOptions::dataType(xShapeInfo);
+        BUILD_SINGLE_SELECTOR(xType, oesTadGeneric,
+                              (launchDims, stream, dX, dXShapeInfo, nullptr, dimensionLength, tadShapeInfo, tadOffsets, descending),
+                              LIBND4J_TYPES);
 
-    nd4j::DebugHelper::checkErrorCode(stream, "sortTad(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "sortTad(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void sortCooIndices(Nd4jPointer *extraPointers, Nd4jLong *indices, void *values, Nd4jLong length, int rank) {
@@ -2464,21 +2456,29 @@ Nd4jLong encodeBitmap(Nd4jPointer *extraPointers,
 								Nd4jLong N,
 								int *dz,
 								float threshold) {
+    try {
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
-    int *reductionPointer = reinterpret_cast<int *>(extraPointers[3]);
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        int *resultPointer = reinterpret_cast<int *>(extraPointers[2]);
+        int *reductionPointer = reinterpret_cast<int *>(extraPointers[3]);
 
-    dim3 launchDims(512, 512, 32768);
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, cudaEncodeBitmapGeneric, (launchDims, stream, dx, N, dz, resultPointer, reductionPointer, threshold), LIBND4J_TYPES);
+        dim3 launchDims(512, 512, 32768);
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+        BUILD_SINGLE_SELECTOR(xType, cudaEncodeBitmapGeneric,
+                              (launchDims, stream, dx, N, dz, resultPointer, reductionPointer, threshold),
+                              LIBND4J_TYPES);
 
-    nd4j::DebugHelper::checkErrorCode(stream, "encodeBitmapFloat(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "encodeBitmapFloat(...) failed");
 
-    Nd4jLong dZ = (Nd4jLong) resultPointer[0];
-    resultPointer[0] = 0;
+        Nd4jLong dZ = (Nd4jLong) resultPointer[0];
+        resultPointer[0] = 0;
 
-    return dZ;
+        return dZ;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 0;
+    }
 }
 
 
@@ -2486,13 +2486,17 @@ void decodeBitmap(Nd4jPointer *extraPointers,
 							void *dx,
 							Nd4jLong N,
 							void *dz, Nd4jLong *zShapeInfo) {
+    try {
+        cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        dim3 launchDims(512, 512, 16384);
+        auto xType = nd4j::ArrayOptions::dataType(zShapeInfo);
+        BUILD_SINGLE_SELECTOR(xType, cudaDecodeBitmapGeneric, (launchDims, stream, dx, N, dz), LIBND4J_TYPES);
 
-    cudaStream_t *stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
-    dim3 launchDims(512, 512, 16384);
-    auto xType = nd4j::ArrayOptions::dataType(zShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, cudaDecodeBitmapGeneric, (launchDims, stream, dx, N, dz), LIBND4J_TYPES);
-
-    nd4j::DebugHelper::checkErrorCode(stream, "decodeBitmapFloat(...) failed");
+        nd4j::DebugHelper::checkErrorCode(stream, "decodeBitmapFloat(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length) {
@@ -2505,7 +2509,13 @@ void munmapFile(Nd4jPointer *extraPointers, Nd4jLong* ptrMap, Nd4jLong length) {
 
 
 nd4j::graph::ResultWrapper* executeFlatGraph(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
-    return nd4j::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
+    try {
+        return nd4j::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 Nd4jLong getResultWrapperSize(nd4j::graph::ResultWrapper* ptr) {
@@ -2560,9 +2570,16 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 }
 
 nd4j::ShapeList* calculateOutputShapes2(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool *bArgs, int numBArgs) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
+    try {
+        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
 
-    return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs, bArgs, numBArgs);
+        return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs,
+                                      iArgs, numIArgs, bArgs, numBArgs);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp* op, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
@@ -2584,9 +2601,15 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 }
 
 nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
-	auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
+    try {
+        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
 
-	return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+        return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 Nd4jLong getShapeListSize(nd4j::ShapeList* list) {
@@ -2681,39 +2704,57 @@ static FORCEINLINE Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer*
 
 
 int execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace) {
-	auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
+    try {
+        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
 
-	return realExec(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, bArgs, numBArgs, isInplace);
+        return realExec(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes,
+                        numOutputs, tArgs, numTArgs, iArgs, numIArgs, bArgs, numBArgs, isInplace);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 1;
+    }
 }
 
 int execCustomOp2(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer opContext) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
-    auto context = reinterpret_cast<Context*>(opContext);
+    try {
+        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
+        auto context = reinterpret_cast<Context *>(opContext);
 
-    auto result = op->execute(context);
+        auto result = op->execute(context);
 
-    auto res = cudaStreamSynchronize(*context->launchContext()->getCudaStream());
-    if (res != 0)
-        throw nd4j::cuda_exception::build("customOp execution failed", res);
+        auto res = cudaStreamSynchronize(*context->launchContext()->getCudaStream());
+        if (res != 0)
+            throw nd4j::cuda_exception::build("customOp execution failed", res);
 
-    for (auto v:context->fastpath_in()) {
-        v->syncToDevice();
+        for (auto v:context->fastpath_in()) {
+            v->syncToDevice();
+        }
+
+        for (auto v:context->fastpath_out()) {
+            v->syncToDevice();
+        }
+
+        return result;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 1;
     }
-
-    for (auto v:context->fastpath_out()) {
-        v->syncToDevice();
-    }
-
-    return result;
 }
 
 int registerGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer flatBufferPointer) {
+    try {
+        auto graph = nd4j::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
 
-	auto graph = nd4j::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
+        nd4j::graph::GraphHolder::getInstance()->registerGraph(graphId, graph);
 
-	nd4j::graph::GraphHolder::getInstance()->registerGraph(graphId, graph);
-
-	return ND4J_STATUS_OK;
+        return ND4J_STATUS_OK;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 1;
+    }
 }
 
 
@@ -2764,7 +2805,13 @@ static VariablesSet* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong gr
 }
 
 VariablesSet* executeStoredGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
-	return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
+    try {
+        return executeStoredGraphT(extraPointers, graphId, inputBuffers, inputShapes, inputIndices, numInputs);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 Nd4jLong getVariablesSetSize(nd4j::graph::VariablesSet* set) {
@@ -2800,10 +2847,15 @@ void* getVariableBuffer(nd4j::graph::Variable* variable) {
 }
 
 int unregisterGraph(Nd4jPointer *extraPointers, Nd4jLong graphId) {
+    try {
+        nd4j::graph::GraphHolder::getInstance()->dropGraphAny(graphId);
 
-	nd4j::graph::GraphHolder::getInstance()->dropGraphAny(graphId);
-
-	return ND4J_STATUS_OK;
+        return ND4J_STATUS_OK;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 1;
+    }
 }
 
 void deletePointerArray(Nd4jPointer pointer) {
@@ -2918,8 +2970,15 @@ Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, nd4j::graph::GraphS
 
 
 Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs) {
-
-    return execCustomOpWithScope(extraPointers, reinterpret_cast<nd4j::graph::GraphState*>(state), opHash, scopes, numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs);
+    try {
+        return execCustomOpWithScope(extraPointers, reinterpret_cast<nd4j::graph::GraphState *>(state), opHash, scopes,
+                                     numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes,
+                                     numOutputs);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 1;
+    }
 }
 
 void deleteResultWrapper(Nd4jPointer ptr) {
@@ -2937,181 +2996,186 @@ int estimateThreshold(Nd4jPointer *extraPointers, Nd4jPointer dX, Nd4jLong *dXSh
  *     void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer dX, long N, int dstType, Nd4jPointer dZ);
  */
 void convertTypes(Nd4jPointer *extras, int srcType, Nd4jPointer dX, Nd4jLong N, int dstType, Nd4jPointer dZ) {
- 	auto dx = reinterpret_cast<void *>(dX);
-	auto dz = reinterpret_cast<void *>(dZ);
+    try {
+        auto dx = reinterpret_cast<void *>(dX);
+        auto dz = reinterpret_cast<void *>(dZ);
 
-    if (srcType == ND4J_FLOAT8) {
-        if (dstType == ND4J_FLOAT8) {
-            // convertKernel<double, nd4j::float8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT8) {
-            //nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::int8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT8) {
-            //nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::uint8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT16) {
-            //nd4j::TypeCast::convertGenericCuda<nd4j::float8, float16>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT16) {
-            //nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::int16>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT16) {
-            //nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::uint16>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT24) {
+        if (srcType == ND4J_FLOAT8) {
+            if (dstType == ND4J_FLOAT8) {
+                // convertKernel<double, nd4j::float8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT8) {
+                //nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::int8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT8) {
+                //nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::uint8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT16) {
+                //nd4j::TypeCast::convertGenericCuda<nd4j::float8, float16>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT16) {
+                //nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::int16>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT16) {
+                //nd4j::TypeCast::convertGenericCuda<nd4j::float8, nd4j::uint16>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT24) {
 
-        } else if (dstType == ND4J_FLOAT32) {
-            //nd4j::TypeCast::convertGenericCuda<nd4j::float8, float>(extras, dx, N, dz);
-        } else if (dstType == ND4J_DOUBLE) {
-            //nd4j::TypeCast::convertGenericCuda<nd4j::float8, double>(extras, dx, N, dz);
-        } else {
-            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-        }
-    } else if (srcType == ND4J_INT8) {
-        if (dstType == ND4J_FLOAT8) {
-            //nd4j::TypeCast::convertGenericCuda<nd4j::int8, nd4j::float8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT8) {
-            //convertKernel<nd4j::int8, nd4j::int8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGenericCuda<int8_t, uint8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGenericCuda<int8_t, float16>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGenericCuda<int8_t, int16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGenericCuda<int8_t, uint16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT24) {
-            // TODO: eventually we might want to add it
-        } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGenericCuda<int8_t, float>(extras, dx, N, dz);
-        } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGenericCuda<int8_t, double>(extras, dx, N, dz);
-        } else {
-            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-        }
-    } else if (srcType == ND4J_UINT8) {
-        if (dstType == ND4J_FLOAT8) {
-            //nd4j::TypeCast::convertGenericCuda<uint8_t, nd4j::float8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGenericCuda<uint8_t, int8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGenericCuda<uint8_t, uint8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGenericCuda<uint8_t, float16>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGenericCuda<uint8_t, int16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGenericCuda<uint8_t, uint16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT24) {
-            // TODO: still might want to add
-        } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGenericCuda<uint8_t, float>(extras, dx, N, dz);
-        } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGenericCuda<uint8_t, double>(extras, dx, N, dz);
-        } else {
-            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-        }
-    } else if (srcType == ND4J_FLOAT16) {
-        if (dstType == ND4J_FLOAT8) {
-            //nd4j::TypeCast::convertGenericCuda<float16, nd4j::float8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGenericCuda<float16, int8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGenericCuda<float16, uint8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGenericCuda<float16, float16>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGenericCuda<float16, int16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGenericCuda<float16, uint16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT24) {
-            // TODO: .... ^^^
-        } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGenericCuda<float16, float>(extras, dx, N, dz);
-        } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGenericCuda<float16, double>(extras, dx, N, dz);
-        } else if (dstType == ND4J_THRESHOLD) {
-            //nd4j::convertToThreshold<float16>(nullptr, dx, N, dz);
-        } else {
-            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-        }
-    } else if (srcType == ND4J_INT16) {
-        if (dstType == ND4J_FLOAT8) {
-            //nd4j::TypeCast::convertGenericCuda<int16_t, nd4j::float8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGenericCuda<int16_t, int8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGenericCuda<int16_t, uint8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGenericCuda<int16_t, float16>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGenericCuda<int16_t, int16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGenericCuda<int16_t, uint16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT24) {
-            // TODO...
-        } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGenericCuda<int16_t, float>(extras, dx, N, dz);
-        } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGenericCuda<int16_t, double>(extras, dx, N, dz);
-        } else {
-            printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-        }
-    } else if (srcType == ND4J_FLOAT24) {
+            } else if (dstType == ND4J_FLOAT32) {
+                //nd4j::TypeCast::convertGenericCuda<nd4j::float8, float>(extras, dx, N, dz);
+            } else if (dstType == ND4J_DOUBLE) {
+                //nd4j::TypeCast::convertGenericCuda<nd4j::float8, double>(extras, dx, N, dz);
+            } else {
+                nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+            }
+        } else if (srcType == ND4J_INT8) {
+            if (dstType == ND4J_FLOAT8) {
+                //nd4j::TypeCast::convertGenericCuda<nd4j::int8, nd4j::float8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT8) {
+                //convertKernel<nd4j::int8, nd4j::int8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT8) {
+                nd4j::TypeCast::convertGenericCuda<int8_t, uint8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT16) {
+                nd4j::TypeCast::convertGenericCuda<int8_t, float16>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT16) {
+                nd4j::TypeCast::convertGenericCuda<int8_t, int16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT16) {
+                nd4j::TypeCast::convertGenericCuda<int8_t, uint16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT24) {
+                // TODO: eventually we might want to add it
+            } else if (dstType == ND4J_FLOAT32) {
+                nd4j::TypeCast::convertGenericCuda<int8_t, float>(extras, dx, N, dz);
+            } else if (dstType == ND4J_DOUBLE) {
+                nd4j::TypeCast::convertGenericCuda<int8_t, double>(extras, dx, N, dz);
+            } else {
+                nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+            }
+        } else if (srcType == ND4J_UINT8) {
+            if (dstType == ND4J_FLOAT8) {
+                //nd4j::TypeCast::convertGenericCuda<uint8_t, nd4j::float8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT8) {
+                nd4j::TypeCast::convertGenericCuda<uint8_t, int8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT8) {
+                nd4j::TypeCast::convertGenericCuda<uint8_t, uint8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT16) {
+                nd4j::TypeCast::convertGenericCuda<uint8_t, float16>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT16) {
+                nd4j::TypeCast::convertGenericCuda<uint8_t, int16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT16) {
+                nd4j::TypeCast::convertGenericCuda<uint8_t, uint16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT24) {
+                // TODO: still might want to add
+            } else if (dstType == ND4J_FLOAT32) {
+                nd4j::TypeCast::convertGenericCuda<uint8_t, float>(extras, dx, N, dz);
+            } else if (dstType == ND4J_DOUBLE) {
+                nd4j::TypeCast::convertGenericCuda<uint8_t, double>(extras, dx, N, dz);
+            } else {
+                nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+            }
+        } else if (srcType == ND4J_FLOAT16) {
+            if (dstType == ND4J_FLOAT8) {
+                //nd4j::TypeCast::convertGenericCuda<float16, nd4j::float8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT8) {
+                nd4j::TypeCast::convertGenericCuda<float16, int8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT8) {
+                nd4j::TypeCast::convertGenericCuda<float16, uint8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT16) {
+                nd4j::TypeCast::convertGenericCuda<float16, float16>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT16) {
+                nd4j::TypeCast::convertGenericCuda<float16, int16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT16) {
+                nd4j::TypeCast::convertGenericCuda<float16, uint16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT24) {
+                // TODO: .... ^^^
+            } else if (dstType == ND4J_FLOAT32) {
+                nd4j::TypeCast::convertGenericCuda<float16, float>(extras, dx, N, dz);
+            } else if (dstType == ND4J_DOUBLE) {
+                nd4j::TypeCast::convertGenericCuda<float16, double>(extras, dx, N, dz);
+            } else if (dstType == ND4J_THRESHOLD) {
+                //nd4j::convertToThreshold<float16>(nullptr, dx, N, dz);
+            } else {
+                nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+            }
+        } else if (srcType == ND4J_INT16) {
+            if (dstType == ND4J_FLOAT8) {
+                //nd4j::TypeCast::convertGenericCuda<int16_t, nd4j::float8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT8) {
+                nd4j::TypeCast::convertGenericCuda<int16_t, int8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT8) {
+                nd4j::TypeCast::convertGenericCuda<int16_t, uint8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT16) {
+                nd4j::TypeCast::convertGenericCuda<int16_t, float16>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT16) {
+                nd4j::TypeCast::convertGenericCuda<int16_t, int16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT16) {
+                nd4j::TypeCast::convertGenericCuda<int16_t, uint16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT24) {
+                // TODO...
+            } else if (dstType == ND4J_FLOAT32) {
+                nd4j::TypeCast::convertGenericCuda<int16_t, float>(extras, dx, N, dz);
+            } else if (dstType == ND4J_DOUBLE) {
+                nd4j::TypeCast::convertGenericCuda<int16_t, double>(extras, dx, N, dz);
+            } else {
+                printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+            }
+        } else if (srcType == ND4J_FLOAT24) {
 
-    } else if (srcType == ND4J_FLOAT32) {
-        if (dstType == ND4J_FLOAT8) {
-            //nd4j::TypeCast::convertGenericCuda<float, nd4j::float8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGenericCuda<float, int8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGenericCuda<float, uint8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGenericCuda<float, float16>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGenericCuda<float, int16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGenericCuda<float, uint16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT24) {
+        } else if (srcType == ND4J_FLOAT32) {
+            if (dstType == ND4J_FLOAT8) {
+                //nd4j::TypeCast::convertGenericCuda<float, nd4j::float8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT8) {
+                nd4j::TypeCast::convertGenericCuda<float, int8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT8) {
+                nd4j::TypeCast::convertGenericCuda<float, uint8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT16) {
+                nd4j::TypeCast::convertGenericCuda<float, float16>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT16) {
+                nd4j::TypeCast::convertGenericCuda<float, int16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT16) {
+                nd4j::TypeCast::convertGenericCuda<float, uint16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT24) {
 
-        } else if (dstType == ND4J_DOUBLE) {
-            nd4j::TypeCast::convertGenericCuda<float, double>(extras, dx, N, dz);
-        } else if (dstType == ND4J_THRESHOLD) {
-            //nd4j::convertToThreshold<float>(nullptr, dx, N, dz);
-        } else {
-            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-        }
-    } else if (srcType == ND4J_DOUBLE) {
-        if (dstType == ND4J_FLOAT8) {
-            //nd4j::TypeCast::convertGenericCuda<double, nd4j::float8>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT8) {
-            nd4j::TypeCast::convertGenericCuda<double, int8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT8) {
-            nd4j::TypeCast::convertGenericCuda<double, uint8_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT16) {
-            nd4j::TypeCast::convertGenericCuda<double, float16>(extras, dx, N, dz);
-        } else if (dstType == ND4J_INT16) {
-            nd4j::TypeCast::convertGenericCuda<double, int16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_UINT16) {
-            nd4j::TypeCast::convertGenericCuda<double, uint16_t>(extras, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT24) {
+            } else if (dstType == ND4J_DOUBLE) {
+                nd4j::TypeCast::convertGenericCuda<float, double>(extras, dx, N, dz);
+            } else if (dstType == ND4J_THRESHOLD) {
+                //nd4j::convertToThreshold<float>(nullptr, dx, N, dz);
+            } else {
+                nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+            }
+        } else if (srcType == ND4J_DOUBLE) {
+            if (dstType == ND4J_FLOAT8) {
+                //nd4j::TypeCast::convertGenericCuda<double, nd4j::float8>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT8) {
+                nd4j::TypeCast::convertGenericCuda<double, int8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT8) {
+                nd4j::TypeCast::convertGenericCuda<double, uint8_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT16) {
+                nd4j::TypeCast::convertGenericCuda<double, float16>(extras, dx, N, dz);
+            } else if (dstType == ND4J_INT16) {
+                nd4j::TypeCast::convertGenericCuda<double, int16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_UINT16) {
+                nd4j::TypeCast::convertGenericCuda<double, uint16_t>(extras, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT24) {
 
-        } else if (dstType == ND4J_FLOAT32) {
-            nd4j::TypeCast::convertGenericCuda<double, float>(extras, dx, N, dz);
-        } else if (dstType == ND4J_DOUBLE) {
-            //
-        } else if (dstType == ND4J_THRESHOLD) {
-            //nd4j::convertToThreshold<double>(nullptr, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT32) {
+                nd4j::TypeCast::convertGenericCuda<double, float>(extras, dx, N, dz);
+            } else if (dstType == ND4J_DOUBLE) {
+                //
+            } else if (dstType == ND4J_THRESHOLD) {
+                //nd4j::convertToThreshold<double>(nullptr, dx, N, dz);
+            } else {
+                nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+            }
+        } else if (srcType == ND4J_THRESHOLD) {
+            if (dstType == ND4J_FLOAT16) {
+                //nd4j::convertFromThreshold<float16>(nullptr, dx, N, dz);
+            } else if (dstType == ND4J_FLOAT32) {
+                //nd4j::convertFromThreshold<float>(nullptr, dx, N, dz);
+            } else if (dstType == ND4J_DOUBLE) {
+                //nd4j::convertFromThreshold<double>(nullptr, dx, N, dz);
+            } else {
+                nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+            }
         } else {
             nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
         }
-    } else if (srcType == ND4J_THRESHOLD) {
-        if (dstType == ND4J_FLOAT16) {
-            //nd4j::convertFromThreshold<float16>(nullptr, dx, N, dz);
-        } else if (dstType == ND4J_FLOAT32) {
-            //nd4j::convertFromThreshold<float>(nullptr, dx, N, dz);
-        } else if (dstType == ND4J_DOUBLE) {
-            //nd4j::convertFromThreshold<double>(nullptr, dx, N, dz);
-        } else {
-            nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
-        }
-    } else {
-        nd4j_printf("Unsupported types conversion: [%i] -> [%i]\n", srcType, dstType);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
 }
 
@@ -3209,20 +3273,31 @@ void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
                       			void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
                       			void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
                       			int* hIindexes, int* dIndexes) {
+    try {
+        auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-	auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
+        nd4j::DataType type = ArrayOptions::dataType(hXShapeInfo);
 
-	nd4j::DataType type = ArrayOptions::dataType(hXShapeInfo);
-
-    BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher, (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIndexes), LIBND4J_TYPES);
-    nd4j::DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
+        BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher,
+                              (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIndexes),
+                              LIBND4J_TYPES);
+        nd4j::DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo) {
-    LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
-    auto p = reinterpret_cast<nd4j::DebugInfo*>(debugInfo);
-    NDArray array(buffer, specialBuffer, shapeInfo, &lc);
-    nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
+    try {
+        LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
+        auto p = reinterpret_cast<nd4j::DebugInfo *>(debugInfo);
+        NDArray array(buffer, specialBuffer, shapeInfo, &lc);
+        nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void __global__ tryPointerKernel(void* p, int len) {
@@ -3239,26 +3314,37 @@ void __global__ tryPointerKernel(void* p, int len) {
 }
 
 void tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
+    try {
+        cudaStream_t stream;
+        cudaStreamCreate(&stream);
 
-    cudaStream_t stream;
-    cudaStreamCreate(&stream);
+        tryPointerKernel << < 256, 512, len + 64, stream >> > (p, len);
+        auto e = cudaStreamSynchronize(stream);
 
-    tryPointerKernel<<<256, 512, len+64, stream>>>(p, len);
-    auto e = cudaStreamSynchronize(stream);
+        if (e != 0)
+            throw nd4j::cuda_exception::build("tryPointer failed", e);
 
-    if (e != 0)
-        throw nd4j::cuda_exception::build("tryPointer failed", e);
-
-    cudaStreamDestroy(stream);
+        cudaStreamDestroy(stream);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 int dataTypeFromNpyHeader(void *header) {
     return (int) cnpy::dataTypeFromHeader(reinterpret_cast<char *>(header));
 }
 nd4j::ConstantDataBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, nd4j::DataType dtype, char order, Nd4jLong ews, bool empty) {
-    auto buffer = new ConstantDataBuffer();
-    *buffer = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(ShapeDescriptor(dtype, order, shape, strides, rank, ews, empty));
-    return buffer;
+    try {
+        auto buffer = new ConstantDataBuffer();
+        *buffer = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(
+                ShapeDescriptor(dtype, order, shape, strides, rank, ews, empty));
+        return buffer;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 void deleteShapeBuffer(nd4j::ConstantDataBuffer* ptr) {
@@ -3359,60 +3445,79 @@ void deleteRandomGenerator(nd4j::graph::RandomGenerator* ptr) {
 
 
 Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray) {
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    unsigned int shapeSize = arr.shape.size();
-    std::vector<Nd4jLong> shape(shapeSize);
-    bool _empty = false;
-    for(unsigned int i = 0; i < shapeSize; i++) {
-        shape[i] = arr.shape[i];
+    try {
+        cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
+        unsigned int shapeSize = arr.shape.size();
+        std::vector<Nd4jLong> shape(shapeSize);
+        bool _empty = false;
+        for (unsigned int i = 0; i < shapeSize; i++) {
+            shape[i] = arr.shape[i];
 
-        if (arr.shape[i] == 0)
-            _empty = true;
+            if (arr.shape[i] == 0)
+                _empty = true;
+        }
+
+        auto dtype = cnpy::dataTypeFromHeader(reinterpret_cast<char *>(npyArray));
+
+        Nd4jLong *shapeBuffer;
+        if (shape.size() == 1 && shape[0] == 0) {
+            // scalar case
+            shapeBuffer = nd4j::ShapeBuilders::createScalarShapeInfo(dtype);
+        } else if (_empty) {
+            if (shapeSize > 0)
+                shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+            else
+                shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype);
+        } else {
+            shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+        }
+        return reinterpret_cast<Nd4jPointer>(nd4j::ConstantShapeHelper::getInstance()->createFromExisting(shapeBuffer,
+                                                                                                          true));
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
     }
-
-    auto dtype = cnpy::dataTypeFromHeader(reinterpret_cast<char *>(npyArray));
-
-    Nd4jLong *shapeBuffer;
-    if (shape.size() == 1 && shape[0] == 0) {
-        // scalar case
-        shapeBuffer = nd4j::ShapeBuilders::createScalarShapeInfo(dtype);
-    } else if (_empty) {
-        if (shapeSize > 0)
-            shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
-        else
-            shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype);
-    } else {
-        shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
-    }
-    return reinterpret_cast<Nd4jPointer>(nd4j::ConstantShapeHelper::getInstance()->createFromExisting(shapeBuffer, true));
 }
 
 const char* runLightBenchmarkSuit(bool printOut) {
-    nd4j::LightBenchmarkSuit suit;
-    auto result = suit.runSuit();
+    try {
+        nd4j::LightBenchmarkSuit suit;
+        auto result = suit.runSuit();
 
-    if (printOut)
-        nd4j_printf("%s\n", result.data());
+        if (printOut)
+            nd4j_printf("%s\n", result.data());
 
-    auto chars = new char[result.length()+1];
-    std::memcpy(chars, result.data(), result.length());
-    chars[result.length()] = (char) 0x0;
+        auto chars = new char[result.length() + 1];
+        std::memcpy(chars, result.data(), result.length());
+        chars[result.length()] = (char) 0x0;
 
-    return chars;
+        return chars;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 const char* runFullBenchmarkSuit(bool printOut) {
-    nd4j::FullBenchmarkSuit suit;
-    auto result = suit.runSuit();
+    try {
+        nd4j::FullBenchmarkSuit suit;
+        auto result = suit.runSuit();
 
-    if (printOut)
-        nd4j_printf("%s\n", result.data());
+        if (printOut)
+            nd4j_printf("%s\n", result.data());
 
-    auto chars = new char[result.length()+1];
-    std::memcpy(chars, result.data(), result.length());
-    chars[result.length()] = (char) 0x0;
+        auto chars = new char[result.length() + 1];
+        std::memcpy(chars, result.data(), result.length());
+        chars[result.length()] = (char) 0x0;
 
-    return chars;
+        return chars;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 Nd4jLong getCachedMemory(int deviceId) {
@@ -3449,4 +3554,12 @@ Nd4jPointer lcBlasHandle(OpaqueLaunchContext* lc) {
 
 Nd4jPointer lcSolverHandle(OpaqueLaunchContext* lc) {
     return lc->getCusolverHandle();
+}
+
+int lastErrorCode() {
+    return nd4j::LaunchContext::defaultContext()->errorReference()->errorCode();
+}
+
+const char* lastErrorMessage() {
+    return nd4j::LaunchContext::defaultContext()->errorReference()->errorMessage();
 }

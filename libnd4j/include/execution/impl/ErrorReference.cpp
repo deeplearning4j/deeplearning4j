@@ -15,32 +15,32 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 27.01.2018
+// @author raver119@gmail.com
 //
 
-#ifndef LIBND4J_PROVIDERRNG_H
-#define LIBND4J_PROVIDERRNG_H
 
-#include <helpers/helper_random.h>
-#include <mutex>
+#include <execution/ErrorReference.h>
 
-namespace nd4j {
-    
-class ProviderRNG {
-        
-    protected:
-        random::RandomBuffer* _rng;
-        static std::mutex _mutex;
-        ProviderRNG();
+namespace sd {
+    int ErrorReference::errorCode() {
+        return _errorCode;
+    }
 
-    public:
-        ProviderRNG(const ProviderRNG&)    = delete;
-        void operator=(const ProviderRNG&) = delete;   
-        random::RandomBuffer* getRNG() const;
-        static ProviderRNG& getInstance();        
-};
+    const char* ErrorReference::errorMessage() {
+        // since we're fetching error message - error code will be assumed consumed & nullified
+        _errorCode = 0;
+        return _errorMessage.c_str();
+    }
 
+    void ErrorReference::setErrorCode(int errorCode) {
+        _errorCode = errorCode;
+    }
 
+    void ErrorReference::setErrorMessage(std::string message) {
+        _errorMessage = message;
+    }
+
+    void ErrorReference::setErrorMessage(const char* message) {
+        _errorMessage = std::string(message);
+    }
 }
-
-#endif //LIBND4J_PROVIDERRNG_H

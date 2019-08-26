@@ -22,6 +22,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.exception.ND4JException;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.nativeblas.NativeOps;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 /**
@@ -67,14 +68,18 @@ public class cudaEvent_t extends CudaPointer {
             int res = NativeOpsHolder.getInstance().getDeviceNativeOps().eventSynchronize(this);
             if (res == 0)
                 throw new ND4JException("CUDA exception happened. Terminating. Last op: [" + Nd4j.getExecutioner().getLastOp() +"]");
+
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode() != 0)
+                throw new RuntimeException(NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage());
         }
     }
 
     public void register(cudaStream_t stream) {
         if (!isDestroyed()) {
             int res = NativeOpsHolder.getInstance().getDeviceNativeOps().registerEvent(this, stream);
-            if (res == 0)
-                throw new ND4JException("CUDA exception happened. Terminating. Last op: [" + Nd4j.getExecutioner().getLastOp() +"]");
+
+            if (NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode() != 0)
+                throw new RuntimeException(NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage());
         }
     }
 }

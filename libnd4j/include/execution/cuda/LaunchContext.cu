@@ -168,4 +168,8 @@ LaunchContext::LaunchContext() {
     bool LaunchContext::isInitialized() {
         return contextBuffers.isInitialized();
     }
+
+    sd::ErrorReference* LaunchContext::errorReference() {
+        return contextBuffers.errorReference();
+    }
 }

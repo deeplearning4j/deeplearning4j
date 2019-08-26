@@ -557,43 +557,6 @@ public interface NativeOps {
                                         @Cast("Nd4jLong *") LongPointer tadShapeInfo, @Cast("Nd4jLong *") LongPointer tadOffsets,
                                         @Cast("Nd4jLong *") LongPointer tadShapeInfoZ, @Cast("Nd4jLong *") LongPointer tadOffsetsZ);
 
-    /**
-     * @param extraPointers
-     * @param offset
-     * @param order
-     * @param results
-     * @param resultShapeInfo
-     * @param input
-     * @param inputShapeInfo
-     */
-    void flatten(PointerPointer extraPointers,
-                                 int offset,
-                                 char order,
-                                 Pointer results, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
-                                 Pointer dresults, @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                 Pointer input, @Cast("Nd4jLong *") LongPointer inputShapeInfo,
-                                 Pointer dinput, @Cast("Nd4jLong *") LongPointer dinputShapeInfo);
-
-    /**
-     * @param extraPointers
-     * @param dimension
-     * @param numArrays
-     * @param data
-     * @param inputShapeInfo
-     * @param results
-     * @param resultShapeInfo
-     * @param tadPointers
-     * @param tadOffsets
-     */
-    void concat(PointerPointer extraPointers,
-                                int dimension,
-                                int numArrays,
-                                PointerPointer data, PointerPointer inputShapeInfo,
-                                PointerPointer ddata, PointerPointer dinputShapeInfo,
-                                Pointer results, @Cast("Nd4jLong *") LongPointer resultShapeInfo,
-                                Pointer dresults, @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
-                                PointerPointer tadPointers,
-                                PointerPointer tadOffsets);
 
     void specialConcat(PointerPointer extraPointers,
                                        int dimension,
@@ -1185,4 +1148,7 @@ public interface NativeOps {
     Pointer lcCopyStream(OpaqueLaunchContext lc);
     Pointer lcBlasHandle(OpaqueLaunchContext lc);
     Pointer lcSolverHandle(OpaqueLaunchContext lc);
+
+    int lastErrorCode();
+    String lastErrorMessage();
 }

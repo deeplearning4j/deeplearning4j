@@ -102,8 +102,12 @@ void execIndexReduceScalar(Nd4jPointer *extraPointers,
                                                 void *extraParams,
                                                 void *hZ, Nd4jLong *hZShapeInfo,
                                                 void *dZ, Nd4jLong *dZShapeInfo) {
-
-    NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    try {
+        NativeOpExecutioner::execIndexReduceScalar(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -125,31 +129,36 @@ void  execIndexReduce(Nd4jPointer *extraPointers,int opNum,
                                         void *dZ, Nd4jLong *dZShapeInfo,
                                         void *hDimension, Nd4jLong *hDimensionShape,
                                         void *dDimension, Nd4jLong *dDimensionShape) {
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension,
+                                                                                dimensionLength);
 
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        auto hTADShapeInfo = tadPack.primaryShapeInfo();
+        auto hTADOffsets = tadPack.primaryOffsets();
 
-    auto hTADShapeInfo = tadPack.primaryShapeInfo();
-    auto hTADOffsets = tadPack.primaryOffsets();
+        auto hz = reinterpret_cast<Nd4jLong *>(hZ);
 
-    auto hz = reinterpret_cast<Nd4jLong*>(hZ);
-
-    NativeOpExecutioner::execIndexReduce(nullptr, opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hz,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            dimension,
-            dimensionLength,
-            hTADShapeInfo,
-            hTADOffsets);
+        NativeOpExecutioner::execIndexReduce(nullptr, opNum,
+                                             hX,
+                                             hXShapeInfo,
+                                             dX,
+                                             dXShapeInfo,
+                                             extraParams,
+                                             hz,
+                                             hZShapeInfo,
+                                             dZ,
+                                             dZShapeInfo,
+                                             dimension,
+                                             dimensionLength,
+                                             hTADShapeInfo,
+                                             hTADOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -175,31 +184,38 @@ void execBroadcast(Nd4jPointer *extraPointers,
                                       void *dZ, Nd4jLong *dZShapeInfo,
                                       void *hDimension, Nd4jLong *hDimensionShape,
                                       void *dDimension, Nd4jLong *dDimensionShape) {
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
-    auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hZShapeInfo, dimension, dimensionLength);
+        auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension,
+                                                                                 dimensionLength);
+        auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hZShapeInfo, dimension,
+                                                                                 dimensionLength);
 
-    auto hTADShapeInfo = tadPackX.primaryShapeInfo();
-    auto hTADOffsets = tadPackX.primaryOffsets();
-    auto hTADShapeInfoZ = tadPackZ.primaryShapeInfo();
-    auto hTADOffsetsZ = tadPackZ.primaryOffsets();
+        auto hTADShapeInfo = tadPackX.primaryShapeInfo();
+        auto hTADOffsets = tadPackX.primaryOffsets();
+        auto hTADShapeInfoZ = tadPackZ.primaryShapeInfo();
+        auto hTADOffsetsZ = tadPackZ.primaryOffsets();
 
-    NativeOpExecutioner::execBroadcast(nullptr,
-                                      opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            hY,
-            hYShapeInfo,
-            dY,
-            dYShapeInfo,
-            hZ, hZShapeInfo,
-            dZ, dZShapeInfo,
-            dimension,
-            dimensionLength, hTADShapeInfo, hTADOffsets, hTADShapeInfoZ, hTADOffsetsZ);
+        NativeOpExecutioner::execBroadcast(nullptr,
+                                           opNum,
+                                           hX,
+                                           hXShapeInfo,
+                                           dX,
+                                           dXShapeInfo,
+                                           hY,
+                                           hYShapeInfo,
+                                           dY,
+                                           dYShapeInfo,
+                                           hZ, hZShapeInfo,
+                                           dZ, dZShapeInfo,
+                                           dimension,
+                                           dimensionLength, hTADShapeInfo, hTADOffsets, hTADShapeInfoZ, hTADOffsetsZ);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execBroadcastBool(Nd4jPointer *extraPointers,
@@ -212,31 +228,39 @@ void execBroadcastBool(Nd4jPointer *extraPointers,
                               void *dZ, Nd4jLong *dZShapeInfo,
                                   void *hDimension, Nd4jLong *hDimensionShape,
                                   void *dDimension, Nd4jLong *dDimensionShape) {
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
-    auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hZShapeInfo, dimension, dimensionLength);
+        auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension,
+                                                                                 dimensionLength);
+        auto tadPackZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hZShapeInfo, dimension,
+                                                                                 dimensionLength);
 
-    auto hTADShapeInfo = tadPackX.primaryShapeInfo();
-    auto hTADOffsets = tadPackX.primaryOffsets();
-    auto hTADShapeInfoZ = tadPackZ.primaryShapeInfo();
-    auto hTADOffsetsZ = tadPackZ.primaryOffsets();
+        auto hTADShapeInfo = tadPackX.primaryShapeInfo();
+        auto hTADOffsets = tadPackX.primaryOffsets();
+        auto hTADShapeInfoZ = tadPackZ.primaryShapeInfo();
+        auto hTADOffsetsZ = tadPackZ.primaryOffsets();
 
-    NativeOpExecutioner::execBroadcastBool(nullptr,
-                                          opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            hY,
-            hYShapeInfo,
-            dY,
-            dYShapeInfo,
-            hZ, hZShapeInfo,
-            dZ, dZShapeInfo,
-            dimension,
-            dimensionLength, hTADShapeInfo, hTADOffsets, hTADShapeInfoZ, hTADOffsetsZ);
+        NativeOpExecutioner::execBroadcastBool(nullptr,
+                                               opNum,
+                                               hX,
+                                               hXShapeInfo,
+                                               dX,
+                                               dXShapeInfo,
+                                               hY,
+                                               hYShapeInfo,
+                                               dY,
+                                               dYShapeInfo,
+                                               hZ, hZShapeInfo,
+                                               dZ, dZShapeInfo,
+                                               dimension,
+                                               dimensionLength, hTADShapeInfo, hTADOffsets, hTADShapeInfoZ,
+                                               hTADOffsetsZ);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -261,21 +285,26 @@ void execPairwiseTransform(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    NativeOpExecutioner::execPairwiseTransform(nullptr,
-                                              opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            hY,
-            hYShapeInfo,
-            dY,
-            dYShapeInfo,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            extraParams);
+    try {
+        NativeOpExecutioner::execPairwiseTransform(nullptr,
+                                                   opNum,
+                                                   hX,
+                                                   hXShapeInfo,
+                                                   dX,
+                                                   dXShapeInfo,
+                                                   hY,
+                                                   hYShapeInfo,
+                                                   dY,
+                                                   dYShapeInfo,
+                                                   hZ,
+                                                   hZShapeInfo,
+                                                   dZ,
+                                                   dZShapeInfo,
+                                                   extraParams);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execPairwiseTransformBool(
@@ -288,21 +317,27 @@ void execPairwiseTransformBool(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-    NativeOpExecutioner::execPairwiseBoolTransform(nullptr,
-                                                  opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            hY,
-            hYShapeInfo,
-            dY,
-            dYShapeInfo,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            extraParams);
+
+    try {
+        NativeOpExecutioner::execPairwiseBoolTransform(nullptr,
+                                                       opNum,
+                                                       hX,
+                                                       hXShapeInfo,
+                                                       dX,
+                                                       dXShapeInfo,
+                                                       hY,
+                                                       hYShapeInfo,
+                                                       dY,
+                                                       dYShapeInfo,
+                                                       hZ,
+                                                       hZShapeInfo,
+                                                       dZ,
+                                                       dZShapeInfo,
+                                                       extraParams);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -323,18 +358,22 @@ void execReduceFloat(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo) {
 
-    NativeOpExecutioner::execReduceFloatScalar(nullptr,
-                                              opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo);
-
+    try {
+        NativeOpExecutioner::execReduceFloatScalar(nullptr,
+                                                   opNum,
+                                                   hX,
+                                                   hXShapeInfo,
+                                                   dX,
+                                                   dXShapeInfo,
+                                                   extraParams,
+                                                   hZ,
+                                                   hZShapeInfo,
+                                                   dZ,
+                                                   dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execReduceSame(
@@ -346,18 +385,22 @@ void execReduceSame(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo) {
 
-    NativeOpExecutioner::execReduceSameScalar(nullptr,
-                                             opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo);
-
+    try {
+        NativeOpExecutioner::execReduceSameScalar(nullptr,
+                                                  opNum,
+                                                  hX,
+                                                  hXShapeInfo,
+                                                  dX,
+                                                  dXShapeInfo,
+                                                  extraParams,
+                                                  hZ,
+                                                  hZShapeInfo,
+                                                  dZ,
+                                                  dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execReduceBool(
@@ -368,19 +411,22 @@ void execReduceBool(
         void *extraParams,
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo) {
-
-    NativeOpExecutioner::execReduceBoolScalar(nullptr,
-                                             opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo);
-
+    try {
+        NativeOpExecutioner::execReduceBoolScalar(nullptr,
+                                                  opNum,
+                                                  hX,
+                                                  hXShapeInfo,
+                                                  dX,
+                                                  dXShapeInfo,
+                                                  extraParams,
+                                                  hZ,
+                                                  hZShapeInfo,
+                                                  dZ,
+                                                  dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execReduceLong(
@@ -391,19 +437,22 @@ void execReduceLong(
         void *extraParams,
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo) {
-
-    NativeOpExecutioner::execReduceLongScalar(nullptr,
-                                             opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo);
-
+    try {
+        NativeOpExecutioner::execReduceLongScalar(nullptr,
+                                                  opNum,
+                                                  hX,
+                                                  hXShapeInfo,
+                                                  dX,
+                                                  dXShapeInfo,
+                                                  extraParams,
+                                                  hZ,
+                                                  hZShapeInfo,
+                                                  dZ,
+                                                  dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -424,28 +473,34 @@ void execReduceFloat2(Nd4jPointer *extraPointers,
                                    void *dZ, Nd4jLong *dZShapeInfo,
                                 void *hDimension, Nd4jLong *hDimensionShape,
                                 void *dDimension, Nd4jLong *dDimensionShape) {
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        auto tadPackX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension,
+                                                                                 dimensionLength);
 
-    auto hTADShapeInfo = tadPackX.primaryShapeInfo();
-    auto hTADOffsets = tadPackX.primaryOffsets();
+        auto hTADShapeInfo = tadPackX.primaryShapeInfo();
+        auto hTADOffsets = tadPackX.primaryOffsets();
 
-    NativeOpExecutioner::execReduceFloat(nullptr, opNum,
-                                           hX,
-                                           hXShapeInfo,
-                                           dX,
-                                           dXShapeInfo,
-                                           extraParams,
-                                           hZ,
-                                           hZShapeInfo,
-                                           dZ,
-                                           dZShapeInfo,
-                                           dimension,
-                                           dimensionLength,
-                                           hTADShapeInfo,
-                                           hTADOffsets);
+        NativeOpExecutioner::execReduceFloat(nullptr, opNum,
+                                             hX,
+                                             hXShapeInfo,
+                                             dX,
+                                             dXShapeInfo,
+                                             extraParams,
+                                             hZ,
+                                             hZShapeInfo,
+                                             dZ,
+                                             dZShapeInfo,
+                                             dimension,
+                                             dimensionLength,
+                                             hTADShapeInfo,
+                                             hTADOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execReduceBool2(Nd4jPointer *extraPointers,
@@ -457,28 +512,34 @@ void execReduceBool2(Nd4jPointer *extraPointers,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                void *hDimension, Nd4jLong *hDimensionShape,
                                void *dDimension, Nd4jLong *dDimensionShape) {
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension,
+                                                                                dimensionLength);
 
-    auto hTADShapeInfo = tadPack.primaryShapeInfo();
-    auto hTADOffsets = tadPack.primaryOffsets();
+        auto hTADShapeInfo = tadPack.primaryShapeInfo();
+        auto hTADOffsets = tadPack.primaryOffsets();
 
-    NativeOpExecutioner::execReduceBool(nullptr, opNum,
-                                        hX,
-                                        hXShapeInfo,
-                                        dX,
-                                        dXShapeInfo,
-                                        extraParams,
-                                        hZ,
-                                        hZShapeInfo,
-                                        dZ,
-                                        dZShapeInfo,
-                                        dimension,
-                                        dimensionLength,
-                                        hTADShapeInfo,
-                                        hTADOffsets);
+        NativeOpExecutioner::execReduceBool(nullptr, opNum,
+                                            hX,
+                                            hXShapeInfo,
+                                            dX,
+                                            dXShapeInfo,
+                                            extraParams,
+                                            hZ,
+                                            hZShapeInfo,
+                                            dZ,
+                                            dZShapeInfo,
+                                            dimension,
+                                            dimensionLength,
+                                            hTADShapeInfo,
+                                            hTADOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execReduceSame2(Nd4jPointer *extraPointers,
@@ -490,28 +551,34 @@ void execReduceSame2(Nd4jPointer *extraPointers,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                void *hDimension, Nd4jLong *hDimensionShape,
                                void *dDimension, Nd4jLong *dDimensionShape) {
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension,
+                                                                                dimensionLength);
 
-    auto hTADShapeInfo = tadPack.primaryShapeInfo();
-    auto hTADOffsets = tadPack.primaryOffsets();
+        auto hTADShapeInfo = tadPack.primaryShapeInfo();
+        auto hTADOffsets = tadPack.primaryOffsets();
 
-    NativeOpExecutioner::execReduceSame(nullptr, opNum,
-                                        hX,
-                                        hXShapeInfo,
-                                        dX,
-                                        dXShapeInfo,
-                                        extraParams,
-                                        hZ,
-                                        hZShapeInfo,
-                                        dZ,
-                                        dZShapeInfo,
-                                        dimension,
-                                        dimensionLength,
-                                        hTADShapeInfo,
-                                        hTADOffsets);
+        NativeOpExecutioner::execReduceSame(nullptr, opNum,
+                                            hX,
+                                            hXShapeInfo,
+                                            dX,
+                                            dXShapeInfo,
+                                            extraParams,
+                                            hZ,
+                                            hZShapeInfo,
+                                            dZ,
+                                            dZShapeInfo,
+                                            dimension,
+                                            dimensionLength,
+                                            hTADShapeInfo,
+                                            hTADOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execReduceLong2(Nd4jPointer *extraPointers,
@@ -523,28 +590,34 @@ void execReduceLong2(Nd4jPointer *extraPointers,
                                 void *dZ, Nd4jLong *dZShapeInfo,
                                void *hDimension, Nd4jLong *hDimensionShape,
                                void *dDimension, Nd4jLong *dDimensionShape) {
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension,
+                                                                                dimensionLength);
 
-    auto hTADShapeInfo = tadPack.primaryShapeInfo();
-    auto hTADOffsets = tadPack.primaryOffsets();
+        auto hTADShapeInfo = tadPack.primaryShapeInfo();
+        auto hTADOffsets = tadPack.primaryOffsets();
 
-    NativeOpExecutioner::execReduceLong(nullptr, opNum,
-                                        hX,
-                                        hXShapeInfo,
-                                        dX,
-                                        dXShapeInfo,
-                                        extraParams,
-                                        hZ,
-                                        hZShapeInfo,
-                                        dZ,
-                                        dZShapeInfo,
-                                        dimension,
-                                        dimensionLength,
-                                        hTADShapeInfo,
-                                        hTADOffsets);
+        NativeOpExecutioner::execReduceLong(nullptr, opNum,
+                                            hX,
+                                            hXShapeInfo,
+                                            dX,
+                                            dXShapeInfo,
+                                            extraParams,
+                                            hZ,
+                                            hZShapeInfo,
+                                            dZ,
+                                            dZShapeInfo,
+                                            dimension,
+                                            dimensionLength,
+                                            hTADShapeInfo,
+                                            hTADOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -567,8 +640,13 @@ void execReduce3(Nd4jPointer *extraPointers,
                                     void *dY, Nd4jLong *dYShapeInfo,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo) {
-
-    NativeOpExecutioner::execReduce3(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    try {
+        NativeOpExecutioner::execReduce3(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo,
+                                         dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -588,8 +666,13 @@ void execReduce3Scalar(Nd4jPointer *extraPointers,int opNum,
                                             void *dY, Nd4jLong *dYShapeInfo,
                                             void *hZ, Nd4jLong *hZShapeInfo,
                                             void *dZ, Nd4jLong *dZShapeInfo) {
-
-    NativeOpExecutioner::execReduce3Scalar(nullptr, opNum,hX,hXShapeInfo,dX, dXShapeInfo,extraParams,hY,hYShapeInfo,dY,dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    try {
+        NativeOpExecutioner::execReduce3Scalar(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY,
+                                               hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 /**
  *
@@ -617,19 +700,31 @@ void execReduce3Tad(Nd4jPointer *extraPointers,
                                     void *dDimension, Nd4jLong *dDimensionShape,
                                     Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                     Nd4jLong *yTadOnlyShapeInfo, Nd4jLong *yTadOffsets) {
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    if (extraPointers == nullptr || extraPointers[2] == 0) {
-        NativeOpExecutioner::execReduce3(LaunchContext::defaultContext(), opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, yTadOnlyShapeInfo, yTadOffsets);
-    } else {
-        // going tad-way
-        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+        if (extraPointers == nullptr || extraPointers[2] == 0) {
+            NativeOpExecutioner::execReduce3(LaunchContext::defaultContext(), opNum, hX, hXShapeInfo, dX, dXShapeInfo,
+                                             extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ,
+                                             dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets,
+                                             yTadOnlyShapeInfo, yTadOffsets);
+        } else {
+            // going tad-way
+            auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension,
+                                                                                    dimensionLength);
 
-        auto hTADShapeInfo = tadPack.primaryShapeInfo();
-        auto hTADOffsets = tadPack.primaryOffsets();
+            auto hTADShapeInfo = tadPack.primaryShapeInfo();
+            auto hTADOffsets = tadPack.primaryOffsets();
 
-        NativeOpExecutioner::execReduce3TAD(LaunchContext::defaultContext(), opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, hTADShapeInfo, hTADOffsets, nullptr, nullptr);
+            NativeOpExecutioner::execReduce3TAD(LaunchContext::defaultContext(), opNum, hX, hXShapeInfo, dX,
+                                                dXShapeInfo, extraParams, hY, hYShapeInfo, dY, dYShapeInfo, hZ,
+                                                hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, hTADShapeInfo,
+                                                hTADOffsets, nullptr, nullptr);
+        }
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
 }
 
@@ -654,36 +749,9 @@ void execScalar(
         void *hScalar, Nd4jLong *hScalarShapeInfo,
         void *dScalar, Nd4jLong *dScalarShapeInfo,
         void *extraParams) {
-    NativeOpExecutioner::execScalar(nullptr,
-                                   opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            hScalar,
-            hScalarShapeInfo,
-            dScalar,
-            dScalarShapeInfo,
-            extraParams);
-}
-
-void execScalarBool(
-        Nd4jPointer *extraPointers,
-        int opNum,
-        void *hX, Nd4jLong *hXShapeInfo,
-        void *dX, Nd4jLong *dXShapeInfo,
-        void *hZ, Nd4jLong *hZShapeInfo,
-        void *dZ, Nd4jLong *dZShapeInfo,
-        void *hScalar, Nd4jLong *hScalarShapeInfo,
-        void *dScalar, Nd4jLong *dScalarShapeInfo,
-        void *extraParams) {
-
-    NativeOpExecutioner::execScalarBool(nullptr,
-                                       opNum,
+    try {
+        NativeOpExecutioner::execScalar(nullptr,
+                                        opNum,
                                         hX,
                                         hXShapeInfo,
                                         dX,
@@ -696,7 +764,43 @@ void execScalarBool(
                                         hScalarShapeInfo,
                                         dScalar,
                                         dScalarShapeInfo,
-                                       extraParams);
+                                        extraParams);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
+}
+
+void execScalarBool(
+        Nd4jPointer *extraPointers,
+        int opNum,
+        void *hX, Nd4jLong *hXShapeInfo,
+        void *dX, Nd4jLong *dXShapeInfo,
+        void *hZ, Nd4jLong *hZShapeInfo,
+        void *dZ, Nd4jLong *dZShapeInfo,
+        void *hScalar, Nd4jLong *hScalarShapeInfo,
+        void *dScalar, Nd4jLong *dScalarShapeInfo,
+        void *extraParams) {
+    try {
+        NativeOpExecutioner::execScalarBool(nullptr,
+                                            opNum,
+                                            hX,
+                                            hXShapeInfo,
+                                            dX,
+                                            dXShapeInfo,
+                                            hZ,
+                                            hZShapeInfo,
+                                            dZ,
+                                            dZShapeInfo,
+                                            hScalar,
+                                            hScalarShapeInfo,
+                                            dScalar,
+                                            dScalarShapeInfo,
+                                            extraParams);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -714,18 +818,23 @@ void execSummaryStatsScalar(Nd4jPointer *extraPointers,
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         bool biasCorrected) {
-    NativeOpExecutioner::execSummaryStatsScalar(nullptr,
-                                               opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            biasCorrected);
+    try {
+        NativeOpExecutioner::execSummaryStatsScalar(nullptr,
+                                                    opNum,
+                                                    hX,
+                                                    hXShapeInfo,
+                                                    dX,
+                                                    dXShapeInfo,
+                                                    extraParams,
+                                                    hZ,
+                                                    hZShapeInfo,
+                                                    dZ,
+                                                    dZShapeInfo,
+                                                    biasCorrected);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 /**
  *
@@ -744,18 +853,23 @@ void execSummaryStats(Nd4jPointer *extraPointers,
                                          void *hZ, Nd4jLong *hZShapeInfo,
                                          void *dZ, Nd4jLong *dZShapeInfo,
                                          bool biasCorrected) {
-    NativeOpExecutioner::execSummaryStats(nullptr,
-                                         opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            biasCorrected);
+    try {
+        NativeOpExecutioner::execSummaryStats(nullptr,
+                                              opNum,
+                                              hX,
+                                              hXShapeInfo,
+                                              dX,
+                                              dXShapeInfo,
+                                              extraParams,
+                                              hZ,
+                                              hZShapeInfo,
+                                              dZ,
+                                              dZShapeInfo,
+                                              biasCorrected);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 /**
  *
@@ -779,27 +893,31 @@ void execSummaryStatsTad(Nd4jPointer *extraPointers,
                                          void *dDimension, Nd4jLong *dDimensionShape,
                                          bool biasCorrected,
                                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
 
-    NativeOpExecutioner::execSummaryStats(nullptr,
-                                         opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            dimension,
-            dimensionLength,
-            tadShapeInfo,
-            tadOffsets,
-            biasCorrected);
-
+        NativeOpExecutioner::execSummaryStats(nullptr,
+                                              opNum,
+                                              hX,
+                                              hXShapeInfo,
+                                              dX,
+                                              dXShapeInfo,
+                                              extraParams,
+                                              hZ,
+                                              hZShapeInfo,
+                                              dZ,
+                                              dZShapeInfo,
+                                              dimension,
+                                              dimensionLength,
+                                              tadShapeInfo,
+                                              tadOffsets,
+                                              biasCorrected);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -820,20 +938,24 @@ void execTransformFloat(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-
-    NativeOpExecutioner::execTransformFloat(nullptr,
-                                           opNum,
-            hX,
-            hXShapeInfo,
-            dZ,
-            dXShapeInfo,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            extraParams,
-            nullptr,
-            nullptr);
+    try {
+        NativeOpExecutioner::execTransformFloat(nullptr,
+                                                opNum,
+                                                hX,
+                                                hXShapeInfo,
+                                                dZ,
+                                                dXShapeInfo,
+                                                hZ,
+                                                hZShapeInfo,
+                                                dZ,
+                                                dZShapeInfo,
+                                                extraParams,
+                                                nullptr,
+                                                nullptr);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execTransformSame(
@@ -844,20 +966,24 @@ void execTransformSame(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-
-    NativeOpExecutioner::execTransformSame(nullptr,
-                                          opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            extraParams,
-            nullptr,
-            nullptr);
+    try {
+        NativeOpExecutioner::execTransformSame(nullptr,
+                                               opNum,
+                                               hX,
+                                               hXShapeInfo,
+                                               dX,
+                                               dXShapeInfo,
+                                               hZ,
+                                               hZShapeInfo,
+                                               dZ,
+                                               dZShapeInfo,
+                                               extraParams,
+                                               nullptr,
+                                               nullptr);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execTransformBool(
@@ -868,20 +994,24 @@ void execTransformBool(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-
-    NativeOpExecutioner::execTransformBool(nullptr,
-                                          opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            extraParams,
-            nullptr,
-            nullptr);
+    try {
+        NativeOpExecutioner::execTransformBool(nullptr,
+                                               opNum,
+                                               hX,
+                                               hXShapeInfo,
+                                               dX,
+                                               dXShapeInfo,
+                                               hZ,
+                                               hZShapeInfo,
+                                               dZ,
+                                               dZShapeInfo,
+                                               extraParams,
+                                               nullptr,
+                                               nullptr);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execTransformAny(
@@ -892,20 +1022,24 @@ void execTransformAny(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-
-    NativeOpExecutioner::execTransformAny(nullptr,
-                                         opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            extraParams,
-            nullptr,
-            nullptr);
+    try {
+        NativeOpExecutioner::execTransformAny(nullptr,
+                                              opNum,
+                                              hX,
+                                              hXShapeInfo,
+                                              dX,
+                                              dXShapeInfo,
+                                              hZ,
+                                              hZShapeInfo,
+                                              dZ,
+                                              dZShapeInfo,
+                                              extraParams,
+                                              nullptr,
+                                              nullptr);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execTransformStrict(
@@ -916,20 +1050,24 @@ void execTransformStrict(
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
         void *extraParams) {
-
-    NativeOpExecutioner::execTransformStrict(nullptr,
-                                            opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            extraParams,
-            nullptr,
-            nullptr);
+    try {
+        NativeOpExecutioner::execTransformStrict(nullptr,
+                                                 opNum,
+                                                 hX,
+                                                 hXShapeInfo,
+                                                 dX,
+                                                 dXShapeInfo,
+                                                 hZ,
+                                                 hZShapeInfo,
+                                                 dZ,
+                                                 dZShapeInfo,
+                                                 extraParams,
+                                                 nullptr,
+                                                 nullptr);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execReduce3All(Nd4jPointer *extraPointers,
@@ -948,158 +1086,18 @@ void execReduce3All(Nd4jPointer *extraPointers,
                                      Nd4jLong *yTadShapeInfo,
                                      Nd4jLong *yOffsets) {
 
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
 
-    NativeOpExecutioner::execReduce3All(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
-}
-
-
-template <typename T>
-void flattenGeneric(Nd4jPointer *extraPointers,
-                    int offset,
-                    char order,
-                    void *vresult,
-                    Nd4jLong *hZShapeInfo,
-                    void *vinput,
-                    Nd4jLong *inputShapeInfo) {
-
-    auto hZ = reinterpret_cast<T *>(vresult);
-    auto input = reinterpret_cast<T *>(vinput);
-
-    int numOnes = 0;
-    auto shape = shape::shapeOf(inputShapeInfo);
-    int wholeRank = shape::rank(inputShapeInfo);
-    for(int i = 0; i < wholeRank; i++) {
-        if(shape[i] == 1)
-            numOnes++;
+        NativeOpExecutioner::execReduce3All(nullptr, opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParamsVals, hY,
+                                            hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension,
+                                            dimensionLength, xTadShapeInfo, xOffsets, yTadShapeInfo, yOffsets);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
-
-
-
-    //start at the given offset
-    hZ += offset;
-    char inputOrder = shape::order(inputShapeInfo);
-    auto len = shape::length(inputShapeInfo);
-    auto resultEleStride = shape::elementWiseStride(hZShapeInfo);
-    auto inputEleStride = shape::elementWiseStride(inputShapeInfo);
-    Nd4jLong numTads, stride;
-    int dimension, dimensionLength;
-    int rank = shape::rank(inputShapeInfo);
-    auto xStride = shape::stride(inputShapeInfo);
-    auto xShape = shape::shapeOf(inputShapeInfo);
-
-    dimensionLength = 1;
-    if(order == 'f') {
-        dimension = 0;
-    }
-    else {
-        dimension = rank - 1;
-    }
-    stride  = xStride[dimension];
-    // numTads is product of length of all dimensions excluding
-    // the one we do the tad on
-    numTads = 1;
-    for (int i = 0; i < rank; i++) {
-        if (i != dimension)
-            numTads *= xShape[i];
-    }
-
-    if (inputOrder == order) {
-        if (resultEleStride == 1 && inputEleStride == 1) {
-            memcpy(hZ, input, len* sizeof(T));
-        }
-        else if (resultEleStride >= 1 && inputEleStride >= 1) {
-            if (len < ELEMENT_THRESHOLD) {
-
-                PRAGMA_OMP_SIMD
-                for (Nd4jLong i = 0; i < len; i++) {
-                    hZ[i * resultEleStride] = input[i * inputEleStride];
-                }
-            }
-            else {
-
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (Nd4jLong i = 0; i < len; i++) {
-                    hZ[i * resultEleStride] = input[i * inputEleStride];
-                }
-            }
-        }
-        else {
-            int idx = 0;
-            for(Nd4jLong i = 0; i < len; i++)
-                    hZ[idx++] = input[shape::getIndexOffset(i, inputShapeInfo, len)];
-        }
-    }
-    else {
-        int rank = shape::rank(inputShapeInfo);
-        auto xShape = shape::shapeOf(inputShapeInfo);
-        auto tadShape = xShape[dimension];
-
-        auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(inputShapeInfo, dimension);
-
-        PRAGMA_OMP_PARALLEL_FOR
-        for(int i = 0; i < numTads; i++) {
-
-            Nd4jLong resultOffset;
-
-            if (order == 'f') {
-                // 1. get c ordering coordinates
-                auto cIndexCoordinates = new Nd4jLong[rank - 1];
-                Nd4jLong divisor = 1;
-                for (int dim = rank - 1; dim > 0; dim--) {
-                    cIndexCoordinates[dim - 1] = (i / divisor) % xShape[dim];
-                    divisor *= xShape[dim];
-                }
-
-
-                // 2. convert to f ordering index
-                int fIndex = 0;
-                Nd4jLong multiplier = 1;
-                for (int dim = 1; dim <= rank - 1; dim++) {
-                    fIndex += cIndexCoordinates[dim - 1] * multiplier;
-                    multiplier *= xShape[dim];
-                }
-
-                resultOffset = fIndex * tadShape;
-                delete[] cIndexCoordinates;
-
-            }
-            else {
-                resultOffset = i *  tadShape;
-            }
-
-            auto tadOffset = tadPack.primaryOffsets()[i];
-            for( int j = 0; j < tadShape; j++) {
-
-                // TAD are returned in C ordering always
-                hZ[resultOffset + j] = input[tadOffset + j * stride];
-
-            }
-        }
-    }
-}
-
-
-/**
-    * Concatneate multi array of the same shape together
-    * along a particular dimension
-    */
-void concat(
-        Nd4jPointer *extraPointers,
-        int dimension,
-        int numArrays,
-        Nd4jPointer *data, Nd4jPointer *inputShapeInfo,
-        Nd4jPointer *ddata, Nd4jPointer *dinputShapeInfo,
-        void *hZ, Nd4jLong *hZShapeInfo,
-        void *dZ, Nd4jLong *dZShapeInfo,
-        Nd4jPointer *tadPointers,
-        Nd4jPointer *offsetPointers) {
-
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-
-    BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, hZ, hZShapeInfo), LIBND4J_TYPES);
 }
 
 /**
@@ -1116,39 +1114,14 @@ void specialConcat(
         Nd4jLong *hZShapeInfo,
         Nd4jPointer *tadPointers,
         Nd4jPointer *offsetPointers) {
+    try {
+        auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-
-    BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods, ::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, hZ, hZShapeInfo), LIBND4J_TYPES);
-}
-
-/**
-* Append an input array
-* to the end of a flat array
-* in a particular order
-* @param offset the offset of the array to start at
-* @param order the order
-* @param hZ the hZ array
-* @param hZShapeInfo the shape info for te array
-* @param input the input for the array
-* @param inputShapeInfo the shape information for that array
-*/
-void flatten(
-        Nd4jPointer *extraPointers,
-        int offset,
-        char order,
-        void *hZ, Nd4jLong *hZShapeInfo,
-        void *dZ, Nd4jLong *dZShapeInfo,
-        void *input, Nd4jLong *inputShapeInfo,
-        void *dinput, Nd4jLong *dinputShapeInfo) {
-
-    auto xType = nd4j::ArrayOptions::dataType(inputShapeInfo);
-    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
-
-    if (xType != zType)
-        throw std::runtime_error("NativeOps::flatten requires all operands to have same data type");
-
-    BUILD_SINGLE_SELECTOR(xType, flattenGeneric, (extraPointers, offset, order, hZ, hZShapeInfo, input, inputShapeInfo), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(zType, nd4j::SpecialMethods,::concatCpuGeneric(dimension, numArrays, data, inputShapeInfo, hZ, hZShapeInfo), LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 /**
@@ -1324,7 +1297,13 @@ void setGridLimit(int gridSize) {
 
 nd4j::TadPack* tadOnlyShapeInfo(Nd4jLong *hXShapeInfo, int *dimension, int dimensionLength) {
     auto pack = new TadPack();
-    *pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    try {
+        *pack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(hXShapeInfo, dimension, dimensionLength);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
+
     return pack;
 }
 
@@ -1421,9 +1400,14 @@ void pullRows(Nd4jPointer *extraPointers,
         Nd4jLong *tadOffsets,
         Nd4jLong *zTadShapeInfo,
         Nd4jLong *zTadOffsets) {
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    try {
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, pullRowsGeneric, (hX, hXShapeInfo, hZ, hZShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, pullRowsGeneric, (hX, hXShapeInfo, hZ, hZShapeInfo, n, indexes, tadShapeInfo, tadOffsets, zTadShapeInfo, zTadOffsets), LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 template<typename T>
@@ -1474,9 +1458,14 @@ void tear(Nd4jPointer *extraPointers,
         Nd4jLong *hZShapeInfo,
         Nd4jLong *tadShapeInfo,
         Nd4jLong *tadOffsets) {
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    try {
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, tearGeneric, (hX, hXShapeInfo, targets, hZShapeInfo, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, tearGeneric, (hX, hXShapeInfo, targets, hZShapeInfo, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -1488,9 +1477,14 @@ void average(Nd4jPointer *extras,
         int n,
         Nd4jLong length,
         bool propagate) {
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    try {
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(hX, z, hZShapeInfo, n, length, propagate), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::averageGeneric(hX, z, hZShapeInfo, n, length, propagate), LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void accumulate(Nd4jPointer *extras,
@@ -1500,10 +1494,14 @@ void accumulate(Nd4jPointer *extras,
         void *dz, Nd4jLong *dZShapeInfo,
         int n,
         Nd4jLong length) {
+    try {
+        auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 
-    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
-
-    BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(hX, hz, hZShapeInfo, n, length), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, nd4j::SpecialMethods, ::accumulateGeneric(hX, hz, hZShapeInfo, n, length), LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void enableP2P(bool enable) {
@@ -1613,14 +1611,20 @@ void shuffle(Nd4jPointer *extras,
                               int *shuffleMap,
                               Nd4jPointer *tadShapeInfo,
                               Nd4jPointer *tadOffsets) {
-    auto xShape = reinterpret_cast<Nd4jLong **>(hXShapeInfo);
-    auto zShape = reinterpret_cast<Nd4jLong **>(hZShapeInfo);
-    auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong **>(tadShapeInfo);
-    auto tadOffset = reinterpret_cast<Nd4jLong **>(tadOffsets);
+    try {
+        auto xShape = reinterpret_cast<Nd4jLong **>(hXShapeInfo);
+        auto zShape = reinterpret_cast<Nd4jLong **>(hZShapeInfo);
+        auto tadOnlyShapeInfo = reinterpret_cast<Nd4jLong **>(tadShapeInfo);
+        auto tadOffset = reinterpret_cast<Nd4jLong **>(tadOffsets);
 
-    auto xType = nd4j::ArrayOptions::dataType(xShape[0]);
+        auto xType = nd4j::ArrayOptions::dataType(xShape[0]);
 
-    BUILD_SINGLE_SELECTOR(xType, shuffleGeneric, (hX, xShape, hz, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(xType, shuffleGeneric,
+                              (hX, xShape, hz, zShape, N, shuffleMap, tadOnlyShapeInfo, tadOffset), LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -1632,27 +1636,6 @@ bool isExperimentalEnabled() {
 void setOmpMinThreads(int threads) {
     // TODO: to be implemented
 }
-
-/*
-void execMetaPredicateShape(Nd4jPointer *extras,
-                                        const int opTypeA,
-                                        const int opNumA,
-                                        const int opTypeB,
-                                        const int opNumB,
-                                        Nd4jLong N,
-                                        void *hX, Nd4jLong *hXShapeInfo,
-                                        void *dX, Nd4jLong *dXShapeInfo,
-                                        void *hY, Nd4jLong *hYShapeInfo,
-                                        void *dY, Nd4jLong *dYShapeInfo,
-                                        void *hZ, Nd4jLong *hZShapeInfo,
-                                        void *dZ, Nd4jLong *dZShapeInfo,
-                                        void *extraA,
-                                        void *extraB,
-                                        double scalarA,
-                                        double scalarB) {
-    // no-op;
-}
-*/
 
 int getDevice() {
     return 0;
@@ -1671,31 +1654,35 @@ void execScalarTad(Nd4jPointer *extraPointers,
                                  void *dDimension, Nd4jLong *dDimensionShape,
                                  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                  Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
-
-    NativeOpExecutioner::execScalar(nullptr,
-            opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            hScalars,
-            hScalarShapeInfo,
-            dScalars,
-            dScalarShapeInfo,
-            dimension,
-            shape::length(hDimensionShape),
-            tadShapeInfo,
-            tadOffsets,
-            tadShapeInfoZ,
-            tadOffsetsZ);
+        NativeOpExecutioner::execScalar(nullptr,
+                                        opNum,
+                                        hX,
+                                        hXShapeInfo,
+                                        dX,
+                                        dXShapeInfo,
+                                        extraParams,
+                                        hZ,
+                                        hZShapeInfo,
+                                        dZ,
+                                        dZShapeInfo,
+                                        hScalars,
+                                        hScalarShapeInfo,
+                                        dScalars,
+                                        dScalarShapeInfo,
+                                        dimension,
+                                        shape::length(hDimensionShape),
+                                        tadShapeInfo,
+                                        tadOffsets,
+                                        tadShapeInfoZ,
+                                        tadOffsetsZ);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execScalarBoolTad(Nd4jPointer *extraPointers,
@@ -1711,44 +1698,53 @@ void execScalarBoolTad(Nd4jPointer *extraPointers,
                            void *dDimension, Nd4jLong *dDimensionShape,
                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                            Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+    try {
+        auto dimension = reinterpret_cast<int *>(hDimension);
+        int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
 
-    auto dimension = reinterpret_cast<int *>(hDimension);
-    int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
-
-    NativeOpExecutioner::execScalarBool(nullptr,
-                                       opNum,
-            hX,
-            hXShapeInfo,
-            dX,
-            dXShapeInfo,
-            extraParams,
-            hZ,
-            hZShapeInfo,
-            dZ,
-            dZShapeInfo,
-            hScalars,
-            hScalarShapeInfo,
-            dScalars,
-            dScalarShapeInfo,
-            dimension,
-            dimensionLength,
-            tadShapeInfo,
-            tadOffsets,
-            tadShapeInfoZ,
-            tadOffsetsZ);
+        NativeOpExecutioner::execScalarBool(nullptr,
+                                            opNum,
+                                            hX,
+                                            hXShapeInfo,
+                                            dX,
+                                            dXShapeInfo,
+                                            extraParams,
+                                            hZ,
+                                            hZShapeInfo,
+                                            dZ,
+                                            dZShapeInfo,
+                                            hScalars,
+                                            hScalarShapeInfo,
+                                            dScalars,
+                                            dScalarShapeInfo,
+                                            dimension,
+                                            dimensionLength,
+                                            tadShapeInfo,
+                                            tadOffsets,
+                                            tadShapeInfoZ,
+                                            tadOffsetsZ);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 const char * getDeviceName(int deviceId) {
-    if (!nameSet) {
-        name = reinterpret_cast<char *>(malloc(256 * sizeof(char)));
+    try {
+        if (!nameSet) {
+            name = reinterpret_cast<char *>(malloc(256 * sizeof(char)));
 
-        CHECK_ALLOC(name, "Failed to allocate new string buffer", 256);
+            CHECK_ALLOC(name, "Failed to allocate new string buffer", 256);
 
-        std::memset(name, 0, 256 * sizeof(char));
-        nameSet = true;
+            std::memset(name, 0, 256 * sizeof(char));
+            nameSet = true;
 
-        // TODO: provide proper CPU model name here
-        sprintf(name, "x86-compatible CPU");
+            // TODO: provide proper CPU model name here
+            sprintf(name, "x86-compatible CPU");
+        }
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
 
 
@@ -1768,8 +1764,12 @@ void execAggregate(Nd4jPointer *extraPointers,int opNum,
                                     void *realArguments,
                                     int numRealArguments,
                                     nd4j::DataType dtype) {
-
-    BUILD_SINGLE_SELECTOR(dtype, NativeOpExecutioner::execAggregate, (nullptr, opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), FLOAT_TYPES);
+    try {
+        BUILD_SINGLE_SELECTOR(dtype, NativeOpExecutioner::execAggregate, (nullptr, opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), FLOAT_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 
 }
 
@@ -1841,7 +1841,12 @@ void batchExecutor(Nd4jPointer *extraPointers,
                                int maxReals,
                                void *ptrToArguments,
                                nd4j::DataType dtype) {
-    BUILD_SINGLE_SELECTOR(dtype, _batchExecutor, (extraPointers, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments, dtype), FLOAT_TYPES);
+    try {
+        BUILD_SINGLE_SELECTOR(dtype, _batchExecutor, (extraPointers, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments, dtype), FLOAT_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execAggregateBatch(Nd4jPointer *extraPointers,
@@ -1855,7 +1860,12 @@ void execAggregateBatch(Nd4jPointer *extraPointers,
                                          int maxReals,
                                          void *ptrToArguments,
                                          nd4j::DataType dtype) {
-    BUILD_SINGLE_SELECTOR(dtype, _batchExecutor, (extraPointers, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments, dtype), FLOAT_TYPES);
+    try {
+        BUILD_SINGLE_SELECTOR(dtype, _batchExecutor, (extraPointers, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments, dtype), FLOAT_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 
@@ -1865,7 +1875,12 @@ void execRandom(Nd4jPointer *extraPointers,
                                  void *hZ, Nd4jLong *hZShapeInfo,
                                  void *dZ, Nd4jLong *dZShapeInfo,
                                  void *extraArguments) {
-    NativeOpExecutioner::execRandom(nullptr, opNum, state, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    try {
+        NativeOpExecutioner::execRandom(nullptr, opNum, state, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execRandom3(Nd4jPointer *extraPointers,
@@ -1878,8 +1893,12 @@ void execRandom3(Nd4jPointer *extraPointers,
                                  void *hZ, Nd4jLong *hZShapeInfo,
                                  void *dZ, Nd4jLong *dZShapeInfo,
                                  void *extraArguments) {
-
-    NativeOpExecutioner::execRandom(nullptr, opNum, state, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    try {
+        NativeOpExecutioner::execRandom(nullptr, opNum, state, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY, dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void execRandom2(Nd4jPointer *extraPointers,
@@ -1890,19 +1909,25 @@ void execRandom2(Nd4jPointer *extraPointers,
                                  void *hZ, Nd4jLong *hZShapeInfo,
                                  void *dZ, Nd4jLong *dZShapeInfo,
                                  void *extraArguments) {
-
-    NativeOpExecutioner::execRandom(nullptr, opNum, state, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    try {
+        NativeOpExecutioner::execRandom(nullptr, opNum, state, hX, hXShapeInfo, dX, dXShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraArguments);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 Nd4jPointer initRandom(Nd4jPointer *extraPointers, long seed, long bufferSize, Nd4jPointer ptrToBuffer) {
-    graph::RandomGenerator* generator = new graph::RandomGenerator(seed, seed);
-//    auto ptrBuf = reinterpret_cast<long *>(ptrToBuffer);
-//    auto buffer = new nd4j::random::RandomBuffer(seed, bufferSize, reinterpret_cast<uint64_t *>(ptrBuf));
-//
-//    nd4j::random::Xoroshiro128 generator(buffer);
-//    generator.refreshBuffer();
-//
-    return (Nd4jPointer) generator;
+    try {
+        auto generator = new graph::RandomGenerator(seed, seed);
+
+        return (Nd4jPointer) generator;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+
+        return nullptr;
+    }
 }
 
 void refreshBuffer(Nd4jPointer *extraPointers, long seed, Nd4jPointer ptrRandom) {
@@ -1953,7 +1978,12 @@ void sort(Nd4jPointer *extraPointers,
         void *hX, Nd4jLong *hXShapeInfo,
         void *dX, Nd4jLong *dXShapeInfo,
         bool descending) {
-    NativeOpExecutioner::execSort(hX, hXShapeInfo, descending);
+    try {
+        NativeOpExecutioner::execSort(hX, hXShapeInfo, descending);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void sortTad(Nd4jPointer *extraPointers,
@@ -1964,7 +1994,12 @@ void sortTad(Nd4jPointer *extraPointers,
             Nd4jLong *tadShapeInfo,
             Nd4jLong *tadOffsets,
             bool descending) {
-    NativeOpExecutioner::execSort(hX, hXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+    try {
+        NativeOpExecutioner::execSort(hX, hXShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets, descending);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void sortCooIndices(Nd4jPointer *extraPointers,
@@ -1972,7 +2007,12 @@ void sortCooIndices(Nd4jPointer *extraPointers,
         void *values,
         Nd4jLong length,
         int rank) {
-    NativeOpExecutioner::execSortCooIndices(indices, values, length, rank);
+    try {
+        NativeOpExecutioner::execSortCooIndices(indices, values, length, rank);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInfo, Nd4jLong N, int *dz, float threshold) {
@@ -1983,7 +2023,7 @@ Nd4jLong encodeBitmap(Nd4jPointer *extraPointers, void *hX, Nd4jLong *hXShapeInf
 
 Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong length) {
     auto hZ = new Nd4jLong[2];errno = 0;
-
+try {
 #if defined(_WIN32) || defined(_WIN64)
     _mmap(hZ, static_cast<size_t>(length), fileName);
 #else
@@ -1992,7 +2032,7 @@ Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong le
         nd4j_printf("Errno: %i\n", errno);
         throw std::runtime_error("Failed to open file for MMAP");
     }
-    void * ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
+    void *ptr = mmap(NULL, length, PROT_READ | PROT_WRITE, MAP_SHARED, fd, 0);
 
 // check for failed allocation
     if (ptr == MAP_FAILED)
@@ -2004,7 +2044,11 @@ Nd4jLong* mmapFile(Nd4jPointer *extraPointers, const char *fileName, Nd4jLong le
 #endif
 
     return hZ;
-
+} catch (std::exception &e) {
+    nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+    nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    return nullptr;
+}
 }
 
 void munmapFile(Nd4jPointer *extraPointers, Nd4jLong *ptrMap, Nd4jLong length) {
@@ -2019,7 +2063,13 @@ void munmapFile(Nd4jPointer *extraPointers, Nd4jLong *ptrMap, Nd4jLong length) {
 }
 
 nd4j::graph::ResultWrapper* executeFlatGraph(Nd4jPointer *extraPointers, Nd4jPointer flatBufferPointer) {
-    return nd4j::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
+    try {
+        return nd4j::graph::GraphExecutioner::executeFlatBuffer(flatBufferPointer);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 Nd4jLong getResultWrapperSize(nd4j::graph::ResultWrapper* ptr) {
@@ -2061,8 +2111,14 @@ FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer
 
 
 int estimateThreshold(Nd4jPointer *extraPointers, Nd4jPointer hX, Nd4jLong *hXShapeInfo, int N, float threshold) {
-    auto xType = ArrayOptions::dataType(hXShapeInfo);
-    BUILD_SINGLE_SELECTOR(xType, return estimateThresholdGeneric, (extraPointers, hX, N, threshold), FLOAT_TYPES);
+    try {
+        auto xType = ArrayOptions::dataType(hXShapeInfo);
+        BUILD_SINGLE_SELECTOR(xType, return estimateThresholdGeneric, (extraPointers, hX, N, threshold), FLOAT_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 0;
+    }
 }
 
 Nd4jLong getShapeListSize(nd4j::ShapeList* list) {
@@ -2122,9 +2178,15 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 }
 
 nd4j::ShapeList* calculateOutputShapes2(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool *bArgs, int numBArgs) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
+    try {
+        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
 
-    return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs, bArgs, numBArgs);
+        return _calculateOutputShapes(extraPointers, op, inputBuffers, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs, bArgs, numBArgs);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::DeclarableOp *op, Nd4jPointer* inputShapes, int numInputShapes, double *tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
@@ -2147,16 +2209,28 @@ nd4j::ShapeList* _calculateOutputShapes(Nd4jPointer* extraPointers, nd4j::ops::D
 }
 
 nd4j::ShapeList* calculateOutputShapes(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputShapes, int numInputShapes, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
+    try {
+        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
 
-    return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+        return _calculateOutputShapes(extraPointers, op, inputShapes, numInputShapes, tArgs, numTArgs, iArgs, numIArgs);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 int execCustomOp2(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer opContext) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
-    auto context = reinterpret_cast<Context*>(opContext);
+    try {
+        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
+        auto context = reinterpret_cast<Context *>(opContext);
 
-    return op->execute(context);
+        return op->execute(context);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 20;
+    }
 }
 
 Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace) {
@@ -2234,34 +2308,6 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
                 outputs[e]->streamline(shape::order(reinterpret_cast<Nd4jLong *>(outputShapes[e])));
         }
 
-/*
-    if (!isInplace) {
-        if (hZ->size() != numOutputs) {
-            return ND4J_STATUS_BAD_OUTPUT;
-        }
-
-        for (int e = 0; e < numOutputs; e++) {
-            auto buffer = (T *) outputBuffers[e];
-            auto shape = (int *) outputShapes[e];
-            nd4j::NDArray<T> tmp(buffer, shape);
-
-            if (tmp.lengthOf() != hZ->at(e)->lengthOf()) {
-                nd4j_printf("Provided output array for [%s] has length of %i, but actual hZ has length of %i\n", op->getOpName()->c_str(), tmp.lengthOf(), hZ->at(e)->lengthOf());
-                return ND4J_STATUS_BAD_OUTPUT;
-            }
-
-            tmp.assign(hZ->at(e));
-        }
-    } else {
-        // if op is inplace, our ResultSet holds pointers
-        hZ->purge();
-    }
-
-
-    delete hZ;
-
-*/
-
     for (auto v: inputs)
         delete v;
 
@@ -2273,16 +2319,28 @@ Nd4jStatus realExec(nd4j::ops::DeclarableOp* op, Nd4jPointer* extraPointers, Nd4
 
 
 int execCustomOp(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer* inputBuffers, Nd4jPointer* inputShapes, int numInputs, Nd4jPointer* outputBuffers, Nd4jPointer* outputShapes, int numOutputs, double* tArgs, int numTArgs, Nd4jLong *iArgs, int numIArgs, bool* bArgs, int numBArgs, bool isInplace) {
-    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
-    return realExec(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, bArgs, numBArgs, isInplace);
+    try {
+        auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(hash);
+        return realExec(op, extraPointers, hash, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs, tArgs, numTArgs, iArgs, numIArgs, bArgs, numBArgs, isInplace);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 1;
+    }
 }
 
 int registerGraph(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer flatBufferPointer) {
-    auto graph = nd4j::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
+    try {
+        auto graph = nd4j::graph::GraphExecutioner::importFromFlatPointer(flatBufferPointer);
 
-    nd4j::graph::GraphHolder::getInstance()->registerGraph(graphId, graph);
+        nd4j::graph::GraphHolder::getInstance()->registerGraph(graphId, graph);
 
-    return ND4J_STATUS_OK;
+        return ND4J_STATUS_OK;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 1;
+    }
 }
 
 static VariablesSet* executeStoredGraphT(Nd4jPointer *extraPointers, Nd4jLong graphId, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int* inputIndices, int numInputs) {
@@ -2478,7 +2536,13 @@ Nd4jStatus execCustomOpWithScope_(Nd4jPointer *extraPointers, nd4j::graph::Graph
 }
 
 Nd4jStatus execCustomOpWithScope(Nd4jPointer *extraPointers, Nd4jPointer state, Nd4jLong opHash, Nd4jLong *scopes, int numScopes, Nd4jPointer *inputBuffers, Nd4jPointer *inputShapes, int numInputs, Nd4jPointer *outputBuffers, Nd4jPointer *outputShapes, int numOutputs) {
-    return execCustomOpWithScope_(extraPointers, reinterpret_cast<nd4j::graph::GraphState*>(state), opHash, scopes, numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs);
+    try {
+        return execCustomOpWithScope_(extraPointers, reinterpret_cast<nd4j::graph::GraphState *>(state), opHash, scopes, numScopes, inputBuffers, inputShapes, numInputs, outputBuffers, outputShapes, numOutputs);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return 1;
+    }
 }
 
 void deleteResultWrapper(Nd4jPointer ptr) {
@@ -2704,73 +2768,98 @@ void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
                       void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
                       int* hIindexes, int* dIindexes) {
 
+    try {
 
-    int numThreads = omp_get_max_threads();
+        int numThreads = omp_get_max_threads();
 
-    PRAGMA_OMP_PARALLEL_THREADS(numThreads)
-    {
-        for (int i = 0; i < numOfSubArrs; ++i) {
+        PRAGMA_OMP_PARALLEL_THREADS(numThreads)
+        {
+            for (int i = 0; i < numOfSubArrs; ++i) {
 
-            int threadIndex = omp_get_thread_num();
-            const auto xIndex = hIindexes[i];
-            const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
+                int threadIndex = omp_get_thread_num();
+                const auto xIndex = hIindexes[i];
+                const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
 
-            if (!isOwner)
-                continue;
-
-            NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)), hXShapeInfo);
-            NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)), hYShapeInfo);
-
-            if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
-                continue;
-            }
-
-            switch (opCode) {
-                case 0:
-                    inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 1:
-                    inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 2:
-                    inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 3:
-                    inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 4:
-                    inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 5:
-                    inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 6:
-                    inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
-                    break;
-                default:
+                if (!isOwner)
                     continue;
+
+                NDArray inSubArr(
+                        reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
+                        hXShapeInfo);
+                NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
+                                  hYShapeInfo);
+
+                if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
+                    continue;
+                }
+
+                switch (opCode) {
+                    case 0:
+                        inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 1:
+                        inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 2:
+                        inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 3:
+                        inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 4:
+                        inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 5:
+                        inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 6:
+                        inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    default:
+                        continue;
+                }
             }
         }
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
 }
 
 void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo) {
-    auto p = reinterpret_cast<nd4j::DebugInfo*>(debugInfo);
-    NDArray array(buffer, shapeInfo);
-    nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
+    try {
+        auto p = reinterpret_cast<nd4j::DebugInfo *>(debugInfo);
+        NDArray array(buffer, shapeInfo);
+        nd4j::DebugHelper::retrieveDebugStatistics(p, &array);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void tryPointer(Nd4jPointer extra, Nd4jPointer p, int len) {
-    auto buf = reinterpret_cast<int8_t*>(p);
-    int cnt = 0;
-    for (int i = 0; i < len; i++)
-        cnt += buf[cnt];
+    try {
+        auto buf = reinterpret_cast<int8_t *>(p);
+        int cnt = 0;
+        for (int i = 0; i < len; i++)
+            cnt += buf[cnt];
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 nd4j::ConstantDataBuffer* shapeBuffer(int rank, Nd4jLong *shape, Nd4jLong *strides, nd4j::DataType dtype, char order, Nd4jLong ews, bool empty) {
-    auto buffer = new ConstantDataBuffer();
-    *buffer = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(ShapeDescriptor(dtype, order, shape, strides, rank, ews, empty));
-    return buffer;
+    try {
+        auto buffer = new ConstantDataBuffer();
+        *buffer = nd4j::ConstantShapeHelper::getInstance()->bufferForShapeInfo(
+                ShapeDescriptor(dtype, order, shape, strides, rank, ews, empty));
+        return buffer;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 void deleteShapeBuffer(nd4j::ConstantDataBuffer* ptr) {
@@ -2790,7 +2879,13 @@ nd4j::ConstantDataBuffer* constantBufferDouble(nd4j::DataType dtype, double *dat
 }
 
 nd4j::ConstantDataBuffer* constantBuffer(nd4j::DataType dtype, nd4j::ConstantDescriptor *descriptor) {
-    return nd4j::ConstantHelper::getInstance()->constantBuffer(*descriptor, dtype);
+    try {
+        return nd4j::ConstantHelper::getInstance()->constantBuffer(*descriptor, dtype);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 Nd4jPointer getConstantDataBufferPrimary(nd4j::ConstantDataBuffer* dbf) {
@@ -2808,7 +2903,13 @@ Nd4jLong getConstantDataBufferSizeOf(nd4j::ConstantDataBuffer* dbf) {
 
 
 nd4j::graph::Context* createGraphContext(int nodeId) {
-    return new nd4j::graph::Context(nodeId);
+    try {
+        return new nd4j::graph::Context(nodeId);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 nd4j::graph::RandomGenerator* getGraphContextRandomGenerator(nd4j::graph::Context* ptr) {
     return &ptr->randomGenerator();
@@ -2872,32 +2973,38 @@ int dataTypeFromNpyHeader(void *header) {
 }
 
 Nd4jPointer shapeBufferForNumpy(Nd4jPointer npyArray) {
-    cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
-    unsigned int shapeSize = arr.shape.size();
-    std::vector<Nd4jLong> shape(shapeSize);
-    bool _empty = false;
-    for(unsigned int i = 0; i < shapeSize; i++) {
-        shape[i] = arr.shape[i];
+    try {
+        cnpy::NpyArray arr = cnpy::loadNpyFromPointer(reinterpret_cast<char *>(npyArray));
+        unsigned int shapeSize = arr.shape.size();
+        std::vector<Nd4jLong> shape(shapeSize);
+        bool _empty = false;
+        for (unsigned int i = 0; i < shapeSize; i++) {
+            shape[i] = arr.shape[i];
 
-        if (arr.shape[i] == 0)
-            _empty = true;
+            if (arr.shape[i] == 0)
+                _empty = true;
+        }
+
+        auto dtype = cnpy::dataTypeFromHeader(reinterpret_cast<char *>(npyArray));
+
+        Nd4jLong *shapeBuffer;
+        if (shape.size() == 1 && shape[0] == 0) {
+            // scalar case
+            shapeBuffer = nd4j::ShapeBuilders::createScalarShapeInfo(dtype);
+        } else if (_empty) {
+            if (shapeSize > 0)
+                shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+            else
+                shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype);
+        } else {
+            shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
+        }
+        return reinterpret_cast<Nd4jPointer>(nd4j::ConstantShapeHelper::getInstance()->createFromExisting(shapeBuffer, true));
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
     }
-
-    auto dtype = cnpy::dataTypeFromHeader(reinterpret_cast<char *>(npyArray));
-
-    Nd4jLong *shapeBuffer;
-    if (shape.size() == 1 && shape[0] == 0) {
-    // scalar case
-        shapeBuffer = nd4j::ShapeBuilders::createScalarShapeInfo(dtype);
-    } else if (_empty) {
-        if (shapeSize > 0)
-            shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
-        else
-            shapeBuffer = nd4j::ShapeBuilders::emptyShapeInfo(dtype);
-    } else {
-        shapeBuffer = nd4j::ShapeBuilders::createShapeInfo(dtype, arr.fortranOrder ? 'f' : 'c', shape);
-    }
-    return reinterpret_cast<Nd4jPointer>(nd4j::ConstantShapeHelper::getInstance()->createFromExisting(shapeBuffer, true));
 }
 
 void sortByKey(Nd4jPointer *extraPointers,
@@ -2906,10 +3013,15 @@ void sortByKey(Nd4jPointer *extraPointers,
                           void *y, Nd4jLong *yShapeInfo,
                           void *dy, Nd4jLong *dyShapeInfo,
                           bool descending) {
-    auto xType = ArrayOptions::dataType(xShapeInfo);
-    auto yType = ArrayOptions::dataType(yShapeInfo);
+    try {
+        auto xType = ArrayOptions::dataType(xShapeInfo);
+        auto yType = ArrayOptions::dataType(yShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortByKey(x, xShapeInfo, y, yShapeInfo, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortByKey(x, xShapeInfo, y, yShapeInfo, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void sortByValue(Nd4jPointer *extraPointers,
@@ -2918,11 +3030,15 @@ void sortByValue(Nd4jPointer *extraPointers,
                             void *y, Nd4jLong *yShapeInfo,
                             void *dy, Nd4jLong *dyShapeInfo,
                             bool descending) {
+    try {
+        auto xType = ArrayOptions::dataType(xShapeInfo);
+        auto yType = ArrayOptions::dataType(yShapeInfo);
 
-    auto xType = ArrayOptions::dataType(xShapeInfo);
-    auto yType = ArrayOptions::dataType(yShapeInfo);
-
-    BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortByValue(x, xShapeInfo, y, yShapeInfo, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortByValue(x, xShapeInfo, y, yShapeInfo, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void sortTadByKey(Nd4jPointer *extraPointers,
@@ -2933,10 +3049,15 @@ void sortTadByKey(Nd4jPointer *extraPointers,
                   int *dimension,
                   int dimensionLength,
                   bool descending) {
-    auto xType = ArrayOptions::dataType(xShapeInfo);
-    auto yType = ArrayOptions::dataType(yShapeInfo);
+    try {
+        auto xType = ArrayOptions::dataType(xShapeInfo);
+        auto yType = ArrayOptions::dataType(yShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortTadByKey(x, xShapeInfo, y, yShapeInfo, dimension, dimensionLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortTadByKey(x, xShapeInfo, y, yShapeInfo, dimension, dimensionLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 void sortTadByValue(Nd4jPointer *extraPointers,
@@ -2947,24 +3068,35 @@ void sortTadByValue(Nd4jPointer *extraPointers,
                     int *dimension,
                     int dimensionLength,
                     bool descending) {
-    auto xType = ArrayOptions::dataType(xShapeInfo);
-    auto yType = ArrayOptions::dataType(yShapeInfo);
+    try {
+        auto xType = ArrayOptions::dataType(xShapeInfo);
+        auto yType = ArrayOptions::dataType(yShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortTadByValue(x, xShapeInfo, y, yShapeInfo, dimension, dimensionLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+        BUILD_DOUBLE_SELECTOR(xType, yType, nd4j::DoubleMethods, ::sortTadByValue(x, xShapeInfo, y, yShapeInfo, dimension, dimensionLength, descending), LIBND4J_TYPES, LIBND4J_TYPES);
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+    }
 }
 
 const char* runLightBenchmarkSuit(bool printOut) {
-    nd4j::LightBenchmarkSuit suit;
-    auto result = suit.runSuit();
+    try {
+        nd4j::LightBenchmarkSuit suit;
+        auto result = suit.runSuit();
 
-    if (printOut)
-        nd4j_printf("%s\n", result.data());
+        if (printOut)
+            nd4j_printf("%s\n", result.data());
 
-    auto chars = new char[result.length()+1];
-    std::memcpy(chars, result.data(), result.length());
-    chars[result.length()] = (char) 0x0;
+        auto chars = new char[result.length() + 1];
+        std::memcpy(chars, result.data(), result.length());
+        chars[result.length()] = (char) 0x0;
 
-    return chars;
+        return chars;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 Nd4jLong getCachedMemory(int deviceId) {
@@ -2972,17 +3104,23 @@ Nd4jLong getCachedMemory(int deviceId) {
 }
 
 const char* runFullBenchmarkSuit(bool printOut) {
-    nd4j::FullBenchmarkSuit suit;
-    auto result = suit.runSuit();
+    try {
+        nd4j::FullBenchmarkSuit suit;
+        auto result = suit.runSuit();
 
-    if (printOut)
-        nd4j_printf("%s\n", result.data());
+        if (printOut)
+            nd4j_printf("%s\n", result.data());
 
-    auto chars = new char[result.length()+1];
-    std::memcpy(chars, result.data(), result.length());
-    chars[result.length()] = (char) 0x0;
+        auto chars = new char[result.length() + 1];
+        std::memcpy(chars, result.data(), result.length());
+        chars[result.length()] = (char) 0x0;
 
-    return chars;
+        return chars;
+    } catch (std::exception &e) {
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
+        return nullptr;
+    }
 }
 
 nd4j::LaunchContext* defaultLaunchContext() {
@@ -3017,8 +3155,14 @@ Nd4jPointer lcSolverHandle(OpaqueLaunchContext* lc) {
     return nullptr;
 }
 
+int lastErrorCode() {
+    return nd4j::LaunchContext::defaultContext()->errorReference()->errorCode();
+}
 
-BUILD_SINGLE_TEMPLATE(template void flattenGeneric,(Nd4jPointer*, int, char, void*, Nd4jLong*, void*, Nd4jLong*), LIBND4J_TYPES);
+const char* lastErrorMessage() {
+    return nd4j::LaunchContext::defaultContext()->errorReference()->errorMessage();
+}
+
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric, (void *, Nd4jLong*, void*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void tearGeneric, (void *, Nd4jLong*, Nd4jPointer*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void shuffleGeneric, (void**, Nd4jLong**, void**, Nd4jLong**, int, int*, Nd4jLong**, Nd4jLong**), LIBND4J_TYPES);

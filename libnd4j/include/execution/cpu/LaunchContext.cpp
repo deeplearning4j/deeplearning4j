@@ -23,7 +23,11 @@
 #include <exceptions/cuda_exception.h>
 #include <thread>
 
+#ifdef IOS_BUILD
 nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
+#else
+thread_local nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
+#endif
 
 namespace nd4j {
 
@@ -64,5 +68,9 @@ namespace nd4j {
 
     void LaunchContext::releaseBuffers() {
         //
+    }
+
+    sd::ErrorReference* LaunchContext::errorReference() {
+        return contextBuffers.errorReference();
     }
 }

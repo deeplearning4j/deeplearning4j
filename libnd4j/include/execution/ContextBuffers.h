@@ -23,6 +23,7 @@
 
 #include <dll.h>
 #include <pointercast.h>
+#include <execution/ErrorReference.h>
 
 namespace nd4j {
     class ND4J_EXPORT ContextBuffers {
@@ -32,6 +33,7 @@ namespace nd4j {
         void* _allocationPointer = nullptr;
         void* _execStream = nullptr;
         void* _specialStream = nullptr;
+        sd::ErrorReference _errorReference;
         bool _allocated = false;
         bool _initialized = false;
 
@@ -59,6 +61,8 @@ namespace nd4j {
         void setReductionBuffer(void* pointer);
         void setScalarBuffer(void* pointer);
         void setAllocationBuffer(void* pointer);
+
+        sd::ErrorReference* errorReference();
 
         void triggerOwnership(bool isOwner);
 

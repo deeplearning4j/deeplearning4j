@@ -220,5 +220,9 @@ namespace nd4j {
     bool ContextBuffers::isInitialized() {
         return _initialized;
     }
+
+    sd::ErrorReference* ContextBuffers::errorReference() {
+        return &_errorReference;
+    }
 }
 

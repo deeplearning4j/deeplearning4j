@@ -70,7 +70,7 @@ CONFIGURABLE_OP_IMPL(softmax_bp, 2, 1, true, 0, 0) {
 
     DECLARE_TYPES(softmax_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(DataType::ANY)
+                ->setAllowedInputTypes({ALL_FLOATS})
                 ->setAllowedOutputTypes({ALL_FLOATS});
     }
 

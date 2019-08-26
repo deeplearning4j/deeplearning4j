@@ -99,4 +99,8 @@ namespace nd4j {
     ContextBuffers& ContextBuffers::operator=(ContextBuffers&& other) {
         return *this;
     }
+
+    sd::ErrorReference* ContextBuffers::errorReference() {
+        return &_errorReference;
+    }
 }

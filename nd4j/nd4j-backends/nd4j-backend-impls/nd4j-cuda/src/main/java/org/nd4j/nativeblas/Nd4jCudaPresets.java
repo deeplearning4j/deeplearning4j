@@ -32,6 +32,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         "array/ConstantDescriptor.h",
                         "array/ConstantDataBuffer.h",
                         "array/TadPack.h",
+                        "execution/ErrorReference.h",
                         "memory/MemoryType.h",
                         "Environment.h",
                         "types/utf8string.h",

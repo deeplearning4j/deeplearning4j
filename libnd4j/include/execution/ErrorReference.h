@@ -15,37 +15,32 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 27.01.2018
+// @author raver119@gmail.com
 //
 
-#include <helpers/ProviderRNG.h>
-#include <NativeOps.h>
+#ifndef DEV_TESTS_ERRORREFERENCE_H
+#define DEV_TESTS_ERRORREFERENCE_H
 
+#include <string>
+#include <dll.h>
 
-namespace nd4j {
-    
-ProviderRNG::ProviderRNG() {
+namespace sd {
+    class ND4J_EXPORT ErrorReference {
+    private:
+        int _errorCode = 0;
+        std::string _errorMessage;
+    public:
+        ErrorReference() = default;
+        ~ErrorReference() = default;
 
-    Nd4jLong *buffer = new Nd4jLong[100000];
-    std::lock_guard<std::mutex> lock(_mutex);
-    #ifndef __CUDABLAS__
-    // at this moment we don't have streams etc, so let's just skip this for now
-    _rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);    
-    #endif
-    // if(_rng != nullptr)        
+        int errorCode();
+        const char* errorMessage();
+
+        void setErrorCode(int errorCode);
+        void setErrorMessage(std::string message);
+        void setErrorMessage(const char* message);
+    };
 }
 
-ProviderRNG& ProviderRNG::getInstance() {     
-    
-    static ProviderRNG instance; 
-    return instance;
-}
 
-random::RandomBuffer* ProviderRNG::getRNG() const {
-
-    return _rng;
-}
-
-std::mutex ProviderRNG::_mutex;
-    
-}
+#endif //DEV_TESTS_ERRORREFERENCE_H

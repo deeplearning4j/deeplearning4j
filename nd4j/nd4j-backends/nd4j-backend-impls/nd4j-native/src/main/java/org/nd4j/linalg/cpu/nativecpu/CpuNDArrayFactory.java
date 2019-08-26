@@ -106,6 +106,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         functions.put(8, Loader.addressof("LAPACKE_sgesdd"));
         functions.put(9, Loader.addressof("LAPACKE_dgesdd"));
         nativeOps.initializeFunctions(functions);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
     }
 
     @Override
@@ -489,32 +492,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public INDArray toFlattened(char order, Collection<INDArray> matrices) {
         Preconditions.checkArgument(matrices.size() > 0, "toFlattened expects > 0 operands");
-/*
-        int length = 0;
-        val list = new ArrayList<INDArray>(matrices);
-        val t = list.get(0).dataType();
-        for (INDArray m : matrices) {
-            length += m.length();
-            Preconditions.checkArgument(m.dataType() == t, "All operands must have same data type");
-        }
 
-        INDArray ret = Nd4j.create(t, new long[] {length}, order);
-        int linearIndex = 0;
-        PointerPointer dummy = new PointerPointer(new Pointer[] {null});
-        for (INDArray m : matrices) {
-            Nd4j.getCompressor().autoDecompress(m);
-
-            nativeOps.flatten(dummy, linearIndex, order,
-                            ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                            null, null,
-                            m.data().addressPointer(),
-                            (LongPointer) m.shapeInfoDataBuffer().addressPointer(),
-                            null, null);
-
-            linearIndex += m.length();
-        }
-        return ret;
-        */
         return Nd4j.exec(new Flatten(order, matrices.toArray(new INDArray[matrices.size()])))[0];
     }
 
@@ -555,6 +533,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                     new LongPointerWrapper(tadBuffers.getSecond().pointer())
             );
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         return result;
     }
 
@@ -574,65 +555,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             return toConcat[0];
 
         return Nd4j.exec(new Concat(dimension, toConcat))[0];
-
-        // legacy implementation
-/*
-        // if reusable var wasn't created for this thread, or is smaller then needed - set it to new value
-        if (extrazA.get() == null || extrazB.get() == null || extrazSize.get() == null || extrazSize.get() < toConcat.length) {
-            extrazA.set(new PointerPointer(toConcat.length));
-            extrazB.set(new PointerPointer(toConcat.length));
-            extrazSize.set(toConcat.length);
-        }
-
-        PointerPointer shapeInfoPointers = extrazA.get();
-        PointerPointer dataPointers = extrazB.get();
-        int sumAlongDim = 0;
-
-        long[] outputShape = ArrayUtil.copy(toConcat[0].shape());
-
-        boolean allScalars = true;
-
-        for (int i = 0; i < toConcat.length; i++) {
-            Preconditions.checkState(toConcat[i].rank() == outputShape.length, "Encountered different array ranks for concat: input[0].shape()=%ndShape, input[%s].shape()=%ndShape",
-                    toConcat[0], i, toConcat[i]);
-
-            if (toConcat[i].isCompressed())
-                Nd4j.getCompressor().decompressi(toConcat[i]);
-
-            Preconditions.checkArgument(toConcat[i].dataType() == toConcat[0].dataType(), "All operands must have same data type: input 0 has type %s, input %s has type %s",
-                    toConcat[0].dataType(), i, toConcat[i].dataType());
-
-            allScalars &= toConcat[i].rank() == 0;
-
-            shapeInfoPointers.put(i, toConcat[i].shapeInfoDataBuffer().addressPointer());
-            dataPointers.put(i, toConcat[i].data().addressPointer());
-            sumAlongDim += toConcat[i].size(dimension);
-            for (int j = 0; j < toConcat[i].rank(); j++) {
-
-                if (j != dimension && toConcat[i].size(j) != outputShape[j]) {
-                    throw new IllegalArgumentException(
-                            "Illegal concatenation at array " + i + " and shape element " + j);
-                }
-            }
-        }
-
-        if (allScalars) {
-            outputShape = new long[]{sumAlongDim};
-        } else {
-            outputShape[dimension] = sumAlongDim;
-        }
-
-        INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
-
-        nativeOps.concat(null, dimension, toConcat.length,
-                    dataPointers, shapeInfoPointers,
-                null, null,
-                    ret.data().addressPointer(), (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                    null, null,
-                    null, null);
-
-        return ret;
-        */
     }
 
 
@@ -757,6 +679,8 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                     (LongPointer) zTadShapeInfo,
                     new LongPointerWrapper(zTadOffsets));
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         return ret;
     }
@@ -793,6 +717,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                 null, null,
                 arrays.length,
                 len);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         return target;
     }
@@ -845,6 +772,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                 arrays.length,
                     len,
                 true);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         return target;
     }
@@ -983,90 +913,14 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                 arrays.size(),
                     ptrMap, tadPointers, offsetPointers);
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         dataPointers.address();
         shapePointers.address();
         tadPointers.address();
         offsetPointers.address();
     }
-
-
-    /**
-     * This method converts Half-precision databuffer to current dType buffer.
-     *
-     * @param buffer
-     * @return
-     */
-    /*
-    @Override
-    public DataBuffer restoreFromHalfs(DataBuffer buffer) {
-        if (buffer.dataType() != DataType.COMPRESSED)
-            throw new IllegalStateException("DataBuffer contains wrong data: " + buffer.dataType());
-    
-        CompressedDataBuffer comp = (CompressedDataBuffer) buffer;
-        CompressionDescriptor descriptor = comp.getCompressionDescriptor();
-    
-        DataBuffer targetBuffer = Nd4j.createBuffer(descriptor.getCompressedLength() / 2);
-    
-        if (Nd4j.dataType() == DataType.DOUBLE) {
-            nativeOps.convertHalfsToDoubles(
-                    null,
-                    comp.addressPointer(),
-                    (int) descriptor.getCompressedLength() / 2,
-                    targetBuffer.addressPointer()
-            );
-        } else if (Nd4j.dataType() == DataType.FLOAT) {
-            nativeOps.convertHalfsToFloats(
-                    null,
-                    comp.addressPointer(),
-                    (int) descriptor.getCompressedLength() / 2,
-                    targetBuffer.addressPointer()
-            );
-        } else {
-            throw new UnsupportedOperationException("Target dtype isn't supported: " + Nd4j.dataType());
-        }
-    
-        return targetBuffer;
-    }
-    */
-
-    /**
-     * This method converts Single/Double precision databuffer to Half-precision databuffer
-     *
-     * @param buffer
-     * @return
-     */
-    /*@Override
-    public DataBuffer convertToHalfs(DataBuffer buffer) {
-        // we allocate pointer
-        ShortPointer pointer = new ShortPointer(buffer.length());
-    
-        if (buffer.dataType() == DataType.DOUBLE) {
-            nativeOps.convertDoublesToHalfs(
-                    null,
-                    buffer.addressPointer(),
-                    (int) buffer.length(),
-                    pointer
-            );
-        } else if (buffer.dataType() == DataType.FLOAT) {
-            nativeOps.convertFloatsToHalfs(
-                    null,
-                    buffer.addressPointer(),
-                    (int) buffer.length(),
-                    pointer
-            );
-        } else {
-            throw new UnsupportedOperationException("Source dtype isn't supported: " + buffer.dataType());
-        }
-    
-        CompressionDescriptor descriptor = new CompressionDescriptor(buffer, new Float16());
-        descriptor.setCompressedLength(buffer.length() * 2);
-    
-    
-        CompressedDataBuffer result = new CompressedDataBuffer(pointer, descriptor);
-        return result;
-    }
-    */
 
     /**
      * This method converts Single/Double precision databuffer to Half-precision databuffer
@@ -1081,6 +935,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             throw new UnsupportedOperationException("Impossible to compress View. Consider using dup() before. ");
 
         DataBuffer buffer = convertDataEx(typeSrc, source.data(), typeDst);
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         source.setData(buffer);
 
         if (buffer instanceof CompressedDataBuffer)
@@ -1125,6 +982,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         convertDataEx(typeSrc, source, typeDst, buffer);
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         return buffer;
     }
 
@@ -1132,6 +992,9 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, Pointer target,
                               long length) {
         nativeOps.convertTypes(null, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
     }
 
     @Override
