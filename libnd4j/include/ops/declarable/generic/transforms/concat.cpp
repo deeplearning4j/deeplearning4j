@@ -167,9 +167,7 @@ DECLARE_SHAPE_FN(concat) {
     }
 
     for(int i = 1; i < numOfArrs; ++i)
-        if (!shape::isEmpty(arrShapes[i])) {
-            outShapeInfo[axis + 1] += arrShapes[i][axis + 1];
-        }
+        outShapeInfo[axis + 1] += arrShapes[i][axis + 1];
 
     ShapeUtils::updateStridesAndType(outShapeInfo, arrShapes[0], shape::order(arrShapes[0]));
 
