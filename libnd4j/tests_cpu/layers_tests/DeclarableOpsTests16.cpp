@@ -39,7 +39,7 @@ public:
     }
 };
 
-TEST_F(DeclarableOpsTests16, test_scatter_update_119) {
+TEST_F(DeclarableOpsTests16, scatter_upd_1) {
     auto x = NDArrayFactory::create<float>('c', {3}, {1, 1, 1});
     auto y = NDArrayFactory::create<int>(0);
     auto w = NDArrayFactory::create<float>(3.0f);
@@ -55,6 +55,28 @@ TEST_F(DeclarableOpsTests16, test_scatter_update_119) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests16, scatter_upd_2) {
+
+    NDArray x('c', {10, 3}, nd4j::DataType::FLOAT32);
+    NDArray indices('c', {2}, {2,5}, nd4j::DataType::INT32);
+    NDArray updates('c', {2, 3}, {100,101,102,  200,201,202}, nd4j::DataType::FLOAT32);
+    NDArray e('c', {10, 3}, {1,2,3, 4,5,6, 100,101,102, 10,11,12, 13,14,15, 200,201,202, 19,20,21, 22,23,24, 25,26,27, 28,29,30}, nd4j::DataType::FLOAT32);
+
+    x.linspace(1);
+
+    nd4j::ops::scatter_upd op;
+    auto result = op.execute({&x, &indices, &updates}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printBuffer();
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
 
 TEST_F(DeclarableOpsTests16, test_size_dtype_1) {
     auto x = NDArrayFactory::create<float>('c', {3}, {1, 1, 1});
