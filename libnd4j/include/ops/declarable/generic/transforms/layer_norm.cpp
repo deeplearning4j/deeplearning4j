@@ -36,7 +36,7 @@ namespace ops  {
         std::vector<int> axis = *block.getIArguments();
 
         const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
-        const int dimC = isNCHW ? 1 : 3;
+        const int dimC = isNCHW ? 1 : input->rankOf() - 1;
 
         NDArray* bias = nullptr;
         if (block.width() > 2)
@@ -78,7 +78,7 @@ namespace ops  {
         auto dLdb = block.width() == 4 ? OUTPUT_VARIABLE(2) : nullptr;
 
         const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
-        const int dimC = isNCHW ? 1 : 3;
+        const int dimC = isNCHW ? 1 : input->rankOf() - 1;
 
         std::vector<int> axis = *block.getIArguments();
 
