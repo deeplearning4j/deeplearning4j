@@ -28,13 +28,10 @@ namespace helpers {
 template <typename T>
 void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& output) {
 
-     const int nbins = output.lengthOf();
+    const int nbins = output.lengthOf();
 
-    // firstly initialize output with zeros 
-    if(output.ews() == 1)
-        memset(output.buffer(), 0, nbins * output.sizeOfT());
-    else
-        output = 0;
+    // firstly initialize output with zeros
+    output.nullify();
 
     const T leftEdge  = range.e<double>(0);
     const T rightEdge = range.e<double>(1);

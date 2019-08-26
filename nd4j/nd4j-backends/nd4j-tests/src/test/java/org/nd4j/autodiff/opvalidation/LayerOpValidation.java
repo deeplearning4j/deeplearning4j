@@ -1297,7 +1297,6 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
     @Test
-    @Ignore("AB 2019/06/24 - Failing: Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testLayerNormMixedOrders(){
         Nd4j.getRandom().setSeed(12345);
         INDArray input = Nd4j.rand(DataType.DOUBLE, 3, 8).dup('f');

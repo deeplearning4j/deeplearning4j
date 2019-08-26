@@ -54,6 +54,8 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(!lock) schedule(guided))
         std::vector<int> dimsToExcludeUpd(sizeOfDims);
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
+        shape::printIntArray(dimsToExcludeUpd.data(),dimsToExcludeUpd.size());
+
 // PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)) // causes known openMP asan bug !
 PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(!lock) schedule(guided))
         for(Nd4jLong i = 0; i < indLen; ++i) {

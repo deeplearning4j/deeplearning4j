@@ -20,110 +20,181 @@
 
 #include <ops/declarable/helpers/histogramFixedWidth.h>
 #include <cuda_exception.h>
+#include <PointersManager.h>
 
-namespace nd4j {
-namespace ops {
+namespace nd4j    {
+namespace ops     {
 namespace helpers {
 
-    template <typename T>
-    __global__ static void copyBuffers(Nd4jLong* destination, void const* source, Nd4jLong* sourceShape, Nd4jLong bufferLength) {
-        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
-        const auto step = gridDim.x * blockDim.x;
-        for (int t = tid; t < bufferLength; t += step) {
-            destination[t] = reinterpret_cast<T const*>(source)[shape::getIndexOffset(t, sourceShape, bufferLength)];
-        }
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void histogramFixedWidthCuda( const void* vx, const Nd4jLong* xShapeInfo,
+                                                      void* vz, const Nd4jLong* zShapeInfo,
+                                                const T leftEdge, const T rightEdge) {
+
+    const T* x  = reinterpret_cast<const T*>(vx);
+    Nd4jLong* z = reinterpret_cast<Nd4jLong*>(vz);
+
+    __shared__ Nd4jLong xLen, zLen, totalThreads, nbins;
+    __shared__ T binWidth, secondEdge, lastButOneEdge;
+
+    if (threadIdx.x == 0) {
+
+        xLen  = shape::length(xShapeInfo);
+        nbins = shape::length(zShapeInfo);          // nbins = zLen
+        totalThreads = gridDim.x * blockDim.x;
+
+        binWidth       = (rightEdge - leftEdge ) / nbins;
+        secondEdge     = leftEdge + binWidth;
+        lastButOneEdge = rightEdge - binWidth;
     }
 
-    template <typename T>
-    __global__ static void returnBuffers(void* destination, Nd4jLong const* source, Nd4jLong* destinationShape, Nd4jLong bufferLength) {
-        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
-        const auto step = gridDim.x * blockDim.x;
-        for (int t = tid; t < bufferLength; t += step) {
-            reinterpret_cast<T*>(destination)[shape::getIndexOffset(t, destinationShape, bufferLength)] = source[t];
-        }
+    __syncthreads();
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < xLen; i += totalThreads) {
+
+        const T value = x[shape::getIndexOffset(i, xShapeInfo, xLen)];
+
+        Nd4jLong zIndex;
+
+        if(value < secondEdge)
+            zIndex = 0;
+        else if(value >= lastButOneEdge)
+            zIndex = nbins - 1;
+        else
+            zIndex = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
+
+        nd4j::math::atomics::nd4j_atomicAdd(&z[shape::getIndexOffset(zIndex, zShapeInfo, nbins)], 1LL);
     }
+}
 
-    template <typename T>
-    static __global__ void histogramFixedWidthKernel(void* outputBuffer, Nd4jLong outputLength, void const* inputBuffer, Nd4jLong* inputShape, Nd4jLong inputLength, double const leftEdge, double binWidth, double secondEdge, double lastButOneEdge) {
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__host__ static void histogramFixedWidthCudaLauncher(const cudaStream_t *stream, const NDArray& input, const NDArray& range, NDArray& output) {
 
-        __shared__ T const* x;
-        __shared__ Nd4jLong* z; // output buffer
+    const T leftEdge  = range.e<T>(0);
+    const T rightEdge = range.e<T>(1);
 
-        if (threadIdx.x == 0) {
-            z = reinterpret_cast<Nd4jLong*>(outputBuffer);
-            x = reinterpret_cast<T const*>(inputBuffer);
-        }
-        __syncthreads();
-        auto tid = blockIdx.x * gridDim.x + threadIdx.x;
-        auto step = blockDim.x * gridDim.x;
+    histogramFixedWidthCuda<T><<<512, MAX_NUM_THREADS / 2, 512, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftEdge, rightEdge);
+}
 
-        for(auto i = tid; i < inputLength; i += step) {
+////////////////////////////////////////////////////////////////////////
+void histogramFixedWidth(nd4j::LaunchContext* context, const NDArray& input, const NDArray& range, NDArray& output) {
 
-            const T value = x[shape::getIndexOffset(i, inputShape, inputLength)];
-            Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
+    // firstly initialize output with zeros
+    output.nullify();
 
-            if(value < secondEdge)
-                currInd = 0;
-            else if(value >= lastButOneEdge)
-                currInd = outputLength - 1;
-            nd4j::math::atomics::nd4j_atomicAdd(&z[currInd], 1LL);
-        }
-    }
+    PointersManager manager(context, "histogramFixedWidth");
+
+    NDArray::prepareSpecialUse({&output}, {&input});
+    BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidthCudaLauncher, (context->getCudaStream(), input, range, output), LIBND4J_TYPES);
+    NDArray::registerSpecialUse({&output}, {&input});
+
+    manager.synchronize();
+}
 
 
-    template <typename T>
-    void histogramFixedWidth_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
-        const int nbins = output.lengthOf();
-        auto stream = context->getCudaStream();
-        // firstly initialize output with zeros
-        //if(output.ews() == 1)
-        //    memset(output.buffer(), 0, nbins * output.sizeOfT());
-        //else
-        output.assign(0);
-        if (!input.isActualOnDeviceSide())
-            input.syncToDevice();
+//     template <typename T>
+//     __global__ static void copyBuffers(Nd4jLong* destination, void const* source, Nd4jLong* sourceShape, Nd4jLong bufferLength) {
+//         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+//         const auto step = gridDim.x * blockDim.x;
+//         for (int t = tid; t < bufferLength; t += step) {
+//             destination[t] = reinterpret_cast<T const*>(source)[shape::getIndexOffset(t, sourceShape, bufferLength)];
+//         }
+//     }
 
-        const double leftEdge  = range.e<double>(0);
-        const double rightEdge = range.e<double>(1);
+//     template <typename T>
+//     __global__ static void returnBuffers(void* destination, Nd4jLong const* source, Nd4jLong* destinationShape, Nd4jLong bufferLength) {
+//         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+//         const auto step = gridDim.x * blockDim.x;
+//         for (int t = tid; t < bufferLength; t += step) {
+//             reinterpret_cast<T*>(destination)[shape::getIndexOffset(t, destinationShape, bufferLength)] = source[t];
+//         }
+//     }
 
-        const double binWidth       = (rightEdge - leftEdge ) / nbins;
-        const double secondEdge     = leftEdge + binWidth;
-        double lastButOneEdge = rightEdge - binWidth;
-        Nd4jLong* outputBuffer;
-        cudaError_t err = cudaMalloc(&outputBuffer, output.lengthOf() * sizeof(Nd4jLong));
-        if (err != 0)
-            throw cuda_exception::build("helpers::histogramFixedWidth: Cannot allocate memory for output", err);
-        copyBuffers<Nd4jLong ><<<256, 512, 8192, *stream>>>(outputBuffer, output.getSpecialBuffer(), output.getSpecialShapeInfo(), output.lengthOf());
-        histogramFixedWidthKernel<T><<<256, 512, 8192, *stream>>>(outputBuffer, output.lengthOf(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), input.lengthOf(), leftEdge, binWidth, secondEdge, lastButOneEdge);
-        returnBuffers<Nd4jLong><<<256, 512, 8192, *stream>>>(output.specialBuffer(), outputBuffer, output.specialShapeInfo(), output.lengthOf());
-        //cudaSyncStream(*stream);
-        err = cudaFree(outputBuffer);
-        if (err != 0)
-            throw cuda_exception::build("helpers::histogramFixedWidth: Cannot deallocate memory for output buffer", err);
-        output.tickWriteDevice();
-//#pragma omp parallel for schedule(guided)
-//        for(Nd4jLong i = 0; i < input.lengthOf(); ++i) {
-//
-//            const T value = input.e<T>(i);
-//
-//            if(value < secondEdge)
-//#pragma omp critical
-//                output.p<Nd4jLong>(0, output.e<Nd4jLong>(0) + 1);
-//            else if(value >= lastButOneEdge)
-//#pragma omp critical
-//                output.p<Nd4jLong>(nbins-1, output.e<Nd4jLong>(nbins-1) + 1);
-//            else {
-//                Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
-//#pragma omp critical
-//                output.p<Nd4jLong>(currInd, output.e<Nd4jLong>(currInd) + 1);
-//            }
-//        }
-    }
+//     template <typename T>
+//     static __global__ void histogramFixedWidthKernel(void* outputBuffer, Nd4jLong outputLength, void const* inputBuffer, Nd4jLong* inputShape, Nd4jLong inputLength, double const leftEdge, double binWidth, double secondEdge, double lastButOneEdge) {
 
-    void histogramFixedWidth(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidth_, (context, input, range, output), LIBND4J_TYPES);
-    }
-    BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output), LIBND4J_TYPES);
+//         __shared__ T const* x;
+//         __shared__ Nd4jLong* z; // output buffer
+
+//         if (threadIdx.x == 0) {
+//             z = reinterpret_cast<Nd4jLong*>(outputBuffer);
+//             x = reinterpret_cast<T const*>(inputBuffer);
+//         }
+//         __syncthreads();
+//         auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+//         auto step = blockDim.x * gridDim.x;
+
+//         for(auto i = tid; i < inputLength; i += step) {
+
+//             const T value = x[shape::getIndexOffset(i, inputShape, inputLength)];
+//             Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
+
+//             if(value < secondEdge)
+//                 currInd = 0;
+//             else if(value >= lastButOneEdge)
+//                 currInd = outputLength - 1;
+//             nd4j::math::atomics::nd4j_atomicAdd(&z[currInd], 1LL);
+//         }
+//     }
+
+
+//     template <typename T>
+//     void histogramFixedWidth_(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
+//         const int nbins = output.lengthOf();
+//         auto stream = context->getCudaStream();
+//         // firstly initialize output with zeros
+//         //if(output.ews() == 1)
+//         //    memset(output.buffer(), 0, nbins * output.sizeOfT());
+//         //else
+//         output.assign(0);
+//         if (!input.isActualOnDeviceSide())
+//             input.syncToDevice();
+
+//         const double leftEdge  = range.e<double>(0);
+//         const double rightEdge = range.e<double>(1);
+
+//         const double binWidth       = (rightEdge - leftEdge ) / nbins;
+//         const double secondEdge     = leftEdge + binWidth;
+//         double lastButOneEdge = rightEdge - binWidth;
+//         Nd4jLong* outputBuffer;
+//         cudaError_t err = cudaMalloc(&outputBuffer, output.lengthOf() * sizeof(Nd4jLong));
+//         if (err != 0)
+//             throw cuda_exception::build("helpers::histogramFixedWidth: Cannot allocate memory for output", err);
+//         copyBuffers<Nd4jLong ><<<256, 512, 8192, *stream>>>(outputBuffer, output.getSpecialBuffer(), output.getSpecialShapeInfo(), output.lengthOf());
+//         histogramFixedWidthKernel<T><<<256, 512, 8192, *stream>>>(outputBuffer, output.lengthOf(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), input.lengthOf(), leftEdge, binWidth, secondEdge, lastButOneEdge);
+//         returnBuffers<Nd4jLong><<<256, 512, 8192, *stream>>>(output.specialBuffer(), outputBuffer, output.specialShapeInfo(), output.lengthOf());
+//         //cudaSyncStream(*stream);
+//         err = cudaFree(outputBuffer);
+//         if (err != 0)
+//             throw cuda_exception::build("helpers::histogramFixedWidth: Cannot deallocate memory for output buffer", err);
+//         output.tickWriteDevice();
+// //#pragma omp parallel for schedule(guided)
+// //        for(Nd4jLong i = 0; i < input.lengthOf(); ++i) {
+// //
+// //            const T value = input.e<T>(i);
+// //
+// //            if(value < secondEdge)
+// //#pragma omp critical
+// //                output.p<Nd4jLong>(0, output.e<Nd4jLong>(0) + 1);
+// //            else if(value >= lastButOneEdge)
+// //#pragma omp critical
+// //                output.p<Nd4jLong>(nbins-1, output.e<Nd4jLong>(nbins-1) + 1);
+// //            else {
+// //                Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
+// //#pragma omp critical
+// //                output.p<Nd4jLong>(currInd, output.e<Nd4jLong>(currInd) + 1);
+// //            }
+// //        }
+//     }
+
+//     void histogramFixedWidth(nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output) {
+//         BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidth_, (context, input, range, output), LIBND4J_TYPES);
+//     }
+//     BUILD_SINGLE_TEMPLATE(template void histogramFixedWidth_, (nd4j::LaunchContext * context, const NDArray& input, const NDArray& range, NDArray& output), LIBND4J_TYPES);
 
 }
 }

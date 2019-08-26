@@ -910,7 +910,31 @@ TEST_F(DeclarableOpsTests10, histogram_fixed_width_test5) {
     auto *out = results->at(0);
 
     ASSERT_TRUE(exp.isSameShape(out));
-    out->printBuffer("5HIST");
+    // out->printBuffer("5HIST");
+    ASSERT_TRUE(exp.equalsTo(out));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, histogram_fixed_width_test6) {
+
+    auto input = NDArrayFactory::create<double>('c', {7},{0.0, 0.1, 0.1, 0.3, 0.5, 0.5, 0.9});
+    auto range = NDArrayFactory::create<double>('c', {2}, {0, 1});
+    auto bins  = NDArrayFactory::create<int>(5);
+
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {5}, {3, 1, 2, 0, 1});
+
+    nd4j::ops::histogram_fixed_width op;
+    auto results = op.execute({&input, &range, &bins}, {}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto out = results->at(0);
+    // out->printShapeInfo();
+    // out->printIndexedBuffer();
+
+    ASSERT_TRUE(exp.isSameShape(out));
     ASSERT_TRUE(exp.equalsTo(out));
 
     delete results;
