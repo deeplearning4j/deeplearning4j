@@ -18,8 +18,8 @@ package org.deeplearning4j.spark.impl.common.score;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -38,8 +38,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Slf4j
-public abstract class BaseVaeScoreWithKeyFunctionAdapter<K>
-                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray>>, Tuple2<K, Double>> {
+public abstract class BaseVaeScoreWithKeyFunction<K> implements FlatMapFunction<Iterator<Tuple2<K, INDArray>>, Tuple2<K, Double>> {
 
     protected final Broadcast<INDArray> params;
     protected final Broadcast<String> jsonConfig;
@@ -51,7 +50,7 @@ public abstract class BaseVaeScoreWithKeyFunctionAdapter<K>
      * @param jsonConfig             MultiLayerConfiguration, as json
      * @param batchSize              Batch size to use when scoring
      */
-    public BaseVaeScoreWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+    public BaseVaeScoreWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
         this.params = params;
         this.jsonConfig = jsonConfig;
         this.batchSize = batchSize;
@@ -63,9 +62,9 @@ public abstract class BaseVaeScoreWithKeyFunctionAdapter<K>
 
 
     @Override
-    public Iterable<Tuple2<K, Double>> call(Iterator<Tuple2<K, INDArray>> iterator) throws Exception {
+    public Iterator<Tuple2<K, Double>> call(Iterator<Tuple2<K, INDArray>> iterator) throws Exception {
         if (!iterator.hasNext()) {
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         VariationalAutoencoder vae = getVaeLayer();
@@ -108,6 +107,6 @@ public abstract class BaseVaeScoreWithKeyFunctionAdapter<K>
             log.debug("Scored {} examples ", totalCount);
         }
 
-        return ret;
+        return ret.iterator();
     }
 }

@@ -17,9 +17,8 @@
 package org.deeplearning4j.spark.impl.graph.evaluation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
@@ -43,26 +42,7 @@ import java.util.concurrent.Future;
  *
  * @author Alex Black
  */
-public class IEvaluateMDSPathsFlatMapFunction
-                extends BaseFlatMapFunctionAdaptee<Iterator<String>, IEvaluation[]> {
-
-    public IEvaluateMDSPathsFlatMapFunction(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers, int evalBatchSize,
-                                            DataSetLoader dsLoader, MultiDataSetLoader mdsLoader,
-                                            Broadcast<SerializableHadoopConfig> configuration, IEvaluation... evaluations) {
-        super(new IEvaluateMDSPathsFlatMapFunctionAdapter(json, params, evalNumWorkers, evalBatchSize, dsLoader, mdsLoader, configuration, evaluations));
-    }
-}
-
-
-/**
- * Function to evaluate data (using an IEvaluation instance), in a distributed manner
- * Flat map function used to batch examples for computational efficiency + reduce number of IEvaluation objects returned
- * for network efficiency.
- *
- * @author Alex Black
- */
-@Slf4j
-class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<Iterator<String>, IEvaluation[]> {
+public class IEvaluateMDSPathsFlatMapFunction implements FlatMapFunction<Iterator<String>, IEvaluation[]> {
 
     protected Broadcast<String> json;
     protected Broadcast<byte[]> params;
@@ -80,7 +60,7 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
      *                              this. Used to avoid doing too many at once (and hence memory issues)
      * @param evaluations Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public IEvaluateMDSPathsFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers, int evalBatchSize,
+    public IEvaluateMDSPathsFlatMapFunction(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers, int evalBatchSize,
                                                    DataSetLoader dsLoader, MultiDataSetLoader mdsLoader, Broadcast<SerializableHadoopConfig> configuration, IEvaluation[] evaluations) {
         this.json = json;
         this.params = params;
@@ -93,9 +73,9 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
     }
 
     @Override
-    public Iterable<IEvaluation[]> call(Iterator<String> paths) throws Exception {
+    public Iterator<IEvaluation[]> call(Iterator<String> paths) throws Exception {
         if (!paths.hasNext()) {
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         MultiDataSetIterator iter;
@@ -109,9 +89,9 @@ class IEvaluateMDSPathsFlatMapFunctionAdapter implements FlatMapFunctionAdapter<
         Future<IEvaluation[]> f = EvaluationRunner.getInstance().execute(evaluations, evalNumWorkers, evalBatchSize, null, iter, true, json, params);
         IEvaluation[] result = f.get();
         if(result == null){
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         } else {
-            return Collections.singletonList(result);
+            return Collections.singletonList(result).iterator();
         }
     }
 }

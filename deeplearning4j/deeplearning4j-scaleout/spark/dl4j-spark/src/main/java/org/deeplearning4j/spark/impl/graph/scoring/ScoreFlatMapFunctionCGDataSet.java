@@ -16,9 +16,8 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -37,35 +36,23 @@ import java.util.Iterator;
 import java.util.List;
 
 /** Function used to score a DataSet using a ComputationGraph */
-public class ScoreFlatMapFunctionCGDataSet
-                extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, Tuple2<Integer, Double>> {
-
-    public ScoreFlatMapFunctionCGDataSet(String json, Broadcast<INDArray> params, int minibatchSize) {
-        super(new ScoreFlatMapFunctionCGDataSetAdapter(json, params, minibatchSize));
-    }
-}
-
-
-/** Function used to score a DataSet using a ComputationGraph */
-class ScoreFlatMapFunctionCGDataSetAdapter
-                implements FlatMapFunctionAdapter<Iterator<DataSet>, Tuple2<Integer, Double>> {
-
+public class ScoreFlatMapFunctionCGDataSet implements FlatMapFunction<Iterator<DataSet>, Tuple2<Integer, Double>> {
     private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunctionCGDataSet.class);
     private String json;
     private Broadcast<INDArray> params;
     private int minibatchSize;
 
 
-    public ScoreFlatMapFunctionCGDataSetAdapter(String json, Broadcast<INDArray> params, int minibatchSize) {
+    public ScoreFlatMapFunctionCGDataSet(String json, Broadcast<INDArray> params, int minibatchSize) {
         this.json = json;
         this.params = params;
         this.minibatchSize = minibatchSize;
     }
 
     @Override
-    public Iterable<Tuple2<Integer, Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterator<Tuple2<Integer, Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple2<>(0, 0.0));
+            return Collections.singletonList(new Tuple2<>(0, 0.0)).iterator();
         }
 
         DataSetIterator iter = new IteratorDataSetIterator(dataSetIterator, minibatchSize); //Does batching where appropriate
@@ -90,6 +77,6 @@ class ScoreFlatMapFunctionCGDataSetAdapter
 
         Nd4j.getExecutioner().commit();
 
-        return out;
+        return out.iterator();
     }
 }
