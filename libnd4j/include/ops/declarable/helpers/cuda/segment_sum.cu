@@ -190,7 +190,9 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void segmentSumFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentSumFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices});
     }
 
     // -------------------------------------------------------------------------------------------------------------- //
@@ -229,8 +231,10 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void unsortedSegmentSumFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSumFunctor_, (context, input, indices, numOfClasses, output),
                               NUMERIC_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices});
 
     }
 
@@ -343,8 +347,10 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 
     int segmentSumFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentSumFunctorBP_, (context, input,
                 indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut});
     }
 
     template <typename T, typename I>
@@ -381,7 +387,9 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     int unsortedSegmentSumFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSumFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut});
     }
 
 }

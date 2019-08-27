@@ -27,16 +27,16 @@ namespace ops     {
 namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
-template<typename T>
+template<typename X, typename Z>
 __global__ static void histogramFixedWidthCuda( const void* vx, const Nd4jLong* xShapeInfo,
                                                       void* vz, const Nd4jLong* zShapeInfo,
-                                                const T leftEdge, const T rightEdge) {
+                                                const X leftEdge, const X rightEdge) {
 
-    const T* x  = reinterpret_cast<const T*>(vx);
-    Nd4jLong* z = reinterpret_cast<Nd4jLong*>(vz);
+    const auto x  = reinterpret_cast<const X*>(vx);
+    auto z = reinterpret_cast<Z*>(vz);
 
     __shared__ Nd4jLong xLen, zLen, totalThreads, nbins;
-    __shared__ T binWidth, secondEdge, lastButOneEdge;
+    __shared__ X binWidth, secondEdge, lastButOneEdge;
 
     if (threadIdx.x == 0) {
 
@@ -55,7 +55,7 @@ __global__ static void histogramFixedWidthCuda( const void* vx, const Nd4jLong* 
 
     for (Nd4jLong i = tid; i < xLen; i += totalThreads) {
 
-        const T value = x[shape::getIndexOffset(i, xShapeInfo, xLen)];
+        const X value = x[shape::getIndexOffset(i, xShapeInfo, xLen)];
 
         Nd4jLong zIndex;
 
@@ -66,18 +66,18 @@ __global__ static void histogramFixedWidthCuda( const void* vx, const Nd4jLong* 
         else
             zIndex = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
 
-        nd4j::math::atomics::nd4j_atomicAdd(&z[shape::getIndexOffset(zIndex, zShapeInfo, nbins)], 1LL);
+        nd4j::math::atomics::nd4j_atomicAdd<Z>(&z[shape::getIndexOffset(zIndex, zShapeInfo, nbins)], 1);
     }
 }
 
 ///////////////////////////////////////////////////////////////////
-template<typename T>
+template<typename X, typename Z>
 __host__ static void histogramFixedWidthCudaLauncher(const cudaStream_t *stream, const NDArray& input, const NDArray& range, NDArray& output) {
 
-    const T leftEdge  = range.e<T>(0);
-    const T rightEdge = range.e<T>(1);
+    const X leftEdge  = range.e<X>(0);
+    const X rightEdge = range.e<X>(1);
 
-    histogramFixedWidthCuda<T><<<512, MAX_NUM_THREADS / 2, 512, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftEdge, rightEdge);
+    histogramFixedWidthCuda<X, Z><<<256, 256, 1024, *stream>>>(input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), leftEdge, rightEdge);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -89,7 +89,7 @@ void histogramFixedWidth(nd4j::LaunchContext* context, const NDArray& input, con
     PointersManager manager(context, "histogramFixedWidth");
 
     NDArray::prepareSpecialUse({&output}, {&input});
-    BUILD_SINGLE_SELECTOR(input.dataType(), histogramFixedWidthCudaLauncher, (context->getCudaStream(), input, range, output), LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), histogramFixedWidthCudaLauncher, (context->getCudaStream(), input, range, output), LIBND4J_TYPES, INDEXING_TYPES);
     NDArray::registerSpecialUse({&output}, {&input});
 
     manager.synchronize();

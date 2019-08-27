@@ -1178,7 +1178,7 @@ public class LayerOpValidation extends BaseOpValidation {
         final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
 
         final INDArray output = Nd4j.zerosLike(res);
-        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, bias, output, 1));
+        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, bias, output, true, 1));
 
         assertEquals(res, output);
     }
@@ -1216,7 +1216,7 @@ public class LayerOpValidation extends BaseOpValidation {
         final INDArray res = standardized.mulRowVector(gain);
 
         final INDArray output = Nd4j.zerosLike(res);
-        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, output, 1));
+        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, output, true, 1));
 
         assertEquals(res, output);
     }

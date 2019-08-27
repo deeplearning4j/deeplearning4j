@@ -163,7 +163,7 @@ namespace helpers {
 
         classesRangesBegs.assign(indices->lengthOf());
         classesRangesLens.assign(0);
-
+        NDArray::prepareSpecialUse({output}, {input, indices});
         dim3 dims(numClasses, indices->lengthOf(), numClasses * 32 + 32);
         int* begins = reinterpret_cast<int*>(classesRangesBegs.specialBuffer());
         int* lengths = reinterpret_cast<int*>(classesRangesLens.specialBuffer());
@@ -182,11 +182,14 @@ namespace helpers {
             Nd4jLong* outputTadOffsets = packZ.specialOffsets();
             segmentMeanTadKernel<T,I><<<input->sizeAt(0), 512, 2048, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
+        NDArray::registerSpecialUse({output}, {input, indices});
 
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void segmentMeanFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices});
     }
 
     // -------------------------------------------------------------------------------------------------------------- //
@@ -194,6 +197,8 @@ namespace helpers {
     static void unsortedSegmentMeanFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         auto stream = context->getCudaStream();
 //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
+        NDArray::prepareSpecialUse({output}, {input, indices});
+
         NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
         NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
 //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
@@ -221,12 +226,15 @@ namespace helpers {
             dims.x = input->sizeAt(0);
             segmentMeanTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
+        NDArray::registerSpecialUse({output}, {input, indices});
 
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void unsortedSegmentMeanFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMeanFunctor_, (context, input, indices, numOfClasses, output),
                               NUMERIC_TYPES, INDEXING_TYPES);
+        NDArray::prepareSpecialUse({output}, {input, indices});
     }
 
     // -------------------------------------------------------------------------------------------------------------- //
@@ -349,8 +357,10 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     // segmen mean bp main
     int segmentMeanFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMeanFunctorBP_, (context, input,
                 indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut});
     }
     // -------------------------------------------------------------------------------------------------------------- //
 
@@ -399,7 +409,9 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     int unsortedSegmentMeanFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMeanFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut});
     }
 
 }
