@@ -75,6 +75,6 @@ public class ExecuteWorkerPathFlatMap<R extends TrainingResult> implements FlatM
             list.add(iter.next());
         }
 
-        return workerFlatMap.call(new PathSparkDataSetIterator(list.iterator(), dataSetLoader, hadoopConfig)).iterator();
+        return workerFlatMap.call(new PathSparkDataSetIterator(list.iterator(), dataSetLoader, hadoopConfig));
     }
 }

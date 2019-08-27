@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.spark.impl.multilayer.scoring;
 
-import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -42,7 +42,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class FeedForwardWithKeyFunction<K>
-                implements FlatMapFunction<Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>>, Tuple2<K, INDArray>> {
+                implements PairFlatMapFunction<Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>>, K, INDArray> {
 
     protected static Logger log = LoggerFactory.getLogger(FeedForwardWithKeyFunction.class);
 

@@ -19,6 +19,7 @@ package org.deeplearning4j.spark.impl.common.score;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -38,7 +39,7 @@ import java.util.List;
  * @author Alex Black
  */
 @Slf4j
-public abstract class BaseVaeScoreWithKeyFunction<K> implements FlatMapFunction<Iterator<Tuple2<K, INDArray>>, Tuple2<K, Double>> {
+public abstract class BaseVaeScoreWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, INDArray>>, K, Double> {
 
     protected final Broadcast<INDArray> params;
     protected final Broadcast<String> jsonConfig;
