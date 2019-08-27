@@ -192,7 +192,9 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void segmentProdFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentProdFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices});
     }
 
     // -------------------------------------------------------------------------------------------------------------- //
@@ -231,8 +233,10 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void unsortedSegmentProdFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentProdFunctor_, (context, input, indices, numOfClasses, output),
                               NUMERIC_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices});
     }
 
     // -------------------------------------------------------------------------------------------------------------- //
@@ -358,8 +362,10 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
 
     int segmentProdFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentProdFunctorBP_, (context, input,
                 indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut});
     }
 
     // -------------------------------------------------------------------------------------------------------------- //
@@ -404,7 +410,9 @@ namespace helpers {
 
     // -------------------------------------------------------------------------------------------------------------- //
     int unsortedSegmentProdFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentProdFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
+        NDArray::registerSpecialUse({output}, {input, indices, gradOut});
     }
 
     // -------------------------------------------------------------------------------------------------------------- //
