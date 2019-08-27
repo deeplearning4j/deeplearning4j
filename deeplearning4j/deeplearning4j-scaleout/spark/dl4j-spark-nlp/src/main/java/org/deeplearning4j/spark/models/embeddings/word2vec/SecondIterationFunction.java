@@ -16,9 +16,8 @@
 
 package org.deeplearning4j.spark.models.embeddings.word2vec;
 
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -37,22 +36,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author jeffreytang
  * @author raver119@gmail.com
  */
-public class SecondIterationFunction extends
-                BaseFlatMapFunctionAdaptee<Iterator<Tuple2<List<VocabWord>, Long>>, Entry<VocabWord, INDArray>> {
-
-    public SecondIterationFunction(Broadcast<Map<String, Object>> word2vecVarMapBroadcast,
-                    Broadcast<double[]> expTableBroadcast, Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast) {
-        super(new SecondIterationFunctionAdapter(word2vecVarMapBroadcast, expTableBroadcast, vocabCacheBroadcast));
-    }
-}
-
-
-/**
- * @author jeffreytang
- * @author raver119@gmail.com
- */
-class SecondIterationFunctionAdapter
-                implements FlatMapFunctionAdapter<Iterator<Tuple2<List<VocabWord>, Long>>, Entry<VocabWord, INDArray>> {
+public class SecondIterationFunction implements FlatMapFunction<Iterator<Tuple2<List<VocabWord>, Long>>, Entry<VocabWord, INDArray>> {
 
     private int ithIteration = 1;
     private int vectorLength;
@@ -78,7 +62,7 @@ class SecondIterationFunctionAdapter
 
 
 
-    public SecondIterationFunctionAdapter(Broadcast<Map<String, Object>> word2vecVarMapBroadcast,
+    public SecondIterationFunction(Broadcast<Map<String, Object>> word2vecVarMapBroadcast,
                     Broadcast<double[]> expTableBroadcast, Broadcast<VocabCache<VocabWord>> vocabCacheBroadcast) {
 
         Map<String, Object> word2vecVarMap = word2vecVarMapBroadcast.getValue();
@@ -110,7 +94,7 @@ class SecondIterationFunctionAdapter
 
 
     @Override
-    public Iterable<Entry<VocabWord, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
+    public Iterator<Entry<VocabWord, INDArray>> call(Iterator<Tuple2<List<VocabWord>, Long>> pairIter) {
         this.vocabHolder = VocabHolder.getInstance();
         this.vocabHolder.setSeed(seed, vectorLength);
 
@@ -139,7 +123,7 @@ class SecondIterationFunctionAdapter
                 }
             }
         }
-        return vocabHolder.getSplit(vocab);
+        return vocabHolder.getSplit(vocab).iterator();
     }
 
 
