@@ -261,7 +261,6 @@
 
         <oshi.version>3.4.2</oshi.version>
         <kafka.version>0.8.2.2</kafka.version>
-        <akka.version>2.3.16</akka.version>
         <typesafe.config.version>1.3.0</typesafe.config.version> <!-- Play requires 1.3.0 -->
         <py4j.version>0.10.4</py4j.version>
         <jcommander.version>1.27</jcommander.version>
@@ -280,6 +279,7 @@
         <fastutil.version>6.5.7</fastutil.version>
         <unirest.version>1.4.9</unirest.version>
         <reflections.version>0.9.10</reflections.version>
+        <breeze.version>1.0</breeze.version>
 
         <javacpp.parser.skip>false</javacpp.parser.skip>     <!-- To skip header file parsing phase: -Djavacpp.parser.skip=true  -->
         <javacpp.compiler.skip>false</javacpp.compiler.skip> <!-- To skip native compilation phase: -Djavacpp.compiler.skip=true -->
