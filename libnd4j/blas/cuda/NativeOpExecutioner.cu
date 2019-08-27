@@ -475,12 +475,12 @@ void NativeOpExecutioner::execIndexReduce(nd4j::LaunchContext  *lc,
 	auto numBlocks = shape::length(hZShapeInfo);
     dim3 launchDims(numBlocks, 256, 32768);
 
-    if (zType != nd4j::DataType::INT64)
-        throw datatype_exception::build("NativeOpExecutioner::execIndexReduce requires Z operand to have INT64 type", zType);
+    if (zType != nd4j::DataType::INT64 && zType != nd4j::DataType::INT32)
+        throw datatype_exception::build("NativeOpExecutioner::execIndexReduce requires Z operand to have INT32/INT64 type", zType);
 
 	auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
-	BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce,  ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+	BUILD_DOUBLE_SELECTOR(xType, zType, functions::indexreduce::IndexReduce,  ::executeIndexReduce(launchDims, stream, opNum, dX, dXShapeInfo, shape::rank(hXShapeInfo), extraParams, dz, dZShapeInfo, shape::rank(hZShapeInfo), dimension, dimensionLength, 1, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), LIBND4J_TYPES, INDEXING_TYPES);
 
     // TODO: remove after the release
     auto res = cudaStreamSynchronize(*stream);
@@ -567,12 +567,12 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::LaunchContext  *lc,
     // FIXME: we want Z to be one of integer types
 	//if (!DataTypeUtils::isZ(zType))
 	//    throw nd4j::datatype_exception("NativeOpExecutioner::execIndexReduceScalar requires Z operand to have one of integer types")
-	if (zType != nd4j::DataType::INT64)
-        throw nd4j::datatype_exception::build("NativeOpExecutioner::execIndexReduceScalar requires Z operand to have INT64 data type", zType);
+	if (zType != nd4j::DataType::INT64 && zType != nd4j::DataType::INT32)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execIndexReduceScalar requires Z operand to have INT32/INT64 data type", zType);
 
     auto dz = reinterpret_cast<Nd4jLong*>(dZ);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream,
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::indexreduce::IndexReduce, ::executeIndexReduceScalar(launchDims, stream,
                                                                                                 opNum,
                                                                                                 dX, dXShapeInfo, shape::rank(hXShapeInfo),
                                                                                                 extraParams,
@@ -580,7 +580,7 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::LaunchContext  *lc,
                                                                                                 nullptr, 0,
                                                                                                 1,
                                                                                                 allocationPointer, reductionPointer,
-                                                                                                nullptr, nullptr), LIBND4J_TYPES);
+                                                                                                nullptr, nullptr), LIBND4J_TYPES, INDEXING_TYPES);
     // TODO: remove after the release
     auto res = cudaStreamSynchronize(*stream);
     if (res != 0)

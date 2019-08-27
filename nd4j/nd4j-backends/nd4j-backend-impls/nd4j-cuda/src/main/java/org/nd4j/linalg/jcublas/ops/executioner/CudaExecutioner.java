@@ -226,6 +226,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      */
     protected INDArray naiveExec(ReduceOp op, int... dimension) {
         long st = profilingConfigurableHookIn(op);
+
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+            //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
+            //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
+            if(op.z() != null){
+                Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
+                        " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
+                op.z().assign(op.x());
+                return op.z();
+            } else {
+                op.setZ(op.x().dup());
+                return op.z();
+            }
+        }
+
         INDArray ret = op.z();
 
         checkForCompression(op);
@@ -481,6 +496,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(ReduceOp op) {
         checkForCompression(op);
+
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+            //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
+            //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
+            if(op.z() != null){
+                Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
+                        " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
+                op.z().assign(op.x());
+                return op.z();
+            } else {
+                op.setZ(op.x().dup());
+                return op.z();
+            }
+        }
 
         val dimension = op.dimensions().toIntVector();
 
@@ -890,6 +919,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
     protected CudaContext invoke(ReduceOp op, int[] dimension) {
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+            //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
+            //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
+            if(op.z() != null){
+                Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
+                        " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
+                op.z().assign(op.x());
+                return context;
+            } else {
+                op.setZ(op.x().dup());
+                return context;
+            }
+        }
+
         long st = profilingConfigurableHookIn(op);
 
         checkForCompression(op);
@@ -912,8 +957,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             if (dimension[i] >= op.x().rank() && dimension[i] != Integer.MAX_VALUE)
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
                         + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
-
-        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
 
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());

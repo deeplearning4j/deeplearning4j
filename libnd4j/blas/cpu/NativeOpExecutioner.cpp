@@ -79,9 +79,10 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::LaunchContext  *lc, int op
 #endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     auto hz = reinterpret_cast<Nd4jLong*>(hZ);
 
-    BUILD_SINGLE_SELECTOR(xType, hz[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum,hX,hXShapeInfo,extraParams), LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, hz[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum,hX,hXShapeInfo,extraParams), LIBND4J_TYPES, INDEXING_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -111,9 +112,10 @@ void NativeOpExecutioner::execIndexReduce(nd4j::LaunchContext  *lc,
 #endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     Nd4jLong* hz = reinterpret_cast<Nd4jLong*>(hZ);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, extraParams, hz, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, extraParams, hz, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES, INDEXING_TYPES);
 //    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
 }
 

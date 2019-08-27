@@ -734,6 +734,46 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testListDiff(){
+        INDArray x = Nd4j.createFromArray(0, 1, 2, 3);
+        INDArray y = Nd4j.createFromArray(3, 1);
+
+        INDArray out = Nd4j.create(DataType.INT, 2);
+        INDArray outIdx = Nd4j.create(DataType.INT, 2);
+
+        Nd4j.exec(DynamicCustomOp.builder("listdiff")
+                .addInputs(x, y)
+                .addOutputs(out, outIdx)
+                .build());
+
+        INDArray exp = Nd4j.createFromArray(0, 2);
+
+        assertEquals(exp, out);         //Values in x not in y
+        assertEquals(exp, outIdx);      //Indices of the values in x not in y
+    }
+
+    @Test
+    public void testTopK1(){
+        INDArray x = Nd4j.createFromArray(0.0, 0.0, 0.0, 10.0, 0.0);
+        INDArray k = Nd4j.scalar(1);
+        INDArray outValue = Nd4j.create(DataType.DOUBLE, 1);
+        INDArray outIdx = Nd4j.create(DataType.INT, 1);
+
+        Nd4j.exec(DynamicCustomOp.builder("top_k")
+                .addInputs(x, k)
+                .addOutputs(outValue, outIdx)
+                .addBooleanArguments(false) //not sorted
+                .addIntegerArguments(1)
+                .build());
+
+        INDArray expValue = Nd4j.createFromArray(10.0);
+        INDArray expIdx = Nd4j.createFromArray(3);
+
+        assertEquals(expValue, outValue);
+        assertEquals(expIdx, outIdx);
+    }
+
+    @Test
     public void testMaxPool2Dbp_1() {
         val x = Nd4j.create(DataType.HALF, 2,3,16,16).assign(Double.NaN);
         val y = Nd4j.create(DataType.HALF, 2,3,8,8).assign(Double.NaN);

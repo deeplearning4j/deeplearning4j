@@ -25,6 +25,7 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 
@@ -297,6 +298,15 @@ public class EmptyTests extends BaseNd4jTest {
 
         assertTrue(result[0].isEmpty());
         assertNotNull(result[0].shapeInfoDataBuffer().asLong());
+    }
+
+    @Test
+    public void testAllEmptyReduce(){
+        INDArray x = Nd4j.createFromArray(true, true, true);
+        val all = new All(x);
+        all.setEmptyReduce(true);   //For TF compatibility - empty array for axis (which means no-op - and NOT all array reduction)
+        INDArray out = Nd4j.exec(all);
+        assertEquals(x, out);
     }
 
     @Override

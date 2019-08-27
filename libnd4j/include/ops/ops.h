@@ -3746,7 +3746,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IndexAbsoluteMax  {
 	public:
 		static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
@@ -3799,7 +3799,7 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X>
+    template <typename X, typename Z>
     class FirstIndex {
     public:
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
@@ -3861,7 +3861,7 @@ namespace simdOps {
     };
 
 
-    template <typename X>
+    template <typename X, typename Z>
     class LastIndex {
     public:
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
@@ -3920,7 +3920,7 @@ namespace simdOps {
     };
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IndexMax  {
 	public:
 
@@ -3974,7 +3974,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IndexAbsoluteMin {
 	public:
 		static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(
@@ -4030,7 +4030,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IndexMin {
 	public:
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(

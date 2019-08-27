@@ -3590,8 +3590,8 @@ void NDArray::applyIndexReduce(nd4j::indexreduce::Ops op, NDArray* target, const
     if (isS())
         throw std::runtime_error("NDArray::applyIndexReduce: you can't use this method on String array!");
 
-    if (target->dataType() != nd4j::DataType::INT64)
-        throw std::runtime_error("NDArray::applyIndexReduce operations return INT64");
+    if (target->dataType() != nd4j::DataType::INT64 && target->dataType() != nd4j::DataType::INT32)
+        throw std::runtime_error("NDArray::applyIndexReduce operations return INT32/INT64");
 
     void* params = extraParams != nullptr ? const_cast<ExtraArguments*>(extraParams)->argumentsAsT(this->dataType()) : nullptr;
 
