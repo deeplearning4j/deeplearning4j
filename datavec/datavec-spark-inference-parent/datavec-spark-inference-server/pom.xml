@@ -133,7 +133,7 @@
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-java_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.code.findbugs</groupId>
@@ -155,25 +155,25 @@
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-json_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-server_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-netty-server_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
