@@ -86,7 +86,7 @@ namespace ops  {
 
         if(bias != nullptr) {
             // eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, {0}, true);
-            eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}), true);
+            eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}));
         }
 
         NDArray standardized(input->shapeInfo(), false, block.launchContext());
@@ -99,7 +99,7 @@ namespace ops  {
 
         standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
         standardized.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &standardized, nullptr);
-        standardized.reduceAlongDimension(nd4j::reduce::Sum, dLdg, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}), true);
+        standardized.reduceAlongDimension(nd4j::reduce::Sum, dLdg, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}));
 
         nd4j::ops::standardize_bp standardizeBp;
         // eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
