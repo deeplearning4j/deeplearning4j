@@ -28,12 +28,6 @@
     <artifactId>datavec-spark_2.11</artifactId>
 
     <properties>
-        <!-- These Spark versions have to be here, and NOT in the datavec parent pom. Otherwise, the properties
-         will be resolved to their defaults. Whereas when defined here (the version outputStream spark 1 vs. 2 specific) we can
-         have different version properties simultaneously (in different pom files) instead of a single global property -->
-        <spark.version>2.1.0</spark.version>
-        <spark.major.version>2</spark.major.version>
-
         <!-- Default scala versions, may be overwritten by build profiles -->
         <scala.version>2.11.12</scala.version>
         <scala.binary.version>2.11</scala.binary.version>
