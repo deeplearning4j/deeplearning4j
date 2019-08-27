@@ -172,7 +172,7 @@ public class SynchronousFlowController implements FlowController {
         val cId = allocator.getDeviceId();
 
 
-        if (result != null && !result.isEmpty()) {
+        if (result != null && !result.isEmpty() && !result.isS()) {
             Nd4j.getCompressor().autoDecompress(result);
             prepareDelayedMemory(result);
             val pointData = allocator.getAllocationPoint(result);
@@ -198,7 +198,8 @@ public class SynchronousFlowController implements FlowController {
             return context;
 
         for (INDArray operand : operands) {
-            if (operand == null || operand.isEmpty())
+            // empty or String arrays can be skipped
+            if (operand == null || operand.isEmpty() || operand.isS())
                 continue;
 
             Nd4j.getCompressor().autoDecompress(operand);

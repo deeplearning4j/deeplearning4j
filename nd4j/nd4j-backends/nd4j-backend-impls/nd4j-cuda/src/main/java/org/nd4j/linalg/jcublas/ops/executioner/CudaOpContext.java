@@ -100,7 +100,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
     @Override
     public Pointer contextPointer() {
         for (val v:fastpath_in.values()) {
-            if (v.isEmpty())
+            if (v.isEmpty() || v.isS())
                 continue;
 
             AtomicAllocator.getInstance().getAllocationPoint(v).tickHostRead();
@@ -111,7 +111,7 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
         }
 
         for (val v:fastpath_out.values()) {
-            if (v.isEmpty())
+            if (v.isEmpty() || v.isS())
                 continue;
 
             AtomicAllocator.getInstance().getAllocationPoint(v).tickHostRead();
