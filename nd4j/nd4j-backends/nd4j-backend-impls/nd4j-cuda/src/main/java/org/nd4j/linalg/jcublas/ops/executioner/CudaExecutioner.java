@@ -894,13 +894,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             //long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
             Pointer dimensionPointer = AtomicAllocator.getInstance()
-                    .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
+                    .getHostPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension));
 
             nativeOps.execIndexReduce(xShapeInfoHostPointer, op.opNum(),
                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                      extraArgs,
                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                    null,
+                    dimensionPointer,
                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                     null);
