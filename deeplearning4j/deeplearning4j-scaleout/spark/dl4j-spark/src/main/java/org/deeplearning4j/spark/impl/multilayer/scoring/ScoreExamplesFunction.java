@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.spark.impl.multilayer.scoring;
 
+import org.apache.spark.api.java.function.DoubleFlatMapFunction;
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
@@ -38,7 +39,7 @@ import java.util.List;
  * @author Alex Black
  * @see ScoreExamplesWithKeyFunction
  */
-public class ScoreExamplesFunction implements FlatMapFunction<Iterator<DataSet>, Double> {
+public class ScoreExamplesFunction implements DoubleFlatMapFunction<Iterator<DataSet>> {
 
     protected static Logger log = LoggerFactory.getLogger(ScoreExamplesFunction.class);
 

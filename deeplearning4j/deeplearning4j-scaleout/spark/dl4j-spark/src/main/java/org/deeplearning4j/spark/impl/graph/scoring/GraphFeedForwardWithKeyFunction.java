@@ -19,6 +19,7 @@ package org.deeplearning4j.spark.impl.graph.scoring;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -43,7 +44,7 @@ import java.util.List;
  */
 @Slf4j
 @AllArgsConstructor
-public class GraphFeedForwardWithKeyFunction<K> implements FlatMapFunction<Iterator<Tuple2<K, INDArray[]>>, Tuple2<K, INDArray[]>> {
+public class GraphFeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, INDArray[]>>, K, INDArray[]> {
 
     private final Broadcast<INDArray> params;
     private final Broadcast<String> jsonConfig;

@@ -18,15 +18,13 @@ package org.deeplearning4j.spark.impl.graph.scoring;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import scala.Tuple2;
 
 import java.util.ArrayList;
@@ -44,7 +42,7 @@ import java.util.List;
  * @see ScoreExamplesFunction
  */
 @Slf4j
-public class ScoreExamplesWithKeyFunction<K> implements FlatMapFunction<Iterator<Tuple2<K, MultiDataSet>>, Tuple2<K, Double>> {
+public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, MultiDataSet>>, K, Double> {
 
     private final Broadcast<INDArray> params;
     private final Broadcast<String> jsonConfig;

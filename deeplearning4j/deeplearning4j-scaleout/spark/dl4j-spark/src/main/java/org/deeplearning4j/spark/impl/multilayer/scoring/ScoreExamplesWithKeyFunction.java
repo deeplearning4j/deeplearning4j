@@ -17,7 +17,7 @@
 package org.deeplearning4j.spark.impl.multilayer.scoring;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
@@ -43,7 +43,7 @@ import java.util.List;
  * @see ScoreExamplesFunction
  */
 @Slf4j
-public class ScoreExamplesWithKeyFunction<K> implements FlatMapFunction<Iterator<Tuple2<K, DataSet>>, Tuple2<K, Double>> {
+public class ScoreExamplesWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, DataSet>>, K, Double> {
 
     private final Broadcast<INDArray> params;
     private final Broadcast<String> jsonConfig;
