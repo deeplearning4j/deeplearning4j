@@ -759,8 +759,8 @@ public class SDNN extends SDOps {
      *
      * @return Output variable
      */
-    public SDVariable layerNorm(SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
-        return layerNorm(null, input, gain, bias, dimensions);
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, SDVariable bias, boolean channelsFirst, int... dimensions) {
+        return layerNorm(null, input, gain, bias, channelsFirst, dimensions);
     }
 
     /**
@@ -772,13 +772,15 @@ public class SDNN extends SDOps {
      * @param input Input variable
      * @param gain gain
      * @param bias bias
+     * @param channelsFirst For 2D input - unused. True for NCHW (minibatch, channels, height, width), false for NHWC data
+     * @param dimensions Dimensions to perform layer norm over - dimension=1 for 2d/MLP data, dimension=1,2,3 for CNNs
      * @return Output variable
      */
-    public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
+    public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, SDVariable bias, boolean channelsFirst, int... dimensions) {
         validateFloatingPoint("layerNorm", "input", input);
         validateFloatingPoint("layerNorm", "gain", gain);
         validateFloatingPoint("layerNorm", "bias", bias);
-        SDVariable result = f().layerNorm(input, gain, bias, dimensions);
+        SDVariable result = f().layerNorm(input, gain, bias, channelsFirst, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 
@@ -789,8 +791,8 @@ public class SDNN extends SDOps {
      *
      * @return Output variable
      */
-    public SDVariable layerNorm(SDVariable input, SDVariable gain, int... dimensions) {
-        return layerNorm((String)null, input, gain, dimensions);
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, boolean channelsFirst, int... dimensions) {
+        return layerNorm((String)null, input, gain, channelsFirst, dimensions);
     }
 
     /**
@@ -803,10 +805,10 @@ public class SDNN extends SDOps {
      * @param gain gain
      * @return Output variable
      */
-    public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, int... dimensions) {
+    public SDVariable layerNorm(String name, SDVariable input, SDVariable gain, boolean channelsFirst, int... dimensions) {
         validateFloatingPoint("layerNorm", "input", input);
         validateFloatingPoint("layerNorm", "gain", gain);
-        SDVariable result = f().layerNorm(input, gain, dimensions);
+        SDVariable result = f().layerNorm(input, gain, channelsFirst, dimensions);
         return updateVariableNameAndReference(result, name);
     }
 

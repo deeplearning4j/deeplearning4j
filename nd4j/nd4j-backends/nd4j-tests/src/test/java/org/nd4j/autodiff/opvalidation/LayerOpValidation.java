@@ -1126,7 +1126,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);
         SDVariable sdBias = sd.var("bias", bias);
-        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, axis);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, true, axis);
         out.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -1134,6 +1134,38 @@ public class LayerOpValidation extends BaseOpValidation {
                 .gradientCheck(true));
         assertNull(err, err);
     }
+
+    @Test
+    public void testLayerNorm4d() {
+        int mb = 3;
+        int ch = 4;
+        for(boolean nchw : new boolean[]{true, false}) {
+            double eps = 0.0;
+            INDArray x = Nd4j.rand(DataType.FLOAT, nchw ? new long[]{mb, ch, 8, 8} : new long[]{mb, 8, 8, ch});
+            INDArray gain4d = Nd4j.rand(DataType.FLOAT, nchw ? new long[]{1, ch, 1, 1} : new long[]{1, 1, 1, ch});
+            INDArray bias4d = Nd4j.rand(DataType.FLOAT, nchw ? new long[]{1, ch, 1, 1} : new long[]{1, 1, 1, ch});
+            INDArray mean = x.mean(true, 1, 2, 3);
+            INDArray std = Transforms.sqrt(x.var(false,1,2,3).addi(eps)).reshape(mb, 1, 1, 1);
+
+            INDArray standardized = x.sub(mean).div(std);
+            INDArray exp = standardized.mul(gain4d).add(bias4d);
+
+            final int[] axis = new int[]{1, 2, 3};
+            SameDiff sd = SameDiff.create();
+            SDVariable sdInput = sd.var("input", x);
+            SDVariable sdGain = sd.var("gain", gain4d.reshape(ch));
+            SDVariable sdBias = sd.var("bias", bias4d.reshape(ch));
+            SDVariable out = sd.nn.layerNorm("layernorm", sdInput, sdGain, sdBias, nchw, axis);
+
+            SDVariable loss = sd.loss.l2Loss(out);
+
+            String err = OpValidation.validate(new TestCase(sd)
+                    .expectedOutput("layernorm", exp)
+                    .gradientCheck(true));
+            assertNull(err);
+        }
+    }
+
 
     @Test
     public void testLayerNormOP() {
@@ -1165,7 +1197,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);
-        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, axis);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, true, axis);
         out.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -1209,7 +1241,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);
         SDVariable sdBias = sd.var("bias", bias);
-        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, axis);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, true, axis);
         out.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)

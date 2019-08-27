@@ -35,6 +35,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -609,6 +610,21 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     protected static INDArray[] wrapOrNull(INDArray in){
         return in == null ? null : new INDArray[]{in};
+    }
+
+    protected static <T> T[] wrapFilterNull(T... in){
+        int count = 0;
+        for( int i=0; i<in.length; i++ ) {
+            if (in[i] != null) count++;
+        }
+        T[] out = (T[]) Array.newInstance(in.getClass().getComponentType(), count);
+        int j=0;
+        for( int i=0; i<in.length; i++ ){
+            if(in[i] != null){
+                out[j++] = in[i];
+            }
+        }
+        return out;
     }
 
     public static class DynamicCustomOpsBuilder {
