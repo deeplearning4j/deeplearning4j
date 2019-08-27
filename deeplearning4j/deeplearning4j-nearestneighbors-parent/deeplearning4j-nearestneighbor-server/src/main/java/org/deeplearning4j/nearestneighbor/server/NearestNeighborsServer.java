@@ -33,8 +33,10 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.serde.base64.Nd4jBase64;
 import org.nd4j.serde.binary.BinarySerde;
+import play.BuiltInComponents;
 import play.Mode;
 import play.libs.Json;
+import play.routing.Router;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
@@ -149,19 +151,36 @@ public class NearestNeighborsServer {
 
         VPTree tree = new VPTree(points, similarityFunction, invert);
 
-        RoutingDsl routingDsl = new RoutingDsl();
+        //Set play secret key, if required
+        //http://www.playframework.com/documentation/latest/ApplicationSecret
+        String crypto = System.getProperty("play.crypto.secret");
+        if (crypto == null || "changeme".equals(crypto) || "".equals(crypto)) {
+            byte[] newCrypto = new byte[1024];
+
+            new Random().nextBytes(newCrypto);
+
+            String base64 = Base64.getEncoder().encodeToString(newCrypto);
+            System.setProperty("play.crypto.secret", base64);
+        }
+
+
+        server = Server.forRouter(Mode.PROD, port, b -> createRouter(tree, labels, points, b));
+    }
+
+    protected Router createRouter(VPTree tree, List<String> labels, INDArray points, BuiltInComponents builtInComponents){
+        RoutingDsl routingDsl = RoutingDsl.fromComponents(builtInComponents);
         //return the host information for a given id
-        routingDsl.POST("/knn").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/knn").routingTo(request -> {
             try {
-                NearestNeighborRequest record = Json.fromJson(request().body().asJson(), NearestNeighborRequest.class);
+                NearestNeighborRequest record = Json.fromJson(request.body().asJson(), NearestNeighborRequest.class);
                 NearestNeighbor nearestNeighbor =
-                                NearestNeighbor.builder().points(points).record(record).tree(tree).build();
+                        NearestNeighbor.builder().points(points).record(record).tree(tree).build();
 
                 if (record == null)
                     return badRequest(Json.toJson(Collections.singletonMap("status", "invalid json passed.")));
 
                 NearestNeighborsResults results =
-                                NearestNeighborsResults.builder().results(nearestNeighbor.search()).build();
+                        NearestNeighborsResults.builder().results(nearestNeighbor.search()).build();
 
 
                 return ok(Json.toJson(results));
@@ -171,11 +190,11 @@ public class NearestNeighborsServer {
                 e.printStackTrace();
                 return internalServerError(e.getMessage());
             }
-        })));
+        });
 
-        routingDsl.POST("/knnnew").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/knnnew").routingTo(request -> {
             try {
-                Base64NDArrayBody record = Json.fromJson(request().body().asJson(), Base64NDArrayBody.class);
+                Base64NDArrayBody record = Json.fromJson(request.body().asJson(), Base64NDArrayBody.class);
                 if (record == null)
                     return badRequest(Json.toJson(Collections.singletonMap("status", "invalid json passed.")));
 
@@ -216,23 +235,9 @@ public class NearestNeighborsServer {
                 e.printStackTrace();
                 return internalServerError(e.getMessage());
             }
-        })));
+        });
 
-        //Set play secret key, if required
-        //http://www.playframework.com/documentation/latest/ApplicationSecret
-        String crypto = System.getProperty("play.crypto.secret");
-        if (crypto == null || "changeme".equals(crypto) || "".equals(crypto)) {
-            byte[] newCrypto = new byte[1024];
-
-            new Random().nextBytes(newCrypto);
-
-            String base64 = Base64.getEncoder().encodeToString(newCrypto);
-            System.setProperty("play.crypto.secret", base64);
-        }
-
-        server = Server.forRouter(routingDsl.build(), Mode.PROD, port);
-
-
+        return routingDsl.build();
     }
 
     /**
