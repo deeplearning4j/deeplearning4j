@@ -88,3 +88,33 @@ TEST_F(DeclarableOpsTests16, test_size_dtype_1) {
 
     ASSERT_EQ(e, z);
 }
+
+TEST_F(DeclarableOpsTests16, test_empty_noop_1) {
+    auto z = NDArrayFactory::empty<Nd4jLong>();
+
+    nd4j::ops::noop op;
+    auto status = op.execute({}, {&z}, {}, {}, {});
+    ASSERT_EQ(Status::OK(), status);
+}
+
+TEST_F(DeclarableOpsTests16, test_empty_noop_2) {
+    auto z = NDArrayFactory::empty<Nd4jLong>();
+
+    Context ctx(1);
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+    nd4j::ops::noop op;
+    auto status = op.execute(&ctx);
+
+    ASSERT_EQ(Status::OK(), status);
+}
+
+TEST_F(DeclarableOpsTests16, test_svd_1) {
+    auto x = NDArrayFactory::create<float>('c', {3, 3}, {0.7787856f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f, 0.18039072f,0.50563407f, 0.89252293f, 0.5461209f});
+    auto z = NDArrayFactory::create<float>('c', {3});
+
+    nd4j::ops::svd op;
+    auto status = op.execute({&x}, {&z}, {}, {0, 0, 16}, {});
+
+    ASSERT_EQ(Status::OK(), status);
+}

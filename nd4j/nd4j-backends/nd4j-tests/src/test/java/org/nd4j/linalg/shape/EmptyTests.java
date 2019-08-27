@@ -309,6 +309,17 @@ public class EmptyTests extends BaseNd4jTest {
         assertEquals(x, out);
     }
 
+    @Test
+    public void testEmptyNoop() {
+        val output = Nd4j.empty(DataType.LONG);
+
+        val op = DynamicCustomOp.builder("noop")
+                .addOutputs(output)
+                .build();
+
+        Nd4j.exec(op);
+    }
+
     @Override
     public char ordering() {
         return 'c';

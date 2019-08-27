@@ -74,14 +74,14 @@ namespace helpers {
     template <typename T, typename I>
     static __global__ void unsortedSegmentMeanLinearKernel(void* input, Nd4jLong* inputShape, void* indices, Nd4jLong* indicesShape, int* starts, int* lengths, Nd4jLong numOfClasses, void* output, Nd4jLong* outputShape) {
         __shared__ T* val;
-        __shared__ Nd4jLong xLen, zLen, segment, zIndex;
+        __shared__ Nd4jLong xLen, zLen, zIndex;
         __shared__ T* x;
         __shared__ T* z;
         __shared__ I* y; //int threadsPerSegment, start, finish;
-
+        auto segment = blockIdx.x;// /
         if (threadIdx.x == 0) {
 //            threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
-            segment = blockIdx.x;// / threadsPerSegment;
+//            threadsPerSegment;
             x = reinterpret_cast<T*>(input);
             z = reinterpret_cast<T*>(output);
             y = reinterpret_cast<I*>(indices);
@@ -117,12 +117,12 @@ namespace helpers {
     template <typename T, typename I>
     static __global__ void segmentMeanTadKernel(void* inputBuf, Nd4jLong* inputShape, Nd4jLong* inputTads, Nd4jLong* inputTadOffsets, I* indices, int* starts, int* lengths, Nd4jLong numOfClasses, void* outputBuf, Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets) {
         __shared__ T* val;
-        __shared__ Nd4jLong len, segment, zIndex, total;
+        __shared__ Nd4jLong len, zIndex, total;
         __shared__ T* z;
         __shared__ int threadsPerSegment, start, finish;
+        auto segment = indices[blockIdx.x]; // / threadsPerSegment;
 
         if (threadIdx.x == 0) {
-            segment = indices[blockIdx.x]; // / threadsPerSegment;
             z = reinterpret_cast<T*>(outputBuf) + outputTadOffsets[segment];
             len = shape::length(inputTads);
             start = starts[segment];
@@ -139,7 +139,7 @@ namespace helpers {
                 for (auto e = threadIdx.x; e < len; e += blockDim.x) {
                     auto xIndex = shape::getIndexOffset(e, inputTads, len);
                     auto zIndex = shape::getIndexOffset(e, outputTads, len);
-                    z[zIndex] = T(x[xIndex]/lengths[segment]);
+                    nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], T(x[xIndex]/lengths[segment]));
                 }
             }
             else {
@@ -197,7 +197,6 @@ namespace helpers {
     static void unsortedSegmentMeanFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         auto stream = context->getCudaStream();
 //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
-        NDArray::prepareSpecialUse({output}, {input, indices});
 
         NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
         NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
@@ -226,7 +225,6 @@ namespace helpers {
             dims.x = input->sizeAt(0);
             segmentMeanTadKernel<T,I><<<dims.x, dims.y, dims.z, *stream>>>(input->specialBuffer(), input->specialShapeInfo(), inputTads, inputTadOffsets, reinterpret_cast<I*>(indices->specialBuffer()), begins, lengths, numOfClasses, output->specialBuffer(), output->specialShapeInfo(), outputTads, outputTadOffsets);
         }
-        NDArray::registerSpecialUse({output}, {input, indices});
 
     }
     // -------------------------------------------------------------------------------------------------------------- //
@@ -234,7 +232,7 @@ namespace helpers {
         NDArray::prepareSpecialUse({output}, {input, indices});
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMeanFunctor_, (context, input, indices, numOfClasses, output),
                               NUMERIC_TYPES, INDEXING_TYPES);
-        NDArray::prepareSpecialUse({output}, {input, indices});
+        NDArray::registerSpecialUse({output}, {input, indices});
     }
 
     // -------------------------------------------------------------------------------------------------------------- //
