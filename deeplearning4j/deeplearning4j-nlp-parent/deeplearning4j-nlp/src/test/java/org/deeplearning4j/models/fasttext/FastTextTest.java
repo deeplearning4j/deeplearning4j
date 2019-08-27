@@ -103,7 +103,6 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore("AB 2019/06/24 - Failing: Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testPredict() throws IOException {
             String text = "I like soccer";
 
@@ -119,7 +118,6 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
-    @Ignore("AB 2019/06/24 - Failing: Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testPredictProbability() throws IOException {
         String text = "I like soccer";
 
