@@ -17,9 +17,8 @@
 package org.deeplearning4j.spark.parameterserver.functions;
 
 import org.apache.commons.io.LineIterator;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.MultiDataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
@@ -37,21 +36,13 @@ import java.util.Iterator;
 /**
  * @author raver119@gmail.com
  */
-public class SharedFlatMapPathsMDS<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
-
-    public SharedFlatMapPathsMDS(TrainingWorker<R> worker, MultiDataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
-        super(new SharedFlatMapPathsMDSAdapter<R>(worker, loader, hadoopConfig));
-    }
-}
-
-
-class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<String>, R> {
+public class SharedFlatMapPathsMDS<R extends TrainingResult> implements FlatMapFunction<Iterator<String>, R> {
 
     protected final SharedTrainingWorker worker;
     protected final MultiDataSetLoader loader;
     protected final Broadcast<SerializableHadoopConfig> hadoopConfig;
 
-    public SharedFlatMapPathsMDSAdapter(TrainingWorker<R> worker, MultiDataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
+    public SharedFlatMapPathsMDS(TrainingWorker<R> worker, MultiDataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
         // we're not going to have anything but Shared classes here ever
         this.worker = (SharedTrainingWorker) worker;
         this.loader = loader;
@@ -59,10 +50,10 @@ class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapF
     }
 
     @Override
-    public Iterable<R> call(Iterator<String> dataSetIterator) throws Exception {
+    public Iterator<R> call(Iterator<String> dataSetIterator) throws Exception {
         //Under some limited circumstances, we might have an empty partition. In this case, we should return immediately
         if(!dataSetIterator.hasNext()){
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
         // here we'll be converting out Strings coming out of iterator to DataSets
         // PathSparkDataSetIterator does that for us
@@ -78,7 +69,7 @@ class SharedFlatMapPathsMDSAdapter<R extends TrainingResult> implements FlatMapF
             // first callee will become master, others will obey and die
             SharedTrainingResult result = SharedTrainingWrapper.getInstance(worker.getInstanceId()).run(worker);
 
-            return Collections.singletonList((R) result);
+            return Collections.singletonList((R) result).iterator();
         } finally {
             lineIter.close();
             f.delete();

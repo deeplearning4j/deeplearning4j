@@ -16,8 +16,7 @@
 
 package org.deeplearning4j.spark.parameterserver.functions;
 
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.parameterserver.pw.SharedTrainingWrapper;
@@ -32,28 +31,20 @@ import java.util.Iterator;
  * @author raver119@gmail.com
  */
 
-public class SharedFlatMapDataSet<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, R> {
-
-    public SharedFlatMapDataSet(TrainingWorker<R> worker) {
-        super(new SharedFlatMapDataSetAdapter<R>(worker));
-    }
-}
-
-
-class SharedFlatMapDataSetAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<DataSet>, R> {
+public class SharedFlatMapDataSet<R extends TrainingResult> implements FlatMapFunction<Iterator<DataSet>, R> {
 
     private final SharedTrainingWorker worker;
 
-    public SharedFlatMapDataSetAdapter(TrainingWorker<R> worker) {
+    public SharedFlatMapDataSet(TrainingWorker<R> worker) {
         // we're not going to have anything but Shared classes here ever
         this.worker = (SharedTrainingWorker) worker;
     }
 
     @Override
-    public Iterable<R> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterator<R> call(Iterator<DataSet> dataSetIterator) throws Exception {
         //Under some limited circumstances, we might have an empty partition. In this case, we should return immediately
         if(!dataSetIterator.hasNext()){
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         /*
@@ -70,6 +61,6 @@ class SharedFlatMapDataSetAdapter<R extends TrainingResult> implements FlatMapFu
         // all threads in this executor will be blocked here until training finished
         SharedTrainingResult result = SharedTrainingWrapper.getInstance(worker.getInstanceId()).run(worker);
 
-        return Collections.singletonList((R) result);
+        return Collections.singletonList((R) result).iterator();
     }
 }
