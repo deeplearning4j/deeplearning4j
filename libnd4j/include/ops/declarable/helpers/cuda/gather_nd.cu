@@ -106,6 +106,7 @@ namespace nd4j {
                     const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xRank + 1, xCoordStart, xRank);
 
                     z[zOffset] = x[xOffset];
+                    printf("z[%lld] = x[%lld] = %f\n", zOffset, xOffset, (float) z[zOffset]);
                 }
             }
 
@@ -124,7 +125,7 @@ namespace nd4j {
 
                 const int maxRank = nd4j::math::nd4j_max<int>(indices.rankOf(), nd4j::math::nd4j_max<int>(input.rankOf(), output.rankOf()));
 
-                const int threadsPerBlock = MAX_NUM_THREADS;
+                const int threadsPerBlock = 256;
                 const int blocksPerGrid = (output.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
                 const int sharedMem = 8 * threadsPerBlock * maxRank + 128;
 

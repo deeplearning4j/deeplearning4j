@@ -816,6 +816,23 @@ TEST_F(DeclarableOpsTests5, gatherNd_test7) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test8) {
+    auto x = NDArrayFactory::create<double>('c', {2, 2}, {1., 2., 3., 4.});
+    auto y = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 1, 1});
+    auto e = NDArrayFactory::create<double>('c', {2}, {1., 4.});
+
+    nd4j::ops::gather_nd op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests5, reverse_sequense_test1) {
 
     auto input = NDArrayFactory::create<double>('c', {3, 4, 5});
