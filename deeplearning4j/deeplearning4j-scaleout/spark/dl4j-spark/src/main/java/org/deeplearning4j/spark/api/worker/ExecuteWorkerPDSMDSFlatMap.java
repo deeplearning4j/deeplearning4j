@@ -16,9 +16,8 @@
 
 package org.deeplearning4j.spark.api.worker;
 
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.input.PortableDataStream;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.iterator.PortableDataStreamMultiDataSetIterator;
@@ -33,32 +32,15 @@ import java.util.Iterator;
  * @author Alex Black
  */
 @Deprecated
-public class ExecuteWorkerPDSMDSFlatMap<R extends TrainingResult>
-                extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
+public class ExecuteWorkerPDSMDSFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<PortableDataStream>, R> {
+    private final FlatMapFunction<Iterator<MultiDataSet>, R> workerFlatMap;
 
     public ExecuteWorkerPDSMDSFlatMap(TrainingWorker<R> worker) {
-        super(new ExecuteWorkerPDSMDSFlatMapAdapter<>(worker));
-    }
-}
-
-
-/**
- * A FlatMapFunction for executing training on serialized MultiDataSet objects, that can be loaded using a PortableDataStream
- * Used for SparkComputationGraph implementations only
- *
- * @author Alex Black
- */
-@Deprecated
-class ExecuteWorkerPDSMDSFlatMapAdapter<R extends TrainingResult>
-                implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
-    private final FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> workerFlatMap;
-
-    public ExecuteWorkerPDSMDSFlatMapAdapter(TrainingWorker<R> worker) {
-        this.workerFlatMap = new ExecuteWorkerMultiDataSetFlatMapAdapter<>(worker);
+        this.workerFlatMap = new ExecuteWorkerMultiDataSetFlatMap<>(worker);
     }
 
     @Override
-    public Iterable<R> call(Iterator<PortableDataStream> iter) throws Exception {
+    public Iterator<R> call(Iterator<PortableDataStream> iter) throws Exception {
         return workerFlatMap.call(new PortableDataStreamMultiDataSetIterator(iter));
     }
 }

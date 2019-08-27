@@ -16,9 +16,8 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -29,7 +28,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
-import lombok.val;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -37,18 +35,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /** Function used to score a MultiDataSet using a given ComputationGraph */
-public class ScoreFlatMapFunctionCGMultiDataSet
-                extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, Tuple2<Integer, Double>> {
-
-    public ScoreFlatMapFunctionCGMultiDataSet(String json, Broadcast<INDArray> params, int minibatchSize) {
-        super(new ScoreFlatMapFunctionCGMultiDataSetAdapter(json, params, minibatchSize));
-    }
-}
-
-
-/** Function used to score a MultiDataSet using a given ComputationGraph */
-class ScoreFlatMapFunctionCGMultiDataSetAdapter
-                implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, Tuple2<Integer, Double>> {
+public class ScoreFlatMapFunctionCGMultiDataSet implements FlatMapFunction<Iterator<MultiDataSet>, Tuple2<Integer, Double>> {
 
     private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunctionCGMultiDataSet.class);
     private String json;
@@ -56,16 +43,16 @@ class ScoreFlatMapFunctionCGMultiDataSetAdapter
     private int minibatchSize;
 
 
-    public ScoreFlatMapFunctionCGMultiDataSetAdapter(String json, Broadcast<INDArray> params, int minibatchSize) {
+    public ScoreFlatMapFunctionCGMultiDataSet(String json, Broadcast<INDArray> params, int minibatchSize) {
         this.json = json;
         this.params = params;
         this.minibatchSize = minibatchSize;
     }
 
     @Override
-    public Iterable<Tuple2<Integer, Double>> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
+    public Iterator<Tuple2<Integer, Double>> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple2<>(0, 0.0));
+            return Collections.singletonList(new Tuple2<>(0, 0.0)).iterator();
         }
 
         MultiDataSetIterator iter = new IteratorMultiDataSetIterator(dataSetIterator, minibatchSize); //Does batching where appropriate
@@ -91,6 +78,6 @@ class ScoreFlatMapFunctionCGMultiDataSetAdapter
 
         Nd4j.getExecutioner().commit();
 
-        return out;
+        return out.iterator();
     }
 }
