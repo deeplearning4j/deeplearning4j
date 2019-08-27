@@ -416,6 +416,24 @@ public class TransformOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testDynamicPartition2(){
+        INDArray data = Nd4j.createFromArray(2, 1, 2, 0);
+        INDArray partitions = Nd4j.createFromArray(0, 2, 1, 0);
+        INDArray[] out = Nd4j.exec(DynamicCustomOp.builder("dynamic_partition")
+                .addOutputs(Nd4j.createUninitialized(DataType.INT, 2), Nd4j.createUninitialized(DataType.INT, 1), Nd4j.createUninitialized(DataType.INT, 1))
+                .addIntegerArguments(3) //3 partitions
+                .addInputs(data, partitions).build());
+
+        INDArray exp0 = Nd4j.createFromArray(2, 0);
+        INDArray exp1 = Nd4j.createFromArray(2);
+        INDArray exp2 = Nd4j.createFromArray(1);
+
+        assertEquals(exp0, out[0]);     //Usually just gives [0,0]
+        assertEquals(exp1, out[1]);
+        assertEquals(exp2, out[2]);
+    }
+
+    @Test
     public void testDynamicStitch() {
         SameDiff sd = SameDiff.create();
 
@@ -1610,6 +1628,27 @@ public class TransformOpValidation extends BaseOpValidation {
 
             assertNull(err);
         }
+    }
+
+    @Test
+    public void testTopK1(){
+        INDArray x = Nd4j.createFromArray(0.0, 0.0, 0.0, 10.0, 0.0);
+        INDArray k = Nd4j.scalar(1);
+        INDArray outValue = Nd4j.create(DataType.DOUBLE, 1);
+        INDArray outIdx = Nd4j.create(DataType.INT, 1);
+
+        Nd4j.exec(DynamicCustomOp.builder("top_k")
+                .addInputs(x, k)
+                .addOutputs(outValue, outIdx)
+                .addBooleanArguments(false) //not sorted
+                .addIntegerArguments(1)
+                .build());
+
+        INDArray expValue = Nd4j.createFromArray(10.0);
+        INDArray expIdx = Nd4j.createFromArray(3);
+
+        assertEquals(expValue, outValue);
+        assertEquals(expIdx, outIdx);
     }
 
     @Test

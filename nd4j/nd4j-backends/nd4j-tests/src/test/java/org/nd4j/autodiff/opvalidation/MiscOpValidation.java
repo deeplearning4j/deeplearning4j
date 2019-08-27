@@ -439,6 +439,27 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testScatterUpdate(){
+        INDArray x = Nd4j.linspace(DataType.FLOAT, 1, 30, 1).reshape(10, 3);
+        INDArray updates = Nd4j.create(new float[][]{
+                {100, 101, 102},
+                {200, 201, 202}});
+        INDArray indices = Nd4j.createFromArray(2, 5);
+
+        INDArray exp = x.dup();
+        exp.putRow(2, updates.getRow(0));
+        exp.putRow(5, updates.getRow(1));
+
+        INDArray out = exp.ulike();
+        Nd4j.exec(DynamicCustomOp.builder("scatter_upd")
+                .addInputs(x, indices, updates)
+                .addOutputs(out)
+                .build());
+
+        assertEquals(exp, out);
+    }
+
+    @Test
     public void testGatherGradient() {
         Nd4j.getRandom().setSeed(12345);
 
@@ -1687,5 +1708,42 @@ public class MiscOpValidation extends BaseOpValidation {
                 .build();
 
         Nd4j.getExecutioner().exec(op);
+    }
+
+    @Test
+    public void testHistogramFixedWidth(){
+        //Bins: [-inf, 0.2), [0.2, 0.4), [0.4, 0.6), [0.6, 0.8), [0.8, inf]
+        INDArray in = Nd4j.createFromArray(0.0, 0.1, 0.1, 0.3, 0.5, 0.5, 0.9);
+        INDArray range = Nd4j.createFromArray(0.0, 1.0);
+        INDArray n = Nd4j.scalar(5);
+
+        INDArray out = Nd4j.create(DataType.INT, 5);
+
+        Nd4j.exec(DynamicCustomOp.builder("histogram_fixed_width")
+                .addInputs(in, range, n)
+                .addOutputs(out)
+                .build());
+
+        INDArray exp = Nd4j.createFromArray(3, 1, 2, 0, 1);
+        assertEquals(exp, out);
+    }
+
+    @Test
+    public void testListDiff(){
+        INDArray x = Nd4j.createFromArray(0, 1, 2, 3);
+        INDArray y = Nd4j.createFromArray(3, 1);
+
+        INDArray out = Nd4j.create(DataType.INT, 2);
+        INDArray outIdx = Nd4j.create(DataType.INT, 2);
+
+        Nd4j.exec(DynamicCustomOp.builder("listdiff")
+                .addInputs(x, y)
+                .addOutputs(out, outIdx)
+                .build());
+
+        INDArray exp = Nd4j.createFromArray(0, 2);
+
+        assertEquals(exp, out);         //Values in x not in y
+        assertEquals(exp, outIdx);      //Indices of the values in x not in y
     }
 }

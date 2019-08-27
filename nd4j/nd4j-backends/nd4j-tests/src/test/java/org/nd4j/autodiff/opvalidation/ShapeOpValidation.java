@@ -1343,6 +1343,26 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testSegmentMean(){
+        INDArray x = Nd4j.linspace(DataType.FLOAT, 1, 18, 1).reshape(6, 3);
+        INDArray segmentIds = Nd4j.createFromArray(0, 0, 1, 1, 2, 2);
+
+        INDArray out = Nd4j.create(DataType.FLOAT, 3, 3);
+
+        Nd4j.exec(DynamicCustomOp.builder("segment_mean")
+                .addInputs(x, segmentIds)
+                .addOutputs(out)
+                .build());
+
+        INDArray exp = out.like();
+        exp.putRow(0, x.getRow(0).add(x.getRow(1)).muli(0.5));
+        exp.putRow(1, x.getRow(2).add(x.getRow(3)).muli(0.5));
+        exp.putRow(2, x.getRow(4).add(x.getRow(5)).muli(0.5));
+
+        assertEquals(exp, out);
+    }
+
+    @Test
     public void testSequenceMask() {
         OpValidationSuite.ignoreFailing();  //2018-01-09: output datatype issue?
         SameDiff sameDiff = SameDiff.create();
