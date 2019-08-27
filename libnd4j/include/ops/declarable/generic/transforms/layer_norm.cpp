@@ -38,9 +38,13 @@ namespace ops  {
         const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
         const int dimC = isNCHW ? 1 : input->rankOf() - 1;
 
+        REQUIRE_TRUE(gain->rankOf() == 1 && gain->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM OP: wrong shape of gain array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());
+
         NDArray* bias = nullptr;
-        if (block.width() > 2)
+        if (block.width() > 2) {
             bias = INPUT_VARIABLE(2);
+            REQUIRE_TRUE(bias->rankOf() == 1 && bias->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM OP: wrong shape of bias array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(bias).c_str());
+        }
 
         std::vector<Nd4jLong> longAxis = ArrayUtils::toLongVector(axis);
 
@@ -80,11 +84,14 @@ namespace ops  {
         const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
         const int dimC = isNCHW ? 1 : input->rankOf() - 1;
 
+        REQUIRE_TRUE(gain->rankOf() == 1 && gain->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM_BP OP: wrong shape of gain array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());
+
         std::vector<int> axis = *block.getIArguments();
 
         std::vector<Nd4jLong> longAxis = ArrayUtils::toLongVector(axis);
 
         if(bias != nullptr) {
+            REQUIRE_TRUE(bias->rankOf() == 1 && bias->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM_BP OP: wrong shape of bias array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(bias).c_str());
             // eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, {0}, true);
             eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}));
         }

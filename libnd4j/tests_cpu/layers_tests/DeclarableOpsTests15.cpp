@@ -245,8 +245,8 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_3) {
 
 TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto g = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto b = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto g = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
+    auto b = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
 
     nd4j::ops::layer_norm op;
     auto result = op.execute({&x, &g, &b}, {}, {0}, {false});
@@ -256,8 +256,8 @@ TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
 
 TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto g = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto b = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto g = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
+    auto b = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
     auto eps = NDArrayFactory::create<float>('c', {1, 5}, {0., 0., 0., 0., 0.});
 
     nd4j::ops::layer_norm_bp op;
