@@ -93,7 +93,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             INDArray g = getParam(DefaultParamInitializer.GAIN_KEY);
 
             INDArray dldg = gradientViews.get(DefaultParamInitializer.GAIN_KEY);
-            Nd4j.getExecutioner().exec(new LayerNormBp(preNorm, g, delta, delta, dldg, 1));
+            Nd4j.getExecutioner().exec(new LayerNormBp(preNorm, g, delta, delta, dldg, true, 1));
             ret.gradientForVariable().put(DefaultParamInitializer.GAIN_KEY, dldg);
 
         }
@@ -318,7 +318,7 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray preNorm = ret;
         if(hasLayerNorm()){
             preNorm = (forBackprop ? ret.dup(ret.ordering()) : ret);
-            Nd4j.getExecutioner().exec(new LayerNorm(preNorm, g, ret, 1));
+            Nd4j.getExecutioner().exec(new LayerNorm(preNorm, g, ret, true, 1));
         }
 
         if(hasBias()){

@@ -54,17 +54,14 @@ public class LayerNorm extends DynamicCustomOp {
         this(sameDiff, input, gain, null, channelsFirst, dimensions);
     }
 
-    public LayerNorm(INDArray input, INDArray gain, INDArray bias, INDArray result, int... dimensions) {
-        super("layer_norm", new INDArray[]{input, gain, bias}, new INDArray[]{result});
-        Preconditions.checkArgument(bias != null, "LayerNorm: Use different constructor if bias is null.");
-
+    public LayerNorm(INDArray input, INDArray gain, INDArray bias, INDArray result, boolean channelsFirst, int... dimensions) {
+        super("layer_norm", wrapFilterNull(input, gain, bias), wrapOrNull(result));
+        this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
 
-    public LayerNorm(INDArray input, INDArray gain, INDArray result, int... dimensions) {
-        super("layer_norm", new INDArray[]{input, gain}, new INDArray[]{result});
-        noBias = true;
-        setDimensions(dimensions);
+    public LayerNorm(INDArray input, INDArray gain, INDArray result, boolean channelsFirst, int... dimensions) {
+        this(input, gain, null, result, channelsFirst, dimensions);
     }
 
     @Override
