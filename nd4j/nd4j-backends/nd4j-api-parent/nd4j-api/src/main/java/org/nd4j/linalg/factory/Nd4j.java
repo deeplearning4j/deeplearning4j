@@ -2265,15 +2265,12 @@ public class Nd4j {
                 Preconditions.checkState(data.length == numColumns,
                         "Data has inconsistent number of columns: data length %s, numColumns %s", data.length, numColumns);
             data2.add(readSplit(data));
-
-
         }
-        ret = Nd4j.create(dataType, data2.size(), numColumns);
-        for (int i = 0; i < data2.size(); i++) {
-            float[] row = data2.get(i);
-            INDArray arr = Nd4j.create(row, new long[]{1, row.length}, dataType);
-            ret.putRow(i, arr);
+        float[][] fArr = new float[data2.size()][0];
+        for(int i=0; i<data2.size(); i++ ){
+            fArr[i] = data2.get(i);
         }
+        ret = Nd4j.createFromArray(fArr).castTo(dataType);
         return ret;
     }
 
