@@ -25,11 +25,13 @@ import org.datavec.api.writable.DoubleWritable;
 import org.datavec.api.writable.Writable;
 import org.datavec.spark.BaseSparkTest;
 import org.junit.Test;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerMinMaxScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,36 +53,35 @@ public class NormalizationTests extends BaseSparkTest {
         for (int i = 0; i < numColumns; i++)
             builder.addColumnDouble(String.valueOf(i));
 
+        Nd4j.getRandom().setSeed(12345);
+
+        INDArray arr = Nd4j.rand(DataType.FLOAT, 5, numColumns);
         for (int i = 0; i < 5; i++) {
             List<Writable> record = new ArrayList<>(numColumns);
             data.add(record);
             for (int j = 0; j < numColumns; j++) {
-                record.add(new DoubleWritable(1.0));
+                record.add(new DoubleWritable(arr.getDouble(i, j)));
             }
-
         }
 
-        INDArray arr = RecordConverter.toMatrix(data);
 
         Schema schema = builder.build();
         JavaRDD<List<Writable>> rdd = sc.parallelize(data);
         Dataset<Row> dataFrame = DataFrames.toDataFrame(schema, rdd);
 
         //assert equivalent to the ndarray pre processing
-        NormalizerStandardize standardScaler = new NormalizerStandardize();
-        standardScaler.fit(new DataSet(arr.dup(), arr.dup()));
-        INDArray standardScalered = arr.dup();
-        standardScaler.transform(new DataSet(standardScalered, standardScalered));
         DataNormalization zeroToOne = new NormalizerMinMaxScaler();
         zeroToOne.fit(new DataSet(arr.dup(), arr.dup()));
         INDArray zeroToOnes = arr.dup();
         zeroToOne.transform(new DataSet(zeroToOnes, zeroToOnes));
         List<Row> rows = Normalization.stdDevMeanColumns(dataFrame, dataFrame.columns());
         INDArray assertion = DataFrames.toMatrix(rows);
-        //compare standard deviation
-        assertTrue(standardScaler.getStd().equalsWithEps(assertion.getRow(0), 1e-1));
+        INDArray expStd = arr.std(true, true, 0);
+        INDArray std = assertion.getRow(0, true);
+        assertTrue(expStd.equalsWithEps(std, 1e-3));
         //compare mean
-        assertTrue(standardScaler.getMean().equalsWithEps(assertion.getRow(1), 1e-1));
+        INDArray expMean = arr.mean(true, 0);
+        assertTrue(expMean.equalsWithEps(assertion.getRow(1, true), 1e-3));
 
     }
 
