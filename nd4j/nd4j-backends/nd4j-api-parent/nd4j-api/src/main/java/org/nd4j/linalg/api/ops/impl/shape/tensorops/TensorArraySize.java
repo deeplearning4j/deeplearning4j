@@ -42,12 +42,6 @@ public class TensorArraySize extends BaseTensorOp {
    }
 
    @Override
-   public List<LongShapeDescriptor> calculateOutputShape() {
-      // output is scalar only
-      return Collections.singletonList(LongShapeDescriptor.fromShape(new long[]{}, DataType.LONG));
-   }
-
-   @Override
    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
       super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
    }

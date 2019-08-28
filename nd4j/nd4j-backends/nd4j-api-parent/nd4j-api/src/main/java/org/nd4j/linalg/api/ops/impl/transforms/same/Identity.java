@@ -79,11 +79,4 @@ public class Identity extends BaseDynamicTransformOp {
         return dataTypes;
     }
 
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        if(inputArguments == null || inputArguments.isEmpty())
-            return Collections.emptyList();
-        return Collections.singletonList(inputArguments.get(0).shapeDescriptor());
-    }
-
 }

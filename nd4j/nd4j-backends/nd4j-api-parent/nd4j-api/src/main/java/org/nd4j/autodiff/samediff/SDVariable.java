@@ -111,9 +111,6 @@ public class SDVariable implements Serializable {
         return variableType == VariableType.CONSTANT;
     }
 
-
-
-
     /**
      * Allocate and return a  new array
      * based on the vertex id and weight initialization.

@@ -163,7 +163,6 @@ import org.nd4j.linalg.api.ops.impl.scatter.ScatterMin;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterMul;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterSub;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
-import org.nd4j.linalg.api.ops.impl.shape.Broadcast;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
@@ -1448,14 +1447,6 @@ public class DifferentialFunctionFactory {
 
     public SDVariable matrixInverse(SDVariable in){
         return new MatrixInverse(sameDiff(), in, false).outputVariable();
-    }
-
-    public SDVariable broadcast(SDVariable iX, int... shape) {
-        return broadcast(iX, ArrayUtil.toLongArray(shape));
-    }
-
-    public SDVariable broadcast(SDVariable iX, long... shape) {
-        return new Broadcast(sameDiff(), iX, shape).outputVariable();
     }
 
     public SDVariable onehot(SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {

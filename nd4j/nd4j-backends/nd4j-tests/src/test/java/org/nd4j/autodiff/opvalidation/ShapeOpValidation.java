@@ -1619,21 +1619,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         assertEquals(expected, result.eval());
     }
 
-    @Test
-    public void testBroadcast() {
-        OpValidationSuite.ignoreFailing();
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.rand(3, 4));
-        SDVariable broadcast = sd.f().broadcast(in, 3, 4, 5);
-
-        INDArray out = sd.execAndEndResult();
-        assertArrayEquals(new long[]{3, 4, 5}, out.shape());
-
-        for (int i = 0; i < 5; i++) {
-            assertEquals(in.getArr(), out.get(all(), all(), point(i)));
-        }
-    }
-
 
     @Test
     public void testSlice2d() {
