@@ -38,7 +38,7 @@ lazy val commonSettings = Seq(
   resolvers in ThisBuild ++= Seq(Opts.resolver.sonatypeSnapshots),
   nd4jVersion := sys.props.getOrElse("nd4jVersion", default = "1.0.0-SNAPSHOT"),
   libraryDependencies ++= Seq(
-    "com.nativelibs4java" %% "scalaxy-loops" % "0.3.4",
+//    "com.nativelibs4java" %% "scalaxy-loops" % "0.3.4",
 //    "org.nd4j" % "nd4j-api" % nd4jVersion.value,
 //    "org.nd4j" % "nd4j-native-platform" % nd4jVersion.value % Test,
     "org.scalatest" %% "scalatest" % "2.2.6" % Test,

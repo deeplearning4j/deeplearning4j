@@ -21,7 +21,6 @@ import org.nd4j.linalg.api.ops.Op
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.ops.{ BitFilterOps, FilterOps, FunctionalOpExecutioner, MapOps }
 
-import scalaxy.loops._
 import scala.language.postfixOps
 import scala.util.control.Breaks._
 
@@ -65,7 +64,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
     val lv = ev.linearView(underlying)
     breakable {
       for {
-        i <- 0 until lv.length().toInt optimized
+        i <- 0 until lv.length().toInt 
       } if (!f(ev.get(lv, i))) {
         result = true
         break()
@@ -81,7 +80,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
     val lv = ev.linearView(underlying)
     breakable {
       for {
-        i <- 0 until lv.length().toInt optimized
+        i <- 0 until lv.length().toInt 
       } if (!f(ev.get(lv, i))) {
         result = false
         break()
