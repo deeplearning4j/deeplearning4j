@@ -1920,6 +1920,50 @@ TEST_F(DeclarableOpsTests5, EmbeddingLookup_3) {
 
     delete result;
 }
+/* @Test
+    public void testDynamicPartition(){
+        INDArray data = Nd4j.createFromArray(2, 1, 2, 0);
+        INDArray partitions = Nd4j.createFromArray(0, 2, 1, 0);
+        INDArray[] out = Nd4j.exec(DynamicCustomOp.builder("dynamic_partition")
+                .addOutputs(Nd4j.createUninitialized(DataType.INT, 2), Nd4j.createUninitialized(DataType.INT, 1), Nd4j.createUninitialized(DataType.INT, 1))
+                .addIntegerArguments(3) //3 partitions
+                .addInputs(data, partitions).build());
+
+        INDArray exp0 = Nd4j.createFromArray(2, 0);
+        INDArray exp1 = Nd4j.createFromArray(2);
+        INDArray exp2 = Nd4j.createFromArray(1);
+
+        assertEquals(exp0, out[0]);     //Usually just gives [0,0]
+        assertEquals(exp1, out[1]);
+        assertEquals(exp2, out[2]);
+    }*/
+TEST_F(DeclarableOpsTests5, DynamicPartition_01) {
+
+    auto x = NDArrayFactory::create<int>({2,1,2,0});
+
+    auto y = NDArrayFactory::create<int>({0,2,1,0});
+
+    int numPartition = 3;
+    std::vector<NDArray> exp( { NDArrayFactory::create<int>('c', {2}, {2, 0}),
+                                NDArrayFactory::create<int>('c', {1}, {2}),
+                                NDArrayFactory::create<int>('c', {1}, {1})});
+
+    nd4j::ops::dynamic_partition op;
+    auto result = op.execute({&x, &y}, {}, {numPartition});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    ASSERT_EQ(result->size(), numPartition); // result has the same size as given param 4
+
+    for (int e = 0; e < result->size(); e++) {
+        auto output = result->at(e);
+        // output->printShapeInfo("Output shape> ");
+        // output->printIndexedBuffer("Output data> ");
+        ASSERT_TRUE(exp[e].isSameShape(output));
+        ASSERT_TRUE(exp[e].equalsTo(output));
+    }
+
+    delete result;
+}
 
 TEST_F(DeclarableOpsTests5, DynamicPartition_1) {
 
@@ -2027,6 +2071,38 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_3) {
             ASSERT_TRUE(exp[e].lengthOf() == 0);
         }
     }
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, DynamicStitch_empty_1) {
+    auto i0 = NDArrayFactory::create<int>('c', {2}, {2, 3});
+    auto i1 = NDArrayFactory::empty<int>();
+    auto i2 = NDArrayFactory::create<int>('c', {2}, {0, 1});
+
+    auto d0 = NDArrayFactory::create<double>('c', {2, 5}, {0.085571885,0.7937801,0.65908563,0.55552566,0.15962744,0.7787856,0.80119777,0.72437465,0.23089433,0.72714126});
+    auto d1 = NDArrayFactory::empty<double>();
+    auto d2 = NDArrayFactory::create<double>('c', {2, 5}, {0.94414854,0.5956861,0.8668989,0.3502196,0.5100082,0.061725974,0.6621324,0.034165382,0.32576954,0.51917326});
+
+    nd4j::ops::dynamic_stitch op;
+    auto result = op.execute({&i0, &i1, &i2, &d0, &d1, &d2}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests5, DynamicStitch_empty_2) {
+    auto i0 = NDArrayFactory::create<int>('c', {2}, {2, 3});
+    auto i1 = NDArrayFactory::create<int>('c', {0});
+    auto i2 = NDArrayFactory::create<int>('c', {2}, {0, 1});
+
+    auto d0 = NDArrayFactory::create<double>('c', {2, 5}, {0.085571885,0.7937801,0.65908563,0.55552566,0.15962744,0.7787856,0.80119777,0.72437465,0.23089433,0.72714126});
+    auto d1 = NDArrayFactory::create<double>('c', {0, 5});
+    auto d2 = NDArrayFactory::create<double>('c', {2, 5}, {0.94414854,0.5956861,0.8668989,0.3502196,0.5100082,0.061725974,0.6621324,0.034165382,0.32576954,0.51917326});
+
+    nd4j::ops::dynamic_stitch op;
+    auto result = op.execute({&i0, &i1, &i2, &d0, &d1, &d2}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
 
     delete result;
 }
