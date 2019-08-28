@@ -530,7 +530,7 @@ public abstract class DifferentialFunction {
     public SDVariable arg(int num){
         SDVariable[] args = args();
         Preconditions.checkNotNull(args, "Arguments are null for function %s", this.getOwnName());
-        Preconditions.checkArgument(num >= 0 && num < args.length, "Invalid index: must be 0 to numArgs (0 <= idx < %s)", args.length);
+        Preconditions.checkArgument(num >= 0 && num < args.length, "Invalid index: must be 0 to numArgs (0 <= idx < %s), got %s", args.length, num);
         return args[num];
     }
 
