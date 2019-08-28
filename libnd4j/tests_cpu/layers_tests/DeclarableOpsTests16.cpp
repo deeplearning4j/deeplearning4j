@@ -118,3 +118,19 @@ TEST_F(DeclarableOpsTests16, test_svd_1) {
 
     ASSERT_EQ(Status::OK(), status);
 }
+
+TEST_F(DeclarableOpsTests16, test_hamming_distance_1) {
+    auto x = NDArrayFactory::create<Nd4jLong>({37, 37, 37});
+    auto y = NDArrayFactory::create<Nd4jLong>({8723, 8723, 8723});
+    auto e = NDArrayFactory::create<Nd4jLong>(18);
+
+    nd4j::ops::bits_hamming_distance op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
