@@ -16,7 +16,7 @@
 
 package org.datavec.api.util.ndarray;
 
-import com.google.common.base.Preconditions;
+import org.nd4j.shade.guava.base.Preconditions;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import lombok.NonNull;
 import org.datavec.api.timeseries.util.TimeSeriesWritableUtils;

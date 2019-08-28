@@ -16,7 +16,7 @@
 
 package org.datavec.api.split.parittion;
 
-import com.google.common.io.Files;
+import org.nd4j.shade.guava.io.Files;
 import org.datavec.api.conf.Configuration;
 import org.datavec.api.split.FileSplit;
 import org.datavec.api.split.partition.NumberOfRecordsPartitioner;

@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.text.corpora.sentiwordnet;
 
-import com.google.common.collect.Sets;
+import org.nd4j.shade.guava.collect.Sets;
 import org.apache.uima.analysis_engine.AnalysisEngine;
 import org.apache.uima.cas.CAS;
 import org.apache.uima.cas.CASException;

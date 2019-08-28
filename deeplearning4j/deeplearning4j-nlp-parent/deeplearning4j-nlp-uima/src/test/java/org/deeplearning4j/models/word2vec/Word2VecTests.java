@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.models.word2vec;
 
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Doubles;
+import org.nd4j.shade.guava.primitives.Ints;
 import lombok.val;
 import net.didion.jwnl.data.Word;
 import org.apache.commons.io.FileUtils;

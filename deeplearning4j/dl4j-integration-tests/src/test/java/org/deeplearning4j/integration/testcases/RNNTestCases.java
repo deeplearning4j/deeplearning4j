@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.integration.testcases;
 
-import com.google.common.io.Files;
+import org.nd4j.shade.guava.io.Files;
 import org.deeplearning4j.integration.TestCase;
 import org.deeplearning4j.integration.testcases.misc.CharacterIterator;
 import org.deeplearning4j.integration.testcases.misc.CompositeMultiDataSetPreProcessor;

@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.clustering.kdtree;
 
-import com.google.common.primitives.Doubles;
+import org.nd4j.shade.guava.primitives.Doubles;
 import lombok.val;
 import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.joda.time.Duration;

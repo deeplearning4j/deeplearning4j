@@ -17,8 +17,8 @@
 package org.deeplearning4j.integration;
 
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.ClassPath;
+import org.nd4j.shade.guava.collect.ImmutableSet;
+import org.nd4j.shade.guava.reflect.ClassPath;
 import org.deeplearning4j.integration.util.CountingMultiDataSetIterator;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;

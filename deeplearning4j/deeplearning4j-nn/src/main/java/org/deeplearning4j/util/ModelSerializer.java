@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.util;
 
-import com.google.common.io.Files;
+import org.nd4j.shade.guava.io.Files;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;

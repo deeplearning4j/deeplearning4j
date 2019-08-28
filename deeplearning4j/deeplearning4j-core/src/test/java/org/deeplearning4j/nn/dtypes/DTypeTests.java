@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.nn.dtypes;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.ClassPath;
+import org.nd4j.shade.guava.collect.ImmutableSet;
+import org.nd4j.shade.guava.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
@@ -103,7 +103,7 @@ public class DTypeTests extends BaseDL4JTest {
         ImmutableSet<ClassPath.ClassInfo> info;
         try {
             //Dependency note: this ClassPath class was added in Guava 14
-            info = com.google.common.reflect.ClassPath.from(DTypeTests.class.getClassLoader())
+            info = org.nd4j.shade.guava.reflect.ClassPath.from(DTypeTests.class.getClassLoader())
                     .getTopLevelClassesRecursive("org.deeplearning4j");
         } catch (IOException e) {
             //Should never happen

@@ -16,7 +16,7 @@
 
 package org.datavec.api.writable;
 
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import org.datavec.api.transform.schema.Schema;
 import org.datavec.api.util.ndarray.RecordConverter;
 import org.junit.Test;
