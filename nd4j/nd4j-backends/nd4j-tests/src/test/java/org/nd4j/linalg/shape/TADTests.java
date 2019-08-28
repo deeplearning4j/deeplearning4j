@@ -79,7 +79,7 @@ public class TADTests extends BaseNd4jTest {
 
                     int[] shape = new int[] {e, x};
                     Arrays.sort(shape);
-                    INDArray assertion = array.javaTensorAlongDimension(0, shape);
+                    INDArray assertion = array.tensorAlongDimension(0, shape);
                     INDArray test = array.tensorAlongDimension(0, shape);
 
                     assertEquals(assertion, test);
@@ -101,7 +101,7 @@ public class TADTests extends BaseNd4jTest {
                 Arrays.sort(shape);
                 log.info("About to do shape: " + Arrays.toString(shape) + " for array of shape "
                                 + array.shapeInfoToString());
-                INDArray assertion = array.javaTensorAlongDimension(0, shape);
+                INDArray assertion = array.tensorAlongDimension(0, shape);
                 INDArray test = array.tensorAlongDimension(0, shape);
                 assertEquals(assertion, test);
                 //assertEquals(assertion.shapeInfoDataBuffer(), test.shapeInfoDataBuffer());
@@ -121,8 +121,8 @@ public class TADTests extends BaseNd4jTest {
     public void testMysteriousCrash() {
         INDArray arrayF = Nd4j.create(new int[] {1, 1, 4, 4}, 'f');
         INDArray arrayC = Nd4j.create(new int[] {1, 1, 4, 4}, 'c');
-        INDArray javaCTad = arrayC.javaTensorAlongDimension(0, 2, 3);
-        INDArray javaFTad = arrayF.javaTensorAlongDimension(0, 2, 3);
+        INDArray javaCTad = arrayC.tensorAlongDimension(0, 2, 3);
+        INDArray javaFTad = arrayF.tensorAlongDimension(0, 2, 3);
         Pair<DataBuffer, DataBuffer> tadBuffersF =
                         Nd4j.getExecutioner().getTADManager().getTADOnlyShapeInfo(arrayF, 2, 3);
         Pair<DataBuffer, DataBuffer> tadBuffersC =

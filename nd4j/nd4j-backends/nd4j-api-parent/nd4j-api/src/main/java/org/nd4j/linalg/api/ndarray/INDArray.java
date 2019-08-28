@@ -106,27 +106,31 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * Element wise stride
+     * @return the element wise stride
      */
     int elementWiseStride();
 
     /**
-     * Get a scalar
-     * at the given linear offset
+     * Get a double at the given linear offset unsafe, without checks.
      * @param offset the offset to get at
-     * @return this
+     * @return double value at offset
      */
-    double getDoubleUnsafe(long offset);
+    double getDoubleUnsafe(long offset); //TODO: consider deleting.
 
+    /**
+     * Get string value at given index.
+     * @param index index to retreive
+     * @return string value at index.
+     */
     String getString(long index);
 
     /**
-     * Insert a scalar
-     * at the given linear offset
+     * Insert a scalar at the given linear offset
      * @param offset the offset to insert at
      * @param value the value to insert
      * @return this
      */
-    INDArray putScalarUnsafe(long offset, double value);
+    INDArray putScalarUnsafe(long offset, double value); //TODO: consider deleting.
 
     /**
      * Returns the number of possible vectors for a given dimension
@@ -163,17 +167,6 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray tensorAlongDimension(long index, int... dimension);
 
     /**
-     * Get the vector along a particular dimension
-     *
-     * @param index     the index of the vector to getScalar
-     * @param dimension the dimension to getScalar the vector from
-     * @return the vector along a particular dimension
-     */
-    @Deprecated
-    INDArray javaTensorAlongDimension(int index, int... dimension);
-
-
-    /**
      * Returns the cumulative sum along a dimension. In-place method.
      *
      * @param dimension the dimension to perform cumulative sum along.
@@ -190,8 +183,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray cumsum(int dimension);
 
     /**
-     * Assign all of the elements in the given
-     * ndarray to this ndarray
+     * Assign all of the elements in the given ndarray to this ndarray
      *
      * @param arr the elements to assign
      * @return this
@@ -254,9 +246,19 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray putScalar(int[] i, double value);
 
-
+    /**
+     * See {@link #putScalar(int[], double)}
+     */
     INDArray putScalar(long[] i, double value);
+
+    /**
+     * See {@link #putScalar(int[], double)}
+     */
     INDArray putScalar(long[] i, float value);
+
+    /**
+     * See {@link #putScalar(int[], double)}
+     */
     INDArray putScalar(long[] i, int value);
 
     /**
@@ -300,7 +302,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray lt(Number other);
 
-
     /**
      * Put the specified float value at the specified indices in this array
      *
@@ -326,8 +327,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the binary ndarray for "Epsilon equals" comparison.
      */
     INDArray eps(Number other);
-
-
 
     /**
      * Returns the binary ndarray for "Equals" comparison.
@@ -367,9 +366,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param other the ndarray to compare.
      * @return the binary ndarray for "Less" comparison.
      */
-
     INDArray lt(INDArray other);
-
 
     /**
      * Returns the binary ndarray for "Epsilon equals" comparison.
@@ -403,7 +400,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray eq(INDArray other);
 
-
     /**
      * Returns the binary ndarray for "Greater Than" comparison.
      *
@@ -423,8 +419,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * are not infinite
      */
     INDArray isNaN();
-
-
 
     /**
      * Returns the ndarray negative (cloned)
