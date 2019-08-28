@@ -547,8 +547,11 @@ public abstract class DifferentialFunction {
     /**
      * Resolve properties and arguments right before execution of
      * this operation.
+     *
+     * @deprecated Will be removed in the future.  Ops should support array arguments.  Should not bs used or overridden.
      */
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
+    @Deprecated
+    public final void resolvePropertiesFromSameDiffBeforeExecution() {
         val properties = sameDiff.propertiesToResolveForFunction(this);
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
         val currentFields = this.propertiesForFunction();

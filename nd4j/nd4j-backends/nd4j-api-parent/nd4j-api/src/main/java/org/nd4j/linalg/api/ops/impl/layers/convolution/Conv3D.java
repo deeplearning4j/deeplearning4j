@@ -268,14 +268,6 @@ public class Conv3D extends DynamicCustomOp {
         return ret;
     }
 
-
-    @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        if (numIArguments() < 1) {
-            addArgs();
-        }
-    }
-
     @Override
     public boolean isConfigProperties() {
         return true;

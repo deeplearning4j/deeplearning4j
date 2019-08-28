@@ -66,11 +66,6 @@ public class Transpose extends DynamicCustomOp {
     }
 
     @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        super.resolvePropertiesFromSameDiffBeforeExecution();
-    }
-
-    @Override
     public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
         Map<String, Map<String, PropertyMapping>> ret = new LinkedHashMap<>();
         Map<String, PropertyMapping> map = new LinkedHashMap<>();
