@@ -201,54 +201,6 @@
             <version>${leveldb.version}</version>
         </dependency>
 
-        <!-- ///////////////// Jackson Dependencies ///////////////// -->
-        <!-- Here: forcing all Jackson versions to match Spark versions. Otherwise, Spark may override some Jackson dependencies
-        with 2.4.4, but not all of them - resulting in dependency issues. Play framework seems OK using this version of Jackson
-        (as opposed to the default 2.5.4 version) as long as these versions aren't mixed for different dependencies. -->
-        <!-- Jackson Core -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${spark.jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${spark.jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${spark.jackson.version}</version>
-        </dependency>
-
-        <!-- Jackson Module -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.module</groupId>
-            <artifactId>jackson-module-scala_2.11</artifactId>
-            <version>${spark.jackson.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <!-- Jackson Datatype -->
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-            <version>${spark.jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${spark.jackson.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
