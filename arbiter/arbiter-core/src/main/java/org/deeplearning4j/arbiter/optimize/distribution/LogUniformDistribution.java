@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.distribution;
 
-import com.google.common.base.Preconditions;
+import org.nd4j.shade.guava.base.Preconditions;
 import lombok.Getter;
 import org.apache.commons.math3.distribution.RealDistribution;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;

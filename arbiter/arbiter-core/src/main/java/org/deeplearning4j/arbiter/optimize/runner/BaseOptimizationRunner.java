@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.arbiter.optimize.runner;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import org.nd4j.shade.guava.util.concurrent.ListenableFuture;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
