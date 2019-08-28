@@ -68,11 +68,11 @@
     </properties>
 
     <dependencies>
-        <dependency>
+        <!--dependency>
             <groupId>com.nativelibs4java</groupId>
             <artifactId>scalaxy-loops_${scala.binary.version}</artifactId>
             <version>0.3.4</version>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
