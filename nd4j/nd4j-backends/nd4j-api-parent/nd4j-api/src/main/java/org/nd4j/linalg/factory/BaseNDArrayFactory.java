@@ -1281,7 +1281,7 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     public INDArray scalar(Number value) {
         MemoryWorkspace  ws = Nd4j.getMemoryManager().getCurrentWorkspace();
 
-        if (value instanceof Double || value instanceof AtomicDouble)   /* note that org.nd4j.linalg.primitives.AtomicDouble extends com.google.common.util.concurrent.AtomicDouble */
+        if (value instanceof Double || value instanceof AtomicDouble)   /* note that org.nd4j.linalg.primitives.AtomicDouble extends org.nd4j.shade.guava.util.concurrent.AtomicDouble */
             return scalar(value.doubleValue());
         else if (value instanceof Float)
             return scalar(value.floatValue());

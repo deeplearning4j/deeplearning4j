@@ -16,7 +16,7 @@
 
 package org.nd4j.jita.handler;
 
-import com.google.common.collect.Table;
+import org.nd4j.shade.guava.collect.Table;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
 import org.nd4j.jita.allocator.enums.AllocationStatus;

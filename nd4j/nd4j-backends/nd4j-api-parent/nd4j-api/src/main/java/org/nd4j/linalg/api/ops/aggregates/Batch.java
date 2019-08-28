@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.aggregates;
 
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;

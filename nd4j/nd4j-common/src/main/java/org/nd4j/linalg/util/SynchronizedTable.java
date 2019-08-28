@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.util;
 
-import com.google.common.collect.Table;
+import org.nd4j.shade.guava.collect.Table;
 
 import java.util.Collection;
 import java.util.Map;

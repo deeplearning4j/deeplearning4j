@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape;
 
-import com.google.common.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Ints;
 import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
