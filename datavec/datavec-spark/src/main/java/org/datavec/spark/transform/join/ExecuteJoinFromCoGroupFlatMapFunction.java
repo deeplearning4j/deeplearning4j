@@ -16,11 +16,7 @@
 
 package org.datavec.spark.transform.join;
 
-<<<<<<< HEAD
-import com.google.common.collect.Iterables;
-=======
 import org.nd4j.shade.guava.collect.Iterables;
->>>>>>> 56227dcd8570250afb4568947c98534b78580bb0
 import org.apache.spark.api.java.function.FlatMapFunction;
 import org.datavec.api.transform.join.Join;
 import org.datavec.api.writable.Writable;
