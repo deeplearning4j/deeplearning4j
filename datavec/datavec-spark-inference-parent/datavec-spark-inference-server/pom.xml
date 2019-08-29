@@ -194,23 +194,31 @@
             <artifactId>jcommander</artifactId>
             <version>${jcommander.version}</version>
         </dependency>
-
-        <!-- Test Scope Dependencies -->
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-
     </dependencies>
 
     <profiles>
         <profile>
-            <id>test-nd4j-native</id>
+            <id>nd4j-tests-cpu</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
+
         <profile>
-            <id>test-nd4j-cuda-10.1</id>
+            <id>nd4j-tests-cuda</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-10.1</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>
