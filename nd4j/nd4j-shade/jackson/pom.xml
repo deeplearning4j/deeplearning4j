@@ -233,10 +233,7 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>${jackson.databind.version}</version>
-<<<<<<< HEAD
-=======
             <optional>true</optional>
->>>>>>> 56227dcd8570250afb4568947c98534b78580bb0
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -270,10 +267,7 @@
             <groupId>org.yaml</groupId>
             <artifactId>snakeyaml</artifactId>
             <version>${shaded.snakeyaml.version}</version>
-<<<<<<< HEAD
-=======
             <optional>true</optional>
->>>>>>> 56227dcd8570250afb4568947c98534b78580bb0
         </dependency>
     </dependencies>
 
