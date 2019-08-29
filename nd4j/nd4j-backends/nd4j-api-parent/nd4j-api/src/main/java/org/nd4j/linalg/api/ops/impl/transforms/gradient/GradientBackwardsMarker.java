@@ -77,7 +77,7 @@ public class GradientBackwardsMarker extends DynamicCustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], DataType.FLOAT));
+        throw new UnsupportedOperationException("calculateOutputShape() is not supported for control flow ops.");
     }
 
     @Override

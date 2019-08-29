@@ -46,6 +46,7 @@ public class LayerNorm extends DynamicCustomOp {
 
     public LayerNorm(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable gain, SDVariable bias, boolean channelsFirst, int... dimensions) {
         super(null, sameDiff, wrapFilterNull(input, gain, bias), false);
+        this.noBias = bias == null;
         this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
@@ -56,6 +57,7 @@ public class LayerNorm extends DynamicCustomOp {
 
     public LayerNorm(INDArray input, INDArray gain, INDArray bias, INDArray result, boolean channelsFirst, int... dimensions) {
         super("layer_norm", wrapFilterNull(input, gain, bias), wrapOrNull(result));
+        this.noBias = bias == null;
         this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
@@ -115,4 +117,8 @@ public class LayerNorm extends DynamicCustomOp {
         return Collections.singletonList(first);
     }
 
+    @Override
+    public int numOutputArguments() {
+        return noBias ? 2 : 3;
+    }
 }

@@ -14,38 +14,19 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops;
+//
+// @author raver119@gmail.com
+//
 
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.linalg.api.ndarray.INDArray;
+#ifndef SD_HAMMING_H
+#define SD_HAMMING_H
 
-/**
- * A Module is a {@link CustomOp}
- * with varying input arguments
- * and automatically calculated outputs
- * defined at a higher level than c++.
- *
- * A Module is meant to be a way of implementing custom operations
- * in straight java/nd4j.
- */
-public interface Module extends CustomOp {
-
-    /**
-     *
-     * @param inputs
-     */
-    void exec(INDArray... inputs);
-
-
-    Module[] subModules();
-
-
-    void addModule(Module module);
-
-
-    void execSameDiff(SDVariable... input);
-
-
-
-
+namespace nd4j {
+    namespace ops {
+        namespace helpers {
+            void hamming(LaunchContext *context, NDArray &x, NDArray &y, NDArray &output);
+        }
+    }
 }
+
+#endif //DEV_TESTS_HAMMING_H

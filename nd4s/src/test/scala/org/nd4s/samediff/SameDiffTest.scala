@@ -15,7 +15,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.api.ops.DynamicCustomOp
-import org.nd4j.linalg.api.ops.impl.layers.{ ExternalErrorsFunction, Linear }
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.{ Conv2DConfig, LocalResponseNormalizationConfig }
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray

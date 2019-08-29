@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-public abstract  class BaseTensorOp extends DynamicCustomOp {
+public abstract class BaseTensorOp extends DynamicCustomOp {
 
     public BaseTensorOp(String name, SameDiff sameDiff, SDVariable[] args){
         super(name, sameDiff, args);
@@ -78,8 +78,7 @@ public abstract  class BaseTensorOp extends DynamicCustomOp {
 
     @Override
     public List<LongShapeDescriptor> calculateOutputShape() {
-        //Not used/not required
-        return Collections.emptyList();
+        throw new UnsupportedOperationException("calculateOutputShape() is not supported for tensor ops.");
     }
 
     @Override

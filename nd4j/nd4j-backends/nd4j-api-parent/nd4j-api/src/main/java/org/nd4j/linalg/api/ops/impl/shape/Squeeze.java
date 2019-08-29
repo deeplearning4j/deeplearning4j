@@ -41,6 +41,7 @@ public class Squeeze extends DynamicCustomOp {
     public Squeeze(SameDiff sameDiff, SDVariable arg, int[] squeezeDims) {
         super(null, sameDiff, new SDVariable[]{arg});
         this.squeezeDims = squeezeDims;
+        addIArgument(squeezeDims);
     }
 
     @Override
@@ -51,14 +52,6 @@ public class Squeeze extends DynamicCustomOp {
         for( int i=0; i<dimList.size(); i++ )
             squeezeDims[i] = dimList.get(i).intValue();
         addIArgument(squeezeDims);
-    }
-
-    @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        super.resolvePropertiesFromSameDiffBeforeExecution();
-        if (squeezeDims != null && numIArguments() < squeezeDims.length) {
-            addIArgument(squeezeDims);
-        }
     }
 
     @Override

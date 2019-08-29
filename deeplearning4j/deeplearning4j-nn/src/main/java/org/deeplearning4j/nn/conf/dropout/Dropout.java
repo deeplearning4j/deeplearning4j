@@ -18,6 +18,8 @@ package org.deeplearning4j.nn.conf.dropout;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -26,11 +28,11 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
-import org.nd4j.util.OneTimeLogger;
 
 /**
  * Implements standard (inverted) dropout.<br>
@@ -64,16 +66,28 @@ import org.nd4j.util.OneTimeLogger;
  * @author Alex Black
  */
 @Data
-@JsonIgnoreProperties({"mask", "helper"})
-@EqualsAndHashCode(exclude = {"mask", "helper"})
+@JsonIgnoreProperties({"mask", "helper", "helperCountFail"})
+@EqualsAndHashCode(exclude = {"mask", "helper", "helperCountFail"})
 @Slf4j
 public class Dropout implements IDropout {
+
+    /**
+     * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+     * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+     * (non-CuDNN) implementation for LSTM/GravesLSTM will be used
+     *
+     */
+    @Getter
+    @Setter
+    protected boolean helperAllowFallback = true;
 
     private double p;
     private ISchedule pSchedule;
     private transient INDArray mask;
     private transient DropoutHelper helper;
     private boolean initializedHelper = false;
+
+    private int helperCountFail = 0;
 
     /**
      * @param activationRetainProbability Probability of retaining an activation - see {@link Dropout} javadoc
@@ -94,6 +108,18 @@ public class Dropout implements IDropout {
      */
     public Dropout(ISchedule activationRetainProbabilitySchedule){
         this(Double.NaN, activationRetainProbabilitySchedule);
+    }
+
+    /**
+     * When using a helper (CuDNN or MKLDNN in some cases) and an error is encountered, should fallback to the non-helper implementation be allowed?
+     * If set to false, an exception in the helper will be propagated back to the user. If false, the built-in
+     * (non-helper) implementation for Dropout will be used
+     *
+     * @param allowFallback Whether fallback to non-helper implementation should be used
+     */
+    public Dropout helperAllowFallback(boolean allowFallback) {
+        this.setHelperAllowFallback(allowFallback);
+        return this;
     }
 
     protected Dropout(@JsonProperty("p") double activationRetainProbability, @JsonProperty("pSchedule") ISchedule activationRetainProbabilitySchedule) {
@@ -141,9 +167,29 @@ public class Dropout implements IDropout {
             initializeHelper(output.dataType());
         }
 
-        if(helper != null){
-            helper.applyDropout(inputActivations, output, p);
-            return output;
+        if(helper != null && (helperCountFail == 0 || !isHelperAllowFallback())){
+            boolean helperWorked = false;
+            try {
+                helper.applyDropout(inputActivations, output, p);
+                helperWorked = true;
+            }catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
+            } catch (Exception e){
+                if(e.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw e;
+                }
+
+                if(isHelperAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException("Error during Dropout CuDNN helper forward pass - helperAllowFallback() is set to false", e);
+                }
+            }
+
+            if(helperWorked)
+                return output;
         }
 
         INDArray inputCast = inputActivations;
@@ -159,9 +205,29 @@ public class Dropout implements IDropout {
 
     @Override
     public INDArray backprop(INDArray gradAtOutput, INDArray gradAtInput, int iteration, int epoch) {
-        if(helper != null){
-            helper.backprop(gradAtOutput, gradAtInput);
-            return gradAtInput;
+        if(helper != null && (helperCountFail == 0 || !isHelperAllowFallback())){
+            boolean helperWorked = false;
+            try {
+                helper.backprop(gradAtOutput, gradAtInput);
+                helperWorked = true;
+            }catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
+            } catch (Exception e){
+                if(e.getMessage().contains("Failed to allocate")){
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw e;
+                }
+
+                if(isHelperAllowFallback()){
+                    helperCountFail++;
+                    log.warn("CuDNN execution failed - falling back on built-in implementation",e);
+                } else {
+                    throw new RuntimeException("Error during Dropout CuDNN helper backprop - helperAllowFallback() is set to false", e);
+                }
+            }
+
+            if(helperWorked)
+                return gradAtInput;
         }
 
         Preconditions.checkState(mask != null, "Cannot perform backprop: Dropout mask array is absent (already cleared?)");

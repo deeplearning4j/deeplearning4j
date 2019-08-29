@@ -238,13 +238,28 @@ public class LocalResponseNormalization extends Layer {
 
         /**
          * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
-         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * If set to false, an exception in CuDNN will be propagated back to the user. If true, the built-in
          * (non-CuDNN) implementation for BatchNormalization will be used
+         *
+         * @deprecated Use {@link #helperAllowFallback(boolean)}
          *
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */
+        @Deprecated
         public Builder cudnnAllowFallback(boolean allowFallback) {
             this.setCudnnAllowFallback(allowFallback);
+            return this;
+        }
+
+        /**
+         * When using CuDNN or MKLDNN and an error is encountered, should fallback to the non-helper implementation be allowed?
+         * If set to false, an exception in the helper will be propagated back to the user. If true, the built-in
+         * (non-MKL/CuDNN) implementation for LocalResponseNormalizationLayer will be used
+         *
+         * @param allowFallback Whether fallback to non-CuDNN implementation should be used
+         */
+        public Builder helperAllowFallback(boolean allowFallback) {
+            this.cudnnAllowFallback = allowFallback;
             return this;
         }
 

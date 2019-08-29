@@ -2728,11 +2728,13 @@ int execCustomOp2(Nd4jPointer* extraPointers, Nd4jLong hash, Nd4jPointer opConte
             throw nd4j::cuda_exception::build("customOp execution failed", res);
 
         for (auto v:context->fastpath_in()) {
-            v->syncToDevice();
+            if (!v->isEmpty())
+                v->syncToDevice();
         }
 
         for (auto v:context->fastpath_out()) {
-            v->syncToDevice();
+            if (!v->isEmpty())
+                v->syncToDevice();
         }
 
         return result;

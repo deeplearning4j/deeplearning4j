@@ -45,12 +45,14 @@ public class LayerNormBp extends DynamicCustomOp {
 
     public LayerNormBp(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable gain, SDVariable bias, @NonNull SDVariable gradient, boolean channelsFirst, int... dimensions) {
         super(null, sameDiff, wrapFilterNull(input, gain, bias, gradient), false);
+        this.noBias = bias == null;
         this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
 
     public LayerNormBp(@NonNull INDArray input, @NonNull INDArray gain, INDArray bias, @NonNull INDArray grad, @NonNull INDArray dLdx, @NonNull INDArray dLdg, INDArray dLdb, boolean channelsFirst, int... dimensions) {
         super("layer_norm_bp", wrapFilterNull(input, gain, bias, grad), wrapFilterNull(dLdx, dLdg, dLdb));
+        this.noBias = bias == null;
         this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }

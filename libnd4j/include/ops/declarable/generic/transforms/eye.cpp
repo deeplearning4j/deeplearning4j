@@ -27,7 +27,7 @@ namespace nd4j {
 namespace ops {
 
 
-    CUSTOM_OP_IMPL(eye, -2, 1, false, 0, -2) {
+    CUSTOM_OP_IMPL(eye, -2, 1, false, -2, -2) {
 
         helpers::eye(block.launchContext(), *OUTPUT_VARIABLE(0));
 
@@ -44,8 +44,7 @@ namespace ops {
 
         std::vector<int> params;
 
-        // FIX ME: original has a dtype param - so should be used here instead. e.g. (DataType) INT_ARG(0);
-        nd4j::DataType dtype = nd4j::DataType::FLOAT32;
+        nd4j::DataType dtype = block.getTArguments()->empty() ? nd4j::DataType::FLOAT32 : nd4j::DataTypeUtils::fromInt(T_ARG(0));
 
         if(block.width() == 0) {
             params = *block.getIArguments();
@@ -54,27 +53,27 @@ namespace ops {
             for (int i = 0; i < block.width(); i++) {
                 auto input = INPUT_VARIABLE(i);
                 REQUIRE_TRUE(input->rankOf() == 1, 0, "Inputs to eye should be 1D");
-                for (int e = 0; e < input->lengthOf(); e++) {
+
+                for (int e = 0; e < input->lengthOf(); e++)
                     params.emplace_back(input->e<int>(e));
-                }
             }
         }
 
 
-        REQUIRE_TRUE(params.size() > 0, 0, "Size not provided for eye op.");
+        REQUIRE_TRUE(params.size() > 0, 0, "Size is not provided for eye op.");
 
         const bool ordered = (params[0] == -99 || params[0] == -102); // -99 :'c', -102 : 'f'
         if (!ordered)
             params.insert(params.begin(), -99);
 
-        REQUIRE_TRUE(params.size() > 1, 0, "Size not provided for eye op.");
+        REQUIRE_TRUE(params.size() > 1, 0, "Size is not provided for eye op.");
 
         Nd4jLong* outShapeInfo(nullptr);
 
         const int size = params.size();
 
         switch(size) {
-        
+
             case 2:
                 ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
                 outShapeInfo[0] = 2;
@@ -99,7 +98,7 @@ namespace ops {
                     outShapeInfo[i] = params[i+2];
                 break;
         }
-        
+
         shape::updateStrides(outShapeInfo, static_cast<char>(-params[0]));
         auto result = ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(outShapeInfo, dtype));
         RELEASE(outShapeInfo, block.getWorkspace());

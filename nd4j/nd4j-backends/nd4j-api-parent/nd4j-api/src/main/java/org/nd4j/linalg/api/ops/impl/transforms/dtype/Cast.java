@@ -126,41 +126,6 @@ public class Cast extends BaseDynamicTransformOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        if(inputArguments.size() > 0){
-            long[] s = inputArguments.get(0).shape();
-            LongShapeDescriptor lsd = LongShapeDescriptor.fromShape(s, typeDst);
-            if(inputArguments.get(0).isEmpty()){
-                long e = lsd.getExtras();
-                e = ArrayOptionsHelper.setOptionBit(e, ArrayType.EMPTY);
-                lsd.setExtras(e);
-            }
-            return Collections.singletonList(lsd);
-        }
-
-        if (arg() != null && (arg().getArr() != null || arg().getShape() != null)) {
-            if (arg().getArr() != null) {
-                long[] s = arg().getArr().shape();
-                LongShapeDescriptor lsd = LongShapeDescriptor.fromShape(s, typeDst);
-                if(inputArguments.size() > 0 && inputArguments.get(0) != null && inputArguments.get(0).isEmpty()){
-                    long e = lsd.getExtras();
-                    e = ArrayOptionsHelper.setOptionBit(e, ArrayType.EMPTY);
-                    lsd.setExtras(e);
-                }
-                return Collections.singletonList(lsd);
-            } else {
-                long[] s = arg().getShape();
-                if(Shape.isPlaceholderShape(s)){
-                    return Collections.emptyList();
-                }
-                return Collections.singletonList(LongShapeDescriptor.fromShape(s, typeDst));
-            }
-        }
-
-        return Collections.emptyList();
-    }
-
-    @Override
     public void setValueFor(Field target, Object value) {
         //This is a hack around a property mapping issue - TF datatype DT_DOUBLE return attribute.getType() of DT_DOUBLE which doesn't make sense
         if(value == null || value instanceof String || value instanceof DataType){

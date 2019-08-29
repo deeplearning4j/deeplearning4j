@@ -74,36 +74,11 @@ public class Gather extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
-
     }
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         OnnxGraphMapper.getInstance().initFunctionFromProperties(node.getOpType(), this, attributesForNode, node, graph);
-    }
-
-
-    @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-//        super.resolvePropertiesFromSameDiffBeforeExecution();
-        if (indices != null && numInputArguments() < 2) {
-            if (numInputArguments() == 0) {
-                INDArray a = Nd4j.create(indices, new long[]{indices.length}, new long[]{1}, 'c', DataType.INT);
-                if (indices.length > 1)
-                    a = a.reshape(indices.length);
-                else
-                    a = a.reshape(new int[]{});
-
-                addInputArgument(args()[0].getArr(), a);
-            } else if (numInputArguments() == 1) {
-                addInputArgument(Nd4j.create(indices, new long[]{indices.length}, new long[]{1}, 'c', DataType.INT));
-            }
-
-        }
-
-        if (numIArguments() < 1) {
-            addIArgument(jaxis);
-        }
     }
 
     @Override

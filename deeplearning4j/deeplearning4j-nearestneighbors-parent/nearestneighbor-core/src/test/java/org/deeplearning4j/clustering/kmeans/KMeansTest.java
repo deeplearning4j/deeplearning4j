@@ -269,9 +269,9 @@ public class KMeansTest extends BaseDL4JTest {
 
             double[] centroid1 = {2.44e8,    2.71e8,    2.98e8,    3.25e8};
             double[] centroid2 = {5.14e8,    5.41e8,    5.68e8,    5.95e8};
-            double[] centroid3 = {1.63e8,     1.9e8,    2.17e8,    2.44e8};
-            double[] centroid4 = {6.76e8,    7.03e8,     7.3e8,    7.57e8};
-            double[] centroid5 = {4.06e8,    4.33e8,     4.6e8,    4.87e8};
+            double[] centroid3 = {1000000.0, 2.8E7, 5.5E7, 8.2E7};
+            double[] centroid4 = {7.03E8, 7.3E8, 7.57E8, 7.84E8};
+            double[] centroid5 = {3.79E8, 4.06E8, 4.33E8, 4.6E8};
 
             assertArrayEquals(centroid1, clusterSet.getClusters().get(0).getCenter().getArray().toDoubleVector(), 1e-4);
             assertArrayEquals(centroid2, clusterSet.getClusters().get(1).getCenter().getArray().toDoubleVector(), 1e-4);

@@ -80,7 +80,7 @@
     <profile>
       <id>test-nd4j-native</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <activeByDefault>false</activeByDefault>
       </activation>
       <dependencies>
         <dependency>

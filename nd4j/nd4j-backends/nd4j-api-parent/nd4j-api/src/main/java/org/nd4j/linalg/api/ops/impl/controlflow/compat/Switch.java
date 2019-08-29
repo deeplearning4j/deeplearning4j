@@ -64,18 +64,6 @@ public class Switch extends BaseCompatOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        if(args()[0].getArr() != null) {
-            val arg0 = args()[0];
-            val arr0 = arg0.getArr();
-            val dtype = arr0.dataType();
-            return Arrays.asList(LongShapeDescriptor.fromShape(arg0.getShape(), dtype),LongShapeDescriptor.fromShape(arg0.getShape(), dtype));
-        }
-        else
-            return Collections.emptyList();
-    }
-
-    @Override
     public SDVariable[] outputVariables() {
         return super.outputVariables();
     }

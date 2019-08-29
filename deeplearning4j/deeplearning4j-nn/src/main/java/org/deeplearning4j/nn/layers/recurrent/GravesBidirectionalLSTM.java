@@ -17,7 +17,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -90,7 +89,8 @@ public class GravesBidirectionalLSTM
 
         final FwdPassReturn fwdPass = activateHelperDirectional(true, null, null, true, true, workspaceMgr);
 
-        final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
+        final Pair<Gradient, INDArray> forwardsGradient = LSTMHelpers.backpropGradientHelper(this,
+                        this.conf,
                         this.layerConf().getGateActivationFn(), this.input,
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS),
                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS), epsilon,
@@ -98,13 +98,14 @@ public class GravesBidirectionalLSTM
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_FORWARDS,
                         GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS, gradientViews, maskArray, true,
-                        null, workspaceMgr);
+                        null, workspaceMgr, layerConf().isHelperAllowFallback());
 
 
 
         final FwdPassReturn backPass = activateHelperDirectional(true, null, null, true, false, workspaceMgr);
 
-        final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(this.conf,
+        final Pair<Gradient, INDArray> backwardsGradient = LSTMHelpers.backpropGradientHelper(this,
+                        this.conf,
                         this.layerConf().getGateActivationFn(), this.input,
                         getParam(GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS),
                         getParam(GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS), epsilon,
@@ -112,7 +113,7 @@ public class GravesBidirectionalLSTM
                         GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.RECURRENT_WEIGHT_KEY_BACKWARDS,
                         GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS, gradientViews, maskArray, true,
-                        null, workspaceMgr);
+                        null, workspaceMgr, layerConf().isHelperAllowFallback());
 
 
         //merge the gradient, which is key value pair of String,INDArray
@@ -175,7 +176,7 @@ public class GravesBidirectionalLSTM
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_FORWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), true,
                             GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_FORWARDS, maskArray, true, null,
-                            forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
+                            forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
             backwardsEval = LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(),
                             this.input,
@@ -184,7 +185,7 @@ public class GravesBidirectionalLSTM
                             getParam(GravesBidirectionalLSTMParamInitializer.BIAS_KEY_BACKWARDS), training, null, null,
                             forBackprop || (cacheMode != CacheMode.NONE && training), false,
                             GravesBidirectionalLSTMParamInitializer.INPUT_WEIGHT_KEY_BACKWARDS, maskArray, true, null,
-                            forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
+                            forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
             cachedPassForward = forwardsEval;
             cachedPassBackward = backwardsEval;
@@ -230,7 +231,7 @@ public class GravesBidirectionalLSTM
             return LSTMHelpers.activateHelper(this, this.conf, this.layerConf().getGateActivationFn(), this.input,
                             getParam(recurrentKey), getParam(inputKey), getParam(biasKey), training,
                             prevOutputActivations, prevMemCellState, forBackprop, forwards, inputKey, maskArray, true,
-                            null, forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
+                            null, forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
         }
     }
 

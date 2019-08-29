@@ -1423,6 +1423,61 @@ TEST_F(DeclarableOpsTests7, TestSegmentMean_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests7, TestSegmentMean_02) {
+    auto x = NDArrayFactory::create<double>('c', {6, 3}, {1, 2,  3., 4., 5., 6.,  7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18.});
+    auto idx = NDArrayFactory::create<int>({0, 0, 1, 1, 2,2});
+    auto exp = NDArrayFactory::create<double>('c', {3, 3}, {    2.5, 3.5, 4.5,      8.5, 9.5, 10.5,   14.5, 15.5,  16.5});
+
+    nd4j::ops::segment_mean op;
+
+    auto result = op.execute({&x, &idx}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 1);
+    exp.printIndexedBuffer("Expect Mean");
+    result->at(0)->printIndexedBuffer("Output Mean");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests7, TestSegmentMean_021) {
+    auto x = NDArrayFactory::create<float>('c', {6, 3});//, {1, 2,  3., 4., 5., 6.,  7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18.});
+    auto idx = NDArrayFactory::create<int>({0, 0, 1, 1, 2,2});
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {    2.5, 3.5, 4.5,      8.5, 9.5, 10.5,   14.5, 15.5,  16.5});
+
+    nd4j::ops::segment_mean op;
+    x.linspace(1.);
+    auto result = op.execute({&x, &idx}, {}, {});
+    ASSERT_EQ(result->status(), Status::OK());
+    ASSERT_EQ(result->size(), 1);
+    exp.printIndexedBuffer("Expect Mean");
+    result->at(0)->printIndexedBuffer("Output Mean");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests7, TestSegmentMean_022) {
+    auto x = NDArrayFactory::create<float>('c', {6, 3});//, {1, 2,  3., 4., 5., 6.,  7., 8., 9., 10., 11., 12., 13., 14., 15., 16., 17., 18.});
+    auto idx = NDArrayFactory::create<int>({0, 0, 1, 1, 2,2});
+    auto z = NDArrayFactory::create<float>('c', {3, 3}); //, {    2.5, 3.5, 4.5,      8.5, 9.5, 10.5,   14.5, 15.5,  16.5});
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {    2.5, 3.5, 4.5,      8.5, 9.5, 10.5,   14.5, 15.5,  16.5});
+
+    nd4j::ops::segment_mean op;
+    x.linspace(1.);
+    auto result = op.execute({&x, &idx}, {&z}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
+    ASSERT_EQ(result, Status::OK());
+
+    exp.printIndexedBuffer("Expect Mean");
+    z.printIndexedBuffer("Output Mean");
+//    exp.printShapeInfo("Exp Shape");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+//    delete result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, TestSegmentMeanBP_2) {
     auto x = NDArrayFactory::create<double>('c', {4, 4}, {1.8, 2.5,  4.,  9.,2.1, 2.4,  3.,  9.,2.1, 2.1, 0.7, 0.1,3., 4.2, 2.2, 1.});

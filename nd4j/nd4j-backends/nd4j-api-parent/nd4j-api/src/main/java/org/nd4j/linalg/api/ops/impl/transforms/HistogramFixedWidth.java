@@ -71,16 +71,6 @@ public class HistogramFixedWidth extends DynamicCustomOp {
     }
 
     @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        if(args().length == 3 && iArguments.isEmpty()){
-            //Num bins is 3rd array
-            addIArgument(arg(2).getArr().getInt(0));
-        }
-        super.resolvePropertiesFromSameDiffBeforeExecution();
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         throw new UnsupportedOperationException("Not supported");
     }

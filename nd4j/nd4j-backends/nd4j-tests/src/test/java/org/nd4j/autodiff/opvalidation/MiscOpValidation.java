@@ -1729,6 +1729,24 @@ public class MiscOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testDynamicPartition(){
+        INDArray data = Nd4j.createFromArray(2, 1, 2, 0);
+        INDArray partitions = Nd4j.createFromArray(0, 2, 1, 0);
+        INDArray[] out = Nd4j.exec(DynamicCustomOp.builder("dynamic_partition")
+                .addOutputs(Nd4j.createUninitialized(DataType.INT, 2), Nd4j.createUninitialized(DataType.INT, 1), Nd4j.createUninitialized(DataType.INT, 1))
+                .addIntegerArguments(3) //3 partitions
+                .addInputs(data, partitions).build());
+
+        INDArray exp0 = Nd4j.createFromArray(2, 0);
+        INDArray exp1 = Nd4j.createFromArray(2);
+        INDArray exp2 = Nd4j.createFromArray(1);
+
+        assertEquals(exp0, out[0]);     //Usually just gives [0,0]
+        assertEquals(exp1, out[1]);
+        assertEquals(exp2, out[2]);
+    }
+
+    @Test
     public void testListDiff(){
         INDArray x = Nd4j.createFromArray(0, 1, 2, 3);
         INDArray y = Nd4j.createFromArray(3, 1);

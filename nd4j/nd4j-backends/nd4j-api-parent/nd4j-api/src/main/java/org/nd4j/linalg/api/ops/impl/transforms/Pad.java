@@ -83,17 +83,6 @@ public class Pad extends DynamicCustomOp {
     }
 
     @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        if(args().length == 3){
-            INDArray arr = arg(2).getArr();
-            this.tArguments.clear();
-            this.tArguments.add(arr.getDouble(0));
-        }
-        super.resolvePropertiesFromSameDiffBeforeExecution();
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //Pad backprop: it's basically slice op...
         //Inputs to pad: input array (rank N), and padding array (rank 2, shape [N,2])

@@ -86,14 +86,6 @@ public class Rank extends DynamicCustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        List<LongShapeDescriptor> ret = new ArrayList<>();
-        ret.add(LongShapeDescriptor.fromShape(new long[]{}, DataType.INT));
-        return ret;
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         return Collections.singletonList(sameDiff.zerosLike(arg()));
     }

@@ -372,6 +372,9 @@ namespace nd4j {
                     if (_descriptor->isSameMode()) {
 
                         if (index >= block.width()) {
+                            if (block.fastpath_in().size() == 0)
+                                continue;
+
                             auto ia = block.fastpath_in()[0];
 
                             if (ia->dataType() != cType) {
@@ -423,6 +426,9 @@ namespace nd4j {
                             if (_descriptor->isSameMode()) {
 
                                 if (index >= block.width()) {
+                                    if (block.width() == 0)
+                                        continue;
+
                                     auto iv = block.variable(0);
 
                                     if (iv->getNDArray()->dataType() != cType) {

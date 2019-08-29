@@ -22,7 +22,7 @@ import java.lang.reflect.Method;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Base class for MLK-DNN Helpers
+ * Base class for MKL-DNN Helpers
  * @author Alex Black
  */
 public class BaseMKLDNNHelper {
