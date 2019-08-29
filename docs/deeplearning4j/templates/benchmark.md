@@ -45,7 +45,7 @@ Ideally, these should be excluded from any timing/performance results you report
 For example: what BLAS implementation (MKL, OpenBLAS, etc)? If you are using CUDA, are you using CuDNN?
 ND4J and DL4J can use these libraries (MKL, CuDNN) when they are available - but are not always available by default. If they are not made available, performance can be lower - sometimes considerably.
 
-This is especially important when comparing results between libraries: for example, if you compared two libraries (one using OpenBLAS, another using MLK) your results may simply reflect the performance differences it the BLAS library being used - and not the performance oth the libraries being tested. Similarly, one library with CuDNN and another without CuDNN may simply reflect the performance benefit of using CuDNN.
+This is especially important when comparing results between libraries: for example, if you compared two libraries (one using OpenBLAS, another using MKL) your results may simply reflect the performance differences it the BLAS library being used - and not the performance oth the libraries being tested. Similarly, one library with CuDNN and another without CuDNN may simply reflect the performance benefit of using CuDNN.
 
 
 3. How are things configured?

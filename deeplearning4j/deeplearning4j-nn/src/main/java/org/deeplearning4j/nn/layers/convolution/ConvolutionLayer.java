@@ -378,7 +378,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                         log.warn("CuDNN execution failed - falling back on built-in implementation",e);
                     }
                 } else {
-                    throw new RuntimeException(e);
+                    throw new RuntimeException("Error during ConvolutionLayer MKL/CuDNN helper forward pass - isCudnnAllowFallback() is set to false", e);
                 }
             }
             if (ret != null) {
@@ -453,8 +453,30 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //String afn = conf.getLayer().getActivationFunction();
         IActivation afn = layerConf().getActivationFn();
 
-        if (helper != null && Shape.strideDescendingCAscendingF(z)) {
-            INDArray ret = helper.activate(z, layerConf().getActivationFn(), training);
+        if (helper != null && Shape.strideDescendingCAscendingF(z) && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
+            INDArray ret = null;
+            try {
+                ret = helper.activate(z, layerConf().getActivationFn(), training);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
+            } catch (Exception e) {
+                if (e.getMessage() != null && e.getMessage().contains("Failed to allocate")) {
+                    //This is a memory exception - don't fallback to built-in implementation
+                    throw e;
+                }
+
+                if (layerConf().isCudnnAllowFallback()) {
+                    helperCountFail++;
+                    if (helper instanceof MKLDNNConvHelper) {
+                        log.warn("MKL-DNN execution failed - falling back on built-in implementation", e);
+                    } else {
+                        log.warn("CuDNN execution failed - falling back on built-in implementation", e);
+                    }
+                } else {
+                    throw new RuntimeException("Error during ConvolutionLayer MKL/CuDNN helper forward pass - isCudnnAllowFallback() is set to false", e);
+                }
+            }
+
             if (ret != null) {
                 return ret;
             }

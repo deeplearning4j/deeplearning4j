@@ -17,8 +17,6 @@
 package org.deeplearning4j.nn.conf.layers;
 
 import lombok.*;
-import org.deeplearning4j.nn.params.LSTMParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
@@ -35,11 +33,13 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
 
     protected double forgetGateBiasInit;
     protected IActivation gateActivationFn = new ActivationSigmoid();
+    protected boolean helperAllowFallback = true;
 
     protected AbstractLSTM(Builder builder) {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+        this.helperAllowFallback = builder.helperAllowFallback;
     }
 
     @AllArgsConstructor
@@ -59,6 +59,14 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
          * for example
          */
         protected IActivation gateActivationFn = new ActivationSigmoid();
+
+        /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for LSTM/GravesLSTM will be used
+         *
+         */
+        protected boolean helperAllowFallback = true;
 
         /**
          * Set forget gate bias initalizations. Values in range 1-5 can potentially help with learning or longer-term
@@ -97,6 +105,18 @@ public abstract class AbstractLSTM extends BaseRecurrentLayer {
          */
         public T gateActivationFunction(IActivation gateActivationFn) {
             this.setGateActivationFn(gateActivationFn);
+            return (T) this;
+        }
+
+        /**
+         * When using a helper (CuDNN or MKLDNN in some cases) and an error is encountered, should fallback to the non-helper implementation be allowed?
+         * If set to false, an exception in the helper will be propagated back to the user. If false, the built-in
+         * (non-helper) implementation for LSTM/GravesLSTM will be used
+         *
+         * @param allowFallback Whether fallback to non-helper implementation should be used
+         */
+        public T helperAllowFallback(boolean allowFallback) {
+            this.setHelperAllowFallback(allowFallback);
             return (T) this;
         }
 
