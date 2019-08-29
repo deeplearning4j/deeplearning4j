@@ -272,6 +272,7 @@ TEST_F(CudaBasicsTests2, mmulMxM_12) {
 	NDArray exp('f', {M,N}, {-16., -22., -23., -25., 30., -12., -38., -70., 20., 16., 18., 18., 22., -8., -28., -52.}, nd4j::DataType::FLOAT32);
 
 	nd4j::MmulHelper::mmul(&a, &b, &c, 1., 0.);
+	// c.printBuffer();
 
 	ASSERT_TRUE(c.equalsTo(&exp));
 }

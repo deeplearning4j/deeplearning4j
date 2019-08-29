@@ -44,12 +44,13 @@
     <properties>
         <jumpy.compile.skip>false</jumpy.compile.skip>
         <jumpy.version>0.2.4</jumpy.version>
+        <nd4j.backend>nd4j-native</nd4j.backend>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
+            <artifactId>${nd4j.backend}</artifactId>
             <version>${dl4j.version}</version>
         </dependency>
     </dependencies>
@@ -179,4 +180,18 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>nd4j-backend</id>
+            <activation>
+                <property>
+                    <name>libnd4j.cuda</name>
+                </property>
+            </activation>
+            <properties>
+                <nd4j.backend>nd4j-cuda-${libnd4j.cuda}</nd4j.backend>
+            </properties>
+        </profile>
+    </profiles>
 </project>

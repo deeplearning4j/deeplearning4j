@@ -159,7 +159,7 @@
         <profile>
             <id>nd4j-tests-cpu</id>
             <activation>
-                <activeByDefault>true</activeByDefault>
+                <activeByDefault>false</activeByDefault>
             </activation>
             <dependencies>
                 <dependency>

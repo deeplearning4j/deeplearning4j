@@ -111,18 +111,21 @@ namespace nd4j {
 
         /**
          * creates identity 2D matrix or batch of identical 2D identity matrices
-         * 
+         *
          * Input array:
          * provide some array - in any case operation simply neglects it
-         * 
+         *
+         * Input float argument (if passed):
+         * TArgs[0] - type of elements of output array, default value is 5 (float)
+         *
          * Input integer arguments:
          * IArgs[0]       - order of output identity matrix, 99 -> 'c'-order, 102 -> 'f'-order
          * IArgs[1]       - the number of rows in output inner-most 2D identity matrix
          * IArgs[2]       - optional, the number of columns in output inner-most 2D identity matrix, if this argument is not provided then it is taken to be equal to number of rows
-         * IArgs[3,4,...] - optional, shape of batch, output matrix will have leading batch dimensions of this shape         
+         * IArgs[3,4,...] - optional, shape of batch, output matrix will have leading batch dimensions of this shape
          */
         #if NOT_EXCLUDED(OP_eye)
-        DECLARE_CUSTOM_OP(eye, -2, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(eye, -2, 1, false, -2, 2);
         #endif
 
         #if NOT_EXCLUDED(OP_gather_nd)
@@ -143,10 +146,10 @@ namespace nd4j {
 
         /**
          * clip a list of given tensors with given average norm when needed
-         * 
+         *
          * Input:
          *    a list of tensors (at least one)
-         * 
+         *
          * Input floating point argument:
          *    clip_norm - a value that used as threshold value and norm to be used
          *
@@ -182,12 +185,12 @@ namespace nd4j {
 
         /**
          * returns histogram (as 1D array) with fixed bins width
-         * 
+         *
          * Input arrays:
-         * - input array with elements to be binned into output histogram 
+         * - input array with elements to be binned into output histogram
          * - range array with first element being bottom limit and second element being top limit of histogram,
              please note that input_value <= range[0] will be mapped to histogram[0], input_value >= range[1] will be mapped to histogram[-1]
-         * 
+         *
          * Input integer arguments:
          *    nbins (optional) - number of histogram bins, default value is 100
          */

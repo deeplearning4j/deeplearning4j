@@ -53,11 +53,13 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
 
     private double forgetGateBiasInit;
     private IActivation gateActivationFn = new ActivationSigmoid();
+    protected boolean helperAllowFallback = true;
 
     private GravesBidirectionalLSTM(Builder builder) {
         super(builder);
         this.forgetGateBiasInit = builder.forgetGateBiasInit;
         this.gateActivationFn = builder.gateActivationFn;
+        this.helperAllowFallback = builder.helperAllowFallback;
 
         initializeConstraints(builder);
     }
@@ -124,6 +126,14 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         private IActivation gateActivationFn = new ActivationSigmoid();
 
         /**
+         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
+         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
+         * (non-CuDNN) implementation for GravesBidirectionalLSTM will be used
+         *
+         */
+        protected boolean helperAllowFallback = true;
+
+        /**
          * Set forget gate bias initalizations. Values in range 1-5 can potentially help with learning or longer-term
          * dependencies.
          */
@@ -161,6 +171,18 @@ public class GravesBidirectionalLSTM extends BaseRecurrentLayer {
         public Builder gateActivationFunction(IActivation gateActivationFn) {
             this.setGateActivationFn(gateActivationFn);
             return this;
+        }
+
+        /**
+         * When using a helper (CuDNN or MKLDNN in some cases) and an error is encountered, should fallback to the non-helper implementation be allowed?
+         * If set to false, an exception in the helper will be propagated back to the user. If false, the built-in
+         * (non-helper) implementation for GravesBidirectionalLSTM will be used
+         *
+         * @param allowFallback Whether fallback to non-helper implementation should be used
+         */
+        public Builder helperAllowFallback(boolean allowFallback) {
+            this.setHelperAllowFallback(allowFallback);
+            return (Builder) this;
         }
 
         @SuppressWarnings("unchecked")

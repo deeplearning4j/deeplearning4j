@@ -100,11 +100,27 @@
 
         <profile>
             <id>test-nd4j-native</id>
-        </profile>
-        <profile>
-            <id>test-nd4j-cuda-10.1</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
 
+        <profile>
+            <id>test-nd4j-cuda-10.1</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-10.1</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
     </profiles>
 
     <dependencies>
@@ -220,14 +236,6 @@
             <artifactId>junit</artifactId>              <!-- Version set by deeplearning4j-parent dependency management -->
             <scope>test</scope>
         </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
 
         <!-- WebJars Dependencies -->
         <dependency>
@@ -637,6 +645,4 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
-
-
 </project>
