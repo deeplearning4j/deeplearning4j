@@ -68,11 +68,6 @@
     </properties>
 
     <dependencies>
-        <!--dependency>
-            <groupId>com.nativelibs4java</groupId>
-            <artifactId>scalaxy-loops_${scala.binary.version}</artifactId>
-            <version>0.3.4</version>
-        </dependency-->
         <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
@@ -90,6 +85,12 @@
             <version>${logback.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+   	    <groupId>junit</groupId>	
+	    <artifactId>junit</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+	</dependency>
         <dependency>
             <groupId>org.scalatest</groupId>
             <artifactId>scalatest_${scala.binary.version}</artifactId>
@@ -193,6 +194,7 @@
                         <arg>-deprecation</arg>
                         <arg>-explaintypes</arg>
                         <arg>-nobootcp</arg>
+			<arg>-usejavacp</arg>
                     </args>
                 </configuration>
             </plugin>
