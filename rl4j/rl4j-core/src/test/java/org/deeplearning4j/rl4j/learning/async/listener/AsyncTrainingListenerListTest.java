@@ -61,6 +61,8 @@ public class AsyncTrainingListenerListTest {
 
         public int onEpochTrainingResultCallCount = 0;
         public ListenerResponse onTrainingResultResponse = ListenerResponse.CONTINUE;
+        public int onTrainingProgressCallCount = 0;
+        public ListenerResponse onTrainingProgressResponse = ListenerResponse.CONTINUE;
 
         @Override
         public ListenerResponse onTrainingStart(ITrainingEvent event) {
@@ -81,6 +83,12 @@ public class AsyncTrainingListenerListTest {
         public ListenerResponse onEpochTrainingResult(IEpochTrainingResultEvent event) {
             ++onEpochTrainingResultCallCount;
             return onTrainingResultResponse;
+        }
+
+        @Override
+        public ListenerResponse onTrainingProgress(ITrainingProgressEvent event) {
+            ++onTrainingProgressCallCount;
+            return onTrainingProgressResponse;
         }
     }
 

@@ -23,7 +23,7 @@ public class AsyncThreadTest {
         context.sut.run();
 
         // Assert
-        assertEquals(5, context.neuralNet.resetCallCount);
+        assertEquals(6, context.neuralNet.resetCallCount);
     }
 
     @Test
@@ -63,8 +63,8 @@ public class AsyncThreadTest {
         context.sut.run();
 
         // Assert
-        assertEquals(5, context.sut.preEpochCallCount);
-        assertEquals(5, context.sut.postEpochCallCount);
+        assertEquals(6, context.sut.preEpochCallCount);
+        assertEquals(6, context.sut.postEpochCallCount);
     }
 
     @Test
@@ -76,9 +76,9 @@ public class AsyncThreadTest {
         context.sut.run();
 
         // Assert
-        assertEquals(4, context.listener.statEntries.size());
-        int[] expectedStepCounter = new int[] { 2, 4, 6, 8 };
-        for(int i = 0; i < 4; ++i) {
+        assertEquals(5, context.listener.statEntries.size());
+        int[] expectedStepCounter = new int[] { 2, 4, 6, 8, 10 };
+        for(int i = 0; i < 5; ++i) {
             IDataManager.StatEntry statEntry = context.listener.statEntries.get(i);
             assertEquals(expectedStepCounter[i], statEntry.getStepCounter());
             assertEquals(i, statEntry.getEpochCounter());

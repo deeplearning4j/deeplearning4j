@@ -39,6 +39,17 @@ public class DataManagerTrainingListener implements TrainingListener {
         }
 
         return ListenerResponse.CONTINUE;
+    }
 
+    @Override
+    public ListenerResponse onTrainingProgress(ITrainingProgressEvent event) {
+        try {
+            dataManager.writeInfo(event.getLearning());
+        } catch (Exception e) {
+            log.error("Training failed.", e);
+            return ListenerResponse.STOP;
+        }
+
+        return ListenerResponse.CONTINUE;
     }
 }

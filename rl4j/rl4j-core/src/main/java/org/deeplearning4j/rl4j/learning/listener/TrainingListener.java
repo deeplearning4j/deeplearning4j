@@ -57,4 +57,10 @@ public interface TrainingListener {
      */
     ListenerResponse onEpochTrainingResult(IEpochTrainingResultEvent event);
 
+    /**
+     * Called regularly to monitor the training progress.
+     * @param event A {@link ITrainingProgressEvent}
+     * @return A ListenerResponse telling the source of the event if it should continue or stop the training.
+     */
+    ListenerResponse onTrainingProgress(ITrainingProgressEvent event);
 }

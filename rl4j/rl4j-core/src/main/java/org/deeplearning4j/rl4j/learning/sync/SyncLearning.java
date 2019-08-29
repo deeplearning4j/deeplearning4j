@@ -64,6 +64,7 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
      * <ul>
      *   <li>{@link TrainingListener#onTrainingStart(ITrainingEvent) onTrainingStart()} is called once when the training starts.</li>
      *   <li>{@link TrainingListener#onNewEpoch(IEpochTrainingEvent) onNewEpoch()} and {@link TrainingListener#onEpochTrainingResult(IEpochTrainingResultEvent) onEpochTrainingResult()}  are called for every epoch. onEpochTrainingResult will not be called if onNewEpoch stops the training</li>
+     *   <li>{@link TrainingListener#onTrainingProgress(ITrainingProgressEvent) onTrainingProgress()} is called after onEpochTrainingResult()</li>
      *   <li>{@link TrainingListener#onTrainingEnd(ITrainingEvent) onTrainingEnd()} is always called at the end of the training, even if the training was cancelled by a listener.</li>
      * </ul>
      */
@@ -87,6 +88,12 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
                 }
 
                 postEpoch();
+
+                canContinue = listeners.notifyTrainingProgress(buildProgressEpochEvent());
+                if (!canContinue) {
+                    break;
+                }
+
                 log.info("Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
                 incrementEpoch();
             }
@@ -100,6 +107,10 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
     }
     protected IEpochTrainingResultEvent buildEpochTrainingResultEvent(IDataManager.StatEntry statEntry) {
         return new EpochTrainingResultEvent(getEpochCounter(), getStepCounter(), statEntry);
+    }
+
+    protected ITrainingProgressEvent buildProgressEpochEvent() {
+        return new TrainingProgressEvent(this);
     }
 
     protected abstract void preEpoch();

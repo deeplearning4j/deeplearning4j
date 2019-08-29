@@ -35,7 +35,7 @@ public class MockAsyncGlobal implements IAsyncGlobal {
 
     @Override
     public boolean isTrainingComplete() {
-        return ++currentLoop >= maxLoops;
+        return ++currentLoop > maxLoops;
     }
 
     @Override

@@ -13,6 +13,7 @@ public class MockTrainingListener implements TrainingListener {
     public int onTrainingEndCallCount = 0;
     public int onNewEpochCallCount = 0;
     public int onEpochTrainingResultCallCount = 0;
+    public int onTrainingProgressCallCount = 0;
 
     @Setter
     private int remainingTrainingStartCallCount = Integer.MAX_VALUE;
@@ -20,6 +21,8 @@ public class MockTrainingListener implements TrainingListener {
     private int remainingOnNewEpochCallCount = Integer.MAX_VALUE;
     @Setter
     private int remainingOnEpochTrainingResult = Integer.MAX_VALUE;
+    @Setter
+    private int remainingonTrainingProgressCallCount = Integer.MAX_VALUE;
 
     public final List<IDataManager.StatEntry> statEntries = new ArrayList<>();
 
@@ -44,6 +47,13 @@ public class MockTrainingListener implements TrainingListener {
         --remainingOnEpochTrainingResult;
         statEntries.add(event.getStatEntry());
         return remainingOnEpochTrainingResult < 0 ? ListenerResponse.STOP : ListenerResponse.CONTINUE;
+    }
+
+    @Override
+    public ListenerResponse onTrainingProgress(ITrainingProgressEvent event) {
+        ++onTrainingProgressCallCount;
+        --remainingonTrainingProgressCallCount;
+        return remainingonTrainingProgressCallCount < 0 ? ListenerResponse.STOP : ListenerResponse.CONTINUE;
     }
 
     @Override

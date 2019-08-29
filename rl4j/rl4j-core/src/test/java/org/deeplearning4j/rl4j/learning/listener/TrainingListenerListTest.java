@@ -28,6 +28,7 @@ public class TrainingListenerListTest {
         MockTrainingListener listener1 = new MockTrainingListener();
         listener1.setRemainingTrainingStartCallCount(0);
         listener1.setRemainingOnNewEpochCallCount(0);
+        listener1.setRemainingonTrainingProgressCallCount(0);
         listener1.setRemainingOnEpochTrainingResult(0);
         MockTrainingListener listener2 = new MockTrainingListener();
         TrainingListenerList sut = new TrainingListenerList();
@@ -38,6 +39,7 @@ public class TrainingListenerListTest {
         sut.notifyTrainingStarted(null);
         sut.notifyNewEpoch(null);
         sut.notifyEpochTrainingResult(new EpochTrainingResultEvent(0, 0, null));
+        sut.notifyTrainingProgress(null);
         sut.notifyTrainingFinished(null);
 
         // Assert
@@ -49,6 +51,9 @@ public class TrainingListenerListTest {
 
         assertEquals(1, listener1.onEpochTrainingResultCallCount);
         assertEquals(0, listener2.onEpochTrainingResultCallCount);
+
+        assertEquals(1, listener1.onTrainingProgressCallCount);
+        assertEquals(0, listener2.onTrainingProgressCallCount);
 
         assertEquals(1, listener1.onTrainingEndCallCount);
         assertEquals(1, listener2.onTrainingEndCallCount);
@@ -67,10 +72,12 @@ public class TrainingListenerListTest {
         boolean resultTrainingStarted = sut.notifyTrainingStarted(null);
         boolean resultNewEpoch = sut.notifyNewEpoch(null);
         boolean resultEpochTrainingResult = sut.notifyEpochTrainingResult(new EpochTrainingResultEvent(0, 0, null) );
+        boolean resultProgress = sut.notifyTrainingProgress(null);
 
         // Assert
         assertTrue(resultTrainingStarted);
         assertTrue(resultNewEpoch);
         assertTrue(resultEpochTrainingResult);
+        assertTrue(resultProgress);
     }
 }

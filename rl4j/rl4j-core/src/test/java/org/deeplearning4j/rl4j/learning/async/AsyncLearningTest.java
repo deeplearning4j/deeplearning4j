@@ -54,8 +54,21 @@ public class AsyncLearningTest {
         assertTrue(context.asyncGlobal.hasBeenTerminated);
     }
 
+    @Test
+    public void when_training_expect_onTrainingProgressCalled() {
+        // Arrange
+        TestContext context = new TestContext();
+
+        // Act
+        context.sut.train();
+
+        // Assert
+        assertEquals(1, context.listener.onTrainingProgressCallCount);
+    }
+
+
     public static class TestContext {
-        public final MockAsyncConfiguration conf = new MockAsyncConfiguration(20, 10);
+        public final MockAsyncConfiguration conf = new MockAsyncConfiguration(1, 1);
         public final MockAsyncGlobal asyncGlobal = new MockAsyncGlobal();
         public final MockPolicy policy = new MockPolicy();
         public final TestAsyncLearning sut = new TestAsyncLearning(conf, asyncGlobal, policy);
@@ -63,6 +76,8 @@ public class AsyncLearningTest {
 
         public TestContext() {
             sut.addListener(listener);
+            asyncGlobal.setMaxLoops(1);
+            sut.setProgressMonitorFrequency(1);
         }
     }
 

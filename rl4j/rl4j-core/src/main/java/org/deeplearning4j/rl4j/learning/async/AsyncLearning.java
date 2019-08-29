@@ -18,11 +18,10 @@ package org.deeplearning4j.rl4j.learning.async;
 
 import lombok.AccessLevel;
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.listener.TrainingEvent;
-import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
-import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
+import org.deeplearning4j.rl4j.learning.listener.*;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -74,19 +73,20 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         return getAsyncGlobal().isTrainingComplete();
     }
 
-    private Thread[] launchThreads() {
+    private boolean canContinue = true;
+
+    @Getter @Setter
+    private int progressMonitorFrequency = 20000;
+
+    private void launchThreads() {
         startGlobalThread();
-        Thread[] threads = new Thread[getConfiguration().getNumThread()];
-        for (int i = 0; i < threads.length; i++) {
+        for (int i = 0; i < getConfiguration().getNumThread(); i++) {
             Thread t = newThread(i);
             Nd4j.getAffinityManager().attachThreadToDevice(t,
-                            i % Nd4j.getAffinityManager().getNumberOfDevices());
+                    i % Nd4j.getAffinityManager().getNumberOfDevices());
             t.start();
-            threads[i] = t;
         }
         log.info("Threads launched.");
-
-        return threads;
     }
 
     /**
@@ -109,32 +109,46 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
      * returns {@link org.deeplearning4j.rl4j.learning.listener.TrainingListener.ListenerResponse TrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
      * Events:
      * <ul>
-     *   <li>{@link TrainingListener#onTrainingStart(TrainingEvent) onTrainingStart()} is called once when the training starts.</li>
-     *   <li>{@link TrainingListener#onTrainingEnd(TrainingEvent) onTrainingEnd()}  is always called at the end of the training, even if the training was cancelled by a listener.</li>
+     *   <li>{@link TrainingListener#onTrainingStart(ITrainingEvent) onTrainingStart()} is called once when the training starts.</li>
+     *   <li>{@link TrainingListener#onTrainingEnd(ITrainingEvent) onTrainingEnd()}  is always called at the end of the training, even if the training was cancelled by a listener.</li>
      * </ul>
      */
     public void train() {
 
-            log.info("AsyncLearning training starting.");
+        log.info("AsyncLearning training starting.");
 
-            Thread[] threads = launchThreads();
+        canContinue = listeners.notifyTrainingStarted(buildTrainingStartedEvent());
+        if (canContinue) {
+            launchThreads();
+            monitorTraining();
+        }
 
-            boolean canContinue = listeners.notifyTrainingStarted(buildTrainingStartedEvent());
-            if (canContinue) {
-                try {
-                    for(Thread t : threads) {
-                        t.join();
-                    }
-                } catch (InterruptedException e) {
-                    log.error("Training failed.", e);
-                }
-            }
-
-        terminateTraining();
+        cleanupPostTraining();
         listeners.notifyTrainingFinished(buildTrainingFinishedEvent());
     }
 
-    protected void terminateTraining() {
+    protected void monitorTraining() {
+        try {
+            while (canContinue && !isTrainingComplete() && getAsyncGlobal().isRunning()) {
+                canContinue = listeners.notifyTrainingProgress(buildProgressEpochEvent());
+                if(!canContinue) {
+                    return;
+                }
+
+                synchronized (this) {
+                    wait(progressMonitorFrequency);
+                }
+            }
+        } catch (InterruptedException e) {
+            log.error("Training interrupted.", e);
+        }
+    }
+
+    protected ITrainingProgressEvent buildProgressEpochEvent() {
+        return new TrainingProgressEvent(this);
+    }
+
+    protected void cleanupPostTraining() {
         // Worker threads stops automatically when the global thread stops
         getAsyncGlobal().terminate();
     }

@@ -17,9 +17,7 @@
 package org.deeplearning4j.rl4j.learning.listener;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
-import lombok.Setter;
 
 /**
  * This event contains informations about the epoch being handled.

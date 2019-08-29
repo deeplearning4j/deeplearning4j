@@ -86,4 +86,16 @@ public class TrainingListenerList {
         return true;
     }
 
+    /**
+     * Notify the listeners that they update the progress ot the trainning.
+     */
+    public boolean notifyTrainingProgress(ITrainingProgressEvent event) {
+        for (TrainingListener listener : listeners) {
+            if (listener.onTrainingProgress(event) == TrainingListener.ListenerResponse.STOP) {
+                return false;
+            }
+        }
+
+        return true;
+    }
 }

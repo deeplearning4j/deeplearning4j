@@ -216,18 +216,17 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             nextObs.muli(1.0 / getHistoryProcessor().getScale());
         }
 
-        INDArray dqnOutputAr = dqnOutput(obs);
+        INDArray targetDqnOutput = targetDqnOutput(obs);
 
         INDArray dqnOutputNext = dqnOutput(nextObs);
-        INDArray targetDqnOutputNext = null;
+        INDArray targetDqnOutputNext = targetDqnOutput(nextObs);
 
         INDArray tempQ = null;
         INDArray getMaxAction = null;
         if (getConfiguration().isDoubleDQN()) {
-            targetDqnOutputNext = targetDqnOutput(nextObs);
             getMaxAction = Nd4j.argMax(dqnOutputNext, 1);
         } else {
-            tempQ = Nd4j.max(dqnOutputNext, 1);
+            tempQ = Nd4j.max(targetDqnOutputNext, 1);
         }
 
 
@@ -246,15 +245,15 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
 
 
-            double previousV = dqnOutputAr.getDouble(i, actions[i]);
+            double previousV = targetDqnOutput.getDouble(i, actions[i]);
             double lowB = previousV - getConfiguration().getErrorClamp();
             double highB = previousV + getConfiguration().getErrorClamp();
             double clamped = Math.min(highB, Math.max(yTar, lowB));
 
-            dqnOutputAr.putScalar(i, actions[i], clamped);
+            targetDqnOutput.putScalar(i, actions[i], clamped);
         }
 
-        return new Pair(obs, dqnOutputAr);
+        return new Pair(obs, targetDqnOutput);
     }
 
 }
