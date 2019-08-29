@@ -194,7 +194,7 @@
                         <arg>-deprecation</arg>
                         <arg>-explaintypes</arg>
                         <arg>-nobootcp</arg>
-			<arg>-usejavacp</arg>
+			            <arg>-usejavacp</arg>
                     </args>
                 </configuration>
             </plugin>

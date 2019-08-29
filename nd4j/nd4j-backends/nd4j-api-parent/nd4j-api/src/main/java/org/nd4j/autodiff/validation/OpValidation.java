@@ -16,8 +16,8 @@
 
 package org.nd4j.autodiff.validation;
 
-import com.google.common.collect.ImmutableSet;
-import com.google.common.reflect.ClassPath;
+import org.nd4j.shade.guava.collect.ImmutableSet;
+import org.nd4j.shade.guava.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -560,7 +560,7 @@ public class OpValidation {
         ImmutableSet<ClassPath.ClassInfo> info;
         try {
             //Dependency note: this ClassPath class was added in Guava 14
-            info = com.google.common.reflect.ClassPath.from(DifferentialFunctionClassHolder.class.getClassLoader())
+            info = org.nd4j.shade.guava.reflect.ClassPath.from(DifferentialFunctionClassHolder.class.getClassLoader())
                     .getTopLevelClassesRecursive("org.nd4j.linalg.api.ops");
         } catch (IOException e) {
             //Should never happen

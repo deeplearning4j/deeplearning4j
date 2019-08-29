@@ -48,11 +48,6 @@ public class HashCode extends DynamicCustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        return Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], DataType.LONG));
-    }
-
-    @Override
     public String opName() {
         return "hashcode";
     }

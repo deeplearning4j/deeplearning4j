@@ -614,7 +614,7 @@ public class OpExecutionerTests extends BaseNd4jTest {
             assertEquals(arr5s.getDouble(i), 16, 1e-1);
         System.out.println("6d");
         INDArray arr6 = Nd4j.ones(1, 1, 4, 4, 4, 4);
-        INDArray arr6Tad = arr6.javaTensorAlongDimension(0, 2, 3);
+        INDArray arr6Tad = arr6.tensorAlongDimension(0, 2, 3);
         INDArray arr6s = arr6.sum(2, 3);
         for (int i = 0; i < arr6s.length(); i++)
             assertEquals(arr6s.getDouble(i), 16, 1e-1);

@@ -412,7 +412,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 .expectedOutput("dp0", expOut[0])
                 .expectedOutput("dp1", expOut[1])
                 .gradientCheck(true));
-        assertNull(err, err);
+        assertNull(err);
     }
 
     @Test

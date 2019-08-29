@@ -50,8 +50,8 @@ namespace nd4j {
                     auto zShapeInfo = zShapeInfos[o];
                     auto zLength = shape::length(zShapeInfo);
 
-                    // iLimit should be
-                    auto iLimit = iLength <= blockIdx.x ? blockIdx.x : (iLength + (blockIdx.x - (iLength % blockIdx.x)));
+                    // iLimit should be multiple of blockDim.x
+                    auto iLimit = iLength <= blockDim.x ? blockDim.x : (iLength + (blockDim.x - (iLength % blockDim.x)));
                     int cnt = 0;
 
                     for (Nd4jLong e = threadIdx.x; e < iLimit; e += blockDim.x) {
@@ -75,8 +75,9 @@ namespace nd4j {
 
                         // doing actual update
                         if (e < iLength)
-                            if (trueIndices[threadIdx.x] >= 0)
+                            if (trueIndices[threadIdx.x] >= 0) {
                                 z[trueIndices[threadIdx.x]] = x[shape::getIndexOffset(e, xShapeInfo, xLength)];
+                            }
 
                         __syncthreads();
                     }
@@ -148,12 +149,11 @@ namespace nd4j {
                     auto dOutTadShapes = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(tadShapes.data(), tadShapes.size() * sizeof(Nd4jLong *)));
                     auto dOutTadOffsets = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(tadOffsets.data(), tadOffsets.size() * sizeof(Nd4jLong *)));
 
-                    dynamicPartitionTadKernel<X,Y><<<256, 512, 1024, *context->getCudaStream()>>>(input->getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), shape::length(packX.primaryShapeInfo()), indices->getSpecialBuffer(), indices->getSpecialShapeInfo(), indices->lengthOf(), dOutBuffers, dOutTadShapes, dOutTadOffsets, outSize);
+                    dynamicPartitionTadKernel<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input->getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), shape::length(packX.primaryShapeInfo()), indices->getSpecialBuffer(), indices->getSpecialShapeInfo(), indices->lengthOf(), dOutBuffers, dOutTadShapes, dOutTadOffsets, outSize);
 
                 } else {
                     auto numThreads = 256;
                     auto shmemSize = numThreads * sizeof(Y) * 2 + 1024;
-
 
                     std::vector<void *> outBuffers;
                     std::vector<Nd4jLong *> outShapes;
@@ -202,6 +202,9 @@ namespace nd4j {
                 for (int e = blockIdx.x; e < inputSize; e += gridDim.x) {
                     auto indices = reinterpret_cast<Y*>(vindices[e]);
                     auto iShapeInfo = iShapeInfos[e];
+
+                    if (shape::isEmpty(iShapeInfo))
+                        continue;
 
                     auto iLength = shape::length(iShapeInfo);
                     auto zLength = shape::length(zTadShapeInfo);
@@ -310,8 +313,9 @@ namespace nd4j {
 
                 NDArray::registerSpecialUse({}, {indices, input});
 
-                for (auto v:outputList)
+                for (auto v:outputList) {
                     v->tickWriteDevice();
+                }
             }
 
             template <typename T>

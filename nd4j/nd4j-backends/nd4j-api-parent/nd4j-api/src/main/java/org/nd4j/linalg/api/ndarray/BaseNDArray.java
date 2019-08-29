@@ -17,8 +17,8 @@
 package org.nd4j.linalg.api.ndarray;
 
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -1007,19 +1007,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return toTad;
     }
 
-    /**
-     * Get the vector along a particular dimension
-     *
-     * @param index     the index of the vector to getScalar
-     * @param dimension the dimension to getScalar the vector from
-     * @return the vector along a particular dimension
-     */
-    @Override
-    @Deprecated
-    public INDArray javaTensorAlongDimension(int index, int... dimension) {
-        return doTad(index, dimension);
-    }
-
     private void setShapeInformation(Pair<DataBuffer, long[]> shapeInfo) {
         this.shapeInformation = shapeInfo.getFirst();
         this.jvmShapeInfo = new JvmShapeInfo(shapeInfo.getSecond());
@@ -1110,14 +1097,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return ret2.permutei(finalPermuteDims);
     }
 
-
-
-    /**
-     * Returns the number of possible vectors for a given dimension
-     *
-     * @param dimension the dimension to calculate the number of vectors for
-     * @return the number of possible vectors along a dimension
-     */
     @Override
     public long vectorsAlongDimension(int dimension) {
         if (dimension == 0 && isVector() || isRowVectorOrScalar())
@@ -1150,17 +1129,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return length / size(dimension);
     }
 
-    /**
-     * Get the vector along a particular dimension
-     *
-     * @param index     the index of the vector to get
-     * @param dimension the dimension to get the vector from
-     * @return the vector along a particular dimension
-     */
     @Override
     public INDArray vectorAlongDimension(int index, int dimension) {
-        if (dimension < 0)
+        if (dimension < 0) {
             dimension = jvmShapeInfo.getRank() + dimension;
+        }
 
         //return the whole thing
         if (dimension == jvmShapeInfo.getRank() - 1 && size(dimension) == 1 && rank() > 2
@@ -1168,12 +1141,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return this;
         }
 
-        INDArray ret = tensorAlongDimension(index, dimension);
-        //if (isMatrix() && ret.isVector() && dimension == 1 && !ret.isRowVector())
-        //    return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
-        //else if (isMatrix() && ret.isVector() && dimension == 0 && !ret.isColumnVector())
-        //    return ret.reshape(ArrayUtil.reverseCopy(ret.shape()));
-        return ret;
+        return tensorAlongDimension(index, dimension);
     }
 
     @Override
@@ -1196,13 +1164,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  0, ordering(), this.dataType(), false));
     }
 
-
-    /**
-     * Cumulative sum along a dimension
-     *
-     * @param dimension the dimension to perform cumulative sum along
-     * @return the cumulative sum along the specified dimension
-     */
     @Override
     public INDArray cumsumi(int dimension) {
         validateNumericalArray("cumsumi", true);
@@ -1351,25 +1312,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return logEntropy(Integer.MAX_VALUE).getDouble(0);
     }
 
-    /**
-     * Cumulative sum along a dimension (in place)
-     *
-     * @param dimension the dimension to perform cumulative sum along
-     * @return the cumulative sum along the specified dimension
-     */
     @Override
     public INDArray cumsum(int dimension) {
         validateNumericalArray("cumsum", true);
         return dup().cumsumi(dimension);
     }
 
-    /**
-     * Assign all of the elements in the given
-     * ndarray to this ndarray
-     *
-     * @param arr the elements to assign
-     * @return this
-     */
     @Override
     public INDArray assign(final INDArray arr) {
         Preconditions.checkState((this.isScalar() && arr.isScalar()) || (this.isVector() && arr.isVector()) || Shape.shapeEqualWithSqueeze(this.shape(), arr.shape()),
@@ -1378,7 +1326,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         Preconditions.checkArgument(this.length() == arr.length(), "Length of both arrays must be equal");
 
-        //Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.pairwise.Set(this, arr, this, length()));
         Nd4j.getExecutioner().exec(new org.nd4j.linalg.api.ops.impl.transforms.any.Assign(arr, this));
         return this;
     }
@@ -1413,7 +1360,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public INDArray putScalar(long i, float value) {
         return putScalar(i, (double) value);
-
     }
 
     @Override
@@ -1540,7 +1486,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return this;
     }
 
-
     @Override
     public INDArray putScalar(int[] indexes, float value) {
         return putScalar(indexes, (double) value);
@@ -1556,27 +1501,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return putScalar(indexes, (double) value);
     }
 
-    /**
-     * Returns an ndarray with 1 if the element is epsilon equals
-     *
-     * @param other the number to compare
-     * @return a copied ndarray with the given
-     * binary conditions
-     */
     @Override
     public INDArray eps(Number other) {
         validateNumericalArray("eps", true);
         return Nd4j.getExecutioner().exec(new ScalarEps(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
 
-    /**
-     * epsilon equals than comparison:
-     * If the given number is less than the
-     * comparison number the item is 0 otherwise 1
-     *
-     * @param other the number to compare
-     * @return
-     */
     @Override
     public INDArray eps(INDArray other) {
         validateNumericalArray("eps", true);
@@ -1612,7 +1542,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         validateNumericalArray("greater than or equals (gte)", false);
         return Nd4j.getExecutioner().exec(new ScalarGreaterThanOrEqual(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), other));
     }
-
 
     @Override
     public INDArray lt(INDArray other) {
@@ -1675,9 +1604,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, Nd4j.createUninitialized(DataType.BOOL, this.shape(), this.ordering()), Conditions.isNan()));
     }
 
-    /**
-     * Negate each element.
-     */
     @Override
     public INDArray neg() {
         validateNumericalArray("negative (neg)", true);
@@ -1686,9 +1612,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new Negative(this, Nd4j.createUninitialized(this.dataType(), this.shape(), this.ordering())));
     }
 
-    /**
-     * Negate each element (in-place).
-     */
     @Override
     public INDArray negi() {
         validateNumericalArray("negative (negi)", true);
@@ -3909,28 +3832,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return assign(value ? 1 : 0);
     }
 
-
-    /**
-     * Assign all elements from given ndarray that are matching given condition,
-     * ndarray to this ndarray
-     *
-     * @param arr       the elements to assign
-     * @param condition
-     * @return this
-     */
     @Override
     public INDArray assignIf(INDArray arr, Condition condition) {
         BooleanIndexing.assignIf(this, arr, condition);
         return this;
     }
 
-    /**
-     * Replaces all elements in this ndarray that are matching give condition, with corresponding elements from given array
-     *
-     * @param arr
-     * @param condition
-     * @return
-     */
     @Override
     public INDArray replaceWhere(INDArray arr, Condition condition) {
         Nd4j.getCompressor().autoDecompress(this);

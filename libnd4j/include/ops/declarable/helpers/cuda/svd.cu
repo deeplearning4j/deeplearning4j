@@ -602,6 +602,8 @@ void svd(nd4j::LaunchContext* context, const NDArray* x, const std::vector<NDArr
     // NDArray VT = outArrs[2]->transpose();
     NDArray* V = outArrs[2];
 
+    NDArray::prepareSpecialUse({S, U, V}, {x});
+
     if(x->rankOf() == 2) {
         // svdQR(context, x, S, U, VT, fullUV, calcUV);
         svdJcb(context, x, S, U, V, fullUV, calcUV);
@@ -631,6 +633,8 @@ void svd(nd4j::LaunchContext* context, const NDArray* x, const std::vector<NDArr
             delete tadsV;
         }
     }
+
+    NDArray::registerSpecialUse({S, U, V}, {x});
 }
 
 

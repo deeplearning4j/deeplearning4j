@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.ui.play.staticroutes;
 
-import com.google.common.net.HttpHeaders;
+import org.nd4j.shade.guava.net.HttpHeaders;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;

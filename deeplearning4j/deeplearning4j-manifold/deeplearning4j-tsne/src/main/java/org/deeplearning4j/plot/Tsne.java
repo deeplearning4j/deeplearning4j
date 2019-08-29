@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.plot;
 
-import com.google.common.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Ints;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dimensionalityreduction.PCA;

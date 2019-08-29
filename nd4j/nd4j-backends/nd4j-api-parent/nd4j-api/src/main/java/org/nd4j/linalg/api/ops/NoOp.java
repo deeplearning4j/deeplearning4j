@@ -80,6 +80,7 @@ public class NoOp extends DynamicCustomOp {
         return 1;
     }
 
+
     @Override
     public List<LongShapeDescriptor> calculateOutputShape(){
         if(inputArguments != null && !inputArguments.isEmpty()){

@@ -57,15 +57,6 @@ public class Exit extends BaseCompatOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        if(arg().getArr() != null) {
-            return Collections.singletonList(arg().getShapeDescriptor());
-        }
-        else
-            return Collections.emptyList();
-    }
-
-    @Override
     public SDVariable[] outputVariables() {
         return super.outputVariables();
     }

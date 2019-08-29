@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import lombok.Getter;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -61,18 +61,6 @@ public class Switch extends BaseCompatOp {
     @Override
     public String opName() {
         return OP_NAME;
-    }
-
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        if(args()[0].getArr() != null) {
-            val arg0 = args()[0];
-            val arr0 = arg0.getArr();
-            val dtype = arr0.dataType();
-            return Arrays.asList(LongShapeDescriptor.fromShape(arg0.getShape(), dtype),LongShapeDescriptor.fromShape(arg0.getShape(), dtype));
-        }
-        else
-            return Collections.emptyList();
     }
 
     @Override

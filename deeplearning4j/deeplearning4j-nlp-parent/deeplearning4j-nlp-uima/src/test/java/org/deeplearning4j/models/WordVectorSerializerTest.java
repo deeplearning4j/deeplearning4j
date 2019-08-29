@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.models;
 
-import com.google.common.io.Files;
-import com.google.common.primitives.Doubles;
+import org.nd4j.shade.guava.io.Files;
+import org.nd4j.shade.guava.primitives.Doubles;
 import lombok.val;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.ArrayUtils;

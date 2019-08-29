@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.models.sequencevectors;
 
-import com.google.common.primitives.Ints;
-import com.google.common.util.concurrent.AtomicDouble;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

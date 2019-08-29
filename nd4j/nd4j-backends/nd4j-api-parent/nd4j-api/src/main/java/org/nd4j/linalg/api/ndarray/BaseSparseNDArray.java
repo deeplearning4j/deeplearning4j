@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.api.ndarray;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.ericaro.neoitertools.Generator;
@@ -412,11 +412,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray javaTensorAlongDimension(int index, int... dimension) {
-        return null;
-    }
-
-    @Override
     public INDArray cumsumi(int dimension) {
         return null;
     }
@@ -475,7 +470,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public INDArray putScalar(long[] i, int value) {
         return null;
     }
-
 
     @Override
     public INDArray isInfinite() {
@@ -551,6 +545,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public INDArray lte(Number other) {
         return null;
     }
+
     @Override
     public INDArray lt(INDArray other) {
         return null;

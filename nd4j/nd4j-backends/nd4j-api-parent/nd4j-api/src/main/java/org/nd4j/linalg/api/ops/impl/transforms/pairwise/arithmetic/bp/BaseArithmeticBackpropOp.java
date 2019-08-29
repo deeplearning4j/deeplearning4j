@@ -47,11 +47,6 @@ public abstract class BaseArithmeticBackpropOp extends BaseDynamicTransformOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape(){
-        return Nd4j.getExecutioner().calculateOutputShape(this);
-    }
-
-    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         Preconditions.checkState(dataTypes != null && dataTypes.size() == 3, "Expected exactly 3 input datatypes for %s, got input %s", getClass(), dataTypes);
         //Gradient types: same as input

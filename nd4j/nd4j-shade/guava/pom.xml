@@ -9,7 +9,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>protobuf</artifactId>
+    <artifactId>guava</artifactId>
 
     <properties>
         <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
@@ -17,28 +17,10 @@
 
     <dependencies>
         <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java</artifactId>
-            <version>3.8.0</version>
-            <!-- Without optional=true, users will still be able to import this dependency and compile, yet will get a NoClassDefFoundError at runtime -->
-            <optional>true</optional>
-        </dependency>
-        <dependency>
-            <groupId>com.google.protobuf</groupId>
-            <artifactId>protobuf-java-util</artifactId>
-            <version>3.8.0</version>
-            <optional>true</optional>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.guava</groupId>
-                    <artifactId>guava</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>26.0-android</version>
+            <version>28.0-jre</version>
+            <!-- Without optional=true, users will still be able to import this dependency and compile, yet will get a NoClassDefFoundError at runtime -->
             <optional>true</optional>
         </dependency>
     </dependencies>
@@ -79,7 +61,7 @@
 
                                 <target>
                                     <id>create-shaded-jars</id>
-                                    <dir>@rootdir@/nd4j/nd4j-shade/protobuf/</dir>
+                                    <dir>@rootdir@/nd4j/nd4j-shade/guava/</dir>
                                     <goals>clean,compile,package</goals>
                                     <properties>
                                         <skip.custom.lifecycle>true</skip.custom.lifecycle>
@@ -90,7 +72,6 @@
                             <defaultTarget>create-shaded-jars</defaultTarget>
                         </configuration>
                     </plugin>
-
                 </plugins>
             </build>
         </profile>
@@ -112,12 +93,6 @@
                 </executions>
             </plugin>
 
-
-            <!--
-            Use Maven Shade plugin to add a shaded version of the Protobuf dependencies, that can be imported by
-            including this module (org.nd4j.protobuf) as a dependency.
-            The standard com.google.protobuf dependencies will be provided, though are prefixed by org.nd4j.shade.protobuf
-            -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
@@ -134,8 +109,7 @@
                                     <resource>reference.conf</resource>
                                 </transformer>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                </transformer>
+                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer"/>
                             </transformers>
                         </configuration>
                     </execution>
@@ -163,22 +137,18 @@
 
                     <artifactSet>
                         <includes>
-                            <include>com.google.protobuf:*</include>
-                            <include>com.google.protobuf.*:*</include>
-                            <include>com.google.guava:*</include>
+                            <include>com.google.*:*</include>
                         </includes>
                     </artifactSet>
 
                     <relocations>
-                        <!-- Protobuf dependencies -->
-                        <relocation>
-                            <pattern>com.google.protobuf</pattern>
-                            <shadedPattern>org.nd4j.shade.protobuf</shadedPattern>
-                        </relocation>
-                        <!-- Guava dependencies -->
                         <relocation>
                             <pattern>com.google.common</pattern>
-                            <shadedPattern>org.nd4j.shade.protobuf.common</shadedPattern>
+                            <shadedPattern>org.nd4j.shade.guava</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.google</pattern>
+                            <shadedPattern>org.nd4j.shade</shadedPattern>
                         </relocation>
                     </relocations>
 
@@ -231,7 +201,7 @@
                             <artifactItems>
                                 <artifactItem>
                                     <groupId>org.nd4j</groupId>
-                                    <artifactId>protobuf</artifactId>
+                                    <artifactId>guava</artifactId>
                                     <version>${project.version}</version>
                                     <type>jar</type>
                                     <overWrite>false</overWrite>

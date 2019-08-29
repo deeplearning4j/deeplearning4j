@@ -16,7 +16,7 @@
 
 package org.datavec.spark.storage;
 
-import com.google.common.io.Files;
+import org.nd4j.shade.guava.io.Files;
 import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.datavec.api.writable.*;

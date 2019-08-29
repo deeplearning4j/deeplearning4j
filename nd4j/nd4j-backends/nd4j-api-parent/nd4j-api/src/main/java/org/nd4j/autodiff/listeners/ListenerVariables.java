@@ -16,7 +16,7 @@
 
 package org.nd4j.autodiff.listeners;
 
-import com.google.common.collect.Sets;
+import org.nd4j.shade.guava.collect.Sets;
 
 import java.util.Arrays;
 import java.util.HashSet;

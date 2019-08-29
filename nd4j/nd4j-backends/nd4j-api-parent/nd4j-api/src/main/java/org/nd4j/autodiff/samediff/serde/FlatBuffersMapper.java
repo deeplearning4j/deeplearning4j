@@ -16,7 +16,7 @@
 
 package org.nd4j.autodiff.samediff.serde;
 
-import com.google.common.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import java.nio.ByteOrder;
 import java.util.*;

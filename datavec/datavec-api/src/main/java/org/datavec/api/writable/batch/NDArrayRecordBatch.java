@@ -16,7 +16,7 @@
 
 package org.datavec.api.writable.batch;
 
-import com.google.common.base.Preconditions;
+import org.nd4j.shade.guava.base.Preconditions;
 import lombok.Data;
 import lombok.NonNull;
 import org.datavec.api.writable.NDArrayWritable;

@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.clustering.quadtree;
 
-import com.google.common.util.concurrent.AtomicDouble;
+import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;

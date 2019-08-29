@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.datasets.iterator.parallel;
 
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;

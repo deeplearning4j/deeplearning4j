@@ -20,7 +20,7 @@ import com.beust.jcommander.JCommander;
 import com.beust.jcommander.Parameter;
 import com.beust.jcommander.ParameterException;
 import com.beust.jcommander.Parameters;
-import com.google.common.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Ints;
 
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
