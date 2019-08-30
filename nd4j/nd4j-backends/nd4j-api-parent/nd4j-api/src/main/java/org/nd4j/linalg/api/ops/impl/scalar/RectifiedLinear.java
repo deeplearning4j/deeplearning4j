@@ -22,6 +22,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarOp;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -77,8 +78,12 @@ public class RectifiedLinear extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable step = new Step(sameDiff, arg(), false, scalarValue.getDouble(0)).outputVariables()[0];
-        SDVariable ret = step.mul(i_v.get(0));
-        return Arrays.asList(ret);
+        if(scalarValue.getDouble(0) == 0.0){
+            return Collections.singletonList(f().reluDerivative(arg(), i_v.get(0)));
+        } else {
+            SDVariable step = new Step(sameDiff, arg(), false, scalarValue.getDouble(0)).outputVariables()[0];
+            SDVariable ret = step.mul(i_v.get(0));
+            return Collections.singletonList(ret);
+        }
     }
 }

@@ -133,23 +133,8 @@ import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.HammingDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.JaccardDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
-import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
-import org.nd4j.linalg.api.ops.impl.scalar.LogX;
+import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.Pow;
-import org.nd4j.linalg.api.ops.impl.scalar.PowDerivative;
-import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
-import org.nd4j.linalg.api.ops.impl.scalar.Relu6;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseDivision;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction;
-import org.nd4j.linalg.api.ops.impl.scalar.Step;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThanOrEqual;
@@ -211,6 +196,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMean;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMin;
@@ -1338,6 +1324,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable relu(SDVariable iX, double cutoff) {
         return new RectifiedLinear(sameDiff(), iX, false, cutoff).outputVariable();
+    }
+
+    public SDVariable reluDerivative(SDVariable input, SDVariable grad){
+        return new RectifiedLinearDerivative(sameDiff(), input, grad).outputVariable();
     }
 
     public SDVariable relu6(SDVariable iX, double cutoff) {
