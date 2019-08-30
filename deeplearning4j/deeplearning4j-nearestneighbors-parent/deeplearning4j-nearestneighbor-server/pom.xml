@@ -78,24 +78,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
             <version>${google.protobuf.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.11</artifactId>
-            <version>${akka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-slf4j_2.11</artifactId>
-            <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>joda-time</groupId>
@@ -212,11 +197,6 @@
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-netty-server_2.11</artifactId>
             <version>${playframework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-cluster_2.11</artifactId>
-            <version>${akka.version}</version>
         </dependency>
     </dependencies>
 

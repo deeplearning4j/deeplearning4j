@@ -78,8 +78,9 @@ public class TestJsonYaml {
     public void testMissingPrimitives() {
 
         Schema schema = new Schema.Builder().addColumnDouble("Dbl2", null, 100.0, false, false).build();
-
-        String strJson = "{\n" + "  \"Schema\" : {\n" + "    \"columns\" : [ {\n" + "      \"Double\" : {\n"
+        //Legacy format JSON
+        String strJson = "{\n" + "  \"Schema\" : {\n"
+                        + "    \"columns\" : [ {\n" + "      \"Double\" : {\n"
                         + "        \"name\" : \"Dbl2\",\n" + "        \"maxAllowedValue\" : 100.0\n" +
                         //"        \"allowNaN\" : false,\n" +           //Normally included: but exclude here to test
                         //"        \"allowInfinite\" : false\n" +       //Normally included: but exclude here to test

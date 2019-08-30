@@ -24,8 +24,11 @@ import org.apache.commons.io.FileUtils;
 import org.datavec.api.transform.TransformProcess;
 import org.datavec.image.transform.ImageTransformProcess;
 import org.datavec.spark.transform.model.*;
+import play.BuiltInComponents;
 import play.Mode;
+import play.libs.Files;
 import play.mvc.Http;
+import play.routing.Router;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
@@ -33,6 +36,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.function.Function;
 
 import static play.mvc.Controller.request;
 import static play.mvc.Results.*;
@@ -62,8 +66,6 @@ public class ImageSparkTransformServer extends SparkTransformServer {
             System.exit(1);
         }
 
-        RoutingDsl routingDsl = new RoutingDsl();
-
         if (jsonPath != null) {
             String json = FileUtils.readFileToString(new File(jsonPath));
             ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(json);
@@ -73,7 +75,13 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                     + "to /transformprocess");
         }
 
-        routingDsl.GET("/transformprocess").routeTo(FunctionUtil.function0((() -> {
+        server = Server.forRouter(Mode.PROD, port, this::createRouter);
+    }
+
+    protected Router createRouter(BuiltInComponents builtInComponents){
+        RoutingDsl routingDsl = RoutingDsl.fromComponents(builtInComponents);
+
+        routingDsl.GET("/transformprocess").routingTo(req -> {
             try {
                 if (transform == null)
                     return badRequest();
@@ -83,11 +91,11 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 e.printStackTrace();
                 return internalServerError();
             }
-        })));
+        });
 
-        routingDsl.POST("/transformprocess").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/transformprocess").routingTo(req -> {
             try {
-                ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getJsonText());
+                ImageTransformProcess transformProcess = ImageTransformProcess.fromJson(getJsonText(req));
                 setImageTransformProcess(transformProcess);
                 log.info("Transform process initialized");
                 return ok(objectMapper.writeValueAsString(transformProcess)).as(contentType);
@@ -95,11 +103,11 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 e.printStackTrace();
                 return internalServerError();
             }
-        })));
+        });
 
-        routingDsl.POST("/transformincrementalarray").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/transformincrementalarray").routingTo(req -> {
             try {
-                SingleImageRecord record = objectMapper.readValue(getJsonText(), SingleImageRecord.class);
+                SingleImageRecord record = objectMapper.readValue(getJsonText(req), SingleImageRecord.class);
                 if (record == null)
                     return badRequest();
                 return ok(objectMapper.writeValueAsString(transformIncrementalArray(record))).as(contentType);
@@ -107,17 +115,17 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 e.printStackTrace();
                 return internalServerError();
             }
-        })));
+        });
 
-        routingDsl.POST("/transformincrementalimage").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/transformincrementalimage").routingTo(req -> {
             try {
-                Http.MultipartFormData body = request().body().asMultipartFormData();
-                List<Http.MultipartFormData.FilePart> files = body.getFiles();
-                if (files.size() == 0 || files.get(0).getFile() == null) {
+                Http.MultipartFormData<Files.TemporaryFile> body = req.body().asMultipartFormData();
+                List<Http.MultipartFormData.FilePart<Files.TemporaryFile>> files = body.getFiles();
+                if (files.isEmpty() || files.get(0).getRef() == null ) {
                     return badRequest();
                 }
 
-                File file = files.get(0).getFile();
+                File file = files.get(0).getRef().path().toFile();
                 SingleImageRecord record = new SingleImageRecord(file.toURI());
 
                 return ok(objectMapper.writeValueAsString(transformIncrementalArray(record))).as(contentType);
@@ -125,11 +133,11 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 e.printStackTrace();
                 return internalServerError();
             }
-        })));
+        });
 
-        routingDsl.POST("/transformarray").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/transformarray").routingTo(req -> {
             try {
-                BatchImageRecord batch = objectMapper.readValue(getJsonText(), BatchImageRecord.class);
+                BatchImageRecord batch = objectMapper.readValue(getJsonText(req), BatchImageRecord.class);
                 if (batch == null)
                     return badRequest();
                 return ok(objectMapper.writeValueAsString(transformArray(batch))).as(contentType);
@@ -137,22 +145,22 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 e.printStackTrace();
                 return internalServerError();
             }
-        })));
+        });
 
-        routingDsl.POST("/transformimage").routeTo(FunctionUtil.function0((() -> {
+        routingDsl.POST("/transformimage").routingTo(req -> {
             try {
-                Http.MultipartFormData body = request().body().asMultipartFormData();
-                List<Http.MultipartFormData.FilePart> files = body.getFiles();
+                Http.MultipartFormData<Files.TemporaryFile> body = req.body().asMultipartFormData();
+                List<Http.MultipartFormData.FilePart<Files.TemporaryFile>> files = body.getFiles();
                 if (files.size() == 0) {
                     return badRequest();
                 }
 
                 List<SingleImageRecord> records = new ArrayList<>();
 
-                for (Http.MultipartFormData.FilePart filePart : files) {
-                    File file = filePart.getFile();
+                for (Http.MultipartFormData.FilePart<Files.TemporaryFile> filePart : files) {
+                    Files.TemporaryFile file = filePart.getRef();
                     if (file != null) {
-                        SingleImageRecord record = new SingleImageRecord(file.toURI());
+                        SingleImageRecord record = new SingleImageRecord(file.path().toUri());
                         records.add(record);
                     }
                 }
@@ -164,9 +172,9 @@ public class ImageSparkTransformServer extends SparkTransformServer {
                 e.printStackTrace();
                 return internalServerError();
             }
-        })));
+        });
 
-        server = Server.forRouter(routingDsl.build(), Mode.PROD, port);
+        return routingDsl.build();
     }
 
     @Override

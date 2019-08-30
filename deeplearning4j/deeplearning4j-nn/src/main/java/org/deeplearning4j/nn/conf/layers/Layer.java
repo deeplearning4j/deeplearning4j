@@ -29,7 +29,6 @@ import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.dropout.IDropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializerHelper;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -45,8 +44,7 @@ import java.util.*;
  * A neural network layer.
  */
 
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-                defaultImpl = LegacyLayerDeserializerHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @Data
 @NoArgsConstructor
 public abstract class Layer implements TrainingConfig, Serializable, Cloneable {

@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.collection;
 
-import com.google.common.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Ints;
 import lombok.Getter;
 import org.nd4j.base.Preconditions;
 

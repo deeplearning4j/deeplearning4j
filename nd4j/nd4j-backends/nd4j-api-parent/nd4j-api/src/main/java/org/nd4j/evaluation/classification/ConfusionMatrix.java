@@ -16,8 +16,8 @@
 
 package org.nd4j.evaluation.classification;
 
-import com.google.common.collect.HashMultiset;
-import com.google.common.collect.Multiset;
+import org.nd4j.shade.guava.collect.HashMultiset;
+import org.nd4j.shade.guava.collect.Multiset;
 import lombok.Getter;
 
 import java.io.Serializable;

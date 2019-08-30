@@ -16,9 +16,9 @@
 
 package org.deeplearning4j.arbiter.optimize.runner;
 
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import org.nd4j.shade.guava.util.concurrent.ListenableFuture;
+import org.nd4j.shade.guava.util.concurrent.ListeningExecutorService;
+import org.nd4j.shade.guava.util.concurrent.MoreExecutors;
 import lombok.Setter;
 import org.deeplearning4j.arbiter.optimize.api.*;
 import org.deeplearning4j.arbiter.optimize.api.data.DataProvider;

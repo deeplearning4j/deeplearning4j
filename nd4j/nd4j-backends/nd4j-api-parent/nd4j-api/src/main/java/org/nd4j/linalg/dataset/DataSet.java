@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.dataset;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.base.Function;
+import org.nd4j.shade.guava.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;

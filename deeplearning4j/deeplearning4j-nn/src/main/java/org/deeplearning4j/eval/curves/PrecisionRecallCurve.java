@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.eval.curves;
 
-import com.google.common.base.Preconditions;
+import org.nd4j.shade.guava.base.Preconditions;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.EqualsAndHashCode;

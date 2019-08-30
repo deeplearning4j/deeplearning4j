@@ -36,14 +36,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <!-- These Spark version properties have to defined be here, and NOT in the deeplearning4j-parent pom. Otherwise,
-         the properties will be resolved to their defaults (and not the values present during the build). Whereas when
-         defined here (the version is spark 1 vs. 2 specific) we can have different version properties simultaneously
-          (in different pom files) instead of a single global property -->
-        <spark.version>2.1.0</spark.version>
-        <spark.major.version>2</spark.major.version>
         <datavec.spark.version>1.0.0_spark_2-SNAPSHOT</datavec.spark.version>
-
 
 
         <scala.macros.version>2.1.0</scala.macros.version>
@@ -195,21 +188,6 @@
             <version>${jaxb.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-actor_2.11</artifactId>
-            <version>${akka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-remote_2.11</artifactId>
-            <version>${akka.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-slf4j_2.11</artifactId>
-            <version>${akka.version}</version>
-        </dependency>
-        <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty</artifactId>
             <version>${netty.version}</version>
@@ -280,36 +258,6 @@
     </dependencies>
 
     <profiles>
-        <profile>
-            <id>spark-2</id>
-            <activation>
-                <property>
-                    <name>spark.major.version</name>
-                    <value>2</value>
-                </property>
-            </activation>
-            <dependencies>
-                <dependency>
-                    <groupId>com.typesafe.akka</groupId>
-                    <artifactId>akka-remote_2.11</artifactId>
-                    <version>2.3.11</version>
-                </dependency>
-            </dependencies>
-        </profile>
-        <profile>
-            <id>cdh5</id>
-            <repositories>
-                <repository>
-                    <id>org.apache.hadoop</id>
-                    <url>https://repository.cloudera.com/artifactory/cloudera-repos/</url>
-                </repository>
-            </repositories>
-            <properties>
-                <hadoop.version>2.0.0-cdh4.6.0</hadoop.version>
-                <spark.version>1.2.0-cdh5.3.0</spark.version>
-            </properties>
-        </profile>
-
         <profile>
             <id>test-nd4j-native</id>
         </profile>

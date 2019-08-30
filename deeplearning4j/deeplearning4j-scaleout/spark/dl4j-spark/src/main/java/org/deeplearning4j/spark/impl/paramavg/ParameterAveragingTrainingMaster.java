@@ -67,7 +67,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.*;
 
-import static com.google.common.base.Preconditions.checkArgument;
+import static org.nd4j.shade.guava.base.Preconditions.checkArgument;
 
 /**
  * ParameterAveragingTrainingMaster: A {@link TrainingMaster}

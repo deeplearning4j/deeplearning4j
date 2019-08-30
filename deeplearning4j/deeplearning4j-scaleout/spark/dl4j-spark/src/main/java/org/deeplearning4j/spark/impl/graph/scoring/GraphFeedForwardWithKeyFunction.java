@@ -16,11 +16,13 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.api.java.function.FlatMapFunction;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -40,48 +42,19 @@ import java.util.List;
  * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
  * @author Alex Black
  */
-public class GraphFeedForwardWithKeyFunction<K>
-                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, INDArray[]>>, K, INDArray[]> {
-
-    public GraphFeedForwardWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
-        super(new GraphFeedForwardWithKeyFunctionAdapter<K>(params, jsonConfig, batchSize));
-    }
-}
-
-
-/**
- * Function to feed-forward examples, and get the network output (for example, class probabilities).
- * A key value is used to keey track of which output corresponds to which input.
- *
- * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
- * @author Alex Black
- */
-class GraphFeedForwardWithKeyFunctionAdapter<K>
-                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, INDArray[]>>, Tuple2<K, INDArray[]>> {
-
-    protected static Logger log = LoggerFactory.getLogger(GraphFeedForwardWithKeyFunction.class);
+@Slf4j
+@AllArgsConstructor
+public class GraphFeedForwardWithKeyFunction<K> implements PairFlatMapFunction<Iterator<Tuple2<K, INDArray[]>>, K, INDArray[]> {
 
     private final Broadcast<INDArray> params;
     private final Broadcast<String> jsonConfig;
     private final int batchSize;
 
-    /**
-     * @param params     MultiLayerNetwork parameters
-     * @param jsonConfig MultiLayerConfiguration, as json
-     * @param batchSize  Batch size to use for forward pass (use > 1 for efficiency)
-     */
-    public GraphFeedForwardWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
-                    int batchSize) {
-        this.params = params;
-        this.jsonConfig = jsonConfig;
-        this.batchSize = batchSize;
-    }
-
 
     @Override
-    public Iterable<Tuple2<K, INDArray[]>> call(Iterator<Tuple2<K, INDArray[]>> iterator) throws Exception {
+    public Iterator<Tuple2<K, INDArray[]>> call(Iterator<Tuple2<K, INDArray[]>> iterator) throws Exception {
         if (!iterator.hasNext()) {
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(jsonConfig.getValue()));
@@ -129,7 +102,7 @@ class GraphFeedForwardWithKeyFunctionAdapter<K>
         }
 
         if (tupleCount == 0) {
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         List<Tuple2<K, INDArray[]>> output = new ArrayList<>(tupleCount);
@@ -198,7 +171,7 @@ class GraphFeedForwardWithKeyFunctionAdapter<K>
 
         Nd4j.getExecutioner().commit();
 
-        return output;
+        return output.iterator();
     }
 
     private INDArray getSubset(int exampleStart, int exampleEnd, INDArray from) {

@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.nn.workspace;
 
-import com.google.common.base.Preconditions;
+import org.nd4j.shade.guava.base.Preconditions;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.Setter;

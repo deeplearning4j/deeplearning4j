@@ -16,9 +16,8 @@
 
 package org.deeplearning4j.spark.api.worker;
 
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.input.PortableDataStream;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.spark.api.TrainingResult;
 import org.deeplearning4j.spark.api.TrainingWorker;
 import org.deeplearning4j.spark.iterator.PortableDataStreamDataSetIterator;
@@ -33,32 +32,15 @@ import java.util.Iterator;
  * @author Alex Black
  */
 @Deprecated
-public class ExecuteWorkerPDSFlatMap<R extends TrainingResult>
-                extends BaseFlatMapFunctionAdaptee<Iterator<PortableDataStream>, R> {
+public class ExecuteWorkerPDSFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<PortableDataStream>, R> {
+    private final FlatMapFunction<Iterator<DataSet>, R> workerFlatMap;
 
     public ExecuteWorkerPDSFlatMap(TrainingWorker<R> worker) {
-        super(new ExecuteWorkerPDSFlatMapAdapter<>(worker));
-    }
-}
-
-
-/**
- * A FlatMapFunction for executing training on serialized DataSet objects, that can be loaded using a PortableDataStream
- * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
- *
- * @author Alex Black
- */
-@Deprecated
-class ExecuteWorkerPDSFlatMapAdapter<R extends TrainingResult>
-                implements FlatMapFunctionAdapter<Iterator<PortableDataStream>, R> {
-    private final FlatMapFunctionAdapter<Iterator<DataSet>, R> workerFlatMap;
-
-    public ExecuteWorkerPDSFlatMapAdapter(TrainingWorker<R> worker) {
-        this.workerFlatMap = new ExecuteWorkerFlatMapAdapter<>(worker);
+        this.workerFlatMap = new ExecuteWorkerFlatMap<>(worker);
     }
 
     @Override
-    public Iterable<R> call(Iterator<PortableDataStream> iter) throws Exception {
+    public Iterator<R> call(Iterator<PortableDataStream> iter) throws Exception {
         return workerFlatMap.call(new PortableDataStreamDataSetIterator(iter));
     }
 }

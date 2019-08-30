@@ -21,7 +21,7 @@ import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.layers.variational.VariationalAutoencoder;
-import org.deeplearning4j.spark.impl.common.score.BaseVaeReconstructionProbWithKeyFunctionAdapter;
+import org.deeplearning4j.spark.impl.common.score.BaseVaeReconstructionProbWithKeyFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**
@@ -31,7 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
  *
  * @author Alex Black
  */
-public class CGVaeReconstructionProbWithKeyFunction<K> extends BaseVaeReconstructionProbWithKeyFunctionAdapter<K> {
+public class CGVaeReconstructionProbWithKeyFunction<K> extends BaseVaeReconstructionProbWithKeyFunction<K> {
 
 
     /**

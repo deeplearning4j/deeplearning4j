@@ -18,6 +18,7 @@ package org.deeplearning4j.arbiter.ui.misc;
 
 
 import org.nd4j.shade.jackson.annotation.JsonAutoDetect;
+import org.nd4j.shade.jackson.annotation.PropertyAccessor;
 import org.nd4j.shade.jackson.core.JsonProcessingException;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.MapperFeature;
@@ -45,12 +46,9 @@ public class JsonMapper {
         mapper.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
         mapper.configure(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY, true);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
-
-        mapper.setVisibilityChecker(mapper.getSerializationConfig().getDefaultVisibilityChecker()
-                .withFieldVisibility(JsonAutoDetect.Visibility.ANY)
-                .withGetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withSetterVisibility(JsonAutoDetect.Visibility.NONE)
-                .withCreatorVisibility(JsonAutoDetect.Visibility.NONE));
+        mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+        mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        mapper.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
 
         return mapper;
     }

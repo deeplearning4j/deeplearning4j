@@ -59,6 +59,7 @@ public class TestJson {
         om.enable(SerializationFeature.INDENT_OUTPUT);
         om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+        om.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
         return om;
     }
 

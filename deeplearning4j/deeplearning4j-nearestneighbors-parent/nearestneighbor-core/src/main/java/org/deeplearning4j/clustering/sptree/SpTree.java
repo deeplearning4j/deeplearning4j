@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.clustering.sptree;
 
-import com.google.common.util.concurrent.AtomicDouble;
+import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import lombok.val;
 import org.deeplearning4j.clustering.algorithm.Distance;
 import org.deeplearning4j.nn.conf.WorkspaceMode;

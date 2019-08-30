@@ -32,42 +32,6 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
-    <dependencyManagement>
-        <dependencies>
-            <dependency>
-                <!-- Force Jackson versions to match Spark. This usually only matters for Spark local, not Spark submit -->
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-core</artifactId>
-                <version>${spark2.jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-databind</artifactId>
-                <version>${spark2.jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.core</groupId>
-                <artifactId>jackson-annotations</artifactId>
-                <version>${spark2.jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.module</groupId>
-                <artifactId>jackson-module-scala_${scala.binary.version}</artifactId>
-                <version>${spark2.jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.datatype</groupId>
-                <artifactId>jackson-datatype-jdk8</artifactId>
-                <version>${spark2.jackson.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>com.fasterxml.jackson.datatype</groupId>
-                <artifactId>jackson-datatype-jsr310</artifactId>
-                <version>${spark2.jackson.version}</version>
-            </dependency>
-        </dependencies>
-    </dependencyManagement>
-
     <dependencies>
         <dependency>
             <groupId>org.nd4j</groupId>

@@ -16,7 +16,7 @@
 
 package org.nd4j.parameterserver.distributed.v2.transport.impl;
 
-import com.google.common.math.IntMath;
+import org.nd4j.shade.guava.math.IntMath;
 import io.aeron.Aeron;
 import io.aeron.FragmentAssembler;
 import io.aeron.Publication;

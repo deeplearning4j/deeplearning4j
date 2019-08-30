@@ -16,7 +16,7 @@
 
 package org.datavec.hadoop.records.reader;
 
-import com.google.common.io.Files;
+import org.nd4j.shade.guava.io.Files;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.Path;
 import org.apache.hadoop.io.*;

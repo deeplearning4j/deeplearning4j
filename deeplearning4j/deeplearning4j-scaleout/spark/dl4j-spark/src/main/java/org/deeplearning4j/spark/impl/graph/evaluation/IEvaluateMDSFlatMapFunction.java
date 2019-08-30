@@ -17,12 +17,10 @@
 package org.deeplearning4j.spark.impl.graph.evaluation;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.deeplearning4j.spark.impl.evaluation.EvaluationRunner;
 import org.nd4j.evaluation.IEvaluation;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.util.Collections;
@@ -36,26 +34,7 @@ import java.util.concurrent.Future;
  *
  * @author Alex Black
  */
-public class IEvaluateMDSFlatMapFunction<T extends IEvaluation>
-                extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, T[]> {
-
-    public IEvaluateMDSFlatMapFunction(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers, int evalBatchSize,
-                    T... evaluations) {
-        super(new IEvaluateMDSFlatMapFunctionAdapter<>(json, params, evalNumWorkers, evalBatchSize, evaluations));
-    }
-}
-
-
-/**
- * Function to evaluate data (using an IEvaluation instance), in a distributed manner
- * Flat map function used to batch examples for computational efficiency + reduce number of IEvaluation objects returned
- * for network efficiency.
- *
- * @author Alex Black
- */
-@Slf4j
-class IEvaluateMDSFlatMapFunctionAdapter<T extends IEvaluation>
-                implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, T[]> {
+public class IEvaluateMDSFlatMapFunction<T extends IEvaluation> implements FlatMapFunction<Iterator<MultiDataSet>, T[]> {
 
     protected Broadcast<String> json;
     protected Broadcast<byte[]> params;
@@ -70,7 +49,7 @@ class IEvaluateMDSFlatMapFunctionAdapter<T extends IEvaluation>
      *                              this. Used to avoid doing too many at once (and hence memory issues)
      * @param evaluations Initial evaulation instance (i.e., empty Evaluation or RegressionEvaluation instance)
      */
-    public IEvaluateMDSFlatMapFunctionAdapter(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers,
+    public IEvaluateMDSFlatMapFunction(Broadcast<String> json, Broadcast<byte[]> params, int evalNumWorkers,
                                               int evalBatchSize, T[] evaluations) {
         this.json = json;
         this.params = params;
@@ -80,13 +59,13 @@ class IEvaluateMDSFlatMapFunctionAdapter<T extends IEvaluation>
     }
 
     @Override
-    public Iterable<T[]> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
+    public Iterator<T[]> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         if (!dataSetIterator.hasNext()) {
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         Future<IEvaluation[]> f = EvaluationRunner.getInstance().execute(
@@ -94,9 +73,9 @@ class IEvaluateMDSFlatMapFunctionAdapter<T extends IEvaluation>
 
         IEvaluation[] result = f.get();
         if(result == null){
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         } else {
-            return Collections.singletonList((T[])result);
+            return Collections.singletonList((T[])result).iterator();
         }
     }
 }

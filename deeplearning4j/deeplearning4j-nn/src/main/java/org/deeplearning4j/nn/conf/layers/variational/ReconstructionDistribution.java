@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.nn.conf.layers.variational;
 
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyReconstructionDistributionDeserializerHelper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonSubTypes;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -32,8 +31,7 @@ import java.io.Serializable;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-                defaultImpl = LegacyReconstructionDistributionDeserializerHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface ReconstructionDistribution extends Serializable {
 
     /**

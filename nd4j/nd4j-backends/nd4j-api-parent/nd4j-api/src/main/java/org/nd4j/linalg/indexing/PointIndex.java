@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.indexing;
 
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.api.ndarray.INDArray;
 

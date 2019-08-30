@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.dataset;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import org.nd4j.shade.guava.collect.Lists;
+import org.nd4j.shade.guava.collect.Maps;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;

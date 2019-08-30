@@ -21,9 +21,10 @@ import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.analysis.columns.ColumnAnalysis;
 import org.datavec.api.transform.analysis.sequence.SequenceLengthAnalysis;
 import org.datavec.api.transform.schema.Schema;
+import org.datavec.api.transform.serde.JsonMappers;
 import org.datavec.api.transform.serde.JsonSerializer;
 import org.datavec.api.transform.serde.YamlSerializer;
-import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 
 import java.io.IOException;
 import java.util.List;
@@ -50,6 +51,16 @@ public class SequenceDataAnalysis extends DataAnalysis {
     public static SequenceDataAnalysis fromJson(String json){
         try{
             return new JsonSerializer().getObjectMapper().readValue(json, SequenceDataAnalysis.class);
+        } catch (InvalidTypeIdException e){
+            if(e.getMessage().contains("@class")){
+                try{
+                    //JSON may be legacy (1.0.0-alpha or earlier), attempt to load it using old format
+                    return JsonMappers.getLegacyMapper().readValue(json, SequenceDataAnalysis.class);
+                } catch (IOException e2){
+                    throw new RuntimeException(e2);
+                }
+            }
+            throw new RuntimeException(e);
         } catch (IOException e){
             throw new RuntimeException(e);
         }

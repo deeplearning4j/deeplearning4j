@@ -16,10 +16,10 @@
 
 package org.nd4j.autodiff.listeners.records;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.Collections2;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.base.Predicates;
+import org.nd4j.shade.guava.collect.Collections2;
+import org.nd4j.shade.guava.collect.ImmutableMap;
+import org.nd4j.shade.guava.collect.Lists;
 
 import java.util.ArrayList;
 import java.util.Collection;

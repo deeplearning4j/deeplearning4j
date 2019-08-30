@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.indexing;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;

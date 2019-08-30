@@ -16,7 +16,7 @@
 
 package org.nd4j.evaluation.custom;
 
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;

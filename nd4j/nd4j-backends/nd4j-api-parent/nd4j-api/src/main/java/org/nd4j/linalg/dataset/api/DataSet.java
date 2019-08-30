@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.dataset.api;
 
-import com.google.common.base.Function;
+import org.nd4j.shade.guava.base.Function;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.SplitTestAndTrain;

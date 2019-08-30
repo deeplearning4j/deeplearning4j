@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.models.embeddings.wordvectors;
 
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.models.embeddings.WeightLookupTable;
 import org.deeplearning4j.models.sequencevectors.sequence.SequenceElement;

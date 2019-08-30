@@ -18,9 +18,9 @@ package org.nd4j.imports.graphmapper.onnx;
 
 import org.nd4j.shade.protobuf.ByteString;
 import org.nd4j.shade.protobuf.Message;
-import com.google.common.primitives.Floats;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Floats;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;

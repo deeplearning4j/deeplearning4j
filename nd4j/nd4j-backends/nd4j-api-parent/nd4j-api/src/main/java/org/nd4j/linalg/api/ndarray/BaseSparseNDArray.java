@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.api.ndarray;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.ericaro.neoitertools.Generator;

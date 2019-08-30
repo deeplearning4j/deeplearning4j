@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.spark.api.worker;
 
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import lombok.AllArgsConstructor;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.nd4j.linalg.dataset.AsyncMultiDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorMultiDataSetIterator;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -39,31 +39,13 @@ import java.util.Iterator;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerMultiDataSetFlatMap<R extends TrainingResult>
-                extends BaseFlatMapFunctionAdaptee<Iterator<MultiDataSet>, R> {
-
-    public ExecuteWorkerMultiDataSetFlatMap(TrainingWorker<R> worker) {
-        super(new ExecuteWorkerMultiDataSetFlatMapAdapter<>(worker));
-    }
-}
-
-
-/**
- * A FlatMapFunction for executing training on MultiDataSets. Used only in SparkComputationGraph implementation.
- *
- * @author Alex Black
- */
-class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult>
-                implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, R> {
+@AllArgsConstructor
+public class ExecuteWorkerMultiDataSetFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<MultiDataSet>, R> {
 
     private final TrainingWorker<R> worker;
 
-    public ExecuteWorkerMultiDataSetFlatMapAdapter(TrainingWorker<R> worker) {
-        this.worker = worker;
-    }
-
     @Override
-    public Iterable<R> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
+    public Iterator<R> call(Iterator<MultiDataSet> dataSetIterator) throws Exception {
         WorkerConfiguration dataConfig = worker.getDataConfiguration();
 
         boolean stats = dataConfig.isCollectTrainingStats();
@@ -75,7 +57,7 @@ class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult>
             if (stats)
                 s.logReturnTime();
             //TODO return the results...
-            return Collections.emptyList(); //Sometimes: no data
+            return Collections.emptyIterator(); //Sometimes: no data
         }
 
         int batchSize = dataConfig.getBatchSizePerWorker();
@@ -118,13 +100,13 @@ class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult>
                         SparkTrainingStats returnStats = s.build(workerStats);
                         result.getFirst().setStats(returnStats);
 
-                        return Collections.singletonList(result.getFirst());
+                        return Collections.singletonList(result.getFirst()).iterator();
                     }
                 } else {
                     R result = worker.processMinibatch(next, net, !batchedIterator.hasNext());
                     if (result != null) {
                         //Terminate training immediately
-                        return Collections.singletonList(result);
+                        return Collections.singletonList(result).iterator();
                     }
                 }
             }
@@ -134,9 +116,9 @@ class ExecuteWorkerMultiDataSetFlatMapAdapter<R extends TrainingResult>
                 s.logReturnTime();
                 Pair<R, SparkTrainingStats> pair = worker.getFinalResultWithStats(net);
                 pair.getFirst().setStats(s.build(pair.getSecond()));
-                return Collections.singletonList(pair.getFirst());
+                return Collections.singletonList(pair.getFirst()).iterator();
             } else {
-                return Collections.singletonList(worker.getFinalResult(net));
+                return Collections.singletonList(worker.getFinalResult(net)).iterator();
             }
         } finally {
             Nd4j.getExecutioner().commit();
