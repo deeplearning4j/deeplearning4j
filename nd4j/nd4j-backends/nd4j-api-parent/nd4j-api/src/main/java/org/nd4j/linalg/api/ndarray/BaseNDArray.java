@@ -1711,16 +1711,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return result;
     }
 
-
-
-    /**
-     * Returns the element at the specified row/column
-     * This will throw an exception if the
-     *
-     * @param row    the row of the element to return
-     * @param column the row of the element to return
-     * @return a scalar indarray of the element at this index
-     */
     @Override
     public INDArray getScalar(long row, long column) {
         return getScalar(new long[] {row, column});
@@ -1885,27 +1875,20 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    /**
-     * Inserts the element at the specified index
-     *
-     * @param indices the indices to insert into
-     * @param element a scalar ndarray
-     * @return a scalar ndarray of the element at this index
-     */
     @Override
     public INDArray put(int[] indices, INDArray element) {
         Nd4j.getCompressor().autoDecompress(this);
         if (!element.isScalar())
             throw new IllegalArgumentException("Unable to insert anything but a scalar");
         if (isRowVector() && indices[0] == 0 && indices.length == 2) {
-            int ix = 0; //Shape.offset(javaShapeInformation);
+            int ix = 0;
             for (int i = 1; i < indices.length; i++)
                 ix += indices[i] * stride(i);
             if (ix >= data.length())
                 throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
             data.put(ix, element.getDouble(0));
         } else {
-            int ix = 0; //Shape.offset(javaShapeInformation);
+            int ix = 0;
             for (int i = 0; i < indices.length; i++)
                 if (size(i) != 1)
                     ix += indices[i] * stride(i);
@@ -1913,10 +1896,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 throw new IllegalArgumentException("Illegal indices " + Arrays.toString(indices));
             data.put(ix, element.getDouble(0));
         }
-
-
         return this;
-
     }
 
     @Override
@@ -1970,39 +1950,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return putWhereWithMask(mask,Nd4j.scalar(put));
     }
 
-    /**
-     * Inserts the element at the specified index
-     *
-     * @param i       the row insert into
-     * @param j       the column to insert into
-     * @param element a scalar ndarray
-     * @return a scalar ndarray of the element at this index
-     */
     @Override
     public INDArray put(int i, int j, INDArray element) {
         return put(new int[] {i, j}, element);
     }
 
-    /**
-     * Inserts the element at the specified index
-     *
-     * @param i       the row insert into
-     * @param j       the column to insert into
-     * @param element a scalar ndarray
-     * @return a scalar ndarray of the element at this index
-     */
     @Override
     public INDArray put(int i, int j, Number element) {
         return putScalar(new int[] {i, j}, element.doubleValue());
     }
 
-    /**
-     * Assigns the given matrix (put) to the specified slice
-     *
-     * @param slice the slice to assign
-     * @param put   the slice to put
-     * @return this for chainability
-     */
     @Override
     public INDArray putSlice(int slice, INDArray put) {
         Nd4j.getCompressor().autoDecompress(this);
@@ -2102,10 +2059,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getStrides(shape, ordering);
     }
 
-
-    /**
-     * Returns the square of the Euclidean distance.
-     */
     @Override
     public double squaredDistance(INDArray other) {
         validateNumericalArray("squaredDistance", false);
@@ -2113,9 +2066,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return d2 * d2;
     }
 
-    /**
-     * Returns the (euclidean) distance.
-     */
     @Override
     public double distance2(INDArray other) {
         validateNumericalArray("distance2", false);
@@ -2123,17 +2073,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(this, other)).getFinalResult().doubleValue();
     }
 
-    /**
-     * Returns the (1-norm) distance.
-     */
     @Override
     public double distance1(INDArray other) {
         validateNumericalArray("distance1", false);
         Nd4j.getCompressor().autoDecompress(this);
         return Nd4j.getExecutioner().execAndReturn(new ManhattanDistance(this, other)).getFinalResult().doubleValue();
     }
-
-
 
     @Override
     public INDArray get(INDArray indices) {
@@ -2191,49 +2136,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public INDArray get(List<List<Integer>> indices) {
-        INDArrayIndex[] indArrayIndices = new INDArrayIndex[indices.size()];
-        for(int i = 0; i < indArrayIndices.length; i++) {
-            indArrayIndices[i] = new SpecifiedIndex(Ints.toArray(indices.get(i)));
-        }
-
-        boolean hasNext = true;
-        Generator<List<List<Long>>> iterate = SpecifiedIndex.iterate(indArrayIndices);
-        List<INDArray> resultList = new ArrayList<>();
-        while(hasNext) {
-            try {
-                List<List<Long>> next = iterate.next();
-                int[][] nextArr = new int[next.size()][];
-                for(int i = 0; i < next.size(); i++) {
-                    nextArr[i] = Ints.toArray(next.get(i));
-                }
-
-                int[] curr = Ints.concat(nextArr);
-                INDArray currSlice = this;
-                for(int j = 0; j < curr.length; j++) {
-                    currSlice = currSlice.slice(curr[j]);
-                }
-
-                //slice drops the first dimension, this adds a 1 to match normal numpy behavior
-                currSlice = currSlice.reshape(Longs.concat(new long[]{1},currSlice.shape()));
-
-                resultList.add(currSlice);
-
-
-            }
-            catch(NoSuchElementException e) {
-                hasNext = false;
-            }
-        }
-
-
-
-
-        return Nd4j.concat(0,resultList.toArray(new INDArray[resultList.size()]));
-    }
-
-
-    @Override
     public INDArray put(INDArray indices, INDArray element) {
         if(indices.rank() > 2) {
             throw new ND4JIllegalArgumentException("Indices must be a vector or matrix.");
@@ -2245,7 +2147,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 int[] specifiedIndex = indices.getColumn(i).dup().data().asInt();
                 putScalar(specifiedIndex,element.getDouble(ndIndexIterator.next()));
             }
-
         }
         else {
             List<INDArray> arrList = new ArrayList<>();
@@ -2258,8 +2159,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                         Nd4j.getExecutioner().execAndReturn(new Assign(new INDArray[]{slice,element},new INDArray[]{slice}));
                         arrList.add(slice(row.getInt(j)));
                     }
-
-
                 }
             }
             else if(indices.isRowVector()) {
@@ -2267,14 +2166,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                     arrList.add(slice(indices.getInt(i)));
                 }
             }
-
         }
-
-
         return this;
-
     }
-
 
     @Override
     public INDArray put(INDArrayIndex[] indices, INDArray element) {
@@ -2342,7 +2236,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             get.putScalar(i, element.doubleValue());
         return this;
     }
-
 
     /**
      * Mainly here for people coming from numpy.
@@ -2446,7 +2339,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return ret;
     }
 
-
     protected void init(int[] shape, int[] stride) {
         //null character
         if (shapeInformation == null || jvmShapeInfo == null || ordering() == '\u0000') {
@@ -2465,7 +2357,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
 
     }
-
 
     @Override
     public INDArray getScalar(long i) {
@@ -2936,13 +2827,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return dup().rsubiRowVector(rowVector);
     }
 
-    /**
-     * Inserts the element at the specified index
-     *
-     * @param i       the index insert into
-     * @param element a scalar ndarray
-     * @return a scalar ndarray of the element at this index
-     */
     @Override
     public INDArray put(int i, INDArray element) {
         Preconditions.checkArgument(element.isScalar(), "Element must be a scalar: element has shape %ndShape", element);
@@ -3706,12 +3590,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return normmax(false, dimension);
     }
 
-    /**
-     * Reverse division
-     *
-     * @param other the matrix to divide from
-     * @return
-     */
     @Override
     public INDArray rdiv(INDArray other) {
         validateNumericalArray("rdiv", false);
@@ -3722,37 +3600,17 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
-    /**
-     * Reverse divsion (in place)
-     *
-     * @param other
-     * @return
-     */
     @Override
     public INDArray rdivi(INDArray other) {
         return rdivi(other, this);
     }
 
-    /**
-     * Reverse division
-     *
-     * @param other  the matrix to subtract from
-     * @param result the result ndarray
-     * @return
-     */
     @Override
     public INDArray rdiv(INDArray other, INDArray result) {
         validateNumericalArray("rdiv", false);
         return dup().rdivi(other, result);
     }
 
-    /**
-     * Reverse division (in-place)
-     *
-     * @param other  the other ndarray to subtract
-     * @param result the result ndarray
-     * @return the ndarray with the operation applied
-     */
     @Override
     public INDArray rdivi(INDArray other, INDArray result) {
         validateNumericalArray("rdivi", false);
@@ -3761,23 +3619,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return result;
     }
 
-    /**
-     * Reverse subtraction
-     *
-     * @param other  the matrix to subtract from
-     * @param result the result ndarray
-     * @return
-     */
     @Override
     public INDArray rsub(INDArray other, INDArray result) {
         validateNumericalArray("rsub", false);
         return rsubi(other, result);
     }
 
-    /**
-     * @param other
-     * @return
-     */
     @Override
     public INDArray rsub(INDArray other) {
         validateNumericalArray("rsub", false);
@@ -3788,22 +3635,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
-    /**
-     * @param other
-     * @return
-     */
     @Override
     public INDArray rsubi(INDArray other) {
         return rsubi(other, this);
     }
 
-    /**
-     * Reverse subtraction (in-place)
-     *
-     * @param other  the other ndarray to subtract
-     * @param result the result ndarray
-     * @return the ndarray with the operation applied
-     */
     @Override
     public INDArray rsubi(INDArray other, INDArray result) {
         validateNumericalArray("rsubi", false);
@@ -3812,12 +3648,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return result;
     }
 
-    /**
-     * Set the value of the ndarray to the specified value
-     *
-     * @param value the value to assign
-     * @return the ndarray with the values
-     */
     @Override
     public INDArray assign(Number value) {
         Preconditions.checkState(dataType() != DataType.BOOL || value.doubleValue() == 0.0 || value.doubleValue() == 1.0, "Only values 0 or 1 are allowed for scalar " +
@@ -3825,7 +3655,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         Nd4j.getExecutioner().exec(new ScalarSet(this, value));
         return this;
     }
-
 
     @Override
     public INDArray assign(boolean value) {
@@ -3846,7 +3675,7 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    @Deprecated
+    @Deprecated  //TODO: Investigate. Not deprecated in the base interface.
     public long linearIndex(long i) {
         long idx = i;
         for (int j = 0; j < jvmShapeInfo.rank - 1; j++) {
@@ -4073,15 +3902,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return addi(n, this);
     }
 
-
-
-    /**
-     * Replicate and tile array to fill out to the given shape
-     * See:
-     * https://github.com/numpy/numpy/blob/master/numpy/matlib.py#L310-L358
-     * @param shape the new shape of this ndarray
-     * @return the shape to fill out to
-     */
     @Override
     public INDArray repmat(int[] shape) {
         Nd4j.getCompressor().autoDecompress(this);
@@ -4109,16 +3929,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return out;
     }
 
-
-    /**
-     * Insert a row in to this array
-     * Will throw an exception if this
-     * ndarray is not a matrix
-     *
-     * @param row   the row insert into
-     * @param toPut the row to insert
-     * @return this
-     */
     @Override
     public INDArray putRow(long row, INDArray toPut) {
         if (isRowVector() && toPut.isVector()) {
@@ -4127,15 +3937,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return put(new INDArrayIndex[] {NDArrayIndex.point(row), NDArrayIndex.all()}, toPut);
     }
 
-    /**
-     * Insert a column in to this array
-     * Will throw an exception if this
-     * ndarray is not a matrix
-     *
-     * @param column the column to insert
-     * @param toPut  the array to put
-     * @return this
-     */
     @Override
     public INDArray putColumn(int column, INDArray toPut) {
         Nd4j.getCompressor().autoDecompress(this);
@@ -4752,11 +4553,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return reshape(length());
     }
 
-    /**
-     * Flattens the array for linear indexing
-     *
-     * @return the flattened version of this array
-     */
     @Override
     public void sliceVectors(List<INDArray> list) {
         if (isVector())
@@ -4804,12 +4600,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return col.reshape(col.length(), 1);
     }
 
-
-    /**
-     * Get whole rows from the passed indices.
-     *
-     * @param rindices
-     */
     @Override
     public INDArray getRows(int[] rindices) {
         Nd4j.getCompressor().autoDecompress(this);
@@ -4826,13 +4616,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
-    /**
-     * Returns a subset of this array based on the specified
-     * indexes
-     *
-     * @param indexes the indexes in to the array
-     * @return a view of the array with the specified indices
-     */
     @Override
     public INDArray get(INDArrayIndex... indexes) {
         Nd4j.getCompressor().autoDecompress(this);
@@ -5020,13 +4803,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return out;
     }
 
-
-    /**
-     * Get whole columns
-     * from the passed indices.
-     *
-     * @param cindices
-     */
     @Override
     public INDArray getColumns(int... cindices) {
         if (!isMatrix() && !isVector())

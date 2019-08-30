@@ -568,13 +568,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return this;
     }
 
-    /**
-     * Returns a subset of this array based on the specified
-     * indexes
-     *
-     * @param indexes the indexes in to the array
-     * @return a view of the array with the specified indices
-     */
     @Override
     public INDArray get(INDArrayIndex... indexes) {
 

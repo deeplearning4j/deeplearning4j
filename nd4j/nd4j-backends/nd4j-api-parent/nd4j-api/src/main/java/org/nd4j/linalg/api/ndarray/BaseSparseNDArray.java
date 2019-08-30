@@ -153,7 +153,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                             arrList.set(j,put);
                         }
                     }
-
                 }
             }
             else if(indices.isRowVector()) {
@@ -161,12 +160,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                     arrList.add(slice(indices.getInt(i)));
                 }
             }
-
             return Nd4j.concat(0,arrList.toArray(new INDArray[arrList.size()]));
-
         }
-
-
     }
 
     @Override
@@ -260,20 +255,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray get(List<List<Integer>> indices) {
-        return null;
-    }
-
-    @Override
     public INDArray put(INDArray indices, INDArray element) {
         INDArrayIndex[] realIndices = new INDArrayIndex[indices.rank()];
         for(int i = 0; i < realIndices.length; i++) {
             realIndices[i] = new SpecifiedIndex(indices.slice(i).dup().data().asInt());
         }
-
-
         return put(realIndices,element);
-
     }
 
     @Override
