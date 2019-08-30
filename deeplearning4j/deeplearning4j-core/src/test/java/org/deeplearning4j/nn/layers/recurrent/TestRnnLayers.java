@@ -229,7 +229,9 @@ public class TestRnnLayers extends BaseDL4JTest {
                 net.fit(in,l);
             } catch (Throwable t){
                 String msg = t.getMessage();
-                assertTrue(msg, msg.contains("sequence length") && msg.contains("input") && msg.contains("label"));
+                if(msg == null)
+                    t.printStackTrace();
+                assertTrue(msg, msg != null && msg.contains("sequence length") && msg.contains("input") && msg.contains("label"));
             }
 
         }
