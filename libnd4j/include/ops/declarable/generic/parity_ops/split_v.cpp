@@ -46,7 +46,7 @@ namespace ops {
         int pos = 0;
         std::vector<Nd4jLong> indices(2 * input->rankOf());
         
-        for (int e = 0; e < sizes->lengthOf(); e++) {
+        for (Nd4jLong e = 0; e < sizes->lengthOf(); e++) {
             int c_size = sizes->e<int>(e);
             
             for (int d = 0; d < input->rankOf(); d++) {
@@ -103,7 +103,7 @@ namespace ops {
         
         auto length = sizes->lengthOf();
         int pos = 0;
-        for (int e = 0; e < length; e++) {
+        for (Nd4jLong e = 0; e < length; e++) {
             int c_size = sizes->e<int>(e);
             
 

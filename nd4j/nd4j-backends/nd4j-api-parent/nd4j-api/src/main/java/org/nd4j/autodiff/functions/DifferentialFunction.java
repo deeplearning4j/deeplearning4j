@@ -16,17 +16,16 @@
 
 package org.nd4j.autodiff.functions;
 
-import com.rits.cloning.Cloner;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
-import org.nd4j.graph.DataType;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
@@ -102,10 +101,10 @@ public abstract class DifferentialFunction {
 
     /**
      * Initialize the function from the given
-     * {@link onnx.OnnxProto3.NodeProto}
+     * {@link onnx.Onnx.NodeProto}
      * @param node
      */
-    public DifferentialFunction(SameDiff sameDiff,onnx.OnnxProto3.NodeProto node,Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public DifferentialFunction(SameDiff sameDiff,onnx.Onnx.NodeProto node,Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         this.sameDiff = sameDiff;
         setInstanceId();
         initFromOnnx(node, sameDiff, attributesForNode, graph);
@@ -520,7 +519,7 @@ public abstract class DifferentialFunction {
      * @return the arguments for a given function
      */
     public  SDVariable[] args() {
-        return sameDiff.getInputVariablesForFunction(this);
+        return sameDiff.getInputVariablesForOp(this);
     }
 
     /**
@@ -657,23 +656,11 @@ public abstract class DifferentialFunction {
             if(sameDiff == null)
                 this.ownName = UUID.randomUUID().toString();
             else {
-                int argIndex = 0;
-                String scope = sameDiff.currentNameScope();
-                if(scope == null)
-                    scope = "";
-                else
-                    scope = scope + "/";
-                String varName = scope + sameDiff.generateNewVarName(opName(),argIndex);
-                while(sameDiff.functionExists(varName)) {
-                    varName = scope + sameDiff.generateNewVarName(opName(), argIndex);
-                    argIndex++;
-                }
-
-                this.ownName = varName;
+                this.ownName = sameDiff.getOpName(opName());
             }
 
-            if(sameDiff != null && !(this instanceof SDVariable))
-                sameDiff.putFunctionForId(ownName,this);
+            if(sameDiff != null)
+                sameDiff.putOpForId(ownName,this);
         }
     }
 
@@ -744,13 +731,13 @@ public abstract class DifferentialFunction {
 
     /**
      * Iniitialize the function from the given
-     * {@link onnx.OnnxProto3.NodeProto}
+     * {@link onnx.Onnx.NodeProto}
      * @param node
      * @param initWith
      * @param attributesForNode
      * @param graph
      */
-    public abstract void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph);
+    public abstract void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph);
 
 
 
@@ -785,8 +772,7 @@ public abstract class DifferentialFunction {
      * @return
      */
     public  DifferentialFunction dup() {
-        Cloner cloner = SameDiff.newCloner();
-        return cloner.deepClone(this);
+        return FlatBuffersMapper.cloneViaSerialize(sameDiff, this);
     }
 
 

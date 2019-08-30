@@ -100,19 +100,12 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
             input->syncToDevice();
 
         diagPartFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), outLen, inLen);
-//        int i(0), j;
-//        for (j = 0;j < outLen; j++) {
-//            output->p(j, input->e(i));
-//            i += outLen + 1;
-//        }
-
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _diagPartFunctor, (nd4j::LaunchContext * context, const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
     void diagPartFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output) {
         auto zType = output->dataType();
-        BUILD_SINGLE_SELECTOR(zType, _diagPartFunctor, (context, input, output), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(zType, _diagPartFunctor, (context, input, output), NUMERIC_TYPES);
 
     }
 

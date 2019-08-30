@@ -33,7 +33,6 @@ import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOpDescriptor;
-import org.nd4j.linalg.api.ops.DefaultOpConverter;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.custom.BarnesEdgeForces;
 import org.nd4j.linalg.api.ops.custom.BarnesHutGains;
@@ -80,7 +79,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.Not;
-import org.nd4j.linalg.api.ops.impl.transforms.segment.UnsortedSegmentMax;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.GELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELUDerivative;
@@ -95,7 +93,6 @@ import org.nd4j.linalg.api.ops.random.impl.Linspace;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Function;
-import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.primitives.Pair;
 import org.tensorflow.framework.OpDef;
@@ -465,13 +462,16 @@ public class OpValidation {
         //i.e., don't double count if a SameDiff instance has multiple copies of the same op type
 
         //Collect coverage information for backprop:
-        DifferentialFunction[] functions = sd.functions();
+        DifferentialFunction[] functions = sd.ops();
         Set<Class> backpropSeen = new HashSet<>();
         for (DifferentialFunction df : functions) {
             backpropSeen.add(df.getClass());
         }
         for (Class c : backpropSeen) {
-            gradCheckCoverageCountPerClass.put(c, gradCheckCoverageCountPerClass.get(c) + 1);
+            if(gradCheckCoverageCountPerClass.containsKey(c))
+                gradCheckCoverageCountPerClass.put(c, gradCheckCoverageCountPerClass.get(c) + 1);
+            else
+                gradCheckCoverageCountPerClass.put(c, 1);
         }
 
         //Collect coverage information for forward pass (expected outputs)
@@ -479,7 +479,7 @@ public class OpValidation {
         if (testCase.fwdTestFns() != null) {
             for (String s : testCase.fwdTestFns().keySet()) {
                 //Determine the differential function that this variable is the output of, if any
-                DifferentialFunction df = sd.getVariableOutputFunction(s);
+                DifferentialFunction df = sd.getVariableOutputOp(s);
                 if (df != null) {
                     if (seen == null)
                         seen = new HashSet<>();
@@ -491,15 +491,23 @@ public class OpValidation {
 
         if (seen != null) {
             for (Class c : seen) {
-                fwdPassCoverageCountPerClass.put(c, fwdPassCoverageCountPerClass.get(c) + 1);
+                if(fwdPassCoverageCountPerClass.containsKey(c)) {
+                    fwdPassCoverageCountPerClass.put(c, fwdPassCoverageCountPerClass.get(c) + 1);
+                } else {
+                    fwdPassCoverageCountPerClass.put(c, 1);
+                }
             }
         }
     }
 
     private static void collectCoverageInformation(OpTestCase testCase) {
         //TODO we're basically assuming subtypes of DynamicCustomOp here, for coverage... not DCO itself
-        singleOpTestCountPerClass.put(testCase.op().getClass(),
-                singleOpTestCountPerClass.get(testCase.op().getClass()) + 1);
+        if(singleOpTestCountPerClass.containsKey(testCase.op().getClass())) {
+            singleOpTestCountPerClass.put(testCase.op().getClass(),
+                    singleOpTestCountPerClass.get(testCase.op().getClass()) + 1);
+        } else {
+            singleOpTestCountPerClass.put(testCase.op().getClass(), 1);
+        }
     }
 
 
@@ -827,7 +835,6 @@ public class OpValidation {
                 //Exclude misc
                 DynamicCustomOp.class,
                 GradientBackwardsMarker.class,
-                DefaultOpConverter.class,
                 EqualsWithEps.class,
                 FreeGridOp.class,
                 MergeSum.class, //Redundant; we use MergeAdd in samediff instead
@@ -835,7 +842,6 @@ public class OpValidation {
                 RestoreV2.class,
                 SaveV2.class,
                 ScalarSetValue.class,   //Not used in SameDiff (it's a "set to X if less than X" type op, redundant given other ops)
-                LegacyPooling2D.class,  //Deprecated; not used in samediff
                 BinomialDistributionEx.class,   //Redundant?
 
                 //Exclude manual broadcast ops: SameDiff uses auto broadcasting
@@ -904,7 +910,6 @@ public class OpValidation {
                 Conv2DDerivative.class,
                 Conv3DDerivative.class,
                 DeConv2DDerivative.class,
-                FullConv3DDerivative.class,
                 LocalResponseNormalizationDerivative.class,
                 Pooling2DDerivative.class,
                 Pooling3DDerivative.class,

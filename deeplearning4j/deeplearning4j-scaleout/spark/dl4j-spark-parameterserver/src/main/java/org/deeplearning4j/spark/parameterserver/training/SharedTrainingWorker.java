@@ -86,7 +86,7 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
 
         // This method will be called ONLY once, in master thread
         //Before getting NetBroadcastTuple, to ensure it always gets mapped to device 0
-        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
+        Nd4j.getAffinityManager().unsafeSetDevice(0);
 
         NetBroadcastTuple tuple = broadcastModel.getValue();
         if (tuple.getConfiguration() != null) {
@@ -109,7 +109,7 @@ public class SharedTrainingWorker extends BaseTrainingWorker<SharedTrainingResul
     @Override
     public ComputationGraph getInitialModelGraph() {
         //Before getting NetBroadcastTuple, to ensure it always gets mapped to device 0
-        Nd4j.getAffinityManager().attachThreadToDevice(Thread.currentThread(), 0);
+        Nd4j.getAffinityManager().unsafeSetDevice(0);
         NetBroadcastTuple tuple = broadcastModel.getValue();
         if (tuple.getGraphConfiguration() != null) {
             ComputationGraphConfiguration conf = tuple.getGraphConfiguration();

@@ -253,7 +253,7 @@ DECLARE_SHAPE_FN(gruCell_bp) {
     Nd4jLong *dLdbcShapeInfo = nullptr;
     COPY_SHAPE(bcShapeInfo, dLdbcShapeInfo);
 
-    return SHAPELIST(dLdxShapeInfo, dLdhiShapeInfo, dLdWShapeInfo, dLdWcShapeInfo, dLdbShapeInfo, dLdbcShapeInfo);
+    return SHAPELIST(CONSTANT(dLdxShapeInfo), CONSTANT(dLdhiShapeInfo), CONSTANT(dLdWShapeInfo), CONSTANT(dLdWcShapeInfo), CONSTANT(dLdbShapeInfo), CONSTANT(dLdbcShapeInfo));
 }
 
 

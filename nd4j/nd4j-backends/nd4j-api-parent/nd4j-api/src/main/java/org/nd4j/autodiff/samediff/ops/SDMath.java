@@ -2422,6 +2422,58 @@ public class SDMath extends SDOps {
     }
 
     /**
+     * Shift integer bits to the left, i.e. var << 4
+     *
+     * @param name Name of the output variable
+     * @param x    Input 1
+     * @return Output SDVariable with shifted bits
+     */
+    public SDVariable bitShift(String name, SDVariable x, int shift) {
+        validateInteger("shift_bits", x);
+        SDVariable result = f().shift(x, shift);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Shift integer bits to the right, i.e. var >> 4
+     *
+     * @param name Name of the output variable
+     * @param x    Input 1
+     * @return Output SDVariable with shifted bits
+     */
+    public SDVariable bitShiftRight(String name, SDVariable x, int shift) {
+        validateInteger("rshift_bits", x);
+        SDVariable result = f().rshift(x, shift);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Roll integer bits to the left, i.e. var << 4 | var >> (32 - 4)
+     *
+     * @param name Name of the output variable
+     * @param x    Input 1
+     * @return Output SDVariable with shifted bits
+     */
+    public SDVariable bitRotl(String name, SDVariable x, int shift) {
+        validateInteger("cyclic_shift_bits", x);
+        SDVariable result = f().rotl(x, shift);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
+     * Roll integer bits to the right, i.e. var >> 4 | var << (32 - 4)
+     *
+     * @param name Name of the output variable
+     * @param x    Input 1
+     * @return Output SDVariable with shifted bits
+     */
+    public SDVariable bitRotr(String name, SDVariable x, int shift) {
+        validateInteger("cyclic_rshift_bits", x);
+        SDVariable result = f().rotr(x, shift);
+        return updateVariableNameAndReference(result, name);
+    }
+
+    /**
      * Full array zero fraction array reduction operation, optionally along specified dimensions: out = (count(x == 0) / length(x))
      *
      * @param input Input variable

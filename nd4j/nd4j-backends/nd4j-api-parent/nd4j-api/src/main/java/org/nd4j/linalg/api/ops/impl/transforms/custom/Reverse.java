@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Arrays;
@@ -36,6 +37,27 @@ public class Reverse extends DynamicCustomOp {
     }
 
     public Reverse() {
+    }
+
+    /**
+     * Inplace reverse.  See {@link #Reverse(INDArray, INDArray)}
+     */
+    public Reverse(INDArray x){
+        this(x, x);
+        this.inPlace = true;
+    }
+
+    /**
+     * Reverses whole array for compatibility with OldReverse.
+     *
+     * Note that otherwise, passing null or empty dimensions will result in a noop.
+     */
+    public Reverse(INDArray x, INDArray z){
+        super(new INDArray[]{x}, new INDArray[]{z});
+        this.dimensions = new int[x.rank()];
+        for(int i = 0 ; i < this.dimensions.length ; i++)
+            this.dimensions[i] = i;
+        addIArgument(dimensions);
     }
 
     @Override

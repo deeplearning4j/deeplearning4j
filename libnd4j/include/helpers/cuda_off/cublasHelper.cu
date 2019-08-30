@@ -20,12 +20,15 @@
 
 
 #include <cublas_v2.h>
+#include <cusolverDn.h>
 #include "../cublasHelper.h"
 #include <exceptions/cuda_exception.h>
 #include <helpers/logger.h>
+#include <execution/AffinityManager.h>
 
 namespace nd4j {
-    void* cublas::handle() {
+
+    static void* handle_() {
         auto _handle = new cublasHandle_t();
         auto status = cublasCreate_v2(_handle); // initialize CUBLAS context
         if (status != CUBLAS_STATUS_SUCCESS)
@@ -34,7 +37,16 @@ namespace nd4j {
         return reinterpret_cast<void *>(_handle);
     }
 
-    void cublas::destroyHandle(void* handle) {
+    static void* solver_() {
+        auto cusolverH = new cusolverDnHandle_t();
+        auto status = cusolverDnCreate(cusolverH);
+        if (status != CUSOLVER_STATUS_SUCCESS)
+            throw cuda_exception::build("cuSolver handle creation failed !", status);
+
+        return cusolverH;
+    }
+
+    static void destroyHandle_(void* handle) {
         auto ch = reinterpret_cast<cublasHandle_t *>(handle);
         auto status = cublasDestroy_v2(*ch);
         if (status != CUBLAS_STATUS_SUCCESS)
@@ -42,4 +54,57 @@ namespace nd4j {
 
         delete ch;
     }
+
+    CublasHelper::CublasHelper() {
+        auto numDevices = AffinityManager::numberOfDevices();
+        auto currentDevice = AffinityManager::currentDeviceId();
+        _cache.resize(numDevices);
+        _solvers.resize(numDevices);
+        for (int e = 0; e < numDevices; e++) {
+            AffinityManager::setCurrentDevice(e);
+
+            _cache[e] = handle_();
+            _solvers[e] = solver_();
+        }
+
+        // don't forget to restore back original device
+        AffinityManager::setCurrentDevice(currentDevice);
+    }
+
+    CublasHelper::~CublasHelper() {
+        auto numDevices = AffinityManager::numberOfDevices();
+
+        for (int e = 0; e < numDevices; e++)
+            destroyHandle_(_cache[e]);
+    }
+
+    CublasHelper* CublasHelper::getInstance() {
+        if (!_INSTANCE)
+            _INSTANCE = new nd4j::CublasHelper();
+
+        return _INSTANCE;
+    }
+
+    void* CublasHelper::handle() {
+        auto deviceId = AffinityManager::currentDeviceId();
+        return handle(deviceId);
+    }
+
+    void* CublasHelper::solver() {
+        auto deviceId = AffinityManager::currentDeviceId();
+        if (deviceId < 0 || deviceId > _solvers.size())
+            throw cuda_exception::build("requested deviceId doesn't look valid", deviceId);
+
+        return _solvers[deviceId];
+    }
+
+    void* CublasHelper::handle(int deviceId) {
+        if (deviceId < 0 || deviceId > _cache.size())
+            throw cuda_exception::build("requested deviceId doesn't look valid", deviceId);
+
+        return _cache[deviceId];
+    }
+
+
+    nd4j::CublasHelper* nd4j::CublasHelper::_INSTANCE = 0;
 }

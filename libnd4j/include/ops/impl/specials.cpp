@@ -66,17 +66,17 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, ND
                 PRAGMA_OMP_PARALLEL_FOR_SIMD
                 for (uint r = 0; r < numOfArrs; r++) {
 
-                    const uint arrLen = inArrs[r]->lengthOf();
+                    const Nd4jLong arrLen = inArrs[r]->lengthOf();
                     const uint xEws    = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
 
                     T *z = outBuff + zOffset[r];
                     T *x = inArrs[r]->bufferAsT<T>();
 
                     if(outEws == 1 && xEws == 1)
-                        for (uint e = 0; e < arrLen; e++)
+                        for (Nd4jLong e = 0; e < arrLen; e++)
                             z[e] = x[e];
                     else
-                        for (uint e = 0; e < arrLen; e++)
+                        for (Nd4jLong e = 0; e < arrLen; e++)
                             z[e * outEws] = x[e * xEws];
                 }
                 return;

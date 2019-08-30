@@ -84,8 +84,10 @@ public class MultiLayerSpace extends BaseNetworkSpace<DL4JConfiguration> {
         List<ParameterSpace> allLeaves = collectLeaves();
         List<ParameterSpace> list = LeafUtils.getUniqueObjects(allLeaves);
 
-        for (ParameterSpace ps : list)
+        for (ParameterSpace ps : list) {
+            int n = ps.numParameters();
             numParameters += ps.numParameters();
+        }
 
         this.trainingWorkspaceMode = builder.trainingWorkspaceMode;
         this.inferenceWorkspaceMode = builder.inferenceWorkspaceMode;

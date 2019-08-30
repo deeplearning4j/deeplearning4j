@@ -21,7 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -251,8 +251,6 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .kW(kW)
                 .pH(pH)
                 .pW(pW)
-                .virtualHeight(1)
-                .virtualWidth(1)
                 .isNHWC(data_format.equalsIgnoreCase("nhwc"))
                 .extra(0.0) // averaging only for non-padded values
                 .build();
@@ -262,7 +260,7 @@ public class AvgPooling2D extends DynamicCustomOp {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         val paddingVal = !attributesForNode.containsKey("auto_pad") ? "VALID" : attributesForNode.get("auto_pad").getS().toStringUtf8();
         val kernelShape = attributesForNode.get("kernel_shape").getIntsList();
         val padding = !attributesForNode.containsKey("pads") ? Arrays.asList(1L) : attributesForNode.get("pads").getIntsList();
@@ -277,8 +275,6 @@ public class AvgPooling2D extends DynamicCustomOp {
                 .kW(kernelShape.get(1).intValue())
                 .pH(padding.get(0).intValue())
                 .pW(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
-                .virtualWidth(1)
-                .virtualHeight(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();

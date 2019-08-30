@@ -16,32 +16,32 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
-import lombok.AllArgsConstructor;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D.Divisor;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.Pooling2D.Pooling2DType;
+import org.nd4j.linalg.util.ConvConfigUtil;
 
-import java.util.LinkedHashMap;
-import java.util.Map;
-
-@Builder
-@AllArgsConstructor
 @Data
+@Builder
 @NoArgsConstructor
 public class Pooling2DConfig extends BaseConvolutionConfig {
 
-    private long kH, kW;
-    private long sH, sW;
-    private long pH, pW;
-    private long virtualHeight, virtualWidth;
+    @Builder.Default private long kH = -1, kW = -1;
+    @Builder.Default private long sH = 1, sW = 1;
+    @Builder.Default private long pH = 0, pW = 0;
     /**
      * Extra is an optional parameter mainly for use with pnorm right now.
      * All pooling implementations take 9 parameters save pnorm.
      * Pnorm takes 10 and is cast to an int.
      */
     private double extra;
-    private Pooling2D.Pooling2DType type;
+    @Builder.Default
+    private Pooling2D.Pooling2DType type = Pooling2DType.MAX;
     @Builder.Default
     private Pooling2D.Divisor divisor = Pooling2D.Divisor.EXCLUDE_PADDING;
     private boolean isSameMode;
@@ -52,7 +52,26 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
     @Builder.Default
     private boolean isNHWC = false;
 
+    public Pooling2DConfig(long kH, long kW, long sH, long sW, long pH, long pW, double extra, Pooling2DType type,
+            Divisor divisor, boolean isSameMode, long dH, long dW, boolean isNHWC) {
+        this.kH = kH;
+        this.kW = kW;
+        this.sH = sH;
+        this.sW = sW;
+        this.pH = pH;
+        this.pW = pW;
+        this.extra = extra;
+        this.type = type;
+        this.divisor = divisor;
+        this.isSameMode = isSameMode;
+        this.dH = dH;
+        this.dW = dW;
+        this.isNHWC = isNHWC;
 
+        validate();
+    }
+
+    @Override
     public Map<String, Object> toProperties() {
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("kH", kH);
@@ -61,8 +80,6 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
         ret.put("sW", sW);
         ret.put("pH", pH);
         ret.put("pW", pW);
-        ret.put("virtualHeight", virtualHeight);
-        ret.put("virtualWidth", virtualWidth);
         ret.put("extra", extra);
         ret.put("type", type.toString());
         ret.put("isSameMode", isSameMode);
@@ -70,6 +87,13 @@ public class Pooling2DConfig extends BaseConvolutionConfig {
         ret.put("dW", dW);
         ret.put("isNHWC", isNHWC);
         return ret;
+    }
+
+    @Override
+    protected void validate() {
+        ConvConfigUtil.validate2D(kH, kW, sH, sW, pH, pW, dH, dW);
+
+        //TODO check other args?
     }
 
 }

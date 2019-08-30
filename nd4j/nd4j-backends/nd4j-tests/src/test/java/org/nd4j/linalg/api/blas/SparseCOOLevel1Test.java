@@ -47,44 +47,52 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
 
     @Test
     public void shouldComputeDot() {
-        INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
+        // Commented out on removal of Nd4j createSparse methods
+        /*INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
         //INDArray vec = Nd4j.create( new double[] {1 ,2, 3, 4});
         INDArray matrix = Nd4j.linspace(1, 4, 4, DataType.FLOAT).reshape(1, 4);
         INDArray vec = matrix.getRow(0);
         assertEquals(21, Nd4j.getBlasWrapper().dot(sparseVec, vec), 1e-1);
+        */
     }
 
     @Test
     public void shouldComputeNrm2() {
-        INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
-        assertEquals(Math.sqrt(21), Nd4j.getBlasWrapper().nrm2(sparseVec), 1e-1);
+        // Commented out on removal of Nd4j createSparse methods
+        //INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
+        //assertEquals(Math.sqrt(21), Nd4j.getBlasWrapper().nrm2(sparseVec), 1e-1);
     }
 
     @Test
     public void shouldComputeAsum() {
-        INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
-        assertEquals(7, Nd4j.getBlasWrapper().asum(sparseVec), 1e-1);
+        // Commented out on removal of Nd4j createSparse methods
+        //INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
+        //assertEquals(7, Nd4j.getBlasWrapper().asum(sparseVec), 1e-1);
     }
 
     @Test
     public void shouldComputeIamax() {
-        INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
-        assertEquals(2, Nd4j.getBlasWrapper().iamax(sparseVec), 1e-1);
+        // Commented out on removal of Nd4j createSparse methods
+        // INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
+        // assertEquals(2, Nd4j.getBlasWrapper().iamax(sparseVec), 1e-1);
     }
 
     @Test
     public void shouldComputeIamin() {
-        INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
-        assertEquals(0, Nd4j.getBlasWrapper().level1().iamin(sparseVec), 1e-1);
+        // Commented out on removal of Nd4j createSparse methods
+        // INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
+        // assertEquals(0, Nd4j.getBlasWrapper().level1().iamin(sparseVec), 1e-1);
     }
 
     @Test
     public void shouldComputeAxpy() {
-        INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
+        // Commented out on removal of Nd4j createSparse methods
+        /* INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
         INDArray vec = Nd4j.create(new double[] {1, 2, 3, 4});
         INDArray expected = Nd4j.create(new double[] {2, 4, 3, 8});
         Nd4j.getBlasWrapper().level1().axpy(vec.length(), 1, sparseVec, vec);
         assertEquals(getFailureMessage(), expected, vec);
+        */
     }
 
     @Test
@@ -101,18 +109,21 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
         //before: [1.0,2.0,0.0,4.0]  [1.0,2.0,3.0,4.0]
         // after: [3.0,6.0,6.0,12.0] [-1.0,-2.0,3.0,-4.0]
 
-        INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
+        // Commented out on removal of Nd4j createSparse methods
+        /*INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
         INDArray vec = Nd4j.create(new double[] {1, 2, 3, 4});
         Nd4j.getBlasWrapper().level1().rot(vec.length(), sparseVec, vec, 1, 2);
         System.out.println(sparseVec.data() + " " + vec.data());
-
         //System.out.println("indexes: " + ((BaseSparseNDArray) sparseVec).getVectorCoordinates().toString());
+
         INDArray expectedSparseVec = Nd4j.createSparseCSR(new double[] {3, 6, 6, 12}, new int[] {0, 1, 2, 3},
                         new int[] {0}, new int[] {4}, new long[] {1, 4});
+
         INDArray expectedVec = Nd4j.create(new double[] {-1, -2, 3, -4});
         assertEquals(getFailureMessage(), expectedSparseVec.data(), sparseVec.data());
 
         assertEquals(getFailureMessage(), expectedVec, vec);
+        */
         // TODO FIXME
     }
 
@@ -132,10 +143,10 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
 
         int[] cols = {0, 1, 2, 3};
         double[] values = {1, 2, 3, 4};
-        INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
+        // commented out on removal of createSparse methods from Nd4j
+        /* INDArray sparseVec = Nd4j.createSparseCOO(data, indexes, shape);
         INDArray vec = Nd4j.create(new double[] {1, 2, 3, 4});
         Nd4j.getBlasWrapper().level1().rot(vec.length(), sparseVec, vec, 1, 2);
-
         INDArray expectedSparseVec = Nd4j.createSparseCSR(new double[] {3, 6, 9, 12}, new int[] {0, 1, 2, 3},
                         new int[] {0}, new int[] {4}, new long[] {1, 4});
         INDArray expectedVec = Nd4j.create(new double[] {-1, -2, -3, -4});
@@ -146,6 +157,7 @@ public class SparseCOOLevel1Test extends BaseNd4jTest {
             BaseSparseNDArray vecSparse2 = ((BaseSparseNDArray) sparseVec);
             assertEquals(getFailureMessage(), vec2.getVectorCoordinates(), vecSparse2);
         }
+        */
     }
 
     @Override

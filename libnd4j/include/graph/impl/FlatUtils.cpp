@@ -64,14 +64,14 @@ namespace nd4j {
                 auto longPtr = reinterpret_cast<Nd4jLong *>(rawPtr);
                 auto charPtr = reinterpret_cast<char *>(longPtr + length + 1);
                 auto offsets = new Nd4jLong[length+1];
-                for (int e = 0; e <= length; e++) {
+                for (Nd4jLong e = 0; e <= length; e++) {
                     auto o = longPtr[e];
                     // FIXME: BE vs LE on partials
                     //auto v = canKeep ?  o : BitwiseUtils::swap_bytes<Nd4jLong>(o);
                     offsets[e] = o;
                 }
 
-                for (int e = 0; e < length; e++) {
+                for (Nd4jLong e = 0; e < length; e++) {
                     auto start = offsets[e];
                     auto end = offsets[e+1];
                     auto len = end - start;
@@ -101,6 +101,17 @@ namespace nd4j {
 
             delete[] newShape;
             return array;
+        }
+
+        flatbuffers::Offset<FlatArray> FlatUtils::toFlatArray(flatbuffers::FlatBufferBuilder &builder, NDArray &array) {
+            auto byteVector = array.asByteVector();
+
+            auto fBuffer = builder.CreateVector(byteVector);
+            auto fShape = builder.CreateVector(array.getShapeInfoAsFlatVector());
+
+            auto bo = static_cast<nd4j::graph::ByteOrder>(BitwiseUtils::asByteOrder());
+
+            return CreateFlatArray(builder, fShape, fBuffer, static_cast<nd4j::graph::DataType>(array.dataType()), bo);
         }
     }
 }

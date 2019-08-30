@@ -39,10 +39,10 @@ public class CudaDeallocator implements Deallocator {
     public void deallocate() {
         log.trace("Deallocating CUDA memory");
         // skipping any allocation that is coming from workspace
-        if (point.isAttached()) {
+        if (point.isAttached() || point.isReleased()) {
             // TODO: remove allocation point as well?
             if (!AtomicAllocator.getInstance().allocationsMap().containsKey(point.getObjectId()))
-                throw new RuntimeException();
+                return;
 
             AtomicAllocator.getInstance().getFlowController().waitTillReleased(point);
 

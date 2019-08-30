@@ -52,7 +52,6 @@ __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 		xzRank = shape::rank(xShapeInfo);
 		yRank  = shape::rank(yShapeInfo);
 	}
-
 	__syncthreads();
 
 	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -99,7 +98,7 @@ void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& a
 	const auto yType = alpha.dataType();
 
 	NDArray::prepareSpecialUse({&output}, {&input, &alpha});
-	BUILD_DOUBLE_SELECTOR(xType, yType, preluCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), output.getSpecialBuffer()), LIBND4J_TYPES, FLOAT_TYPES);
+	BUILD_SINGLE_SELECTOR_TWICE(xType, preluCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), output.getSpecialBuffer()), FLOAT_TYPES);
 	NDArray::registerSpecialUse({&output}, {&input, &alpha});
 
 	manager.synchronize();
@@ -132,7 +131,6 @@ __global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeI
 		inRank     = shape::rank(inShapeInfo);
 		alphaRank  = shape::rank(alphaShapeInfo);
 	}
-
 	__syncthreads();
 
 	const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -189,7 +187,7 @@ void preluBP(nd4j::LaunchContext* context, const NDArray& input, const NDArray& 
 	const auto zType = alpha.dataType();
 
 	NDArray::prepareSpecialUse({&dLdI, &dLdA}, {&input, &alpha, &dLdO});
-	BUILD_DOUBLE_SELECTOR(xType, zType, preluBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), dLdO.getSpecialBuffer(),  dLdO.getSpecialShapeInfo(), dLdI.getSpecialBuffer(), dLdI.getSpecialShapeInfo(), dLdA.getSpecialBuffer(), dLdA.getSpecialShapeInfo()), LIBND4J_TYPES, FLOAT_TYPES);
+	BUILD_SINGLE_SELECTOR_TWICE(xType, preluBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), alpha.getSpecialBuffer(), alpha.getSpecialShapeInfo(), dLdO.getSpecialBuffer(),  dLdO.getSpecialShapeInfo(), dLdI.getSpecialBuffer(), dLdI.getSpecialShapeInfo(), dLdA.getSpecialBuffer(), dLdA.getSpecialShapeInfo()), FLOAT_TYPES);
 	NDArray::registerSpecialUse({&dLdI, &dLdA}, {&input, &alpha, &dLdO});
 
 	manager.synchronize();
@@ -363,7 +361,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 	temp = 0;
 
 	// ************ evaluate value of exp(x[offset] - max) per each element, store it to shared memory shmem ************ //
-	// at the same evaluate sum of exponents, sum will be stored in shmem[0]
+	// at the same time evaluate sum of exponents, sum will be stored in shmem[0]
 	for (int i = 0; i < numOfIters; ++i) {
 
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
@@ -565,20 +563,14 @@ void softmaxDerivative(nd4j::LaunchContext * context, const NDArray& input, NDAr
 
 	template <typename T>
 	linkage void thresholdReluDerivative_(NDArray* input, double theta, NDArray* dLdO, NDArray* output) {
+        auto derivative = LAMBDA_TT(_x, grO, theta) {if (_x > theta) return grO; else return static_cast<T>(0); };
 
+        input->applyPairwiseLambda(dLdO, derivative, output);
 	}
 
 	void thresholdReluDerivative(nd4j::LaunchContext * context, NDArray* input, double threshold, NDArray* dLdO, NDArray* output) {
 		BUILD_SINGLE_SELECTOR(input->dataType(), thresholdReluDerivative_, (input, threshold, dLdO, output), FLOAT_TYPES);
 	}
-
-
-BUILD_SINGLE_TEMPLATE(template void thresholdReluDerivative_, (NDArray* input, double threshold, NDArray* dLdO, NDArray* output), FLOAT_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void preluCudaLauncher,   (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz), LIBND4J_TYPES, FLOAT_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void preluBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vIn, const Nd4jLong *inShapeInfo, const void *vAlpha, const Nd4jLong *alphaShapeInfo, const void *vdLdO,  const Nd4jLong *dLdOShapeInfo, void *vdLdI,  const Nd4jLong *dLdIShapeInfo, void *vdLdA,  const Nd4jLong *dLdAShapeInfo), LIBND4J_TYPES, FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template void softMaxForVectorCudaLauncher, (const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz), FLOAT_TYPES);
-BUILD_SINGLE_TEMPLATE(template void softMaxDerivForVectorCudaLauncher, (const cudaStream_t* stream, const void *vx, const Nd4jLong *xzShapeInfo, void *vz), FLOAT_TYPES);
-
 
 }
 }

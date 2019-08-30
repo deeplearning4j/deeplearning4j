@@ -21,6 +21,8 @@ import lombok.Getter;
 import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
+import org.nd4j.evaluation.IMetric;
+import org.nd4j.evaluation.classification.Evaluation.Metric;
 import org.nd4j.evaluation.curves.Histogram;
 import org.nd4j.evaluation.curves.ReliabilityDiagram;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -104,6 +106,13 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
     @JsonSerialize(using = NDArraySerializer.class)
     @JsonDeserialize(using = NDArrayDeSerializer.class)
     private INDArray probHistogramByLabelClass; //Histogram - for each label class separately
+
+    protected EvaluationCalibration(int axis, int reliabilityDiagNumBins, int histogramNumBins, boolean excludeEmptyBins) {
+        this.axis = axis;
+        this.reliabilityDiagNumBins = reliabilityDiagNumBins;
+        this.histogramNumBins = histogramNumBins;
+        this.excludeEmptyBins = excludeEmptyBins;
+    }
 
     /**
      * Create an EvaluationCalibration instance with the default number of bins
@@ -253,7 +262,7 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
         labelCountsEachClass.addi(labels2d.sum(0).castTo(labelCountsEachClass.dataType()));
         //For prediction counts: do an IsMax op, but we need to take masking into account...
-        INDArray isPredictedClass = Nd4j.getExecutioner().exec(new IsMax(p.dup(), 1));
+        INDArray isPredictedClass = Nd4j.getExecutioner().exec(new IsMax(p, p.ulike(), 1))[0];
         if (maskArray != null) {
             LossUtil.applyMask(isPredictedClass, maskArray);
         }
@@ -475,5 +484,15 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
 
     public static EvaluationCalibration fromJson(String json){
         return fromJson(json, EvaluationCalibration.class);
+    }
+
+    @Override
+    public double getValue(IMetric metric){
+        throw new IllegalStateException("Can't get value for non-calibration Metric " + metric);
+    }
+
+    @Override
+    public EvaluationCalibration newInstance() {
+        return new EvaluationCalibration(axis, reliabilityDiagNumBins, histogramNumBins, excludeEmptyBins);
     }
 }

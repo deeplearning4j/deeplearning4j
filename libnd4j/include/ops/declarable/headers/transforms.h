@@ -65,9 +65,15 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_mergemax)
         DECLARE_OP(mergemax, -1, 1, false);
         #endif
-
+        /*
+         * Complete tensor with max indices merged from all input tensors list
+         *
+         * INPUT: tensors with the same shape
+         * OUTPUT: integer tensor with the same shape
+         * INT_ARG: result type (one of int), INT32 by default
+         */
         #if NOT_EXCLUDED(OP_mergemaxindex)
-        DECLARE_OP(mergemaxindex, -1, 1, false);
+        DECLARE_CUSTOM_OP(mergemaxindex, -1, 1, false, 0, 0);
         #endif
 
         #if NOT_EXCLUDED(OP_mergeadd)

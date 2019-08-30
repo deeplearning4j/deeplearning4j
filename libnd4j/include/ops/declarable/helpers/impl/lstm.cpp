@@ -45,29 +45,29 @@ namespace nd4j {
                                    const NDArray* iSeq, const NDArray* cSeq, const NDArray* fSeq, const NDArray* oSeq, const NDArray* zSeq,
                                    const NDArray* hSeq, const NDArray* ySeq, const std::vector<double>& params, const int dataFormat){
 
-                int seqLen, mb, inSize, outSize;
+                int seqLen, bS, nIn, nOut;
 
                 if(dataFormat == 0) {
                     seqLen  = xSeq->sizeAt(0);
-                    mb      = xSeq->sizeAt(1);
-                    inSize  = xSeq->sizeAt(2);
-                    outSize = iSeq->sizeAt(2);
+                    bS      = xSeq->sizeAt(1);
+                    nIn  = xSeq->sizeAt(2);
+                    nOut = iSeq->sizeAt(2);
                 }
                 else if(dataFormat == 1) {
                     seqLen  = xSeq->sizeAt(2);
-                    mb      = xSeq->sizeAt(0);
-                    inSize  = xSeq->sizeAt(1);
-                    outSize = iSeq->sizeAt(1);
+                    bS      = xSeq->sizeAt(0);
+                    nIn  = xSeq->sizeAt(1);
+                    nOut = iSeq->sizeAt(1);
                 }
                 else if(dataFormat == 2) {
                     seqLen  = xSeq->sizeAt(1);
-                    mb      = xSeq->sizeAt(0);
-                    inSize  = xSeq->sizeAt(2);
-                    outSize = iSeq->sizeAt(2);
+                    bS      = xSeq->sizeAt(0);
+                    nIn  = xSeq->sizeAt(2);
+                    nOut = iSeq->sizeAt(2);
                 }
 
-                const std::vector<Nd4jLong> inSliceShape({mb,inSize});
-                const std::vector<Nd4jLong> outSliceShape({mb,outSize});
+                const std::vector<Nd4jLong> inSliceShape({bS,nIn});
+                const std::vector<Nd4jLong> outSliceShape({bS,nOut});
 
                 auto c_t1 = const_cast<NDArray*>(c0);
                 auto y_t1 = const_cast<NDArray*>(y0);
@@ -105,11 +105,11 @@ namespace nd4j {
             void lstmTimeLoop(nd4j::LaunchContext * context, const NDArray* x, const NDArray* h0, const NDArray* c0, const NDArray* Wx, const NDArray* Wh, const NDArray* Wc, const NDArray* Wp, const NDArray* b,
                               NDArray* h, NDArray* c, const std::vector<double>& params) {
 
-                // x  input [time x bS x inSize]
+                // x  input [time x bS x nIn]
                 // h0 initial cell output (at time step = 0) [bS x numProj], in case of projection=false -> numProj == numUnits !!!
                 // c0 initial cell state  (at time step = 0) [bS x numUnits],
 
-                // Wx input-to-hidden  weights, [inSize  x 4*numUnits]
+                // Wx input-to-hidden  weights, [nIn  x 4*numUnits]
                 // Wh hidden-to-hidden weights, [numProj x 4*numUnits]
                 // Wc diagonal weights for peephole connections [3*numUnits]
                 // Wp projection weights [numUnits x numProj]

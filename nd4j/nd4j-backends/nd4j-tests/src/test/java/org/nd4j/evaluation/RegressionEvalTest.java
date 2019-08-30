@@ -17,8 +17,8 @@
 package org.nd4j.evaluation;
 
 import org.junit.Test;
-import org.nd4j.evaluation.classification.EvaluationCalibration;
 import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
@@ -256,7 +256,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         e3d.eval(label, prediction);
         e2d.eval(l2d, p2d);
 
-        for (RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()) {
+        for (Metric m : Metric.values()) {
             double d1 = e3d.scoreForMetric(m);
             double d2 = e2d.scoreForMetric(m);
             assertEquals(m.toString(), d2, d1, 1e-6);
@@ -288,7 +288,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         e4d.eval(label, prediction);
         e2d.eval(l2d, p2d);
 
-        for (RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()) {
+        for (Metric m : Metric.values()) {
             double d1 = e4d.scoreForMetric(m);
             double d2 = e2d.scoreForMetric(m);
             assertEquals(m.toString(), d2, d1, 1e-6);
@@ -347,10 +347,10 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         RegressionEvaluation e2d_m2 = new RegressionEvaluation();
         e4d_m2.eval(label, prediction, perOutMask);
         e2d_m2.eval(l2d, p2d, m2d);
-        for(RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()){
+        for(Metric m : Metric.values()){
             double d1 = e4d_m2.scoreForMetric(m);
             double d2 = e2d_m2.scoreForMetric(m);
-            assertEquals(m.toString(), d2, d1, 1e-6);
+            assertEquals(m.toString(), d2, d1, 1e-5);
         }
     }
 
@@ -382,7 +382,7 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         RegressionEvaluation e2d_m1 = new RegressionEvaluation();
         e4d_m1.eval(label, prediction, mask1dPerEx);
         e2d_m1.eval(l2d, p2d);
-        for(RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()){
+        for(Metric m : Metric.values()){
             double d1 = e4d_m1.scoreForMetric(m);
             double d2 = e2d_m1.scoreForMetric(m);
             assertEquals(m.toString(), d2, d1, 1e-6);
@@ -409,10 +409,10 @@ public class RegressionEvalTest  extends BaseNd4jTest {
         RegressionEvaluation e2d_m2 = new RegressionEvaluation();
         e4d_m2.eval(label, prediction, perOutMask);
         e2d_m2.eval(l2d, p2d, m2d);
-        for(RegressionEvaluation.Metric m : RegressionEvaluation.Metric.values()){
+        for(Metric m : Metric.values()){
             double d1 = e4d_m2.scoreForMetric(m);
             double d2 = e2d_m2.scoreForMetric(m);
-            assertEquals(m.toString(), d2, d1, 1e-6);
+            assertEquals(m.toString(), d2, d1, 1e-5);
         }
     }
 }

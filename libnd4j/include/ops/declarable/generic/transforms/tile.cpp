@@ -50,6 +50,9 @@ CUSTOM_OP_IMPL(tile, 1, 1, false, 0, -2) {
     else {
         REQUIRE_TRUE(false, 0, "TILE op: this op requires repeats vector, either as IArgs or second array with length equal to rank of input array to be tiled !");
     }
+
+    auto repProd = shape::prodLong(reps.data(), reps.size());
+    REQUIRE_TRUE(repProd > 0, 0, "TILE op: reps can't contain 0s");
             
     input->tile(reps, *output);
 
@@ -81,7 +84,10 @@ DECLARE_SHAPE_FN(tile) {
     }
     else {
         REQUIRE_TRUE(false, 0, "TILE op: this op requires repeats vector, either as IArgs or second array with length equal to rank of input array to be tiled !");
-    }    
+    }
+
+    auto repProd = shape::prodLong(reps.data(), reps.size());
+    REQUIRE_TRUE(repProd > 0, 0, "TILE op: reps can't contain 0s");
     
     std::vector<Nd4jLong> shape(inRank);
     for (int e = 0; e < shape::rank(inShape); e++)

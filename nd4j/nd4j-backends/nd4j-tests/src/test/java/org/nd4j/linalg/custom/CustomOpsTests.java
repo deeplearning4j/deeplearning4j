@@ -32,15 +32,20 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.api.ops.impl.reduce.MmulBp;
+import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.ModOp;
 import org.nd4j.linalg.api.ops.random.compat.RandomStandardNormal;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import static org.junit.Assert.*;
@@ -442,7 +447,7 @@ public class CustomOpsTests extends BaseNd4jTest {
         context.setOutputArray(0, arrayZ);
 
         val addOp = new AddOp();
-        NativeOpsHolder.getInstance().getDeviceNativeOps().execCustomOp(null, addOp.opHash(), context.contextPointer());
+        NativeOpsHolder.getInstance().getDeviceNativeOps().execCustomOp2(null, addOp.opHash(), context.contextPointer());
 
         assertEquals(exp, arrayZ);
     }
@@ -544,6 +549,8 @@ public class CustomOpsTests extends BaseNd4jTest {
         Nd4j.exec(op);  //Execution is OK
     }
 
+
+
     @Test
     public void testDepthwise(){
         INDArray input = Nd4j.create(DataType.DOUBLE, 1,3,8,8);
@@ -570,6 +577,17 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testMod_1() {
+        val x = Nd4j.createFromArray(5.f, 6.f, 7.f);
+        val y = Nd4j.scalar(4.f);
+        val e = Nd4j.createFromArray(1.f, 2.f, 3.f);
+
+        val z = Nd4j.exec(new ModOp(new INDArray[]{x, y}, new INDArray[]{}))[0];
+
+        assertEquals(e, z);
+    }
+
+    @Test
     public void testScalarVector_edge_1() {
         val x = Nd4j.scalar(2.0f);
         val y = Nd4j.createFromArray(new float[]{2.0f});
@@ -591,5 +609,143 @@ public class CustomOpsTests extends BaseNd4jTest {
 
         assertTrue(Shape.shapeEquals(e.shape(), z.shape()));
         assertEquals(e, z);
+    }
+
+    @Test(expected = RuntimeException.class)
+    public void testInputValidationMergeMax(){
+        INDArray[] inputs = new INDArray[]{
+                Nd4j.createFromArray(0.0f, 1.0f, 2.0f).reshape('c', 1, 3),
+                Nd4j.createFromArray(1.0f).reshape('c', 1, 1)};
+
+        INDArray out = Nd4j.create(DataType.FLOAT, 1, 3).assign(Double.NaN);
+        CustomOp op = DynamicCustomOp.builder("mergemax")
+                .addInputs(inputs)
+                .addOutputs(out)
+                .callInplace(false)
+                .build();
+
+        Nd4j.exec(op);
+        System.out.println(out);
+    }
+
+    @Test
+    public void testUpsampling2dBackprop(){
+
+        Nd4j.getRandom().setSeed(12345);
+        int c = 2;
+        int[] sz = {2,2};
+        long[] inSize = {1, c, 3, 3};
+        INDArray eps = Nd4j.rand(DataType.FLOAT, 1, c, sz[0] * inSize[2], sz[1] * inSize[3]);
+
+        INDArray input = Nd4j.create(inSize);    //Unused, not sure why this is even an arg...
+        INDArray exp = Nd4j.create(DataType.FLOAT, inSize);
+
+        for( int ch=0; ch<c; ch++ ) {
+            for( int h=0; h<eps.size(2); h++ ){
+                for( int w=0; w<eps.size(3); w++ ){
+                    int[] from = new int[]{0, ch, h, w};
+                    int[] to = new int[]{0, ch, h/sz[0], w/sz[1]};
+                    float add = eps.getFloat(from);
+                    float current = exp.getFloat(to);
+                    exp.putScalar(to, current + add);
+                }
+            }
+        }
+
+        System.out.println("Eps:");
+        System.out.println(eps.shapeInfoToString());
+        System.out.println(Arrays.toString(eps.data().asFloat()));
+
+        System.out.println("Expected:");
+        System.out.println(exp.shapeInfoToString());
+        System.out.println(Arrays.toString(exp.data().asFloat()));
+
+        DynamicCustomOp op = DynamicCustomOp.builder("upsampling2d_bp")
+                .addInputs(input, eps)
+                .addOutputs(exp.ulike())
+                .addIntegerArguments(1) //1 = NCHW
+                .build();
+
+        Nd4j.exec(op);
+
+        INDArray act = op.getOutputArgument(0);
+        assertEquals(exp, act);
+    }
+
+    @Test
+    public void testIsMaxView(){
+        INDArray predictions = Nd4j.rand(DataType.FLOAT, 3, 4, 3, 2);
+
+        INDArray row = predictions.get(NDArrayIndex.point(0), NDArrayIndex.all(), NDArrayIndex.point(0), NDArrayIndex.point(0));
+        row = row.reshape(1, row.length());
+        assertArrayEquals(new long[]{1, 4}, row.shape());
+
+        val result1 = row.ulike();
+        val result2 = row.ulike();
+
+        Nd4j.exec(new IsMax(row.dup(), result1, 1));        //OK
+        Nd4j.exec(new IsMax(row, result2, 1));              //C++ exception
+
+        assertEquals(result1, result2);
+    }
+
+    @Test
+    public void isMax4d_2dims(){
+        Nd4j.getRandom().setSeed(12345);
+        INDArray in = Nd4j.rand(DataType.FLOAT, 3, 3, 4, 4).permute(0, 2, 3, 1);
+
+        INDArray out_permutedIn = in.like();
+        INDArray out_dupedIn = in.like();
+
+        Nd4j.exec(new IsMax(in.dup(), out_dupedIn, 2, 3));
+        Nd4j.exec(new IsMax(in, out_permutedIn, 2, 3));
+
+        assertEquals(out_dupedIn, out_permutedIn);
+    }
+
+    @Test
+    public void testSizeTypes(){
+        List<DataType> failed = new ArrayList<>();
+        for(DataType dt : new DataType[]{DataType.LONG, DataType.INT, DataType.SHORT, DataType.BYTE,
+                DataType.UINT64, DataType.UINT32, DataType.UINT16, DataType.UBYTE,
+                DataType.DOUBLE, DataType.FLOAT, DataType.HALF, DataType.BFLOAT16}) {
+
+            INDArray in = Nd4j.create(DataType.FLOAT, 100);
+            INDArray out = Nd4j.scalar(dt, 0);
+            INDArray e = Nd4j.scalar(dt, 100);
+
+            DynamicCustomOp op = DynamicCustomOp.builder("size")
+                    .addInputs(in)
+                    .addOutputs(out)
+                    .build();
+
+            try {
+                Nd4j.exec(op);
+
+                assertEquals(e, out);
+            } catch (Throwable t){
+                failed.add(dt);
+            }
+        }
+
+        if(!failed.isEmpty()){
+            fail("Failed datatypes: " + failed.toString());
+        }
+    }
+
+    @Test
+    public void testMaxPool2Dbp_1() {
+        val x = Nd4j.create(DataType.HALF, 2,3,16,16).assign(Double.NaN);
+        val y = Nd4j.create(DataType.HALF, 2,3,8,8).assign(Double.NaN);
+        val z = Nd4j.create(DataType.HALF, 2,3,16,16);
+
+        val op = DynamicCustomOp.builder("maxpool2d_bp")
+                .addInputs(x, y)
+                .addOutputs(z)
+                .addIntegerArguments(2, 2, 2, 2, 8,8, 1,1,1, 0,0)
+                .build();
+
+        Nd4j.exec(op);
+        Nd4j.getExecutioner().commit();
     }
 }

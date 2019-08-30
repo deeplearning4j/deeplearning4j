@@ -113,7 +113,7 @@ public class AsyncThreadTest {
         private final AsyncConfiguration conf;
 
         public MockAsyncThread(IAsyncGlobal asyncGlobal, int threadNumber, MockNeuralNet neuralNet, MDP mdp, AsyncConfiguration conf, TrainingListenerList listeners) {
-            super(asyncGlobal, mdp, listeners, threadNumber);
+            super(asyncGlobal, mdp, listeners, threadNumber, 0);
 
             this.asyncGlobal = asyncGlobal;
             this.neuralNet = neuralNet;

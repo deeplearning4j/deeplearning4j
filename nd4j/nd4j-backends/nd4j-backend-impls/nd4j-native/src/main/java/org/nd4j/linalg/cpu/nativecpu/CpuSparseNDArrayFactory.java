@@ -222,7 +222,7 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     }
 
     @Override
-    public INDArray createUninitializedDetached(long[] shape, char ordering) {
+    public INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape){
         return null;
     }
 
@@ -249,11 +249,6 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     @Override
     public INDArray create(float[] data, long[] shape, long[] stride, char order, long offset) {
         return null;
-    }
-
-    @Override
-    public INDArray trueScalar(Number value) {
-        throw new UnsupportedOperationException();
     }
 
     @Override
@@ -424,11 +419,6 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
 
     @Override
     public INDArray createUninitialized(int[] shape, char ordering) {
-        return null;
-    }
-
-    @Override
-    public INDArray createUninitializedDetached(int[] shape, char ordering) {
         return null;
     }
 

@@ -96,11 +96,14 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
                 phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
             }
 
-            for(String s : paramTable.keySet() ) {
-                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
+            //TODO Find a more efficient solution for this
+            for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+                INDArray arr = e.getValue();
+                sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
             }
 
-            Map<String,INDArray> out = sameDiff.exec(phMap, outputKey);
+            Map<String,INDArray> out = sameDiff.output(phMap, outputKey);
             INDArray result = out.get(outputKey);
 
             //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
@@ -131,9 +134,11 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
             bl.validateInput(input);
 
-            for(String s : paramTable.keySet() ){
-                //TODO this should only be necessary, in theory, once!
-                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
+            //TODO Find a more efficient solution for this
+            for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+                INDArray arr = e.getValue();
+                sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
             }
 
             Map<String,INDArray> phMap = new HashMap<>();
@@ -159,7 +164,14 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
                 g.gradientForVariable().put(s, dl4jGrad);
             }
 
-            dLdIn = sameDiff.grad(INPUT_KEY).getArr();
+            SDVariable v = sameDiff.grad(INPUT_KEY);
+            dLdIn = v.getArr();
+
+            if(dLdIn == null && fn.getGradPlaceholderName().equals(v.getVarName())){
+                //Edge case with lambda layers like identity: SameDiff doesn't store the placeholders
+                // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
+                dLdIn = epsilon;
+            }
         }
 
         //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere

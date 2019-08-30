@@ -26,6 +26,7 @@ import org.nd4j.graph.*;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling3DConfig;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
@@ -188,11 +189,11 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                     assertEquals(varsOrig.get(j).getVarName(), varsRestored.get(j).getVarName());
                 }
 
-                DifferentialFunction[] fOrig = sd.functions();
-                DifferentialFunction[] fRestored = restored.functions();
+                DifferentialFunction[] fOrig = sd.ops();
+                DifferentialFunction[] fRestored = restored.ops();
                 assertEquals(fOrig.length, fRestored.length);
 
-                for (int j = 0; j < sd.functions().length; j++) {
+                for (int j = 0; j < sd.ops().length; j++) {
                     assertEquals(fOrig[j].getClass(), fRestored[j].getClass());
                 }
 
@@ -224,7 +225,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                     sd.save(f2, withUpdaterState);
                     SameDiff r2 = SameDiff.load(f2, withUpdaterState);
                     assertEquals(varsOrig.size(), r2.variables().size());
-                    assertEquals(fOrig.length, r2.functions().length);
+                    assertEquals(fOrig.length, r2.ops().length);
                     assertEquals(sd.getLossVariables(), r2.getLossVariables());
 
                     //Save via stream:
@@ -237,7 +238,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                     try(InputStream is = new BufferedInputStream(new FileInputStream(f3))) {
                         SameDiff r3 = SameDiff.load(is, withUpdaterState);
                         assertEquals(varsOrig.size(), r3.variables().size());
-                        assertEquals(fOrig.length, r3.functions().length);
+                        assertEquals(fOrig.length, r3.ops().length);
                         assertEquals(sd.getLossVariables(), r3.getLossVariables());
                     }
                 }
@@ -327,5 +328,46 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 assertEquals(a1, a2);
             }
         }
+    }
+
+
+    @Test
+    public void pooling3DSerialization(){
+        SameDiff sd = SameDiff.create();
+
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 28, 28);
+        SDVariable o = sd.cnn.maxPooling3d("pool", x, Pooling3DConfig.builder().build());
+
+        ByteBuffer bbSerialized = sd.asFlatBuffers(true);
+
+        SameDiff deserialized;
+        try{
+            deserialized = SameDiff.fromFlatBuffers(bbSerialized);
+        } catch (IOException e){
+            throw new RuntimeException("IOException deserializing from FlatBuffers", e);
+        }
+        assertEquals(
+                sd.getVariableOutputOp("pool").getClass(),
+                deserialized.getVariableOutputOp("pool").getClass());
+    }
+
+    @Test
+    public void pooling3DSerialization2(){
+        SameDiff sd = SameDiff.create();
+
+        SDVariable x = sd.placeHolder("x", DataType.FLOAT, 1, 28, 28);
+        SDVariable o = sd.cnn.avgPooling3d("pool", x, Pooling3DConfig.builder().build());
+
+        ByteBuffer bbSerialized = sd.asFlatBuffers(true);
+
+        SameDiff deserialized;
+        try{
+            deserialized = SameDiff.fromFlatBuffers(bbSerialized);
+        } catch (IOException e){
+            throw new RuntimeException("IOException deserializing from FlatBuffers", e);
+        }
+        assertEquals(
+                sd.getVariableOutputOp("pool").getClass(),
+                deserialized.getVariableOutputOp("pool").getClass());
     }
 }

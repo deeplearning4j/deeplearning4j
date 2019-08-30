@@ -20,7 +20,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -134,7 +134,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
     }
 
     @Override
@@ -202,12 +202,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public void setX(INDArray x) {
         if (x == null) {
             if (args() != null && args().length >= 1) {
-                DifferentialFunction firstArg = args()[0];
-                if (firstArg instanceof SDVariable) {
-                    SDVariable sdVariable = (SDVariable) firstArg;
-                    if (sdVariable.getArr() != null)
-                        this.x = sdVariable.getArr();
-                }
+                SDVariable firstArg = args()[0];
+                if (firstArg.getArr() != null)
+                    this.x = firstArg.getArr();
             } else
                 throw new ND4JIllegalStateException("Unable to set null array for x. Also unable to infer from differential function arguments");
         } else
@@ -238,12 +235,9 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public void setY(INDArray y) {
         if (y == null) {
             if (args() != null && args().length > 1) {
-                DifferentialFunction firstArg = args()[1];
-                if (firstArg instanceof SDVariable) {
-                    SDVariable sdVariable = (SDVariable) firstArg;
-                    if (sdVariable.getArr() != null)
-                        this.y = sdVariable.getArr();
-                }
+                SDVariable firstArg = args()[1];
+                if (firstArg.getArr() != null)
+                    this.y = firstArg.getArr();
             } else
                 throw new ND4JIllegalStateException("Unable to set null array for y. Also unable to infer from differential function arguments");
         } else
@@ -274,7 +268,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public SDVariable[] outputVariables(String baseName) {
         if(zVertexId == null)  {
-            val outputNames = sameDiff.getOutputsForFunction(this);
+            val outputNames = sameDiff.getOutputsForOp(this);
             //no need to dynamically create if already exists
             if(outputNames != null) {
                 zVertexId = sameDiff.getVariable(outputNames[0]).getVarName();
@@ -293,13 +287,13 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
                 sameDiff.setArrayForVariable(newVars[0].getVarName(),inputArr);
                 z = inputArr;
-                if(sameDiff.getOutputsForFunction(this) == null)
+                if(sameDiff.getOutputsForOp(this) == null)
                     sameDiff.addOutgoingFor(newVars,this);
                 return newVars;
             }
 
             SDVariable[] newVars = sameDiff.generateOutputVariableForOp(this, baseName, false);
-            if (sameDiff.getOutputsForFunction(this) == null)
+            if (sameDiff.getOutputsForOp(this) == null)
                 sameDiff.addOutgoingFor(newVars, this);
             return newVars;
         }

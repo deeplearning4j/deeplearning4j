@@ -52,8 +52,8 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
 
     public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IAsyncGlobal<IDQN> asyncGlobal,
                                              AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf,
-                                             TrainingListenerList listeners, int threadNumber) {
-        super(asyncGlobal, mdp, listeners, threadNumber);
+                                             TrainingListenerList listeners, int threadNumber, int deviceNum) {
+        super(asyncGlobal, mdp, listeners, threadNumber, deviceNum);
         this.conf = conf;
         this.asyncGlobal = asyncGlobal;
         this.threadNumber = threadNumber;

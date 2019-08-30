@@ -777,7 +777,7 @@ namespace nd4j {
             block.setDataType(0, type);
             block.fillInputs(in);
             block.markInplace(isInplace);
-            block.setRNG(ProviderRNG::getInstance().getRNG());
+           // block.setRNG(ProviderRNG::getInstance().getRNG());
 
             for (int e = 0; e < tArgs.size(); e++)
                 block.getTArguments()->emplace_back(tArgs.at(e));

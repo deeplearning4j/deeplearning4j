@@ -137,8 +137,8 @@ namespace nd4j {
         auto newAxis = ShapeUtils::evalDimsToExclude(array->rankOf(), args);
         auto result = array->allTensorsAlongDimension(newAxis);
         for (int e = 0; e < result->size(); e++) {
-            auto chunk = result->at(e)->dup(array->ordering());
-            write(e, chunk);
+            auto chunk = result->at(e);//->dup(array->ordering());
+            write(e, chunk->dup(array->ordering()));
         }
         delete result;
     }

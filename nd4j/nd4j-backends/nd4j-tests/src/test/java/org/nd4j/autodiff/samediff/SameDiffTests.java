@@ -59,13 +59,13 @@ import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNorma
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.IsNonDecreasing;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.IsNumericTensor;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.IsStrictlyIncreasing;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Min;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.checkutil.NDArrayCreationUtil;
@@ -1516,7 +1516,7 @@ public class SameDiffTests extends BaseNd4jTest {
         //then dL/dIn = 1 if in_i == min(in) or 0 otherwise
 
         //Note that we don't have an "IsMin" op, so use IsMax(neg(in)) which is equivalent
-        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.neg())).castTo(Nd4j.defaultFloatingPointType());
+        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.neg()))[0].castTo(Nd4j.defaultFloatingPointType());
 
         assertEquals(exp, dLdIn);
     }
@@ -1540,7 +1540,7 @@ public class SameDiffTests extends BaseNd4jTest {
         //If L = max(in)
         //then dL/dIn = 1 if in_i == max(in) or 0 otherwise
 
-        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.dup())).castTo(DataType.DOUBLE);
+        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.dup()))[0].castTo(DataType.DOUBLE);
 
         assertEquals(exp, dLdIn);
     }
@@ -1759,11 +1759,11 @@ public class SameDiffTests extends BaseNd4jTest {
                     break;
                 case 7:
                     t = sd.max(in1, in2);
-                    expOut = Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup()));
+                    expOut = Nd4j.getExecutioner().exec(new Max(ia, ib, ia.dup()))[0];
                     break;
                 case 8:
                     t = sd.min(in1, in2);
-                    expOut = Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup()));
+                    expOut = Nd4j.getExecutioner().exec(new Min(ia, ib, ia.dup()))[0];
                     break;
                 case 9:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
@@ -3117,7 +3117,6 @@ public class SameDiffTests extends BaseNd4jTest {
         final INDArray array = Nd4j.rand(1, 1);
         final SameDiff sd = SameDiff.create();
         final SDVariable a = sd.var("a", array.shape());
-        a.setScalarValue(array);
         a.getArr();
     }
 
@@ -3565,6 +3564,17 @@ public class SameDiffTests extends BaseNd4jTest {
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
         assertEquals(115, SD.exec(null, outName).get(outName).getInt(0));
+    }
 
+    @Test
+    public void testMod_1(){
+        val sd = SameDiff.create();
+        val initial = sd.constant("initial", Nd4j.createFromArray(5.f, 6.f, 7.f));
+        val four = sd.constant("four", 4.0f);
+        val mod = initial.mod("mod",  four);
+
+        val e = Nd4j.createFromArray(1.f, 2.f, 3.f);
+
+        assertEquals(e, mod.eval());
     }
 }

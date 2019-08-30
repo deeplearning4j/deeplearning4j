@@ -47,6 +47,10 @@ public class LessThan extends BaseDynamicTransformOp {
         super(inputs, outputs);
     }
 
+    public LessThan(INDArray x, INDArray y, INDArray z){
+        this(new INDArray[]{x, y}, new INDArray[]{z});
+    }
+
     @Override
     public String opName() {
         return "less";

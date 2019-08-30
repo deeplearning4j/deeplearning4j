@@ -127,8 +127,7 @@ public class IndexingTestsC extends BaseNd4jTest {
                         4, 4, 4, 4, 4, 4, 4, 4}, new long[] {1, 1, 8, 8});
 
 
-        INDArray padded = Nd4j.pad(img, new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}},
-                        Nd4j.PadMode.CONSTANT);
+        INDArray padded = Nd4j.pad(img, new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}});
 
         INDArray get = padded.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.interval(i, sy, iLim),
                         NDArrayIndex.interval(j, sx, jLim));

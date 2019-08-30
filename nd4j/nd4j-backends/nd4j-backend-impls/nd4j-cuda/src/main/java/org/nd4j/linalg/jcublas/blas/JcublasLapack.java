@@ -75,7 +75,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -142,7 +142,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -214,7 +214,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -330,7 +330,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = (CudaContext) allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -439,7 +439,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = (CudaContext) allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -523,7 +523,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -656,7 +656,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = (CudaContext) allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -766,7 +766,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -853,7 +853,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = (CudaContext) allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();
@@ -928,7 +928,7 @@ public class JcublasLapack extends BaseLapack {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         // Get context for current thread
-        CudaContext ctx = (CudaContext) allocator.getDeviceContext().getContext();
+        val ctx = allocator.getDeviceContext();
 
         // setup the solver handles for cuSolver calls
         cusolverDnHandle_t handle = ctx.getSolverHandle();

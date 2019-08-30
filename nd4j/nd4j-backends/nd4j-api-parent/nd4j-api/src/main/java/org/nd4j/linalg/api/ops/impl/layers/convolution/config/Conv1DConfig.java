@@ -16,15 +16,16 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
-import lombok.*;
-import org.nd4j.base.Preconditions;
-
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.util.ConvConfigUtil;
 
-@Builder
 @Data
-@AllArgsConstructor
+@Builder
 @NoArgsConstructor
 public class Conv1DConfig extends BaseConvolutionConfig {
     public static final String NCW = "NCW";
@@ -40,6 +41,16 @@ public class Conv1DConfig extends BaseConvolutionConfig {
     private String dataFormat = NCW;
     private boolean isSameMode;
 
+    public Conv1DConfig(long k, long s, long p, String dataFormat, boolean isSameMode) {
+        this.k = k;
+        this.s = s;
+        this.p = p;
+        this.dataFormat = dataFormat;
+        this.isSameMode = isSameMode;
+
+        validate();
+    }
+
     public boolean isNWC(){
         Preconditions.checkState(dataFormat.equalsIgnoreCase(NCW) || dataFormat.equalsIgnoreCase(NWC),
                 "Data format must be one of %s or %s, got %s", NCW, NWC, dataFormat);
@@ -54,6 +65,7 @@ public class Conv1DConfig extends BaseConvolutionConfig {
         }
     }
 
+    @Override
     public Map<String, Object> toProperties() {
         Map<String, Object> ret = new LinkedHashMap<>();
         ret.put("k", k);
@@ -62,6 +74,12 @@ public class Conv1DConfig extends BaseConvolutionConfig {
         ret.put("isSameMode", isSameMode);
         ret.put("dataFormat", dataFormat);
         return ret;
+    }
+
+    @Override
+    protected void validate() {
+        ConvConfigUtil.validate1D(k, s, p);
+        Preconditions.checkArgument(dataFormat != null, "Data format can't be null");
     }
 
 

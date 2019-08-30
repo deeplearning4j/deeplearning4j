@@ -35,6 +35,8 @@
 #include <op_boilerplate.h>
 #include <memory/Workspace.h>
 #include <vector>
+#include <mutex>
+#include <execution/ContextBuffers.h>
 
 
 
@@ -44,49 +46,42 @@ class ND4J_EXPORT LaunchContext {
 
 	private:
         static std::vector<std::shared_ptr<LaunchContext>> _contexts;
+        static std::mutex _mutex;
 
 #ifdef __CUDABLAS__
 
 #ifndef __JAVACPP_HACK__
 
-		void* _reductionPointer;
-		void* _scalarPointer;
-		int* _allocationPointer;
-		cudaStream_t *_cudaStream = nullptr;
-		cudaStream_t *_cudaSpecialStream = nullptr;
-		void *_cublasHandle = nullptr;
+		void* _cublasHandle = nullptr;
+		void* _cusolverHandle = nullptr;
 
 #endif // JCPP
 
 		bool _isAllocated = false;
 #endif // CUDA
-	nd4j::memory::Workspace* _workspace = nullptr;
-    int _deviceID = 0;
+	    nd4j::memory::Workspace* _workspace = nullptr;
+        int _deviceID = 0;
+
 	public:
 #ifdef __CUDABLAS__
 
 #ifndef __JAVACPP_HACK__
 		LaunchContext(cudaStream_t* cudaStream, cudaStream_t& specialCudaStream, void* reductionPointer = nullptr,  void* scalarPointer = nullptr,  int* allocationPointer = nullptr);
 
-		FORCEINLINE void* getReductionPointer () const {return _reductionPointer;};
+		void* getReductionPointer () const;
+		void* getScalarPointer() const;
+		int* getAllocationPointer() const;
+		void* getCublasHandle() const;
+		void* getCusolverHandle() const;
+		cudaStream_t* getCudaStream() const;
+		cudaStream_t* getCudaSpecialStream() const;
 
-		FORCEINLINE void* getScalarPointer() const {return _scalarPointer;};
-
-		FORCEINLINE int* getAllocationPointer() const {return _allocationPointer;};
-
-		FORCEINLINE void* getCublasHandle() const {return _cublasHandle;};
-		FORCEINLINE cudaStream_t* getCudaStream() const {return _cudaStream;};
-		FORCEINLINE cudaStream_t* getCudaSpecialStream() const {return _cudaSpecialStream;};
-
-		FORCEINLINE void setReductionPointer (void* reductionPointer) {_reductionPointer = reductionPointer;};
-
-		FORCEINLINE void setScalarPointer(void* scalarPointer) {_scalarPointer = scalarPointer;};
-
-		FORCEINLINE void setAllocationPointer(int* allocationPointer) {_allocationPointer = allocationPointer;};
-
-		FORCEINLINE void setCudaStream(cudaStream_t* cudaStream)  {_cudaStream = cudaStream;};
-		FORCEINLINE void setCudaSpecialStream(cudaStream_t* cudaStream)  {_cudaSpecialStream = cudaStream;};
-		FORCEINLINE void setCublasHandle(void *handle) {_cublasHandle = handle; };
+		void setReductionPointer (void* reductionPointer);
+		void setScalarPointer(void* scalarPointer);
+		void setAllocationPointer(int* allocationPointer);
+		void setCudaStream(cudaStream_t* cudaStream);
+		void setCudaSpecialStream(cudaStream_t* cudaStream);
+		void setCublasHandle(void *handle);
 
 
 #endif // JCPP
@@ -103,7 +98,12 @@ class ND4J_EXPORT LaunchContext {
     	int getDeviceID() const {return _deviceID;}
     	void setDeviceID(int deviceID) { _deviceID = deviceID; }
 
+    	static bool isInitialized();
+    	static void releaseBuffers();
 	    static LaunchContext* defaultContext();
+
+
+    	static void swapContextBuffers(ContextBuffers &buffers);
 
 };
 

@@ -38,10 +38,10 @@ import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
 import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMax;
-import org.nd4j.linalg.api.ops.impl.transforms.comparison.OldMin;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.GreaterThanOrEqual;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.LessThanOrEqual;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Max;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Min;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.Standardize;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
@@ -1008,7 +1008,7 @@ public class TransformOpValidation extends BaseOpValidation {
             }
 
 
-            DifferentialFunction[] funcs = sd.functions();
+            DifferentialFunction[] funcs = sd.ops();
             String name = opName == null ? funcs[0].opName() : opName;
 
 
@@ -1141,11 +1141,11 @@ public class TransformOpValidation extends BaseOpValidation {
                     break;
                 case 14:
                     t = sd.max(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMax(ia, ib, ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new Max(ia, ib, ia.dup()))[0]);
                     break;
                 case 15:
                     t = sd.min(in1, in2);
-                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new OldMin(ia, ib, ia.dup())));
+                    tc.expectedOutput(t.getVarName(), Nd4j.getExecutioner().exec(new Min(ia, ib, ia.dup()))[0]);
                     break;
                 case 16:
                     ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
@@ -1199,7 +1199,7 @@ public class TransformOpValidation extends BaseOpValidation {
             }
 
 
-            DifferentialFunction[] funcs = sd.functions();
+            DifferentialFunction[] funcs = sd.ops();
             String name = (opName == null ? funcs[0].opName() : opName);
 
             String msg = "test: " + i + " - " + name;
@@ -1249,7 +1249,7 @@ public class TransformOpValidation extends BaseOpValidation {
                 case 2:
                     //TODO: IsMax supports both bool and float out: https://github.com/deeplearning4j/deeplearning4j/issues/6872
                     inArr = Nd4j.create(new double[]{-3,5,0,2});
-                    exp = Nd4j.create(new boolean[]{false,true,false,false}).castTo(DataType.DOUBLE);
+                    exp = Nd4j.create(new boolean[]{false,true,false,false});
                     out = sd.math().isMax(in);
                     break;
                 case 3:
@@ -1408,7 +1408,7 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testScatterOpsScalar(){
         for(String s : new String[]{"add", "sub", "mul", "div"}) {
             INDArray ref = Nd4j.linspace(1, 30, 30, DataType.DOUBLE).reshape(10, 3);
-            INDArray indices = Nd4j.trueScalar(5);
+            INDArray indices = Nd4j.scalar(5);
             INDArray upd = Nd4j.create(new double[]{10, 20, 30});
 
             //The non-scalar case works:
@@ -1452,7 +1452,7 @@ public class TransformOpValidation extends BaseOpValidation {
     public void testPad(){
         INDArray in = Nd4j.valueArrayOf(new long[]{5}, 1.0);
         INDArray pad = Nd4j.create(new double[]{1,1}, new long[]{1,2}).castTo(DataType.LONG);
-        INDArray value = Nd4j.trueScalar(10.0);
+        INDArray value = Nd4j.scalar(10.0);
 
         INDArray out = Nd4j.create(new long[]{7});
 

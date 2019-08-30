@@ -60,6 +60,7 @@ throw an exception otherwise. Also, as we shall discuss just below, all the `SDV
 supposed to be of floating point type.
 
 ## Common features of variables
+
 Before we go to the differences between variables, let us first look at the properties they all share 
 - All variables are ultimately derived from an instance of `SameDiff`, serving as parts of its 
 [graph](./samediff/graphs). In fact, each variable has a `SameDiff` as one of its fields.
@@ -87,13 +88,22 @@ SDVariable weights = samediff.var("weights", DataType.FLOAT, 784, 10);
 ```
 adds a variable constituting of a 784x10 array of `float` numbers - weights for a single layer MNIST perceptron 
 in this case - to a pre-existing `SameDiff` instance `samediff`.
-However, this way the values within a variable will be set as zeros. If we wish them to be filled, say, with random 
-numbers, we need to add a weight initialization scheme, for instance like that:
+
+However, this way the values within a variable will be set as zeros. You may also create a variable with values from
+a preset `INDArray`. Say
+```java
+SDVariable weights = samediff.var("weigths", Nd4j.nrand(784, 10).div(28));
+```
+will create a variable filled with normally distributed randomly generated numbers with variance `1/28`. You may put
+any other array creation methods instead of `nrand`, or any preset array, of course. Also, you may use some popular 
+initialization scheme, like so:
+
 ```java
 SDVariable weights = samediff.var("weights", new XavierInitScheme('c', 784, 10), DataType.FLOAT, 784, 10);
 ```
 Now, the weights will be randomly initialized using the Xavier scheme. There are other ways to create and 
-fill variables, you may see a full reference in our [javadoc](https://deeplearning4j.org/api/latest/).
+
+fill variables: you may look them up in the 'known subclasses' section [of our javadoc](https://deeplearning4j.org/api/latest/org/nd4j/weightinit/WeightInitScheme.html").
 
 ### Constants
 

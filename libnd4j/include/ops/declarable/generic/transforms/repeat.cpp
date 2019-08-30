@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
@@ -24,38 +24,52 @@
 #include <ops/declarable/CustomOperations.h>
 
 namespace nd4j {
-    namespace ops {
-        //////////////////////////////////////////////////////////////////////////
-		// here iArgs is int vector of repeats at the beginning and last element in iArgs is dimension
-		CUSTOM_OP_IMPL(repeat, 1, 1, true, 0, -1) {			
+namespace ops  {
 
-			auto x   = INPUT_VARIABLE(0);
-            auto ret = OUTPUT_VARIABLE(0);
+//////////////////////////////////////////////////////////////////////////
+// here iArgs is int vector of repeats at the beginning and last element in iArgs is dimension
+CUSTOM_OP_IMPL(repeat, 1, 1, true, 0, -1) {
 
-			x->repeat(block.getIArguments()->back(), *ret);
+	auto input  = INPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-			return Status::OK();
-        }
+    std::vector<int> repeats = *block.getIArguments();
 
-        DECLARE_TYPES(repeat) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
-        }
-		
-        DECLARE_SHAPE_FN(repeat) {                               
-            
-            auto x   = INPUT_VARIABLE(0);
-            auto argumets = block.getIArguments();
-            int argsSize = argumets->size();
-            int dimension = (*argumets)[argsSize-1];
-            auto repeats = *argumets;
-            repeats.pop_back();
-            
-            auto outShape = ShapeUtils::evalRepeatShape(dimension, ArrayUtils::toLongVector(repeats), *x);
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(x->dataType(), x->ordering(), outShape)));
-        }
-    }
+    const int axis = repeats.back() < 0 ? repeats.back() + input->rankOf() : repeats.back();
+
+    repeats.pop_back();
+
+    REQUIRE_TRUE(0 <= axis && axis < input->rankOf(), 0, "CUSTOM REPEAT OP: wrong axis argument it should be less then input array rank %i, but got %i instead !", input->rankOf(), axis);
+
+    REQUIRE_TRUE(repeats.size() == 1 || repeats.size() == input->sizeAt(axis), 0, "CUSTOM REPEAT OP: wrong axis argument, size of repeats vector must be 1 or equal to dimension at given axis, but got repeats.size = %i and axis = %i !", repeats.size(), axis);
+
+    input->repeat(axis, repeats, *output);
+
+	return Status::OK();
+}
+
+DECLARE_TYPES(repeat) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setSameMode(true);
+}
+
+DECLARE_SHAPE_FN(repeat) {
+
+    auto input = INPUT_VARIABLE(0);
+
+    std::vector<int> repeats = *block.getIArguments();
+
+    const int axis = repeats.back() < 0 ? repeats.back() + input->rankOf() : repeats.back();
+
+    repeats.pop_back();
+
+    auto outShape = ShapeUtils::evalRepeatShape(axis, repeats, *input);
+
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(input->dataType(), input->ordering(), outShape)));
+
+}
+}
 }
 
 #endif

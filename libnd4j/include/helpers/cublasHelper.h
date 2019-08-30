@@ -21,12 +21,28 @@
 #ifndef DEV_TESTS_CUBLASHELPER_H
 #define DEV_TESTS_CUBLASHELPER_H
 
-namespace nd4j {
-    namespace cublas {
-        void* handle();
+#include <dll.h>
+#include <pointercast.h>
+#include <vector>
 
-        void destroyHandle(void* handle);
-    }
+namespace nd4j {
+    class CublasHelper {
+    private:
+        static CublasHelper *_INSTANCE;
+
+        std::vector<void*> _cache;
+        std::vector<void*> _solvers;
+
+        CublasHelper();
+        ~CublasHelper();
+    public:
+        static CublasHelper* getInstance();
+
+        void* solver();
+
+        void* handle();
+        void* handle(int deviceId);
+    };
 }
 
 #endif //DEV_TESTS_CUBLASHELPER_H

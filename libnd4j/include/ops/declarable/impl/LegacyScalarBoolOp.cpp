@@ -47,7 +47,7 @@ namespace nd4j {
             Nd4jLong *newShape;
             COPY_SHAPE(inShape, newShape);
 
-            return SHAPELIST(newShape);
+            return SHAPELIST(CONSTANT(newShape));
         }
 
         Nd4jStatus LegacyScalarBoolOp::validateAndExecute(Context &block) {

@@ -95,16 +95,10 @@ public class Word2VecPerformerVoid implements VoidFunction<Pair<List<VocabWord>,
         initExpTable();
 
         if (negative > 0 && conf.contains(TABLE)) {
-            try {
-                ByteArrayInputStream bis = new ByteArrayInputStream(conf.get(TABLE).getBytes());
-                DataInputStream dis = new DataInputStream(bis);
-                table = Nd4j.read(dis);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-
+            ByteArrayInputStream bis = new ByteArrayInputStream(conf.get(TABLE).getBytes());
+            DataInputStream dis = new DataInputStream(bis);
+            table = Nd4j.read(dis);
         }
-
     }
 
 

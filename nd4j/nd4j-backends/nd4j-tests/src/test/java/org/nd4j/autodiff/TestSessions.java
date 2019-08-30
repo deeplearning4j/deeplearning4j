@@ -72,7 +72,8 @@ public class TestSessions extends BaseNd4jTest {
         m.put("x", x);
         m.put("y", y);
 
-        Map<String,INDArray> outMap = is.output(Collections.singletonList("out"), m, null, true, null);
+        Map<String,INDArray> outMap = is.output(Collections.singletonList("out"), m, null,
+                Collections.<String>emptyList(), true, null);
 
         assertEquals(1, outMap.size());
         assertEquals(outExp, outMap.get("out"));
@@ -109,7 +110,8 @@ public class TestSessions extends BaseNd4jTest {
         m.put("y", y);
 
         System.out.println("----------------------------------");
-        Map<String,INDArray> outMap = is.output(Collections.singletonList("d"), m, null, false, null);
+        Map<String,INDArray> outMap = is.output(Collections.singletonList("d"), m, null,
+                Collections.<String>emptyList(), false, null);
 
         assertEquals(1, outMap.size());
         assertEquals(dExp, outMap.get("d"));
@@ -143,7 +145,8 @@ public class TestSessions extends BaseNd4jTest {
         InferenceSession is = new InferenceSession(sd);
 //        String outName = merge.getVarName();
         String outName = outVar.getVarName();
-        Map<String,INDArray> outMap = is.output(Collections.singletonList(outName), m, null, false, null);
+        Map<String,INDArray> outMap = is.output(Collections.singletonList(outName), m, null,
+                Collections.<String>emptyList(), false, null);
 
         assertEquals(1, outMap.size());
         INDArray out = outMap.get(outName);
@@ -178,7 +181,8 @@ public class TestSessions extends BaseNd4jTest {
         String n = merge.getVarName();
 
         System.out.println("----------------------------------");
-        Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null, false, null);
+        Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(),
+                false, null);
         assertEquals(1, outMap.size());
         assertEquals(expTrue, outMap.get(n));
 
@@ -187,7 +191,7 @@ public class TestSessions extends BaseNd4jTest {
         //Check false case:
         bArr.assign(0);
         is = new InferenceSession(sd);
-        outMap = is.output(Collections.singletonList(n), m, null, false, null);
+        outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(), false, null);
         assertEquals(1, outMap.size());
         assertEquals(expFalse, outMap.get(n));
     }
@@ -218,7 +222,8 @@ public class TestSessions extends BaseNd4jTest {
             String n = "while/Exit";
             String n2 = "while/Exit_1";
 
-            Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null, false, null);
+            Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null,
+                    Collections.<String>emptyList(), false, null);
             assertEquals(2, m.size());
 
             INDArray exp = Nd4j.scalar((float)numIter);

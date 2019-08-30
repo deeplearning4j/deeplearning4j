@@ -18,7 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce;
 
 import lombok.EqualsAndHashCode;
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -204,7 +204,7 @@ public class Mmul extends DynamicCustomOp {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         val isTransposeA = !attributesForNode.containsKey("transA") ? false : attributesForNode.get("transA").getI() > 0;
         val isTransposeB = !attributesForNode.containsKey("transB") ? false : attributesForNode.get("transB").getI() > 0;
         MMulTranspose mMulTranspose = MMulTranspose.builder()

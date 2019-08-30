@@ -164,9 +164,9 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     }
 
     protected boolean compareDevicePointers(INDArray array, Op op) {
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
 
-        Pointer pointer = AtomicAllocator.getInstance().getPointer(array, context);
+        val pointer = AtomicAllocator.getInstance().getPointer(array, context);
 
         long opZ = AtomicAllocator.getInstance().getPointer(op.z(), context).address();
         long opX = AtomicAllocator.getInstance().getPointer(op.x(), context).address();
@@ -193,7 +193,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
 
     protected boolean compareHostPointers(INDArray array, Op op) {
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
 
         Pointer pointer = AtomicAllocator.getInstance().getPointer(array, context);
 
@@ -506,9 +506,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
 
-        //        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
-        // FIXME: do not leave it as is
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = allocator.getDeviceContext();
 
         pointers.setX(allocator.getPointer(op.x(), context));
         pointers.setXShapeInfo(allocator.getPointer(op.x().shapeInfoDataBuffer(), context));
@@ -930,7 +928,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
     public void flushQueueBlocking() {
         flushQueue();
 
-        val context =((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext());
+        val context = AtomicAllocator.getInstance().getDeviceContext();
 
         context.syncSpecialStream();
         context.syncOldStream();

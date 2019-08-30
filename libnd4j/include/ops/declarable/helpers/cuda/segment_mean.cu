@@ -186,9 +186,9 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void segmentMeanFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctor_, (context, input, indices, output), FLOAT_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), segmentMeanFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
     }
-    BUILD_DOUBLE_TEMPLATE(template void segmentMeanFunctor_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
+
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
     static void unsortedSegmentMeanFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
@@ -226,10 +226,8 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     void unsortedSegmentMeanFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMeanFunctor_, (context, input, indices, numOfClasses, output),
-                              FLOAT_TYPES, INTEGER_TYPES);
+                              NUMERIC_TYPES, INDEXING_TYPES);
     }
-    // -------------------------------------------------------------------------------------------------------------- //
-    BUILD_DOUBLE_TEMPLATE(template void unsortedSegmentMeanFunctor_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
 
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
@@ -250,6 +248,7 @@ namespace helpers {
             gradOut = reinterpret_cast<T*>(eps);
             gradLen = shape::length(epsShape);
         }
+        __syncthreads();
 
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = gridDim.x * blockDim.x;
@@ -351,10 +350,8 @@ namespace helpers {
     // segmen mean bp main
     int segmentMeanFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMeanFunctorBP_, (context, input,
-                indices, gradOut, output), NUMERIC_TYPES, INTEGER_TYPES);
+                indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
     }
-    // -------------------------------------------------------------------------------------------------------------- //
-    BUILD_DOUBLE_TEMPLATE(template int segmentMeanFunctorBP_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
     // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T, typename I>
@@ -402,12 +399,8 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     int unsortedSegmentMeanFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMeanFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMeanFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
     }
-    // -------------------------------------------------------------------------------------------------------------- //
-
-    BUILD_DOUBLE_TEMPLATE(template int unsortedSegmentMeanFunctorBP_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
-    // -------------------------------------------------------------------------------------------------------------- //
 
 }
 }

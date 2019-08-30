@@ -17,7 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -80,7 +80,7 @@ public class Fill extends DynamicCustomOp {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         super.initFromOnnx(node, initWith, attributesForNode, graph);
     }
 

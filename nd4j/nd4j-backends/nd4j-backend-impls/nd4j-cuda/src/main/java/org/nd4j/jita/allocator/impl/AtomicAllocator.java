@@ -22,8 +22,6 @@ import lombok.val;
 import org.apache.commons.lang3.RandomUtils;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.Allocator;
-import org.nd4j.jita.allocator.context.ContextPool;
-import org.nd4j.jita.allocator.context.ExternalContext;
 import org.nd4j.jita.allocator.enums.Aggressiveness;
 import org.nd4j.jita.allocator.enums.AllocationStatus;
 import org.nd4j.jita.allocator.garbage.GarbageBufferReference;
@@ -226,7 +224,7 @@ public class AtomicAllocator implements Allocator {
      * @return
      */
     @Override
-    public ExternalContext getDeviceContext() {
+    public CudaContext getDeviceContext() {
         // FIXME: proper lock avoidance required here
         return memoryHandler.getDeviceContext();
     }
@@ -290,7 +288,7 @@ public class AtomicAllocator implements Allocator {
     }
 
     public Pointer getPointer(DataBuffer buffer) {
-        return memoryHandler.getDevicePointer(buffer, (CudaContext) getDeviceContext().getContext());
+        return memoryHandler.getDevicePointer(buffer, getDeviceContext());
     }
 
     /**
@@ -402,13 +400,18 @@ public class AtomicAllocator implements Allocator {
     public void freeMemory(AllocationPoint point) {
         if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
             this.getMemoryHandler().getMemoryProvider().free(point);
-            point.setAllocationStatus(AllocationStatus.HOST);
-            this.getMemoryHandler().getMemoryProvider().free(point);
-            this.getMemoryHandler().forget(point, AllocationStatus.DEVICE);
+
+            if (point.getHostPointer() != null) {
+                point.setAllocationStatus(AllocationStatus.HOST);
+                this.getMemoryHandler().getMemoryProvider().free(point);
+                this.getMemoryHandler().forget(point, AllocationStatus.DEVICE);
+            }
         } else {
             // call it only once
-            this.getMemoryHandler().getMemoryProvider().free(point);
-            this.getMemoryHandler().forget(point, AllocationStatus.HOST);
+            if (point.getHostPointer() != null) {
+                this.getMemoryHandler().getMemoryProvider().free(point);
+                this.getMemoryHandler().forget(point, AllocationStatus.HOST);
+            }
         }
 
         allocationsMap.remove(point.getObjectId());
@@ -440,6 +443,7 @@ public class AtomicAllocator implements Allocator {
         Long allocId = objectsTracker.getAndIncrement();
         point.setObjectId(allocId);
         point.setConstant(true);
+        point.setDeviceId(Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
         allocationsMap.put(allocId, point);
 
@@ -1070,11 +1074,6 @@ public class AtomicAllocator implements Allocator {
     @Override
     public FlowController getFlowController() {
         return memoryHandler.getFlowController();
-    }
-
-    @Override
-    public ContextPool getContextPool() {
-        return memoryHandler.getContextPool();
     }
 
     @Override

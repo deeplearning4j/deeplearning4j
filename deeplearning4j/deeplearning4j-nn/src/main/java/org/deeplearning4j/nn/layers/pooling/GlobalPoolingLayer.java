@@ -296,7 +296,7 @@ public class GlobalPoolingLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         switch (poolingType) {
             case MAX:
-                INDArray isMax = Nd4j.getExecutioner().exec(new IsMax(inputArray.dup(), poolDim));
+                INDArray isMax = Nd4j.exec(new IsMax(inputArray, inputArray.ulike(), poolDim))[0];
                 return Nd4j.getExecutioner().exec(new BroadcastMulOp(isMax, epsilon, isMax, broadcastDims));
             case AVG:
                 //if out = avg(in,dims) then dL/dIn = 1/N * dL/dOut

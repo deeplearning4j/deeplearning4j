@@ -21,13 +21,14 @@
 #include "../ConstantTadHelper.h"
 #include <TAD.h>
 #include <ConstantHelper.h>
+#include <AffinityManager.h>
 #include <exceptions/cuda_exception.h>
 #include <execution/LaunchContext.h>
 #include <ShapeUtils.h>
 
 namespace nd4j {
     ConstantTadHelper::ConstantTadHelper() {
-        auto numDevices = ConstantHelper::getNumberOfDevices();
+        auto numDevices = AffinityManager::numberOfDevices();
 
         for (int e = 0; e < numDevices; e++) {
             std::map<TadDescriptor, TadPack> pack;
@@ -61,7 +62,7 @@ namespace nd4j {
     }
 
     TadPack& ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
-        const int deviceId = ConstantHelper::getCurrentDevice();
+        const int deviceId = AffinityManager::currentDeviceId();
 
         _mutex.lock();
 

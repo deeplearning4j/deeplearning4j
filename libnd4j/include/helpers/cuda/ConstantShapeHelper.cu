@@ -22,12 +22,13 @@
 #include <exceptions/cuda_exception.h>
 #include <ShapeDescriptor.h>
 #include <ShapeBuilders.h>
+#include <AffinityManager.h>
 #include <ConstantHelper.h>
 
 namespace nd4j {
 
     ConstantShapeHelper::ConstantShapeHelper() {
-        auto numDevices = ConstantHelper::getNumberOfDevices();
+        auto numDevices = AffinityManager::numberOfDevices();
 
         _cache.resize(numDevices);
         for (int e = 0; e < numDevices; e++) {
@@ -54,7 +55,7 @@ namespace nd4j {
     }
 
     ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
-        int deviceId = ConstantHelper::getCurrentDevice();
+        int deviceId = AffinityManager::currentDeviceId();
 
         _mutex.lock();
 
@@ -83,7 +84,7 @@ namespace nd4j {
 
     bool ConstantShapeHelper::checkBufferExistenceForShapeInfo(ShapeDescriptor &descriptor) {
         bool result;
-        auto deviceId = ConstantHelper::getCurrentDevice();
+        auto deviceId = AffinityManager::currentDeviceId();
         _mutex.lock();
 
         if (_cache[deviceId].count(descriptor) == 0)

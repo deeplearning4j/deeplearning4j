@@ -21,7 +21,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import onnx.OnnxProto3;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -71,7 +70,7 @@ public class DeConv2DTF extends DynamicCustomOp {
         }
 
         addArgs();
-        sameDiff.putFunctionForId(this.getOwnName(), this);
+        sameDiff.putOpForId(this.getOwnName(), this);
         sameDiff.addArgsFor(inputs, this);
     }
 

@@ -334,10 +334,6 @@ namespace helpers {
         BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                               (images, boxes, indices, cropSize, method, extrapolationVal, crops), NUMERIC_TYPES, FLOAT_TYPES, INTEGER_TYPES);
     }
-
-    BUILD_TRIPLE_TEMPLATE(template void cropAndResizeFunctor_,
-                          (NDArray const* images, NDArray const* boxes, NDArray const* indices, NDArray const* cropSize, int method, double extrapolationVal, NDArray* crops),
-                          NUMERIC_TYPES, FLOAT_TYPES, INTEGER_TYPES);
 }
 }
 }

@@ -16,8 +16,8 @@
 
 package org.nd4j.imports.graphmapper;
 
-import com.github.os72.protobuf351.Message;
-import com.github.os72.protobuf351.TextFormat;
+import org.nd4j.shade.protobuf.Message;
+import org.nd4j.shade.protobuf.TextFormat;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.IOUtils;
@@ -361,7 +361,7 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
     }
 
     protected void initOutputVariables(SameDiff sd, DifferentialFunction df) {
-        String[] outNames = sd.getOutputsForFunction(df);
+        String[] outNames = sd.getOutputsForOp(df);
         SDVariable[] outVars;
         if (outNames == null) {
             outVars = sd.generateOutputVariableForOp(df, df.getOwnName() != null ? df.getOwnName() : df.opName(), true);

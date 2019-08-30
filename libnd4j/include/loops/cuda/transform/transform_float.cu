@@ -99,18 +99,18 @@ namespace functions {
 
 		        if(xEws > 0 && zEws > 0 && xOrder == zOrder) {								
 					
-					for (int i = tid; i < length; i += totalThreads)
-						z[i * zEws] = OpType::op(x[i * xEws], params);				
+					for (Nd4jLong i = tid; i < length; i += totalThreads)
+                        z[i * zEws] = OpType::op(x[i * xEws], params);
 		        }
 		        else {			        
 					if(vx == vz) {
-						for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+						for (Nd4jLong i = tid; i < length; i+= totalThreads) {
 							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);						
 	    			    	z[xOffset] = OpType::op(x[xOffset], params);
 		    	    	}		    	    
 					}
 					else {
-		    	    	for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+		    	    	for (Nd4jLong i = tid; i < length; i+= totalThreads) {
 							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);
 							auto zOffset = shape::getIndexOffset(i, zShapeInfo, length);				        
 	    			    	z[zOffset] = OpType::op(x[xOffset], params);
@@ -141,6 +141,17 @@ namespace functions {
 			transformFloatSimple<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
             nd4j::DebugHelper::checkErrorCode(stream, "transformFloat(...) failed");
 		}
+
+        template<typename X, typename Z>
+        void TransformFloat<X,Z>::exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
+        }
+
+        template<typename X, typename Z>
+        template <typename OpType>
+        void TransformFloat<X,Z>::exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
+        }
 
 
 		BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformFloat, , LIBND4J_TYPES, FLOAT_TYPES);

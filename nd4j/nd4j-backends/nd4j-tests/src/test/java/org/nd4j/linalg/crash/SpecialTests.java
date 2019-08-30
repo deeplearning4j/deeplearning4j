@@ -32,7 +32,6 @@ import org.nd4j.linalg.api.memory.enums.ResetPolicy;
 import org.nd4j.linalg.api.memory.enums.SpillPolicy;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.LegacyPooling2D;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -199,27 +198,43 @@ public class SpecialTests extends BaseNd4jTest {
 
         val list = new CopyOnWriteArrayList<INDArray>();
         val threads = new ArrayList<Thread>();
-        for (int e = 0; e< Nd4j.getAffinityManager().getNumberOfDevices(); e++) {
+        val devices = Nd4j.getAffinityManager().getNumberOfDevices();
+        for (int e = 0; e < devices; e++) {
             val f = e;
             val t = new Thread(new Runnable() {
                 @Override
                 public void run() {
+                    val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
+                    log.info("Current device: {}", deviceId);
                     for (int i = 0; i < 10; i++) {
-                        list.add(Nd4j.create(100, 100).assign(1.0f));
+                        val ar = Nd4j.create(100, 100).assign(1.0f);
+
+                        assertEquals(deviceId, Nd4j.getAffinityManager().getDeviceForArray(ar));
+                        list.add(ar);
                         Nd4j.getExecutioner().commit();
                     }
                 }
             });
 
             t.start();
+            t.join();
             threads.add(t);
+
+            log.info("------------------------");
         }
 
         for (val t:threads)
             t.join();
 
-        for (val a:list)
-            assertEquals(1.0f, a.meanNumber().floatValue(), 1e-5);
+        for (val a:list) {
+            val device = Nd4j.getAffinityManager().getDeviceForArray(a);
+            try {
+                assertEquals(1.0f, a.meanNumber().floatValue(), 1e-5);
+            } catch (Exception e) {
+                log.error("Failed for array from device [{}]", device);
+                throw e;
+            }
+        }
     }
 
     @Test
@@ -485,52 +500,6 @@ public class SpecialTests extends BaseNd4jTest {
             out = Nd4j.concat(1, arrs);
         }
         Nd4j.getExecutioner().commit();
-        System.out.println(out);
-    }
-
-
-    @Test
-    public void legacyPooling2dTest_double(){
-
-        Nd4j.getRandom().setSeed(12345);
-        INDArray in = Nd4j.rand(DataType.DOUBLE, new int[]{1,1,3,3});
-        INDArray out = Nd4j.create(DataType.DOUBLE, 1,1,2,2).assign(-119);
-
-        Nd4j.getExecutioner().commit();
-
-        val op = new LegacyPooling2D(in, 2, 2, 1, 1, 0, 0, 1, 1, true, LegacyPooling2D.Pooling2DType.MAX, 0.0, out);
-        Nd4j.getExecutioner().exec(op);
-        Nd4j.getExecutioner().commit();
-        System.out.println(in);
-        System.out.println(out);
-    }
-
-
-    @Test
-    public void legacyPooling2dTes_float(){
-
-        Nd4j.getRandom().setSeed(12345);
-        INDArray in = Nd4j.rand(DataType.FLOAT, new int[]{1,1,3,3});
-        INDArray out = Nd4j.create(DataType.FLOAT, 1,1,2,2);
-
-        val op = new LegacyPooling2D(in, 2, 2, 1, 1, 0, 0, 1, 1, true, LegacyPooling2D.Pooling2DType.MAX, 0.0, out);
-        Nd4j.getExecutioner().exec(op);
-        Nd4j.getExecutioner().commit();
-        System.out.println(in);
-        System.out.println(out);
-    }
-
-    @Test
-    public void legacyPooling2dTes_half(){
-
-        Nd4j.getRandom().setSeed(12345);
-        INDArray in = Nd4j.rand(DataType.HALF, new int[]{1,1,3,3});
-        INDArray out = Nd4j.create(DataType.HALF, 1,1,2,2);
-
-        val op = new LegacyPooling2D(in, 2, 2, 1, 1, 0, 0, 1, 1, true, LegacyPooling2D.Pooling2DType.MAX, 0.0, out);
-        Nd4j.getExecutioner().exec(op);
-        Nd4j.getExecutioner().commit();
-        System.out.println(in);
         System.out.println(out);
     }
 

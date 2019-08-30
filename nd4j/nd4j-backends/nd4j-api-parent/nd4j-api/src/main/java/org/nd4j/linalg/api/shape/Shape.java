@@ -251,6 +251,41 @@ public class Shape {
         return false;
     }
 
+    /**
+     * Assert that the broadcast operation {@code result = first.op(second)} is valid, given the
+     * shapes of first, second, and result.<br>
+     * Throws an exception otherwise
+     *
+     * @param op     Name of the operation
+     * @param first  First array
+     * @param second Second array
+     * @param result Result arrray.
+     */
+    public static void assertBroadcastable(String op, INDArray first, INDArray second, INDArray result){
+        long[] fShape = first.shape();
+        long[] sShape = second.shape();
+        Preconditions.checkState(Shape.areShapesBroadcastable(fShape, sShape),
+                "Cannot perform operation \"%s\" - shapes are not equal and are not broadcastable." +
+                        "first.shape=%s, second.shape=%s", op, fShape, sShape);
+
+        long[] outShape = Shape.broadcastOutputShape(fShape, sShape);
+        if (!Arrays.equals(outShape, result.shape())) {
+            //Two cases
+            // 1. x.addi(y)
+            // 2. x.addi(y, z)
+
+            String extra = "";
+            if(first == result){
+                extra = ".\nIn-place operations like x." + op + "(y) can only be performed when x and y have the same shape," +
+                        " or x and y are broadcastable with x.shape() == broadcastShape(x,y)";
+            }
+
+            throw new IllegalStateException("Cannot perform in-place operation \"" + op + "\": result array shape does" +
+                    " not match the broadcast operation output shape: " + Arrays.toString(fShape) + "." + op + "(" +
+                    Arrays.toString(sShape) + ") != " + Arrays.toString(result.shape()) + extra);
+        }
+    }
+
     public static long[] broadcastOutputShape(long[] left,long[] right) {
         if (containsZeros(left))
             return left;
@@ -3641,7 +3676,7 @@ public class Shape {
     }
 
     public static boolean isR(@NonNull DataType x) {
-        return x == DataType.FLOAT || x == DataType.HALF || x == DataType.DOUBLE;
+        return x == DataType.FLOAT || x == DataType.HALF || x == DataType.DOUBLE || x == DataType.BFLOAT16;
     }
 
     private static DataType max(@NonNull DataType typeX, @NonNull DataType typeY) {

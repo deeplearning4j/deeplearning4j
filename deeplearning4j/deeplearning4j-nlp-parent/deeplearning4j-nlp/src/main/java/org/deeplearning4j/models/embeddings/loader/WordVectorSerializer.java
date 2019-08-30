@@ -371,8 +371,7 @@ public class WordVectorSerializer {
     /**
      * This method saves paragraph vectors to the given file.
      *
-     * @param vectors
-     * @param path
+     * @deprecated Use {@link #writeParagraphVectors(ParagraphVectors, File)}
      */
     @Deprecated
     public static void writeWordVectors(@NonNull ParagraphVectors vectors, @NonNull File path) {
@@ -387,8 +386,7 @@ public class WordVectorSerializer {
     /**
      * This method saves paragraph vectors to the given path.
      *
-     * @param vectors
-     * @param path
+     * @deprecated Use {@link #writeParagraphVectors(ParagraphVectors, String)}
      */
     @Deprecated
     public static void writeWordVectors(@NonNull ParagraphVectors vectors, @NonNull String path) {
@@ -423,7 +421,7 @@ public class WordVectorSerializer {
     }
 
     /**
-     * This method saves Word2Vec model into compressed zip file and sends it to output stream
+     * This method saves Word2Vec model into compressed zip file
      * PLEASE NOTE: This method saves FULL model, including syn0 AND syn1
      */
     public static void writeWord2VecModel(Word2Vec vectors, File file) {
@@ -436,7 +434,7 @@ public class WordVectorSerializer {
     }
 
     /**
-     * This method saves Word2Vec model into compressed zip file and sends it to output stream
+     * This method saves Word2Vec model into compressed zip file
      * PLEASE NOTE: This method saves FULL model, including syn0 AND syn1
      */
     public static void writeWord2VecModel(Word2Vec vectors, String path) {
@@ -767,7 +765,7 @@ public class WordVectorSerializer {
      *
      * @param file
      * @return
-     * @throws IOException
+     * @deprecated Use {@link #readWord2Vec(File, boolean)}
      */
     @Deprecated
     public static Word2Vec readWord2Vec(File file) throws IOException {
@@ -993,7 +991,7 @@ public class WordVectorSerializer {
      *
      * @param path Path to file that contains previously serialized model
      * @return
-     * @deprecated Use readParagraphVectors() method instead
+     * @deprecated Use {@link #readParagraphVectors(String)}
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull String path) {
@@ -1007,7 +1005,7 @@ public class WordVectorSerializer {
      *
      * @param file File that contains previously serialized model
      * @return
-     * @deprecated Use readParagraphVectors() method instead
+     * @deprecated Use {@link #readParagraphVectors(File)}
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull File file) {
@@ -1025,8 +1023,7 @@ public class WordVectorSerializer {
      * Deprecation note: Please, consider using readParagraphVectors() method instead
      *
      * @param stream InputStream that contains previously serialized model
-     * @return
-     * @deprecated Use readParagraphVectors() method instead
+     * @deprecated Use {@link #readParagraphVectors(InputStream)}
      */
     @Deprecated
     public static ParagraphVectors readParagraphVectorsFromText(@NonNull InputStream stream) {
@@ -1150,8 +1147,7 @@ public class WordVectorSerializer {
     /**
      * This method saves paragraph vectors to the given output stream.
      *
-     * @param vectors
-     * @param stream
+     * @deprecated Use {@link #writeParagraphVectors(ParagraphVectors, OutputStream)}
      */
     @Deprecated
     public static void writeWordVectors(ParagraphVectors vectors, OutputStream stream) {
@@ -1474,7 +1470,7 @@ public class WordVectorSerializer {
      *
      * @param vec  the word2vec to write
      * @param path the path to write
-     * @throws IOException
+     * @deprecated Use {@link #writeWord2VecModel(Word2Vec, String)}
      */
     @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull String path) throws IOException {
@@ -1492,7 +1488,7 @@ public class WordVectorSerializer {
      *
      * @param vec  the word2vec to write
      * @param file the file to write
-     * @throws IOException
+     * @deprecated Use {@link #writeWord2VecModel(Word2Vec, File)}
      */
     @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull File file) throws IOException {
@@ -1507,7 +1503,7 @@ public class WordVectorSerializer {
      * @param vec          the word2vec to write
      * @param outputStream - OutputStream, where all data should be sent to
      *                     the path to write
-     * @throws IOException
+     * @deprecated Use {@link #writeWord2Vec(Word2Vec, OutputStream)}
      */
     @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull OutputStream outputStream) throws IOException {
@@ -1523,7 +1519,7 @@ public class WordVectorSerializer {
      * @param vec    the word2vec to write
      * @param writer - BufferedWriter, where all data should be written to
      *               the path to write
-     * @throws IOException
+     * @deprecated Use {@link #writeWord2Vec(Word2Vec, OutputStream)}
      */
     @Deprecated
     public static void writeWordVectors(@NonNull Word2Vec vec, @NonNull BufferedWriter writer) throws IOException {
@@ -1596,6 +1592,7 @@ public class WordVectorSerializer {
      * @param vectorsFile the path of the file to load\
      * @return
      * @throws FileNotFoundException if the file does not exist
+     * @deprecated Use {@link #loadTxt(File)}
      */
     @Deprecated
     public static WordVectors loadTxtVectors(File vectorsFile)

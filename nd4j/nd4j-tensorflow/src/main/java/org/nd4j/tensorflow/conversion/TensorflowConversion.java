@@ -16,7 +16,7 @@
 
 package org.nd4j.tensorflow.conversion;
 
-import com.github.os72.protobuf351.InvalidProtocolBufferException;
+import org.nd4j.shade.protobuf.InvalidProtocolBufferException;
 import org.bytedeco.javacpp.*;
 import org.bytedeco.javacpp.indexer.*;
 import org.nd4j.linalg.api.buffer.DataBuffer;
@@ -296,7 +296,7 @@ public class TensorflowConversion {
      * @return
      */
     public static String defaultDeviceForThread() {
-        Integer deviceForThread = Nd4j.getAffinityManager().getDeviceForThread(Thread.currentThread());
+        Integer deviceForThread = Nd4j.getAffinityManager().getDeviceForCurrentThread();
         String deviceName = null;
         //gpu
         if(Nd4j.getBackend().getClass().getName().contains("JCublasBackend")) {

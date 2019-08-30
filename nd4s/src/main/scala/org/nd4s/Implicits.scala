@@ -46,8 +46,8 @@ object Implicits {
   implicit def jfloatColl2INDArray(s: Seq[java.lang.Float]): FloatArray2INDArray =
     new FloatArray2INDArray(s.map(x => x: Float)(breakOut))
   class FloatArray2INDArray(val underlying: Array[Float]) extends AnyVal {
-    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray =
-      Nd4j.create(underlying, shape, ord.value, offset)
+    def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order())): INDArray =
+      Nd4j.create(underlying, shape, ord.value)
 
     def asNDArray(shape: Int*): INDArray =
       Nd4j.create(underlying.toArray, shape.toArray: _*)

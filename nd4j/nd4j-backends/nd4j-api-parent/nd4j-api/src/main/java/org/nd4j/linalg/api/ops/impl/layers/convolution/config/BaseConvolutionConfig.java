@@ -16,12 +16,16 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution.config;
 
+import java.util.LinkedHashMap;
+import java.util.Map;
 import lombok.val;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 
 import java.lang.reflect.Field;
 
 public abstract class BaseConvolutionConfig {
+
+    public abstract Map<String, Object> toProperties();
 
     /**
      * Get the value for a given property
@@ -154,4 +158,5 @@ public abstract class BaseConvolutionConfig {
     }
 
 
+    protected abstract void validate();
 }

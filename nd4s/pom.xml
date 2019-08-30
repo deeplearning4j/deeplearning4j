@@ -29,8 +29,8 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.nd4j</groupId>
-    <artifactId>nd4s</artifactId>
-    <packaging>pom</packaging>
+    <artifactId>nd4s_${scala.binary.version}</artifactId>
+    <packaging>jar</packaging>
 
     <name>nd4s</name>
 
@@ -80,8 +80,9 @@
         </dependency>
         <dependency>
             <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native-platform</artifactId>
+            <artifactId>nd4j-native</artifactId>
             <version>${nd4j.version}</version>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
@@ -278,6 +279,19 @@
                         <skip>true</skip>
                     </gitDescribe>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>make-a-jar</id>
+                        <phase>compile</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

@@ -62,7 +62,6 @@ __global__ static void dilation2dCuda(const void* vx, const Nd4jLong* xShapeInfo
         kH = yShapeInfo[1];
         kW = yShapeInfo[2];
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -114,8 +113,6 @@ static void dilation2dCudaLauncher(const int blocksPerGrid, const int threadsPer
     dilation2dCuda<X,Z><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, sH, sW, pH, pW, dH, dW);
 }
 
-BUILD_DOUBLE_TEMPLATE(template void dilation2dCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW), LIBND4J_TYPES, FLOAT_TYPES);
-
 void dilation2d(nd4j::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
 
    	PointersManager manager(context, "dilation2d");
@@ -125,7 +122,7 @@ void dilation2d(nd4j::LaunchContext* context, NDArray *input, NDArray *weights, 
     const int sharedMem = (weights->rankOf() + output->rankOf()) * sizeof(Nd4jLong) * threadsPerBlock  + 128;
 
     NDArray::prepareSpecialUse({output}, {input, weights});
-    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), dilation2dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), weights->getSpecialBuffer(), weights->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), sH, sW, pH, pW, dH, dW), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), dilation2dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), weights->getSpecialBuffer(), weights->getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), sH, sW, pH, pW, dH, dW), FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {input, weights});
 
     manager.synchronize();

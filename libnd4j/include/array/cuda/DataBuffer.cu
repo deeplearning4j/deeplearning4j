@@ -174,6 +174,22 @@ void DataBuffer::setToZeroBuffers(const bool both) {
 }
 
 ////////////////////////////////////////////////////////////////////////
+void DataBuffer::migrate() {
+    memory::Workspace* newWorkspace = nullptr;
+    void* newBuffer;
+    ALLOCATE_SPECIAL(newBuffer, newWorkspace, getLenInBytes(), int8_t);
+    cudaMemcpy(newBuffer, _specialBuffer, getLenInBytes(), cudaMemcpyDeviceToDevice);
+
+    if (_isOwnerSpecial) {
+        // now we're releasing original buffer
+        RELEASE_SPECIAL(_specialBuffer, _workspace);
+    }
+
+    _isOwnerSpecial = true;
+    _specialBuffer = newBuffer;
+}
+
+////////////////////////////////////////////////////////////////////////
 void DataBuffer::writePrimary() const    { _writePrimary = ++_counter; }
 void DataBuffer::writeSpecial() const    { _writeSpecial = ++_counter; }
 void DataBuffer::readPrimary()  const    { _readPrimary  = ++_counter; }

@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.layers;
 
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -25,6 +25,8 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -33,13 +35,15 @@ import org.tensorflow.framework.NodeDef;
 
 import java.util.*;
 
-public class ExternalErrorsFunction extends DifferentialFunction {
+public class ExternalErrorsFunction extends DynamicCustomOp {
+    public static final String OP_NAME = "ExternalErrorsFn";
 
     private static final List<LongShapeDescriptor> OUT_SHAPE = Collections.singletonList(LongShapeDescriptor.fromShape(new long[0], Nd4j.dataType()));
 
     private Map<String,INDArray> gradients;
     private Map<String,SDVariable> gradVariables;
     private SDVariable out;
+    private String id;
 
 
     public ExternalErrorsFunction(SameDiff sd, List<SDVariable> inputs, Map<String,INDArray> gradients){
@@ -47,6 +51,7 @@ public class ExternalErrorsFunction extends DifferentialFunction {
         if(gradients == null)
             gradients = new HashMap<>();
         this.gradients = gradients;
+        this.id = UUID.randomUUID().toString();
     }
 
     public ExternalErrorsFunction(){ }
@@ -58,10 +63,16 @@ public class ExternalErrorsFunction extends DifferentialFunction {
     @Override
     public SDVariable[] outputVariables(String baseName) {
         if(out == null){
-            String name = sameDiff.generateNewVarName("dummyOutput", 0);
-            out = sameDiff.zero(name, Nd4j.dataType(), 1);
-            sameDiff.getOps().get(getOwnName()).setOutputsOfOp(Collections.singletonList(out.getVarName()));
-            sameDiff.getVariables().get(name).setOutputOfOp(getOwnName());
+            if(id == null)
+                this.id = UUID.randomUUID().toString();
+            String name = "dummyOutput-" + id;
+            if(sameDiff.hasVariable(name)){
+                out = sameDiff.getVariable(name);
+            } else {
+                out = sameDiff.zero(name, Nd4j.dataType(), 1);
+                sameDiff.getOps().get(getOwnName()).setOutputsOfOp(Collections.singletonList(out.getVarName()));
+                sameDiff.getVariables().get(name).setOutputOfOp(getOwnName());
+            }
         }
         return new SDVariable[]{out};
     }
@@ -111,7 +122,7 @@ public class ExternalErrorsFunction extends DifferentialFunction {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
 
     }
 
@@ -127,7 +138,7 @@ public class ExternalErrorsFunction extends DifferentialFunction {
 
     @Override
     public String opName(){
-        return "ExternalErrorsFn";
+        return OP_NAME;
     }
 
     @Override
@@ -138,5 +149,9 @@ public class ExternalErrorsFunction extends DifferentialFunction {
     @Override
     public List<LongShapeDescriptor> calculateOutputShape(){
         return OUT_SHAPE;
+    }
+
+    public Op.Type opType() {
+        return Op.Type.LOGIC;
     }
 }

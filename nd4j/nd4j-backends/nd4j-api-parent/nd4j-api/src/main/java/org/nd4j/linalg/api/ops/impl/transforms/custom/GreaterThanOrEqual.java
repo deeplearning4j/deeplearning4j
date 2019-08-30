@@ -46,6 +46,10 @@ public class GreaterThanOrEqual extends BaseDynamicTransformOp {
         super(inputs, outputs);
     }
 
+    public GreaterThanOrEqual(INDArray x, INDArray y, INDArray z){
+        this(new INDArray[]{x, y}, new INDArray[]{z});
+    }
+
     @Override
     public int opNum() {
         return 11;

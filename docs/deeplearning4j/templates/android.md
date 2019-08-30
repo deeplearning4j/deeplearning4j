@@ -47,21 +47,21 @@ compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', cla
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-arm64"
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86"
 compile group: 'org.nd4j', name: 'nd4j-native', version: '{{page.version}}', classifier: "android-x86_64"
-compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5'
-compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5', classifier: "android-arm"
-compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5', classifier: "android-arm64"
-compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5', classifier: "android-x86"
-compile group: 'org.bytedeco', name: 'openblas', version: '0.3.5-1.5', classifier: "android-x86_64"
-compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5'
-compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5', classifier: "android-arm"
-compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5', classifier: "android-arm64"
-compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5', classifier: "android-x86"
-compile group: 'org.bytedeco', name: 'opencv', version: '4.0.1-1.5', classifier: "android-x86_64"
-compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5'
-compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-arm"
-compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-arm64"
-compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-x86"
-compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5', classifier: "android-x86_64"
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.6-1.5.1'
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.6-1.5.1', classifier: "android-arm"
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.6-1.5.1', classifier: "android-arm64"
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.6-1.5.1', classifier: "android-x86"
+compile group: 'org.bytedeco', name: 'openblas', version: '0.3.6-1.5.1', classifier: "android-x86_64"
+compile group: 'org.bytedeco', name: 'opencv', version: '4.1.0-1.5.1'
+compile group: 'org.bytedeco', name: 'opencv', version: '4.1.0-1.5.1', classifier: "android-arm"
+compile group: 'org.bytedeco', name: 'opencv', version: '4.1.0-1.5.1', classifier: "android-arm64"
+compile group: 'org.bytedeco', name: 'opencv', version: '4.1.0-1.5.1', classifier: "android-x86"
+compile group: 'org.bytedeco', name: 'opencv', version: '4.1.0-1.5.1', classifier: "android-x86_64"
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.1'
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.1', classifier: "android-arm"
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.1', classifier: "android-arm64"
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.1', classifier: "android-x86"
+compile group: 'org.bytedeco', name: 'leptonica', version: '1.78.0-1.5.1', classifier: "android-x86_64"
 
 ```
 

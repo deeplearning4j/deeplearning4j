@@ -56,13 +56,13 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
 
     public static final String[] IGNORE_REGEXES = {
 
-            //2019/07/10 - Libnd4j assign error - https://github.com/eclipse/deeplearning4j/issues/8002
+            //2019/07/22 - Result value failure
             "xlnet_cased_L-24_H-1024_A-16",
 
-            //2019/07/03 - Out of Memory error
+            // 2019/07/22 - OOM, Passes with sufficient memory (16GB heap, 32GB off-heap tested)
             "compression_residual_gru",
 
-            //2019/07/03 - Out of Memory error
+            // 2019/07/22 - OOM, Passes with sufficient memory (16GB heap, 32GB off-heap tested)
             "deeplabv3_xception_ade20k_train",
 
             //2019/07/03 - o.n.i.g.t.TFGraphMapper - No TensorFlow descriptor found for tensor "sample_sequence/model/h0/attn/MatMul", op "BatchMatMulV2"

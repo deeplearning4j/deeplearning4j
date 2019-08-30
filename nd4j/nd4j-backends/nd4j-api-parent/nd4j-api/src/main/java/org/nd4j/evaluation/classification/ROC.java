@@ -20,6 +20,9 @@ import lombok.*;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.BaseEvaluation;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.IMetric;
+import org.nd4j.evaluation.classification.Evaluation.Metric;
 import org.nd4j.evaluation.curves.PrecisionRecallCurve;
 import org.nd4j.evaluation.curves.RocCurve;
 import org.nd4j.evaluation.serde.ROCSerializer;
@@ -28,7 +31,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -77,11 +80,24 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 @JsonSerialize(using = ROCSerializer.class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
 public class ROC extends BaseEvaluation<ROC> {
+
     /**
      * AUROC: Area under ROC curve<br>
      * AUPRC: Area under Precision-Recall Curve
      */
-    public enum Metric {AUROC, AUPRC}
+    public enum Metric implements IMetric {
+        AUROC, AUPRC;
+
+        @Override
+        public Class<? extends IEvaluation> getEvaluationClass() {
+            return ROC.class;
+        }
+
+        @Override
+        public boolean minimize() {
+            return false;
+        }
+    }
 
     private static final int DEFAULT_EXACT_ALLOC_BLOCK_SIZE = 2048;
     private final Map<Double, CountsForThreshold> counts = new LinkedHashMap<>();
@@ -99,6 +115,13 @@ public class ROC extends BaseEvaluation<ROC> {
     private boolean rocRemoveRedundantPts;
     private int exactAllocBlockSize;
     protected int axis = 1;
+
+
+
+    public ROC(int thresholdSteps, boolean rocRemoveRedundantPts, int exactAllocBlockSize, int axis) {
+        this(thresholdSteps, rocRemoveRedundantPts, exactAllocBlockSize);
+        this.axis = axis;
+    }
 
     public ROC() {
         //Default to exact
@@ -685,8 +708,8 @@ public class ROC extends BaseEvaluation<ROC> {
                     itp = isTruePositive;
                     ifp = isFalsePositive;
                 } else {
-                    isTruePositive = Nd4j.getExecutioner().exec(new OldMulOp(predictedClass1, positiveActualClassColumn, itp));
-                    isFalsePositive = Nd4j.getExecutioner().exec(new OldMulOp(predictedClass1, negativeActualClassColumn, ifp));
+                    isTruePositive = Nd4j.getExecutioner().exec(new MulOp(predictedClass1, positiveActualClassColumn, itp))[0];
+                    isFalsePositive = Nd4j.getExecutioner().exec(new MulOp(predictedClass1, negativeActualClassColumn, ifp))[0];
                 }
 
                 //Counts for this batch:
@@ -810,5 +833,18 @@ public class ROC extends BaseEvaluation<ROC> {
             default:
                 throw new IllegalStateException("Unknown metric: " + metric);
         }
+    }
+
+    @Override
+    public double getValue(IMetric metric){
+        if(metric instanceof Metric){
+            return scoreForMetric((Metric) metric);
+        } else
+            throw new IllegalStateException("Can't get value for non-ROC Metric " + metric);
+    }
+
+    @Override
+    public ROC newInstance() {
+        return new ROC(thresholdSteps, rocRemoveRedundantPts, exactAllocBlockSize, axis);
     }
 }

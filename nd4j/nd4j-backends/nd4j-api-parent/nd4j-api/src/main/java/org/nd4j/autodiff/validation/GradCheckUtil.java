@@ -28,7 +28,6 @@ import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.autodiff.validation.listeners.NonInplaceValidationListener;
 import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -106,7 +105,7 @@ public class GradCheckUtil {
         }
 
         Set<String> fnOutputs = new HashSet<>();
-        for(DifferentialFunction f : sd.functions()){
+        for(DifferentialFunction f : sd.ops()){
             for(SDVariable s : f.outputVariables()){
                 fnOutputs.add(s.getVarName());
             }
@@ -593,7 +592,7 @@ public class GradCheckUtil {
         4. Gradient function: should contain all of the existing functions, and more
          */
 
-        DifferentialFunction[] dfs = sd.functions();
+        DifferentialFunction[] dfs = sd.ops();
         List<SDVariable> vars = sd.variables();
 
         Set<String> varSetStr = new HashSet<>();
@@ -661,7 +660,7 @@ public class GradCheckUtil {
 
             //Check that all original functions are present in the gradient function
             for(DifferentialFunction dfOrig : dfs){
-                Preconditions.checkNotNull(gradFn.getFunctionById(dfOrig.getOwnName()), "DifferentialFunction " + dfOrig.getOwnName()
+                Preconditions.checkNotNull(gradFn.getOpById(dfOrig.getOwnName()), "DifferentialFunction " + dfOrig.getOwnName()
                         + " from original SameDiff instance not present in grad fn");
             }
         }

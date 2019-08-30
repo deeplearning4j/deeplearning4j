@@ -1092,15 +1092,15 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_06) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_7) {
 
-    NDArray input = NDArrayFactory::create<float>('c', {2, 3, 4}, {0.7788, 0.8012, 0.7244, 0.2309,
-                                                                   0.7271, 0.1804, 0.5056, 0.8925,
-                                                                   0.5461, 0.9234, 0.0856, 0.7938,
+    NDArray input = NDArrayFactory::create<float>('c', {2, 3, 4}, {0.7788f, 0.8012f, 0.7244f, 0.2309f,
+                                                                   0.7271f, 0.1804f, 0.5056f, 0.8925f,
+                                                                   0.5461f, 0.9234f, 0.0856f, 0.7938f,
 
-                                                                   0.6591, 0.5555, 0.1596, 0.3087,
-                                                                   0.1548, 0.4695, 0.9939, 0.6113,
-                                                                   0.6765, 0.1800, 0.6750, 0.2246});
+                                                                   0.6591f, 0.5555f, 0.1596f, 0.3087f,
+                                                                   0.1548f, 0.4695f, 0.9939f, 0.6113f,
+                                                                   0.6765f, 0.1800f, 0.6750f, 0.2246f});
     NDArray n = NDArrayFactory::create<int>(2);
-    NDArray exp = NDArrayFactory::create<float>('c', {2,3}, {0.7788, 0.7271, 0.7938, 0.5555, 0.6113, 0.675});
+    NDArray exp = NDArrayFactory::create<float>('c', {2,3}, {0.7788f, 0.7271f, 0.7938f, 0.5555f, 0.6113f, 0.675f});
 
     //input.linspace(1.f);
 
@@ -1119,15 +1119,15 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_7) {
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, NTH_Element_Test_8) {
 
-    NDArray input = NDArrayFactory::create<float>('c', {2, 3, 4}, {0.7788, 0.8012, 0.7244, 0.2309,
-                                                                   0.7271, 0.1804, 0.5056, 0.8925,
-                                                                   0.5461, 0.9234, 0.0856, 0.7938,
+    NDArray input = NDArrayFactory::create<float>('c', {2, 3, 4}, {0.7788f, 0.8012f, 0.7244f, 0.2309f,
+                                                                   0.7271f, 0.1804f, 0.5056f, 0.8925f,
+                                                                   0.5461f, 0.9234f, 0.0856f, 0.7938f,
 
-                                                                   0.6591, 0.5555, 0.1596, 0.3087,
-                                                                   0.1548, 0.4695, 0.9939, 0.6113,
-                                                                   0.6765, 0.1800, 0.6750, 0.2246});
+                                                                   0.6591f, 0.5555f, 0.1596f, 0.3087f,
+                                                                   0.1548f, 0.4695f, 0.9939f, 0.6113f,
+                                                                   0.6765f, 0.1800f, 0.6750f, 0.2246f});
     NDArray n = NDArrayFactory::create<int>(2);
-    NDArray exp = NDArrayFactory::create<float>('c', {2,3}, {0.7244, 0.5056, 0.5461, 0.3087, 0.4695, 0.2246});
+    NDArray exp = NDArrayFactory::create<float>('c', {2,3}, {0.7244f, 0.5056f, 0.5461f, 0.3087f, 0.4695f, 0.2246f});
 
     //input.linspace(1.f);
 
@@ -1359,10 +1359,10 @@ TEST_F(DeclarableOpsTests10, broadcast_to_test10) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test1) {
 
-    NDArray input    = NDArrayFactory::create<float>('c', {1, 2,3,4});
+    NDArray input    = NDArrayFactory::create<double>('c', {1, 2,3,4});
     //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
     //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
-    NDArray expected = NDArrayFactory::create<float>('c', {1, 10, 10, 4}, {1.,  2.,   3.,   4.,  2.2,  3.2,  4.2,  5.2, 3.4,  4.4,  5.4,  6.4,
+    NDArray expected = NDArrayFactory::create<double>('c', {1, 10, 10, 4}, {1.,  2.,   3.,   4.,  2.2,  3.2,  4.2,  5.2, 3.4,  4.4,  5.4,  6.4,
                                                   4.6, 5.6,  6.6,  7.6, 5.8,  6.8,  7.8,  8.8, 7.,   8.,   9.,  10.,
                                                   8.2, 9.2, 10.2, 11.2, 9.,  10.,  11.,  12.,  9.,  10.,  11.,  12.,
                                                   9., 10.,  11.,  12.,  3.4,  4.4,  5.4,  6.4, 4.6,  5.6, 6.6,   7.6,
@@ -1416,10 +1416,10 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test2) {
 
-    NDArray input    = NDArrayFactory::create<float>('c', {1, 2,3,4});
+    NDArray input    = NDArrayFactory::create<double>('c', {1, 2,3,4});
     NDArray size = NDArrayFactory::create<int>({10, 10});
     //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
-    NDArray expected = NDArrayFactory::create<float>('c', {1, 10, 10, 4}, {1.,  2.,   3.,   4.,  2.2,  3.2,  4.2,  5.2, 3.4,  4.4,  5.4,  6.4,
+    NDArray expected = NDArrayFactory::create<double>('c', {1, 10, 10, 4}, {1.,  2.,   3.,   4.,  2.2,  3.2,  4.2,  5.2, 3.4,  4.4,  5.4,  6.4,
                                                   4.6, 5.6,  6.6,  7.6, 5.8,  6.8,  7.8,  8.8, 7.,   8.,   9.,  10.,
                                                   8.2, 9.2, 10.2, 11.2, 9.,  10.,  11.,  12.,  9.,  10.,  11.,  12.,
                                                   9., 10.,  11.,  12.,  3.4,  4.4,  5.4,  6.4, 4.6,  5.6, 6.6,   7.6,
@@ -1472,10 +1472,10 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test3) {
 
-    NDArray input    = NDArrayFactory::create<float>('c', {1, 2,3,4});
+    NDArray input    = NDArrayFactory::create<double>('c', {1, 2,3,4});
     //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
     //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
-    NDArray expected = NDArrayFactory::create<float>('c', {1, 10, 10, 4},
+    NDArray expected = NDArrayFactory::create<double>('c', {1, 10, 10, 4},
             { 1.,         2.,         3.,         4. ,
              1.8888888,  2.8888888,  3.8888888,  4.888889,
              2.7777777,  3.7777777,  4.7777777,  5.7777777,
@@ -1602,9 +1602,9 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test3) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test4) {
 
-    NDArray input    = NDArrayFactory::create<float>('c', {1, 2,3,4});
+    NDArray input    = NDArrayFactory::create<double>('c', {1, 2,3,4});
     NDArray size = NDArrayFactory::create<int>({10, 10});
-    NDArray expected = NDArrayFactory::create<float>('c', {1, 10, 10, 4},
+    NDArray expected = NDArrayFactory::create<double>('c', {1, 10, 10, 4},
                             { 1.,         2.,         3.,         4. ,
                               1.8888888,  2.8888888,  3.8888888,  4.888889,
                               2.7777777,  3.7777777,  4.7777777,  5.7777777,
@@ -1750,10 +1750,10 @@ TEST_F(DeclarableOpsTests10, LinSpace_Test1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
 
-    NDArray input    = NDArrayFactory::create<float>('c', {1, 2, 3, 4});
+    NDArray input    = NDArrayFactory::create<double>('c', {1, 2, 3, 4});
     //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
     //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
-    NDArray expected = NDArrayFactory::create<float>('c', {1, 4, 5, 4}, { 1,  2,  3,  4,
+    NDArray expected = NDArrayFactory::create<double>('c', {1, 4, 5, 4}, { 1,  2,  3,  4,
      1,  2,  3,  4,
      5,  6,  7,  8,
      5,  6,  7,  8,
@@ -1870,7 +1870,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
-//    result->printIndexedBuffer("OOOOUUUUTTT");
+    //result->printIndexedBuffer("OOOOUUUUTTT");
 
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
@@ -1892,7 +1892,7 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
-//    result->printBuffer("NonMaxSuppression OUtput2");
+    result->printBuffer("NonMaxSuppression OUtput2");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -1926,8 +1926,8 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Image_CropAndResize_2) {
     int axis = 0;
-    NDArray images    = NDArrayFactory::create<float>('c', {1,2,2,1}, {1,2,3,4});
-    NDArray boxes = NDArrayFactory::create<float>('c', {1,4}, {0,0,1,1});
+    NDArray images    = NDArrayFactory::create<float>('c', {1,2,2,1}, {1.f, 2.f, 3.f, 4.f});
+    NDArray boxes = NDArrayFactory::create<float>('c', {1,4}, {0.f, 0.f, 1.f, 1.f});
     NDArray boxI = NDArrayFactory::create<int>('c', {1}, {axis});
     NDArray cropSize = NDArrayFactory::create<int>({1, 1});
 
@@ -1991,6 +1991,30 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_4) {
     // result->printIndexedBuffer("Cropped and Resized");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_CropAndResize_5) {
+
+    NDArray images('c', {1, 100, 100, 3});
+    NDArray boxes('c', {1,4}, {0,0,1,1}, nd4j::DataType::FLOAT32);
+    NDArray boxI('c', {2}, {1,1}, nd4j::DataType::INT32);
+    NDArray cropSize = NDArrayFactory::create<int>({10, 10});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray expected('c', {1, 10, 10,3}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::crop_and_resize op;
+    auto results = op.execute({&images, &boxes, &boxI, &cropSize}, {}, {1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printShapeInfo("Cropped and Resized");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    //ASSERT_TRUE(expected.equalsTo(result));
 
     delete results;
 }

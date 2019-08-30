@@ -121,7 +121,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
         Nd4j.getDeallocatorService().pickObject(this);
 
         // now we're
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
 
         val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
@@ -544,6 +544,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
      */
     @Override
     public long address() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return allocationPoint.getPointers().getHostPointer().address();
     }
 
@@ -554,6 +557,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer pointer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         // FIXME: very bad thing,
         lazyAllocateHostPointer();
 
@@ -1109,6 +1115,9 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     public Pointer addressPointer() {
+        if (released)
+            throw new IllegalStateException("You can't use DataBuffer once it was released");
+
         return AtomicAllocator.getInstance().getHostPointer(this);
     }
 
@@ -1522,7 +1531,7 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
             lazyAllocateHostPointer();
         }
 
-        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
         NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(allocationPoint.getDevicePointer(), 0, length * elementSize, 0, context.getSpecialStream());
 
         MemcpyDirection direction = MemcpyDirection.DEVICE_TO_DEVICE;
@@ -1562,7 +1571,10 @@ public abstract class BaseCudaDataBuffer extends BaseDataBuffer implements JCuda
 
     @Override
     protected void release() {
-        AtomicAllocator.getInstance().freeMemory(allocationPoint);
+        if (!released) {
+            AtomicAllocator.getInstance().freeMemory(allocationPoint);
+            allocationPoint.setReleased(true);
+        }
         released = true;
     }
 

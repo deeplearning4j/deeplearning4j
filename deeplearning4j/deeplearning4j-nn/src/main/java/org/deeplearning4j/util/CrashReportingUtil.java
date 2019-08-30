@@ -205,7 +205,7 @@ public class CrashReportingUtil {
         StringBuilder sb = genericMemoryStatus();
 
         int bytesPerElement;
-        switch (Nd4j.dataType()){
+        switch (isMLN ? mln.params().dataType() : cg.params().dataType()){
             case DOUBLE:
                 bytesPerElement = 8;
                 break;

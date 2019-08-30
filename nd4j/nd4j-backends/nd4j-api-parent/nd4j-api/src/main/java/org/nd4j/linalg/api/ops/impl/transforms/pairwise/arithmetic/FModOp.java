@@ -52,6 +52,9 @@ public class FModOp extends BaseTransformSameOp {
     public FModOp(INDArray x, INDArray z) {
         super(x, z);
     }
+    public FModOp(INDArray x, INDArray y, INDArray z) {
+        super(x, y, z);
+    }
 
     public FModOp(INDArray x) {
         super(x);

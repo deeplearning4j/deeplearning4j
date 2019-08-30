@@ -114,11 +114,16 @@ TEST_F(WorkspaceTests, ResetTest1) {
 
 
 TEST_F(WorkspaceTests, StretchTest1) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+
     Workspace workspace(128);
     void* ptr = workspace.allocateBytes(8);
     workspace.scopeOut();
     ASSERT_EQ(0, workspace.getSpilledSize());
+    ASSERT_EQ(0, workspace.getSpilledSecondarySize());
     ASSERT_EQ(0, workspace.getCurrentOffset());
+    ASSERT_EQ(0, workspace.getCurrentSecondaryOffset());
 
 
     workspace.scopeIn();
@@ -144,6 +149,9 @@ TEST_F(WorkspaceTests, StretchTest1) {
 }
 
 TEST_F(WorkspaceTests, NewInWorkspaceTest1) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+
     Workspace ws(65536);
 
     ASSERT_EQ(65536, ws.getCurrentSize());
@@ -188,6 +196,9 @@ TEST_F(WorkspaceTests, NewInWorkspaceTest2) {
 }
 
 TEST_F(WorkspaceTests, CloneTest1) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+
     Workspace ws(65536);
 
     ws.allocateBytes(65536 * 2);
@@ -241,6 +252,9 @@ TEST_F(WorkspaceTests, Test_Graph_1) {
 #endif
 
 TEST_F(WorkspaceTests, Test_Externalized_1) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+
     char buffer[10000];
     ExternalWorkspace pojo((Nd4jPointer) buffer, 10000, nullptr, 0);
 

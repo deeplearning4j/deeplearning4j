@@ -23,6 +23,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ops.custom.Flatten;
+import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
@@ -48,7 +49,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.nativeblas.BaseNativeNDArrayFactory;
 import org.nd4j.nativeblas.LongPointerWrapper;
 import org.nd4j.nativeblas.NativeOpsHolder;
-import org.nd4j.nativeblas.Nd4jCpu;
 
 import java.util.*;
 
@@ -200,19 +200,10 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray createUninitializedDetached(int[] shape, char ordering) {
+    public INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape){
         MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
         Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
-        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
-        return ret;
-    }
-
-    @Override
-    public INDArray createUninitializedDetached(long[] shape, char ordering) {
-        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-        Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new NDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
+        INDArray ret = new NDArray(dataType, shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
         Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
         return ret;
     }
@@ -582,6 +573,10 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         if (toConcat.length == 1)
             return toConcat[0];
 
+        return Nd4j.exec(new Concat(dimension, toConcat))[0];
+
+        // legacy implementation
+/*
         // if reusable var wasn't created for this thread, or is smaller then needed - set it to new value
         if (extrazA.get() == null || extrazB.get() == null || extrazSize.get() == null || extrazSize.get() < toConcat.length) {
             extrazA.set(new PointerPointer(toConcat.length));
@@ -637,6 +632,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
                     null, null);
 
         return ret;
+        */
     }
 
 

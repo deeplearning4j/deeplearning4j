@@ -29,11 +29,7 @@ namespace helpers {
     template <typename T>
     static _CUDA_G void lrnKernel(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, void *vz, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets, Nd4jLong numTads, Nd4jLong tadLength, int depth, double bias, double alpha, double beta) {
         extern __shared__ char sharedChar[];
-        __shared__ T* shared;
-        if (threadIdx.x == 0)
-            shared = reinterpret_cast<T*>(sharedChar);
-        __syncthreads();
-
+        T* shared = reinterpret_cast<T*>(sharedChar);
 
         auto xEws = shape::elementWiseStride(xTadShapeInfo);
         auto zEws = shape::elementWiseStride(zTadShapeInfo);
@@ -69,16 +65,8 @@ namespace helpers {
     template <typename X, typename Z>
     static _CUDA_G void lrnBPKernel(void *vx, Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets, void *vz, Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets, Nd4jLong numTads, Nd4jLong tadLength, int depth, double bias, double alpha, double beta) {
         extern __shared__ char sharedChar[];
-        __shared__ X* sharedX;
-        __shared__ Z* sharedY;
-
-        if (threadIdx.x == 0) {
-            sharedX = reinterpret_cast<X*>(sharedChar);
-            sharedY = reinterpret_cast<Z*>(sharedX + blockDim.x);
-        }
-
-        __syncthreads();
-
+        X* sharedX = reinterpret_cast<X*>(sharedChar);
+        Z* sharedY = reinterpret_cast<Z*>(sharedX + blockDim.x);
 
         auto xEws = shape::elementWiseStride(xTadShapeInfo);
         auto zEws = shape::elementWiseStride(zTadShapeInfo);
@@ -148,7 +136,7 @@ namespace helpers {
         input.syncToDevice();
         gradO.syncToDevice();
 
-        BUILD_DOUBLE_SELECTOR(input.dataType(), gradO.dataType(), lrnBP_, (block, input, gradO, gradI, depth, bias, alpha, beta), LIBND4J_TYPES, FLOAT_TYPES);
+        BUILD_DOUBLE_SELECTOR(input.dataType(), gradO.dataType(), lrnBP_, (block, input, gradO, gradI, depth, bias, alpha, beta), FLOAT_TYPES, FLOAT_TYPES);
 
         gradI.tickWriteDevice();
     }

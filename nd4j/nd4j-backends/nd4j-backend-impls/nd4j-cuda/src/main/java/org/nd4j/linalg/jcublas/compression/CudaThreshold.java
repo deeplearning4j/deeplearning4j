@@ -19,6 +19,7 @@ package org.nd4j.linalg.jcublas.compression;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.apache.commons.math3.util.FastMath;
 import org.bytedeco.javacpp.*;
 import org.nd4j.compression.impl.AbstractCompressor;
@@ -118,7 +119,7 @@ public class CudaThreshold extends AbstractCompressor {
 
         DataBuffer result = Nd4j.createBuffer(type, originalLength, false);
 
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = AtomicAllocator.getInstance().getDeviceContext();
 
         PointerPointer extras = new PointerPointer(32).put(1, context.getOldStream());
 
@@ -139,7 +140,7 @@ public class CudaThreshold extends AbstractCompressor {
         int numThreads = 1024;
         int numBlocks = (int) (buffer.length() / numThreads + (buffer.length() % numThreads == 0 ? 0 : 1));
 
-        CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+        val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
 
         DataBuffer blocksBuffer = Nd4j.getMemoryManager().getCurrentWorkspace() == null ? Nd4j.getDataBufferFactory().createInt(numBlocks+1, true) : Nd4j.getDataBufferFactory().createInt(numBlocks+1, true, Nd4j.getMemoryManager().getCurrentWorkspace());
         PointerPointer extras = new PointerPointer(32).put(1, context.getOldStream());

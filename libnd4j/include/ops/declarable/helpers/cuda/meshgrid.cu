@@ -136,7 +136,7 @@ namespace helpers {
     //////////////////////////////////////////////////////////////////////////
     void meshgrid(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, const std::vector<NDArray*>& outArrs, const bool swapFirst2Dims) {
 
-        BUILD_SINGLE_SELECTOR(inArrs.at(0)->dataType(), meshgrid_, (context, inArrs, outArrs, swapFirst2Dims), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(inArrs.at(0)->dataType(), meshgrid_, (context, inArrs, outArrs, swapFirst2Dims), NUMERIC_TYPES);
 
         for (auto v:outArrs)
             v->tickWriteDevice();

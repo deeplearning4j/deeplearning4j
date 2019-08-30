@@ -190,9 +190,9 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void segmentSumFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentSumFunctor_, (context, input, indices, output), NUMERIC_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentSumFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
     }
-    BUILD_DOUBLE_TEMPLATE(template void segmentSumFunctor_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
+
     // -------------------------------------------------------------------------------------------------------------- //
     template <typename T, typename I>
     static void unsortedSegmentSumFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
@@ -230,11 +230,9 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     void unsortedSegmentSumFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentSumFunctor_, (context, input, indices, numOfClasses, output),
-                              NUMERIC_TYPES, INTEGER_TYPES);
+                              NUMERIC_TYPES, INDEXING_TYPES);
 
     }
-    // -------------------------------------------------------------------------------------------------------------- //
-    BUILD_DOUBLE_TEMPLATE(template void unsortedSegmentSumFunctor_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
 
     // -------------------------------------------------------------------------------------------------------------- //
     // Backpropagate ops
@@ -258,6 +256,7 @@ namespace helpers {
             gradOut = reinterpret_cast<T*>(eps);
             gradLen = shape::length(epsShape);
         }
+        __syncthreads();
 
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = gridDim.x * blockDim.x;
@@ -294,6 +293,7 @@ namespace helpers {
             gradLen = shape::length(epsShape);
             currentLen = shape::length(outTad);
         }
+        __syncthreads();
 
         for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
             auto yIndex = shape::getIndexOffset(i, indicesShape, yLen);
@@ -344,10 +344,8 @@ namespace helpers {
 
     int segmentSumFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentSumFunctorBP_, (context, input,
-                indices, gradOut, output), NUMERIC_TYPES, INTEGER_TYPES);
+                indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
     }
-    BUILD_DOUBLE_TEMPLATE(template int segmentSumFunctorBP_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
-    // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T, typename I>
     static int unsortedSegmentSumFunctorBP_(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
@@ -383,10 +381,8 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     int unsortedSegmentSumFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSumFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentSumFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
     }
-    // -------------------------------------------------------------------------------------------------------------- //
-    BUILD_DOUBLE_TEMPLATE(template int unsortedSegmentSumFunctorBP_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
 
 }
 }

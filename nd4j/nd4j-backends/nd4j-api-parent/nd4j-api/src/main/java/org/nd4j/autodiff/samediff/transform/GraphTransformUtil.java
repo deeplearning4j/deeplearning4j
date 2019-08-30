@@ -78,7 +78,7 @@ public class GraphTransformUtil {
                 if (oldInputsForOps != null) {
                     List<String> newInputsForOps = new ArrayList<>();
                     for (String s : oldInputsForOps) {
-                        DifferentialFunction df = sd.getFunctionById(s);
+                        DifferentialFunction df = sd.getOpById(s);
                         if (!allSubGraphFns.contains(df)) {
                             newInputsForOps.add(s);
                         }
@@ -141,7 +141,7 @@ public class GraphTransformUtil {
                         // (1) variable is (was) input to op that has been removed - just remove from list
                         // (2) variable is now connected directly as an output: (A->B->C) becomes (A->C)
                         // For the latter case, this
-                        DifferentialFunction df = sd.getFunctionById(opName);
+                        DifferentialFunction df = sd.getOpById(opName);
                         if (allSubGraphFns.contains(df)) {
                             newInputsForOp.remove(opName);
                         }
@@ -178,7 +178,7 @@ public class GraphTransformUtil {
      */
     public static List<SubGraph> getSubgraphsMatching(SameDiff sd, SubGraphPredicate p) {
         List<SubGraph> out = new ArrayList<>();
-        for (DifferentialFunction df : sd.functions()) {
+        for (DifferentialFunction df : sd.ops()) {
             if (p.matches(sd, df)) {
                 SubGraph sg = p.getSubGraph(sd, df);
                 out.add(sg);

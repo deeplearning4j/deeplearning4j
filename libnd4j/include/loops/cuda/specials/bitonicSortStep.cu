@@ -21,60 +21,6 @@
 
 #include <ops/specials_cuda.h>
 
-//////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-__global__ void bitonicSortStepKernelValue(void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int j, int k, int length, bool descending) {
-
-    auto x = static_cast<X*>(vx);
-    auto y = static_cast<Y*>(vy);
-
-    unsigned int i, ixj; /* Sorting partners: i and ixj */
-    i = threadIdx.x + blockDim.x * blockIdx.x;
-
-    __shared__ Nd4jLong xLength;
-    if (threadIdx.x == 0)
-        xLength = shape::length(xShapeInfo);
-
-    __syncthreads();
-
-
-    if (i >= length)
-        return;
-
-    ixj = i^j;
-
-    /* The threads with the lowest ids sort the array. */
-    if ((ixj)>i) {
-        int posI = shape::getIndexOffset(i, yShapeInfo, xLength);
-        int posIXJ = shape::getIndexOffset(ixj, yShapeInfo, xLength);
-
-        if ((i&k)==0) {
-            /* Sort ascending */
-            if (!descending == (y[posI]>y[posIXJ])) {
-                /* exchange(i,ixj); */
-                X temp = x[posI];
-                x[posI] = x[posIXJ];
-                x[posIXJ] = temp;
-
-                Y ytemp = y[posI];
-                y[posI] = y[posIXJ];
-                y[posIXJ] = ytemp;
-            }
-        } else if ((i&k)!=0) {
-            /* Sort descending */
-            if (!descending == (y[posI]<y[posIXJ])) {
-                /* exchange(i,ixj); */
-                X temp = x[posI];
-                x[posI] = x[posIXJ];
-                x[posIXJ] = temp;
-
-                Y ytemp = y[posI];
-                y[posI] = y[posIXJ];
-                y[posIXJ] = ytemp;
-            }
-        }
-    }
-}
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
@@ -189,13 +135,6 @@ __host__ void bitonicSortStepGenericKey(dim3 &launchDims, cudaStream_t *stream, 
     bitonicSortStepKernelKey<X,Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, j, k, length, descending);
 }
 
-//////////////////////////////////////////////////////////////////////////
-template <typename X, typename Y>
-__host__ void bitonicSortStepGenericValue(dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int j, int k, int length, bool descending) {
-    bitonicSortStepKernelValue<X,Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, j, k, length, descending);
-}
-
 
 BUILD_SINGLE_TEMPLATE(template void ND4J_EXPORT bitonicSortStepGeneric, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, int j, int k, int length, bool descending), LIBND4J_TYPES);
 BUILD_DOUBLE_TEMPLATE(template void ND4J_EXPORT bitonicSortStepGenericKey, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int j, int k, int length, bool descending), LIBND4J_TYPES, LIBND4J_TYPES);
-BUILD_DOUBLE_TEMPLATE(template void ND4J_EXPORT bitonicSortStepGenericValue, (dim3 &launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, int j, int k, int length, bool descending), LIBND4J_TYPES, LIBND4J_TYPES);

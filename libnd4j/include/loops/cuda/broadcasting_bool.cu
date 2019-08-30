@@ -127,7 +127,7 @@ namespace functions {
             if (threadIdx.x == 0) {
                 tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
-                numTads = shape::length(xShapeInfo) / tadLength;
+                numTads = shape::length(yShapeInfo) / tadLength;
                 xEWS = shape::elementWiseStride(xShapeInfo);
                 zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
             }
@@ -185,7 +185,6 @@ namespace functions {
             __shared__ Nd4jLong zEWS;
       
             if (threadIdx.x == 0) {
-
    	            tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                 numTads = shape::length(xShapeInfo) / tadLength;
@@ -223,6 +222,77 @@ namespace functions {
             }
 		}
 	}
+
+
+        template<typename X, typename Y>
+        void BroadcastBool<X,Y>::exec(int opNum,
+                         void *x,
+                         Nd4jLong *xShapeInfo,
+                         void *y,
+                         Nd4jLong *yShapeInfo,
+                         void *result,
+                         Nd4jLong *resultShapeInfo,
+                         int *dimension,
+                         int dimensionLength,
+                         Nd4jLong *tadShapeInfo,
+                         Nd4jLong *tadOffset,
+                         Nd4jLong *tadShapeInfoZ,
+                         Nd4jLong *tadOffsetZ) {
+
+        }
+
+        template<typename X, typename Y>
+        void BroadcastBool<X,Y>::execInverse(int opNum,
+                                void *x,
+                                Nd4jLong *xShapeInfo,
+                                void *y,
+                                Nd4jLong *yShapeInfo,
+                                void *result,
+                                Nd4jLong *resultShapeInfo,
+                                int *dimension,
+                                int dimensionLength,
+                                Nd4jLong *tadShapeInfo,
+                                Nd4jLong *tadOffset,
+                                Nd4jLong *tadShapeInfoZ,
+                                Nd4jLong *tadOffsetZ) {
+
+        }
+
+        template<typename X, typename Y>
+        template<typename OpType>
+        void BroadcastBool<X,Y>::exec(void *x,
+                         Nd4jLong *xShapeInfo,
+                         void *y,
+                         Nd4jLong *yShapeInfo,
+                         void *result,
+                         Nd4jLong *resultShapeInfo,
+                         int *dimension,
+                         int dimensionLength,
+                         Nd4jLong *tadShapeInfo,
+                         Nd4jLong *tadOffset,
+                         Nd4jLong *tadShapeInfoZ,
+                         Nd4jLong *tadOffsetZ) {
+
+        }
+
+        template<typename X, typename Y>
+        template<typename OpType>
+        void BroadcastBool<X,Y>::execInverse(void *x,
+                                Nd4jLong *xShapeInfo,
+                                void *y,
+                                Nd4jLong *yShapeInfo,
+                                void *result,
+                                Nd4jLong *resultShapeInfo,
+                                int *dimension,
+                                int dimensionLength,
+                                Nd4jLong *tadShapeInfo,
+                                Nd4jLong *tadOffset,
+                                Nd4jLong *tadShapeInfoZ,
+                                Nd4jLong *tadOffsetZ) {
+
+        }
+
+
 
     BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT BroadcastBool, , LIBND4J_TYPES, BOOL_TYPES);
     }

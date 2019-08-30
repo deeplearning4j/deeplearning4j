@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.api.shape.options.ArrayType;
@@ -168,15 +169,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray createUninitializedDetached(int[] shape, char ordering) {
-        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-        Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new JCublasNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
-        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
-        return ret;
-    }
-
-    @Override
     public INDArray create(DataBuffer data, int[] newShape, int[] newStride, long offset, char ordering) {
         return new JCublasNDArray(data, newShape, newStride, offset, ordering);
     }
@@ -289,27 +281,27 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(long[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride, order, dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride, order, dataType);
     }
 
     @Override
     public INDArray create(int[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride, order, dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride, order, dataType);
     }
 
     @Override
     public INDArray create(short[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride, order, dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride, order, dataType);
     }
 
     @Override
     public INDArray create(byte[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride, order, dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride, order, dataType);
     }
 
     @Override
     public INDArray create(boolean[] data, long[] shape, long[] stride, char order, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride, order, dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride, order, dataType);
     }
 
     @Override
@@ -419,6 +411,10 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
+        return Nd4j.exec(new Concat(dimension, toConcat))[0];
+
+        // legacy implementation
+/*
         boolean allScalars = true;
 
         var outputShape = ArrayUtil.copy(toConcat[0].shape());
@@ -540,6 +536,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         return ret;
         //return super.concat(dimension, toConcat);
+        */
     }
 
 
@@ -555,7 +552,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         PointerPointer dataPointers = new PointerPointer(toConcat.length);
 
         AtomicAllocator allocator = AtomicAllocator.getInstance();
-        CudaContext context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = allocator.getDeviceContext();
 
 
         int sumAlongDim = 0;
@@ -792,10 +789,10 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             Nd4j.getExecutioner().commit();
 
-            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+            val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
 
-            PointerPointer dataPointers = new PointerPointer(arrays.length);
-            PointerPointer extras = new PointerPointer(null, // not used
+            val dataPointers = new PointerPointer(arrays.length);
+            val extras = new PointerPointer(null, // not used
                     context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer(), new CudaPointer(1) );
 
             for (int i = 0; i < arrays.length; i++) {
@@ -908,10 +905,10 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
              */
             long len = target == null ? arrays[0].lengthLong() : target.lengthLong();
 
-            CudaContext context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+            val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
 
-            PointerPointer dataPointers = new PointerPointer(arrays.length);
-            PointerPointer extras = new PointerPointer(null, // not used
+            val dataPointers = new PointerPointer(arrays.length);
+            val extras = new PointerPointer(null, // not used
                     context.getOldStream(), AtomicAllocator.getInstance().getDeviceIdPointer(), new CudaPointer(1) );
 
             for (int i = 0; i < arrays.length; i++) {
@@ -1258,7 +1255,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public void convertDataEx(DataTypeEx typeSrc, Pointer source, DataTypeEx typeDst, Pointer target, long length) {
-        val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
+        val stream = AtomicAllocator.getInstance().getDeviceContext().getOldStream();
 
         val p = new PointerPointer<>(new Pointer[]{null, stream});
 
@@ -1271,7 +1268,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         Pointer dstPtr = null;
         long size = 0;
         long ssize = 0;
-        val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
+        val stream = AtomicAllocator.getInstance().getDeviceContext().getOldStream();
         if (buffer instanceof CompressedDataBuffer) {
             // compressing
             size = ((CompressedDataBuffer) buffer).getCompressionDescriptor().getCompressedLength();
@@ -1300,7 +1297,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     @Override
     public void convertDataEx(DataTypeEx typeSrc, DataBuffer source, DataTypeEx typeDst, DataBuffer target) {
 
-        val stream = ((CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext()).getOldStream();
+        val stream = AtomicAllocator.getInstance().getDeviceContext().getOldStream();
         Pointer srcPtr = null;
         Pointer dstPtr = null;
 
@@ -1602,27 +1599,27 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(long[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(int[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(short[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(byte[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
     public INDArray create(boolean[] data, long[] shape, long[] stride, DataType dataType, MemoryWorkspace workspace) {
-        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType, workspace), shape, stride,  Nd4j.order(), dataType);
+        return new JCublasNDArray(Nd4j.createTypedBuffer(data, dataType), shape, stride,  Nd4j.order(), dataType);
     }
 
     @Override
@@ -1676,12 +1673,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     @Override
-    public INDArray createUninitializedDetached(long[] shape, char ordering) {
-        MemoryWorkspace workspace = Nd4j.getMemoryManager().getCurrentWorkspace();
-        Nd4j.getMemoryManager().setCurrentWorkspace(null);
-        INDArray ret = new JCublasNDArray(shape, Nd4j.getStrides(shape, ordering), 0, ordering, false);
-        Nd4j.getMemoryManager().setCurrentWorkspace(workspace);
-        return ret;
+    public INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape) {
+        return new JCublasNDArray(Nd4j.createBufferDetached(shape, dataType), shape, Nd4j.getStrides(shape, order), order, dataType);
     }
 
     @Override

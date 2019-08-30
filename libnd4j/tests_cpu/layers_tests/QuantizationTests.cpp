@@ -31,16 +31,23 @@ class QuantizationTests : public testing::Test {
 };
 
 TEST_F(QuantizationTests, Basic_Test_1) {
+#ifndef __CUDABLAS__
     auto s = TypeCast::estimateQuantizedSize(10);
     ASSERT_EQ(18, s);
+#endif
 }
 
 TEST_F(QuantizationTests, Basic_Test_2) {
+#ifndef __CUDABLAS__
     auto s = TypeCast::estimateQuantizedSize(1);
     ASSERT_EQ(9, s);
+#endif
 }
 
 TEST_F(QuantizationTests, Compression_Test_1) {
+
+    #ifndef __CUDABLAS__
+
     auto x = NDArrayFactory::create<float>('c', {10});
     auto z = NDArrayFactory::create<float>('c', {10});
     x.linspace(1.0f);
@@ -58,4 +65,6 @@ TEST_F(QuantizationTests, Compression_Test_1) {
     ASSERT_NEAR(10.0f, fq[1], 1e-5);
 
     delete[] q;
+
+    #endif
 }

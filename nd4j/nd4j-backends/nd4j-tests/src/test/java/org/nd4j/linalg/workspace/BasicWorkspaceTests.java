@@ -312,7 +312,7 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
 
             INDArray array1 = Nd4j.create(new double[] {1f, 2f, 3f, 4f, 5f});
 
-            INDArray array2 = Nd4j.createUninitializedDetached(5);
+            INDArray array2 = Nd4j.createUninitializedDetached(DOUBLE, 5);
 
             array2.assign(array1);
 

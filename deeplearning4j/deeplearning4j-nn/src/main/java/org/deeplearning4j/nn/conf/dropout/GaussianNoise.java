@@ -19,7 +19,7 @@ package org.deeplearning4j.nn.conf.dropout;
 import lombok.Data;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -69,7 +69,7 @@ public class GaussianNoise implements IDropout {
         INDArray noise = Nd4j.createUninitialized(output.dataType(), inputActivations.shape(), inputActivations.ordering());
         Nd4j.getExecutioner().exec(new GaussianDistribution(noise, 0, currS));
 
-        Nd4j.getExecutioner().exec(new OldAddOp(inputActivations, noise, output));
+        Nd4j.getExecutioner().exec(new AddOp(inputActivations, noise, output));
         return output;
     }
 

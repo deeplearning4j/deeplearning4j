@@ -112,7 +112,8 @@ namespace nd4j {
             COPY_SHAPE(input, epsShape);
             COPY_SHAPE(bias, gradShape);
 
-            return SHAPELIST(epsShape, gradShape);
+            return SHAPELIST(CONSTANT(epsShape), CONSTANT(gradShape));
+
         }
     }
 }

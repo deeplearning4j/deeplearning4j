@@ -7,13 +7,15 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
+import org.nd4j.autodiff.listeners.ListenerResponse;
 import org.nd4j.autodiff.listeners.Loss;
+import org.nd4j.autodiff.listeners.records.LossCurve;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 import java.io.*;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -148,12 +150,18 @@ public class CheckpointListener extends BaseListener implements Serializable {
     }
 
     @Override
-    public void epochEnd(SameDiff sameDiff, At at) {
+    public ListenerResponse epochEnd(SameDiff sameDiff, At at, LossCurve lossCurve, long epochTimeMillis) {
         if(saveEveryNEpochs != null && (at.epoch()+1) % saveEveryNEpochs == 0){
             //Save:
             saveCheckpoint(sameDiff, at);
         }
         //General saving conditions: don't need to check here - will check in iterationDone
+        return ListenerResponse.CONTINUE;
+    }
+
+    @Override
+    public boolean isActive(Operation operation) {
+        return operation == Operation.TRAINING;
     }
 
     @Override

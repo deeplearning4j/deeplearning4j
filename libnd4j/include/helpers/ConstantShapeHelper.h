@@ -29,6 +29,7 @@
 #include <ShapeDescriptor.h>
 #include <array/ConstantDataBuffer.h>
 #include <memory/Workspace.h>
+#include <op_boilerplate.h>
 
 namespace nd4j {
 
@@ -64,6 +65,31 @@ namespace nd4j {
         Nd4jLong* createFromExisting(Nd4jLong *shapeInfo, bool destroyOriginal = true);
 
         bool checkBufferExistenceForShapeInfo(ShapeDescriptor &descriptor);
+
+
+        /**
+         * This method returns number of cached TAD shapes/offsets on specific device
+         * @return
+         */
+        FORCEINLINE int cachedEntriesForDevice(int deviceId) {
+            if (deviceId > _cache.size())
+                throw std::runtime_error("deviceId > number of actual devices");
+
+            return _cache[deviceId].size();
+        }
+
+        /**
+         * This method returns total number of cached TAD shapes/offsets on all devices
+         * @return
+         */
+        FORCEINLINE int totalCachedEntries() {
+            int total = 0;
+
+            for (int e = 0; e < _cache.size(); e++)
+                total += _cache[e].size();
+
+            return total;
+        }
     };
 }
 

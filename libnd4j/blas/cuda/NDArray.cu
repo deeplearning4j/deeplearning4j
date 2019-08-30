@@ -55,7 +55,19 @@ void* NDArray::getPlatformBuffer() const    { return getSpecialBuffer(); }
 Nd4jLong* NDArray::getPlatformShapeInfo() const { return getSpecialShapeInfo(); }
 Nd4jLong* NDArray::platformShapeInfo()          { return specialShapeInfo(); }
 
-void NDArray::syncToDevice() const          { _buffer->syncToSpecial();  }
+void NDArray::syncToDevice() const          {
+    auto currentDeviceId = AffinityManager::currentDeviceId();
+    if (currentDeviceId != _deviceId) {
+        // first of all we update shapeInfo
+        const_cast<NDArray*>(this)->setShapeInfo(this->getShapeInfo());
+
+        // now we actually migrate data buffer
+        _buffer->migrate();
+    }
+
+    _buffer->syncToSpecial();
+}
+
 void NDArray::syncToHost() const            { _buffer->syncToPrimary(getContext()); }
 void NDArray::tickWriteHost() const         { _buffer->writePrimary();   }
 void NDArray::tickWriteDevice() const       { _buffer->writeSpecial();   }
@@ -78,7 +90,6 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
     __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
         areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);
@@ -87,7 +98,6 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
         zLen  = shape::length(zShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * zRank;
@@ -153,14 +163,12 @@ __global__ static void identityMatrixCuda(void* vx, const Nd4jLong* xShapeInfo, 
     __shared__ Nd4jLong len, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
         rank = shape::rank(xShapeInfo);
         len  = shape::length(xShapeInfo);
         totalThreads = gridDim.x * blockDim.x;
     }
-
     __syncthreads();
 
     auto coords = sharedMem + threadIdx.x * rank;
@@ -230,6 +238,7 @@ void NDArray::synchronize(const char* msg) const {
     if (res != 0)
         throw std::runtime_error(msg + std::string(": synchronization failed !"));
 }
+
 ////////////////////////////////////////////////////////////////////////
 void NDArray::prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables) {
 
@@ -300,10 +309,11 @@ void* NDArray::specialBufferWithOffset(Nd4jLong offset) const {
 // change an array by repeating it the number of times given by reps.
 NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     int dim = reps.size();
-    int product = 1;
+    Nd4jLong product = 1;
     for(const auto& item : reps)
         product *= item;
-    if(product == 0)
+
+    if(product < 1)
         throw std::runtime_error("NDArray::tile method: one of the elements in reps array is zero !");
 
     int rankOld = rankOf();
@@ -342,6 +352,10 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
 // change an array by repeating it the number of times given by reps.
 void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
 
+    auto repProd = shape::prodLong(reps.data(), reps.size());
+    if (repProd < 1)
+        throw std::runtime_error("NDArray::tile: reps can't contain 0s");
+
     // evaluate true tile shapeInfo for comparison with target shapeInfo
     auto newShapeInfo = ShapeUtils::evalTileShapeInfo(*this, reps, getContext()->getWorkspace());
     if(!shape::equalsSoft(newShapeInfo, target.getShapeInfo()))  {
@@ -355,7 +369,7 @@ void NDArray::tile(const std::vector<Nd4jLong>& reps, NDArray& target) const {
     auto stream = getContext()->getCudaStream();
 
     prepareSpecialUse({&target}, {this});
-    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(target.dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES);
     registerSpecialUse({&target}, {this});
 }
 
@@ -374,68 +388,119 @@ void NDArray::tile(NDArray& target) const {
     auto stream = getContext()->getCudaStream();
 
     prepareSpecialUse({&target}, {this});
-    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(target.dataType(),  tileKernelHH, (getSpecialBuffer(), getSpecialShapeInfo(), target.getSpecialBuffer(), target.getSpecialShapeInfo(), targetLen, ews, stream), LIBND4J_TYPES);
     registerSpecialUse({&target}, {this});
 }
 
-//////////////////////////////////////////////////////////////////////////
-// create new  array by repeating it the number of times given by reps
-NDArray* NDArray::repeat(int dimension, const std::vector<Nd4jLong>& repeats) const {
-    auto outShape = ShapeUtils::evalRepeatShape(dimension, repeats, *this);
+////////////////////////////////////////////////////////////////////////
+template<typename X, typename Z>
+__global__ static void repeatCuda(const void* vx, const Nd4jLong* xShapeInfo,
+                                        void* vz, const Nd4jLong* zShapeInfo,
+                                  const int* repeats, const int repSize,
+                                  const int axis) {
 
-    // the size of outShape == rank
-    int rank = rankOf();            // = outShape.size()
+    const X* x = reinterpret_cast<const X*>(vx);
+          Z* z = reinterpret_cast<Z*>(vz);
 
-    std::vector<Nd4jLong> newShape(rank);
-    for (int i = 0; i < rank; i++)
-        newShape[i] = outShape[i];
+    __shared__ int rank;
+    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen = zLen
 
-    auto ret = new NDArray('c', outShape, dataType(),  getContext());
+    if (threadIdx.x == 0) {
 
-    auto repeatDelta = shape::prodLong(newShape.data(), rank) / this->lengthOf();
-    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rankOf(), {dimension});
-    const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(getShapeInfo(), dimsToExclude); //this->tensorsAlongDimension({dimension});
-    std::vector<int> copy({dimension});
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(ret->getShapeInfo(), copy);
+        rank = shape::rank(zShapeInfo);     // xRank = zRank
+        zLen = shape::length(zShapeInfo);    // xLen <= zLen
 
-    prepareSpecialUse({ret}, {this});
-    auto stream = getContext()->getCudaStream();
-    BUILD_SINGLE_SELECTOR(dataType(), repeatKernelH, (getSpecialBuffer(), ret->getSpecialBuffer(), numTads, lengthOf(), ret->lengthOf(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets(), *stream), LIBND4J_TYPES);
-    registerSpecialUse({ret}, {this});
+        totalThreads = gridDim.x * blockDim.x;
+    }
 
-    return ret;
+    __syncthreads();
+
+    auto coords = sharedMem + threadIdx.x * rank;
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
+
+        shape::index2coords(rank, zShapeInfo + 1, i, zLen, coords);
+
+        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+
+        if(repSize > 1) {
+            for (uint j = 0; j < repSize; ++j) {
+                coords[axis] -= repeats[j];
+                if (coords[axis] < 0) {
+                    coords[axis] = j;
+                    break;
+                }
+            }
+        }
+        else
+            coords[axis] /= repeats[0];
+
+        z[zOffset] = x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
-// fill array by repeating it the number of times given by reps
-void NDArray::repeat(int dimension, NDArray& target) const {
+template<typename X, typename Z>
+static void repeatCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,
+                               const void* vx, const Nd4jLong* xShapeInfo,
+                                     void* vz, const Nd4jLong* zShapeInfo,
+                               const int* repeats, const int repSize,
+                               const int axis) {
 
-    if(dimension < 0)
-        dimension += rankOf();
-
-    if(rankOf() != target.rankOf())
-        throw std::invalid_argument("NDArray::repeat(int dimension, NDArray& target) method: wrong rank of target array it must be equal to this array rank!");
-
-    Nd4jLong repeatDelta = target.sizeAt(dimension) / sizeAt(dimension);
-
-    if(repeatDelta == 0)
-        throw std::invalid_argument("NDArray::repeat(int dimension, NDArray& target) method: wrong shape of target array!");
-
-
-    std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(rankOf(), {dimension});
-    const Nd4jLong numTads = ShapeUtils::getNumOfSubArrs(getShapeInfo(), dimsToExclude);
-
-    std::vector<int> copy({dimension});
-    auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(this->getShapeInfo(), copy);
-    auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(target.getShapeInfo(), copy);
-
-    NDArray::prepareSpecialUse({&target}, {this});
-    auto stream = getContext()->getCudaStream();
-    BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), repeatKernelHH, (getSpecialBuffer(), target.getSpecialBuffer(), numTads, lengthOf(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets(), *stream), LIBND4J_TYPES, LIBND4J_TYPES);
-    NDArray::registerSpecialUse({&target}, {this});
+    repeatCuda<X,Z><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, repeats, repSize, axis);
 }
+BUILD_DOUBLE_TEMPLATE(template void repeatCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo, const int* repeats, const int repSize, const int axis), LIBND4J_TYPES, LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+// create new array by repeating it the number of times given by repeats
+NDArray* NDArray::repeat(const int axis, const std::vector<int>& repeats) const {
+
+    auto output = new NDArray('c', ShapeUtils::evalRepeatShape(axis, repeats, *this), dataType(),  getContext());
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (output->lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = output->rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+
+    PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
+
+    const int* reps = reinterpret_cast<int*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(int)));
+
+    prepareSpecialUse({output}, {this});
+    BUILD_SINGLE_SELECTOR_TWICE(dataType(), repeatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), getSpecialBuffer(), getSpecialShapeInfo(), output->specialBuffer(), output->specialShapeInfo(), reps, repeats.size(), axis), LIBND4J_TYPES);
+    prepareSpecialUse({output}, {this});
+
+    manager.synchronize();
+
+    return output;
+}
+
+//////////////////////////////////////////////////////////////////////////
+// fill array by repeating it the number of times given by repeats
+void NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) const {
+
+    if(!target.isSameShape(ShapeUtils::evalRepeatShape(axis, repeats, *this)))
+        throw std::invalid_argument("NDArray::repeat(const int axis, const std::vector<int>& repeats, NDArray& target) method: wrong shape of target array!");
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (target.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = target.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+
+    PointersManager manager(getContext(), "NDArray::repeat(const int axis, const std::vector<int>& repeats)");
+
+    const int* reps = reinterpret_cast<int*>(manager.replicatePointer(repeats.data(), repeats.size() * sizeof(int)));
+
+    prepareSpecialUse({&target}, {this});
+    BUILD_DOUBLE_SELECTOR(dataType(), target.dataType(), repeatCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, getContext()->getCudaStream(), getSpecialBuffer(), getSpecialShapeInfo(), target.specialBuffer(), target.specialShapeInfo(), reps, repeats.size(), axis), LIBND4J_TYPES, LIBND4J_TYPES);
+    prepareSpecialUse({&target}, {this});
+
+    manager.synchronize();
+}
+
 
 ////////////////////////////////////////////////////////////////////////
 void* NDArray::specialBuffer() {

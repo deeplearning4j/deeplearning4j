@@ -71,7 +71,8 @@ namespace ops  {
             NDArray* rowCounts = NDArrayFactory::create_<int>('c', {N}); //rowP->dup();
             //srowCounts->assign(0);
             Nd4jLong len = helpers::barnes_row_count(rowP, colP, N, *rowCounts);
-            //rowCounts->printBuffer("Row Counts");
+            rowCounts->syncToHost();
+//            rowCounts->printBuffer("Row Counts");
             if (len <= 0) throw std::runtime_error("barnes_symmetrized: Cannot allocate shape due non-positive len.");
             rowCountsPtr = rowCounts;
             //ALLOCATE(outShapeInfo, block.workspace(), shape::shapeInfoLength(2), Nd4jLong);

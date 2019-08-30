@@ -990,8 +990,9 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                 if(gradB->rankOf() == 2)
                     gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
                 gradO->reduceAlongDimension(reduce::Sum, gradBR, {0,indOoH,indOoH+1});                      // sum over bS, oH, oW
+
                 if(gradBR != gradB)
-                    delete gradB;
+                    delete gradBR;
             }
 
             //----- calculation of gradI -----//
@@ -1146,8 +1147,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             // gradO has shape [bS, iC, factorH*iH, factorW*iW ] (NCHW) or [bS, factorH*iH, factorW*iW, iC] (NHWC)
             // gradI has shape [bS, iC, iH, iW] (NCHW) or [bS, iH, iW, iC] (NHWC)
 
-            gradI.nullify();
-
             const T* x = gradO.bufferAsT<T>();
                   T* z = gradI.bufferAsT<T>();
 
@@ -1181,8 +1180,10 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
                             const auto zOffset = b*zStride0 + c*zStride1 + h*zStride2 + w*zStride3;
 
-                            for(uint xh = h; xh < h + factorH; ++xh)
-                                for(uint xw = w; xw < w + factorW; ++xw)
+                            z[zOffset] = 0;
+
+                            for(uint xh = h * factorH; xh < h * factorH + factorH; ++xh)
+                                for(uint xw = w * factorW; xw < w * factorW + factorW; ++xw)
                                     z[zOffset] += x[b*xStride0 + c*xStride1 + xh*xStride2 + xw*xStride3];
                         }
                     }
@@ -1196,8 +1197,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
             // input  has shape [bS, iC, iD, iH, iW] (NCDHW) or [bS, iD, iH, iW, iC] (NDHWC)
             // output has shape [bS, iC, factorD*iD, factorH*iH, factorW*iW ] (NCDHW) or [bS, factorD*iD, factorH*iH, factorW*iW, iC] (NDHWC)
-
-            gradI.nullify();
 
             const T* x = gradO.bufferAsT<T>();
                   T* z = gradI.bufferAsT<T>();
@@ -1237,9 +1236,11 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
                                 const auto zOffset = b*zStride0 + c*zStride1 + d*zStride2 + h*zStride3 + w*zStride4;
 
-                                for(uint xd = d; xd < d + factorD; ++xd)
-                                    for(uint xh = h; xh < h + factorH; ++xh)
-                                        for(uint xw = w; xw < w + factorW; ++xw)
+                                z[zOffset] = 0;
+
+                                for(uint xd = d * factorD; xd < d * factorD + factorD; ++xd)
+                                    for(uint xh = h * factorH; xh < h * factorH + factorH; ++xh)
+                                        for(uint xw = w * factorW; xw < w * factorW + factorW; ++xw)
                                             z[zOffset] += x[b*xStride0 + c*xStride1 + xd*xStride2 + xh*xStride3 + xw*xStride4];
                             }
                         }
@@ -1862,17 +1863,25 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 #endif
             nd4j_debug("MKL-DNN is not used for pooling2d_bp!\n", 0);
 
-            const Nd4jLong iStride0 = gradI.stridesOf()[0];
-            const Nd4jLong iStride1 = gradI.stridesOf()[1];
-            const Nd4jLong iStride2 = gradI.stridesOf()[2];
-            const Nd4jLong iStride3 = gradI.stridesOf()[3];
-            const Nd4jLong oStride0 = gradO.stridesOf()[0];
-            const Nd4jLong oStride1 = gradO.stridesOf()[1];
-            const Nd4jLong oStride2 = gradO.stridesOf()[2];
-            const Nd4jLong oStride3 = gradO.stridesOf()[3];
-            const Nd4jLong iStep2   = dH*iStride2;
-            const Nd4jLong iStep3   = dW*iStride3;
-            const int      kProd    = kH*kW;
+            const Nd4jLong iStride0  = input.stridesOf()[0];
+            const Nd4jLong iStride1  = input.stridesOf()[1];
+            const Nd4jLong iStride2  = input.stridesOf()[2];
+            const Nd4jLong iStride3  = input.stridesOf()[3];
+            const Nd4jLong gIStride0 = gradI.stridesOf()[0];
+            const Nd4jLong gIStride1 = gradI.stridesOf()[1];
+            const Nd4jLong gIStride2 = gradI.stridesOf()[2];
+            const Nd4jLong gIStride3 = gradI.stridesOf()[3];
+            const Nd4jLong oStride0  = gradO.stridesOf()[0];
+            const Nd4jLong oStride1  = gradO.stridesOf()[1];
+            const Nd4jLong oStride2  = gradO.stridesOf()[2];
+            const Nd4jLong oStride3  = gradO.stridesOf()[3];
+            const Nd4jLong iStep2    = dH*iStride2;
+            const Nd4jLong iStep3    = dW*iStride3;
+            const Nd4jLong gIStep2   = dH*gIStride2;
+            const Nd4jLong gIStep3   = dW*gIStride3;
+            const int      kProd     = kH*kW;
+
+            const bool sameStrides = iStride0 == gIStride0 && iStride1 == gIStride1 && iStride2 == gIStride2 && iStride3 == gIStride3;
 
             Nd4jLong hstart, wstart,hend, wend, maxKH, maxKW;
             T sum, valO, *pIn, *pgI;
@@ -1900,28 +1909,48 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                 if(wend > iW)
                                     wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                hstart *= iStride2;
-                                hend   *= iStride2;
-                                wstart *= iStride3;
-                                wend   *= iStride3;
-
                                 sum = -DataTypeUtils::max<T>();
                                 valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
 
-                                // we set these to default values
-                                maxKH = hstart;
-                                maxKW = wstart;
+                                if(sameStrides) {
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
-                                        T valIn = pIn[kh + kw];
-                                        if (valIn > sum) {
-                                            sum = valIn;
-                                            maxKH = kh;
-                                            maxKW = kw;
+                                    hstart *= iStride2;
+                                    hend   *= iStride2;
+                                    wstart *= iStride3;
+                                    wend   *= iStride3;
+
+                                    // we set these to default values
+                                    maxKH = hstart;
+                                    maxKW = wstart;
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
+                                            T valIn = pIn[kh + kw];
+                                            if (valIn > sum) {
+                                                sum = valIn;
+                                                maxKH = kh;
+                                                maxKW = kw;
+                                            }
                                         }
-                                    }
-                                gI[pIn - in + maxKH + maxKW] += valO;
+                                    gI[pIn - in + maxKH + maxKW] += valO;
+                                }
+                                else {
+
+                                    // we set these to default values
+                                    maxKH = hstart;
+                                    maxKW = wstart;
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                            T valIn = pIn[kh * iStride2 + kw * iStride3];
+                                            if (valIn > sum) {
+                                                sum = valIn;
+                                                maxKH = kh;
+                                                maxKW = kw;
+                                            }
+                                        }
+                                    gI[b * gIStride0 + c * gIStride1 + maxKH * gIStride2 + maxKW * gIStride3] += valO;
+                                }
                             }
                         }
                     }
@@ -1935,7 +1964,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                         for(int oh = 0; oh < oH; ++oh) {
                             for(int ow = 0; ow < oW; ++ow) {
 
-                                pgI  = gI + b * iStride0 + c * iStride1;
+                                pgI  = gI + b * gIStride0 + c * gIStride1;
 
                                 hstart = oh * sH - pH;
                                 wstart = ow * sW - pW;
@@ -1951,20 +1980,20 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                 if(wend > iW)
                                     wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                hstart *= iStride2;
-                                hend   *= iStride2;
-                                wstart *= iStride3;
-                                wend   *= iStride3;
+                                hstart *= gIStride2;
+                                hend   *= gIStride2;
+                                wstart *= gIStride3;
+                                wend   *= gIStride3;
 
                                 valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
 
                                 if ((int) extraParam0 == 0)         //Exclude padding
-                                    valO /= static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
+                                    valO /= static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(gIStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(gIStep3)));   //Accounts for dilation
                                 else if ((int) extraParam0 == 1)    //Include padding
                                     valO /= kProd;
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                for (Nd4jLong kh = hstart; kh < hend; kh += gIStep2)
+                                    for (Nd4jLong kw = wstart; kw < wend; kw += gIStep3)
                                         pgI[kh + kw] += valO;
                             }
                         }
@@ -1980,7 +2009,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                             for(int ow = 0; ow < oW; ++ow) {
 
                                 pIn  = in + b * iStride0 + c * iStride1;
-                                pgI  = gI + (pIn - in);
+                                pgI  = sameStrides ? gI + (pIn - in) : gI + b * gIStride0 + c * gIStride1;
 
                                 hstart = oh * sH - pH;
                                 wstart = ow * sW - pW;
@@ -1996,24 +2025,41 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                 if(wend > iW)
                                     wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-
-                                hstart *= iStride2;
-                                hend   *= iStride2;
-                                wstart *= iStride3;
-                                wend   *= iStride3;
-
                                 sum = static_cast<T>(0.f);
                                 valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                        sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                if(sameStrides) {
 
-                                valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1. - extraParam0) / extraParam0);
+                                    hstart *= iStride2;
+                                    hend   *= iStride2;
+                                    wstart *= iStride3;
+                                    wend   *= iStride3;
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                        pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f);
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                            sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+
+                                    valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1. - extraParam0) / extraParam0);
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                            pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(pIn[kh + kw]);
+                                }
+                                else {
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += dW)
+                                            sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh * iStride2 + kw * iStride3]), extraParam0);
+
+                                    valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1. - extraParam0) / extraParam0);
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += dH) {
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                            const auto inVal = pIn[kh * iStride2 + kw * iStride3];
+                                            pgI[kh * gIStride2 + kw * gIStride3] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(inVal), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(inVal);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
@@ -2143,11 +2189,16 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 #endif
             nd4j_debug("MKL-DNN is not used for pooling3d_bp!\n", 0);
 
-            const Nd4jLong iStride0 = gradI.stridesOf()[0];
-            const Nd4jLong iStride1 = gradI.stridesOf()[1];
-            const Nd4jLong iStride2 = gradI.stridesOf()[2];
-            const Nd4jLong iStride3 = gradI.stridesOf()[3];
-            const Nd4jLong iStride4 = gradI.stridesOf()[4];
+            const Nd4jLong iStride0  = input.stridesOf()[0];
+            const Nd4jLong iStride1  = input.stridesOf()[1];
+            const Nd4jLong iStride2  = input.stridesOf()[2];
+            const Nd4jLong iStride3  = input.stridesOf()[3];
+            const Nd4jLong iStride4  = input.stridesOf()[4];
+            const Nd4jLong gIStride0 = gradI.stridesOf()[0];
+            const Nd4jLong gIStride1 = gradI.stridesOf()[1];
+            const Nd4jLong gIStride2 = gradI.stridesOf()[2];
+            const Nd4jLong gIStride3 = gradI.stridesOf()[3];
+            const Nd4jLong gIStride4 = gradI.stridesOf()[4];
             const Nd4jLong oStride0 = gradO.stridesOf()[0];
             const Nd4jLong oStride1 = gradO.stridesOf()[1];
             const Nd4jLong oStride2 = gradO.stridesOf()[2];
@@ -2156,7 +2207,12 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             const Nd4jLong iStep2   = dD*iStride2;
             const Nd4jLong iStep3   = dH*iStride3;
             const Nd4jLong iStep4   = dW*iStride4;
+            const Nd4jLong gIStep2  = dD*gIStride2;
+            const Nd4jLong gIStep3  = dH*gIStride3;
+            const Nd4jLong gIStep4  = dW*gIStride4;
             const int      kProd    = kD*kH*kW;
+
+            const bool sameStrides = iStride0 == gIStride0 && iStride1 == gIStride1 && iStride2 == gIStride2 && iStride3 == gIStride3 && iStride4 == gIStride4;
 
             Nd4jLong dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW;
             T sum, valO, *pIn, *pgI;
@@ -2191,32 +2247,55 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                     if(wend > iW)
                                         wend -= dW * ((wend-iW + dW - 1) / dW);
 
-                                    dstart *= iStride2;
-                                    dend   *= iStride2;
-                                    hstart *= iStride3;
-                                    hend   *= iStride3;
-                                    wstart *= iStride4;
-                                    wend   *= iStride4;
-
-                                    maxKD = dstart;
-                                    maxKH = hstart;
-                                    maxKW = wstart;
-
                                     sum = -DataTypeUtils::max<T>();
                                     valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4) {
-                                                T valIn = pIn[kd + kh + kw];
-                                                if (valIn > sum) {
-                                                    sum = valIn;
-                                                    maxKD = kd;
-                                                    maxKH = kh;
-                                                    maxKW = kw;
+                                    if(sameStrides) {
+
+                                        dstart *= iStride2;
+                                        dend   *= iStride2;
+                                        hstart *= iStride3;
+                                        hend   *= iStride3;
+                                        wstart *= iStride4;
+                                        wend   *= iStride4;
+
+                                        maxKD = dstart;
+                                        maxKH = hstart;
+                                        maxKW = wstart;
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4) {
+                                                    T valIn = pIn[kd + kh + kw];
+                                                    if (valIn > sum) {
+                                                        sum = valIn;
+                                                        maxKD = kd;
+                                                        maxKH = kh;
+                                                        maxKW = kw;
+                                                    }
                                                 }
-                                            }
-                                    gI[pIn - in + maxKD + maxKH + maxKW] += valO;
+                                        gI[pIn - in + maxKD + maxKH + maxKW] += valO;
+                                    }
+                                    else {
+
+                                        // we set these to default values
+                                        maxKH = hstart;
+                                        maxKW = wstart;
+                                        maxKD = dstart;
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += dD)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                                    T valIn = pIn[kd * iStride2 + kh * iStride3 + kw * iStride4];
+                                                    if (valIn > sum) {
+                                                        sum = valIn;
+                                                        maxKD = kd;
+                                                        maxKH = kh;
+                                                        maxKW = kw;
+                                                    }
+                                                }
+                                        gI[b * gIStride0 + c * gIStride1 + maxKD * gIStride2 + maxKH * gIStride3 + maxKW * gIStride4] += valO;
+                                    }
                                 }
                             }
                         }
@@ -2232,7 +2311,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                             for(int oh = 0; oh < oH; ++oh) {
                                 for(int ow = 0; ow < oW; ++ow) {
 
-                                    pgI  = gI + b * iStride0 + c * iStride1;
+                                    pgI  = gI + b * gIStride0 + c * gIStride1;
 
                                     dstart = od * sD - pD;
                                     hstart = oh * sH - pH;
@@ -2254,23 +2333,23 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                     if(wend > iW)
                                         wend -= dW * ((wend-iW + dW - 1) / dW);
 
-                                    dstart *= iStride2;
-                                    dend   *= iStride2;
-                                    hstart *= iStride3;
-                                    hend   *= iStride3;
-                                    wstart *= iStride4;
-                                    wend   *= iStride4;
+                                    dstart *= gIStride2;
+                                    dend   *= gIStride2;
+                                    hstart *= gIStride3;
+                                    hend   *= gIStride3;
+                                    wstart *= gIStride4;
+                                    wend   *= gIStride4;
 
                                     valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
 
                                     if (extraParam0 == 0)         //Exclude padding
-                                        valO /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(iStep2)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep3)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(iStep4));   //Accounts for dilation
+                                        valO /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(gIStep2)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(gIStep3)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(gIStep4));   //Accounts for dilation
                                     else if (extraParam0 == 1)    //Include padding
                                         valO /= kProd;
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                    for (Nd4jLong kd = dstart; kd < dend; kd += gIStep2)
+                                        for (Nd4jLong kh = hstart; kh < hend; kh += gIStep3)
+                                            for (Nd4jLong kw = wstart; kw < wend; kw += gIStep4)
                                                 pgI[kd + kh + kw] += valO;
                                 }
                             }
@@ -2310,27 +2389,46 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                     if(wend > iW)
                                         wend -= dW * ((wend-iW + dW - 1) / dW);
 
-                                    dstart *= iStride2;
-                                    dend   *= iStride2;
-                                    hstart *= iStride3;
-                                    hend   *= iStride3;
-                                    wstart *= iStride4;
-                                    wend   *= iStride4;
-
                                     sum = static_cast<T>(0.);
                                     valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
+                                    if(sameStrides) {
 
-                                    valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+                                        dstart *= iStride2;
+                                        dend   *= iStride2;
+                                        hstart *= iStride3;
+                                        hend   *= iStride3;
+                                        wstart *= iStride4;
+                                        wend   *= iStride4;
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f);
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                                    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
+
+                                        valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                                    pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f);
+                                    }
+                                    else {
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += dD)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += dW)
+                                                    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd * iStride2 + kh * iStride3 + kw * iStride4]), extraParam0);
+
+                                        valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += dD)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                                    const auto inVal = pIn[kD * iStride2 + kh * iStride3 + kw * iStride4];
+                                                    pgI[kd * gIStride2 + kh * gIStride3 + kw * gIStride4] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(inVal), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(inVal);
+                                                }
+                                    }
                                 }
                             }
                         }
@@ -2347,71 +2445,52 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
 
         void ConvolutionUtils::conv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-            BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), conv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::conv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-            BUILD_DOUBLE_SELECTOR(input->dataType(), gradO->dataType(), conv2dBP_, (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2dBP_, (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::depthwiseConv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-            BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), depthwiseConv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::depthwiseConv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-            BUILD_DOUBLE_SELECTOR(input->dataType(), gradO->dataType(), depthwiseConv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::sconv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-            BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sconv2d_, (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), sconv2d_, (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::vol2col(nd4j::graph::Context& block, const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
-            BUILD_SINGLE_SELECTOR(volume.dataType(), vol2col_, (volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(volume.dataType(), vol2col_, (volume, columns, sD, sH, sW, pD, pH, pW, dD, dH, dW), FLOAT_TYPES);
         }
         void ConvolutionUtils::col2vol(nd4j::graph::Context& block, const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
-            BUILD_SINGLE_SELECTOR(volume.dataType(), col2vol_, (columns, volume, sD, sH, sW, pD, pH, pW, dD, dH, dW), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(volume.dataType(), col2vol_, (columns, volume, sD, sH, sW, pD, pH, pW, dD, dH, dW), FLOAT_TYPES);
         }
         void ConvolutionUtils::upsampling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
-            BUILD_SINGLE_SELECTOR(input.dataType(), upsampling2d_, (input, output, factorH, factorW, isNCHW), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(input.dataType(), upsampling2d_, (input, output, factorH, factorW, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::upsampling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
-            BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3d_, (input, output, factorD, factorH, factorW, isNCDHW), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3d_, (input, output, factorD, factorH, factorW, isNCDHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::upsampling2dBP(nd4j::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
-            BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling2dBP_, (gradO, gradI, isNCHW), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling2dBP_, (gradO, gradI, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::upsampling3dBP(nd4j::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
-            BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling3dBP_, (gradO, gradI, isNCHW), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(gradO.dataType(), upsampling3dBP_, (gradO, gradI, isNCHW), FLOAT_TYPES);
         }
 
 
 
         void ConvolutionUtils::pooling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const PoolingType poolingMode, const int extraParam0) {
-            BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_, (block, input, output, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(input.dataType(), pooling2d_, (block, input, output, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
         }
         void ConvolutionUtils::pooling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
-            BUILD_SINGLE_SELECTOR(input.dataType(), pooling3d_, (block, input, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(input.dataType(), pooling3d_, (block, input, output, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
         }
         void ConvolutionUtils::pooling2dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
-            BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBP_, (block, input, gradO, gradI, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBP_, (block, input, gradO, gradI, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
         }
         void ConvolutionUtils::pooling3dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
-            BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dBP_, (block, input, gradO, gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+            BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dBP_, (block, input, gradO, gradI, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
         }
-
-
-        BUILD_DOUBLE_TEMPLATE(template void conv2d_,            (nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
-        BUILD_DOUBLE_TEMPLATE(template void conv2dBP_,          (nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
-        BUILD_DOUBLE_TEMPLATE(template void depthwiseConv2d_,   (const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
-        BUILD_DOUBLE_TEMPLATE(template void depthwiseConv2dBP_, (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
-        BUILD_DOUBLE_TEMPLATE(template void sconv2d_,           (nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
-
-        BUILD_SINGLE_TEMPLATE(template void upsampling2d_,   (const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template void upsampling3d_,   (const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template void upsampling2dBP_, (const NDArray& gradO, NDArray& gradI, const bool isNCHW), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template void upsampling3dBP_, (const NDArray& gradO, NDArray& gradI, const bool isNCHW), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template void vol2col_,        (const NDArray& volume, NDArray& columns, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template void col2vol_,        (const NDArray& columns, NDArray& volume, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template void pooling2d_,      (nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template void pooling3d_,      (nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template void pooling2dBP_,    (nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-        BUILD_SINGLE_TEMPLATE(template void pooling3dBP_,    (nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
-
     }
 }

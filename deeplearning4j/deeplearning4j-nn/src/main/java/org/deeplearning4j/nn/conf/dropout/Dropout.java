@@ -24,7 +24,7 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.random.impl.DropOutInverted;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.schedule.ISchedule;
@@ -153,7 +153,7 @@ public class Dropout implements IDropout {
 
         mask = workspaceMgr.createUninitialized(ArrayType.INPUT, output.dataType(), output.shape(), output.ordering()).assign(1.0);
         Nd4j.getExecutioner().exec(new DropOutInverted(mask, mask, currP));
-        Nd4j.getExecutioner().exec(new OldMulOp(inputCast, mask, output));
+        Nd4j.getExecutioner().exec(new MulOp(inputCast, mask, output));
         return output;
     }
 
@@ -171,7 +171,7 @@ public class Dropout implements IDropout {
         if(m.dataType() != gradAtInput.dataType()){
             m = m.castTo(gradAtInput.dataType());
         }
-        Nd4j.getExecutioner().exec(new OldMulOp(gradAtOutput, m, gradAtInput));
+        Nd4j.getExecutioner().exec(new MulOp(gradAtOutput, m, gradAtInput));
         mask = null;
         return gradAtInput;
     }

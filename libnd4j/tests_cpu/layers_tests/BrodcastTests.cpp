@@ -34,6 +34,8 @@ public:
     int dimensionLength = 2;
 };
 
+#ifndef __CUDABLAS__
+
 TEST_F(BroadcastMultiDimTest,MultimDimTest) {
     shape::TAD *tad = new shape::TAD();
     tad->init(inputShapeBuffer,dimensions,dimensionLength);
@@ -59,3 +61,5 @@ TEST_F(BroadcastMultiDimTest,MultimDimTest) {
 
     delete tad;
 }
+
+#endif

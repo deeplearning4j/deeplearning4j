@@ -43,7 +43,6 @@ namespace helpers {
                 axisVector[e] = a + rank;
         }
     }
-
 }
 }
 }

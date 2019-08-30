@@ -97,6 +97,11 @@ void DataBuffer::allocateSpecial() {
 }
 
 ////////////////////////////////////////////////////////////////////////
+void DataBuffer::migrate() {
+
+}
+
+////////////////////////////////////////////////////////////////////////
 void DataBuffer::writePrimary() const    { }
 void DataBuffer::writeSpecial() const    { }
 void DataBuffer::readPrimary()  const    { }

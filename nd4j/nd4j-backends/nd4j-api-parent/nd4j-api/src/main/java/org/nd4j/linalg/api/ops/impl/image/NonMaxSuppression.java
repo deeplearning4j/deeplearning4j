@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.image;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -27,7 +28,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * IdentityN op wrapper
+ * Non max suppression
  *
  * @author raver119@gmail.com
  */
@@ -35,8 +36,9 @@ public class NonMaxSuppression extends DynamicCustomOp {
 
     public NonMaxSuppression() {}
 
-    public NonMaxSuppression(SameDiff sameDiff, SDVariable[] input) {
-        super(null, sameDiff, input, false);
+    public NonMaxSuppression(SameDiff sameDiff, @NonNull SDVariable boxes, @NonNull SDVariable scores, @NonNull SDVariable maxOutSize,
+                             @NonNull SDVariable iouThreshold, @NonNull SDVariable scoreThreshold) {
+        super(null, sameDiff, new SDVariable[]{boxes, scores, maxOutSize, iouThreshold, scoreThreshold}, false);
     }
 
     @Override

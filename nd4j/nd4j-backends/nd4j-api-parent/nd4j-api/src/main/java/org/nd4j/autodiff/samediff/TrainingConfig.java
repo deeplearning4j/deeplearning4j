@@ -18,7 +18,9 @@ package org.nd4j.autodiff.samediff;
 
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.listeners.ListenerEvaluations;
 import org.nd4j.base.Preconditions;
+import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.linalg.learning.config.IUpdater;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
 import org.nd4j.linalg.learning.regularization.L2Regularization;
@@ -61,6 +63,12 @@ public class TrainingConfig {
     private List<String> lossVariables;
     private int iterationCount;
     private int epochCount;
+
+    private Map<String, List<IEvaluation>> trainEvaluations = new HashMap<>();
+    private Map<String, Integer> trainEvaluationLabels = new HashMap<>();
+
+    private Map<String, List<IEvaluation>> validationEvaluations = new HashMap<>();
+    private Map<String, Integer> validationEvaluationLabels = new HashMap<>();
 
     /**
      * Create a training configuration suitable for training a single input, single output network.<br>
@@ -106,6 +114,17 @@ public class TrainingConfig {
         this.lossVariables = lossVariables;
     }
 
+    protected TrainingConfig(IUpdater updater, List<Regularization> regularization, boolean minimize, List<String> dataSetFeatureMapping, List<String> dataSetLabelMapping,
+            List<String> dataSetFeatureMaskMapping, List<String> dataSetLabelMaskMapping, List<String> lossVariables,
+            Map<String, List<IEvaluation>> trainEvaluations, Map<String, Integer> trainEvaluationLabels,
+            Map<String, List<IEvaluation>> validationEvaluations, Map<String, Integer> validationEvaluationLabels){
+        this(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping, dataSetFeatureMaskMapping, dataSetLabelMaskMapping, lossVariables);
+        this.trainEvaluations = trainEvaluations;
+        this.trainEvaluationLabels = trainEvaluationLabels;
+        this.validationEvaluations = validationEvaluations;
+        this.validationEvaluationLabels = validationEvaluationLabels;
+    }
+
     /**
      * Increment the iteration count by 1
      */
@@ -145,6 +164,12 @@ public class TrainingConfig {
         private List<String> lossVariables;
         private boolean skipValidation = false;
         private boolean markLabelsUnused = false;
+
+        private Map<String, List<IEvaluation>> trainEvaluations = new HashMap<>();
+        private Map<String, Integer> trainEvaluationLabels = new HashMap<>();
+
+        private Map<String, List<IEvaluation>> validationEvaluations = new HashMap<>();
+        private Map<String, Integer> validationEvaluationLabels = new HashMap<>();
 
         /**
          * Set the updater (such as {@link org.nd4j.linalg.learning.config.Adam}, {@link org.nd4j.linalg.learning.config.Nesterovs}
@@ -327,7 +352,7 @@ public class TrainingConfig {
          * Set the name of the placeholders/variables that should be set using the feature mask INDArray(s) from the
          * DataSet or MultiDataSet. For example, if the network had 2 mask variables called "mask1" and "mask2"
          * and the MultiDataSet features masks should be mapped with {@code MultiDataSet.getFeatureMaskArray(0)->"mask1"}
-         * and {@code MultiDataSet.getFeatureMaskArray(1)->"mask2"}, then this should be set to {@code "mask2", "mask2"}.
+         * and {@code MultiDataSet.getFeatureMaskArray(1)->"mask2"}, then this should be set to {@code "mask1", "mask2"}.
          *
          * @param dataSetFeatureMaskMapping Name of the variables/placeholders that the feature arrays should be mapped to
          */
@@ -347,7 +372,7 @@ public class TrainingConfig {
          * Set the name of the placeholders/variables that should be set using the label mask INDArray(s) from the
          * DataSet or MultiDataSet. For example, if the network had 2 mask variables called "mask1" and "mask2"
          * and the MultiDataSet label masks should be mapped with {@code MultiDataSet.getLabelMaskArray(0)->"mask1"}
-         * and {@code MultiDataSet.getLabelMaskArray(1)->"mask2"}, then this should be set to {@code "mask2", "mask2"}.
+         * and {@code MultiDataSet.getLabelMaskArray(1)->"mask2"}, then this should be set to {@code "mask1", "mask2"}.
          *
          * @param dataSetLabelMaskMapping Name of the variables/placeholders that the feature arrays should be mapped to
          */
@@ -366,6 +391,104 @@ public class TrainingConfig {
             return this;
         }
 
+        private void addEvaluations(boolean validation, @NonNull Map<String, List<IEvaluation>> evaluationMap, @NonNull Map<String, Integer> labelMap,
+                @NonNull String variableName, int labelIndex, @NonNull IEvaluation... evaluations){
+            if(evaluationMap.containsKey(variableName) && labelMap.get(variableName) != labelIndex){
+                String s;
+
+                if(validation){
+                    s = "This ListenerEvaluations.Builder already has validation evaluations for ";
+                } else {
+                    s = "This ListenerEvaluations.Builder already has train evaluations for ";
+                }
+
+                throw new IllegalArgumentException(s + "variable " +
+                        variableName + " with label index " + labelIndex + ".  You can't add " +
+                        " evaluations with a different label index.  Got label index " + labelIndex);
+            }
+
+            if(evaluationMap.containsKey(variableName)){
+                evaluationMap.get(variableName).addAll(Arrays.asList(evaluations));
+            } else {
+                evaluationMap.put(variableName, Arrays.asList(evaluations));
+                labelMap.put(variableName, labelIndex);
+            }
+        }
+
+        /**
+         * Add requested History training evaluations for a parm/variable.
+         *
+         * These evaluations will be reported in the {@link org.nd4j.autodiff.listeners.records.History} object returned by fit.
+         *
+         * @param variableName  The variable to evaluate
+         * @param labelIndex    The index of the label to evaluate against
+         * @param evaluations   The evaluations to run
+         */
+        public Builder trainEvaluation(@NonNull String variableName, int labelIndex, @NonNull IEvaluation... evaluations){
+            addEvaluations(false, this.trainEvaluations, this.trainEvaluationLabels, variableName,
+                    labelIndex, evaluations);
+            return this;
+        }
+
+        /**
+         * Add requested History training evaluations for a parm/variable.
+         *
+         * These evaluations will be reported in the {@link org.nd4j.autodiff.listeners.records.History} object returned by fit.
+         *
+         * @param variable      The variable to evaluate
+         * @param labelIndex    The index of the label to evaluate against
+         * @param evaluations   The evaluations to run
+         */
+        public Builder trainEvaluation(@NonNull SDVariable variable, int labelIndex, @NonNull IEvaluation... evaluations){
+            return trainEvaluation(variable.getVarName(), labelIndex, evaluations);
+        }
+
+        /**
+         * Add requested History validation evaluations for a parm/variable.
+         *
+         * These evaluations will be reported in the {@link org.nd4j.autodiff.listeners.records.History} object returned by fit.
+         *
+         * @param variableName  The variable to evaluate
+         * @param labelIndex    The index of the label to evaluate against
+         * @param evaluations   The evaluations to run
+         */
+        public Builder validationEvaluation(@NonNull String variableName, int labelIndex, @NonNull IEvaluation... evaluations){
+            addEvaluations(true, this.validationEvaluations, this.validationEvaluationLabels, variableName,
+                    labelIndex, evaluations);
+            return this;
+        }
+
+        /**
+         * Add requested History validation evaluations for a parm/variable.
+         *
+         * These evaluations will be reported in the {@link org.nd4j.autodiff.listeners.records.History} object returned by fit.
+         *
+         * @param variable      The variable to evaluate
+         * @param labelIndex    The index of the label to evaluate against
+         * @param evaluations   The evaluations to run
+         */
+        public Builder validationEvaluation(@NonNull SDVariable variable, int labelIndex, @NonNull IEvaluation... evaluations){
+            return validationEvaluation(variable.getVarName(), labelIndex, evaluations);
+        }
+
+        /**
+         * Add requested evaluations for a parm/variable, for either training or validation.
+         *
+         * These evaluations will be reported in the {@link org.nd4j.autodiff.listeners.records.History} object returned by fit.
+         *
+         * @param validation    Whether to add these evaluations as validation or training
+         * @param variableName  The variable to evaluate
+         * @param labelIndex    The index of the label to evaluate against
+         * @param evaluations   The evaluations to run
+         */
+        public Builder addEvaluations(boolean validation, @NonNull String variableName, int labelIndex, @NonNull IEvaluation... evaluations){
+            if(validation){
+                return validationEvaluation(variableName, labelIndex, evaluations);
+            } else{
+                return trainEvaluation(variableName, labelIndex, evaluations);
+            }
+        }
+
         public TrainingConfig build(){
             if(!skipValidation) {
                 Preconditions.checkState(updater != null, "Updater (optimizer) must not be null. Use updater(IUpdater) to set an updater");
@@ -374,10 +497,20 @@ public class TrainingConfig {
                 Preconditions.checkState(markLabelsUnused || dataSetLabelMapping != null, "No DataSet label mapping has been provided. A " +
                         "mapping between DataSet array positions and variables/placeholders must be provided - use dataSetLabelMapping(...) to set this," +
                         " or use markLabelsUnused() to mark labels as unused (for example, for unsupervised learning)");
+
+
+                Preconditions.checkArgument(trainEvaluations.keySet().equals(trainEvaluationLabels.keySet()),
+                        "Must specify a label index for each train evaluation.  Expected: %s, got: %s",
+                        trainEvaluations.keySet(), trainEvaluationLabels.keySet());
+
+                Preconditions.checkArgument(validationEvaluations.keySet().equals(validationEvaluationLabels.keySet()),
+                        "Must specify a label index for each validation evaluation.  Expected: %s, got: %s",
+                        validationEvaluations.keySet(), validationEvaluationLabels.keySet());
             }
 
             return new TrainingConfig(updater, regularization, minimize, dataSetFeatureMapping, dataSetLabelMapping,
-                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping, lossVariables);
+                    dataSetFeatureMaskMapping, dataSetLabelMaskMapping, lossVariables,
+                    trainEvaluations, trainEvaluationLabels, validationEvaluations, validationEvaluationLabels);
         }
     }
 

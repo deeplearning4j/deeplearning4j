@@ -104,38 +104,6 @@ public class Tile extends DynamicCustomOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        if(inputArguments.size() == 0)
-            return Collections.emptyList();
-
-        /**
-         * This op is special case: we can't infer its shape before both inputs are available.
-         * So if reps argument is full of 0.0s - we skip shape inference
-         *
-         * And during actual op invocation both inputs should be available due to topo sort
-         */
-        if (is_static_reps)
-            return Nd4j.getExecutioner().calculateOutputShape(this);
-
-        if (inputArguments().length < 2)
-            return Collections.emptyList();
-
-        val array = inputArguments()[1];
-
-        // FIXME: int cast
-        val reps = new long[(int) array.length()];
-
-        for (int e = 0; e < reps.length; e++)
-            reps[e] = (int) array.getDouble(e);
-
-        if (ArrayUtil.prodLong(reps) == 0)
-            return Collections.emptyList();
-        else
-            return Nd4j.getExecutioner().calculateOutputShape(this);
-    }
-
-
-    @Override
     public String opName() {
         return "tile";
     }

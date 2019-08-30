@@ -24,11 +24,10 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.random.impl.AlphaDropOut;
 import org.nd4j.linalg.api.ops.random.impl.BernoulliDistribution;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.schedule.ISchedule;
 import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
@@ -139,7 +138,7 @@ public class AlphaDropout implements IDropout {
         //a * (x * d + alphaPrime * (1-d)) + b
         INDArray inverseMask = mask.rsub(1.0);
         INDArray aPOneMinusD = inverseMask.muli(alphaPrime);
-        Nd4j.getExecutioner().exec(new OldMulOp(inputActivations, mask, output));   //out = x * d
+        Nd4j.getExecutioner().exec(new MulOp(inputActivations, mask, output));   //out = x * d
         output.addi(aPOneMinusD).muli(a).addi(b);
 
         //Nd4j.getExecutioner().exec(new AlphaDropOut(inputActivations, output, p, a, alphaPrime, b));
@@ -152,7 +151,7 @@ public class AlphaDropout implements IDropout {
         //dL/dIn = dL/dOut * dOut/dIn
         // dOut/dIn = 0 if dropped (d=0), or a otherwise (d=1)
         mask.muli(a);
-        Nd4j.getExecutioner().exec(new OldMulOp(gradAtOutput, mask, gradAtInput));
+        Nd4j.getExecutioner().exec(new MulOp(gradAtOutput, mask, gradAtInput));
         mask = null;
         return gradAtInput;
     }

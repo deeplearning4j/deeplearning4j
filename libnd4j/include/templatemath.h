@@ -781,14 +781,32 @@ inline __device__ double nd4j_atomicMin<double>(double* address, double val)  {
 }
 template <>
 inline __device__ uint64_t nd4j_atomicMin<uint64_t>(uint64_t* address, uint64_t val)  {
+#if __CUDA_ARCH__ >= 350
      return atomicMin((unsigned long long*)address, (unsigned long long)val);
+#else
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = __double_as_longlong(val), assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, math::nd4j_min((unsigned long long)val, assumed));
+	} while (assumed != old);
+	return old;
+#endif
 }
 template <>
 inline __device__ Nd4jLong nd4j_atomicMin<Nd4jLong>(Nd4jLong* address, Nd4jLong val)  {
 
-        return (Nd4jLong)atomicMin((unsigned long long*)address, (unsigned long long)val);
-//    else
-//        return (Nd4jLong)atomicMax((unsigned long long*)address, (unsigned long long)val);
+ #if __CUDA_ARCH__ >= 350
+     return atomicMin((unsigned long long*)address, (unsigned long long)val);
+ #else
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = (unsigned long long)val, assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, math::nd4j_min(val, (Nd4jLong)assumed));
+	} while (assumed != old);
+	return old;
+#endif
 
 }
 template <>
@@ -952,7 +970,17 @@ inline __device__ bfloat16 nd4j_atomicMax<bfloat16>(bfloat16* address, bfloat16 
 
 template <>
 inline __device__ uint64_t nd4j_atomicMax<uint64_t>(uint64_t* address, uint64_t val)  {
-    return atomicMax((unsigned long long*)address, (unsigned long long)val);
+#if __CUDA_ARCH__ >= 350
+     return atomicMax((unsigned long long*)address, (unsigned long long)val);
+#else
+    unsigned long long int* address_as_ull = (unsigned long long int*)address;
+    unsigned long long int old = __double_as_longlong(val), assumed;
+    do {
+		assumed = old;
+		old = atomicCAS(address_as_ull, assumed, math::nd4j_max((unsigned long long)val, assumed));
+	} while (assumed != old);
+	return old;
+#endif
 }
 
 template <>
@@ -1029,6 +1057,9 @@ inline __device__ uint64_t nd4j_atomicAdd<uint64_t>(uint64_t* address, uint64_t 
 
 template <>
 inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)  {
+#if __CUDA_ARCH__ >= 700
+    atomicAdd(reinterpret_cast<__half*>(address), val.data);
+#else
 	int* address_as_ull = (int*) address;
 
 	long addr = (long) address;
@@ -1058,6 +1089,7 @@ inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)
 
 	if (!misaligned) return old.B.H;
 	else return old.B.L;
+#endif
 }
 
 template <>

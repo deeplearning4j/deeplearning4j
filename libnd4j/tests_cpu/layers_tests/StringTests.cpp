@@ -25,7 +25,6 @@
 #include <graph/Stash.h>
 
 using namespace nd4j;
-using namespace nd4j;
 
 class StringTests : public testing::Test {
 public:

@@ -386,6 +386,29 @@ public class SDCNN extends SDOps {
     }
 
     /**
+     * 3D CNN deconvolution operation with or without optional bias
+     *
+     * @param input   Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+     * @param weights Weights array - shape [kD, kH, kW, oC, iC]
+     * @param bias    Bias array - optional, may be null. If non-null, must have shape [outputChannels]
+     * @param config  Configuration
+     */
+    public SDVariable deconv3d(SDVariable input, SDVariable weights, SDVariable bias, DeConv3DConfig config) {
+        return deconv3d(null, input, weights, bias, config);
+    }
+
+    /**
+     * 3D CNN deconvolution operation with no bias
+     *
+     * @param input   Input array - shape [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
+     * @param weights Weights array - shape [kD, kH, kW, oC, iC]
+     * @param config  Configuration
+     */
+    public SDVariable deconv3d(SDVariable input, SDVariable weights, DeConv3DConfig config) {
+        return deconv3d(input, weights, null, config);
+    }
+
+    /**
      * Convolution 2d layer batch to space operation on 4d input.<br>
      * Reduces input channels dimension by rearranging data into a larger spatial dimensions<br>
      * Example: if input has shape [mb, 8, 2, 2] and block size is 2, then output size is [mb, 8/(2*2), 2*2, 2*2]

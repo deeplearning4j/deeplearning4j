@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformAnyOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -34,54 +35,35 @@ import java.util.List;
  * [1, 2, 3, 1] -> [0, 0, 1, 0]
  * @author Adam Gibson
  */
-public class IsMax extends BaseTransformAnyOp {
-    public IsMax(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+public class IsMax extends DynamicCustomOp {
+    public IsMax(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, i_v);
     }
 
-    public IsMax(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
-    public IsMax(SameDiff sameDiff, SDVariable i_v, Object[] extraArgs) {
-        super(sameDiff, i_v, extraArgs);
-    }
 
     public IsMax(INDArray x, INDArray z) {
-        super(x, z);
+        super(new INDArray[]{x}, new INDArray[]{z});
     }
 
     public IsMax() {}
+
     public IsMax(INDArray x) {
-        super(x, Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering()));
+        this(x, Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering()));
     }
 
     public IsMax(INDArray x, INDArray z, int... dimensions) {
-        super(x, z);
-        this.extraArgs = new Object[dimensions.length + 1];
-        this.extraArgs[0] = dimensions.length;
-        for (int i = 0; i < dimensions.length; i++)
-            this.extraArgs[i + 1] = dimensions[i];
+        this(x, z);
+        this.addIArgument(dimensions);
     }
 
     public IsMax(INDArray x, int... dimensions) {
-        super(x, Nd4j.createUninitialized(x.dataType(), x.shape(), x.ordering()));
-        this.extraArgs = new Object[dimensions.length + 1];
-        this.extraArgs[0] = dimensions.length;
-        for (int i = 0; i < dimensions.length; i++)
-            this.extraArgs[i + 1] = dimensions[i];
-    }
-
-    @Override
-    public int opNum() {
-        return 1;
+        this(x, Nd4j.createUninitialized(DataType.BOOL, x.shape(), x.ordering()), dimensions);
     }
 
     @Override
     public String opName() {
         return "ismax";
     }
-
 
     @Override
     public String onnxName() {
@@ -94,15 +76,13 @@ public class IsMax extends BaseTransformAnyOp {
     }
 
     @Override
-    public DataBuffer extraArgsDataBuff(DataType dtype) {
-        if (Nd4j.getExecutioner().type() == OpExecutioner.ExecutionerType.CUDA)
-            return this.extraArgs == null ? null : Nd4j.createBuffer(DataType.LONG, 1, false);
-        else
-            return super.extraArgsDataBuff(dtype);
+    public List<SDVariable> doDiff(List<SDVariable> f1) {
+        return Collections.singletonList(f().zerosLike(arg()));
     }
 
     @Override
-    public List<SDVariable> doDiff(List<SDVariable> f1) {
-        return Collections.singletonList(f().zerosLike(arg()));
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        //Also supports other types if say float array is provided as output array
+        return Collections.singletonList(DataType.BOOL);
     }
 }

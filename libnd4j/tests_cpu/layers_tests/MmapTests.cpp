@@ -33,7 +33,9 @@ public:
 };
 
 TEST_F(MmapTests, Test_Basic_Mmap_1) {
-    NativeOps nativeOps;
+    // FIXME: we must adopt this for CUDA as well
+    if (!Environment::getInstance()->isCPU())
+        return;
 
     // just 10GB
     Nd4jLong size = 100000L;
@@ -43,11 +45,11 @@ TEST_F(MmapTests, Test_Basic_Mmap_1) {
     ofs.write("", 1);
     ofs.close();
 
-    auto result = nativeOps.mmapFile(nullptr, "file", size);
+    auto result = mmapFile(nullptr, "file", size);
 
     ASSERT_FALSE(result == nullptr);
 
-    nativeOps.munmapFile(nullptr, result, size);
+    munmapFile(nullptr, result, size);
 
     remove("file");
 }

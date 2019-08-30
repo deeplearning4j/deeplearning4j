@@ -53,9 +53,9 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
     final private Random random;
 
     public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal,
-                             A3CDiscrete.A3CConfiguration a3cc, TrainingListenerList listeners,
+                             A3CDiscrete.A3CConfiguration a3cc, int deviceNum, TrainingListenerList listeners,
                              int threadNumber) {
-        super(asyncGlobal, mdp, listeners, threadNumber);
+        super(asyncGlobal, mdp, listeners, threadNumber, deviceNum);
         this.conf = a3cc;
         this.asyncGlobal = asyncGlobal;
         this.threadNumber = threadNumber;

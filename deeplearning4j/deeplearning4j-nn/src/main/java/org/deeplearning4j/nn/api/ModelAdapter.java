@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.nn.api;
 
+import org.nd4j.adapters.OutputAdapter;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 /**

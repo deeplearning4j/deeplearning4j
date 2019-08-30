@@ -27,11 +27,10 @@ namespace nd4j {
 ProviderRNG::ProviderRNG() {
 
     Nd4jLong *buffer = new Nd4jLong[100000];
-    NativeOps nativeOps;    
     std::lock_guard<std::mutex> lock(_mutex);
     #ifndef __CUDABLAS__
     // at this moment we don't have streams etc, so let's just skip this for now
-    _rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);    
+    _rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, 100000, (Nd4jPointer) buffer);    
     #endif
     // if(_rng != nullptr)        
 }

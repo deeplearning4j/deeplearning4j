@@ -77,7 +77,7 @@ public class BatchToSpace extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "BatchToSpaceND";
+        return "BatchToSpace";
     }
 
     @Override

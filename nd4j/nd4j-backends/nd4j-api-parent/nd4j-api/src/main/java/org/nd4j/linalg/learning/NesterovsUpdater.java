@@ -19,7 +19,7 @@ package org.nd4j.linalg.learning;
 import lombok.Data;
 import lombok.NonNull;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Nesterovs;
@@ -105,6 +105,6 @@ public class NesterovsUpdater implements GradientUpdater<Nesterovs> {
         INDArray ret = vPrev.muli(momentum).addi(v.mul(-momentum - 1));
         gradient.assign(ret);
         */
-        Nd4j.getExecutioner().exec(new OldAddOp(vPrev.muli(momentum), v.mul(-momentum - 1), gradient));
+        Nd4j.getExecutioner().exec(new AddOp(vPrev.muli(momentum), v.mul(-momentum - 1), gradient));
     }
 }

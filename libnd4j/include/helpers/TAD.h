@@ -492,7 +492,7 @@ namespace shape {
 
         //find the length of the elements we
         //are iterating over
-        int len = 1;
+        Nd4jLong len = 1;
         //left over index cursor for initializing elements
         int leftOverIndex = 0;
         for(int i = 0; i < rank; i++) {
@@ -669,7 +669,7 @@ namespace shape {
 
         //find the length of the elements we
         //are iterating over
-        int len = 1;
+        Nd4jLong len = 1;
         //left over index cursor for initializing elements
         int leftOverIndex = 0;
         for(int i = 0; i < rank; i++) {
@@ -787,7 +787,7 @@ namespace shape {
         Nd4jLong *ret2 = shape::sliceOfShapeBuffer(sliceIndex, permuted);
         Nd4jLong tensorLength = shape::prodLong(tensorShape,tadRank);
 
-        int compLength = shape::isVector(ret2) ? shape::length(ret2) : shape::prod(tensorShape,tadRank);
+        Nd4jLong compLength = shape::isVector(ret2) ? shape::length(ret2) : shape::prodLong(tensorShape,tadRank);
         // int temp;
         // const bool isLikeVector = shape::isLikeVector(ret2, temp);
 

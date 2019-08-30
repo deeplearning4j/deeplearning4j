@@ -223,66 +223,249 @@ TEST_F(DeclarableOpsTests5, Test_Boolean_diff_1) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests5, Test_SetSeed_1) {
+    auto x = NDArrayFactory::create<int>('c', {1, 1}, {120});
+    auto y = NDArrayFactory::create<int>(5);
+
+    nd4j::ops::set_seed op;
+    auto result = op.execute({&x, &y}, {}, {120, 5}, {}, false, nd4j::DataType::INT32);
+
+    ASSERT_EQ(Status::OK(), result->status());
+//    result->at(0)->printIndexedBuffer("RES SEED");
+    nd4j::ops::get_seed getOp;
+    auto getRes = getOp.execute({}, {}, {});
+    ASSERT_EQ(Status::OK(), getRes->status());
+//    getRes->at(0)->printIndexedBuffer("Output RES GET SEED");
+//    ASSERT_EQ(result->at(0)->t<bool>(0), true);
+    delete result;
+    delete getRes;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, scatterMul_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
+    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {10, 2, 3, 4});
+
+    nd4j::ops::scatter_mul op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, scatterDiv_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
+    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.10, 2, 3, 4});
+
+    nd4j::ops::scatter_div op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Scatter Div");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, scatterSub_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    NDArray idc('c', {1}, {0LL}, nd4j::DataType::INT64);
+    auto updates = NDArrayFactory::create<float>('c', {1, 2}, {10, 1});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {-9, 1, 3, 4});
+
+    nd4j::ops::scatter_sub op;
+    auto result = op.execute({&matrix, &idc, &updates}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Scatter Sub");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, hardsigmoid_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.7, 0.9, 1, 1});
+
+    nd4j::ops::hardsigmoid op;
+    auto result = op.execute({&matrix}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Hadrdsigmoid 2x2");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, hardsigmoid_test2) {
+    auto matrix = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto eps = NDArrayFactory::create<float>('c', {2, 2}, {1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<float>('c', {2, 2}, {0.2, 0.4, 0, 0});
+
+    nd4j::ops::hardsigmoid_bp op;
+    auto result = op.execute({&matrix, &eps}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Hadrdsigmoid 2x2");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, hardtanh_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {-1, -1, -1, -1, 0, 1, 1, 1, 1});
+
+    nd4j::ops::hardtanh op;
+    auto result = op.execute({&matrix}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Hardtanh 2x2");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, hardtanh_test2) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9});
+    auto exp = NDArrayFactory::create<float>('c', {3, 3}, {0, 0, 0, 4, 5, 6, 0, 0, 0});
+
+    nd4j::ops::hardtanh_bp op;
+    auto result = op.execute({&matrix, &eps}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Hardtanh_bp 2x2");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, histogram_test1) {
+    auto matrix = NDArrayFactory::create<double>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {3}, {3, 3, 3});
+
+    nd4j::ops::histogram op;
+    auto result = op.execute({&matrix}, {}, {3}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Histogram3");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, histogram_test2) {
+    auto matrix = NDArrayFactory::create<double>('c', {3}, {1, 2, 1});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {4}, {2, 0, 0, 1});
+
+    nd4j::ops::histogram op;
+    auto result = op.execute({&matrix}, {}, {4}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Histogram4");
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, Identity_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+//    auto exp = NDArrayFactory::create<Nd4jLong>('c', {3, 3}, {3, 3, 3});
+
+    nd4j::ops::identity op;
+    auto result = op.execute({&matrix}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+//    z->printIndexedBuffer("Histogram3");
+    ASSERT_TRUE(matrix.equalsTo(z));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, Identity_test2) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {-4, -3, -2, -1, 0, 1, 2, 3, 4});
+    auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1,2,3,4,5,6,7,8,9});
+//    auto exp = NDArrayFactory::create<float>('c', {3,3});
+    nd4j::ops::identity_bp op;
+    auto result = op.execute({&matrix, &eps}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Identity_BP");
+    ASSERT_TRUE(z->equalsTo(eps));
+
+    delete result;
+}
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, Log1p_test1) {
+    auto matrix = NDArrayFactory::create<float>('c', {3, 3}, {4, 3, 2, 1, 0, 1, 2, 3, 4});
+    auto y = NDArrayFactory::create<float>('c', {3,3}, {5,4,3,2,1,2,3,4,5});
+    //  auto eps = NDArrayFactory::create<float>('c', {3, 3}, {1,2,3,4,5,6,7,8,9});
+//    auto exp = NDArrayFactory::create<float>('c', {3,3});
+    nd4j::ops::Log1p op;
+    y.applyTransform(nd4j::transform::Log, nullptr, nullptr);
+    auto result = op.execute({&matrix}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Log1p");
+    ASSERT_TRUE(z->equalsTo(y));
+
+    delete result;
+}
 
 TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
+
     auto x = NDArrayFactory::create<double>('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-    auto blocks = NDArrayFactory::create<double>('c', {2}, {2, 2});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {0, 0, 0, 0});
-
     auto exp = NDArrayFactory::create<double>('c', {4, 1, 1, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-
-    nd4j::ops::space_to_batch op;
-    auto result = op.execute({&x, &blocks, &paddings}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    //z->printIndexedBuffer("z");
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
-TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_int_1) {
-    auto x = NDArrayFactory::create<double>('c', {1, 2, 2, 1}, {1, 2, 3, 4});
-    auto blocks = NDArrayFactory::create<int>('c', {2, 1}, {2, 2});
     auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
-    auto exp = NDArrayFactory::create<double>('c', {4, 1, 1, 1}, {1, 2, 3, 4});
-    auto z = NDArrayFactory::create<double>('c', {4, 1, 1, 1});
-
     nd4j::ops::space_to_batch op;
-    auto result = op.execute({&x, &blocks, &paddings}, {&z}, {}, {}, {});
-    ASSERT_EQ(Status::OK(), result);
-}
-
-TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1_1) {
-    auto x = NDArrayFactory::create<double>('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-    auto exp = NDArrayFactory::create<double>('c', {4, 1, 1, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-
-    nd4j::ops::space_to_batch op;
-    auto result = op.execute({&x}, {}, {2, 2, 0, 0, 0, 0});
+    auto result = op.execute({&x, &paddings}, {}, {2});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
+    // z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
+
 
 TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_2) {
     auto x = NDArrayFactory::create<double>('c', {1, 2, 2, 1}, {1, 2, 3, 4});
-    auto blocks = NDArrayFactory::create<double>('c', {2}, {2, 2});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {0, 0, 0, 0});
-
     auto exp = NDArrayFactory::create<double>('c', {4, 1, 1, 1}, {1, 2, 3, 4});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
     nd4j::ops::space_to_batch op;
-    auto result = op.execute({&x, &blocks, &paddings}, {}, {});
+    auto result = op.execute({&x, &paddings}, {}, {2});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -295,17 +478,17 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_2) {
 
 
 TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_3) {
+
     auto x = NDArrayFactory::create<double>('c', {2, 2, 4, 1}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
-    auto blocks = NDArrayFactory::create<double>('c', {2}, {2, 2});
-    auto paddings = NDArrayFactory::create<double>('c', {2, 2}, {0, 0, 2, 0});
-
-    auto exp = NDArrayFactory::create<double>('c', {8, 1, 3, 1}, {0, 1, 3, 0, 9, 11, 0, 2, 4, 0, 10, 12, 0, 5, 7, 0, 13, 15, 0, 6, 8, 0, 14, 16});
+    auto paddings = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 2, 0});
+    auto exp = NDArrayFactory::create<double>('c', {8, 1, 3, 1}, {0, 1, 3, 0,  9, 11,0, 2, 4, 0, 10, 12,0, 5, 7, 0, 13, 15,0, 6, 8, 0, 14, 16});
 
     nd4j::ops::space_to_batch op;
-    auto result = op.execute({&x, &blocks, &paddings}, {}, {});
+    auto result = op.execute({&x, &paddings}, {}, {2});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
+    // z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -313,85 +496,60 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_3) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_3_1) {
-    auto x = NDArrayFactory::create<double>('c', {2, 2, 4, 1}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
-    auto exp = NDArrayFactory::create<double>('c', {8, 1, 3, 1}, {0, 1, 3, 0, 9, 11, 0, 2, 4, 0, 10, 12, 0, 5, 7, 0, 13, 15, 0, 6, 8, 0, 14, 16});
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_4) {
+
+    const int blockSize = 2;
+    NDArray x('c', {3, 3*blockSize - 1 - 2, 4*blockSize - 2 - 3, 2}, {147, 148, 219, 220, 149, 150, 11,  12, 83,  84, 13,  14, 155, 156, 227, 228, 157, 158, 171, 172, 243, 244, 173, 174, 35,  36, 107, 108, 37,  38, 179, 180, 251, 252, 181, 182, 195, 196, 267, 268, 197, 198, 59,  60, 131, 132, 61,  62, 203, 204, 275, 276, 205, 206}, nd4j::DataType::FLOAT32);
+    NDArray paddings = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 2, 3});
+
+    NDArray exp('c', {3*blockSize*blockSize, 3, 4, 2}, {0,0, 0,0, 0,0, 0,0, 0,0, 11,12, 13,14, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0,
+        0,0, 0,0, 0,0, 35,36, 37,38, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 59,60, 61,62, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0,
+        0,0, 0,0, 0,0, 0,0, 83,84, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 107, 108, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0,
+        0,0, 0,0, 0,0, 0,0, 0,0, 131, 132, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 147, 148, 149, 150, 0,0, 0,0, 155, 156, 157, 158,
+        0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 171, 172, 173, 174, 0,0, 0,0, 179, 180, 181, 182, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 195, 196,
+        197, 198, 0,0, 0,0, 203, 204, 205, 206, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 219, 220, 0,0, 0,0, 0,0, 227, 228, 0,0, 0,0, 0,0,
+        0,0, 0,0, 0,0, 0,0, 243, 244, 0,0, 0,0, 0,0, 251, 252, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0, 267, 268, 0,0, 0,0, 0,0, 275,
+        276, 0,0, 0,0, 0,0, 0,0, 0,0, 0,0}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::space_to_batch op;
-    auto result = op.execute({&x}, {}, {2, 2, 0, 0, 2, 0});
+    auto result = op.execute({&x, &paddings}, {}, {blockSize});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
+    // z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
-TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_3_2) {
-    auto x = NDArrayFactory::create<double>('c', {1, 2, 5, 5});
-    auto blocks = NDArrayFactory::create<int>({1,1,2});
-    auto paddings = NDArrayFactory::create<int>('c', {3,2}, {0,0,0,0,1,2});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 5, 4}, {0.,  2.,  4.,  0., 0.,  7.,  9.,  0.,  0., 12., 14.,  0.,  0., 17., 19.,  0.,  0., 22., 24.,  0.,  0., 27., 29.,  0.,  0., 32., 34.,  0.,  0., 37., 39., 0.,  0., 42., 44.,  0.,  0., 47., 49., 0.,
-                                                                  1.,  3.,  5.,  0., 6.,  8., 10.,  0., 11., 13., 15.,  0., 16., 18., 20.,  0., 21., 23., 25.,  0., 26., 28., 30.,  0., 31., 33., 35.,  0., 36., 38., 40., 0., 41., 43., 45.,  0., 46., 48., 50., 0.});
-    x.linspace(1);
-    nd4j::ops::space_to_batch op;
-    auto result = op.execute({&x, &blocks, &paddings}, {}, {});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-    //z->printIndexedBuffer("Space to Batch Out");
-    //z->printShapeInfo("Space to Batch Out shape");
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
 
 TEST_F(DeclarableOpsTests5, Test_BatchToSpace_1) {
     auto x = NDArrayFactory::create<double>('c', {4, 1, 1, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
     auto exp = NDArrayFactory::create<double>('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-    auto blocks = NDArrayFactory::create<double>('c', {2}, {2, 2});
-    auto crops = NDArrayFactory::create<double>('c', {2, 2}, {0, 0, 0, 0});
+    auto crops = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
     nd4j::ops::batch_to_space op;
-    auto result = op.execute({&x, &blocks, &crops}, {}, {});
+    auto result = op.execute({&x, &crops}, {}, {2});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
+    // z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
 }
-
-TEST_F(DeclarableOpsTests5, Test_BatchToSpace_1_1) {
-    auto x = NDArrayFactory::create<double>('c', {4, 1, 1, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-    auto exp = NDArrayFactory::create<double>('c', {1, 2, 2, 3}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12});
-
-    nd4j::ops::batch_to_space op;
-    auto result = op.execute({&x}, {}, {2, 2, 0, 0, 0, 0});
-    ASSERT_EQ(Status::OK(), result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-    ASSERT_TRUE(exp.equalsTo(z));
-
-    delete result;
-}
-
 
 TEST_F(DeclarableOpsTests5, Test_BatchToSpace_2) {
     auto x = NDArrayFactory::create<double>('c', {4, 1, 1, 1}, {1, 2, 3, 4});
     auto exp = NDArrayFactory::create<double>('c', {1, 2, 2, 1}, {1, 2, 3, 4});
-    auto blocks = NDArrayFactory::create<double>('c', {2}, {2, 2});
-    auto crops = NDArrayFactory::create<double>('c', {2, 2}, {0, 0, 0, 0});
+    auto crops = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 0, 0});
 
     nd4j::ops::batch_to_space op;
-    auto result = op.execute({&x, &blocks, &crops}, {}, {});
+    auto result = op.execute({&x, &crops}, {}, {2});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -404,13 +562,15 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_2) {
 
 
 TEST_F(DeclarableOpsTests5, Test_BatchToSpace_3) {
-    auto x = NDArrayFactory::create<double>('c', {8, 1, 3, 1}, {0, 1, 3, 0, 9, 11, 0, 2, 4, 0, 10, 12, 0, 5, 7, 0, 13, 15, 0, 6, 8, 0, 14, 16});
+    auto x = NDArrayFactory::create<double>('c', {8, 1, 3, 1}, {0, 1, 3, 0,  9, 11,
+                                                                0, 2, 4, 0, 10, 12,
+                                                                0, 5, 7, 0, 13, 15,
+                                                                0, 6, 8, 0, 14, 16});
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 4, 1}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
-    auto blocks = NDArrayFactory::create<double>('c', {2}, {2, 2});
-    auto crops = NDArrayFactory::create<double>('c', {2, 2}, {0, 0, 2, 0});
+    auto crops = NDArrayFactory::create<int>('c', {2, 2}, {0, 0, 2, 0});
 
     nd4j::ops::batch_to_space op;
-    auto result = op.execute({&x, &blocks, &crops}, {}, {});
+    auto result = op.execute({&x, &crops}, {}, {2});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -421,13 +581,18 @@ TEST_F(DeclarableOpsTests5, Test_BatchToSpace_3) {
     delete result;
 }
 
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, Test_BatchToSpace_4) {
 
-TEST_F(DeclarableOpsTests5, Test_BatchToSpace_3_1) {
-    auto x = NDArrayFactory::create<double>('c', {8, 1, 3, 1}, {0, 1, 3, 0, 9, 11, 0, 2, 4, 0, 10, 12, 0, 5, 7, 0, 13, 15, 0, 6, 8, 0, 14, 16});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 4, 1}, {1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16});
+    const int blockSize = 2;
+    NDArray x('c', {3*blockSize*blockSize, 3, 4, 2}, nd4j::DataType::FLOAT32);
+    x.linspace(1, 1);
+    NDArray crops = NDArrayFactory::create<int>('c', {2, 2}, {1, 2, 2, 3});
+
+    NDArray exp('c', {3, 3*blockSize - 1 - 2, 4*blockSize - 2 - 3, 2}, {147, 148, 219, 220, 149, 150, 11,  12, 83,  84, 13,  14, 155, 156, 227, 228, 157, 158, 171, 172, 243, 244, 173, 174, 35,  36, 107, 108, 37,  38, 179, 180, 251, 252, 181, 182, 195, 196, 267, 268, 197, 198, 59,  60, 131, 132, 61,  62, 203, 204, 275, 276, 205, 206}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::batch_to_space op;
-    auto result = op.execute({&x}, {}, {2, 2, 0, 0, 2, 0});
+    auto result = op.execute({&x, &crops}, {}, {blockSize});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -619,6 +784,25 @@ TEST_F(DeclarableOpsTests5, gatherNd_test6) {
     std::vector<Nd4jLong> shape = {1};
     auto indices = NDArrayFactory::create<int>('c', shape, {2});
     auto expected = NDArrayFactory::create<double>(3.);
+
+    nd4j::ops::gather_nd op;
+    auto results = op.execute({&input, &indices}, {}, {});
+    auto output = results->at(0);
+
+    ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(expected.isSameShape(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests5, gatherNd_test7) {
+
+    auto input = NDArrayFactory::create<double>('c', {4, 4});
+    input.linspace(1);
+    auto indices = NDArrayFactory::create<int>('c', {3,3,2}, {0,2,1, 0,1,0, 1,3,1, 0,2,1, 0,1,0, 1,3,1});
+    auto expected = NDArrayFactory::create<double>('c', {3,3}, {3,5,5,8,5,10,2,2,14});
 
     nd4j::ops::gather_nd op;
     auto results = op.execute({&input, &indices}, {}, {});

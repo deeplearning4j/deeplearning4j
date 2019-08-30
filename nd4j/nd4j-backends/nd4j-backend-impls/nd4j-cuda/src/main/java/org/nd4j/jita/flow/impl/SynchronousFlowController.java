@@ -72,7 +72,7 @@ public class SynchronousFlowController implements FlowController {
     public void synchronizeToHost(AllocationPoint point) {
 
         if (!point.isActualOnHostSide()) {
-            val context = (CudaContext) allocator.getDeviceContext().getContext();
+            val context = allocator.getDeviceContext();
 
             if (!point.isConstant())
                 waitTillFinished(point);
@@ -102,7 +102,7 @@ public class SynchronousFlowController implements FlowController {
 
         if (!point.isActualOnDeviceSide()) {
             if (point.getAllocationStatus() == AllocationStatus.DEVICE) {
-                val context = (CudaContext) allocator.getDeviceContext().getContext();
+                val context = allocator.getDeviceContext();
 
                 long perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
@@ -135,7 +135,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareActionAllWrite(INDArray... operands) {
-        val context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = allocator.getDeviceContext();
         val cId = allocator.getDeviceId();
 
         for (INDArray operand : operands) {
@@ -168,7 +168,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareAction(INDArray result, INDArray... operands) {
-        val context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = allocator.getDeviceContext();
         val cId = allocator.getDeviceId();
 
 
@@ -188,12 +188,14 @@ public class SynchronousFlowController implements FlowController {
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) result).setShapeInfoDataBuffer(
-                                Nd4j.getConstantHandler().relocateConstantSpace(result.shapeInfoDataBuffer()));
+                ((JCublasNDArray) result).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(result.shape(), result.stride(), result.elementWiseStride(), result.ordering(), result.dataType(), result.isEmpty()));
             }
 
             allocator.getAllocationPoint(result).setCurrentContext(context);
         }
+
+        if (operands == null)
+            return context;
 
         for (INDArray operand : operands) {
             if (operand == null || operand.isEmpty())
@@ -213,8 +215,7 @@ public class SynchronousFlowController implements FlowController {
             }
 
             if (pointShape.getDeviceId() != cId && pointShape.getDeviceId() >= 0) {
-                ((JCublasNDArray) operand).setShapeInfoDataBuffer(
-                                Nd4j.getConstantHandler().relocateConstantSpace(operand.shapeInfoDataBuffer()));
+                ((JCublasNDArray) operand).setShapeInfoDataBuffer(Nd4j.getExecutioner().createShapeInfo(operand.shape(), operand.stride(), operand.elementWiseStride(), operand.ordering(), operand.dataType(), operand.isEmpty()));
             }
 
             prepareDelayedMemory(operand);
@@ -290,7 +291,7 @@ public class SynchronousFlowController implements FlowController {
 
     @Override
     public CudaContext prepareAction(AllocationPoint result, AllocationPoint... operands) {
-        val context = (CudaContext) allocator.getDeviceContext().getContext();
+        val context = allocator.getDeviceContext();
 
         if (result != null) {
             result.acquireLock();

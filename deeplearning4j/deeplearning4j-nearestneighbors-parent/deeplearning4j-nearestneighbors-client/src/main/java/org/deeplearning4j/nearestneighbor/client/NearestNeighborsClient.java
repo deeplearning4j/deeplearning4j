@@ -19,10 +19,10 @@ package org.deeplearning4j.nearestneighbor.client;
 import com.mashape.unirest.http.ObjectMapper;
 import com.mashape.unirest.http.Unirest;
 import com.mashape.unirest.request.HttpRequest;
-import com.mashape.unirest.request.HttpRequestWithBody;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.val;
 import org.deeplearning4j.nearestneighbor.model.*;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.serde.base64.Nd4jBase64;
@@ -51,6 +51,7 @@ public class NearestNeighborsClient {
 
     static {
         // Only one time
+
         Unirest.setObjectMapper(new ObjectMapper() {
             private org.nd4j.shade.jackson.databind.ObjectMapper jacksonObjectMapper =
                             new org.nd4j.shade.jackson.databind.ObjectMapper();
@@ -89,7 +90,7 @@ public class NearestNeighborsClient {
         NearestNeighborRequest request = new NearestNeighborRequest();
         request.setInputIndex(index);
         request.setK(k);
-        HttpRequestWithBody req = Unirest.post(url + "/knn");
+        val req = Unirest.post(url + "/knn");
         req.header("accept", "application/json")
                 .header("Content-Type", "application/json").body(request);
         addAuthHeader(req);
@@ -112,7 +113,7 @@ public class NearestNeighborsClient {
         Base64NDArrayBody base64NDArrayBody =
                         Base64NDArrayBody.builder().k(k).ndarray(Nd4jBase64.base64String(arr)).build();
 
-        HttpRequestWithBody req = Unirest.post(url + "/knnnew");
+        val req = Unirest.post(url + "/knnnew");
         req.header("accept", "application/json")
                 .header("Content-Type", "application/json").body(base64NDArrayBody);
         addAuthHeader(req);

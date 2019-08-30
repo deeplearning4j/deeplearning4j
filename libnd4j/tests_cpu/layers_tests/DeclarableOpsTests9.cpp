@@ -110,8 +110,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     double extraParams[] = {lambda};
 
     Nd4jLong *buffer = new Nd4jLong[N];
-    NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test1: RNG initialization failed !");
 
@@ -122,7 +121,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test1) {
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 
 }
@@ -142,8 +141,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
 
 
     Nd4jLong *buffer = new Nd4jLong[N];
-    NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistributionInv_test2: RNG initialization failed !");
 
@@ -155,7 +153,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistributionInv_test2) {
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 
 }
@@ -172,8 +170,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     double extraParams[] = {lambda};
 
     Nd4jLong *buffer = new Nd4jLong[N];
-    NativeOps nativeOps;
-    auto rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    auto rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test1: RNG initialization failed !");
 
@@ -184,10 +181,10 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test1) {
     ASSERT_NEAR(mean, actualMean, 0.01);
     ASSERT_NEAR(std,  actualStd, 0.01);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
     delete[] buffer;
 }
-*/
+
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
@@ -206,14 +203,13 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
     Nd4jLong *buffer = new Nd4jLong[N];
    // Nd4jPointer extra[2];
 #ifndef __CUDABLAS__
-    NativeOps nativeOps;
-    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
+    nd4j::random::RandomBuffer* rng = (nd4j::random::RandomBuffer *) initRandom(nullptr, 123, N, (Nd4jPointer) buffer);
     if (rng == nullptr)
         throw std::runtime_error("DeclarableOpsTests9.exponentialDistribution_test2: RNG initialization failed !");
 
     functions::random::RandomFunction<double>::template execTransform<randomOps::ExponentialDistribution<double>>(rng, y.getBuffer(), y.getShapeInfo(), x.getBuffer(), x.getShapeInfo(), extraParams);
 
-    nativeOps.destroyRandom((Nd4jPointer) rng);
+    destroyRandom((Nd4jPointer) rng);
 #endif
     const double actualMean = x.meanNumber().e<double>(0);
     const double actualStd  = x.varianceNumber(variance::SummaryStatsStandardDeviation, true).e<double>(0);
@@ -225,6 +221,7 @@ TEST_F(DeclarableOpsTests9, exponentialDistribution_test2) {
 
     delete[] buffer;
 }
+*/
 
 TEST_F(DeclarableOpsTests9, ScalarOpTest_MixedOrders_1) {
     auto x = NDArrayFactory::create<double>('f', {2, 2}, {1.0, 3.0, 2.0, 4.0});
@@ -585,6 +582,180 @@ TEST_F(DeclarableOpsTests9, concat_test16) {
     ASSERT_TRUE(exp.isSameShape(z));
 
     delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test17) {
+
+    NDArray x0('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
+    NDArray x1('c', {1, 55, 40}, nd4j::DataType::DOUBLE);
+
+    x0 = 1.;
+    x1 = 2.;
+
+    nd4j::ops::concat op;
+    auto result = op.execute({&x0, &x1}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    // z->printShapeInfo();
+    // z->printIndexedBuffer();
+
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    ASSERT_TRUE(2 == numOfTads);
+
+    for (int e = 0; e < numOfTads; ++e) {
+        NDArray tad  = (*z)(e, {0});
+        auto mean = tad.meanNumber().e<double>(0);
+        ASSERT_NEAR((e+1)*1., mean, 1e-5);
+    }
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test18) {
+    std::array<NDArray*, 2000> arrays;
+    Context context(1);
+    Nd4jLong axis = 0;
+
+    // we crate bunch of arrays, filled with specific values
+    for (int e = 0; e < arrays.size(); e++) {
+        auto array = NDArrayFactory::create_<float>('c', {1, 300});
+        array->assign(e);
+        context.setInputArray(e, array, true);
+    }
+
+    auto z = NDArrayFactory::create<float>('c', {2000, 300});
+    context.setOutputArray(0, &z, false);
+    context.setIArguments(&axis, 1);
+
+    nd4j::ops::concat op;
+    op.execute(&context);
+
+    for (int e = 0; e < arrays.size(); e++) {
+        auto row = z.tensorAlongDimension(e, {1});
+
+        ASSERT_NEAR((float) e, row->e<float>(0), 1e-5f);
+
+        delete row;
+    }
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test19) {
+
+    std::array<NDArray*, 10> arrays;
+    Context context(1);
+    Nd4jLong axis = 0;
+
+    // we crate bunch of arrays, filled with specific values
+    for (int e = 0; e < arrays.size(); e++) {
+        auto array = NDArrayFactory::create_<float>('c', {1, 5, 20});
+        array->assign(e);
+        context.setInputArray(e, array, true);
+    }
+
+    auto z = NDArrayFactory::create<float>('c', {(Nd4jLong) arrays.size(), 5, 20});
+    context.setOutputArray(0, &z, false);
+    context.setIArguments(&axis, 1);
+
+    nd4j::ops::concat op;
+    op.execute(&context);
+
+    for (int e = 0; e < arrays.size(); e++)
+        ASSERT_NEAR((float) e, z(e, {0}).meanNumber().e<float>(0), 1e-5f);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test20) {
+    auto x0 = NDArrayFactory::create<double>('c', {1, 100, 150});
+    auto x1 = NDArrayFactory::create<double>('c', {1, 100, 150});
+    auto x2 = NDArrayFactory::create<double>('c', {1, 100, 150});
+    auto x3 = NDArrayFactory::create<double>('c', {1, 100, 150});
+
+    x0.assign(1.0);
+    x1.assign(2.0);
+    x2.assign(3.0);
+    x3.assign(4.0);
+
+    nd4j::ops::concat op;
+    auto result = op.execute({&x0, &x1, &x2, &x3}, {}, {0}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    Nd4jLong numOfTads= ShapeUtils::getNumOfSubArrs(z->getShapeInfo(), {0});
+    ASSERT_TRUE(4 == numOfTads);
+
+    for (int e = 0; e < numOfTads; e++) {
+        NDArray tad  = (*z)(e, {0});
+        auto mean = tad.meanNumber().e<double>(0);
+        ASSERT_NEAR((double) e+1, mean, 1e-5);
+    }
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test21) {
+
+    NDArray x0('c', {1,4,5}, nd4j::DataType::FLOAT32);
+    NDArray x1('c', {2,4,5}, nd4j::DataType::FLOAT32);
+    NDArray  z('f', {3,4,5}, nd4j::DataType::FLOAT32);
+
+    x0 = 0.;
+    x1 = 1.;
+
+    nd4j::ops::concat op;
+    auto status = op.execute({&x0, &x1}, {&z}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test22) {
+
+    NDArray x0('c', {1,6}, {1,2,3,4,5,6});
+    NDArray x1('c', {1,6}, {7,8,9,10,11,12});
+    NDArray output('f', {2,6}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {2,6}, {1,2,3,4,5,6,7,8,9,10,11,12});
+
+    nd4j::ops::concat op;
+
+    auto status = op.execute({&x0, &x1}, {&output}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test23) {
+
+    NDArray x0('c', {1,4}, {1,2,3,4});
+    NDArray x1('c', {1,4}, {5,6,7,8});
+    NDArray output('c', {2,4}, nd4j::DataType::DOUBLE);
+    NDArray exp('c', {2,4}, {1,2,3,4,5,6,7,8});
+
+    nd4j::ops::concat op;
+
+    auto status = op.execute({&x0, &x1}, {&output}, {}, {0}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+
+    ASSERT_TRUE(exp.equalsTo(output));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test24) {
+    auto x = NDArrayFactory::create<double>('c', {2, 1}, {1, 1});
+    auto y = NDArrayFactory::create<double>('c', {2, 1}, {0, 0});
+    auto e = NDArrayFactory::create<double>('c', {2, 2}, {1, 0, 1, 0});
+    auto z = NDArrayFactory::create<double>('c', {2, 2});
+
+    nd4j::ops::concat op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {1}, {});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(e, z);
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -1005,12 +1176,10 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
     x0.linspace(1);
     x1.linspace(1);
 /*
-    NativeOps nativeOps;
-
     float prob[] = {0.5f};
     Nd4jLong* _bufferA = new Nd4jLong[100000];
     long _seed = 119L;
-    auto _rngA = (nd4j::random::RandomBuffer *) nativeOps.initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
+    auto _rngA = (nd4j::random::RandomBuffer *) initRandom(nullptr, _seed, 100000, (Nd4jPointer) _bufferA);
 
     x0. applyTransform(random::DropOutInverted, &x0, prob);
 //    x1.template applyRandom<randomOps::DropOutInverted<float>>(_rngB, nullptr, &x1, prob);
@@ -1026,7 +1195,7 @@ TEST_F(DeclarableOpsTests9, Test_DropoutInverted_01) {
 //    ASSERT_FALSE(x0.equalsTo(nexp0));
 //    ASSERT_FALSE(x0.equalsTo(nexp1));
 //    ASSERT_FALSE(x0.equalsTo(nexp2));
-    nativeOps.destroyRandom(_rngA);
+    destroyRandom(_rngA);
     delete [] _bufferA;
 */
     nd4j::ops::dropout op;
@@ -1592,7 +1761,6 @@ TEST_F(DeclarableOpsTests9, clipbynorm_bp_test1) {
 
     const int bS   = 2;
     const int nOut = 3;
-    const int axis = 0;
     const double clip = 0.7;
 
     auto x = NDArrayFactory::create<double>('c', {bS, nOut}, {0.412 ,0.184 ,0.961 ,0.173 ,0.736 ,0.540 });    // uniform random in range [0,1]

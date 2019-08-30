@@ -303,7 +303,7 @@ class NDArrayProjectionAPITest extends FlatSpec {
   }
 
   "SliceProjectedNDArray" should "filter slice correctly" in {
-    val ndArray = (1d until 10d by 1).asNDArray(2, 2, 2)
+    val ndArray = (1d until 9d by 1).asNDArray(2, 2, 2)
     val result = ndArray.sliceP withFilter (input => false)
     assert(result.filtered.isEmpty)
   }

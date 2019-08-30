@@ -20,6 +20,8 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.val;
 import org.nd4j.evaluation.BaseEvaluation;
+import org.nd4j.evaluation.IEvaluation;
+import org.nd4j.evaluation.IMetric;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.reduce.same.ASum;
@@ -54,12 +56,18 @@ import java.util.List;
 @EqualsAndHashCode(callSuper = true)
 public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
-    public enum Metric { MSE, MAE, RMSE, RSE, PC, R2;
+    public enum Metric implements IMetric { MSE, MAE, RMSE, RSE, PC, R2;
+
+        @Override
+        public Class<? extends IEvaluation> getEvaluationClass() {
+            return RegressionEvaluation.class;
+        }
 
         /**
          * @return True if the metric should be minimized, or false if the metric should be maximized.
          * For example, MSE of 0 is best, but R^2 of 1.0 is best
          */
+        @Override
         public boolean minimize(){
             if(this == R2 || this == PC){
                 return false;
@@ -105,6 +113,12 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     @JsonSerialize(using = NDArrayTextSerializer.class)
     @JsonDeserialize(using = NDArrayTextDeSerializer.class)
     private INDArray sumLabels;
+
+    protected RegressionEvaluation(int axis, List<String> columnNames, long precision){
+        this.axis = axis;
+        this.columnNames = columnNames;
+        this.precision = precision;
+    }
 
     public RegressionEvaluation() {
         this(null, DEFAULT_PRECISION);
@@ -568,6 +582,14 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
         return ret / (double) numColumns();
     }
 
+    @Override
+    public double getValue(IMetric metric){
+        if(metric instanceof Metric){
+            return scoreForMetric((Metric) metric);
+        } else
+            throw new IllegalStateException("Can't get value for non-regression Metric " + metric);
+    }
+
     public double scoreForMetric(Metric metric){
         switch (metric){
             case MSE:
@@ -589,5 +611,10 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
 
     public static RegressionEvaluation fromJson(String json){
         return fromJson(json, RegressionEvaluation.class);
+    }
+
+    @Override
+    public RegressionEvaluation newInstance() {
+        return new RegressionEvaluation(axis, columnNames, precision);
     }
 }

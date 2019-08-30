@@ -107,14 +107,14 @@ namespace helpers {
 
 
     template <typename T>
-    static NDArray lup_(NDArray* input, NDArray* compound, NDArray* permutation) {
+    static NDArray lup_(LaunchContext *context, NDArray* input, NDArray* compound, NDArray* permutation) {
 
         const int rowNum = input->rows();
         const int columnNum = input->columns();
 
         NDArray determinant = NDArrayFactory::create<T>(1.f);
         NDArray compoundMatrix = *input; // copy
-        NDArray permutationMatrix(input, false, input->getContext()); // has same shape as input and contiguous strides
+        NDArray permutationMatrix(input, false, context); // has same shape as input and contiguous strides
         permutationMatrix.setIdentity();
 
         T pivotValue; // = T(0.0);
@@ -160,45 +160,43 @@ namespace helpers {
         return determinant;
     }
 
-    BUILD_SINGLE_TEMPLATE(template NDArray lup_, (NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template NDArray lup_, (LaunchContext *context, NDArray* input, NDArray* output, NDArray* permutation), FLOAT_TYPES);
 
 
 
     template <typename T>
-    static int determinant_(NDArray* input, NDArray* output) {
+    static int determinant_(LaunchContext *context, NDArray* input, NDArray* output) {
 
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
-        auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getContext()); //, block.getWorkspace());
+        auto matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), context); //, block.getWorkspace());
 
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row)
                 matrix.p(row, input->e<T>(k));
-            output->p(e, lup_<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr));
+            output->p(e, lup_<T>(context, &matrix, (NDArray*)nullptr, (NDArray*)nullptr));
         }
 
         return Status::OK();
     }
 
-    BUILD_SINGLE_TEMPLATE(template int determinant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
-
     int determinant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return determinant_, (input, output), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return determinant_, (context, input, output), FLOAT_TYPES);
     }
 
 template <typename T>
-    int logAbsDeterminant_(NDArray* input, NDArray* output) {
+    int logAbsDeterminant_(LaunchContext *context, NDArray* input, NDArray* output) {
 
         Nd4jLong n = input->sizeAt(-1);
         Nd4jLong n2 = n * n;
 
-        NDArray matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), input->getContext()); //, block.getWorkspace());
+        NDArray matrix = NDArrayFactory::create(input->ordering(), {n, n}, input->dataType(), context); //, block.getWorkspace());
         for (int e = 0; e < output->lengthOf(); e++) {
             for (int k = e * n2, row = 0; k < (e + 1) * n2; ++k, ++row) {
                 matrix.p(row, input->e<T>(k));
             }
-	    NDArray det = lup_<T>(&matrix, (NDArray*)nullptr, (NDArray*)nullptr);
+	    NDArray det = lup_<T>(context, &matrix, (NDArray*)nullptr, (NDArray*)nullptr);
 	    if (det.e<T>(0) != 0.f)
              	output->p(e, nd4j::math::nd4j_log<T,T>(nd4j::math::nd4j_abs(det.t<T>(0))));
         }
@@ -206,25 +204,23 @@ template <typename T>
         return ND4J_STATUS_OK;
     }
 
-    BUILD_SINGLE_TEMPLATE(template int logAbsDeterminant_, (NDArray* input, NDArray* output), FLOAT_TYPES);
-
     int logAbsDeterminant(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return logAbsDeterminant_, (input, output), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return logAbsDeterminant_, (context, input, output), FLOAT_TYPES);
     }
 
     template <typename T>
-    static int inverse_(NDArray* input, NDArray* output) {
+    static int inverse_(LaunchContext *context, NDArray* input, NDArray* output) {
 
         auto n = input->sizeAt(-1);
         auto n2 = n * n;
         auto totalCount = output->lengthOf() / n2;
 
         output->assign(0.f); // fill up output tensor with zeros
-        auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
-        auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext()); //, block.getWorkspace());
-        auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext());
-        auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext());
-        auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), input->getContext());
+        auto matrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context); //, block.getWorkspace());
+        auto compound = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context); //, block.getWorkspace());
+        auto permutation = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
+        auto lowerMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
+        auto upperMatrix = NDArrayFactory::create('c', {n, n}, DataTypeUtils::fromT<T>(), context);
 
         for (int e = 0; e < totalCount; e++) {
             if (e)
@@ -233,7 +229,7 @@ template <typename T>
             for (int k = e * n2, row = 0; k < (e + 1) * n2; k++) {
                 matrix.p(row++, input->e<T>(k));
             }
-            T det = lup_<T>(&matrix, &compound, &permutation).template e<T>(0);
+            T det = lup_<T>(context, &matrix, &compound, &permutation).template e<T>(0);
 
             // FIXME: and how this is going to work on float16?
             if (nd4j::math::nd4j_abs<T>(det) < T(0.000001)) {
@@ -266,7 +262,7 @@ template <typename T>
     }
 
     int inverse(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return inverse_, (input, output), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return inverse_, (context, input, output), FLOAT_TYPES);
     }
 
     template <typename T>
@@ -293,14 +289,13 @@ template <typename T>
 
         return true;
     }
-    BUILD_SINGLE_TEMPLATE(template bool checkCholeskyInput_, (nd4j::LaunchContext * context, NDArray const* input), FLOAT_TYPES);
 
     bool checkCholeskyInput(nd4j::LaunchContext * context, NDArray const* input) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return checkCholeskyInput_, (context, input), FLOAT_TYPES);
     }
 
     template <typename T>
-    int cholesky_(NDArray* input, NDArray* output, bool inplace) {
+    int cholesky_(LaunchContext *context, NDArray* input, NDArray* output, bool inplace) {
 
         auto n = input->sizeAt(-1);
         auto n2 = n * n;
@@ -308,8 +303,8 @@ template <typename T>
         if (!inplace)
              output->assign(0.f); // fill up output tensor with zeros only inplace=false
 
-        std::unique_ptr<NDArray> matrix(NDArrayFactory::create_('c', {n, n}, input->dataType(), input->getContext())); //, block.getWorkspace());
-        std::unique_ptr<NDArray> lowerMatrix(NDArrayFactory::create_('c',{n, n}, input->dataType(), input->getContext()));
+        std::unique_ptr<NDArray> matrix(NDArrayFactory::create_('c', {n, n}, input->dataType(), context)); //, block.getWorkspace());
+        std::unique_ptr<NDArray> lowerMatrix(NDArrayFactory::create_('c',{n, n}, input->dataType(), context));
 
         for (int e = 0; e < totalCount; e++) {
 
@@ -343,15 +338,13 @@ template <typename T>
     }
 
     int cholesky(nd4j::LaunchContext * context, NDArray* input, NDArray* output, bool inplace) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (input, output, inplace), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return cholesky_, (context, input, output, inplace), FLOAT_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template int cholesky_, (NDArray* input, NDArray* output, bool inplace), FLOAT_TYPES);
-    BUILD_SINGLE_TEMPLATE(template int inverse_, (NDArray* input, NDArray* output), FLOAT_TYPES);
 
     template <typename T>
-    int logdetFunctor_(NDArray* input, NDArray* output) {
+    int logdetFunctor_(LaunchContext *context, NDArray* input, NDArray* output) {
         std::unique_ptr<NDArray> tempOutput(input->dup());
-        int res = cholesky_<T>(input, tempOutput.get(), false);
+        int res = cholesky_<T>(context, input, tempOutput.get(), false);
         if (res != ND4J_STATUS_OK)
             return res;
         auto n = input->sizeAt(-1);
@@ -370,7 +363,7 @@ template <typename T>
     }
 
     int logdetFunctor(nd4j::LaunchContext * context, NDArray* input, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), return logdetFunctor_, (input, output), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), return logdetFunctor_, (context, input, output), FLOAT_TYPES);
     }
 
 }
