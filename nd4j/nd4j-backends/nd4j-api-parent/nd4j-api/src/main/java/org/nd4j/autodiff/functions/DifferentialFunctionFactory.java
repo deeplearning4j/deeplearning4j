@@ -196,7 +196,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.clip.ClipByValue;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndReplace;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.CompareAndSet;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.*;
-import org.nd4j.linalg.api.ops.impl.transforms.custom.Pow;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMax;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMean;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentMin;
