@@ -32,6 +32,7 @@ import org.deeplearning4j.nn.layers.BaseLayer;
 import org.deeplearning4j.nn.layers.mkldnn.MKLDNNConvHelper;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.activations.impl.ActivationSigmoid;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -188,12 +189,9 @@ public class LSTMHelpers {
         }
         //Input validation: check that if past state is provided, that it has same
         //These can be different if user forgets to call rnnClearPreviousState() between calls of rnnTimeStep
-        if (prevOutputActivations != null && prevOutputActivations.size(0) != input.size(0)) {
-            throw new DL4JInvalidInputException("Previous activations (stored state) number of examples = "
-                            + prevOutputActivations.size(0) + " but input array number of examples = " + input.size(0)
-                            + ". Possible cause: using rnnTimeStep() without calling"
-                            + " rnnClearPreviousState() between different sequences?");
-        }
+        Preconditions.checkState(prevOutputActivations == null || prevOutputActivations.size(0) == input.size(0),
+                "Invalid RNN previous state (last time step activations/initialization): rnnTimeStep with different minibatch size, or forgot to call rnnClearPreviousState between batches?" +
+                        " Previous step output = [batch, nIn] = %ndShape, current input = [batch, nIn, seqLength] = %ndShape", prevOutputActivations, input);
 
         //initialize prevOutputActivations to zeroes
         if (prevOutputActivations == null) {

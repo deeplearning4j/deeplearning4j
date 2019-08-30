@@ -2460,6 +2460,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             }
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
+            if(t != null){
+                if(t instanceof RuntimeException){
+                    throw ((RuntimeException)t);
+                }
+                throw new RuntimeException("Error during neural network forward pass", t);
+            }
+
             if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
                 WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached");
             } else {
@@ -2780,6 +2787,13 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                 }
             }
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
+
+            if(t != null){
+                if(t instanceof RuntimeException){
+                    throw ((RuntimeException)t);
+                }
+                throw new RuntimeException("Error during neural network backpropagation calculation", t);
+            }
         }
 
         //Now, add the gradients in the order we need them in for flattening (same as params order)
@@ -3312,8 +3326,11 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
 
     @Override
     public int batchSize() {
+        //In 99+% of cases, the input and labels dimension 0 size should be identical
+        //The only real exceptions: space to batch, and batch to space layers
+        //In those cases, we should base it on the labels size, as this impacts gradient calculation
         // FIXME: int cast
-        return (int) inputs[0].size(0);
+        return labels == null || labels[0] == null ? (int) inputs[0].size(0) : (int)labels[0].size(0);
     }
 
     @Override

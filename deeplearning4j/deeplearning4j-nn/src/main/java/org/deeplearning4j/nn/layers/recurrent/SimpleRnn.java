@@ -217,6 +217,9 @@ public class SimpleRnn extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.lay
         assertInputSet(false);
         Preconditions.checkState(input.rank() == 3,
                 "3D input expected to RNN layer expected, got " + input.rank());
+        Preconditions.checkState(prevStepOut == null || prevStepOut.size(0) == input.size(0),
+                "Invalid RNN previous state (last time step activations/initialization): rnnTimeStep with different minibatch size, or forgot to call rnnClearPreviousState between batches?" +
+                        " Previous step output = [batch, nIn] = %ndShape, current input = [batch, nIn, seqLength] = %ndShape", prevStepOut, input);
 
         applyDropOutIfNecessary(training, workspaceMgr);
 
