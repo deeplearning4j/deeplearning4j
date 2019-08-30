@@ -104,12 +104,12 @@ public class AsyncLearningTest {
         }
 
         @Override
-        public MDP getMdp() {
+        protected AsyncThread newThread(int i, int deviceAffinity) {
             return null;
         }
 
         @Override
-        protected AsyncThread newThread(int i) {
+        public MDP getMdp() {
             return null;
         }
 

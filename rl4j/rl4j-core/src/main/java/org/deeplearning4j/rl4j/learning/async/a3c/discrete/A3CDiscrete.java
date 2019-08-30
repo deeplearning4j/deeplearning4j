@@ -57,8 +57,8 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
         mdp.getActionSpace().setSeed(conf.getSeed());
     }
 
-    protected AsyncThread newThread(int i) {
-        return new A3CThreadDiscrete(mdp.newInstance(), asyncGlobal, getConfiguration(), getListeners(), i, int deviceNum);
+    protected AsyncThread newThread(int i, int deviceNum) {
+        return new A3CThreadDiscrete(mdp.newInstance(), asyncGlobal, getConfiguration(), deviceNum, getListeners(), i);
     }
 
     public IActorCritic getNeuralNet() {

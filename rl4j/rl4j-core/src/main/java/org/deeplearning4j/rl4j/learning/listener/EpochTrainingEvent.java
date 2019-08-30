@@ -25,7 +25,7 @@ import lombok.Getter;
  * @author Alexandre Boulanger
  */
 @AllArgsConstructor
-public class EpochTrainingEvent extends TrainingEvent implements IEpochTrainingEvent {
+public class EpochTrainingEvent implements IEpochTrainingEvent {
     @Getter
     private int epochCount;
     @Getter
