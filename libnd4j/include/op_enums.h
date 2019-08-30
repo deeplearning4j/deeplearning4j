@@ -63,6 +63,10 @@ namespace nd4j {
         enum BoolOps {
             BUILD_ENUMERATION(PAIRWISE_BOOL_OPS)
         };
+
+        enum IntOps {
+            BUILD_ENUMERATION(PAIRWISE_INT_OPS)
+        };
     }
 
     namespace scalar {
@@ -72,6 +76,10 @@ namespace nd4j {
 
         enum BoolOps {
             BUILD_ENUMERATION(SCALAR_BOOL_OPS)
+        };
+
+        enum IntOps {
+            BUILD_ENUMERATION(SCALAR_INT_OPS)
         };
     }
 
@@ -112,6 +120,10 @@ namespace nd4j {
 
         enum BoolOps {
             BUILD_ENUMERATION(BROADCAST_BOOL_OPS)
+        };
+
+        enum IntOps {
+            BUILD_ENUMERATION(BROADCAST_INT_OPS)
         };
     }
 

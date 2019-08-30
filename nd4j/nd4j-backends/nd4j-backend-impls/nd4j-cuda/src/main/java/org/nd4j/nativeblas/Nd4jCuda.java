@@ -3594,6 +3594,7 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
 // #include <op_enums.h>
 // #include <ops/BroadcastOpsTuple.h>
 // #include <ops/BroadcastBoolOpsTuple.h>
+// #include <ops/BroadcastIntOpsTuple.h>
 // #include <array/ExtraArguments.h>
 // #include <Status.h>
 // #include <ShapeDescriptor.h>

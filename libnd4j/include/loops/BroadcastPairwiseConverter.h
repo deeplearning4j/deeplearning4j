@@ -71,12 +71,25 @@ inline pairwise::BoolOps fromBroadcastToPairwiseBool(broadcast::BoolOps op) {
         case broadcast::And: return pairwise::And;
         case broadcast::Or: return pairwise::Or;
         case broadcast::Xor: return pairwise::Xor;
-        case broadcast::Not: return pairwise::Not;        
+        case broadcast::Not: return pairwise::Not;
         default:
             throw std::runtime_error("fromBroadcastToPairwiseBool: Not convertible operation");
     }
 }
 
+    inline pairwise::IntOps fromBroadcastToPairwiseInt(broadcast::IntOps op) {
+        switch (op) {
+            case broadcast::IntOps::IntAnd: return pairwise::IntOps::IntAnd;
+            case broadcast::IntOps::IntOr: return pairwise::IntOps::IntOr;
+            case broadcast::IntOps::IntXor: return pairwise::IntOps::IntXor;
+            case broadcast::IntOps::ShiftLeft: return pairwise::IntOps::ShiftLeft;
+            case broadcast::IntOps::ShiftRight: return pairwise::IntOps::ShiftRight;
+            case broadcast::IntOps::CyclicShiftLeft: return pairwise::IntOps::CyclicShiftLeft;
+            case broadcast::IntOps::CyclicShiftRight: return pairwise::IntOps::CyclicShiftRight;
+            default:
+                throw std::runtime_error("fromBroadcastToPairwiseInt: Not convertible operation");
+        }
+    }
 }
 
 #endif //DEV_TESTS_BROADCASTPAIRWISECONVERTER_H

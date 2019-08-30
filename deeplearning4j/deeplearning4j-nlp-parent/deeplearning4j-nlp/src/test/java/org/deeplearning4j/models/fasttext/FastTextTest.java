@@ -103,7 +103,7 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testPredict() throws IOException {
+    public void testPredict() {
             String text = "I like soccer";
 
             FastText fastText = new FastText(supModelFile);
@@ -118,7 +118,7 @@ public class FastTextTest extends BaseDL4JTest {
     }
 
     @Test
-    public void testPredictProbability() throws IOException {
+    public void testPredictProbability() {
         String text = "I like soccer";
 
         FastText fastText = new FastText(supModelFile);

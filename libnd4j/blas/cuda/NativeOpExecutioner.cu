@@ -38,19 +38,22 @@
 #include <loops/reduce_same.h>
 #include <loops/reduce_bool.h>
 #include <loops/reduce_long.h>
-#include <loops/broadcasting.h>
 #include <loops/indexreduce.h>
 #include <loops/pairwise_transform.h>
 #include <loops/pairwise_bool.h>
+#include <loops/pairwise_int.h>
 #include <loops/broadcasting_bool.h>
+#include <loops/broadcasting_int.h>
+#include <loops/broadcasting.h>
 #include <loops/reduce_float.h>
 #include <loops/reduce3.h>
 #include <loops/summarystatsreduce.h>
 #include <loops/transform_same.h>
-#include <loops/scalar.h>
 #include <loops/random.h>
 #include <loops/special_kernels.h>
+#include <loops/scalar.h>
 #include <loops/scalar_bool.h>
+#include <loops/scalar_int.h>
 
 using namespace nd4j;
 
@@ -153,6 +156,39 @@ void NativeOpExecutioner::execPairwiseBoolTransform( nd4j::LaunchContext  *lc,
 }
 
 ////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execPairwiseIntTransform( nd4j::LaunchContext  *lc,
+                                                     int opNum,
+                                                     void *hX, Nd4jLong *hXShapeInfo,
+                                                     void *dX, Nd4jLong *dXShapeInfo,
+                                                     void *hY, Nd4jLong *hYShapeInfo,
+                                                     void *dY, Nd4jLong *dYShapeInfo,
+                                                     void *hZ, Nd4jLong *hZShapeInfo,
+                                                     void *dZ, Nd4jLong *dZShapeInfo,
+                                                     void *extraParams) {
+
+    auto stream = lc->getCudaStream();
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (!DataTypeUtils::isZ(zType))
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execPairwiseIntTransform wrong Z operand data type", nd4j::DataType::BOOL, zType);
+
+    if (yType != xType || zType != xType)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execPairwiseIntTransform both operands must have same data type", xType, yType);
+
+    dim3 launchDims(256, 1024, 16384);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::pairwise_transforms::PairWiseIntTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams), INTEGER_TYPES)
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execPairwiseIntTransform failed", res);
+}
+
+////////////////////////////////////////////////////////////////////////
 void NativeOpExecutioner::execSummaryStatsScalar(nd4j::LaunchContext  *lc,
                                     int opNum,
                                     void *hX, Nd4jLong *hXShapeInfo,
@@ -250,6 +286,81 @@ void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
     auto res = cudaStreamSynchronize(*stream);
     if (res != 0)
         throw cuda_exception::build("execInverseBroadcastBool failed", res);
+}
+
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execBroadcastInt(nd4j::LaunchContext  *lc,
+                                            int opNum,
+                                            void *hX, Nd4jLong *hXShapeInfo,
+                                            void *dX, Nd4jLong *dXShapeInfo,
+                                            void *hY, Nd4jLong *hYShapeInfo,
+                                            void *dY, Nd4jLong *dYShapeInfo,
+                                            void *hZ, Nd4jLong *hZShapeInfo,
+                                            void *dZ, Nd4jLong *dZShapeInfo,
+                                            int *dimension, int dimensionLength,
+                                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                            Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+
+    auto stream = lc->getCudaStream();
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (!DataTypeUtils::isZ(zType))
+        throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
+
+    if (yType != xType || zType != xType)
+        throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
+
+    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+        printf("F3B opNum:[%i]\n", opNum);
+
+    dim3 launchDims(256, 256, 1024);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), INTEGER_TYPES)
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execBroadcastBool failed", res);
+}
+
+void NativeOpExecutioner::execInverseBroadcastInt(nd4j::LaunchContext  *lc,
+                                                   int opNum,
+                                                   void *hX, Nd4jLong *hXShapeInfo,
+                                                   void *dX, Nd4jLong *dXShapeInfo,
+                                                   void *hY, Nd4jLong *hYShapeInfo,
+                                                   void *dY, Nd4jLong *dYShapeInfo,
+                                                   void *hZ, Nd4jLong *hZShapeInfo,
+                                                   void *dZ, Nd4jLong *dZShapeInfo,
+                                                   int *dimension, int dimensionLength,
+                                                   Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                                   Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+    auto stream = lc->getCudaStream();
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (!DataTypeUtils::isZ(zType))
+        throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
+
+    if (yType != xType || zType != xType)
+        throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
+
+    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
+        printf("F3BI opNum:[%i]\n", opNum);
+
+    dim3 launchDims(256, 256, 1024);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), INTEGER_TYPES)
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execInverseBroadcastInt failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1112,6 +1223,75 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
     auto res = cudaStreamSynchronize(*stream);
     if (res != 0)
         throw cuda_exception::build("execScalarBool B failed", res);
+}
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
+                                         int opNum,
+                                         void *hX, Nd4jLong *hXShapeInfo,
+                                         void *dX, Nd4jLong *dXShapeInfo,
+                                         void *hZ, Nd4jLong *hZShapeInfo,
+                                         void *dZ, Nd4jLong *dZShapeInfo,
+                                         void *hScalar, Nd4jLong *hScalarShapeInfo,
+                                         void *dScalar, Nd4jLong *dScalarShapeInfo,
+                                         void *extraParams, bool allowParallelism) {
+
+    auto stream = lc->getCudaStream();
+
+    dim3 launchDims = dim3(256, 512, 8192);
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != yType || zType != xType)
+        throw std::runtime_error("NativeOpExecutioner::execScalarInt requires X & Y to have same type");
+
+    if (!DataTypeUtils::isZ(zType) )
+        throw std::runtime_error("NativeOpExecutioner::execScalarInt requires Z operand to have INT type");
+
+    BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalar, extraParams), INTEGER_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execScalarInt failed", res);
+}
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
+                                         int opNum,
+                                         void *hX, Nd4jLong *hXShapeInfo,
+                                         void *dX, Nd4jLong *dXShapeInfo,
+                                         void *extraParams,
+                                         void *hZ, Nd4jLong *hZShapeInfo,
+                                         void *dZ, Nd4jLong *dZShapeInfo,
+                                         void *hScalars, Nd4jLong *hScalarShapeInfo,
+                                         void *dScalars, Nd4jLong *dScalarShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                         Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+
+    auto stream = lc->getCudaStream();
+
+    dim3 launchDims(256, 512, 8192);
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != yType || zType != xType)
+        throw std::runtime_error("NativeOpExecutioner::execScalarInt requires X & Y to have same type");
+
+    if (!DataTypeUtils::isZ(zType) )
+        throw std::runtime_error("NativeOpExecutioner::execScalarInt requires Z operand to have INT type");
+
+    BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform, ::executeCudaAlongDimension(launchDims, stream, opNum, dX, dXShapeInfo, dZ, dZShapeInfo, dScalars, extraParams, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), INTEGER_TYPES);
+
+    // TODO: remove after the release
+    auto res = cudaStreamSynchronize(*stream);
+    if (res != 0)
+        throw cuda_exception::build("execScalarInt B failed", res);
 }
 
 ////////////////////////////////////////////////////////////////////////

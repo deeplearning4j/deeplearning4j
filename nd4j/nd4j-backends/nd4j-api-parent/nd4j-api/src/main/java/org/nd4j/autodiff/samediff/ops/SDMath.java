@@ -2428,7 +2428,7 @@ public class SDMath extends SDOps {
      * @param x    Input 1
      * @return Output SDVariable with shifted bits
      */
-    public SDVariable bitShift(String name, SDVariable x, int shift) {
+    public SDVariable bitShift(String name, SDVariable x, SDVariable shift) {
         validateInteger("shift_bits", x);
         SDVariable result = f().shift(x, shift);
         return updateVariableNameAndReference(result, name);
@@ -2441,7 +2441,7 @@ public class SDMath extends SDOps {
      * @param x    Input 1
      * @return Output SDVariable with shifted bits
      */
-    public SDVariable bitShiftRight(String name, SDVariable x, int shift) {
+    public SDVariable bitShiftRight(String name, SDVariable x, SDVariable shift) {
         validateInteger("rshift_bits", x);
         SDVariable result = f().rshift(x, shift);
         return updateVariableNameAndReference(result, name);
@@ -2454,7 +2454,7 @@ public class SDMath extends SDOps {
      * @param x    Input 1
      * @return Output SDVariable with shifted bits
      */
-    public SDVariable bitRotl(String name, SDVariable x, int shift) {
+    public SDVariable bitRotl(String name, SDVariable x, SDVariable shift) {
         validateInteger("cyclic_shift_bits", x);
         SDVariable result = f().rotl(x, shift);
         return updateVariableNameAndReference(result, name);
@@ -2467,7 +2467,7 @@ public class SDMath extends SDOps {
      * @param x    Input 1
      * @return Output SDVariable with shifted bits
      */
-    public SDVariable bitRotr(String name, SDVariable x, int shift) {
+    public SDVariable bitRotr(String name, SDVariable x, SDVariable shift) {
         validateInteger("cyclic_rshift_bits", x);
         SDVariable result = f().rotr(x, shift);
         return updateVariableNameAndReference(result, name);

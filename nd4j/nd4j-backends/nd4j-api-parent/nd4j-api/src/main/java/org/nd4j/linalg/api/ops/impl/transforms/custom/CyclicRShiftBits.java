@@ -34,18 +34,16 @@ import java.util.List;
  */
 public class CyclicRShiftBits extends BaseDynamicTransformOp {
 
-    public CyclicRShiftBits(SameDiff sameDiff, SDVariable x, int shift) {
-        super(sameDiff, new SDVariable[] {x} ,false);
-        this.addIArgument(shift);
+    public CyclicRShiftBits(SameDiff sameDiff, SDVariable x, SDVariable shift) {
+        super(sameDiff, new SDVariable[] {x, shift} ,false);
     }
 
-    public CyclicRShiftBits(INDArray input, int shift, INDArray output) {
-        super(new INDArray[]{input}, new INDArray[]{output});
-        this.addIArgument(shift);
+    public CyclicRShiftBits(INDArray input, INDArray shift, INDArray output) {
+        super(new INDArray[]{input, shift}, new INDArray[]{output});
     }
 
-    public CyclicRShiftBits(INDArray input, int shift) {
-        this(input, shift,null);
+    public CyclicRShiftBits(INDArray input, INDArray shift) {
+        this(input, shift,input.ulike());
     }
 
     public CyclicRShiftBits() {}

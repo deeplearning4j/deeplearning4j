@@ -189,6 +189,16 @@ static void execScalarBool(nd4j::LaunchContext  *lc,
                             void *dScalar, Nd4jLong *dSscalarShapeInfo,
                             void *extraParams, bool allowParallelism = true);
 
+static void execScalarInt(nd4j::LaunchContext  *lc,
+                               int opNum,
+                               void *hX, Nd4jLong *hXShapeInfo,
+                               void *dX, Nd4jLong *dXShapeInfo,
+                               void *hZ, Nd4jLong *hZShapeInfo,
+                               void *dZ, Nd4jLong *dZShapeInfo,
+                               void *hScalar, Nd4jLong *hSscalarShapeInfo,
+                               void *dScalar, Nd4jLong *dSscalarShapeInfo,
+                               void *extraParams, bool allowParallelism = true);
+
  static void execScalar(nd4j::LaunchContext  *lc,
                             int opNum,
                             void *hX, Nd4jLong *hXShapeInfo,
@@ -214,6 +224,20 @@ static void execScalarBool(nd4j::LaunchContext  *lc,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+
+ static void execScalarInt(nd4j::LaunchContext  *lc,
+                               int opNum,
+                               void *hX, Nd4jLong *hXShapeInfo,
+                               void *dX, Nd4jLong *dXShapeInfo,
+                               void *extraParams,
+                               void *hZ, Nd4jLong *hZShapeInfo,
+                               void *dZ, Nd4jLong *dZShapeInfo,
+                               void *hScalars, Nd4jLong *hScalarShapeInfo,
+                               void *dScalars, Nd4jLong *dScalarShapeInfo,
+                               int *dimension, int dimensionLength,
+                               Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                               Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
+
 
 /**
      *
@@ -275,6 +299,30 @@ static void execScalarBool(nd4j::LaunchContext  *lc,
                                      int *dimension, int dimensionLength,
                                      Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                      Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+
+    static void execBroadcastInt(nd4j::LaunchContext  *lc,
+                                  int opNum,
+                                  void *hX, Nd4jLong *hXShapeInfo,
+                                  void *dX, Nd4jLong *dXShapeInfo,
+                                  void *hY, Nd4jLong *hYShapeInfo,
+                                  void *dY, Nd4jLong *dYShapeInfo,
+                                  void *hZ, Nd4jLong *hZShapeInfo,
+                                  void *dZ, Nd4jLong *dZShapeInfo,
+                                  int *dimension, int dimensionLength,
+                                  Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                  Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ);
+
+    static void execInverseBroadcastInt(nd4j::LaunchContext  *lc,
+                                         int opNum,
+                                         void *x, Nd4jLong *xShapeInfo,
+                                         void *dX, Nd4jLong *dXShapeInfo,
+                                         void *y, Nd4jLong *yShapeInfo,
+                                         void *dY, Nd4jLong *dYShapeInfo,
+                                         void *result, Nd4jLong *resultShapeInfo,
+                                         void *dZ, Nd4jLong *dZShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                         Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
     
 /**
   *
@@ -307,6 +355,16 @@ static void execScalarBool(nd4j::LaunchContext  *lc,
                                     void *hZ, Nd4jLong *hZShapeInfo,
                                     void *dZ, Nd4jLong *dZShapeInfo,
                                     void *extraParams);
+
+    static void execPairwiseIntTransform(nd4j::LaunchContext  *lc,
+                                          int opNum,
+                                          void *hX, Nd4jLong *hXShapeInfo,
+                                          void *dX, Nd4jLong *dXShapeInfo,
+                                          void *hY, Nd4jLong *hYShapeInfo,
+                                          void *dY, Nd4jLong *dYShapeInfo,
+                                          void *hZ, Nd4jLong *hZShapeInfo,
+                                          void *dZ, Nd4jLong *dZShapeInfo,
+                                          void *extraParams);
 
 /**
  *

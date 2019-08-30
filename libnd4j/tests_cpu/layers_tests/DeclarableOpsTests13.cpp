@@ -623,12 +623,13 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_5) {
 
 TEST_F(DeclarableOpsTests13, shift_bits_1) {
     auto x = NDArrayFactory::create<int>('c', {5});
+    auto y = NDArrayFactory::create<int>(4);
     auto e = x.ulike();
     x.assign(32);
     e.assign(512);
 
     nd4j::ops::shift_bits op;
-    auto result = op.execute({&x}, {}, {4});
+    auto result = op.execute({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -640,12 +641,13 @@ TEST_F(DeclarableOpsTests13, shift_bits_1) {
 
 TEST_F(DeclarableOpsTests13, rshift_bits_1) {
     auto x = NDArrayFactory::create<int>('c', {5});
+    auto y = NDArrayFactory::create<int>(4);
     auto e = x.ulike();
     x.assign(512);
     e.assign(32);
 
     nd4j::ops::rshift_bits op;
-    auto result = op.execute({&x}, {}, {4});
+    auto result = op.execute({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -657,12 +659,13 @@ TEST_F(DeclarableOpsTests13, rshift_bits_1) {
 
 TEST_F(DeclarableOpsTests13, cyclic_shift_bits_1) {
     auto x = NDArrayFactory::create<int>('c', {5});
+    auto y = NDArrayFactory::create<int>(4);
     auto e = x.ulike();
     x.assign(32);
     e.assign(512);
 
     nd4j::ops::cyclic_shift_bits op;
-    auto result = op.execute({&x}, {}, {4});
+    auto result = op.execute({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
@@ -674,12 +677,107 @@ TEST_F(DeclarableOpsTests13, cyclic_shift_bits_1) {
 
 TEST_F(DeclarableOpsTests13, cyclic_rshift_bits_1) {
     auto x = NDArrayFactory::create<int>('c', {5});
+    auto y = NDArrayFactory::create<int>(4);
     auto e = x.ulike();
     x.assign(512);
     e.assign(32);
 
     nd4j::ops::cyclic_rshift_bits op;
-    auto result = op.execute({&x}, {}, {4});
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, shift_bits_2) {
+    auto x = NDArrayFactory::create<int>('c', {5});
+    auto y = NDArrayFactory::create<int>('c', {5});
+    auto e = x.ulike();
+    x.assign(32);
+    y.assign(4);
+    e.assign(512);
+
+    nd4j::ops::shift_bits op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, rshift_bits_2) {
+    auto x = NDArrayFactory::create<int>('c', {5});
+    auto y = NDArrayFactory::create<int>('c', {5});
+    auto e = x.ulike();
+    x.assign(512);
+    y.assign(4);
+    e.assign(32);
+
+    nd4j::ops::rshift_bits op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, cyclic_shift_bits_2) {
+    auto x = NDArrayFactory::create<int>('c', {5});
+    auto y = NDArrayFactory::create<int>('c', {5});
+    auto e = x.ulike();
+    x.assign(32);
+    y.assign(4);
+    e.assign(512);
+
+    nd4j::ops::cyclic_shift_bits op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests13, cyclic_rshift_bits_2) {
+    auto x = NDArrayFactory::create<int>('c', {5});
+    auto y = NDArrayFactory::create<int>('c', {5});
+    auto e = x.ulike();
+    x.assign(512);
+    y.assign(4);
+    e.assign(32);
+
+    nd4j::ops::cyclic_rshift_bits op;
+    auto result = op.execute({&x, &y}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_EQ(e, *z);
+
+    delete result;
+}
+TEST_F(DeclarableOpsTests13, shift_bits_3) {
+    auto x = NDArrayFactory::create<int>('c', {5, 5});
+    auto y = NDArrayFactory::create<int>('c', {1, 5});
+    auto e = x.ulike();
+    x.assign(32);
+    y.assign(4);
+    e.assign(512);
+
+    nd4j::ops::shift_bits op;
+    auto result = op.execute({&x, &y}, {}, {});
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
