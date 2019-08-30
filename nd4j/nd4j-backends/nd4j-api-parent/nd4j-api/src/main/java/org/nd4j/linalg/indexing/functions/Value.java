@@ -16,8 +16,7 @@
 
 package org.nd4j.linalg.indexing.functions;
 
-
-import org.nd4j.shade.guava.base.Function;
+import org.nd4j.linalg.function.Function;
 
 /**
  * Created by agibsonccc on 10/8/14.
