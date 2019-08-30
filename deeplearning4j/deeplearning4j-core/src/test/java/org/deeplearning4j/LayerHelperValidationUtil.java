@@ -190,7 +190,7 @@ public class LayerHelperValidationUtil {
                 } else {
                     System.out.println("OK: " + p);
                 }
-                assertTrue("Gradients are not equal: " + p + " - highest relative error = " + maxRE + " > max relative error = " + t.getMaxRelError(),
+                assertTrue(t.getTestName() + " - Gradients are not equal: " + p + " - highest relative error = " + maxRE + " > max relative error = " + t.getMaxRelError(),
                         maxRE < t.getMaxRelError());
             }
         }

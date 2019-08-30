@@ -950,16 +950,6 @@ public interface NDArrayFactory {
     INDArray create(int[] shape);
 
     /**
-     * Create a scalar ndarray with the specified offset
-     *
-     * @param value  the value to initialize the scalar with
-     * @param offset the offset of the ndarray
-     * @return the created ndarray
-     */
-    INDArray scalar(Number value, long offset);
-
-
-    /**
      * Create a scalar nd array with the specified value and offset
      *
      * @param value  the value of the scalar
@@ -989,27 +979,6 @@ public interface NDArrayFactory {
     INDArray scalar(Number value);
 
     INDArray empty(DataType type);
-
-    @Deprecated
-    INDArray trueScalar(Number value);
-
-    @Deprecated
-    INDArray trueScalar(DataType dataType, Number value);
-
-    @Deprecated
-    INDArray trueVector(boolean[] data);
-    @Deprecated
-    INDArray trueVector(byte[] data);
-    @Deprecated
-    INDArray trueVector(short[] data);
-    @Deprecated
-    INDArray trueVector(int[] data);
-    @Deprecated
-    INDArray trueVector(long[] data);
-    @Deprecated
-    INDArray trueVector(float[] data);
-    @Deprecated
-    INDArray trueVector(double[] data);
 
     /**
      * Create a scalar nd array with the specified value and offset
@@ -1094,16 +1063,15 @@ public interface NDArrayFactory {
     INDArray createUninitialized(long[] shape, char ordering);
 
     INDArray createUninitialized(DataType dataType, long[] shape, char ordering, MemoryWorkspace workspace);
-
+    
     /**
-     * Cretes uninitialized INDArray detached from any (if any) workspace
-     * @param shape
-     * @param ordering
-     * @return
+     * Create an uninitialized ndArray. Detached from workspace.
+     * @param dataType data type. Exceptions will be thrown for UTF8, COMPRESSED and UNKNOWN data types.
+     * @param ordering  Fortran 'f' or C/C++ 'c' ordering.
+     * @param shape the shape of the array.
+     * @return the created detached array.
      */
-    INDArray createUninitializedDetached(int[] shape, char ordering);
-
-    INDArray createUninitializedDetached(long[] shape, char ordering);
+    INDArray createUninitializedDetached(DataType dataType, char ordering, long... shape);
 
     /**
      *

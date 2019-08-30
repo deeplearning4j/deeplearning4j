@@ -36,5 +36,6 @@
 #include <GraphExecutioner.h>
 #include <gtest/gtest.h>
 #include <NDArrayFactory.h>
+#include <array>
 
 #endif //LIBND4J_TESTLAYERS_H

@@ -40,6 +40,7 @@
 #define PRAGMA_OMP_PARALLEL_REDUCTION(args)
 #define PRAGMA_OMP_PARALLEL_ARGS(args)
 #define PRAGMA_OMP_PARALLEL_THREADS(args)
+#define PRAGMA_OMP_PARALLEL_THREADS_IF(threads, condition)
 #define PRAGMA_OMP_PARALLEL_FOR
 #define PRAGMA_OMP_PARALLEL_FOR_ARGS(args)
 #define PRAGMA_OMP_PARALLEL_FOR_IF(args)
@@ -77,6 +78,7 @@
 #define PRAGMA_OMP_PARALLEL_REDUCTION(args) _Pragma(OMP_STRINGIFY(omp parallel reduction(args) default(shared)))
 #define PRAGMA_OMP_PARALLEL_ARGS(args) _Pragma(OMP_STRINGIFY(omp parallel args default(shared)))
 #define PRAGMA_OMP_PARALLEL_THREADS(args) _Pragma(OMP_STRINGIFY(omp parallel num_threads(args) if(args > 1) default(shared)))
+#define PRAGMA_OMP_PARALLEL_THREADS_IF(threads, condition) _Pragma(OMP_STRINGIFY(omp parallel num_threads(threads) if(condition) default(shared)))
 #define PRAGMA_OMP_PARALLEL_FOR _Pragma(OMP_STRINGIFY(omp parallel for default(shared)))
 #define PRAGMA_OMP_PARALLEL_FOR_REDUCTION(args) _Pragma(OMP_STRINGIFY(omp parallel for reduction(args) default(shared)))
 #define PRAGMA_OMP_PARALLEL_FOR_ARGS(args) _Pragma(OMP_STRINGIFY(omp parallel for args default(shared)))

@@ -21,6 +21,7 @@
 #ifndef __CUDABLAS__
 
 #include <ConstantHelper.h>
+#include <execution/AffinityManager.h>
 #include <types/types.h>
 #include <loops/type_conversions.h>
 #include <type_boilerplate.h>
@@ -59,11 +60,11 @@ namespace nd4j {
     }
 
     int ConstantHelper::getCurrentDevice() {
-        return 0L;
+        return AffinityManager::currentDeviceId();
     }
 
     int ConstantHelper::getNumberOfDevices() {
-        return 1;
+        return AffinityManager::numberOfDevices();
     }
 
     ConstantDataBuffer* ConstantHelper::constantBuffer(const ConstantDescriptor &descriptor, nd4j::DataType dataType) {

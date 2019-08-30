@@ -324,7 +324,7 @@ TEST_F(NDArrayTest, TestRepeat2) {
 
     auto rep = exp->dup();
     rep->assign(0.);
-    array->repeat(0, *rep);
+    array->repeat(0, {2}, *rep);
     //rep->printIndexedBuffer("Repeated");
 
     ASSERT_EQ(4, rep->sizeAt(0));

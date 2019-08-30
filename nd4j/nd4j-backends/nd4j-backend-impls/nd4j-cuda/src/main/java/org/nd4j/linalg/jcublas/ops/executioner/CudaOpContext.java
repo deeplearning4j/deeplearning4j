@@ -18,6 +18,9 @@ package org.nd4j.linalg.jcublas.ops.executioner;
 
 import lombok.NonNull;
 import lombok.val;
+import org.bytedeco.javacpp.BooleanPointer;
+import org.bytedeco.javacpp.DoublePointer;
+import org.bytedeco.javacpp.LongPointer;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cudaStream_t;
@@ -28,7 +31,10 @@ import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.context.CudaContext;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.nativeblas.Nd4jCuda;
+import org.nd4j.nativeblas.NativeOps;
+import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.nativeblas.OpaqueContext;
+import org.nd4j.nativeblas.OpaqueRandomGenerator;
 
 /**
  * CUDA wrapper for op Context
@@ -36,53 +42,57 @@ import org.nd4j.nativeblas.Nd4jCuda;
  */
 public class CudaOpContext extends BaseOpContext implements OpContext {
     // we might want to have configurable
-    private Nd4jCuda.Context context = new Nd4jCuda.Context(1);
+    private NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
+    private OpaqueContext context = nativeOps.createGraphContext(1);
+
+    @Override
+    public void close() {
+        nativeOps.deleteGraphContext(context);
+    }
 
     @Override
     public void setIArguments(long... arguments) {
         super.setIArguments(arguments);
-        context.setIArguments(arguments, arguments.length);
+        nativeOps.setGraphContextIArguments(context, new LongPointer(arguments), arguments.length);
     }
 
     @Override
     public void setBArguments(boolean... arguments) {
         super.setBArguments(arguments);
-        context.setBArguments(arguments, arguments.length);
+        nativeOps.setGraphContextBArguments(context, new BooleanPointer(arguments), arguments.length);
     }
 
     @Override
     public void setTArguments(double... arguments) {
         super.setTArguments(arguments);
-        context.setTArguments(arguments, arguments.length);
+        nativeOps.setGraphContextTArguments(context, new DoublePointer(arguments), arguments.length);
     }
 
     @Override
     public void setRngStates(long rootState, long nodeState) {
-        context.randomGenerator().setStates(rootState, nodeState);
+        nativeOps.setRandomGeneratorStates(nativeOps.getGraphContextRandomGenerator(context), rootState, nodeState);
     }
 
     @Override
     public Pair<Long, Long> getRngStates() {
-        return Pair.makePair(context.randomGenerator().rootState(), context.randomGenerator().nodeState());
+        OpaqueRandomGenerator g = nativeOps.getGraphContextRandomGenerator(context);
+        return Pair.makePair(nativeOps.getRandomGeneratorRootState(g), nativeOps.getRandomGeneratorNodeState(g));
     }
 
     @Override
     public void setInputArray(int index, @NonNull INDArray array) {
-        // FIXME: remove
-        Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.EVERYWHERE);
+        val ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(null, array);
 
-        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        context.setInputArray(index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), array.isEmpty() ? null : AtomicAllocator.getInstance().getPointer(array, ctx), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
+        nativeOps.setGraphContextInputArray(context, index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), array.isEmpty() ? null : AtomicAllocator.getInstance().getPointer(array, ctx), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
         super.setInputArray(index, array);
     }
 
     @Override
     public void setOutputArray(int index, @NonNull INDArray array) {
-        Nd4j.getAffinityManager().ensureLocation(array, AffinityManager.Location.EVERYWHERE);
+        val ctx = AtomicAllocator.getInstance().getFlowController().prepareAction(array, null);
 
-        val ctx = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        context.setOutputArray(index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), array.isEmpty() ? null : AtomicAllocator.getInstance().getPointer(array, ctx), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
+        nativeOps.setGraphContextOutputArray(context, index, array.isEmpty() ? null : array.data().addressPointer(), array.shapeInfoDataBuffer().addressPointer(), array.isEmpty() ? null : AtomicAllocator.getInstance().getPointer(array, ctx), AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()));
 
         super.setOutputArray(index, array);
     }
@@ -113,11 +123,11 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
 
 
     public void setCudaStream(cudaStream_t stream, Pointer reductionPointer, Pointer allocationPointer) {
-        context.setCudaContext(stream, reductionPointer, allocationPointer);
+        nativeOps.setGraphContextCudaContext(context, stream, reductionPointer, allocationPointer);
     }
 
     @Override
     public void markInplace(boolean reallyInplace) {
-        context.markInplace(reallyInplace);
+        nativeOps.markGraphContextInplace(context, reallyInplace);
     }
 }

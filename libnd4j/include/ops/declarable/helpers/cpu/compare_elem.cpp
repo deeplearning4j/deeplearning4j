@@ -31,14 +31,14 @@ namespace nd4j {
 
                 if(isStrictlyIncreasing) {
                     PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
-                    for (int i = 0; i < length - 1; i++) {
+                    for (Nd4jLong i = 0; i < length - 1; i++) {
                         auto val0 = input->t<T>(i);
                         auto val1 = input->t<T>(i + 1);
                         sum += val0 >= val1 ? -1 : 0;
                     }
                 } else {
                     PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
-                    for (int i = 0; i < length - 1; i++) {
+                    for (Nd4jLong i = 0; i < length - 1; i++) {
                         auto val0 = input->t<T>(i);
                         auto val1 = input->t<T>(i + 1);
                         sum += val0 > val1 ? -1 : 0;

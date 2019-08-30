@@ -18,7 +18,6 @@ package org.nd4j.autodiff.samediff.ops;
 
 import com.google.common.collect.Sets;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import lombok.NonNull;
@@ -27,7 +26,6 @@ import org.nd4j.autodiff.samediff.ArgumentInterceptor;
 import org.nd4j.autodiff.samediff.NameScope;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.autodiff.samediff.SameDiffFunctionDefinition;
 import org.nd4j.autodiff.samediff.SameDiffLambda;
 import org.nd4j.autodiff.samediff.SameDiffNoArgSingleLambda;
 import org.nd4j.autodiff.samediff.SameDiffSingleLambda;
@@ -3377,7 +3375,7 @@ public abstract class SDBaseOps {
 
             for(SameDiffOp op : sd().getOpsInScope(ifScope)) {
                 for(String in : op.getInputsToOp()){
-                    sd().removeArgFromFunction(in, op.getOp());
+                    sd().removeArgFromOp(in, op.getOp());
                 }
                 sd().getOps().remove(op.getName());
             }

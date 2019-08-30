@@ -52,11 +52,10 @@ namespace nd4j {
     auto inputShapeInfo = inputShape->at(1);    
     int shapeInfoLength = inputShapeInfo[0]*2 + 4;
 
-    // FIXME: remove memcpy
     Nd4jLong* outputShapeInfo(nullptr);
     COPY_SHAPE(inputShapeInfo, outputShapeInfo);
     
-    return SHAPELIST(outputShapeInfo);
+    return SHAPELIST(CONSTANT(outputShapeInfo));
 }
 
         DECLARE_TYPES(reshapeas) {

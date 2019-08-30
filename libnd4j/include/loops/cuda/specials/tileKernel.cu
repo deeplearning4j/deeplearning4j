@@ -21,6 +21,17 @@
 #include <loops/special_kernels.h>
 
 namespace nd4j {
+    static Nd4jLong __device__ __noinline__ _getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo, Nd4jLong length) {
+        return shape::getIndexOffset(index, shapeInfo, length);
+    }
+
+    static Nd4jLong __device__ __noinline__ _subArrayOffset(Nd4jLong index, Nd4jLong *shapeInfoA, Nd4jLong *shapeInfoB) {
+        return shape::subArrayOffset(index, shapeInfoA, shapeInfoB);
+    }
+
+    static Nd4jLong __device__ __noinline__ _length(Nd4jLong *shapeInfo) {
+        return shape::length(shapeInfo);
+    }
 
 ////////////////////////////////////////////////////////////////////////
     template<typename T>
@@ -34,31 +45,20 @@ namespace nd4j {
         //const auto resultLength = shape::length(outputShape);
         if (shape::order(outputShape) == 'c') {           //  ews == 1 always here
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto yOffset = shape::subArrayOffset(i, outputShape, inputShape);
+                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
                 *(reinterpret_cast<T *>(outputBuffer) + i) = *(reinterpret_cast<T const *>(inputBuffer) + yOffset);
             }
-//            for(Nd4jLong i=0;  i<resultLen; ++i) {
-//                auto yOffset = shape::subArrayOffset(newShapeInfo, _shapeInfo, i);
-//                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, i, this->_buffer, yOffset), LIBND4J_TYPES);
-//
-//            }
         } else {
-//
-            //auto inputLength = shape::lenght(inputShape);
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto xOffset = shape::getIndexOffset(i, outputShape, resultLength);
-                auto yOffset = shape::subArrayOffset(i, outputShape, inputShape);
-                *(reinterpret_cast<T *>(outputBuffer) + xOffset) = *(reinterpret_cast<T const *>(inputBuffer) +
-                                                                     yOffset);
-//                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (newBuff, xOffset, this->_buffer, yOffset), LIBND4J_TYPES);
+                auto xOffset = _getIndexOffset(i, outputShape, resultLength);
+                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
+                *(reinterpret_cast<T *>(outputBuffer) + xOffset) = *(reinterpret_cast<T const *>(inputBuffer) + yOffset);
             }
         }
 
     }
 
-    BUILD_SINGLE_TEMPLATE(template __global__ void tileKernel,
-                          (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength),
-                          LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE(template __global__ void tileKernel,(void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength), LIBND4J_TYPES);
 
     template<typename T>
     void tileKernelH(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape, Nd4jLong resultLength, cudaStream_t *stream) {
@@ -77,29 +77,26 @@ namespace nd4j {
 
         if (ordering == 'c' && ews == 1) {           //  ews == 1 always here
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto yOffset = shape::subArrayOffset(i, outputShape, inputShape);
-                *(reinterpret_cast<X *>(outputBuffer) + i) = static_cast<X>(*(reinterpret_cast<Y const *>(inputBuffer) +
-                                                                              yOffset));
+                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
+                *(reinterpret_cast<X *>(outputBuffer) + i) = static_cast<X>(*(reinterpret_cast<Y const *>(inputBuffer) + yOffset));
             }
         } else if (ordering == 'c' && ews > 1) {
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto yOffset = shape::subArrayOffset(i, outputShape, inputShape);
-                *(reinterpret_cast<X *>(outputBuffer) + i * ews) = static_cast<X>(*(
-                        reinterpret_cast<Y const *>(inputBuffer) + yOffset));
+                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
+                *(reinterpret_cast<X *>(outputBuffer) + i * ews) = static_cast<X>(*(reinterpret_cast<Y const *>(inputBuffer) + yOffset));
             }
         } else {
 
             for (int i = tid; i < resultLength; i += totalThreads) {
 
-                auto xOffset = shape::getIndexOffset(i, outputShape, resultLength);
-                auto yOffset = shape::subArrayOffset(i, outputShape, inputShape);
-                *(reinterpret_cast<X *>(outputBuffer) + xOffset) = static_cast<X>(*(
-                        reinterpret_cast<Y const *>(inputBuffer) + yOffset));
+                auto xOffset = _getIndexOffset(i, outputShape, resultLength);
+                auto yOffset = _subArrayOffset(i, outputShape, inputShape);
+                *(reinterpret_cast<X *>(outputBuffer) + xOffset) = static_cast<X>(*(reinterpret_cast<Y const *>(inputBuffer) + yOffset));
             }
         }
     }
 
-    BUILD_DOUBLE_TEMPLATE(template __global__ void tileKernelDouble, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, Nd4jLong ews), LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE_TWICE(template __global__ void tileKernelDouble, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, Nd4jLong ews), LIBND4J_TYPES);
 
     template<typename X, typename Y>
     void tileKernelHH(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape, Nd4jLong resultLength, Nd4jLong ews, cudaStream_t *stream) {
@@ -107,5 +104,5 @@ namespace nd4j {
         tileKernelDouble<X, Y><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(inputBuffer, inputShape, outputBuffer, outputShape, resultLength, ews);
     }
 
-    BUILD_DOUBLE_TEMPLATE(template void tileKernelHH, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, Nd4jLong ews, cudaStream_t *stream),LIBND4J_TYPES, LIBND4J_TYPES);
+    BUILD_SINGLE_TEMPLATE_TWICE(template void tileKernelHH, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, Nd4jLong ews, cudaStream_t *stream),LIBND4J_TYPES);
 }

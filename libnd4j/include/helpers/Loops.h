@@ -922,7 +922,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::EWS1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; ++i) {
 
                     extraParams[0] = param0;
@@ -944,7 +944,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::EWSNONZERO: {
 
-               PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+               PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; ++i) {
 
                     extraParams[0] = param0;
@@ -966,7 +966,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
 
                     extraParams[0] = param0;
@@ -990,7 +990,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK2: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
 
                     extraParams[0] = param0;
@@ -1016,7 +1016,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK3: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
 
                     extraParams[0] = param0;
@@ -1044,7 +1044,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK4: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
 
                     extraParams[0] = param0;
@@ -1074,7 +1074,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK5: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint i = 0; i < zLen; i++) {
 
                     extraParams[0] = param0;
@@ -1111,7 +1111,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                 if(shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                     for (uint i = 0; i < zLen; ++i) {
 
                         extraParams[0] = param0;
@@ -1135,7 +1135,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     uint castYTadShapeInfo[MAX_RANK];
                     const bool canCastYTad = nd4j::DataTypeUtils::castShapeInfo<uint>(yTadShapeInfo, castYTadShapeInfo);
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                     for (uint i = 0; i < zLen; ++i) {
 
                         extraParams[0] = param0;
@@ -1199,7 +1199,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::EWS1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
                     for (uint iy = 0; iy < numYTads; ++iy) {
 
@@ -1224,7 +1224,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::EWSNONZERO: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
                     for (uint iy = 0; iy < numYTads; ++iy) {
 
@@ -1249,7 +1249,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
                     for (uint iy = 0; iy < numYTads; ++iy) {
 
@@ -1276,7 +1276,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK2: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
                     for (uint iy = 0; iy < numYTads; ++iy) {
 
@@ -1305,7 +1305,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK3: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
                     for (uint iy = 0; iy < numYTads; ++iy) {
 
@@ -1336,7 +1336,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK4: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
                     for (uint iy = 0; iy < numYTads; ++iy) {
 
@@ -1369,7 +1369,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK5: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                 for (uint ix = 0; ix < numXTads; ++ix) {
                     for (uint iy = 0; iy < numYTads; ++iy) {
 
@@ -1409,7 +1409,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                 if(shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                     for (uint ix = 0; ix < numXTads; ++ix) {
                         for (uint iy = 0; iy < numYTads; ++iy) {
 
@@ -1435,7 +1435,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     uint castYTadShapeInfo[MAX_RANK];
                     const bool canCastYTad = nd4j::DataTypeUtils::castShapeInfo<uint>(yTadShapeInfo, castYTadShapeInfo);
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) if(numThreads > 1) private(extraParams))
+                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
                     for (uint ix = 0; ix < numXTads; ++ix) {
                         for (uint iy = 0; iy < numYTads; ++iy) {
 

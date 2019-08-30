@@ -47,7 +47,6 @@ static void _CUDA_G adjustSaturationCuda(const void* vx, const Nd4jLong* xShapeI
         xDimCstride = shape::stride(xShapeInfo)[dimC];
         zDimCstride = shape::stride(zShapeInfo)[dimC];
     }
-
     __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -80,7 +79,6 @@ static _CUDA_H void adjustSaturationCudaLauncher(const int blocksPerGrid, const 
 
     adjustSaturationCuda<T><<<blocksPerGrid, threadsPerBlock, 256, *stream>>>(vx, xShapeInfo, xTadOffsets, vz, zShapeInfo, zTadOffsets, numOfTads, factorScalarArr->e<T>(0), dimC);
 }
-BUILD_SINGLE_TEMPLATE(template void adjustSaturationCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const Nd4jLong* xTadOffsets, void* vz, const Nd4jLong* zShapeInfo, const Nd4jLong* zTadOffsets, const Nd4jLong numOfTads, const NDArray* factorScalarArr, const int dimC), LIBND4J_TYPES);
 
 ////////////////////////////////////////////////////////////////////////
 void adjustSaturation(nd4j::LaunchContext* context, const NDArray *input, const NDArray* factorScalarArr, NDArray *output, const int dimC) {
@@ -96,7 +94,7 @@ void adjustSaturation(nd4j::LaunchContext* context, const NDArray *input, const 
     PointersManager manager(context, "adjustSaturation");
 
     NDArray::prepareSpecialUse({output}, {input, factorScalarArr});
-    BUILD_SINGLE_SELECTOR(input->dataType(), adjustSaturationCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, factorScalarArr, dimC), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input->dataType(), adjustSaturationCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), packX.platformOffsets(), output->specialBuffer(), output->specialShapeInfo(), packZ.platformOffsets(), numOfTads, factorScalarArr, dimC), FLOAT_TYPES);
     NDArray::registerSpecialUse({output}, {input, factorScalarArr});
 
     manager.synchronize();

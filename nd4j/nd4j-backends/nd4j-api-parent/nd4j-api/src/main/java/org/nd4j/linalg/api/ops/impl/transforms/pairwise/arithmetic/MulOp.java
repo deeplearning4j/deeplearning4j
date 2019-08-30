@@ -37,6 +37,10 @@ public class MulOp  extends BaseDynamicTransformOp {
         super(sameDiff, args, inPlace);
     }
 
+    public MulOp(INDArray first, INDArray second, INDArray result){
+        this(new INDArray[]{first, second}, result == null ? null : new INDArray[]{result});
+    }
+
     public MulOp( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }

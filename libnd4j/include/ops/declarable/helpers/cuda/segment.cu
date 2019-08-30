@@ -40,11 +40,8 @@ namespace helpers {
     }
 
     bool segmentIndicesValidate(nd4j::LaunchContext* context , NDArray* indices, NDArray& expected, NDArray& output) {
-        BUILD_DOUBLE_SELECTOR(output.dataType(), indices->dataType(), return segmentIndicesValidate_, (indices, expected, output), NUMERIC_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(output.dataType(), indices->dataType(), return segmentIndicesValidate_, (indices, expected, output), NUMERIC_TYPES, INDEXING_TYPES);
     }
-
-    BUILD_DOUBLE_TEMPLATE(template bool segmentIndicesValidate_, (NDArray*, NDArray&, NDArray&), NUMERIC_TYPES, INTEGER_TYPES);
-
 
     // -------------------------------------------------------------------------------------------------------------- //
     // Unsorted segment ops functors implementation
@@ -85,9 +82,9 @@ namespace helpers {
     }
 
     bool unsortedSegmentIndicesValidate(nd4j::LaunchContext* context , NDArray* indices, Nd4jLong expected, Nd4jLong& output) {
-        BUILD_SINGLE_SELECTOR(indices->dataType(), return unsortedSegmentIndicesValidate_, (context, indices, expected, output), INTEGER_TYPES);
+        BUILD_SINGLE_SELECTOR(indices->dataType(), return unsortedSegmentIndicesValidate_, (context, indices, expected, output), INDEXING_TYPES);
     }
-    BUILD_SINGLE_TEMPLATE(template bool unsortedSegmentIndicesValidate_, (nd4j::LaunchContext* context , NDArray* indices, Nd4jLong expected, Nd4jLong& output), INTEGER_TYPES);
+
     // -------------------------------------------------------------------------------------------------------------- //
 
     // -------------------------------------------------------------------------------------------------------------- //
@@ -126,9 +123,8 @@ namespace helpers {
         // -------------------------------------------------------------------------------------------------------------- //
 
         void fillUpSegments(NDArray* indices, Nd4jLong numClasses, NDArray& classesRangesBegs, NDArray& classesRangesLens) {
-            BUILD_SINGLE_SELECTOR(indices->dataType(), fillUpSegments_, (indices, numClasses, classesRangesBegs, classesRangesLens), INTEGER_TYPES);
+            BUILD_SINGLE_SELECTOR(indices->dataType(), fillUpSegments_, (indices, numClasses, classesRangesBegs, classesRangesLens), INDEXING_TYPES);
         }
-        BUILD_SINGLE_TEMPLATE(template void fillUpSegments_, (NDArray* indices, Nd4jLong numClasses, NDArray& classesRangesBegs, NDArray& classesRangesLens), INTEGER_TYPES);
         // -------------------------------------------------------------------------------------------------------------- //
 
 }

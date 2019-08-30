@@ -46,6 +46,9 @@ public class EqualTo extends BaseDynamicTransformOp {
         super(inputs, outputs);
     }
 
+    public EqualTo(INDArray x, INDArray y, INDArray z){
+        this(new INDArray[]{x, y}, new INDArray[]{z});
+    }
 
     @Override
     public String opName() {

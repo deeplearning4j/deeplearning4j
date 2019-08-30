@@ -32,6 +32,7 @@ import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * This represent a local thread that explore the environment
@@ -47,7 +48,9 @@ import org.deeplearning4j.rl4j.util.IDataManager;
 public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 extends Thread implements StepCountable {
 
-    private final int threadNumber;
+    private int threadNumber;
+    @Getter
+    protected final int deviceNum;
     @Getter @Setter
     private int stepCounter = 0;
     @Getter @Setter
@@ -59,10 +62,11 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     private final TrainingListenerList listeners;
 
-    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, MDP<O, A, AS> mdp, TrainingListenerList listeners, int threadNumber) {
+    public AsyncThread(IAsyncGlobal<NN> asyncGlobal, MDP<O, A, AS> mdp, TrainingListenerList listeners, int threadNumber, int deviceNum) {
         this.mdp = mdp;
         this.listeners = listeners;
         this.threadNumber = threadNumber;
+        this.deviceNum = deviceNum;
     }
 
     public void setHistoryProcessor(IHistoryProcessor.Configuration conf) {
@@ -107,6 +111,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     @Override
     public void run() {
         RunContext<O> context = new RunContext<>();
+        Nd4j.getAffinityManager().unsafeSetDevice(deviceNum);
 
         log.info("ThreadNum-" + threadNumber + " Started!");
 

@@ -200,7 +200,7 @@ public class TrainModule implements UIModule {
      * List training sessions
      * @return HTML list of training sessions
      */
-    private Result listSessions() {
+    private synchronized Result listSessions() {
         StringBuilder sb = new StringBuilder("<!DOCTYPE html>\n" +
                 "<html lang=\"en\">\n" +
                 "<head>\n" +
@@ -464,7 +464,7 @@ public class TrainModule implements UIModule {
      * @param sessionId session ID
      * @return info for session as JSON
      */
-    private Result sessionInfoForSession(String sessionId) {
+    private synchronized Result sessionInfoForSession(String sessionId) {
 
         Map<String, Object> dataEachSession = new HashMap<>();
         StatsStorage ss = knownSessionIDs.get(sessionId);
@@ -475,7 +475,7 @@ public class TrainModule implements UIModule {
         return Results.ok(asJson(dataEachSession)).as("application/json");
     }
 
-    private Result setSession(String newSessionID) {
+    private synchronized Result setSession(String newSessionID) {
         if (knownSessionIDs.containsKey(newSessionID)) {
             currentSessionID = newSessionID;
             currentWorkerIdx = 0;
@@ -567,7 +567,7 @@ public class TrainModule implements UIModule {
         return getOverviewDataForSession(currentSessionID);
     }
 
-    private Result getOverviewDataForSession(String sessionId) {
+    private synchronized Result getOverviewDataForSession(String sessionId) {
         Long lastUpdateTime = getLastUpdateTime(sessionId);
         I18N i18N = getI18N(sessionId);
 

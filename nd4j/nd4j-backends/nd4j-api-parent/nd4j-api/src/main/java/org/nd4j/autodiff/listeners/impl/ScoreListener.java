@@ -3,7 +3,10 @@ package org.nd4j.autodiff.listeners.impl;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
+import org.nd4j.autodiff.listeners.ListenerResponse;
 import org.nd4j.autodiff.listeners.Loss;
+import org.nd4j.autodiff.listeners.records.LossCurve;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
@@ -32,7 +35,6 @@ public class ScoreListener extends BaseListener {
     private final boolean reportEpochs;
     private final boolean reportIterPerformance;
 
-    private long epochStart;
     private long epochExampleCount;
     private int epochBatchCount;
     private long etlTotalTimeEpoch;
@@ -73,9 +75,13 @@ public class ScoreListener extends BaseListener {
 
 
     @Override
+    public boolean isActive(Operation operation) {
+        return operation == Operation.TRAINING;
+    }
+
+    @Override
     public void epochStart(SameDiff sd, At at) {
         if (reportEpochs) {
-            epochStart = System.currentTimeMillis();
             epochExampleCount = 0;
             epochBatchCount = 0;
             etlTotalTimeEpoch = 0;
@@ -85,17 +91,18 @@ public class ScoreListener extends BaseListener {
     }
 
     @Override
-    public void epochEnd(SameDiff sd, At at) {
+    public ListenerResponse epochEnd(SameDiff sd, At at, LossCurve lossCurve, long epochTimeMillis) {
         if (reportEpochs) {
-            long epochDuration = System.currentTimeMillis() - epochStart;
-            double batchesPerSec = epochBatchCount / (epochDuration / 1000.0);
-            double examplesPerSec = epochExampleCount / (epochDuration / 1000.0);
-            double pcEtl = 100.0 * etlTotalTimeEpoch / (double) epochDuration;
+            double batchesPerSec = epochBatchCount / (epochTimeMillis / 1000.0);
+            double examplesPerSec = epochExampleCount / (epochTimeMillis / 1000.0);
+            double pcEtl = 100.0 * etlTotalTimeEpoch / (double) epochTimeMillis;
             String etl = formatDurationMs(etlTotalTimeEpoch) + " ETL time" + (etlTotalTimeEpoch > 0 ? "(" + format2dp(pcEtl) + " %)" : "");
             log.info("Epoch {} complete on iteration {} - {} batches ({} examples) in {} - {} batches/sec, {} examples/sec, {}",
-                    at.epoch(), at.iteration(), epochBatchCount, epochExampleCount, formatDurationMs(epochDuration),
+                    at.epoch(), at.iteration(), epochBatchCount, epochExampleCount, formatDurationMs(epochTimeMillis),
                     format2dp(batchesPerSec), format2dp(examplesPerSec), etl);
         }
+
+        return ListenerResponse.CONTINUE;
     }
 
     @Override

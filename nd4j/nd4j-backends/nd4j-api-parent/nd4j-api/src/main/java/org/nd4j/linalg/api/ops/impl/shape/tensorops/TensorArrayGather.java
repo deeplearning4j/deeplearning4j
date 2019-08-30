@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.tensorops;
 
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -59,7 +59,7 @@ public class TensorArrayGather extends BaseTensorOp {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         throw new UnsupportedOperationException();
     }
 
@@ -72,7 +72,7 @@ public class TensorArrayGather extends BaseTensorOp {
     public List<DataType> calculateOutputDataTypes(java.util.List<org.nd4j.linalg.api.buffer.DataType> inputDataType){
         //Same output type as the TensorArray - which is defined by input 0
         SDVariable tArr = arg(0);
-        TensorArray t3 = (TensorArray) sameDiff.getVariableOutputFunction(tArr.getVarName());
+        TensorArray t3 = (TensorArray) sameDiff.getVariableOutputOp(tArr.getVarName());
         org.nd4j.linalg.api.buffer.DataType dt = t3.getTensorArrayDataType();
         return Collections.singletonList(dt);
     }

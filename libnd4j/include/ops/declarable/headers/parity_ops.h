@@ -614,7 +614,11 @@ namespace nd4j {
          *
          */
         #if NOT_EXCLUDED(OP_space_to_batch)
-        DECLARE_CUSTOM_OP(space_to_batch, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(space_to_batch, 2, 1, false, 0, 1);
+        #endif
+
+        #if NOT_EXCLUDED(OP_space_to_batch_nd)
+        DECLARE_CUSTOM_OP(space_to_batch_nd, 3, 1, false, 0, 0);
         #endif
 
         /**
@@ -622,7 +626,10 @@ namespace nd4j {
          *
          */
         #if NOT_EXCLUDED(OP_batch_to_space)
-        DECLARE_CUSTOM_OP(batch_to_space, 1, 1, false, 0, -2);
+        DECLARE_CUSTOM_OP(batch_to_space, 2, 1, false, 0, 1);
+        #endif
+        #if NOT_EXCLUDED(OP_batch_to_space_nd)
+        DECLARE_CUSTOM_OP(batch_to_space_nd, 3, 1, false, 0, 0);
         #endif
 
         /**
@@ -1540,7 +1547,7 @@ namespace nd4j {
         * CAUTION: either size tensor or a pair of int params should be provided.
         */
 
-        #if NOT_EXCLUDED(OP_resize_bilinear)
+        #if NOT_EXCLUDED(OP_resize_nearest_neighbor)
         DECLARE_CUSTOM_OP(resize_nearest_neighbor, 1, 1, false, 0, -2);
         #endif
 

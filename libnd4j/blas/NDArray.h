@@ -39,6 +39,7 @@
 #include <ShapeDescriptor.h>
 #include <helpers/ConstantShapeHelper.h>
 #include <array/DataBuffer.h>
+#include <execution/AffinityManager.h>
 
 
 namespace nd4j {
@@ -143,6 +144,11 @@ namespace nd4j {
         */
         nd4j::DataType _dataType = FLOAT32;
 
+        /**
+         * deviceID where this NDArray belongs to
+         */
+        int _deviceId = AffinityManager::currentDeviceId();
+
         template<typename T>
         std::string toStringValue(T value);
 
@@ -212,6 +218,20 @@ namespace nd4j {
         */
         NDArray(void *buffer, const char order, const std::vector<Nd4jLong> &shape,  nd4j::DataType dtype, nd4j::LaunchContext* context = nd4j::LaunchContext::defaultContext(), const bool isBuffAlloc = false);
 
+
+        /**
+        * This method returns new array with the same shape & data type
+        * @return
+        */
+        NDArray like();
+
+        /**
+         * This method returns new uninitialized array with the same shape & data type
+         * @return
+         */
+        NDArray ulike();
+
+
         /**
         *  this constructor creates new NDArray with shape matching "other" array,
         *  doesn't copy "other" elements into new array !!!
@@ -258,6 +278,7 @@ namespace nd4j {
         static void registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList);
         static void preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables = false);
 
+
         /**
          * This method returns buffer pointer offset by given number of elements, wrt own data type
          * @param offset
@@ -295,10 +316,10 @@ namespace nd4j {
 
         /**
         *  create a new array by replicating current array by repeats times along given dimension
-        *  dimension - dimension along which to repeat elements
+        *  axis - axis along which to repeat elements
         *  repeats - number of repetitions
         */
-        NDArray* repeat(int dimension, const std::vector<Nd4jLong>& repeats) const;
+        NDArray* repeat(const int axis, const std::vector<int>& repeats) const;
 
         /**
          * This method fills this array with zeros
@@ -323,9 +344,10 @@ namespace nd4j {
 
         /**
         *  fill target array by repeating current array
-        *  dimension - dimension along which to repeat elements
+        *  axis - axis along which to repeat elements
+        *  repeats - vector containing numbers of repetition for elements at given axis
         */
-        void repeat(int dimension, NDArray& target) const;
+        void repeat(const int axis, const std::vector<int>& repeats, NDArray& target) const;
 
         /**
         *  creates array which points on certain sub-range of this array, sub-range is defined by given indices
@@ -463,6 +485,11 @@ namespace nd4j {
         void printBuffer(const char* msg = nullptr, Nd4jLong limit = -1, const bool sync = true) const;
 
         /**
+        * print element by element consequently in a way they (elements) are stored in physical memory
+        */
+        void printLinearBuffer() const;
+
+        /**
         *  prints _buffer (if host = true) or _bufferD (if host = false) as it is, that is in current state without checking buffer status
         */
         template<typename T>
@@ -481,29 +508,29 @@ namespace nd4j {
         /**
         *  this method assigns values of given array to this one
         */
-        void assign(const NDArray* other);
+        void assign(const NDArray* other, bool allowParallelism = true);
 
         /**
         *  this method assigns values of given array to this one
         */
-        void assign(const NDArray& other);
+        void assign(const NDArray& other, bool allowParallelism = true);
 
         /**
         *  this method assigns given value to all elements in array
         */
-        void assign(const double value);
-        void assign(const float value);
-        void assign(const float16 value);
-        void assign(const bfloat16& value);
-        void assign(const Nd4jLong value);
-        void assign(const int value);
-        void assign(const int16_t value);
-        void assign(const uint8_t value);
-        void assign(const uint16_t value);
-        void assign(const uint32_t value);
-        void assign(const uint64_t value);
-        void assign(const int8_t value);
-        void assign(const bool value);
+        void assign(const double value, bool allowParallelism = true);
+        void assign(const float value, bool allowParallelism = true);
+        void assign(const float16 value, bool allowParallelism = true);
+        void assign(const bfloat16& value, bool allowParallelism = true);
+        void assign(const Nd4jLong value, bool allowParallelism = true);
+        void assign(const int value, bool allowParallelism = true);
+        void assign(const int16_t value, bool allowParallelism = true);
+        void assign(const uint8_t value, bool allowParallelism = true);
+        void assign(const uint16_t value, bool allowParallelism = true);
+        void assign(const uint32_t value, bool allowParallelism = true);
+        void assign(const uint64_t value, bool allowParallelism = true);
+        void assign(const int8_t value, bool allowParallelism = true);
+        void assign(const bool value, bool allowParallelism = true);
 
         /**
         *  returns new copy of this array, optionally in different order
@@ -572,6 +599,7 @@ namespace nd4j {
         /**
         *  apply scalar operation to array
         *  extraParams - extra parameters for operation
+        *  returns scalar array
         */
         NDArray reduceNumber(nd4j::reduce::FloatOps ops, void *extraParams = nullptr) const;
         NDArray reduceNumber(nd4j::reduce::SameOps  ops, void *extraParams = nullptr) const;
@@ -1210,6 +1238,8 @@ namespace nd4j {
 
         template<typename T>
         FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j);
+        template<typename T>
+        FORCEINLINE T& t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k);
 
         /**
         *  returns array element with given index
@@ -1220,6 +1250,8 @@ namespace nd4j {
 
         template<typename T>
         FORCEINLINE T t(const Nd4jLong i, const Nd4jLong j) const;
+        template<typename T>
+        FORCEINLINE T t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const;
 
 
         /**
@@ -2025,6 +2057,23 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
 
+template <typename T>
+T& NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
+
+    if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
+        throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=2 !");
+    if (DataTypeUtils::fromT<T>() != _dataType)
+        throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+
+    if(!isActualOnHostSide())
+        syncToHost();
+
+    Nd4jLong coords[3] = {i, j, k};
+    auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    tickWriteHost();
+    return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+}
+
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
 T NDArray::t(const Nd4jLong i) const {
@@ -2058,6 +2107,23 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
     tickReadHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
+
+    template <typename T>
+    T NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
+
+        if (rankOf() != 3 || i >= sizeAt(0) || j >= sizeAt(1) || k >= sizeAt(2))
+            throw std::invalid_argument("NDArray::t(i,j,k): one of input indexes is out of array length or rank!=2 !");
+        if (DataTypeUtils::fromT<T>() != _dataType)
+            throw std::invalid_argument("NDArray::t(i,j,k): type of array is not equal to template type T!");
+
+        if(!isActualOnHostSide())
+            syncToHost();
+
+        Nd4jLong coords[3] = {i, j, k};
+        auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        tickReadHost();
+        return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
+    }
 
 #ifndef __JAVACPP_HACK__
 ////////////////////////////////////////////////////////////////////////

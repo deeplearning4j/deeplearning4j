@@ -43,7 +43,7 @@ import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.junit.Test;
 import org.nd4j.evaluation.classification.Evaluation;
-import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.dataset.DataSet;
@@ -289,8 +289,8 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
     @Test
     public void testRegressionScoreFunctionSimple() throws Exception {
 
-        for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
-                RegressionEvaluation.Metric.MAE}) {
+        for(Metric metric : new Metric[]{Metric.MSE,
+                Metric.MAE}) {
             log.info("Metric: " + metric);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -335,8 +335,8 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
     public void testAEScoreFunctionSimple() throws Exception {
         DataType dt = Nd4j.defaultFloatingPointType();
 
-        for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
-                RegressionEvaluation.Metric.MAE}) {
+        for(Metric metric : new Metric[]{Metric.MSE,
+                Metric.MAE}) {
             log.info("Metric: " + metric);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -380,8 +380,8 @@ public class TestEarlyStoppingCompGraph extends BaseDL4JTest {
     @Test
     public void testVAEScoreFunctionSimple() throws Exception {
 
-        for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
-                RegressionEvaluation.Metric.MAE}) {
+        for(Metric metric : new Metric[]{Metric.MSE,
+                Metric.MAE}) {
             log.info("Metric: " + metric);
 
             ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()

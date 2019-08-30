@@ -16,7 +16,6 @@
 
 package org.nd4j.imports.TFGraphs;
 
-import com.google.common.primitives.Doubles;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.apache.commons.io.FilenameUtils;
@@ -38,7 +37,6 @@ import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.TFGraphs.listener.OpExecOrderListener;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -46,7 +44,6 @@ import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.impl.reduce.longer.MatchCondition;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.function.BiFunction;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -301,7 +298,7 @@ public class TFGraphTestAllHelper {
             Map<String,SameDiffOp> fns = graph.getOps();
             List<String> execOrder = listener.getOpNamesList();
             for(String opName : execOrder){
-                String[] outputs = graph.getOutputsForFunction(fns.get(opName).getOp());
+                String[] outputs = graph.getOutputsForOp(fns.get(opName).getOp());
                 Collections.addAll(varNames, outputs);
             }
 
@@ -334,8 +331,8 @@ public class TFGraphTestAllHelper {
                             if(countExceeds > 0){
                                 maxRE = relError.maxNumber().doubleValue();
                                 //Find the op that this variable is produced by
-                                op = graph.getVariableOutputFunction(varName);
-                                opInputs = graph.getInputsForFunction(op);
+                                op = graph.getVariableOutputOp(varName);
+                                opInputs = graph.getInputsForOp(op);
                             }
 
 

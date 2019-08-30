@@ -25,6 +25,12 @@
 #include "Environment.h"
 #include <helpers/StringUtils.h>
 
+#ifdef _OPENMP
+
+#include <omp.h>
+
+#endif
+
 #ifdef __CUDABLAS__
 
 #include <cuda.h>
@@ -77,6 +83,10 @@ namespace nd4j {
 
 	    cudaSetDevice(0);
 	    delete[] devProperties;
+#else
+#ifdef _OPENMP
+        omp_set_nested(1);
+#endif
 #endif
     }
 

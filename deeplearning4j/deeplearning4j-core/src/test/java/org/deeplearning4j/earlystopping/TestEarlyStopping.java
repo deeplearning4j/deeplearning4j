@@ -51,7 +51,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROCBinary;
-import org.nd4j.evaluation.regression.RegressionEvaluation;
+import org.nd4j.evaluation.regression.RegressionEvaluation.Metric;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -107,7 +107,7 @@ public class TestEarlyStopping extends BaseDL4JTest {
                     min = false;
                     break;
                 case 3:
-                    sc = new RegressionScoreCalculator(RegressionEvaluation.Metric.MSE, irisIter);
+                    sc = new RegressionScoreCalculator(Metric.MSE, irisIter);
                     min = true;
                     break;
                 case 4:
@@ -561,8 +561,8 @@ public class TestEarlyStopping extends BaseDL4JTest {
     @Test
     public void testRegressionScoreFunctionSimple() throws Exception {
 
-        for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
-                RegressionEvaluation.Metric.MAE}) {
+        for(Metric metric : new Metric[]{Metric.MSE,
+                Metric.MAE}) {
             log.info("Metric: " + metric);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -604,8 +604,8 @@ public class TestEarlyStopping extends BaseDL4JTest {
     @Test
     public void testAEScoreFunctionSimple() throws Exception {
 
-        for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
-                RegressionEvaluation.Metric.MAE}) {
+        for(Metric metric : new Metric[]{Metric.MSE,
+                Metric.MAE}) {
             log.info("Metric: " + metric);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
@@ -647,8 +647,8 @@ public class TestEarlyStopping extends BaseDL4JTest {
     @Test
     public void testVAEScoreFunctionSimple() throws Exception {
 
-        for(RegressionEvaluation.Metric metric : new RegressionEvaluation.Metric[]{RegressionEvaluation.Metric.MSE,
-                RegressionEvaluation.Metric.MAE}) {
+        for(Metric metric : new Metric[]{Metric.MSE,
+                Metric.MAE}) {
             log.info("Metric: " + metric);
 
             MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()

@@ -45,6 +45,11 @@ public class LessThanOrEqual extends BaseDynamicTransformOp {
     public LessThanOrEqual( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }
+
+    public LessThanOrEqual(INDArray x, INDArray y, INDArray z){
+        this(new INDArray[]{x, y}, new INDArray[]{z});
+    }
+
     @Override
     public String opName() {
         return "less_equal";

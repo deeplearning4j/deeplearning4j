@@ -217,7 +217,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         if (threadIdx.x == 0) {
                             z[r] = OpType::getValue(postProcessOrNot, sPartials[threadIdx.x]);
                         }
-
+                        __syncthreads();
                     }
                 }
                 else {
@@ -285,8 +285,8 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         SummaryStatsData<X> *pBuffer = (SummaryStatsData<X>*) reductionBuffer;
                         pBuffer[blockIdx.x] = sPartials[0];
                     }
-                    __syncthreads();
                     __threadfence();
+                    __syncthreads();
 
                     if (tid == 0) {
                         unsigned int ticket = atomicInc(&tc[16384], gridDim.x);
@@ -412,6 +412,74 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
             DEBUG_KERNEL(stream, opNum);
         }
+
+
+        template <typename X, typename Y>
+        Y SummaryStatsReduce<X,Y>::execScalar(int opNum,
+                            bool biasCorrected,
+                            void *x,
+                            Nd4jLong *xShapeInfo,
+                            void *extraParams) {
+            return 0;
+        }
+
+        template <typename X, typename Y>
+        void SummaryStatsReduce<X,Y>::execScalar(int opNum,
+                               bool biasCorrected,
+                               void *x,
+                               Nd4jLong *xShapeInfo,
+                               void *extraParams,
+                               void *vz,
+                               Nd4jLong *resultShapeInfoBuffer) {
+
+        }
+
+        template <typename X, typename Y>
+        void SummaryStatsReduce<X,Y>::exec(int opNum,
+                         bool biasCorrected,
+                         void *x,
+                         Nd4jLong *xShapeInfo,
+                         void *extraParams,
+                         void *vz,
+                         Nd4jLong *resultShapeInfoBuffer,
+                         int *dimension, int dimensionLength) {
+
+        }
+
+        template <typename X, typename Y>
+        template<typename OpType>
+        Y SummaryStatsReduce<X,Y>::execScalar(bool biasCorrected,
+                            void *x,
+                            Nd4jLong *xShapeInfo,
+                            void *extraParams) {
+            return 0;
+        }
+
+        template <typename X, typename Y>
+        template<typename OpType>
+        void SummaryStatsReduce<X,Y>::execScalar(bool biasCorrected,
+                               void *x,
+                               Nd4jLong *xShapeInfo,
+                               void *extraParams,
+                               void *vz,
+                               Nd4jLong *resultShapeInfoBuffer) {
+            //
+        }
+
+
+        template <typename X, typename Y>
+        template<typename OpType>
+        void SummaryStatsReduce<X,Y>::exec(bool biasCorrected,
+                         void *x,
+                         Nd4jLong *xShapeInfo,
+                         void *extraParams,
+                         void *vz,
+                         Nd4jLong *resultShapeInfoBuffer,
+                         int *dimension,
+                         int dimensionLength) {
+
+        }
+
 
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT SummaryStatsReduce, , LIBND4J_TYPES, FLOAT_TYPES);
     }

@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.conf.graph;
 
 import org.deeplearning4j.BaseDL4JTest;
+import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -34,6 +35,7 @@ import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.distribution.impl.UniformDistribution;
+import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -41,6 +43,8 @@ import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Map;
+
+import static org.junit.Assert.assertArrayEquals;
 
 /**
  * Created by binesh on 6/14/2017.
@@ -689,6 +693,7 @@ public class ElementWiseVertexTest extends BaseDL4JTest {
         Assert.assertEquals(0, mse(nullsafe(gradients.get("dense2_W")), dEdW2), this.epsilon);
         Assert.assertEquals(0, mse(nullsafe(gradients.get("dense2_b")), dEdb2), this.epsilon);
     }
+
 
     private static double mse(INDArray output, INDArray target) {
         double mse_expect = Transforms.pow(output.sub(target), 2.0).sumNumber().doubleValue()

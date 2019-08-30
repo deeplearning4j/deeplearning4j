@@ -20,7 +20,6 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.apache.commons.lang3.builder.Diff;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -68,7 +67,7 @@ public class SubGraph {
             boolean allInSubgraph = true;
             if(inputsFor != null){
                 for(String opOwnName : inputsFor) {
-                    if (!inSubgraph(sameDiff.getFunctionById(opOwnName))){
+                    if (!inSubgraph(sameDiff.getOpById(opOwnName))){
                         allInSubgraph = false;
                         break;
                     }

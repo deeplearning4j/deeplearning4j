@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.NextIteration;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.*;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -67,18 +68,6 @@ public class DifferentialFunctionClassHolder {
         add("opName");
         add("sameDiff");
         add("ownName");
-    }};
-    private static final Set<String> classesWithConfig = new LinkedHashSet<String>(){{
-        add(AvgPooling2D.class.getName());
-        add(Conv2D.class.getName());
-        add(Conv3D.class.getName());
-        add(FullConv3D.class.getName());
-        add(LocalResponseNormalization.class.getName());
-        add(MaxPooling2D.class.getName());
-        add(Pooling2D.class.getName());
-        add(Pooling3D.class.getName());
-        add(DepthwiseConv2D.class.getName());
-        add(DeConv2DTF.class.getName());
     }};
     //When determining fields/properties, where should we terminate the search?
     //We don't wan to include every single field from every single superclass
@@ -166,15 +155,36 @@ public class DifferentialFunctionClassHolder {
                 Map<String, Field> fieldNames = new LinkedHashMap<>();
                 Class<? extends DifferentialFunction> current = df.getClass();
                 val fields = new ArrayList<Field>();
+                boolean isFirst = true;
+
                 while (current.getSuperclass() != null && !classesToIgnore.contains(current.getSuperclass())) {
-                    if (classesWithConfig.contains(current.getName())) {
 
-                        val fieldName = "config";
+                    if (df.isConfigProperties() && isFirst) {
 
-                        val configField = current.getDeclaredField(fieldName);
-                        if (configField == null) {
-                            continue;
+                        String fieldName = df.configFieldName();
+
+                        if(fieldName == null)
+                            fieldName = "config";
+
+                        Field configField = null;
+                        try{
+                            configField = current.getDeclaredField(fieldName);
+                        } catch (NoSuchFieldException e){
+                            Class<?> currentConfig = current.getSuperclass();
+
+                            // find a config field in superclasses
+                            while(currentConfig.getSuperclass() != null){
+                                try {
+                                    configField = currentConfig.getDeclaredField(fieldName);
+                                    break;
+                                } catch (NoSuchFieldException e2){
+                                    currentConfig = currentConfig.getSuperclass();
+                                }
+                            }
                         }
+
+                        if(configField == null)
+                            continue;
 
                         val configFieldClass = configField.getType();
 
@@ -207,6 +217,7 @@ public class DifferentialFunctionClassHolder {
 
                     // do something with current's fields
                     current = (Class<? extends DifferentialFunction>) current.getSuperclass();
+                    isFirst = false;
 
                 }
 
@@ -236,7 +247,18 @@ public class DifferentialFunctionClassHolder {
         //log.debug("Missing " + set.size() + " ops!");
 
         countTotalTfOps = tensorflowOpDescriptors.size();
-        countTotalMappedOps = nodeConverters.size();
+
+        //Work out total number of TF ops mapped
+        Set<String> tfMappedOps = new HashSet<>();
+        for(DifferentialFunction df : nodeConverters.values()){
+            try{
+                String[] tfNames = df.tensorflowNames();
+                Collections.addAll(tfMappedOps, tfNames);
+            } catch (NoOpNameFoundException e){
+                //Ignore
+            }
+        }
+        countTotalMappedOps = tfMappedOps.size();
 
         //Get custom ops - map from hash to class
         Map<String,CustomOpDescriptor> descriptorMap = Nd4j.getExecutioner().getCustomOperations();
@@ -347,6 +369,8 @@ public class DifferentialFunctionClassHolder {
                 return Merge.class;
             case Switch.OP_NAME:
                 return Switch.class;
+            case ExternalErrorsFunction.OP_NAME:
+                return ExternalErrorsFunction.class;
             default:
                 if(customOpHashToClasses.containsKey(customOpHash)){
                     return customOpHashToClasses.get(customOpHash).get(name);

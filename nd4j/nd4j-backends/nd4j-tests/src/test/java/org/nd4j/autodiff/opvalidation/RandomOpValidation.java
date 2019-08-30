@@ -289,7 +289,7 @@ public class RandomOpValidation extends BaseOpValidation {
     @Test
     public void testUniformRankSimple() {
 
-        INDArray arr = Nd4j.trueVector(new double[]{100.0});
+        INDArray arr = Nd4j.createFromArray(new double[]{100.0});
 //        OpTestCase tc = new OpTestCase(DynamicCustomOp.builder("randomuniform")
 //                .addInputs(arr)
 //                .addOutputs(Nd4j.createUninitialized(new long[]{100}))
@@ -321,7 +321,7 @@ public class RandomOpValidation extends BaseOpValidation {
     @Test
     public void testRandomExponential() {
         long length = 1_000_000;
-        INDArray shape = Nd4j.trueVector(new double[]{length});
+        INDArray shape = Nd4j.createFromArray(new double[]{length});
         INDArray out = Nd4j.createUninitialized(new long[]{length});
         double lambda = 2;
         RandomExponential op = new RandomExponential(shape, out, lambda);

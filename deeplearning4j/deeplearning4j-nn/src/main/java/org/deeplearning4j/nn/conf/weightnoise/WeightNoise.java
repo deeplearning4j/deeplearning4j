@@ -22,8 +22,8 @@ import org.deeplearning4j.nn.api.ParamInitializer;
 import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.distribution.Distributions;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldAddOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldMulOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.AddOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -86,9 +86,9 @@ public class WeightNoise implements IWeightNoise {
             INDArray out = workspaceMgr.createUninitialized(ArrayType.INPUT, param.dataType(), param.shape(), param.ordering());
 
             if (additive) {
-                Nd4j.getExecutioner().exec(new OldAddOp(param, noise,out));
+                Nd4j.getExecutioner().exec(new AddOp(param, noise,out));
             } else {
-                Nd4j.getExecutioner().exec(new OldMulOp(param, noise, out));
+                Nd4j.getExecutioner().exec(new MulOp(param, noise, out));
             }
             return out;
         }

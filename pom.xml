@@ -244,6 +244,7 @@
         <jaxb.version>2.2.11</jaxb.version>
         <jets3t.version>0.7.1</jets3t.version>
         <jetty.version>9.4.10.v20180503</jetty.version>
+        <jersey.version>2.29</jersey.version>
         <jsch.version>0.1.51</jsch.version>
         <leveldb.version>1.8</leveldb.version>
         <lz4.version>1.3.0</lz4.version>
@@ -288,7 +289,7 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.5.1</javacpp.version>
+        <javacpp.version>1.5.2-SNAPSHOT</javacpp.version>
         <javacpp-presets.version>1.5.1</javacpp-presets.version>
         <javacv.version>1.5.1</javacv.version>
 
@@ -298,7 +299,7 @@
         <openblas.version>0.3.6</openblas.version>
         <mkl.version>2019.4</mkl.version>
         <mkl-dnn.version>0.20</mkl-dnn.version>
-        <mkl-dnn.javacpp.version>${mkl-dnn.version}-${javacpp.version}</mkl-dnn.javacpp.version>
+        <mkl-dnn.javacpp.version>${mkl-dnn.version}-${javacpp-presets.version}</mkl-dnn.javacpp.version>
         <opencv.version>4.1.0</opencv.version>
         <ffmpeg.version>4.1.3</ffmpeg.version>
         <leptonica.version>1.78.0</leptonica.version>

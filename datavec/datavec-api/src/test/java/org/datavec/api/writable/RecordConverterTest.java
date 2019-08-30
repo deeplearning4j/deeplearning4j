@@ -34,8 +34,8 @@ import static org.junit.Assert.assertEquals;
 public class RecordConverterTest {
     @Test
     public void toRecords_PassInClassificationDataSet_ExpectNDArrayAndIntWritables() {
-        INDArray feature1 = Nd4j.create(new double[]{4, -5.7, 10, -0.1}, new long[]{1, 3}, DataType.FLOAT);
-        INDArray feature2 = Nd4j.create(new double[]{11, .7, -1.3, 4}, new long[]{1, 3}, DataType.FLOAT);
+        INDArray feature1 = Nd4j.create(new double[]{4, -5.7, 10, -0.1}, new long[]{1, 4}, DataType.FLOAT);
+        INDArray feature2 = Nd4j.create(new double[]{11, .7, -1.3, 4}, new long[]{1, 4}, DataType.FLOAT);
         INDArray label1 = Nd4j.create(new double[]{0, 0, 1, 0}, new long[]{1, 4}, DataType.FLOAT);
         INDArray label2 = Nd4j.create(new double[]{0, 1, 0, 0}, new long[]{1, 4}, DataType.FLOAT);
         DataSet dataSet = new DataSet(Nd4j.vstack(Lists.newArrayList(feature1, feature2)),

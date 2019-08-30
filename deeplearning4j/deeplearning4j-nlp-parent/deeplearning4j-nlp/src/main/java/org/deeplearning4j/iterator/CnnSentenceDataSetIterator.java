@@ -117,18 +117,22 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
         List<String> sortedLabels = new ArrayList<>(this.sentenceProvider.allLabels());
         Collections.sort(sortedLabels);
 
+        this.wordVectorSize = wordVectors.getWordVector(wordVectors.vocab().wordAtIndex(0)).length;
+
         for (String s : sortedLabels) {
             this.labelClassMap.put(s, count++);
         }
         if (unknownWordHandling == UnknownWordHandling.UseUnknownVector) {
             if (useNormalizedWordVectors) {
-                wordVectors.getWordVectorMatrixNormalized(wordVectors.getUNK());
+                unknown = wordVectors.getWordVectorMatrixNormalized(wordVectors.getUNK());
             } else {
-                wordVectors.getWordVectorMatrix(wordVectors.getUNK());
+                unknown = wordVectors.getWordVectorMatrix(wordVectors.getUNK());
+            }
+
+            if(unknown == null){
+                unknown = wordVectors.getWordVectorMatrix(wordVectors.vocab().wordAtIndex(0)).like();
             }
         }
-
-        this.wordVectorSize = wordVectors.getWordVector(wordVectors.vocab().wordAtIndex(0)).length;
     }
 
     /**
@@ -136,6 +140,9 @@ public class CnnSentenceDataSetIterator implements DataSetIterator {
      */
     public INDArray loadSingleSentence(String sentence) {
         List<String> tokens = tokenizeSentence(sentence);
+        if(tokens.isEmpty())
+            throw new IllegalStateException("No tokens available for input sentence - empty string or no words in vocabulary with RemoveWord unknown handling? Sentence = \"" +
+                    sentence + "\"");
         if(format == Format.CNN1D || format == Format.RNN){
             int[] featuresShape = new int[] {1, wordVectorSize, Math.min(maxSentenceLength, tokens.size())};
             INDArray features = Nd4j.create(featuresShape, (format == Format.CNN1D ? 'c' : 'f'));

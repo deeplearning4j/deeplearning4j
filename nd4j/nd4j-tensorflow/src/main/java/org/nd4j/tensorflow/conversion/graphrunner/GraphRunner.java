@@ -16,9 +16,9 @@
 
 package org.nd4j.tensorflow.conversion.graphrunner;
 
-import com.github.os72.protobuf351.ByteString;
-import com.github.os72.protobuf351.InvalidProtocolBufferException;
-import com.github.os72.protobuf351.util.JsonFormat;
+import org.nd4j.shade.protobuf.ByteString;
+import org.nd4j.shade.protobuf.InvalidProtocolBufferException;
+import org.nd4j.shade.protobuf.util.JsonFormat;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -638,7 +638,7 @@ public class GraphRunner implements Closeable {
 
     /**
      * Convert a json string written out
-     * by {@link com.github.os72.protobuf351.util.JsonFormat}
+     * by {@link org.nd4j.shade.protobuf.util.JsonFormat}
      * to a {@link org.bytedeco.tensorflow.ConfigProto}
      * @param json the json to read
      * @return the config proto to use

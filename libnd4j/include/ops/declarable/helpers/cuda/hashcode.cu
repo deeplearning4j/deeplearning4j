@@ -27,13 +27,13 @@ namespace nd4j {
             template <typename T>
             static __global__ void splitBufferToChuncks(T* buffer, Nd4jLong* tempBuffer, Nd4jLong numBlocks, Nd4jLong blockSize, Nd4jLong length) {
 
-                for (int b = blockIdx.x; b < numBlocks; b += gridDim.x) {
+                for (int b = blockIdx.x * blockDim.x + threadIdx.x; b < numBlocks; b += gridDim.x*blockDim.x) {
                     auto blockBuffer = buffer + b * numBlocks;
 
-                    Nd4jLong r = 1;
-                    for (int e = threadIdx.x; e < blockSize && e + (b * numBlocks) < length; e += blockDim.x) {
+                    Nd4jLong r = 1LL;
+                    for (int e = 0; e < blockSize && e + (b * numBlocks) < length; e++) {
                         auto v = longBytes<T>(blockBuffer[e]);
-                        r = 31 * r + v;
+                        r = 31LL * r + v;
                     }
 
                     tempBuffer[b] = r;
@@ -43,16 +43,17 @@ namespace nd4j {
             template <typename T>
             static __global__ void internalHash(Nd4jLong* tempBuffer, Nd4jLong* tempResult, Nd4jLong numBlocks, Nd4jLong blockSize, Nd4jLong lastLength) {
 
-                for (int b = blockIdx.x; b < numBlocks; b += gridDim.x) {
+                for (int b = blockIdx.x * blockDim.x + threadIdx.x; b < numBlocks; b += gridDim.x * blockDim.x) {
                     auto blockBuffer = tempBuffer + b * numBlocks;
+                     Nd4jLong r = 1LL;
 
-                    Nd4jLong r = 1;
-                    for (int e = threadIdx.x; e < blockSize && e + (b * numBlocks) < lastLength; e += blockDim.x) {
+                    for (Nd4jLong e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
                         auto v = longBytes<T>(blockBuffer[e]);
-                        r = 31 * r + v;
+                        r = 31LL * r + v;
                     }
 
                     tempResult[b] = r;
+
                 }
 
             }
@@ -60,7 +61,6 @@ namespace nd4j {
 
             static __global__ void lastStep(Nd4jLong* resultBuf, Nd4jLong* tempBufferA, Nd4jLong* tempResult, Nd4jLong length, Nd4jLong blockSize) {
                 if (threadIdx.x == 0) {
-
                     if (length <= blockSize)
                         *resultBuf = *tempBufferA;
                     else
@@ -89,7 +89,7 @@ namespace nd4j {
                 auto tempResult = tempBufferB;
 
                 // we divide array into 32 element chunks, and store intermediate results once
-                splitBufferToChuncks<T><<<numBlocks, length, 1024, *stream>>>(buffer, tempBuffer, numBlocks, blockSize, length);
+                splitBufferToChuncks<T><<<numBlocks, 1, 1024, *stream>>>(buffer, tempBuffer, numBlocks, blockSize, length);
 
                 // we replace pointer with intermediate one, and repeat only one chunk left
                 int iterationCount = 0;
@@ -98,7 +98,7 @@ namespace nd4j {
                     numBlocks = lastLength / blockSize + ((lastLength % blockSize == 0) ? 0 : 1);
 
 
-                    internalHash<Nd4jLong><<<numBlocks, lastLength, 1024, *stream>>>(tempBuffer, tempResult, numBlocks, blockSize, lastLength);
+                    internalHash<Nd4jLong><<<numBlocks, 1, 1024, *stream>>>(tempBuffer, tempResult, numBlocks, blockSize, lastLength);
 
 
                     iterationCount++;
@@ -112,10 +112,10 @@ namespace nd4j {
                     }
                 }
 
-                //lastStep<Nd4jLong><<<1,1,128, *stream>>>(result.specialBuffer(), tempBufferA, tempResult, length, blockSize);
-                tempA.syncToHost();
-                tempB.syncToHost();
-                result.assign((length <= blockSize?tempA.e(0) : tempB.e(0)));
+                lastStep<<<1,1,128, *stream>>>(reinterpret_cast<Nd4jLong*>(result.specialBuffer()), tempBufferA, tempResult, length, blockSize);
+//                tempA.syncToHost();
+//                tempB.syncToHost();
+//                result.assign((length <= blockSize?tempA.e(0) : tempB.e(0)));
 
                 NDArray::registerSpecialUse({&result}, {&array});
             }

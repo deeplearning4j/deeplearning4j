@@ -50,7 +50,9 @@ namespace nd4j {
             */
 
             // FIXME: set proper extras here
-            y->applyPairwiseTransform(pairwise::Axpy, x, z, nullptr);
+            ExtraArguments arguments({a});
+
+            y->applyPairwiseTransform(pairwise::Axpy, x, z, &arguments);
 
             return ND4J_STATUS_OK;
         }

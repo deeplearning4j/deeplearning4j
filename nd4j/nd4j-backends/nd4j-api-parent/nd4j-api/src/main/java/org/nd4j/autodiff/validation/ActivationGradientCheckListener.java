@@ -5,12 +5,14 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.BaseListener;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.util.List;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 
 /**
  * A listener used for debugging and testing purposes - specifically for gradient checking activations internally in
@@ -29,7 +31,12 @@ public class ActivationGradientCheckListener extends BaseListener {
     private double eps;
 
     @Override
-    public void opExecution(SameDiff sd, At at, boolean training, SameDiffOp op, INDArray[] outputs) {
+    public boolean isActive(Operation operation) {
+        return true;
+    }
+
+    @Override
+    public void opExecution(SameDiff sd, At at, MultiDataSet batch, SameDiffOp op, INDArray[] outputs) {
         Preconditions.checkState(variableName != null, "No variable name has been set yet. Variable name must be set before using this listener");
         Preconditions.checkState(eps != 0.0, "Epsilon has not been set");
 

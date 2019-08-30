@@ -36,6 +36,7 @@ namespace helpers {
             inputLen = shape::length(inputShape);
             outputLen = shape::length(outputShape);
         }
+        __syncthreads();
 
         for (auto i = blockIdx.x; i < maxIndex; i += gridDim.x)
             for(auto k = threadIdx.x; k < inputLen; k += blockDim.x)

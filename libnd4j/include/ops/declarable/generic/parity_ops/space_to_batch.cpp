@@ -13,7 +13,8 @@ See the License for the specific language governing permissions and
 limitations under the License.
 ==============================================================================*/
 //
-//  Created by raver119 on 19.01.18.
+// @author Yurii Shyrma (iuriish@yahoo.com)
+// @author raver119@gmail.com
 //
 
 #include <op_boilerplate.h>
@@ -24,272 +25,71 @@ limitations under the License.
 
 namespace nd4j {
 namespace ops {
-    const int kMaxSpaceToBatchBlockDims = 4;
 
-    DECLARE_TYPES(space_to_batch) {
-        getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setSameMode(true);
-    }
 
-    CUSTOM_OP_IMPL(space_to_batch, 1, 1, false, 0, -2) {
-        auto input = INPUT_VARIABLE(0);
+CUSTOM_OP_IMPL(space_to_batch, 2, 1, false, 0, 1) {
 
-        std::vector<Nd4jLong> block_shape;
-        std::vector<Nd4jLong> padding_shape;
+    // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW + padLeft + padRight)/blockSize, iC]
 
-        bool order_changed = false;
-        if (input->ordering() != 'c') {
-            order_changed = true;
-            input = input->dup('c');
-        }
+    auto input   = INPUT_VARIABLE(0);
+    auto padding = INPUT_VARIABLE(1);
 
-        auto output = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-        const int xRank = input->rankOf();
-        int block_dims = 0;
+    const uint blockSize = INT_ARG(0);
+    REQUIRE_TRUE(blockSize >= 2, 0, "SpaceToBatch: integer parameter block_size must be >= 2, but got %i instead", blockSize);
 
+    REQUIRE_TRUE(input->rankOf() == 4,  0, "SpaceToBatch: rank of input array must be equal 4, but got %i instead",  input->rankOf());
+    REQUIRE_TRUE(output->rankOf() == 4, 0, "SpaceToBatch: rank of output array must be equal 4, but got %i instead", output->rankOf());
 
+    if(padding->sizeAt(0) != 2 || padding->sizeAt(1) != 2)
+        REQUIRE_TRUE(false, 0, "SpaceToBatch: operation expects padding shape to be {2, 2}, but got %s instead", ShapeUtils::shapeAsString(padding).c_str());
 
-        if (block.width() >= 3) {
-            auto blocks = INPUT_VARIABLE(1);
-            auto padding = INPUT_VARIABLE(2);
+    const uint padBottom = padding->e<uint>(0,0);
+    const uint padTop    = padding->e<uint>(0,1);
+    const uint padLeft   = padding->e<uint>(1,0);
+    const uint padRight  = padding->e<uint>(1,1);
 
-            block_dims = (int) blocks->lengthOf();
+    REQUIRE_TRUE((input->sizeAt(1) + padBottom + padTop) % blockSize == 0 && (input->sizeAt(2) + padLeft + padRight) % blockSize == 0, 0, "SpaceToBatch: after padding, second and third dimensions of input array must be divisible by blockSize !");
 
-            REQUIRE_TRUE(blocks->isVector() || blocks->lengthOf() == 1, 0, "SpaceToBatch: blocks supposed to be vector or scalar, but got %iD instead", blocks->rankOf());
-            REQUIRE_TRUE(input->rankOf() >= 1 + blocks->lengthOf(), 0, "SpaceToBatch: blocks length + 1 should match input rank at least");
-            REQUIRE_TRUE(padding->rankOf() == 2, 0, "SpaceToBatch: padding should have rank of 2, but got %i instead", padding->rankOf());
-            REQUIRE_TRUE(padding->columns() == 2 && blocks->lengthOf() == padding->rows(), 0, "SpaceToBatch: padding should have M rows and 2 columns");
+    helpers::spaceToBatch(block.launchContext(), *input, *output, padBottom, padTop, padLeft, padRight, blockSize);
 
-            block_shape = blocks->template asVectorT<Nd4jLong>();
-            padding_shape = padding->template asVectorT<Nd4jLong>();
+    return Status::OK();
+}
 
-        } else if (block.numI() > 0) {
-            int totalArgs = block.numI();
+////////////////////////////////////////////////////////////////////////////////
+DECLARE_TYPES(space_to_batch) {
 
-            int M = totalArgs / 3;
-            REQUIRE_TRUE(totalArgs % 3 == 0, 0, "SpaceToBatch: number of IntArguments should be dividable by 3 without reminder");
+    getOpDescriptor()->setAllowedInputTypes(0, nd4j::DataType::ANY)
+                     ->setAllowedInputTypes(1, {ALL_INTS})
+                     ->setSameMode(true);
+}
 
-            block_dims = M;
-            block_shape.resize(block_dims);
-            padding_shape.resize(M*2);
+////////////////////////////////////////////////////////////////////////////////
+DECLARE_SHAPE_FN(space_to_batch) {
 
-            REQUIRE_TRUE(input->rankOf() >= 1 + M, 0, "SpaceToBatch: blocks length + 1 should match input rank at least");
+    auto inputShapeInfo   = inputShape->at(0);
+    auto paddingShapeInfo = inputShape->at(1);
 
-            int e = 0;
-            for (; e < block_dims; e++)
-                block_shape[e] = INT_ARG(e);
+    const uint blockSize = INT_ARG(0);
+    REQUIRE_TRUE(blockSize >= 2, 0, "SpaceToBatch: integer parameter block_size must be >= 2, but got %i instead", blockSize);
 
-            for (; e < block.numI(); e++)
-                padding_shape[e - M] = INT_ARG(e);
+    const int rank = inputShapeInfo[0];
+    REQUIRE_TRUE(rank == 4, 0, "SpaceToBatch: rank of input array must be equal 4, but got %i instead", rank);
 
-        } else {
-            REQUIRE_TRUE(false, 0, "SpaceToBatch: there should be some params :(");
-        }
+    if(paddingShapeInfo[1] != 2 || paddingShapeInfo[1] != 2)
+        REQUIRE_TRUE(false, 0, "SpaceToBatch: operation expects padding shape to be {2, 2}, but got %s instead", ShapeUtils::shapeAsString(paddingShapeInfo).c_str());
 
+    const uint padBottom = INPUT_VARIABLE(1)->e<Nd4jLong>(0,0);
+    const uint padTop    = INPUT_VARIABLE(1)->e<Nd4jLong>(0,1);
+    const uint padLeft   = INPUT_VARIABLE(1)->e<Nd4jLong>(1,0);
+    const uint padRight  = INPUT_VARIABLE(1)->e<Nd4jLong>(1,1);
 
-        // Determine the length of the prefix of block dims that can be combined
-        // into the batch dimension due to having no padding and block_shape=1.
-        int removed_prefix_block_dims = 0;
-        for (; removed_prefix_block_dims < block_dims; ++removed_prefix_block_dims) {
-            const int dim = removed_prefix_block_dims;
-            if (padding_shape[2 * dim] != 0 || padding_shape[2 * dim + 1] != 0 || block_shape[dim] != 1)
-                break;            
-        }
+    REQUIRE_TRUE((inputShapeInfo[2] + padBottom + padTop) % blockSize == 0 && (inputShapeInfo[3] + padLeft + padRight) % blockSize == 0, 0, "SpaceToBatch: after padding, second and third dimensions of input array must be divisible by blockSize !");
 
-        // Determine the length of the suffix of block dims that can be combined
-        // into the depth dimension due to having no padding and block_shape=1.
-        int removed_suffix_block_dims = 0;
-        for (; removed_suffix_block_dims < block_dims - removed_prefix_block_dims; ++removed_suffix_block_dims) {
-            const int dim = block_dims - 1 - removed_suffix_block_dims;
-            if (padding_shape[dim * 2] != 0 || padding_shape[dim * 2 + 1] != 0 || block_shape[dim] != 1)
-                break;
-        }
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(inputShapeInfo), 'c', {inputShapeInfo[1] * blockSize * blockSize, (inputShapeInfo[2] + padBottom + padTop) / blockSize, (inputShapeInfo[3] + padLeft + padRight) / blockSize, inputShapeInfo[4]}));
+}
 
-        int block_shape_product = 1;
-        for (int block_dim = 0; block_dim < block_dims; ++block_dim)
-            block_shape_product *= block_shape[block_dim];
-
-        REQUIRE_TRUE(block_shape_product > 0, 0, "SpaceToBatch: block should contain values >= 1 ONLY");
-
-        const int internal_block_dims = block_dims - removed_prefix_block_dims - removed_suffix_block_dims;
-
-        REQUIRE_TRUE(internal_block_dims <= kMaxSpaceToBatchBlockDims, 0, "SpaceToBatch: Maximum number of non-combined block dimensions should be less or equal then %i but got %i instead", kMaxSpaceToBatchBlockDims, internal_block_dims);
-
-        if (internal_block_dims == 0) {
-            // we return array if there's nothing to move here
-            output->assign(input);
-            return Status::OK();
-        }
-
-        std::vector<Nd4jLong> internal_input_shape;
-        std::vector<Nd4jLong> internal_output_shape;
-        std::vector<Nd4jLong> external_output_shape;
-
-        external_output_shape.emplace_back(input->sizeAt(0) * block_shape_product);
-        int input_batch_size = input->sizeAt(0);
-        for (int block_dim = 0; block_dim < removed_prefix_block_dims; block_dim++) {
-            const int size = input->sizeAt(block_dim + 1);
-            input_batch_size *= size;
-            external_output_shape.emplace_back(size);
-        }
-        internal_input_shape.emplace_back(input_batch_size);
-        internal_output_shape.emplace_back(input_batch_size * block_shape_product);
-
-        for (int block_dim = removed_prefix_block_dims; block_dim < block_dims - removed_suffix_block_dims; block_dim++) {
-            const int pad_start = padding_shape[2 * block_dim];
-            const int pad_end = padding_shape[2 * block_dim + 1];
-
-            const int input_size = input->sizeAt(block_dim + 1);
-            const int block_shape_value = block_shape[block_dim];
-            const int padded_size = input_size + pad_start + pad_end;
-            const int output_size = padded_size / block_shape_value;
-
-            // FIXME: validation required here
-
-            internal_input_shape.emplace_back(input_size);
-            internal_output_shape.emplace_back(output_size);
-            external_output_shape.emplace_back(output_size);
-        }
-
-        int depth = 1;
-        for (int dim = block_dims - removed_suffix_block_dims + 1; dim < xRank; dim++) {
-            const int size = input->sizeAt(dim);
-            external_output_shape.emplace_back(size);
-            depth *= size;
-        }
-
-        internal_input_shape.emplace_back(depth);
-        internal_output_shape.emplace_back(depth);
-
-        Nd4jLong* internal_paddings = &padding_shape.data()[2 * removed_prefix_block_dims];
-        Nd4jLong* internal_block_shape = &block_shape.data()[removed_prefix_block_dims];
-
-        helpers::_spaceToBatch(block.launchContext(), internal_block_dims, input, output, internal_input_shape, internal_output_shape, internal_block_shape, internal_paddings);
-
-        if (order_changed)
-            delete input;
-
-        return Status::OK();
-    }
-
-    DECLARE_SHAPE_FN(space_to_batch) {
-        auto in = inputShape->at(0);
-
-        const int xRank = shape::rank(in);
-        int block_dims = 0;
-
-        std::vector<int> block_shape;
-        std::vector<int> padding_shape;
-
-        if (block.width() >= 3) {
-            auto blocks = INPUT_VARIABLE(1);
-            auto padding = INPUT_VARIABLE(2);
-
-            block_dims = (int) blocks->lengthOf();
-
-            block_shape.resize(block_dims);
-            padding_shape.resize(padding->lengthOf());
-
-            for (int e = 0; e < block_dims; e++)
-                block_shape[e] = blocks->e<int>(e);
-
-            for (int e = 0; e < padding->lengthOf(); e++)
-                padding_shape[e] = padding->e<int>(e);
-        } else if (block.numI() > 0) {
-            int totalArgs = block.numI();
-
-            int M = totalArgs / 3;
-
-            block_dims = M;
-            block_shape.resize(block_dims);
-            padding_shape.resize(M*2);
-
-            int e = 0;
-            for (; e < block_dims; e++)
-                block_shape[e] = INT_ARG(e);
-
-            for (; e < block.numI(); e++)
-                padding_shape[e - M] = INT_ARG(e);
-
-        } else {
-            // throw something here
-        }
-
-
-        int removed_prefix_block_dims = 0;
-        for (; removed_prefix_block_dims < block_dims; ++removed_prefix_block_dims) {
-            const int dim = removed_prefix_block_dims;
-            if (padding_shape[2 * dim] != 0 || padding_shape[2 * dim + 1] != 0 || block_shape[dim] != 1)
-                break;
-        }
-
-        int removed_suffix_block_dims = 0;
-        for (; removed_suffix_block_dims < block_dims - removed_prefix_block_dims; ++removed_suffix_block_dims) {
-            const int dim = block_dims - 1 - removed_suffix_block_dims;
-            if (padding_shape[dim * 2] != 0 || padding_shape[dim * 2 + 1] != 0 || block_shape[dim] != 1)
-                break;
-        }
-
-        int block_shape_product = 1;
-        for (int block_dim = 0; block_dim < block_dims; ++block_dim)
-            block_shape_product *= block_shape[block_dim];
-
-        const int internal_block_dims = block_dims - removed_prefix_block_dims - removed_suffix_block_dims;
-
-        if (internal_block_dims == 0) {
-            // just return input shape here
-            Nd4jLong *newShape;
-            COPY_SHAPE(in, newShape);
-            return SHAPELIST(CONSTANT(newShape));
-        }
-
-        // go full route otherwise
-        std::vector<Nd4jLong> internal_input_shape;
-        std::vector<Nd4jLong> internal_output_shape;
-        std::vector<Nd4jLong> external_output_shape;
-
-        external_output_shape.emplace_back(shape::sizeAt(in, 0) * block_shape_product);
-        Nd4jLong input_batch_size = shape::sizeAt(in, 0);
-        for (int block_dim = 0; block_dim < removed_prefix_block_dims; block_dim++) {
-            const int size = shape::sizeAt(in, block_dim + 1);
-            input_batch_size *= size;
-            external_output_shape.emplace_back(size);
-        }
-        internal_input_shape.emplace_back(input_batch_size);
-        internal_output_shape.emplace_back(input_batch_size * block_shape_product);
-
-        for (int block_dim = removed_prefix_block_dims; block_dim < block_dims - removed_suffix_block_dims; block_dim++) {
-            const Nd4jLong pad_start = padding_shape[2 * block_dim];
-            const Nd4jLong pad_end = padding_shape[2 * block_dim + 1];
-
-            const Nd4jLong input_size = shape::sizeAt(in, block_dim + 1);
-            const Nd4jLong block_shape_value = block_shape[block_dim];
-            const Nd4jLong padded_size = input_size + pad_start + pad_end;
-            const Nd4jLong output_size = padded_size / block_shape_value;
-
-            // FIXME: validation required here
-
-            internal_input_shape.emplace_back(input_size);
-            internal_output_shape.emplace_back(output_size);
-            external_output_shape.emplace_back(output_size);
-        }
-
-        int depth = 1;
-        for (int dim = block_dims - removed_suffix_block_dims + 1; dim < xRank; dim++) {
-            const Nd4jLong size = shape::sizeAt(in, dim);
-            external_output_shape.emplace_back(size);
-            depth *= size;
-        }
-
-        internal_input_shape.emplace_back(depth);
-        internal_output_shape.emplace_back(depth);
-
-        // we always give out C order here
-        auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(ArrayOptions::dataType(in), 'c', external_output_shape);
-        return SHAPELIST(newShape);
-    }
 }
 }
 

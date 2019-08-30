@@ -143,6 +143,20 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         val dtype = ArrayOptionsHelper.dataType(jvmShapeInfo);
 
         switch (dtype) {
+            case BOOL: {
+                val dPointer = new BooleanPointer(dataPointer.limit() / dataBufferElementSize);
+                val perfX = PerformanceTracker.getInstance().helperStartTransaction();
+
+                Pointer.memcpy(dPointer, dataPointer, dataPointer.limit());
+
+                PerformanceTracker.getInstance().helperRegisterTransaction(0, perfX, dataPointer.limit(), MemcpyDirection.HOST_TO_HOST);
+
+                data = Nd4j.createBuffer(dPointer,
+                        dtype,
+                        Shape.length(shapeBuffer),
+                        BooleanIndexer.create(dPointer));
+            }
+            break;
             case UBYTE: {
                 val dPointer = new BytePointer(dataPointer.limit() / dataBufferElementSize);
                 val perfX = PerformanceTracker.getInstance().helperStartTransaction();

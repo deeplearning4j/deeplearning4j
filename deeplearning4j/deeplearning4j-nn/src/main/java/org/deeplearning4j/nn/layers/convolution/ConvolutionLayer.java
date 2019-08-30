@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -170,6 +171,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
                         pad, biasGradView, weightGradView, afn,
                         layerConf().getCudnnAlgoMode(), layerConf().getCudnnBwdFilterAlgo(), layerConf().getCudnnBwdDataAlgo(),
                         convolutionMode, dilation, workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Exception e){
                 if(e.getMessage().contains("Failed to allocate")){
                    //This is a memory exception - don't fallback to built-in implementation
@@ -359,6 +362,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
             try {
                 ret = helper.preOutput(input, weights, bias, kernel, strides, pad, layerConf().getCudnnAlgoMode(),
                         layerConf().getCudnnFwdAlgo(), convolutionMode, dilation, workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Exception e){
                 if(e.getMessage() != null && e.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation

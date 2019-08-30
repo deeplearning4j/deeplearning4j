@@ -119,6 +119,17 @@ namespace functions {
             nd4j::DebugHelper::checkErrorCode(stream, "transformStrict(...) failed");
 		}
 
+        template<typename X>
+        void TransformStrict<X>::exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
+        }
+
+        template<typename X>
+        template <typename OpType>
+        void TransformStrict<X>::exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+
+        }
+
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformStrict, , FLOAT_TYPES);
     }
 }

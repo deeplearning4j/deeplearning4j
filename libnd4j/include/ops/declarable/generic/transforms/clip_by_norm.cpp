@@ -33,7 +33,7 @@ namespace ops  {
 
         const auto clipNorm = NDArrayFactory::create(input->dataType(), T_ARG(0), block.launchContext());
         const bool isInplace = block.isInplace();
-        
+
         helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace);
 
         return Status::OK();
@@ -69,8 +69,9 @@ namespace ops  {
 
     DECLARE_TYPES(clipbynorm_bp) {
         getOpDescriptor()
-                ->setAllowedInputTypes(nd4j::DataType::ANY)
-                ->setAllowedOutputTypes({ALL_FLOATS});
+                ->setAllowedInputTypes(0, DataType::ANY)
+                ->setAllowedInputTypes(1, {ALL_FLOATS})
+                ->setAllowedOutputTypes(0, {ALL_FLOATS});
     }
 }
 }

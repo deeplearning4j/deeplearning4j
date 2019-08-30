@@ -52,4 +52,9 @@ public class LossFunctionParameterSpaceAdapter
     protected ParameterSpace<LossFunctions.LossFunction> underlying() {
         return lossFunction;
     }
+
+    @Override
+    protected String underlyingName() {
+        return "lossFunction";
+    }
 }

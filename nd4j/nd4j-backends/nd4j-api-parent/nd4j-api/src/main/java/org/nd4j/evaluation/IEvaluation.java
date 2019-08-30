@@ -99,4 +99,14 @@ public interface IEvaluation<T extends IEvaluation> extends Serializable {
      * @return
      */
     String toYaml();
+
+    /**
+     * Get the value of a given metric for this evaluation.
+     */
+    double getValue(IMetric metric);
+
+    /**
+     * Get a new instance of this evaluation, with the same configuration but no data.
+     */
+    T newInstance();
 }

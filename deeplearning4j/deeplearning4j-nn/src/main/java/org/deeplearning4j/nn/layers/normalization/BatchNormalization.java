@@ -34,9 +34,10 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastAddOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastDivOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastMulOp;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldDivOp;
-import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.OldSubOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.DivOp;
+import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.SubOp;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
@@ -156,6 +157,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             try {
                 ret = helper.backpropGradient(in, eps, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
                         layerConf.getEps(), workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Throwable t){
                 if(t.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation
@@ -202,7 +205,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 INDArray batchMean = helper.getMeanCache(dataType);
                 INDArray batchVar = helper.getVarCache(dataType);
 
-                Nd4j.getExecutioner().exec(new OldSubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
+                Nd4j.getExecutioner().exec(new SubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
                 dGlobalMeanView.muli(1-layerConf().getDecay());
 
                 if(layerConf().isUseLogStd()){
@@ -216,12 +219,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
                     double decay = layerConf().getDecay();
                     INDArray varip1 = vari.mul(decay).addi(batchVar.mul(1-decay));
-                    Nd4j.getExecutioner().exec(new OldDivOp(vari, varip1, dGlobalLog10StdView));
+                    Nd4j.getExecutioner().exec(new DivOp(vari, varip1, dGlobalLog10StdView));
                     Transforms.log(dGlobalLog10StdView, false);
                     dGlobalLog10StdView.muli(ONE_ON_2LOGE_10);
                 } else {
                     //Use variance estimate parameterization. This was only option up to and including 1.0.0-beta3
-                    Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
+                    Nd4j.getExecutioner().exec(new SubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
                     dGlobalVarView.muli(1 - layerConf().getDecay());
                 }
 
@@ -242,8 +245,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             }
 
             //TODO: handle fixed beta/gamma case...
-            INDArray dBeta = epsilon.sum(0); //dL/dBeta = sum_examples dL/dOut
-            INDArray dGamma = epsilon.mul(xHat).sum(0); //dL/dGamma = sum_examples dL/dOut .* xHat
+            INDArray dBeta = epsilon.sum(true, 0); //dL/dBeta = sum_examples dL/dOut
+            INDArray dGamma = epsilon.mul(xHat).sum(true, 0); //dL/dGamma = sum_examples dL/dOut .* xHat
             INDArray dxhat;
             if (layerConf.isLockGammaBeta()) {
                 dxhat = epsilon.mul(layerConf.getGamma());
@@ -254,11 +257,11 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
 
             //dL/dVariance
-            INDArray dLdVar = dxhat.mul(xMu).sum(0).muli(-0.5).muli(Transforms.pow(std, -3.0, true)); //Shape: [1, miniBatch]
+            INDArray dLdVar = dxhat.mul(xMu).sum(true, 0).muli(-0.5).muli(Transforms.pow(std, -3.0, true)); //Shape: [1, miniBatch]
 
             //dL/dmu
-            INDArray dxmu1 = dxhat.sum(0).divi(std).negi();
-            INDArray dxmu2 = xMu.sum(0).muli(-2.0 / batchSize).muli(dLdVar);
+            INDArray dxmu1 = dxhat.sum(true, 0).divi(std).negi();
+            INDArray dxmu2 = xMu.sum(true, 0).muli(-2.0 / batchSize).muli(dLdVar);
 
             INDArray dLdmu = dxmu1.addi(dxmu2); //Shape: [1, nOut]
 
@@ -340,7 +343,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         And use the same idea for global variance estimate
          */
 
-        Nd4j.getExecutioner().exec(new OldSubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
+        Nd4j.getExecutioner().exec(new SubOp(globalMean, batchMean, dGlobalMeanView));   //deltaGlobalMean = globalMean[t] - batchMean
         dGlobalMeanView.muli(1-layerConf().getDecay());
 
         if(layerConf().isUseLogStd()){
@@ -354,12 +357,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
             double decay = layerConf().getDecay();
             INDArray varip1 = vari.mul(decay).addi(batchVar.mul(1-decay));
-            Nd4j.getExecutioner().exec(new OldDivOp(vari, varip1, dGlobalLog10StdView));
+            Nd4j.getExecutioner().exec(new DivOp(vari, varip1, dGlobalLog10StdView));
             Transforms.log(dGlobalLog10StdView, false);
             dGlobalLog10StdView.muli(ONE_ON_2LOGE_10);
         } else {
             //Use variance estimate parameterization. This was only option up to and including 1.0.0-beta3
-            Nd4j.getExecutioner().exec(new OldSubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
+            Nd4j.getExecutioner().exec(new SubOp(globalVar, batchVar, dGlobalVarView));      //deltaGlobalVar = globalVar[t] - batchVar
             dGlobalVarView.muli(1 - layerConf().getDecay());
         }
 
@@ -447,6 +450,8 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
                 ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
                         globalVarView, decay, layerConf.getEps(), workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Throwable t) {
                 if(t.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation

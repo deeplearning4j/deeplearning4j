@@ -1023,10 +1023,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return extendedFlags;
     }
 
-    private INDArray create(DataBuffer values, DataBuffer indices, DataBuffer sparseInfo, long[] newShape) {
-        return Nd4j.createSparseCOO(values, indices, sparseInfo, newShape);
-    }
-
     @Override
     public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
         throw new UnsupportedOperationException();
@@ -1220,6 +1216,11 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public void close() {
 
+    }
+
+    @Override
+    public boolean wasClosed() {
+        return false;
     }
 
     @Override

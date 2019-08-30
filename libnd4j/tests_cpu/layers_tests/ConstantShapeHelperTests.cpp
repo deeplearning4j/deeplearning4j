@@ -39,6 +39,42 @@ public:
 
 };
 
+class ConstantTadHelperTests : public testing::Test {
+public:
+
+};
+
+TEST_F(ConstantShapeHelperTests, test_cachedAmount_1) {
+    auto ttlBefore = ConstantShapeHelper::getInstance()->totalCachedEntries();
+
+    auto arrayA = NDArrayFactory::create<bool>('c', {7, 11, 17, 23, 31, 43});
+
+    auto ttlMiddle = ConstantShapeHelper::getInstance()->totalCachedEntries();
+
+    auto arrayB = NDArrayFactory::create<bool>('c', {7, 11, 17, 23, 31, 43});
+
+    auto ttlAfter = ConstantShapeHelper::getInstance()->totalCachedEntries();
+
+    ASSERT_TRUE(ttlBefore <= ttlMiddle);
+    ASSERT_EQ(ttlMiddle, ttlAfter);
+}
+
+TEST_F(ConstantTadHelperTests, test_cachedAmount_1) {
+    auto arrayA = NDArrayFactory::create<bool>('c', {7, 11, 17, 23, 31, 43});
+    auto ttlBefore = ConstantTadHelper::getInstance()->totalCachedEntries();
+
+    auto packAA = ConstantTadHelper::getInstance()->tadForDimensions(arrayA.shapeInfo(), {3, 4});
+
+    auto ttlMiddle = ConstantTadHelper::getInstance()->totalCachedEntries();
+
+    auto packAB = ConstantTadHelper::getInstance()->tadForDimensions(arrayA.shapeInfo(), {3, 4});
+
+    auto ttlAfter = ConstantTadHelper::getInstance()->totalCachedEntries();
+
+    ASSERT_TRUE(ttlBefore <= ttlMiddle);
+    ASSERT_EQ(ttlMiddle, ttlAfter);
+}
+
 TEST_F(ConstantShapeHelperTests, basic_test_1) {
     auto ptr = ShapeBuilders::createShapeInfo(nd4j::DataType::BFLOAT16, 'f', {5, 10, 15});
     ShapeDescriptor descriptor(ptr);

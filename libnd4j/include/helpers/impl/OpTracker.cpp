@@ -22,6 +22,9 @@
 #include <sstream>
 #include <helpers/logger.h>
 
+using namespace nd4j::ops;
+using namespace nd4j::graph;
+
 namespace nd4j {
     
     OpTracker* OpTracker::getInstance() {

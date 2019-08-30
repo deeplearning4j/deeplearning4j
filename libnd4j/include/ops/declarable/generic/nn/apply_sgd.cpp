@@ -22,6 +22,7 @@
 #if NOT_EXCLUDED(OP_apply_sgd)
 
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/gradient.h>
 
 namespace nd4j {
     namespace ops {
@@ -44,14 +45,8 @@ namespace nd4j {
 
             auto Z = OUTPUT_VARIABLE(0);
 
-            // FIXME: lambda
-            /*
-            auto lambda = LAMBDA_TT(_x, _y, lr) {
-                return _x - (_y * lr);
-            };
+            helpers::applyGradientDescent(block.launchContext(), parameters, gradients, lr, Z);
 
-            parameters->applyPairwiseLambda(gradients, lambda, Z);
-            */
             return Status::OK();
         }
         DECLARE_SYN(ApplyGradientDescent, apply_sgd);

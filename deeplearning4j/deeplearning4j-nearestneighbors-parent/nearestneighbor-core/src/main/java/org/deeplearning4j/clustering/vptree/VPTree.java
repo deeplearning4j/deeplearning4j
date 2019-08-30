@@ -380,18 +380,22 @@ public class VPTree implements Serializable {
 
     private Node buildFromPoints(INDArray items) {
         if (executorService == null && items == this.items && workers > 1) {
+            final val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
 
             executorService = Executors.newFixedThreadPool(workers, new ThreadFactory() {
                 @Override
-                public Thread newThread(Runnable r) {
-                    Thread t = Executors.defaultThreadFactory().newThread(r);
+                public Thread newThread(final Runnable r) {
+                    Thread t = new Thread(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
+                            r.run();
+                        }
+                    });
 
                     t.setDaemon(true);
                     t.setName("VPTree thread");
-
-                    // we don't want threads to be working on different devices
-                    Nd4j.getAffinityManager().attachThreadToDevice(t,
-                            Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
                     return t;
                 }

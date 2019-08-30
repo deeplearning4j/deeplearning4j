@@ -38,6 +38,10 @@ public class RDivOp extends BaseDynamicTransformOp {
         super(sameDiff, args, inPlace);
     }
 
+    public RDivOp(INDArray first, INDArray second, INDArray result){
+        this(new INDArray[]{first, second}, result == null ? null : new INDArray[]{result});
+    }
+
     public RDivOp( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }

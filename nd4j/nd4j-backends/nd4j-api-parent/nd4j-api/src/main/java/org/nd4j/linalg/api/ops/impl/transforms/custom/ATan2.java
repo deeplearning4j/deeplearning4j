@@ -22,11 +22,13 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.BaseDynamicTransformOp;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import org.nd4j.linalg.ops.transforms.Transforms;
 
 /**
  * Arc Tangent elementwise function
@@ -37,6 +39,15 @@ public class ATan2 extends BaseDynamicTransformOp {
 
     public ATan2(SameDiff sameDiff, SDVariable y, SDVariable x) {
         super(sameDiff, new SDVariable[] {y, x} ,false);
+    }
+
+    /**
+     * Note that the order of x and y match {@link java.lang.Math#atan2(double, double)},
+     * and are reversed when compared to OldATan2.
+     * See {@link Transforms#atan2(org.nd4j.linalg.api.ndarray.INDArray, org.nd4j.linalg.api.ndarray.INDArray)}
+     */
+    public ATan2(INDArray x, INDArray y, INDArray z) {
+        super(new INDArray[]{x, y}, new INDArray[]{ z });
     }
 
     public ATan2() {}

@@ -27,6 +27,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/col2im.h>
+#include <helpers/RandomLauncher.h>
 
 using namespace nd4j;
 
@@ -55,9 +56,9 @@ TEST_F(DataTypesValidationTests, Basic_Test_1) {
 }
 
 TEST_F(DataTypesValidationTests, Basic_Test_2) {
-    auto input = NDArrayFactory::create<uint8_t>('c', {1, 1, 1, 4});
-    auto weights = NDArrayFactory::create<float>('c', {1, 1, 1, 4});
-    auto exp = NDArrayFactory::create<float>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
+    auto input = NDArrayFactory::create<float16>('c', {1, 1, 1, 4});
+    auto weights = NDArrayFactory::create<float16>('c', {1, 1, 1, 4});
+    auto exp = NDArrayFactory::create<float16>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
 
     weights.assign(2.0);
     input.linspace(1);
@@ -75,10 +76,10 @@ TEST_F(DataTypesValidationTests, Basic_Test_2) {
 
 
 TEST_F(DataTypesValidationTests, Basic_Test_3) {
-    auto input = NDArrayFactory::create<int8_t>('c', {1, 1, 1, 4});
-    auto weights = NDArrayFactory::create<float16>('c', {1, 1, 1, 4});
-    auto exp = NDArrayFactory::create<float>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
-    auto out = NDArrayFactory::create<float>('c', {1, 4, 1, 4});
+    auto input = NDArrayFactory::create<bfloat16>('c', {1, 1, 1, 4});
+    auto weights = NDArrayFactory::create<bfloat16>('c', {1, 1, 1, 4});
+    auto exp = NDArrayFactory::create<bfloat16>('c', {1, 4, 1, 4}, {2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8., 2., 4., 6., 8.});
+    auto out = NDArrayFactory::create<bfloat16>('c', {1, 4, 1, 4});
 
     weights.assign(2.0);
     input.linspace(1);
@@ -102,6 +103,22 @@ TEST_F(DataTypesValidationTests, Basic_Test_4) {
     nd4j::ops::conv2d op;
     auto result = op.execute({&input, &weights}, {&out}, {}, {1, 1, 1, 1, 0, 0, 1, 1, 0, 0}, {});
     ASSERT_EQ(ND4J_STATUS_VALIDATION, result);
+}
+
+TEST_F(DataTypesValidationTests, test_bfloat16_rand_1) {
+    auto x = NDArrayFactory::create<bfloat16>('c', {5, 10});
+    RandomGenerator gen(119, 120);
+    RandomLauncher::fillUniform(LaunchContext::defaultContext(), gen, &x, 1, 6);
+
+    ASSERT_TRUE(x.sumNumber().e<float>(0) > 0);
+}
+
+TEST_F(DataTypesValidationTests, test_bfloat16_rand_2) {
+    auto x = NDArrayFactory::create<bfloat16>('c', {5, 10});
+    RandomGenerator gen(119, 120);
+    RandomLauncher::fillGaussian(LaunchContext::defaultContext(), gen, &x, 0, 1);
+
+    ASSERT_TRUE(x.sumNumber().e<float>(0) > 0);
 }
 
 TEST_F(DataTypesValidationTests, cast_1) {

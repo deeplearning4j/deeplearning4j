@@ -100,12 +100,15 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         Gradient gradient = new DefaultGradient();
 
-        CustomOp op = DynamicCustomOp.builder("batch_to_space")
-                .addInputs(epsilon, getBlocksArray(), getPaddingArray())
-                .addOutputs(outEpsilon)
+        INDArray epsilonNHWC = epsilon.permute(0, 2, 3, 1);
+        INDArray outEpsilonNHWC = outEpsilon.permute(0, 2, 3, 1);
+
+        CustomOp op = DynamicCustomOp.builder("batch_to_space_nd")
+                .addInputs(epsilonNHWC, getBlocksArray(), getPaddingArray())
+                .addOutputs(outEpsilonNHWC)
                 .callInplace(false)
                 .build();
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.exec(op);
 
         outEpsilon = backpropDropOutIfPresent(outEpsilon);
         return new Pair<>(gradient, outEpsilon);
@@ -143,11 +146,14 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), new long[]{outMiniBatch, depth, outH, outW}, 'c');
 
-        CustomOp op = DynamicCustomOp.builder("space_to_batch")
-                .addInputs(input, getBlocksArray(), getPaddingArray())
-                .addOutputs(out)
+        INDArray inNHWC = input.permute(0, 2, 3, 1);
+        INDArray outNHWC = out.permute(0, 2, 3, 1);
+
+        CustomOp op = DynamicCustomOp.builder("space_to_batch_nd")
+                .addInputs(inNHWC, getBlocksArray(), getPaddingArray())
+                .addOutputs(outNHWC)
                 .build();
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.exec(op);
 
         return out;
     }

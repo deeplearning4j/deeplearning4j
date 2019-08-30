@@ -72,8 +72,9 @@ public class PaddingTests extends BaseNd4jTest {
 
     @Test
     public void testPad() {
+
         INDArray start = Nd4j.linspace(1, 9, 9, DataType.DOUBLE).reshape(3, 3);
-        INDArray ret = Nd4j.pad(start, new int[] {5, 5}, Nd4j.PadMode.CONSTANT);
+        INDArray ret = Nd4j.pad(start, 5, 5);
         double[][] data = new double[][] {{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
                         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},
                         {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0.},

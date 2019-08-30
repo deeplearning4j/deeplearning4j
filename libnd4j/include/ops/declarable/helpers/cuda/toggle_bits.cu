@@ -26,7 +26,13 @@ namespace nd4j {
         namespace helpers {
             template<typename T>
             void toggle_bits__(NDArray &in, NDArray &out) {
+                NDArray::prepareSpecialUse({&out}, {&in});
+                auto lambda = LAMBDA_T(_x) {
+                    return ~_x;//eUtils::flip_bits(_x);
+                };
 
+                in.applyLambda(lambda, &out);
+                NDArray::registerSpecialUse({&out}, {&in});
             }
             BUILD_SINGLE_TEMPLATE(template void toggle_bits__, (NDArray &in, NDArray &out), INTEGER_TYPES);
 

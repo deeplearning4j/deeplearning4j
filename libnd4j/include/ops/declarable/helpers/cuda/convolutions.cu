@@ -39,11 +39,9 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
           T* col = reinterpret_cast<T*>(columns);
 
     __shared__ int colRank, volRank;
-    __shared__ Nd4jLong colLen, iD, iH, iW;
-    __shared__ Nd4jLong *sharedMem;
+    __shared__ Nd4jLong colLen, iD, iH, iW, *sharedMem;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
@@ -56,7 +54,6 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
         iH = volShapeInfo[4];
         iW = volShapeInfo[5];
     }
-
     __syncthreads();
 
     const auto colInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -98,7 +95,6 @@ static void vol2colCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 
     vol2colCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(volume, volShapeInfo, columns, colShapeInfo,  sD, sH, sW, pD, pH, pW, dD, dH, dW);
 }
-BUILD_SINGLE_TEMPLATE(template void vol2colCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream, const void *vol, const Nd4jLong *volShapeInfo, void *col, const Nd4jLong *colShapeInfo, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::vol2col(nd4j::graph::Context& block, const NDArray& vol, NDArray& col, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
@@ -128,7 +124,6 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
     __shared__ Nd4jLong *sharedMem, volLen;
 
     if (threadIdx.x == 0) {
-
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
@@ -145,7 +140,6 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
 
         volLen = shape::length(volShapeInfo);
     }
-
     __syncthreads();
 
     const auto volInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -205,7 +199,6 @@ static void col2volCudaLauncher(const int blocksPerGrid, const int threadsPerBlo
 
     col2volCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, volume, volShapeInfo, sD, sH, sW, pD, pH, pW, dD, dH, dW);
 }
-BUILD_SINGLE_TEMPLATE(template void col2volCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t* stream, const void *col, const Nd4jLong *colShapeInfo, void *vol, const Nd4jLong *volShapeInfo, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW), FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::col2vol(nd4j::graph::Context& block, const NDArray& col, NDArray& vol, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW) {
@@ -285,7 +278,7 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::conv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), conv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -345,7 +338,7 @@ static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::depthwiseConv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), depthwiseConv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -390,7 +383,7 @@ static void sconv2d_(nd4j::graph::Context& block, const NDArray* input, const ND
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::sconv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weightsDepth, const NDArray* weightsPoint, const NDArray* bias,  NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-    BUILD_DOUBLE_SELECTOR(input->dataType(), output->dataType(), sconv2d_, (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), sconv2d_, (block, input, weightsDepth, weightsPoint, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -406,7 +399,6 @@ static __global__ void avgPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
     __shared__ int bS, iC, oH, oW, iH, iW, strideB, strideC, strideY, strideX, strideOB, strideOC, strideOY, strideOX, length, kHEff, kWEff;
 
     if (threadIdx.x == 0) {
-
         bS = shape::sizeAt(xShapeInfo, 0);
         iC = shape::sizeAt(xShapeInfo, 1);
         oH = shape::sizeAt(zShapeInfo, 2);
@@ -430,7 +422,6 @@ static __global__ void avgPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
         kHEff = kH + (kH-1)*(dH-1);
         kWEff = kW + (kW-1)*(dW-1);
     }
-
     __syncthreads();
 
     int tid = blockIdx.x * gridDim.x + threadIdx.x;
@@ -488,7 +479,6 @@ template <typename X, typename Z>
 static void avgPooling2dCudaLauncher(nd4j::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
     avgPooling2dCuda<X, Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
 }
-BUILD_DOUBLE_TEMPLATE(template void avgPooling2dCudaLauncher, (nd4j::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
@@ -504,7 +494,6 @@ static __global__ void pnormPooling2dCuda(const void *vx, const Nd4jLong *xShape
     __shared__ bool fOrder;
 
     if (threadIdx.x == 0) {
-
         bS = shape::sizeAt(xShapeInfo, 0);
         iC = shape::sizeAt(xShapeInfo, 1);
         oH = shape::sizeAt(zShapeInfo, 2);
@@ -528,7 +517,6 @@ static __global__ void pnormPooling2dCuda(const void *vx, const Nd4jLong *xShape
         kHEff = kH + (kH-1)*(dH-1);
         kWEff = kW + (kW-1)*(dW-1);
     }
-
     __syncthreads();
 
     int tid = blockIdx.x * gridDim.x + threadIdx.x;
@@ -582,7 +570,6 @@ template <typename X, typename Z>
 static void pnormPooling2dCudaLauncher(nd4j::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
     pnormPooling2dCuda<X, Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
 }
-BUILD_DOUBLE_TEMPLATE(template void pnormPooling2dCudaLauncher, (nd4j::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Z>
@@ -598,7 +585,6 @@ static __global__ void maxPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
     __shared__ bool fOrder;
 
     if (threadIdx.x == 0) {
-
         bS = shape::sizeAt(xShapeInfo, 0);
         iC = shape::sizeAt(xShapeInfo, 1);
         oH = shape::sizeAt(zShapeInfo, 2);
@@ -622,7 +608,6 @@ static __global__ void maxPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
         kHEff = kH + (kH-1)*(dH-1);
         kWEff = kW + (kW-1)*(dW-1);
     }
-
     __syncthreads();
 
     int tid = blockIdx.x * gridDim.x + threadIdx.x;
@@ -679,7 +664,6 @@ template <typename X, typename Z>
 static void maxPooling2dCudaLauncher(nd4j::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0) {
     maxPooling2dCuda<X,Z><<<512, 512, 4192, *block.getCudaStream()>>>(vx, vxShapeInfo, vz, vzShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, extraParam0);
 }
-BUILD_DOUBLE_TEMPLATE(template void maxPooling2dCudaLauncher, (nd4j::LaunchContext & block, void *vx, Nd4jLong *vxShapeInfo, void *vz, Nd4jLong *vzShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::pooling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const PoolingType poolingMode, const int extraParam0) {
@@ -689,15 +673,15 @@ void ConvolutionUtils::pooling2d(nd4j::graph::Context& block, const NDArray& inp
     switch (poolingMode) {
 
         case MAX_POOL: {
-                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), maxPooling2dCudaLauncher, (*block.launchContext(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR_TWICE(input.dataType(), maxPooling2dCudaLauncher, (*block.launchContext(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0), FLOAT_TYPES);
             }
             break;
         case AVG_POOL: {
-                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), avgPooling2dCudaLauncher, (*block.launchContext(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR_TWICE(input.dataType(), avgPooling2dCudaLauncher, (*block.launchContext(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0), FLOAT_TYPES);
             }
             break;
         case PNORM_POOL: {
-                BUILD_DOUBLE_SELECTOR(input.dataType(), output.dataType(), pnormPooling2dCudaLauncher, (*block.launchContext(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0), LIBND4J_TYPES, FLOAT_TYPES);
+                BUILD_SINGLE_SELECTOR_TWICE(input.dataType(), pnormPooling2dCudaLauncher, (*block.launchContext(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.getSpecialBuffer(), output.getSpecialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, extraParam0), FLOAT_TYPES);
             }
             break;
         default:
@@ -742,7 +726,6 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
 
         kProd = kD * kH * kW;
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -845,7 +828,6 @@ static void pooling3dCudaLauncher(const int blocksPerGrid, const int threadsPerB
 
     pooling3dCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0);
 }
-BUILD_SINGLE_TEMPLATE(template void pooling3dCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::pooling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
@@ -857,48 +839,11 @@ void ConvolutionUtils::pooling3d(nd4j::graph::Context& block, const NDArray& inp
     const int sharedMem = output.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
 
     NDArray::prepareSpecialUse({&output}, {&input});
-    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
     NDArray::registerSpecialUse({&output}, {&input});
 
     manager.synchronize();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
@@ -931,7 +876,6 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
         kProd = kH * kW;
     }
-
     __syncthreads();
 
     const auto yInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -963,6 +907,8 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
         /*** max ***/
         case 0: {
+            coord2 = hstart;
+            coord3 = hend;
 
             T max = -DataTypeUtils::max<T>();
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
@@ -1032,7 +978,6 @@ static void pooling2dBPCudaLauncher(const int blocksPerGrid, const int threadsPe
 
     pooling2dBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0);
 }
-BUILD_SINGLE_TEMPLATE(template void pooling2dBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::pooling2dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kH, const int kW, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW, const int poolingMode, const int extraParam0) {
@@ -1047,7 +992,7 @@ void ConvolutionUtils::pooling2dBP(nd4j::graph::Context& block, const NDArray& i
     const int sharedMem = gradO.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 
     NDArray::prepareSpecialUse({&gradI}, {&input, &gradO});
-    BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling2dBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
     NDArray::registerSpecialUse({&gradI}, {&input, &gradO});
 
     manager.synchronize();
@@ -1087,7 +1032,6 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
         kProd = kD * kH * kW;
     }
-
     __syncthreads();
 
     const auto yInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1201,7 +1145,6 @@ static void pooling3dBPCudaLauncher(const int blocksPerGrid, const int threadsPe
 
     pooling3dBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0);
 }
-BUILD_SINGLE_TEMPLATE(template void pooling3dBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::pooling3dBP(nd4j::graph::Context& block, const NDArray& input, const NDArray& gradO, NDArray& gradI, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int pD, const int pH, const int pW, const int dD, const int dH, const int dW, const int poolingMode, const int extraParam0) {
@@ -1216,7 +1159,7 @@ void ConvolutionUtils::pooling3dBP(nd4j::graph::Context& block, const NDArray& i
     const int sharedMem = gradO.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 
     NDArray::prepareSpecialUse({&gradI}, {&input, &gradO});
-    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), pooling3dBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0), FLOAT_TYPES);
     NDArray::registerSpecialUse({&gradI}, {&input, &gradO});
 
     manager.synchronize();
@@ -1292,11 +1235,10 @@ static void conv2dBP_(nd4j::graph::Context& block, const NDArray* input, const N
         delete gradI;
     }
 }
-BUILD_DOUBLE_TEMPLATE(template void conv2dBP_, (nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::conv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-    BUILD_DOUBLE_SELECTOR(input->dataType(), gradO->dataType(), conv2dBP_, (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2dBP_, (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1362,7 +1304,7 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
             gradBR = new NDArray(gradB->reshape(gradB->ordering(), {(int)gradB->lengthOf()}));
         gradO->reduceAlongDimension(reduce::Sum, gradBR, {0,indOoH,indOoH+1});                      // sum over bS, oH, oW
         if(gradBR != gradB)
-            delete gradB;
+            delete gradBR;
     }
 
     //----- calculation of gradI -----//
@@ -1374,11 +1316,10 @@ static void depthwiseConv2dBP_(const NDArray* input, const NDArray* weights, con
         delete gradI;
     }
 }
-BUILD_DOUBLE_TEMPLATE(template void depthwiseConv2dBP_, (const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::depthwiseConv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-    BUILD_DOUBLE_SELECTOR(input->dataType(), gradO->dataType(), depthwiseConv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), LIBND4J_TYPES, FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
 }
 
 
@@ -1399,11 +1340,10 @@ __global__ static void upsampling2dCuda(const void* vx, const Nd4jLong* xShapeIn
         extern __shared__ unsigned char shmem[];
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
-        dimIH = isNCHW ? 2 : 1;
-        zLen = shape::length(zShapeInfo);
-        rank = 4;
+        dimIH  = isNCHW ? 2 : 1;
+        zLen   = shape::length(zShapeInfo);
+        rank   = 4;
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1434,7 +1374,6 @@ static void upsampling2dCudaLauncher(const int blocksPerGrid, const int threadsP
 
     upsampling2dCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, factorH, factorW, isNCHW);
 }
-BUILD_SINGLE_TEMPLATE(template void upsampling2dCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int factorH, const int factorW, const bool isNCHW), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::upsampling2d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int factorH, const int factorW, const bool isNCHW) {
@@ -1446,7 +1385,7 @@ void ConvolutionUtils::upsampling2d(nd4j::graph::Context& block, const NDArray& 
     const int sharedMem = output.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 
     NDArray::prepareSpecialUse({&output}, {&input});
-    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling2dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), factorH, factorW, isNCHW), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling2dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), factorH, factorW, isNCHW), FLOAT_TYPES);
     NDArray::registerSpecialUse({&output}, {&input});
 
     manager.synchronize();
@@ -1470,10 +1409,9 @@ __global__ static void upsampling3dCuda(const void* vx, const Nd4jLong* xShapeIn
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
         dimID = isNCDHW ? 2 : 1;
-        zLen = shape::length(zShapeInfo);
-        rank = 5;
+        zLen  = shape::length(zShapeInfo);
+        rank  = 5;
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1505,7 +1443,6 @@ static void upsampling3dCudaLauncher(const int blocksPerGrid, const int threadsP
 
     upsampling3dCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, factorD, factorH, factorW, isNCDHW);
 }
-BUILD_SINGLE_TEMPLATE(template void upsampling3dCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const int factorD, const int factorH, const int factorW, const bool isNCDHW), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::upsampling3d(nd4j::graph::Context& block, const NDArray& input, NDArray& output, const int factorD, const int factorH, const int factorW, const bool isNCDHW) {
@@ -1517,7 +1454,7 @@ void ConvolutionUtils::upsampling3d(nd4j::graph::Context& block, const NDArray& 
     const int sharedMem = output.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 
     NDArray::prepareSpecialUse({&output}, {&input});
-    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), factorD, factorH, factorW, isNCDHW), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(input.dataType(), upsampling3dCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), factorD, factorH, factorW, isNCDHW), FLOAT_TYPES);
     NDArray::registerSpecialUse({&output}, {&input});
 
     manager.synchronize();
@@ -1542,13 +1479,12 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
         dimIH = isNCHW ? 2 : 1;
-        zLen = shape::length(zShapeInfo);
-        rank = 4;
+        zLen  = shape::length(zShapeInfo);
+        rank  = 4;
 
         factorH = xShapeInfo[dimIH + 1] / zShapeInfo[dimIH + 1];
         factorW = xShapeInfo[dimIH + 2] / zShapeInfo[dimIH + 2];
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1562,8 +1498,10 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
 
     const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
 
-    const Nd4jLong zCoord2 = coords[dimIH];
-    const Nd4jLong zCoord3 = coords[dimIH + 1];
+    z[zOffset] = 0;
+
+    const Nd4jLong zCoord2 = coords[dimIH]     * factorH;
+    const Nd4jLong zCoord3 = coords[dimIH + 1] * factorW;
 
     for(coords[dimIH] = zCoord2; coords[dimIH] < zCoord2 + factorH; ++coords[dimIH])
         for(coords[dimIH + 1] = zCoord3; coords[dimIH + 1] < zCoord3 + factorW; ++coords[dimIH + 1])
@@ -1579,7 +1517,6 @@ static void upsampling2dBPCudaLauncher(const int blocksPerGrid, const int thread
 
     upsampling2dBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, isNCHW);
 }
-BUILD_SINGLE_TEMPLATE(template void upsampling2dBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const bool isNCHW), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::upsampling2dBP(nd4j::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCHW) {
@@ -1591,7 +1528,7 @@ void ConvolutionUtils::upsampling2dBP(nd4j::graph::Context& block, const NDArray
     const int sharedMem = gradI.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 
     NDArray::prepareSpecialUse({&gradI}, {&gradO});
-    BUILD_SINGLE_SELECTOR(gradI.dataType(), upsampling2dBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), isNCHW), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(gradI.dataType(), upsampling2dBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), isNCHW), FLOAT_TYPES);
     NDArray::registerSpecialUse({&gradI}, {&gradO});
 
     manager.synchronize();
@@ -1616,14 +1553,13 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
         sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
 
         dimID = isNCDHW ? 2 : 1;
-        zLen = shape::length(zShapeInfo);
-        rank = 5;
+        zLen  = shape::length(zShapeInfo);
+        rank  = 5;
 
         factorD = xShapeInfo[dimID + 1] / zShapeInfo[dimID + 1];
         factorH = xShapeInfo[dimID + 2] / zShapeInfo[dimID + 2];
         factorW = xShapeInfo[dimID + 3] / zShapeInfo[dimID + 3];
     }
-
     __syncthreads();
 
     const auto zInd = threadIdx.x + blockIdx.x * blockDim.x;
@@ -1637,9 +1573,11 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
 
     const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
 
-    const Nd4jLong zCoord2 = coords[dimID];
-    const Nd4jLong zCoord3 = coords[dimID + 1];
-    const Nd4jLong zCoord4 = coords[dimID + 2];
+    z[zOffset] = 0;
+
+    const Nd4jLong zCoord2 = coords[dimID]     * factorD;
+    const Nd4jLong zCoord3 = coords[dimID + 1] * factorH;
+    const Nd4jLong zCoord4 = coords[dimID + 2] * factorW;
 
     for(coords[dimID] = zCoord2; coords[dimID] < zCoord2 + factorD; ++coords[dimID])
         for(coords[dimID + 1] = zCoord3; coords[dimID + 1] < zCoord3 + factorH; ++coords[dimID + 1])
@@ -1656,7 +1594,6 @@ static void upsampling3dBPCudaLauncher(const int blocksPerGrid, const int thread
 
     upsampling3dBPCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vz, zShapeInfo, isNCDHW);
 }
-BUILD_SINGLE_TEMPLATE(template void upsampling3dBPCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream, const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const bool isNCDHW), LIBND4J_TYPES);
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::upsampling3dBP(nd4j::graph::Context& block, const NDArray& gradO, NDArray& gradI, const bool isNCDHW) {
@@ -1668,7 +1605,7 @@ void ConvolutionUtils::upsampling3dBP(nd4j::graph::Context& block, const NDArray
     const int sharedMem = gradI.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 
     NDArray::prepareSpecialUse({&gradI}, {&gradO});
-    BUILD_SINGLE_SELECTOR(gradI.dataType(), upsampling3dBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), isNCDHW), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(gradI.dataType(), upsampling3dBPCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), gradO.getSpecialBuffer(), gradO.getSpecialShapeInfo(), gradI.specialBuffer(), gradI.specialShapeInfo(), isNCDHW), FLOAT_TYPES);
     NDArray::registerSpecialUse({&gradI}, {&gradO});
 
     manager.synchronize();

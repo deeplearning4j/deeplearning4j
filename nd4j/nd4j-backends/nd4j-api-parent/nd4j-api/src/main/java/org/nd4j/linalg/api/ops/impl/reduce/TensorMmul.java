@@ -20,7 +20,7 @@ import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import lombok.NoArgsConstructor;
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;
@@ -65,7 +65,7 @@ public class TensorMmul extends DynamicCustomOp {
         this.sameDiff = sameDiff;
         this.mMulTranspose = mMulTranspose;
         this.axes = dimensions;
-        if(!addedEdges && sameDiff.getOutputsForFunction(this) == null) {
+        if(!addedEdges && sameDiff.getOutputsForOp(this) == null) {
             addedEdges = true;
         }
 
@@ -283,7 +283,7 @@ public class TensorMmul extends DynamicCustomOp {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         val isTransposeA = !attributesForNode.containsKey("transA") ? false : attributesForNode.get("transA").getI() > 0;
         val isTransposeB = !attributesForNode.containsKey("transB") ? false : attributesForNode.get("transB").getI() > 0;
         MMulTranspose mMulTranspose = MMulTranspose.builder()

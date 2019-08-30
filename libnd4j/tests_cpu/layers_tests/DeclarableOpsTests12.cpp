@@ -729,8 +729,8 @@ TEST_F(DeclarableOpsTests12, multiUnique_2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, tensormmul_6) {
 
-    NDArray x('c', {1}, {2});
-    NDArray y('c', {2,1,2}, {1,2,3,4});
+    NDArray x('c', {1}, {2}, nd4j::DataType::FLOAT32);
+    NDArray y('c', {2,1,2}, {1,2,3,4}, nd4j::DataType::FLOAT32);
     NDArray exp('c', {2,2}, {2,4,6,8}, nd4j::DataType::FLOAT32);
 
     nd4j::ops::tensormmul op;
@@ -749,59 +749,6 @@ TEST_F(DeclarableOpsTests12, tensormmul_6) {
     delete results;
 
 }
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, concat_test10) {
-
-    NDArray x0('c', {1,4,5}, nd4j::DataType::FLOAT32);
-    NDArray x1('c', {2,4,5}, nd4j::DataType::FLOAT32);
-    NDArray  z('f', {3,4,5}, nd4j::DataType::FLOAT32);
-
-    x0 = 0.;
-    x1 = 1.;
-
-    nd4j::ops::concat op;
-    auto status = op.execute({&x0, &x1}, {&z}, {}, {0}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, concat_14) {
-
-    NDArray x0('c', {1,6}, {1,2,3,4,5,6});
-    NDArray x1('c', {1,6}, {7,8,9,10,11,12});
-    NDArray output('f', {2,6}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {2,6}, {1,2,3,4,5,6,7,8,9,10,11,12});
-
-    nd4j::ops::concat op;
-
-    auto status = op.execute({&x0, &x1}, {&output}, {}, {0}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    // output.printBuffer();
-    // output.printIndexedBuffer();
-
-    ASSERT_TRUE(exp.equalsTo(output));
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests12, concat_15) {
-
-    NDArray x0('c', {1,4}, {1,2,3,4});
-    NDArray x1('c', {1,4}, {5,6,7,8});
-    NDArray output('c', {2,4}, nd4j::DataType::DOUBLE);
-    NDArray exp('c', {2,4}, {1,2,3,4,5,6,7,8});
-
-    nd4j::ops::concat op;
-
-    auto status = op.execute({&x0, &x1}, {&output}, {}, {0}, {});
-    ASSERT_EQ(ND4J_STATUS_OK, status);
-    // output.printBuffer();
-    // output.printIndexedBuffer();
-
-    ASSERT_TRUE(exp.equalsTo(output));
-}
-
 
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests12, reduceMeanBp_4) {
@@ -876,14 +823,13 @@ TEST_F(DeclarableOpsTests12, pullRows_1) {
     auto xTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
     auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
 
-    NativeOps op;
     Nd4jPointer nativeStart[2];
 
 #ifdef __CUDABLAS__
-    nativeStart[1] = *(x.getContext()->getCudaStream());
+    nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
 
-    op.pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
+    pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(),
                          z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                          4, pidx,
                          xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),
@@ -912,12 +858,11 @@ TEST_F(DeclarableOpsTests12, pullRows_2) {
     auto xTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.getShapeInfo(), dims);
     auto zTadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(z.getShapeInfo(), dims);
 
-    NativeOps op;
     Nd4jPointer nativeStart[2];
 #ifdef __CUDABLAS__
-    nativeStart[1] = *(x.getContext()->getCudaStream());
+    nativeStart[1] = (x.getContext()->getCudaStream());
 #endif
-    op.pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+    pullRows(nativeStart, x.buffer(), x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
                          z.buffer(), z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
                          4, pidx,
                          xTadPack.platformShapeInfo(), xTadPack.platformOffsets(),

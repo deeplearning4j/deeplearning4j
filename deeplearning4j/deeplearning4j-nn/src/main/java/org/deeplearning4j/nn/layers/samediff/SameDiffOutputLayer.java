@@ -99,8 +99,11 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 doInit();
             }
 
-            for(String s : paramTable.keySet() ) {
-                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
+            //TODO Find a more efficient solution for this
+            for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+                INDArray arr = e.getValue();
+                sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
             }
 
             Map<String,INDArray> phMap = new HashMap<>();
@@ -111,7 +114,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
 
             String s = activations ? layerConf().activationsVertexName() : outputVar.getVarName();
 
-            INDArray out = sameDiff.execSingle(phMap, s);
+            INDArray out = sameDiff.outputSingle(phMap, s);
 
             //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
             sameDiff.clearPlaceholders(true);
@@ -149,20 +152,11 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 sameDiff.createGradFunction(INPUT_KEY);
             }
 
-            INDArray castInput = input.castTo(dataType);
-            if(castInput.isAttached())
-                castInput = castInput.dup();
-            sameDiff.associateArrayWithVariable(castInput, sameDiff.getVariable(INPUT_KEY));
-            if(layerConf().labelsRequired()) {
-                INDArray castLabels = labels.castTo(dataType);
-                if(castLabels.isAttached())
-                    castLabels = castLabels.dup();
-                sameDiff.associateArrayWithVariable(castLabels, sameDiff.getVariable(LABELS_KEY));
-            }
-
-            for(String s : paramTable.keySet() ){
-                //TODO this should only be necessary, in theory, once!
-                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
+            //TODO Find a more efficient solution for this
+            for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+                INDArray arr = e.getValue();
+                sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
             }
 
             List<String> gradVarNames = new ArrayList<>();
@@ -297,8 +291,10 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");
             outputVar = layerOutput;
 
+            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
             for (Map.Entry<String, INDArray> e : p.entrySet()) {
-                sameDiff.associateArrayWithVariable(e.getValue(), sameDiff.getVariable(e.getKey()));
+                INDArray arr = e.getValue();
+                sameDiff.associateArrayWithVariable(arr, sameDiff.getVariable(e.getKey()));
             }
 
             this.outputKey = layerOutput.getVarName();

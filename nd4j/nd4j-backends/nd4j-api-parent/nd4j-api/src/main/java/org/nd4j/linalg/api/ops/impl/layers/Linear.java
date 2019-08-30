@@ -19,7 +19,7 @@ package org.nd4j.linalg.api.ops.impl.layers;
 import lombok.Builder;
 import lombok.NoArgsConstructor;
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -96,7 +96,7 @@ public class Linear extends BaseModule {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
 
     }
 
@@ -164,13 +164,15 @@ public class Linear extends BaseModule {
 
         if(forward == null) {
             //bias needs to be added yet
-            if(args.length > 1)
+            if(args.length > 1) {
+                /*
                 forward =  f().add(new Mmul(sameDiff, input[0],args()[0],
                         MMulTranspose.builder()
                                 .transposeA(false)
                                 .transposeB(true)
                                 .build()).outputVariables()[0],args()[1]);
-            else {
+             */
+            } else {
                 forward = new Mmul(sameDiff, input[0],args()[0],
                         MMulTranspose.builder().transposeA(false).transposeB(true).build());
             }

@@ -26,6 +26,7 @@
 #include <logger.h>
 #include <cuda_runtime.h>
 #include <cuda.h>
+#include <execution/AffinityManager.h>
 
 #define CONSTANT_LIMIT 49152
 
@@ -43,23 +44,11 @@ namespace nd4j {
     }
 
     int ConstantHelper::getCurrentDevice() {
-        int dev = 0;
-        auto res = cudaGetDevice(&dev);
-
-        if (res != 0)
-            throw cuda_exception::build("cudaGetDevice failed", res);
-
-        return dev;
+        return AffinityManager::currentDeviceId();
     }
 
     int ConstantHelper::getNumberOfDevices() {
-        int dev = 0;
-        auto res = cudaGetDeviceCount(&dev);
-
-        if (res != 0)
-            throw cuda_exception::build("cudaGetDeviceCount failed", res);
-
-        return dev;
+        return AffinityManager::numberOfDevices();
     }
 
 

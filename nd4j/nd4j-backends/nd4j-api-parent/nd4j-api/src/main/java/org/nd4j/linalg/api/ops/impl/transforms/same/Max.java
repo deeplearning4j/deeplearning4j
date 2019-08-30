@@ -26,7 +26,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Calculate the absolute minimum over a vector
+ * Calculate the maximum value between two arrays in an elementwise fashion, broadcasting if required
  *
  * @author raver119@gmail.com
  */

@@ -114,6 +114,9 @@ namespace nd4j {
             auto var = block->isFastPath() ? block->fastpath_out()[0] : block->variable(p)->getNDArray();
             var->p(Nd4jLong(0), status == ND4J_STATUS_TRUE ?  1.0f : 0.0f);
 
+            // for CPU backend that's nop, but for CUDA-like archs this will update special buffer
+            var->syncToDevice();
+
             if (status == ND4J_STATUS_FALSE || status == ND4J_STATUS_TRUE)
                 return ND4J_STATUS_OK;
             

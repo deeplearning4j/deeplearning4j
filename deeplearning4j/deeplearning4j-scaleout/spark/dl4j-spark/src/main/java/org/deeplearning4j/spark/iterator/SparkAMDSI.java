@@ -97,14 +97,9 @@ public class SparkAMDSI extends AsyncMultiDataSetIterator {
         if (iterator.resetSupported())
             this.backedIterator.reset();
 
-        this.thread = new SparkPrefetchThread(buffer, iterator, terminator);
+        this.thread = new SparkPrefetchThread(buffer, iterator, terminator, Nd4j.getAffinityManager().getDeviceForCurrentThread());
 
         context = TaskContext.get();
-
-        /**
-         * We want to ensure, that background thread will have the same thread->device affinity, as master thread
-         */
-        Nd4j.getAffinityManager().attachThreadToDevice(thread, deviceId);
 
         thread.setDaemon(true);
         thread.start();
@@ -117,9 +112,8 @@ public class SparkAMDSI extends AsyncMultiDataSetIterator {
 
     protected class SparkPrefetchThread extends AsyncPrefetchThread {
 
-        protected SparkPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue,
-                        @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator) {
-            super(queue, iterator, terminator);
+        protected SparkPrefetchThread(@NonNull BlockingQueue<MultiDataSet> queue, @NonNull MultiDataSetIterator iterator, @NonNull MultiDataSet terminator, int deviceId) {
+            super(queue, iterator, terminator, deviceId);
         }
     }
 }

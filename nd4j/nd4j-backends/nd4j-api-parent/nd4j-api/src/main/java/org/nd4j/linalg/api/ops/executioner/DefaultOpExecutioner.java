@@ -455,6 +455,14 @@ public class DefaultOpExecutioner implements OpExecutioner {
 
 
     public long profilingConfigurableHookIn(CustomOp op) {
+        for (val arr: op.inputArguments())
+            if (arr.wasClosed())
+                throw new IllegalStateException("One of Input arguments was closed before call");
+
+        for (val arr: op.outputArguments())
+            if (arr.wasClosed())
+                throw new IllegalStateException("One of Output arguments was closed before call");
+
         if (OpProfiler.getInstance().getConfig() == null)
             return System.nanoTime();
 
@@ -471,6 +479,18 @@ public class DefaultOpExecutioner implements OpExecutioner {
     }
 
     public long profilingConfigurableHookIn(Op op, DataBuffer... tadBuffers) {
+        if (op.x() != null)
+            if (op.x().wasClosed())
+                throw new IllegalStateException("Op.X argument was closed before call");
+
+        if (op.y() != null)
+            if (op.y().wasClosed())
+                throw new IllegalStateException("Op.Y argument was closed before call");
+
+        if (op.z() != null)
+            if (op.z().wasClosed())
+                throw new IllegalStateException("Op.Z argument was closed before call");
+
         if (OpProfiler.getInstance().getConfig() == null)
             return System.nanoTime();
 

@@ -73,9 +73,11 @@ namespace helpers {
         symRowP[0] = 0;
         for (int n = 0; n < N; n++)
             symRowP[n + 1] = symRowP[n] + rowCounts->e<int>(n);
+//        outputRows->printBuffer("output rows");
+
         int* symColP = reinterpret_cast<int*>(outputCols->buffer());
 //            symRowP.p(n + 1, symRowP.e(n) + rowCounts.e(n))
-        outputRows->printBuffer("SymRows are");
+//        outputRows->printBuffer("SymRows are");
         int const* pCols = reinterpret_cast<int const*>(colP->getBuffer());
         T const* pVals = reinterpret_cast<T const*>(valP->getBuffer());
         T* pOutput = reinterpret_cast<T*>(outputVals->buffer());
@@ -145,27 +147,28 @@ namespace helpers {
         T* outputP = reinterpret_cast<T*>(output->buffer());
         int colCount = data->columns();
 
-        std::vector<T> buffer(colCount);
-        auto shift = 0;
+
+//        auto shift = 0;
         auto rowSize = sizeof(T) * colCount;
+        PRAGMA_OMP_PARALLEL_FOR
         for (int n = 0; n < N; n++) {
             int start = rowP->e<int>(n);
             int end = rowP->e<int>(n+1);
-
+            int shift = n * colCount;
             for (int i = start; i < end; i++) {
                 T const* thisSlice = dataP + colP->e<int>(i) * colCount;
                 T res = 1;
 
                 for (int k = 0; k < colCount; k++) {
-                    buffer[k] = dataP[shift + k] - thisSlice[k];//thisSlice[k];
-                    res += buffer[k] * buffer[k];
+                    auto tempVal = dataP[shift + k] - thisSlice[k];//thisSlice[k];
+                    res += tempVal * tempVal;
                 }
 
                 res = vals[i] / res;
                 for (int k = 0; k < colCount; k++)
-                    outputP[shift + k] += (buffer[k] * res);
+                    outputP[shift + k] += ((dataP[shift + k] - thisSlice[k]) * res);
             }
-            shift += colCount;
+            //shift += colCount;
         }
     }
 

@@ -22,7 +22,6 @@ import lombok.val;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.api.ModelAdapter;
-import org.deeplearning4j.nn.api.OutputAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -133,9 +132,8 @@ public class ParallelInference {
             boolean cRoot = !assignedRoot.get() && cDevice == currentDevice;
             assignedRoot.compareAndSet(false, cRoot);
 
-            zoo[i] = new InferenceWorker(i, model, observables, cRoot);
+            zoo[i] = new InferenceWorker(i, model, observables, cRoot, cDevice);
 
-            Nd4j.getAffinityManager().attachThreadToDevice(zoo[i], cDevice);
             zoo[i].setDaemon(true);
             zoo[i].start();
         }
@@ -426,13 +424,15 @@ public class ParallelInference {
         private Model replicatedModel;
         private AtomicLong counter = new AtomicLong(0);
         private boolean rootDevice;
+        private int deviceId;
 
         private ReentrantReadWriteLock modelLock = new ReentrantReadWriteLock();
 
-        private InferenceWorker(int id, @NonNull Model model, @NonNull BlockingQueue inputQueue, boolean rootDevice) {
+        private InferenceWorker(int id, @NonNull Model model, @NonNull BlockingQueue inputQueue, boolean rootDevice, int deviceId) {
             this.inputQueue = inputQueue;
             this.protoModel = model;
             this.rootDevice = rootDevice;
+            this.deviceId = deviceId;
 
             this.setDaemon(true);
             this.setName("InferenceThread-" + id);
@@ -492,6 +492,7 @@ public class ParallelInference {
 
         @Override
         public void run() {
+            Nd4j.getAffinityManager().unsafeSetDevice(deviceId);
             try {
                 // model should be replicated & initialized here
                 initializeReplicaModel();

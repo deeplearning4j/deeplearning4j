@@ -69,6 +69,10 @@ public class AllocationPoint {
     @Setter
     private boolean isAttached = false;
 
+    @Getter
+    @Setter
+    private volatile boolean released = false;
+
     // thread safety is guaranteed by allocLock
     private AllocationStatus allocationStatus = AllocationStatus.UNDEFINED;
 

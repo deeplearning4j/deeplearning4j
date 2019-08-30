@@ -40,7 +40,6 @@ __global__ static void crossCuda(const void* vx, const Nd4jLong* xShapeInfo,
     __shared__ Nd4jLong lenWithoutLastDim, totalThreads, *sharedMem;
 
     if (threadIdx.x == 0) {
-
     	x = reinterpret_cast<const T*>(vx);
     	y = reinterpret_cast<const T*>(vy);
     	z = reinterpret_cast<T*>(vz);

@@ -38,6 +38,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -106,19 +107,34 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
     @Override
     public INDArray[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                 Set<String> constAndPhInputs, List<Listener> listeners, boolean training, At at) {
+                                 Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch) {
         if(listeners != null && listeners.size() > 0){
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
             for(Listener l : listeners){
-                l.preOpExecution(sameDiff, at, training, sdOp);
+                if(l.isActive(at.operation()))
+                    l.preOpExecution(sameDiff, at, sdOp);
             }
         }
 
         INDArray[] out = getOutputsHelper(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
         if(listeners != null && listeners.size() > 0){
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
+
+            Map<String, INDArray> namedOutsBuilder = new HashMap<>();
+
+            for(int i = 0 ; i < out.length ; i++)
+                namedOutsBuilder.put(sdOp.outputsOfOp.get(i), out[i]);
+
+            Map<String, INDArray> namedOuts = Collections.unmodifiableMap(namedOutsBuilder);
+
             for(Listener l : listeners){
-                l.opExecution(sameDiff, at, training, sdOp, out);
+                if(l.isActive(at.operation())) {
+                    l.opExecution(sameDiff, at, batch, sdOp, out);
+
+                    for(String varName : namedOuts.keySet()){
+                        l.activationAvailable(sameDiff, at, batch, sdOp, varName, namedOuts.get(varName));
+                    }
+                }
             }
         }
         return out;
@@ -206,7 +222,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             //Merge avairable for forward pass when any of its inputs are available. When multiple are available, behaviour
             // is undefined
             Merge m = (Merge) op;
-            String[] in = sameDiff.getInputsForFunction(op);
+            String[] in = sameDiff.getInputsForOp(op);
             for (String s : in) {
                 VarId vid = newVarId(s, outputFrameIter);
                 if (nodeOutputs.containsKey(vid)) {
@@ -258,10 +274,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.getVarName());
 
-                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                while(sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter){
                     //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayRead
                     //TODO also TensorArrayWrite, scatter, etc??
-                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
                     v = newVarId(inTensorArray.getVarName(), v.getParentFrame());
                 }
 
@@ -283,10 +299,10 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
                 Preconditions.checkState(tArr != null, "Could not find input %s", inTensorArray.getVarName());
 
-                while(sameDiff.getVariableOutputFunction(inTensorArray.getVarName()) instanceof Enter){
+                while(sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter){
                     //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayWrite
                     //TODO also TensorArrayScatter, etc??
-                    inTensorArray = sameDiff.getVariableOutputFunction(inTensorArray.getVarName()).arg();
+                    inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
                     tArr = newVarId(inTensorArray.getVarName(), tArr.getParentFrame());
                 }
 
@@ -388,7 +404,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 //Input 2: The values to scatter
 
                 SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-                TensorArray ta = (TensorArray) sameDiff.getVariableOutputFunction(inTensorArray.getVarName());
+                TensorArray ta = (TensorArray) sameDiff.getVariableOutputOp(inTensorArray.getVarName());
                 VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
                 if(tArr == null && allIterInputs != null){
                     tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
@@ -509,7 +525,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     public DifferentialFunction getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                                      Set<String> constAndPhInputs, Map<String,INDArray> placeholderValues) {
 
-        DifferentialFunction df = sameDiff.getFunctionById(opName);
+        DifferentialFunction df = sameDiff.getOpById(opName);
 
         //TODO We should clone these ops - probably - as we don't want them shared between threads/sessions!
         //But let's only clone them *once* and cache in inference session - not on every exec
@@ -665,6 +681,8 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
             List<LongShapeDescriptor> outShape = customOp.calculateOutputShape();
             Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
             String[] outNames = df.outputVariablesNames();
+            Preconditions.checkState(outNames.length == outShape.size(), "Error in operation shape calculation for op \"%s\": Got %s op output shapes for an operation" +
+                    " with %s outputs (number of shapes and outputs must be equal)", df.opName(), outShape.size(), outNames.length);
             for( int i=0; i<outShape.size(); i++ ){
                 INDArray currOutput = (customOp.numOutputArguments() <= i ? null : customOp.getOutputArgument(i));
                 LongShapeDescriptor reqShape = outShape.get(i);

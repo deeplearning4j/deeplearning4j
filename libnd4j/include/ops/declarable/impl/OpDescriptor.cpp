@@ -166,6 +166,11 @@ namespace nd4j {
             return this;
         }
 
+        OpDescriptor* OpDescriptor::allowOverride(bool allowOverride) {
+            _dtypeOverride = allowOverride;
+            return this;
+        }
+
         OpDescriptor* OpDescriptor::setAllowedInputTypes(const nd4j::DataType dtype) {
             _allowedIns.clear();
             _allowedIns.emplace_back(dtype);

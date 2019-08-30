@@ -199,7 +199,7 @@ public class LegacyOpMapper {
             case 25:
                 return Or.class;
             case 26:
-                return OldAtan2Op.class;
+                throw new UnsupportedOperationException("OldATan2 (op number " + opNum + ") is no longer supported.");
             case 27:
                 return LogicalOr.class;
             case 28:
@@ -243,7 +243,7 @@ public class LegacyOpMapper {
             case 18:
                 return Floor.class;
             case 20:
-                return OldReverse.class;
+                throw new UnsupportedOperationException("OldReverse (op number " + opNum + ") is no longer supported.");
             default:
                 throw new UnsupportedOperationException("No known transform same op for op number: " + opNum);
         }
@@ -581,19 +581,19 @@ public class LegacyOpMapper {
     public static Class<?> pairwiseOpClass(int opNum){
         switch (opNum){
         case 0:
-                return OldAddOp.class;
+                throw new UnsupportedOperationException("OldFModOp (op number " + opNum + ") is no longer supported.");
         case 1:
                 return CopyOp.class;
         case 2:
-                return OldDivOp.class;
+                throw new UnsupportedOperationException("OldDivOp (op number " + opNum + ") is no longer supported.");
         case 3:
-                return OldEqualTo.class;
+                throw new UnsupportedOperationException("OldEqualTo (op number " + opNum + ") is no longer supported.");
         case 4:
-                return OldGreaterThan.class;
+                throw new UnsupportedOperationException("OldGreaterThan (op number " + opNum + ") is no longer supported.");
         case 5:
-                return OldLessThan.class;
+                throw new UnsupportedOperationException("OldLessThan (op number " + opNum + ") is no longer supported.");
         case 6:
-                return OldMulOp.class;
+                throw new UnsupportedOperationException("OldMulOp (op number " + opNum + ") is no longer supported.");
         case 7:
                 return Pow.class;
         case 8:
@@ -603,15 +603,15 @@ public class LegacyOpMapper {
         case 10:
                 return Eps.class;
         case 11:
-                return OldGreaterThanOrEqual.class;
+                throw new UnsupportedOperationException("OldGreaterThanOrEqual (op number " + opNum + ") is no longer supported.");
         case 12:
-                return OldLessThanOrEqual.class;
+                throw new UnsupportedOperationException("OldLessThanOrEqual (op number " + opNum + ") is no longer supported.");
         case 13:
-                return OldMax.class;
+                throw new UnsupportedOperationException("OldMax (op number " + opNum + ") is no longer supported.");
         case 14:
-                return OldMin.class;
+                throw new UnsupportedOperationException("OldMin (op number " + opNum + ") is no longer supported.");
         case 15:
-                return OldNotEqualTo.class;
+                throw new UnsupportedOperationException("OldNotEqualTo (op number " + opNum + ") is no longer supported.");
         case 16:
                 return Set.class;
         case 17:
@@ -631,11 +631,11 @@ public class LegacyOpMapper {
         case 59:
                 return RemainderOp.class;
         case 60:
-                return OldFModOp.class;
+                throw new UnsupportedOperationException("OldFModOp (op number " + opNum + ") is no longer supported.");
         case 69:
-                return OldAtan2Op.class;
+                throw new UnsupportedOperationException("OldATan2 (op number " + opNum + ") is no longer supported.");
         case 20:
-                return OldFloorDivOp.class;
+                throw new UnsupportedOperationException("OldFloorDivOp (op number " + opNum + ") is no longer supported.");
         case 26:
                 return RelativeError.class;
         case 27:

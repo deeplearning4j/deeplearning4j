@@ -44,6 +44,10 @@ public class Max extends BaseDynamicTransformOp {
         super(sameDiff, args, inPlace);
     }
 
+    public Max( INDArray first, INDArray second, INDArray out){
+        super(new INDArray[]{first, second}, out == null ? null : new INDArray[]{out});
+    }
+
     public Max( INDArray[] inputs, INDArray[] outputs) {
         super(inputs, outputs);
     }

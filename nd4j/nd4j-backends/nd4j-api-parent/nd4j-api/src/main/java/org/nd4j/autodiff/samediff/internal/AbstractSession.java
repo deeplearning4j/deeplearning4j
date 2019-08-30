@@ -24,6 +24,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -31,6 +32,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 
 import java.util.*;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
@@ -134,15 +136,41 @@ public abstract class AbstractSession<T, O> {
     }
 
     /**
+     * @deprecated Use {@link #output(List, Map, MultiDataSet, Collection, List, At)}.
+     *
+     * @param training Uses Operation.TRAINING if true, otherwise Operation.INFERENCE
+     */
+    @Deprecated
+    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues,
+            MultiDataSet batch, Collection<String> requiredActivations, boolean training, At at){
+        if(at == null){
+            if(training)
+                at = At.defaultAt(Operation.TRAINING);
+            else
+                at = At.defaultAt(Operation.INFERENCE);
+        }
+        return output(variables, placeholderValues, batch, requiredActivations, Collections.<Listener>emptyList(), at);
+    }
+
+    /**
      * Get the output of the session - i.e., perform inference/forward pass
      *
      * @param variables         Name of the variables we want the arrays/activations for
      * @param placeholderValues The placeholder values (if any).
+     * @param batch             The batch data, used to call Listener.opExecution
+     * @param requiredActivations  Additional activations that are required.  Won't be outputed, but opExecution will be called.  May be null.
      * @return The specified variable values, optionally in the specified workspace
      */
-    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues, List<Listener> listeners, boolean training, At at) {
+    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues,
+            MultiDataSet batch, Collection<String> requiredActivations, List<Listener> listeners, At at) {
+
         Preconditions.checkState(!variables.isEmpty(), "Variables to perform forward pass for must not be empty");
 
+        if(requiredActivations == null)
+            requiredActivations = Collections.emptyList();
+
+        if(at == null)
+            at = At.defaultAt();
 
         //Step 0: validation - that variables exist, placeholders have arrays, etc
         for (String s : variables) {
@@ -164,7 +192,9 @@ public abstract class AbstractSession<T, O> {
         //Step 1: determine subgraph structure we actually need to execute
         //Basic plan: work backwards from the variables we want, based on the graph structure, to work out what
         // we actually need to execute
-        initSubgraph(variables);
+        List<String> allRequired = new ArrayList<>(requiredActivations);
+        allRequired.addAll(variables);
+        initSubgraph(allRequired);
 
         //Step 1a: Check that we have required placeholders
         List<String> phNames = sameDiff.inputs();
@@ -198,7 +228,7 @@ public abstract class AbstractSession<T, O> {
                     // Some Keras layers (like GRU) do different things depending on whether the model is training.
                     // We provide this value directly.
                     if(s.endsWith("keras_learning_phase")){
-                        placeholderValues.put(s, (T) Nd4j.scalar(training));
+                        placeholderValues.put(s, (T) Nd4j.scalar(at.operation().isTrainingPhase()));
                     } else {
                         throw new IllegalStateException(
                                 "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
@@ -295,18 +325,18 @@ public abstract class AbstractSession<T, O> {
                 }
 
 
-            } else if (sameDiff.getVariableOutputFunction(varToExec.getVariable()) != null) {
+            } else if (sameDiff.getVariableOutputOp(varToExec.getVariable()) != null) {
                 //Variable is the output of an op -> execute op
                 String opName = sameDiff.getVariables().get(varToExec.getVariable()).getOutputOfOp();
 
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
                 O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues);
-                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, training, at);
+                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, at, batch);
 
 
                 //Post execution: work out what is now available for exec
-                String[] opOutputVarNames = sameDiff.getFunctionById(opName).outputVariablesNames();
+                String[] opOutputVarNames = sameDiff.getOpById(opName).outputVariablesNames();
 
                 Preconditions.checkState(opOutputValues.length == opOutputVarNames.length, "Unexpected number of outputs from executed op %s:" +
                                 " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.length,
@@ -393,10 +423,10 @@ public abstract class AbstractSession<T, O> {
         //Note subgraph initially should include placeholders and constants
         while (!processingQueue.isEmpty()) {
             String varName = processingQueue.remove();
-            String opName = (sameDiff.getVariableOutputFunction(varName) == null ? null : sameDiff.getVariableOutputFunction(varName).getOwnName());
+            String opName = (sameDiff.getVariableOutputOp(varName) == null ? null : sameDiff.getVariableOutputOp(varName).getOwnName());
 
             if (!subgraph.contains(varName)) {
-                String[] opInputs = opName == null ? null : sameDiff.getInputsForFunction(sameDiff.getFunctionById(opName));
+                String[] opInputs = opName == null ? null : sameDiff.getInputsForOp(sameDiff.getOpById(opName));
                 List<String> controlDeps = sameDiff.getVariables().get(varName).getControlDeps();
                 int numInputs = (opInputs == null ? 0 : opInputs.length);
                 if (controlDeps != null) {
@@ -427,7 +457,7 @@ public abstract class AbstractSession<T, O> {
 
             if (opName != null) {
                 //To execute op - and hence get this variable: need inputs to that op
-                String[] inputs = sameDiff.getInputsForFunction(sameDiff.getFunctionById(opName));
+                String[] inputs = sameDiff.getInputsForOp(sameDiff.getOpById(opName));
                 for (String s2 : inputs) {
                     if (!subgraph.contains(s2)) {
                         processingQueue.add(s2);
@@ -471,7 +501,7 @@ public abstract class AbstractSession<T, O> {
         if (inputForOps != null) {
             for (String opName : inputForOps) {
 
-                DifferentialFunction fn = sameDiff.getFunctionById(opName);
+                DifferentialFunction fn = sameDiff.getOpById(opName);
                 if (fn instanceof Merge) {
                     //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
                     List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
@@ -831,7 +861,7 @@ public abstract class AbstractSession<T, O> {
      * @return The outputs of the op
      */
     public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
-                                   List<Listener> listeners, boolean training, At at);
+                                   List<Listener> listeners, At at, MultiDataSet batch);
 
     /**
      * This method is used to record that the specified input is required for calculating the specified output.
@@ -858,7 +888,7 @@ public abstract class AbstractSession<T, O> {
             //Mark that outVar needs this specific executedVar (i.e., specific frame/iteration)
             //However, in the case of enter nodes, they are available for ALL iterations (used in loop conditions, for example)
             Variable v = sameDiff.getVariables().get(inputVar.getVariable());
-            boolean isEnter = sameDiff.getVariableOutputFunction(v.getVariable().getVarName()) instanceof Enter;
+            boolean isEnter = sameDiff.getVariableOutputOp(v.getVariable().getVarName()) instanceof Enter;
 
             if(isEnter){
                 VarId iter0 = forVariable;

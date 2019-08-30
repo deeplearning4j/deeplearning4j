@@ -25,7 +25,7 @@
 
 namespace nd4j {
     namespace ops {
-        OP_IMPL(Log1p, 2, 1, true) {
+        OP_IMPL(Log1p, 1, 1, true) {
             auto x = INPUT_VARIABLE(0);
             auto z = OUTPUT_VARIABLE(0);
 

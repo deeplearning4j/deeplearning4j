@@ -77,6 +77,7 @@ namespace helpers {
             // saving final value
             if (threadIdx.x == 0)
                 z[shape::getIndexOffset(t, zShapeInfo, zLength)] = x[shape::getIndexOffset(position, xTadShapeInfo, tadLength)];
+            __syncthreads();
         }
     }
 

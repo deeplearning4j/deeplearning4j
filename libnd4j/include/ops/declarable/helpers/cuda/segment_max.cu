@@ -201,9 +201,8 @@ namespace nd4j {
             }
             // -------------------------------------------------------------------------------------------------------------- //
             void segmentMaxFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
-                BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMaxFunctor_, (context, input, indices, output), NUMERIC_TYPES, INTEGER_TYPES);
+                BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMaxFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
             }
-            BUILD_DOUBLE_TEMPLATE(template void segmentMaxFunctor_, (LaunchContext* context, NDArray* input, NDArray* indices, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
             // -------------------------------------------------------------------------------------------------------------- //
 
             template <typename T, typename I>
@@ -241,10 +240,9 @@ namespace nd4j {
             }
             // -------------------------------------------------------------------------------------------------------------- //
             void unsortedSegmentMaxFunctor(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
-                BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMaxFunctor_, (context, input, indices, numOfClasses, output), NUMERIC_TYPES, INTEGER_TYPES);
+                BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMaxFunctor_, (context, input, indices, numOfClasses, output), NUMERIC_TYPES, INDEXING_TYPES);
             }
-            // -------------------------------------------------------------------------------------------------------------- //
-            BUILD_DOUBLE_TEMPLATE(template void unsortedSegmentMaxFunctor_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
+
             // -------------------------------------------------------------------------------------------------------------- //
             // segment max
             // -------------------------------------------------------------------------------------------------------------- //
@@ -268,6 +266,7 @@ namespace nd4j {
                     gradOut = reinterpret_cast<T*>(eps);
                     gradLen = shape::length(epsShape);
                 }
+                __syncthreads();
 
                 auto start = blockIdx.x * blockDim.x + threadIdx.x;
                 auto step = gridDim.x * blockDim.x;
@@ -313,6 +312,7 @@ namespace nd4j {
                     gradLen = shape::length(epsShape);
                     currentLen = shape::length(outTad);
                 }
+                __syncthreads();
 
                 for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
                     auto yIndex = shape::getIndexOffset(i, indicesShape, yLen);
@@ -371,10 +371,8 @@ namespace nd4j {
             // -------------------------------------------------------------------------------------------------------------- //
             int segmentMaxFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
                 BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMaxFunctorBP_, (context, input,
-                        indices, gradOut, output), NUMERIC_TYPES, INTEGER_TYPES);
+                        indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
             }
-            // -------------------------------------------------------------------------------------------------------------- //
-            BUILD_DOUBLE_TEMPLATE(template int segmentMaxFunctorBP_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
 
             // -------------------------------------------------------------------------------------------------------------- //
             template <typename T, typename I>
@@ -418,10 +416,8 @@ namespace nd4j {
             }
             // -------------------------------------------------------------------------------------------------------------- //
             int unsortedSegmentMaxFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-                BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMaxFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES, INTEGER_TYPES);
+                BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMaxFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
             }
-            // -------------------------------------------------------------------------------------------------------------- //
-            BUILD_DOUBLE_TEMPLATE(template int unsortedSegmentMaxFunctorBP_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
         }
     }
 }

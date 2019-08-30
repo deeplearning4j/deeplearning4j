@@ -93,6 +93,7 @@ __global__ static void prefixPerBlockCuda(scalar::Ops op,
 
         if (threadIdx.x == 0)
             shared[blockDim2 - 1] = (op == scalar::Add) ? 0 : 1;
+        __syncthreads();
 
         for (uint d = 1; d < blockDim2; d *= 2) {
 
@@ -160,7 +161,7 @@ void prefix(nd4j::LaunchContext * context, scalar::Ops op, const NDArray* x, NDA
     PointersManager manager(context, "prefix");
 
     NDArray::prepareSpecialUse({z}, {x});
-    BUILD_SINGLE_SELECTOR(x->dataType(), prefixPerBlockCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, x->getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), z->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), numTads, tadLen, exclusive, reverse), LIBND4J_TYPES);
+    BUILD_SINGLE_SELECTOR(x->dataType(), prefixPerBlockCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), op, x->getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), z->specialBuffer(), packZ.platformShapeInfo(), packZ.platformOffsets(), numTads, tadLen, exclusive, reverse), NUMERIC_TYPES);
     NDArray::registerSpecialUse({z}, {x});
 
     manager.synchronize();

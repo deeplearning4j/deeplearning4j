@@ -91,7 +91,7 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_batchnorm)
         DECLARE_CUSTOM_OP(batchnorm, 3, 1, false, 1, 2);
         #endif
-        #if NOT_EXCLUDED(OP_batchnorm)
+        #if NOT_EXCLUDED(OP_batchnorm_new)
         DECLARE_CUSTOM_OP(batchnorm_new, 3, 1, false, 1, 2);
         #endif
 

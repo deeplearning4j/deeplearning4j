@@ -19,6 +19,7 @@
 //
 
 #include "../benchmark/Parameters.h"
+#include <stdexcept>
 
 namespace nd4j {
     Parameters* Parameters::addIntParam(std::string string, int param) {

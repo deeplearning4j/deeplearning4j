@@ -256,6 +256,7 @@ public class EmptyTests extends BaseNd4jTest {
         assertArrayEquals(new long[]{0}, Nd4j.zeros(0).shape());
         assertArrayEquals(new long[]{0,0}, Nd4j.zeros(0,0).shape());
         assertArrayEquals(new long[]{0,0,0}, Nd4j.zeros(0,0,0).shape());
+        assertArrayEquals(new long[]{0,0,0}, Nd4j.zeros(new int[]{0,0,0}, 'f').shape());
         assertArrayEquals(new long[]{0}, Nd4j.zeros(0L).shape());
         assertArrayEquals(new long[]{0}, Nd4j.zeros(dt, 0L).shape());
 

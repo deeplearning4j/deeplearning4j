@@ -192,9 +192,8 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     void segmentMinFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMinFunctor_, (context, input, indices, output), NUMERIC_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMinFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
     }
-    BUILD_DOUBLE_TEMPLATE(template void segmentMinFunctor_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
 
     // -------------------------------------------------------------------------------------------------------------- //
 
@@ -235,11 +234,9 @@ namespace helpers {
     // -------------------------------------------------------------------------------------------------------------- //
     void unsortedSegmentMinFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMinFunctor_, (context, input, indices, numOfClasses, output),
-                              NUMERIC_TYPES, INTEGER_TYPES);
+                              NUMERIC_TYPES, INDEXING_TYPES);
     }
-    // -------------------------------------------------------------------------------------------------------------- //
 
-    BUILD_DOUBLE_TEMPLATE(template void unsortedSegmentMinFunctor_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
     template <typename T, typename I>
     static __global__ void segmentMinBPLinearKernel(void* inputBuf, Nd4jLong* inputShape, void* forwardOutput,
                                                     Nd4jLong* forwardShape, void* eps, Nd4jLong* epsShape, void* indicesBuf, Nd4jLong* indicesShape,
@@ -260,6 +257,7 @@ namespace helpers {
             gradOut = reinterpret_cast<T*>(eps);
             gradLen = shape::length(epsShape);
         }
+        __syncthreads();
 
         auto start = blockIdx.x * blockDim.x + threadIdx.x;
         auto step = gridDim.x * blockDim.x;
@@ -305,6 +303,7 @@ namespace helpers {
             gradLen = shape::length(epsShape);
             currentLen = shape::length(outTad);
         }
+        __syncthreads();
 
         for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
             auto yIndex = shape::getIndexOffset(i, indicesShape, yLen);
@@ -366,10 +365,8 @@ namespace helpers {
     // segmen min
     int segmentMinFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMinFunctorBP_, (context, input,
-                indices, gradOut, output), NUMERIC_TYPES, INTEGER_TYPES);
+                indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
     }
-    BUILD_DOUBLE_TEMPLATE(template int segmentMinFunctorBP_, (nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
-    // -------------------------------------------------------------------------------------------------------------- //
 
     template <typename T, typename I>
     static int unsortedSegmentMinFunctorBP_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
@@ -412,12 +409,8 @@ namespace helpers {
     }
     // -------------------------------------------------------------------------------------------------------------- //
     int unsortedSegmentMinFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMinFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), NUMERIC_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMinFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
     }
-    // -------------------------------------------------------------------------------------------------------------- //
-    BUILD_DOUBLE_TEMPLATE(template int unsortedSegmentMinFunctorBP_, (nd4j::LaunchContext* context, NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output), NUMERIC_TYPES, INTEGER_TYPES);
-    // -------------------------------------------------------------------------------------------------------------- //
-
 }
 }
 }

@@ -115,7 +115,7 @@ public class ByteOrderTests  extends BaseNd4jTest {
 
     @Test
     public void testScalarEncoding() {
-        val scalar = Nd4j.trueScalar(2.0f);
+        val scalar = Nd4j.scalar(2.0f);
 
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
         val fb = scalar.toFlatArray(bufferBuilder);
@@ -133,7 +133,7 @@ public class ByteOrderTests  extends BaseNd4jTest {
 
     @Test
     public void testVectorEncoding_1() {
-        val scalar = Nd4j.trueVector(new float[]{1, 2, 3, 4, 5});
+        val scalar = Nd4j.createFromArray(new float[]{1, 2, 3, 4, 5});
 
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
         val fb = scalar.toFlatArray(bufferBuilder);
@@ -149,7 +149,7 @@ public class ByteOrderTests  extends BaseNd4jTest {
 
     @Test
     public void testVectorEncoding_2() {
-        val scalar = Nd4j.trueVector(new double[]{1, 2, 3, 4, 5});
+        val scalar = Nd4j.createFromArray(new double[]{1, 2, 3, 4, 5});
 
         FlatBufferBuilder bufferBuilder = new FlatBufferBuilder(0);
         val fb = scalar.toFlatArray(bufferBuilder);

@@ -21,13 +21,41 @@
 #include "../cublasHelper.h"
 
 namespace nd4j {
-    namespace cublas {
-        void* handle() {
-            return nullptr;
-        }
-
-        void destroyHandle(void* handle) {
-            //
-        }
+    static void* handle_() {
+        return nullptr;
     }
+
+    static void destroyHandle_(void* handle) {
+
+    }
+
+    CublasHelper::CublasHelper() {
+
+    }
+
+    CublasHelper::~CublasHelper() {
+
+    }
+
+    CublasHelper* CublasHelper::getInstance() {
+        if (!_INSTANCE)
+            _INSTANCE = new nd4j::CublasHelper();
+
+        return _INSTANCE;
+    }
+
+    void* CublasHelper::handle() {
+        return nullptr;
+    }
+
+    void* CublasHelper::solver() {
+        return nullptr;
+    }
+
+    void* CublasHelper::handle(int deviceId) {
+        return nullptr;
+    }
+
+
+    nd4j::CublasHelper* nd4j::CublasHelper::_INSTANCE = 0;
 }

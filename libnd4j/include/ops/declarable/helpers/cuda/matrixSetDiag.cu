@@ -37,6 +37,7 @@ namespace helpers {
             outLength = shape::length(outputShape);
             diagonalLen = shape::length(diagonalShape);
         }
+        __syncthreads();
 
         for(int i = blockIdx.x; i < batchSize; i+= gridDim.x )
             for(int j = threadIdx.x; j < lastSmallDim; j += blockDim.x) {

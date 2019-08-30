@@ -37,21 +37,21 @@ CUSTOM_OP_IMPL(stack, -1, 1, false, 0, 0) {
 	// no-op in case of empty output array
 	if (output->isEmpty())
 	    return Status::OK();
-	
+
 	// input validation
-	// check whether shapes of all input array are the same				
+	// check whether shapes of all input array are the same
 	for (int i = 0; i < (int) block.width() - 1; ++i)
 		REQUIRE_TRUE(shape::equalsSoft((INPUT_VARIABLE(i))->getShapeInfo(), (INPUT_VARIABLE(i+1))->getShapeInfo()), 0, "STACK op: the shapes of all input arrays must be the same !");
- 	
+
 	REQUIRE_TRUE(dim <= input->rankOf(), 0, "STACK op: the input dimension parameter must be <= rank of input arrays shapes (rank=%i), but got %i instead !", input->shapeOf(), dim);
 
- 	
- 	std::vector<NDArray*> inArrs(block.width());
+
+ 	std::vector<const NDArray*> inArrs(block.width());
  	for(int i = 0; i < block.width(); ++i)
 		inArrs[i] = INPUT_VARIABLE(i);
-	
+
 	helpers::stack(block.launchContext(), inArrs, output, dim);
-  	
+
   	return Status::OK();
 }
 DECLARE_SYN(pack, stack);
@@ -66,7 +66,7 @@ DECLARE_SYN(Pack, stack);
 	}
 
 DECLARE_SHAPE_FN(stack) {
-	
+
 	// check whether input dimension is within rank range
 	auto inShapeInfo = inputShape->at(0);
 	int rank = shape::rank(inShapeInfo);
@@ -93,11 +93,11 @@ DECLARE_SHAPE_FN(stack) {
 	if(rank == 0) {
 	    return SHAPELIST(ConstantShapeHelper::getInstance()->vectorShapeInfo(block.width(), ArrayOptions::dataType(inShapeInfo)));
 	}
-	
+
 	//the rank of output ShapeInfo is larger by one compared to input ShapeInfo
 	std::vector<Nd4jLong> outShape(inShapeInfo + 1, inShapeInfo + 1 + rank);
-	
-	// insert (int) block.width() at dim position of input shape to get output shape	
+
+	// insert (int) block.width() at dim position of input shape to get output shape
 	outShape.insert(outShape.begin() + Nd4jLong(dim), (Nd4jLong) block.width());
     return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(inShapeInfo), shape::order(inShapeInfo), outShape)));
 }

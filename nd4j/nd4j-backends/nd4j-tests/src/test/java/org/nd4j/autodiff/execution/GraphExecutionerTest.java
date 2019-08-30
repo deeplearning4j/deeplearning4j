@@ -70,7 +70,7 @@ public class GraphExecutionerTest extends BaseNd4jTest {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
         SDVariable sdVariable = sameDiff.var("ones",ones);
-        SDVariable result = sdVariable.addi(1.0);
+        SDVariable result = sdVariable.add(1.0);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
 
         val executioner = new NativeGraphExecutioner();
@@ -167,7 +167,7 @@ public class GraphExecutionerTest extends BaseNd4jTest {
         SameDiff sameDiff = SameDiff.create();
         INDArray ones = Nd4j.ones(4);
         SDVariable sdVariable = sameDiff.var("ones",ones);
-        SDVariable result = sdVariable.addi(1.0);
+        SDVariable result = sdVariable.add(1.0);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
 
         val executioner = new NativeGraphExecutioner();

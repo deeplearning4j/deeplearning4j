@@ -40,8 +40,7 @@ __global__ static void polyGammaCuda(const void *vn, const Nd4jLong *nShapeInfo,
     
     if (threadIdx.x == 0)         
         len = shape::length(nShapeInfo);    
-
-    __syncthreads();    
+    __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
     const auto totalThreads = gridDim.x * blockDim.x;

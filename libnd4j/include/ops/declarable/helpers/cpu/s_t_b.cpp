@@ -15,7 +15,8 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 19.01.18.
+// @author Yurii Shyrma (iuriish@yahoo.com)
+// @author raver119@gmail.com
 //
 
 #include <ops/declarable/helpers/s_t_b.h>
@@ -25,6 +26,367 @@ namespace ops {
 namespace helpers {
 
 
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void batchToSpace_(const NDArray& input, NDArray& output, const uint cropBottom, const uint cropTop, const uint cropLeft, const uint cropRight) {
+
+    // input [bS, H * blockSize, W * blockSize, iC]
+    // output [bS, H * blockSize - cropBottom - cropTop, W * blockSize - cropLeft - cropRight, iC]
+
+    // if (cropTop = cropBottom = cropRight = cropLeft = 0) shapes are the same
+    // else:
+    // oH -> [cropBottom, iH - cropTop]
+    // oW -> [cropLeft,   iH - cropRight]
+    // xLen > zLen
+
+    const T* x = input.bufferAsT<T>();
+          T* z = output.bufferAsT<T>();
+
+    const int rank = 4;
+
+    const Nd4jLong* xShapeInfo = input.getShapeInfo();
+    const Nd4jLong* zShapeInfo = output.getShapeInfo();
+
+    const uint bS = xShapeInfo[1];
+    const uint iH = xShapeInfo[2];
+    const uint iW = xShapeInfo[3];
+    const uint iC = xShapeInfo[4];
+
+    // loop through output array
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(4))
+    for (uint b = 0; b < bS; ++b) {
+        for (uint h = cropBottom; h < iH - cropTop; ++h) {
+            for (uint w = cropLeft; w < iW - cropRight; ++w) {
+                for (uint c = 0; c < iC; ++c) {
+
+                    const Nd4jLong xOffset = b * xShapeInfo[5] + h * xShapeInfo[6] + w * xShapeInfo[7] + c * xShapeInfo[8];
+
+                    const Nd4jLong zOffset = b * zShapeInfo[5] + (h - cropBottom) * zShapeInfo[6] + (w - cropLeft) * zShapeInfo[7] + c * zShapeInfo[8];
+
+                    z[zOffset] = x[xOffset];
+                }
+            }
+        }
+    }
+}
+
+BUILD_SINGLE_TEMPLATE(template void batchToSpace_, (const NDArray& input, NDArray& output, const uint cropBottom, const uint cropTop, const uint cropLeft, const uint cropRight), LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+void batchToSpace(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const uint cropBottom, const uint cropTop, const uint cropLeft, const uint cropRight, const uint blockSize) {
+
+    // [bS*blockSize*blockSize, H/blockSize, W/blockSize, iC] is rearranged/permuted to [bS, oH, oW, iC]
+    // oH = H - cropTop  - cropBottom
+    // oW = W - cropLeft - cropRight
+
+    NDArray inputRearranged0 = input.reshape(input.ordering(), {blockSize, blockSize, output.sizeAt(0), input.sizeAt(1), input.sizeAt(2), input.sizeAt(3)});
+    inputRearranged0.permutei({2, 3,0, 4,1, 5});
+
+    if(input.lengthOf() == output.lengthOf())
+        output.assign(inputRearranged0);
+    else {
+        NDArray inputRearranged1 = inputRearranged0.reshape(input.ordering(), {output.sizeAt(0), input.sizeAt(1) * blockSize, input.sizeAt(2) * blockSize, input.sizeAt(3)});
+        BUILD_SINGLE_SELECTOR(input.dataType(), batchToSpace_, (inputRearranged1, output, cropBottom, cropTop, cropLeft, cropRight), LIBND4J_TYPES);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& output, const uint numOfSpatialDims) {
+
+    // input [bS, H * blockShape[0], W * blockShape[1], iC]
+    // output [bS, H * blockShape[0] - cropBottom - cropTop, W * blockShape[1] - cropLeft - cropRight, iC]
+
+    // if (cropTop = cropBottom = cropRight = cropLeft = 0) shapes are the same
+    // else:
+    // oH -> [cropBottom, iH - cropTop]
+    // oW -> [cropLeft,   iH - cropRight]
+    // xLen >= zLen
+
+    const T* x = input.bufferAsT<T>();
+          T* z = output.bufferAsT<T>();
+
+    const int rank = input.rankOf();
+    const Nd4jLong zLen = output.lengthOf();
+
+    std::vector<Nd4jLong> coords(rank);
+
+    // loop through input array
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
+
+    for (Nd4jLong i = 0; i < zLen; ++i) {
+
+        shape::index2coords(rank, output.shapeOf(), i, zLen, coords.data());
+
+        const auto zOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), coords.data(), rank);
+
+        // evaluate spatial coordinates for x
+        for(uint j = 1; j <= numOfSpatialDims; ++j)
+            coords[j] += crop.e<uint>(j - 1, 0);       // add crop left
+
+        z[zOffset] = x[shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank)];
+    }
+}
+
+BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_, (const NDArray& input, const NDArray& crop, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+void batchToSpaceND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& crop, NDArray& output) {
+
+    // 4D example, numOfSpatialDims = 2 - two spatial dimensions
+    // [bS*blockShape[0]*blockShape[1], iH, iW, iC] is rearranged/permuted to [bS, iH*blockShape[0] - cropTop  - cropBottom, iW*blockShape[1] - cropLeft - cropRight, iC]
+
+    const uint rank = input.rankOf();
+    const uint numOfSpatialDims = blockShape.sizeAt(0);
+
+    //*** construct reshaping std::vector for first reshape of input array ***//
+
+    std::vector<Nd4jLong> temp(numOfSpatialDims + rank);
+
+    int i;
+    for(i = 0; i < numOfSpatialDims; ++i)
+        temp[i] = blockShape.e<Nd4jLong>(i);
+    temp[i++] = output.sizeAt(0);
+    for(int j = 1; j < rank; ++i, ++j)
+        temp[i] = input.sizeAt(j);
+
+    NDArray inputRearranged0 = input.reshape(input.ordering(), temp);
+
+    //*** construct permuting std::vector for permutation of input array ***//
+
+    temp[0] = numOfSpatialDims;
+
+    for(i = 1; i <= numOfSpatialDims; ++i) {
+        temp[2*i - 1] = numOfSpatialDims + i;
+        temp[2*i]     = i - 1;
+    }
+    for(i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i)
+        temp[i] = i;
+
+    inputRearranged0.permutei(temp);
+
+
+    if(input.lengthOf() == output.lengthOf()) {
+        output.assign(inputRearranged0);
+    }
+    else {
+        //*** construct reshaping std::vector for second reshape of input array ***//
+
+        temp.resize(rank);
+
+        temp[0] = output.sizeAt(0);
+
+        for(i = 1; i < rank; ++i)
+            temp[i] = (i <= numOfSpatialDims) ? input.sizeAt(i) * blockShape.e<Nd4jLong>(i - 1) : input.sizeAt(i);
+
+        NDArray inputRearranged1 = inputRearranged0.reshape(input.ordering(), temp);
+
+        BUILD_SINGLE_SELECTOR(input.dataType(), batchToSpaceND_, (inputRearranged1, crop, output, numOfSpatialDims), LIBND4J_TYPES);
+    }
+}
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void spaceToBatch_(const NDArray& input, NDArray& output, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight) {
+
+    // input [bS, H * blockSize - padBottom - padTop, W * blockSize - padLeft - padRight, iC]
+    // output [bS, H * blockSize, W * blockSize, iC]
+
+    // if (padTop = padBottom = padRight = padLeft = 0) shapes are the same
+    // else:
+    // iH -> [padBottom, oH - padTop]
+    // iW -> [padLeft,   oW - padRight]
+    // zLen > xLen
+
+    const T* x = input.bufferAsT<T>();
+          T* z = output.bufferAsT<T>();
+
+    const int rank = 4;
+
+    const Nd4jLong* xShapeInfo = input.getShapeInfo();
+    const Nd4jLong* zShapeInfo = output.getShapeInfo();
+
+    const uint bS = zShapeInfo[1];
+    const uint oH = zShapeInfo[2];
+    const uint oW = zShapeInfo[3];
+    const uint iC = zShapeInfo[4];
+
+    // loop through output array
+    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(4))
+    for (uint b = 0; b < bS; ++b) {
+        for (uint h = 0; h < oH; ++h) {
+            for (uint w = 0; w < oW; ++w) {
+                for (uint c = 0; c < iC; ++c) {
+
+                    const Nd4jLong zOffset = b * zShapeInfo[5] + h * zShapeInfo[6] + w * zShapeInfo[7] + c * zShapeInfo[8];
+
+                    if(h >= padBottom && h < oH - padTop && w >= padLeft && w < oW - padRight) {
+                        const Nd4jLong xOffset = b * xShapeInfo[5] + (h - padBottom) * xShapeInfo[6] + (w - padLeft) * xShapeInfo[7] + c * xShapeInfo[8];
+                        z[zOffset] = x[xOffset];
+                    }
+                    else
+                        z[zOffset] = 0.f;
+                }
+            }
+        }
+    }
+}
+
+BUILD_SINGLE_TEMPLATE(template void spaceToBatch_, (const NDArray& input, NDArray& output, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight), LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+void spaceToBatch(nd4j::LaunchContext* context, const NDArray& input, NDArray& output, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight, const uint blockSize) {
+
+    // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockSize*blockSize, (iH + padBottom + padTop)/blockSize, (iW + padLeft + padRight)/blockSize, iC]
+
+    NDArray outputRearranged0 = output.reshape(output.ordering(), {blockSize, blockSize, input.sizeAt(0), output.sizeAt(1), output.sizeAt(2), output.sizeAt(3)});
+    outputRearranged0.permutei({2, 3,0, 4,1, 5});
+
+    if(input.lengthOf() == output.lengthOf()) {
+        outputRearranged0.assign(input);
+    }
+    else {
+        NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), {input.sizeAt(0), output.sizeAt(1) * blockSize, output.sizeAt(2) * blockSize, output.sizeAt(3)});
+        BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatch_, (input, outputRearranged1, padBottom, padTop, padLeft, padRight), LIBND4J_TYPES);
+
+        if(output.getBuffer() != outputRearranged1.getBuffer())
+            outputRearranged0.assign(outputRearranged1);
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+//////////////////////////////////////////////////////////////////////////
+template <typename T>
+static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArray& output, const uint numOfSpatialDims) {
+
+    // 4D example
+    // input [bS, H * blockShape[0] - padBottom - padTop, W * blockShape[1] - padLeft - padRight, iC]
+    // output [bS, H * blockShape[0], W * blockShape[1], iC]
+
+    // if (padTop = padBottom = padRight = padLeft = 0) shapes are the same
+    // else:
+    // iH -> [padBottom, oH - padTop]
+    // iW -> [padLeft,   oW - padRight]
+    // zLen > xLen
+
+    const T* x = input.bufferAsT<T>();
+          T* z = output.bufferAsT<T>();
+
+    const int rank = input.rankOf();
+    const Nd4jLong zLen = output.lengthOf();
+
+    std::vector<Nd4jLong> coords(rank);
+
+    // loop through output array
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
+    for (Nd4jLong i = 0; i < zLen; ++i) {
+
+        shape::index2coords(rank, output.shapeOf(), i, zLen, coords.data());
+
+        const auto zOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), coords.data(), rank);
+
+        bool within = true;
+
+        for(uint j = 1; j <= numOfSpatialDims; ++j) {
+
+            const auto padLeft  = padding.e<uint>(j - 1, 0);
+            const auto padRight = padding.e<uint>(j - 1, 1);
+
+            within &= (coords[j] >= padLeft && coords[j] < output.sizeAt(j) - padRight);
+
+            if(!within)
+                break;
+
+            coords[j] -= padLeft;       // get coordinates for x
+        }
+
+        if(within)
+            z[zOffset] = x[shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank)];
+        else
+            z[zOffset] = 0.f;
+    }
+}
+
+BUILD_SINGLE_TEMPLATE(template void spaceToBatchND_, (const NDArray& input, const NDArray& padding, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);
+
+//////////////////////////////////////////////////////////////////////////
+void spaceToBatchND(nd4j::LaunchContext* context, const NDArray& input, const NDArray& blockShape, const NDArray& padding, NDArray& output ) {
+
+    // 4D example with two spatial dimensions
+    // [bS, iH, iW, iC] is rearranged/permuted to [bS*blockShape[0]*blockShape[1], (iH + padBottom + padTop)/blockShape[0], (iW + padLeft + padRight)/blockShape[1], iC]
+
+    const uint rank = input.rankOf();
+
+    const uint numOfSpatialDims = blockShape.sizeAt(0);
+
+    //*** construct reshaping std::vector for first reshape of output array ***//
+    std::vector<Nd4jLong> temp(numOfSpatialDims + rank);
+
+    int i;
+    for(i = 0; i < numOfSpatialDims; ++i)
+        temp[i] = blockShape.e<Nd4jLong>(i);
+    temp[i++] = input.sizeAt(0);
+    for(int j = 1; j < rank; ++i, ++j)
+        temp[i] = output.sizeAt(j);
+
+    NDArray outputRearranged0 = output.reshape(output.ordering(), temp);
+
+    //*** construct permuting std::vector for permutation of output array ***//
+
+    temp[0] = numOfSpatialDims;
+
+    for(i = 1; i <= numOfSpatialDims; ++i) {
+        temp[2*i - 1] = numOfSpatialDims + i;
+        temp[2*i]     = i - 1;
+    }
+    for(i = 2 * numOfSpatialDims + 1; i < temp.size(); ++i)
+        temp[i] = i;
+
+    outputRearranged0.permutei(temp);
+
+    // ****** //
+
+    if(input.lengthOf() == output.lengthOf()) {
+        outputRearranged0.assign(input);
+    }
+    else {
+
+        //*** construct reshaping std::vector for second reshape of output array ***//
+        temp.resize(rank);
+
+        temp[0] = input.sizeAt(0);
+
+        for(i = 1; i < rank; ++i)
+            temp[i] = (i <= numOfSpatialDims) ? output.sizeAt(i) * blockShape.e<Nd4jLong>(i - 1) : output.sizeAt(i);
+
+        NDArray outputRearranged1 = outputRearranged0.reshape(output.ordering(), temp);
+
+        BUILD_SINGLE_SELECTOR(input.dataType(), spaceToBatchND_, (input, padding, outputRearranged1, numOfSpatialDims), LIBND4J_TYPES);
+
+        if(output.getBuffer() != outputRearranged1.getBuffer())
+            outputRearranged0.assign(outputRearranged1);
+    }
+}
+
+
+/*
     template <int N, bool B2S>
     struct SpaceToBatchHelper {
         template <typename T>
@@ -124,6 +486,8 @@ namespace helpers {
 
 #undef STB_BOOL
 #undef STB_DIM
+*/
+
 }
 }
 }

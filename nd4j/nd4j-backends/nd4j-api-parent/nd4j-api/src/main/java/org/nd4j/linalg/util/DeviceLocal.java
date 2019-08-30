@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.util;
 
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import edu.umd.cs.findbugs.annotations.Nullable;
@@ -24,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
@@ -31,14 +33,23 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  *
  * @author raver119@gmail.com
  */
-public class DeviceLocal<T extends Object> {
-    private Map<Integer, T> backingMap = new ConcurrentHashMap<>();
-    private List<ReentrantReadWriteLock> locksMap = new ArrayList<>();
+public abstract class DeviceLocal<T extends Object> {
+    protected Map<Integer, T> backingMap = new ConcurrentHashMap<>();
+    protected List<ReentrantReadWriteLock> locksMap = new ArrayList<>();
+    protected List<AtomicInteger> updatesMap = new ArrayList<>();
+    protected final boolean delayedMode;
 
-    public DeviceLocal() {
+    protected volatile INDArray delayedArray;
+
+    protected int lastSettledDevice = -1;
+
+    public DeviceLocal(boolean delayedMode) {
+        this.delayedMode = delayedMode;
+
         int numDevices = Nd4j.getAffinityManager().getNumberOfDevices();
         for (int i = 0; i < numDevices; i++) {
             locksMap.add(new ReentrantReadWriteLock());
+            updatesMap.add(new AtomicInteger(-1));
         }
     }
 

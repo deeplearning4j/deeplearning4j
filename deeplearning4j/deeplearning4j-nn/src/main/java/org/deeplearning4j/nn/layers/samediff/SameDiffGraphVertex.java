@@ -99,25 +99,28 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 doInit();
             }
 
+            Map<String,INDArray> phMap = new HashMap<>();
             config.validateInput(inputs);
             for(int i=0; i<inputs.length; i++ ){
                 String name = config.getVertexParams().getInputs().get(i);
                 final String maskName = name + "_mask";
-                sameDiff.associateArrayWithVariable(inputs[i].dup(), sameDiff.getVariable(name));
+                phMap.put(name, inputs[i]);
                 if(maskArrays != null && maskArrays[i] != null) {
-                    sameDiff.associateArrayWithVariable(maskArrays[i].dup(), maskName);
+                    phMap.put(maskName, maskArrays[i]);
                 }else{
-                    sameDiff.associateArrayWithVariable(createMask(dataType, inputs[i].shape()), maskName);
+                    phMap.put(maskName, createMask(dataType, inputs[i].shape()));
                 }
             }
 
             if(paramTable != null && paramTable.size() > 0) {
-                for (String s : paramTable.keySet()) {
-                    sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+                //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
+                //TODO Find a more efficient solution for this
+                for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+                    INDArray arr = e.getValue();
+                    sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
                 }
             }
-            Map<String,INDArray> out = sameDiff.exec(null, outputKey);
-            INDArray result = out.get(outputKey);
+            INDArray result = sameDiff.outputSingle(phMap, outputKey);
 
             //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
             sameDiff.clearPlaceholders(true);
@@ -136,10 +139,10 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 doInit();
             }
 
+            List<String> inputNames = config.getVertexParams().getInputs();
             if(!sameDiff.hasGradientFunction()) {
                 //Create when scoped out, to ensure any arrays are not in WS
-                List<String> inputs = config.getVertexParams().getInputs();
-                String[] inArr = inputs.toArray(new String[inputs.size()]);
+                String[] inArr = inputNames.toArray(new String[inputNames.size()]);
                 sameDiff.createGradFunction(inArr);
             }
             config.validateInput(inputs);
@@ -149,25 +152,31 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             for(String s : inputs){
                 phMap.put(s, this.inputs[i++]);
             }
-            if(maskArrays != null){
-                for( int j=0; j<maskArrays.length; j++ ){
-                    String name = inputs.get(j);
-                    final String maskName = name + "_mask";
-                    if(maskArrays[j] != null) {
-                        sameDiff.associateArrayWithVariable(maskArrays[j].dup(), maskName);
-                    }
+            for( int j=0; j<this.inputs.length; j++ ){
+                String name = inputs.get(j);
+                final String maskName = name + "_mask";
+                if(maskArrays != null && maskArrays[j] != null) {
+                    phMap.put(maskName, maskArrays[j]);
+                }else{
+                    phMap.put(maskName, createMask(dataType, this.inputs[j].shape()));
                 }
             }
             String epsName = fn.getGradPlaceholderName();
             phMap.put(epsName, epsilon);
 
 
-            for(String s : paramTable.keySet() ){
-                //TODO this should only be necessary, in theory, once!
-                sameDiff.associateArrayWithVariable(paramTable.get(s), s);
+            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
+            //TODO Find a more efficient solution for this
+            for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+                INDArray arr = e.getValue();
+                sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
             }
 
-            sameDiff.execBackwards(phMap);
+            List<String> required = new ArrayList<>(inputNames.size());     //Ensure that the input placeholder gradients are calculated
+            for(String s : inputNames){
+                required.add(sameDiff.getVariable(s).gradient().getVarName());
+            }
+            sameDiff.execBackwards(phMap, required);
             for(String s : paramTable.keySet() ){
                 INDArray sdGrad = sameDiff.grad(s).getArr();
                 INDArray dl4jGrad = gradTable.get(s);
@@ -176,9 +185,17 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             }
 
             dLdIns = new INDArray[inputs.size()];
+            String fnName = fn.getGradPlaceholderName();
             for(int j=0; j<inputs.size(); j++ ){
                 String name = inputs.get(j);
                 dLdIns[j] = sameDiff.grad(name).getArr();
+
+                String gradName = sameDiff.grad(inputNames.get(j)).getVarName();
+                if(dLdIns[j] == null && fnName.equals(gradName)){
+                    //Edge case with lambda vertices like identity: SameDiff doesn't store the placeholders
+                    // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
+                    dLdIns[j] = epsilon;
+                }
             }
         }
 
@@ -218,9 +235,13 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             int i=0;
             for(String s : config.getVertexParams().getInputs()){
                 val inputShape = inputs[i++].shape().clone();
-                SDVariable inputVar = sameDiff.var(s, dataType, inputShape);
+                INDArray maskTemp = createMask(dataType, inputShape);
+                inputShape[0] = -1;
+                SDVariable inputVar = sameDiff.placeHolder(s, dataType, inputShape);
                 inputVars.put(s, inputVar);
-                SDVariable maskVar = sameDiff.constant(s + "_mask", createMask(dataType, inputShape));
+                long[] maskShape = maskTemp.shape().clone();
+                maskShape[0] = -1;
+                SDVariable maskVar = sameDiff.placeHolder(s + "_mask", maskTemp.dataType(), maskShape);
                 maskVars.put(s, maskVar);
             }
 

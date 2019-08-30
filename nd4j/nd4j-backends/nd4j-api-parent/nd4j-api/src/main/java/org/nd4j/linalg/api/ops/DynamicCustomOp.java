@@ -21,15 +21,13 @@ import com.google.common.primitives.Doubles;
 import com.google.common.primitives.Longs;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
-import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
@@ -135,14 +133,23 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
         bArguments = new ArrayList<>();
     }
 
+    /**
+     * Initialize this operation for execution (pre created ndarrays)
+     *
+     * @param inputs  the inputs
+     * @param outputs the outputs of the op, may be null
+     */
+    public DynamicCustomOp(INDArray[] inputs, INDArray[] outputs) {
+        this(null, inputs, outputs);
+    }
+
 
     /**
      * Initialize this operation for execution (pre created ndarrays)
      *
-     * @param opName  the operation opName to use
-     *                for invocation
+     * @param opName  the operation opName to use for invocation
      * @param inputs  the inputs
-     * @param outputs the outputs of the op
+     * @param outputs the outputs of the op, may be null
      */
     public DynamicCustomOp(String opName, INDArray[] inputs, INDArray[] outputs) {
         this(opName, inputs, outputs, Lists.<Double>newArrayList(), Lists.<Integer>newArrayList());
@@ -199,7 +206,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public SDVariable[] outputVariables(String baseName) {
         if (this.outputVariables == null) {
-            val outputNames = sameDiff.getOutputsForFunction(this);
+            val outputNames = sameDiff.getOutputsForOp(this);
             //no need to dynamically create if already exists
             if (outputNames != null) {
                 outputVariables = new SDVariable[outputNames.length];
@@ -224,7 +231,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
             }
 
             outputVariables = newVars;
-            if (sameDiff.getOutputsForFunction(this) == null)
+            if (sameDiff.getOutputsForOp(this) == null)
                 sameDiff.addOutgoingFor(outputVariables, this);
             return newVars;
         }
@@ -515,7 +522,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
                 throw new ND4JIllegalStateException("Op [" + opName() + "] failure for [" + this.getOwnName() + "]: Number of inputs is invalid for execution. "
                         + numInputArguments() + " were provided but " + descriptor.getNumInputs() + " are required for execution");
             } else {
-                String[] inputNames = sameDiff.getInputsForFunction(this);
+                String[] inputNames = sameDiff.getInputsForOp(this);
                 String[] arrayShapes = new String[inputNames.length];
                 for( int i=0; i<inputNames.length; i++ ){
                     INDArray arr = sameDiff.getVariable(inputNames[i]).getArr();
@@ -596,8 +603,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
 
+    }
+
+    protected static INDArray[] wrapOrNull(INDArray in){
+        return in == null ? null : new INDArray[]{in};
     }
 
     public static class DynamicCustomOpsBuilder {

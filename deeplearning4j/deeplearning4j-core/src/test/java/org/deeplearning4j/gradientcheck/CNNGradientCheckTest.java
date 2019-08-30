@@ -298,7 +298,7 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
         int inputDepth = 1;
 
         int[] kernel = {2, 2};
-        int[] blocks = {1, 1};
+        int[] blocks = {2, 2};
 
         String[] activations = {"sigmoid", "tanh"};
         SubsamplingLayer.PoolingType[] poolingTypes =
@@ -309,8 +309,8 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
             for (SubsamplingLayer.PoolingType poolingType : poolingTypes) {
                 for (int minibatchSize : minibatchSizes) {
                     INDArray input = Nd4j.rand(minibatchSize, width * height * inputDepth);
-                    INDArray labels = Nd4j.zeros(minibatchSize, nOut);
-                    for (int i = 0; i < minibatchSize; i++) {
+                    INDArray labels = Nd4j.zeros(4 * minibatchSize, nOut);
+                    for (int i = 0; i < 4 * minibatchSize; i++) {
                         labels.putScalar(new int[]{i, i % nOut}, 1.0);
                     }
 
@@ -318,11 +318,11 @@ public class CNNGradientCheckTest extends BaseDL4JTest {
                             new NeuralNetConfiguration.Builder()
                                     .dataType(DataType.DOUBLE)
                                     .updater(new NoOp()).weightInit(new NormalDistribution(0, 1))
-                                    .list().layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth)
-                                    .nOut(3).build())//output: (5-2+0)/1+1 = 4
+                                    .list()
+                                    .layer(new ConvolutionLayer.Builder(kernel).nIn(inputDepth).nOut(3).build())
                                     .layer(new SpaceToBatchLayer.Builder(blocks).build()) //trivial space to batch
                                     .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MCXENT)
-                                            .activation(Activation.SOFTMAX).nIn(4 * 4 * 3)
+                                            .activation(Activation.SOFTMAX)
                                             .nOut(nOut).build())
                                     .setInputType(InputType.convolutionalFlat(height, width, inputDepth))
                                     .build();

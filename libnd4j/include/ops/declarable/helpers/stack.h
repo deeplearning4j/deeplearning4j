@@ -28,8 +28,8 @@ namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
-void stack(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray* outArr, const int dim);
-    
+void stack(nd4j::LaunchContext * context, const std::vector<const NDArray*>& inArrs, NDArray* outArr, const int dim);
+
 
 }
 }

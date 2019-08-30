@@ -32,6 +32,7 @@ import org.deeplearning4j.util.ConvolutionUtils;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.util.OneTimeLogger;
@@ -131,6 +132,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             try{
                 ret = helper.backpropGradient(input, epsilon, kernel, strides, pad,
                         layerConf().getPoolingType(), convolutionMode, dilation, workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Exception e){
                 if(e.getMessage() != null && e.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation
@@ -169,7 +172,7 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 b = DynamicCustomOp.builder("maxpool2d_bp");
                 break;
             case AVG:
-                b = DynamicCustomOp.builder("maxpool2d_bp");
+                b = DynamicCustomOp.builder("avgpool2d_bp");
                 if(layerConf().isAvgPoolIncludePadInDivisor()){
                     //Mostly this is a legacy case - beta4 and earlier models.
                     extra = 1;    //Divide by "number present" excluding padding
@@ -256,6 +259,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             try {
                 ret = helper.activate(input, training, kernel, strides, pad, layerConf().getPoolingType(),
                         convolutionMode, dilation, workspaceMgr);
+            } catch (ND4JOpProfilerException e){
+                throw e;    //NaN panic etc for debugging
             } catch (Exception e){
                 if(layerConf().isCudnnAllowFallback()){
                     helperCountFail++;
@@ -284,8 +289,14 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 b = DynamicCustomOp.builder("maxpool2d");
                 break;
             case AVG:
-                b = DynamicCustomOp.builder("maxpool2d");
-                extra = 1;    //Divide by kH*kW not "number present" to match backward pass     -- TODO change this to support both legacy behaviour (deserialized nets) and "exclude" by default for new nets
+                b = DynamicCustomOp.builder("avgpool2d");
+                if(layerConf().isAvgPoolIncludePadInDivisor()){
+                    //Mostly this is a legacy case - beta4 and earlier models.
+                    extra = 1;    //Divide by "number present" excluding padding
+                } else {
+                    //Default behaviour
+                    extra = 0;    //Divide by kH*kW not "number present"
+                }
                 break;
             case PNORM:
                 b = DynamicCustomOp.builder("pnormpool2d");

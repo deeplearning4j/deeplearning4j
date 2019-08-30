@@ -25,12 +25,15 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataBuffer;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.profiler.OpProfiler;
 import org.nd4j.linalg.profiler.ProfilerConfig;
@@ -428,4 +431,63 @@ public class OperationProfilerTests extends BaseNd4jTest {
         assertEquals(1.0f, stats.getMeanValue(), 1e-5);
     }
 
+    @Test
+    public void testNanPanic(){
+        try {
+            DynamicCustomOp op = DynamicCustomOp.builder("add")
+                    .addInputs(Nd4j.valueArrayOf(10, Double.NaN).castTo(DataType.DOUBLE), Nd4j.scalar(0.0))
+                    .addOutputs(Nd4j.create(DataType.DOUBLE, 10))
+                    .build();
+
+            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().checkForNAN(true).build());
+            try {
+                Nd4j.exec(op);  //Should trigger NaN panic
+                fail();
+            } catch (Exception e){
+                //throw new RuntimeException(e);
+                log.info("Message: {}", e.getMessage());
+                assertTrue(e.getMessage(), e.getMessage().contains("NaN"));
+            }
+
+            INDArray in = op.getInputArgument(0);
+
+            try {
+                Transforms.sigmoid(in);
+                fail();
+            } catch (Exception e){
+                assertTrue(e.getMessage().contains("NaN"));
+            }
+        } finally {
+            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().checkForNAN(false).build());
+        }
+    }
+
+    @Test
+    public void testInfPanic(){
+        try {
+            DynamicCustomOp op = DynamicCustomOp.builder("add")
+                    .addInputs(Nd4j.valueArrayOf(10, Double.POSITIVE_INFINITY).castTo(DataType.DOUBLE), Nd4j.scalar(0.0))
+                    .addOutputs(Nd4j.create(DataType.DOUBLE, 10))
+                    .build();
+
+            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().checkForINF(true).build());
+            try {
+                Nd4j.exec(op);  //Should trigger NaN panic
+                fail();
+            } catch (Exception e){
+                assertTrue(e.getMessage(), e.getMessage().contains("Inf"));
+            }
+
+            INDArray in = op.getInputArgument(0);
+
+            try {
+                Transforms.max(in, 1.0, false);
+                fail();
+            } catch (Exception e){
+                assertTrue(e.getMessage().contains("Inf"));
+            }
+        } finally {
+            Nd4j.getExecutioner().setProfilingConfig(ProfilerConfig.builder().checkForINF(false).build());
+        }
+    }
 }

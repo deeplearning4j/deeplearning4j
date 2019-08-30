@@ -189,7 +189,7 @@ namespace functions {
             auto dx = static_cast<T*>(vdx);
             auto extraParams = static_cast<T*>(vextraParams);
             auto reductionBuffer = static_cast<T*>(vreductionBuffer);
-
+            auto order = shape::order(xShapeInfo);
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
             __shared__ volatile int resultScalar;
 
@@ -231,7 +231,6 @@ namespace functions {
 
                 xLength = shape::length(xShapeInfo);
             }
-
             __syncthreads();
 
             if (!resultScalar) {
@@ -267,6 +266,7 @@ namespace functions {
                         if (threadIdx.x == 0) {
                             result[r] = sPartials[threadIdx.x].index;
                         }
+                        __syncthreads();
                     }
                 } else {
 
@@ -287,13 +287,14 @@ namespace functions {
                         if (threadIdx.x == 0) {
                             result[i] = sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
                         }
+                        __syncthreads();
                     }
                 }
             } else {
                 auto n = shape::length(xShapeInfo);
                 auto xElementWiseStride = shape::elementWiseStride(xShapeInfo);
 
-                if(xElementWiseStride >= 1) {
+                if(xElementWiseStride >= 1 && order == 'c') {
                     for(Nd4jLong i = tid;i < n; i += (blockDim.x * gridDim.x)) {
                         IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
                         reduction = OpType::update(reduction, indexVal, extraParams);
@@ -360,6 +361,32 @@ namespace functions {
 
             }
         }
+
+
+
+
+        template <typename T>
+        Nd4jLong IndexReduce<T>::execScalar(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams) {
+            return 0;
+        }
+
+        template <typename T>
+        void IndexReduce<T>::exec(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
+
+        }
+
+        template <typename T>
+        template<typename OpType>
+        Nd4jLong IndexReduce<T>:: execScalar(void *x, Nd4jLong *xShapeInfo, void *extraParams) {
+            return 0;
+        }
+
+        template <typename T>
+        template<typename OpType>
+        _CUDA_H void IndexReduce<T>::exec(void *x, Nd4jLong *xShapeInfo, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
+
+        }
+
 
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
     }

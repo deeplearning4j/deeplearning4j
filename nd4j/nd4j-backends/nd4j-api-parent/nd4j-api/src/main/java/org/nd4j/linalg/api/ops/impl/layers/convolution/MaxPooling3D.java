@@ -18,7 +18,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -43,8 +43,12 @@ public class MaxPooling3D extends Pooling3D {
     public MaxPooling3D() {
     }
 
-    public MaxPooling3D(SameDiff sameDiff, SDVariable input, INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
-        super(sameDiff, new SDVariable[]{input}, new INDArray[]{arrayInput}, new INDArray[]{arrayOutput}, false, config, Pooling3DType.MAX);
+    public MaxPooling3D(SameDiff sameDiff, SDVariable input, Pooling3DConfig config) {
+        super(sameDiff, new SDVariable[]{input}, null, null, false, config, Pooling3DType.MAX);
+    }
+
+    public MaxPooling3D(SameDiff sameDiff, INDArray arrayInput, INDArray arrayOutput, Pooling3DConfig config) {
+        super(sameDiff, null, new INDArray[]{arrayInput}, wrapOrNull(arrayOutput), false, config, Pooling3DType.MAX);
     }
 
     @Override
@@ -74,7 +78,7 @@ public class MaxPooling3D extends Pooling3D {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         throw new UnsupportedOperationException("Not yet implemented");
     }
 

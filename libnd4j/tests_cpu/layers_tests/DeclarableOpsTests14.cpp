@@ -229,22 +229,22 @@ TEST_F(DeclarableOpsTests14, test_empty_fill_1) {
 }
 
 TEST_F(DeclarableOpsTests14, test_lstmBlockCell_1) {
-    auto a = NDArrayFactory::create<float>('c', {1, 5}, {0.7787856f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f});
-    auto b = NDArrayFactory::create<float>('c', {1, 3});
-    auto c = NDArrayFactory::create<float>('c', {1, 3});
-    auto d = NDArrayFactory::create<float>('c', {8, 12}, {-0.15320599,-0.120416045,0.33126968,0.13921785,-0.32313538,-0.43956736,0.4756174,0.4335605,-0.5450856,-0.3943429,-0.28687626,0.068032146,-0.2793799,0.17298919,-0.36553562,-0.097853184,-0.2544747,-0.39872527,-0.14556861,-0.31479517,0.2559092,0.47166896,-0.31330687,0.47313118,0.5134543,-0.4678212,-0.12853557,0.26142156,0.43472284,-0.42842552,-0.1895876,0.538689,0.508651,-0.020272732,0.112327516,0.2704304,-0.046546757,0.32570732,-0.15148133,-0.19145513,0.18631572,-0.024152994,0.41603214,-0.3421499,0.0106860995,-0.2966229,-0.36713937,0.25841123,0.0843398,0.49082482,0.10800403,0.1874243,-0.26379472,-0.22531849,0.24924624,0.23119557,0.49940765,-0.051413506,0.20315129,-0.41888732,0.44097036,0.40453392,0.013338983,0.23434466,0.23942488,0.47894,-0.19898453,0.09253675,-0.032358468,-0.15213022,-0.3441009,-0.15600958,-0.08235118,0.12165731,-0.4481289,-0.4842423,-0.45797008,-0.4606034,0.08163166,-0.2981107,0.50207126,0.44195646,0.13850057,0.072246075,-0.34388685,0.030900061,0.35821778,0.47900867,0.5094063,0.23683065,0.18020362,-0.1369732,0.015235603,0.2786904,0.07954317,0.12543976});
-    auto e = NDArrayFactory::create<float>('c', {3});
-    auto f = NDArrayFactory::create<float>('c', {3});
-    auto g = NDArrayFactory::create<float>('c', {3});
-    auto h = NDArrayFactory::create<float>('c', {12});
+    auto a = NDArrayFactory::create<double>('c', {1, 5}, {0.7787856f, 0.80119777f, 0.72437465f, 0.23089433f, 0.72714126f});
+    auto b = NDArrayFactory::create<double>('c', {1, 3});
+    auto c = NDArrayFactory::create<double>('c', {1, 3});
+    auto d = NDArrayFactory::create<double>('c', {8, 12}, {-0.15320599,-0.120416045,0.33126968,0.13921785,-0.32313538,-0.43956736,0.4756174,0.4335605,-0.5450856,-0.3943429,-0.28687626,0.068032146,-0.2793799,0.17298919,-0.36553562,-0.097853184,-0.2544747,-0.39872527,-0.14556861,-0.31479517,0.2559092,0.47166896,-0.31330687,0.47313118,0.5134543,-0.4678212,-0.12853557,0.26142156,0.43472284,-0.42842552,-0.1895876,0.538689,0.508651,-0.020272732,0.112327516,0.2704304,-0.046546757,0.32570732,-0.15148133,-0.19145513,0.18631572,-0.024152994,0.41603214,-0.3421499,0.0106860995,-0.2966229,-0.36713937,0.25841123,0.0843398,0.49082482,0.10800403,0.1874243,-0.26379472,-0.22531849,0.24924624,0.23119557,0.49940765,-0.051413506,0.20315129,-0.41888732,0.44097036,0.40453392,0.013338983,0.23434466,0.23942488,0.47894,-0.19898453,0.09253675,-0.032358468,-0.15213022,-0.3441009,-0.15600958,-0.08235118,0.12165731,-0.4481289,-0.4842423,-0.45797008,-0.4606034,0.08163166,-0.2981107,0.50207126,0.44195646,0.13850057,0.072246075,-0.34388685,0.030900061,0.35821778,0.47900867,0.5094063,0.23683065,0.18020362,-0.1369732,0.015235603,0.2786904,0.07954317,0.12543976});
+    auto e = NDArrayFactory::create<double>('c', {3});
+    auto f = NDArrayFactory::create<double>('c', {3});
+    auto g = NDArrayFactory::create<double>('c', {3});
+    auto h = NDArrayFactory::create<double>('c', {12});
 
-    auto z0 = NDArrayFactory::create<float>('c', {1, 3});
-    auto z1 = NDArrayFactory::create<float>('c', {1, 3});
-    auto z2 = NDArrayFactory::create<float>('c', {1, 3});
-    auto z3 = NDArrayFactory::create<float>('c', {1, 3});
-    auto z4 = NDArrayFactory::create<float>('c', {1, 3});
-    auto z5 = NDArrayFactory::create<float>('c', {1, 3});
-    auto z6 = NDArrayFactory::create<float>('c', {1, 3});
+    auto z0 = NDArrayFactory::create<double>('c', {1, 3});
+    auto z1 = NDArrayFactory::create<double>('c', {1, 3});
+    auto z2 = NDArrayFactory::create<double>('c', {1, 3});
+    auto z3 = NDArrayFactory::create<double>('c', {1, 3});
+    auto z4 = NDArrayFactory::create<double>('c', {1, 3});
+    auto z5 = NDArrayFactory::create<double>('c', {1, 3});
+    auto z6 = NDArrayFactory::create<double>('c', {1, 3});
 
     nd4j::ops::lstmBlockCell op;
     auto result = op.execute({&a, &b, &c, &d, &e, &f, &g, &h}, {&z0, &z1, &z2, &z3, &z4, &z5, &z6}, {1.0, -1.0}, {0}, {});
@@ -265,8 +265,7 @@ TEST_F(DeclarableOpsTests14, test_empty_stack_1) {
     auto res2 = sumOp.execute({&e}, {1.}, {1});
     ASSERT_EQ(res2->status(), Status::OK());
     auto out = res2->at(0);
-    out->printShapeInfo("ReduceSum empty shape with keep dims");
-    out->printIndexedBuffer("ReduceSum scalar");
+
     ASSERT_EQ(out->e<float>(0), DataTypeUtils::infOrMax<float>());
     delete res2;
     delete result;
@@ -448,6 +447,96 @@ TEST_F(DeclarableOpsTests14, test_empty_tanh_5) {
 
     ASSERT_TRUE(x.isSameShape(z));
     ASSERT_EQ(x, *z);
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_1) {
+
+    NDArray x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArray e('c', {4, 3}, {1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {2, 0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_2) {
+
+    NDArray x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArray e('c', {2, 6}, {1, 1, 2, 2, 3, 3,4, 4, 5, 5, 6, 6});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {2, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_3) {
+
+    NDArray x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArray e('c', {2, 6}, {1, 2, 2, 3, 3, 3,4, 5, 5, 6, 6, 6});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {1,2,3,  1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_4) {
+
+    NDArray x('c', {2, 3}, {1, 2, 3, 4, 5, 6});
+    NDArray e('c', {7, 3}, {1, 2, 3, 1, 2, 3, 1, 2, 3, 4, 5, 6, 4, 5, 6, 4, 5, 6, 4, 5, 6});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {3,4,  0});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests14, repeat_5) {
+
+    NDArray x('c', {2, 3, 4}, {1, 2, 3, 4, 5, 6, 7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24});
+    NDArray e('c', {2, 4, 4}, {1,  2,  3,  4, 5,  6,  7,  8, 5,  6,  7,  8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 17, 18, 19, 20, 21, 22, 23, 24});
+
+    nd4j::ops::repeat op;
+    auto result = op.execute({&x}, {}, {1,2,1,  1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(e.isSameShape(z));
+    ASSERT_TRUE(e.equalsTo(z));
 
     delete result;
 }

@@ -327,7 +327,7 @@ case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
     arr.asNDArray(shape: _*)
 
   override def create(arr: Array[Float], shape: Array[Int], ordering: NDOrdering, offset: Int): INDArray =
-    arr.mkNDArray(shape, ordering, offset)
+    arr.mkNDArray(shape, ordering)
 
   override def update(underlying: INDArray, ir: Array[IndexRange], num: Float): INDArray = {
     if (ir.length == 1 && !ir.head.hasNegative && ir.head

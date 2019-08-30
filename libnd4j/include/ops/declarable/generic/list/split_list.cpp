@@ -53,7 +53,7 @@ namespace nd4j {
             // now let's build subarrays
             int cnt = 0;
             std::vector<Nd4jLong> indices(2 * array->rankOf(), 0);
-            for (int e = 0; e < sizes->lengthOf(); e++) {
+            for (Nd4jLong e = 0; e < sizes->lengthOf(); e++) {
                 int c_size = sizes->e<int>(e);
                 
                 REQUIRE_TRUE(c_size > 0, 0, "Slice size should have postive value, but got %i instead", c_size);

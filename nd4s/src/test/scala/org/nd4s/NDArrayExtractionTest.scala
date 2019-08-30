@@ -48,8 +48,8 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
     assert(extracted == expected)
   }
 
-  it should "be able to extract a part of 2d matrix with double data and offset" in {
-    val ndArray = (1 to 9).map(_.toDouble).mkNDArray(Array(2, 2), NDOrdering.C, offset = 4)
+  it should "be able to extract a part of 2d matrix with double data" in {
+    val ndArray = (5 to 8).map(_.toDouble).mkNDArray(Array(2, 2), NDOrdering.C)
 
     val expectedArray = Array(
       Array(5d, 6d),

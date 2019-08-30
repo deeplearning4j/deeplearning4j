@@ -18,9 +18,10 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import onnx.OnnxProto3;
+import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -66,6 +67,14 @@ public class MaxPooling2D extends DynamicCustomOp {
         this.config = config;
         this.sameDiff = sameDiff;
 
+        addArgs();
+    }
+
+    public MaxPooling2D(INDArray input, INDArray output, @NonNull Pooling2DConfig config){
+        super(null, new INDArray[]{input}, output == null ? null : new INDArray[]{output});
+        config.setType(Pooling2D.Pooling2DType.MAX);
+
+        this.config = config;
         addArgs();
     }
 
@@ -204,8 +213,6 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .kW(kW)
                 .pH(pH)
                 .pW(pW)
-                .virtualHeight(1)
-                .virtualWidth(1)
                 .isNHWC(data_format.equalsIgnoreCase("nhwc"))
                 .extra(1.0) // averaging only for non-padded values
                 .build();
@@ -214,7 +221,7 @@ public class MaxPooling2D extends DynamicCustomOp {
     }
 
     @Override
-    public void initFromOnnx(OnnxProto3.NodeProto node, SameDiff initWith, Map<String, OnnxProto3.AttributeProto> attributesForNode, OnnxProto3.GraphProto graph) {
+    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         val paddingVal = !attributesForNode.containsKey("auto_pad") ? "VALID" : attributesForNode.get("auto_pad").getS().toStringUtf8();
         val isSameNode = paddingVal.equals("SAME");
         val kernelShape = attributesForNode.get("kernel_shape").getIntsList();
@@ -230,8 +237,6 @@ public class MaxPooling2D extends DynamicCustomOp {
                 .kW(kernelShape.size() < 2 ? kernelShape.get(0).intValue() : kernelShape.get(1).intValue())
                 .pH(padding.get(0).intValue())
                 .pW(padding.size() < 2 ? padding.get(0).intValue() : padding.get(1).intValue())
-                .virtualHeight(1)
-                .virtualWidth(1)
                 .build();
         this.config = pooling2DConfig;
         addArgs();

@@ -177,7 +177,7 @@ public class CudaWorkspace extends Nd4jWorkspace {
                     log.info("Workspace [{}] device_{}: alloc array of {} bytes, capacity of {} elements; prevOffset: {}; newOffset: {}; size: {}; address: {}", id, Nd4j.getAffinityManager().getDeviceForCurrentThread(), requiredMemory, numElements, prevOffset, deviceOffset.get(), currentSize.get(), ptr.address());
 
                 if (initialize) {
-                    val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
+                    val context = AtomicAllocator.getInstance().getDeviceContext();
 
                     int ret = NativeOpsHolder.getInstance().getDeviceNativeOps().memsetAsync(ptr, 0, requiredMemory, 0, context.getSpecialStream());
                     if (ret == 0)
