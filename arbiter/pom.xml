@@ -137,6 +137,31 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-enforcer-plugin</artifactId>
+                    <version>${maven-enforcer-plugin.version}</version>
+                    <executions>
+                        <execution>
+                            <phase>test</phase>
+                            <id>enforce-test-resources</id>
+                            <goals>
+                                <goal>enforce</goal>
+                            </goals>
+                            <configuration>
+                                <skip>${skipTestResourceEnforcement}</skip>
+                                <rules>
+                                    <requireActiveProfile>
+                                        <profiles>test-nd4j-native,test-nd4j-cuda-10.1</profiles>
+                                        <all>false</all>
+                                    </requireActiveProfile>
+                                </rules>
+                                <fail>true</fail>
+                            </configuration>
+                        </execution>
+                    </executions>
+                </plugin>
+
+                <plugin>
                     <artifactId>maven-javadoc-plugin</artifactId>
                     <version>${maven-javadoc-plugin.version}</version>
                     <configuration>
@@ -287,4 +312,42 @@
             </plugin>
         </plugins>
     </reporting>
+
+    <profiles>
+        <profile>
+            <id>test-nd4j-native</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+
+        <profile>
+            <id>test-nd4j-cuda-10.1</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-10.1</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${nd4j.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
+        </profile>
+    </profiles>
 </project>
