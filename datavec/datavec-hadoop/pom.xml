@@ -51,11 +51,6 @@
             <version>${netty.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-compress</artifactId>
             <version>${commons-compress.version}</version>
@@ -99,27 +94,10 @@
 
     <profiles>
         <profile>
-            <id>nd4j-tests-cpu</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
+            <id>test-nd4j-native</id>
         </profile>
-
         <profile>
-            <id>nd4j-tests-cuda</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.1</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 </project>

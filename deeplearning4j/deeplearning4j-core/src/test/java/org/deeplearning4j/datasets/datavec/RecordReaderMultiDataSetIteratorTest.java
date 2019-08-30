@@ -17,7 +17,7 @@
 package org.deeplearning4j.datasets.datavec;
 
 
-import com.google.common.io.Files;
+import org.nd4j.shade.guava.io.Files;
 import org.apache.commons.compress.utils.IOUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;

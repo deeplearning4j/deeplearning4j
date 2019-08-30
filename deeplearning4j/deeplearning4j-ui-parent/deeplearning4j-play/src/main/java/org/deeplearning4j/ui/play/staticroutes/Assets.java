@@ -16,18 +16,17 @@
 
 package org.deeplearning4j.ui.play.staticroutes;
 
-import com.google.common.net.HttpHeaders;
+import org.nd4j.shade.guava.net.HttpHeaders;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FilenameUtils;
 import org.nd4j.linalg.io.ClassPathResource;
-import play.api.libs.MimeTypes;
 import play.mvc.Result;
+import play.mvc.StaticFileMimeTypes;
 
 import java.io.InputStream;
-import java.util.function.Function;
+import java.util.Optional;
 
-import static play.mvc.Http.Context.Implicit.response;
 import static play.mvc.Results.ok;
 
 /**
@@ -37,11 +36,9 @@ import static play.mvc.Results.ok;
  */
 @AllArgsConstructor
 @Slf4j
-public class Assets implements Function<String, Result> {
-    private final String assetsRootDirectory;
+public class Assets {
 
-    @Override
-    public Result apply(String s) {
+    public static Result assetRequest(String assetsRootDirectory, String s) {
 
         String fullPath;
         if(s.startsWith("webjars/")){
@@ -60,15 +57,12 @@ public class Assets implements Function<String, Result> {
 
         String fileName = FilenameUtils.getName(fullPath);
 
-        response().setHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"");
-        scala.Option<String> contentType = MimeTypes.forFileName(fileName);
+        Optional<String> contentType = StaticFileMimeTypes.fileMimeTypes().forFileName(fileName);
         String ct;
-        if (contentType.isDefined()) {
-            ct = contentType.get();
-        } else {
-            ct = "application/octet-stream";
-        }
+        ct = contentType.orElse("application/octet-stream");
 
-        return ok(inputStream).as(ct);
+        return ok(inputStream)
+                .withHeader(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + fileName + "\"")
+                .as(ct);
     }
 }

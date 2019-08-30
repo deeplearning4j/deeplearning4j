@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.clustering.randomprojection;
 
-import com.google.common.primitives.Doubles;
+import org.nd4j.shade.guava.primitives.Doubles;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;

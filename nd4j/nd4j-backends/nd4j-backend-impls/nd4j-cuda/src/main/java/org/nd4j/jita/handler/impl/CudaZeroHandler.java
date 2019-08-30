@@ -16,8 +16,8 @@
 
 package org.nd4j.jita.handler.impl;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
+import org.nd4j.shade.guava.collect.HashBasedTable;
+import org.nd4j.shade.guava.collect.Table;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.val;

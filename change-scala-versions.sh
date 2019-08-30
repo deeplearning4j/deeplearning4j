@@ -20,9 +20,9 @@
 
 set -e
 
-VALID_VERSIONS=( 2.10 2.11 )
-SCALA_210_VERSION=$(grep -F -m 1 'scala210.version' pom.xml); SCALA_210_VERSION="${SCALA_210_VERSION#*>}"; SCALA_210_VERSION="${SCALA_210_VERSION%<*}";
+VALID_VERSIONS=( 2.11 2.12 )
 SCALA_211_VERSION=$(grep -F -m 1 'scala211.version' pom.xml); SCALA_211_VERSION="${SCALA_211_VERSION#*>}"; SCALA_211_VERSION="${SCALA_211_VERSION%<*}";
+SCALA_212_VERSION=$(grep -F -m 1 'scala212.version' pom.xml); SCALA_212_VERSION="${SCALA_212_VERSION#*>}"; SCALA_212_VERSION="${SCALA_212_VERSION%<*}";
 
 usage() {
   echo "Usage: $(basename $0) [-h|--help] <scala version to be used>
@@ -45,19 +45,18 @@ check_scala_version() {
   exit 1
 }
 
-
 check_scala_version "$TO_VERSION"
 
 if [ $TO_VERSION = "2.11" ]; then
-  FROM_BINARY="_2\.10"
+  FROM_BINARY="_2\.12"
   TO_BINARY="_2\.11"
-  FROM_VERSION=$SCALA_210_VERSION
+  FROM_VERSION=$SCALA_212_VERSION
   TO_VERSION=$SCALA_211_VERSION
 else
   FROM_BINARY="_2\.11"
-  TO_BINARY="_2\.10"
+  TO_BINARY="_2\.12"
   FROM_VERSION=$SCALA_211_VERSION
-  TO_VERSION=$SCALA_210_VERSION
+  TO_VERSION=$SCALA_212_VERSION
 fi
 
 sed_i() {
@@ -70,35 +69,24 @@ echo "Updating Scala versions in pom.xml files to Scala $1, from $FROM_VERSION t
 
 BASEDIR=$(dirname $0)
 
-#Artifact ids, ending with "_2.10" or "_2.11". Spark, spark-mllib, kafka, etc.
+#Artifact ids, ending with "_2.11" or "_2.12". Spark, spark-mllib, kafka, etc.
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(artifactId>.*\)'$FROM_BINARY'<\/artifactId>/\1'$TO_BINARY'<\/artifactId>/g' {}" \;
 
-#Scala versions, like <scala.version>2.10</scala.version>
+#Scala versions, like <scala.version>2.11</scala.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(scala.version>\)'$FROM_VERSION'<\/scala.version>/\1'$TO_VERSION'<\/scala.version>/g' {}" \;
 
-#Scala binary versions, like <scala.binary.version>2.10</scala.binary.version>
+#Scala binary versions, like <scala.binary.version>2.11</scala.binary.version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(scala.binary.version>\)'${FROM_BINARY#_}'<\/scala.binary.version>/\1'${TO_BINARY#_}'<\/scala.binary.version>/g' {}" \;
 
-#Scala versions, like <artifactId>scala-library</artifactId> <version>2.10.6</version>
+#Scala versions, like <artifactId>scala-library</artifactId> <version>2.11.12</version>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(version>\)'$FROM_VERSION'<\/version>/\1'$TO_VERSION'<\/version>/g' {}" \;
 
-#Scala maven plugin, <scalaVersion>2.10</scalaVersion>
+#Scala maven plugin, <scalaVersion>2.11</scalaVersion>
 find "$BASEDIR" -name 'pom.xml' -not -path '*target*' \
   -exec bash -c "sed_i 's/\(scalaVersion>\)'$FROM_VERSION'<\/scalaVersion>/\1'$TO_VERSION'<\/scalaVersion>/g' {}" \;
-  
-#Edge case for Korean NLP artifact not following conventions:	https://github.com/deeplearning4j/deeplearning4j/issues/6306
-#https://github.com/deeplearning4j/deeplearning4j/issues/6306
-if [[ $TO_VERSION == 2.11* ]]; then
-  sed_i 's/<artifactId>korean-text-scala-2.10<\/artifactId>/<artifactId>korean-text<\/artifactId>/g' deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp-korean/pom.xml
-  sed_i 's/<version>4.2.0<\/version>/<version>4.4<\/version>/g' deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp-korean/pom.xml
-else
-  sed_i 's/<artifactId>korean-text<\/artifactId>/<artifactId>korean-text-scala-2.10<\/artifactId>/g' deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp-korean/pom.xml
-  sed_i 's/<version>4.4<\/version>/<version>4.2.0<\/version>/g' deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp-korean/pom.xml
-fi
-
 
 echo "Done updating Scala versions.";

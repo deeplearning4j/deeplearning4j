@@ -3594,6 +3594,7 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
 // #include <op_enums.h>
 // #include <ops/BroadcastOpsTuple.h>
 // #include <ops/BroadcastBoolOpsTuple.h>
+// #include <ops/BroadcastIntOpsTuple.h>
 // #include <array/ExtraArguments.h>
 // #include <Status.h>
 // #include <ShapeDescriptor.h>
@@ -16496,15 +16497,18 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * creates identity 2D matrix or batch of identical 2D identity matrices
-         * 
+         *
          * Input array:
          * provide some array - in any case operation simply neglects it
-         * 
+         *
+         * Input float argument (if passed):
+         * TArgs[0] - type of elements of output array, default value is 5 (float)
+         *
          * Input integer arguments:
          * IArgs[0]       - order of output identity matrix, 99 -> 'c'-order, 102 -> 'f'-order
          * IArgs[1]       - the number of rows in output inner-most 2D identity matrix
          * IArgs[2]       - optional, the number of columns in output inner-most 2D identity matrix, if this argument is not provided then it is taken to be equal to number of rows
-         * IArgs[3,4,...] - optional, shape of batch, output matrix will have leading batch dimensions of this shape         
+         * IArgs[3,4,...] - optional, shape of batch, output matrix will have leading batch dimensions of this shape
          */
 //         #if NOT_EXCLUDED(OP_eye)
         @Namespace("nd4j::ops") public static class eye extends DeclarableCustomOp {
@@ -16598,10 +16602,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * clip a list of given tensors with given average norm when needed
-         * 
+         *
          * Input:
          *    a list of tensors (at least one)
-         * 
+         *
          * Input floating point argument:
          *    clip_norm - a value that used as threshold value and norm to be used
          *
@@ -16749,12 +16753,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * returns histogram (as 1D array) with fixed bins width
-         * 
+         *
          * Input arrays:
-         * - input array with elements to be binned into output histogram 
+         * - input array with elements to be binned into output histogram
          * - range array with first element being bottom limit and second element being top limit of histogram,
              please note that input_value <= range[0] will be mapped to histogram[0], input_value >= range[1] will be mapped to histogram[-1]
-         * 
+         *
          * Input integer arguments:
          *    nbins (optional) - number of histogram bins, default value is 100
          */
@@ -21822,7 +21826,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * \tparam T
          */
 //         #if NOT_EXCLUDED(OP_shift_bits)
-        @Namespace("nd4j::ops") public static class shift_bits extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class shift_bits extends BroadcastableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public shift_bits(Pointer p) { super(p); }
@@ -21835,7 +21839,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public shift_bits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
 
@@ -21847,7 +21850,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * \tparam T
          */
 //         #if NOT_EXCLUDED(OP_rshift_bits)
-        @Namespace("nd4j::ops") public static class rshift_bits extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class rshift_bits extends BroadcastableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public rshift_bits(Pointer p) { super(p); }
@@ -21860,7 +21863,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public rshift_bits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
 
@@ -21872,7 +21874,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * \tparam T
          */
 //         #if NOT_EXCLUDED(OP_cyclic_shift_bits)
-        @Namespace("nd4j::ops") public static class cyclic_shift_bits extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class cyclic_shift_bits extends BroadcastableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public cyclic_shift_bits(Pointer p) { super(p); }
@@ -21885,7 +21887,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public cyclic_shift_bits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
 
@@ -21897,7 +21898,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * \tparam T
          */
 //         #if NOT_EXCLUDED(OP_cyclic_rshift_bits)
-        @Namespace("nd4j::ops") public static class cyclic_rshift_bits extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class cyclic_rshift_bits extends BroadcastableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public cyclic_rshift_bits(Pointer p) { super(p); }
@@ -21909,6 +21910,30 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public cyclic_rshift_bits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
+
+        /**
+         * This operation returns hamming distance based on bits
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_bits_hamming_distance)
+        @Namespace("nd4j::ops") public static class bits_hamming_distance extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public bits_hamming_distance(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public bits_hamming_distance(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public bits_hamming_distance position(long position) {
+                return (bits_hamming_distance)super.position(position);
+            }
+        
+                                                                                    public bits_hamming_distance() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

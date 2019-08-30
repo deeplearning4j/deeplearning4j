@@ -24,7 +24,7 @@ import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
 @JsonSerialize(using = JsonSerializerAtomicDouble.class)
 @JsonDeserialize(using = JsonDeserializerAtomicDouble.class)
-public class AtomicDouble extends com.google.common.util.concurrent.AtomicDouble {
+public class AtomicDouble extends org.nd4j.shade.guava.util.concurrent.AtomicDouble {
 
     public AtomicDouble(){
         this(0.0);
@@ -40,7 +40,7 @@ public class AtomicDouble extends com.google.common.util.concurrent.AtomicDouble
 
     @Override
     public boolean equals(Object o){
-        //NOTE: com.google.common.util.concurrent.AtomicDouble extends Number, hence this class extends number
+        //NOTE: org.nd4j.shade.guava.util.concurrent.AtomicDouble extends Number, hence this class extends number
         if(o instanceof Number){
             return get() == ((Number)o).doubleValue();
         }

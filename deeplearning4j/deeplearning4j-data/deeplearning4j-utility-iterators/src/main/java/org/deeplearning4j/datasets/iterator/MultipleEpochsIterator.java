@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.datasets.iterator;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.annotations.VisibleForTesting;
+import org.nd4j.shade.guava.collect.Lists;
 import lombok.Getter;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;

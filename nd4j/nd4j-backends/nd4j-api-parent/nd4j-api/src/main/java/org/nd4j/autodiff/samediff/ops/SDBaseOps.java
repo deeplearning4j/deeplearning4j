@@ -16,7 +16,7 @@
 
 package org.nd4j.autodiff.samediff.ops;
 
-import com.google.common.collect.Sets;
+import org.nd4j.shade.guava.collect.Sets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;

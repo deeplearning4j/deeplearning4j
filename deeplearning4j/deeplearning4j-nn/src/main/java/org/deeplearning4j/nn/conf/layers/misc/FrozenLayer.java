@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
-import org.deeplearning4j.nn.conf.serde.FrozenLayerDeserializer;
 import org.deeplearning4j.nn.params.FrozenLayerParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -48,7 +47,6 @@ import java.util.List;
  * @author Alex Black
  */
 @EqualsAndHashCode(callSuper = false)
-@JsonDeserialize(using = FrozenLayerDeserializer.class)
 public class FrozenLayer extends Layer {
 
     @Getter

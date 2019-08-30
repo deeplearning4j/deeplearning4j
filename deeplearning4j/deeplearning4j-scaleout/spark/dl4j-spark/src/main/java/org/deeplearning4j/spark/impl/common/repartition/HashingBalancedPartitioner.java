@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.spark.impl.common.repartition;
 
-import com.google.common.base.Predicate;
-import com.google.common.collect.Collections2;
+import org.nd4j.shade.guava.base.Predicate;
+import org.nd4j.shade.guava.collect.Collections2;
 import org.apache.spark.Partitioner;
 import scala.Tuple2;
 
@@ -25,8 +25,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static org.nd4j.shade.guava.base.Preconditions.checkArgument;
+import static org.nd4j.shade.guava.base.Preconditions.checkNotNull;
 
 /**
  * This is a custom partitioner that rebalances a minimum of elements
@@ -97,12 +97,13 @@ public class HashingBalancedPartitioner extends Partitioner {
 
     @Override
     public int numPartitions() {
-        return Collections2.filter(partitionWeightsByClass.get(0), new Predicate<Double>() {
-            @Override
-            public boolean apply(Double aDouble) {
-                return aDouble >= 0;
-            }
-        }).size();
+        List<Double> list = partitionWeightsByClass.get(0);
+        int count = 0;
+        for(Double d : list){
+            if(d >= 0)
+                count++;
+        }
+        return count;
     }
 
     @Override

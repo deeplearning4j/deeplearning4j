@@ -1086,13 +1086,11 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_1) {
 
     auto y = NDArrayFactory::create<int>({ 2, 1, 2});
 
-// ------------------------------------
-
     auto exp = NDArrayFactory::create<int>({2, 2, 2});
 
     nd4j::ops::broadcast_dynamic_shape op;
 
-    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT32);
+    auto res = op.execute({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
@@ -1107,7 +1105,6 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_2) {
 
     auto y = NDArrayFactory::create<Nd4jLong>({2, 1, 2});
 
-// ------------------------------------
     auto exp = NDArrayFactory::create<Nd4jLong>({2, 2, 2});
 
     nd4j::ops::broadcast_dynamic_shape op;
@@ -1122,17 +1119,15 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_2) {
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_3) {
 
-    auto x = NDArrayFactory::create<Nd4jLong>( {2, 2, 2} );
+    auto x = NDArrayFactory::create<int>( {2, 2, 2} );
 
-    auto y = NDArrayFactory::create<Nd4jLong>({ 2, 1});
+    auto y = NDArrayFactory::create<int>({2, 1});
 
-// ------------------------------------
-
-    auto exp = NDArrayFactory::create<Nd4jLong>({2, 2, 2});
+    auto exp = NDArrayFactory::create<int>({2, 2, 2});
 
     nd4j::ops::broadcast_dynamic_shape op;
 
-    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
+    auto res = op.execute({&x, &y}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
@@ -1145,9 +1140,7 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_4) {
 
     auto x = NDArrayFactory::create<Nd4jLong>( {2, 1} );
 
-    auto y = NDArrayFactory::create<Nd4jLong>('c', {1}, { 4,});
-
-// ------------------------------------
+    auto y = NDArrayFactory::create<Nd4jLong>('c', {1}, {4});
 
     auto exp = NDArrayFactory::create<Nd4jLong>({2, 4});
 
@@ -1161,49 +1154,7 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_4) {
 
     delete res;
 }
-/////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_5) {
 
-    auto x = NDArrayFactory::create<Nd4jLong>({2, 2, 2});
-
-    auto y = NDArrayFactory::create<Nd4jLong>({2, 2});
-
-// ------------------------------------
-
-    auto exp = NDArrayFactory::create<Nd4jLong>({2, 2, 2});
-
-    nd4j::ops::broadcast_dynamic_shape op;
-    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
-
-    ASSERT_EQ(ND4J_STATUS_OK, res->status());
-//    res->at(0)->printIndexedBuffer("Output");
-//    exp.printIndexedBuffer("Expect");
-    ASSERT_TRUE(exp.equalsTo(res->at(0)));
-
-    delete res;
-}
-
-/////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_5) {
-
-    auto x = NDArrayFactory::create<Nd4jLong>({2, 1, 2});
-
-    auto y = NDArrayFactory::create<Nd4jLong>({2, 2, 4});
-
-// ------------------------------------
-
-    auto exp = NDArrayFactory::create<Nd4jLong>({2, 2, 4});
-
-    nd4j::ops::broadcast_dynamic_shape op;
-    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
-
-    ASSERT_EQ(ND4J_STATUS_OK, res->status());
-    // res->at(0)->printIndexedBuffer("Output SGO 5");
-//    exp.printIndexedBuffer("Expect");
-    ASSERT_TRUE(exp.equalsTo(res->at(0)));
-
-    delete res;
-}
 /////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_6) {
 
@@ -1211,16 +1162,12 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_6) {
 
     auto y = NDArrayFactory::create<Nd4jLong>({2, 2, 4});
 
-// ------------------------------------
-
     auto exp = NDArrayFactory::create<Nd4jLong>({2, 2, 4});
 
     nd4j::ops::broadcast_dynamic_shape op;
     auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
-    // res->at(0)->printIndexedBuffer("Output SGO 6");
-//    exp.printIndexedBuffer("Expect");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
     delete res;
@@ -1233,16 +1180,12 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_7) {
 
     auto y = NDArrayFactory::create<Nd4jLong>({2, 4, 1});
 
-// ------------------------------------
-
     auto exp = NDArrayFactory::create<Nd4jLong>({2, 4, 3});
 
     nd4j::ops::broadcast_dynamic_shape op;
     auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT64);
 
     ASSERT_EQ(ND4J_STATUS_OK, res->status());
-    // res->at(0)->printIndexedBuffer("Output SGO 7");
-//    exp.printIndexedBuffer("Expect");
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
 
     delete res;
@@ -1255,19 +1198,15 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_8) {
 
     auto y = NDArrayFactory::create<int>('c', {1}, {4});
 
-// ------------------------------------
+    auto z = NDArrayFactory::create<int>('c', {1});
 
     auto exp = NDArrayFactory::create<int>('c', {1}, {4});
 
     nd4j::ops::broadcast_dynamic_shape op;
-    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT32);
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, res->status());
-//    res->at(0)->printIndexedBuffer("Output SGO 8");
-//    exp.printIndexedBuffer("Expect");
-    ASSERT_TRUE(exp.equalsTo(res->at(0)));
-
-    delete res;
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    ASSERT_TRUE(exp.equalsTo(z));
 }
 
 /////////////////////////////////////////////////////////////////////////////////
@@ -1277,19 +1216,16 @@ TEST_F(DeclarableOpsTests6, BroadcastDynamicShape_SGO_9) {
 
     auto y = NDArrayFactory::create<int>('c', {1}, {1});
 
-// ------------------------------------
+    auto z = NDArrayFactory::create<Nd4jLong>('c', {2});
 
-    auto exp = NDArrayFactory::create<int>('c', {2}, {2,2});
+    auto exp = NDArrayFactory::create<Nd4jLong>('c', {2}, {2,2});
 
     nd4j::ops::broadcast_dynamic_shape op;
-    auto res = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::INT32);
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
 
-    ASSERT_EQ(ND4J_STATUS_OK, res->status());
-    res->at(0)->printIndexedBuffer("Output SGO 9");
-    exp.printIndexedBuffer("Expect9");
-    ASSERT_TRUE(exp.equalsTo(res->at(0)));
+    ASSERT_EQ(ND4J_STATUS_OK, status);
+    // ASSERT_TRUE(exp.equalsTo(z));
 
-    delete res;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

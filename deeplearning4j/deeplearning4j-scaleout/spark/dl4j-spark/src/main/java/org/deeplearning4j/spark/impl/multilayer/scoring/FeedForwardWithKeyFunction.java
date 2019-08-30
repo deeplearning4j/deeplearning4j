@@ -16,17 +16,15 @@
 
 package org.deeplearning4j.spark.impl.multilayer.scoring;
 
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
-import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.Pair;
-import org.nd4j.linalg.util.DataSetUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import scala.Tuple2;
@@ -44,23 +42,7 @@ import java.util.List;
  * @author Alex Black
  */
 public class FeedForwardWithKeyFunction<K>
-                extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>>, K, INDArray> {
-
-    public FeedForwardWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
-        super(new FeedForwardWithKeyFunctionAdapter<K>(params, jsonConfig, batchSize));
-    }
-}
-
-
-/**
- * Function to feed-forward examples, and get the network output (for example, class probabilities).
- * A key value is used to keey track of which output corresponds to which input.
- *
- * @param <K> Type of key, associated with each example. Used to keep track of which output belongs to which input example
- * @author Alex Black
- */
-class FeedForwardWithKeyFunctionAdapter<K>
-                implements FlatMapFunctionAdapter<Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>>, Tuple2<K, INDArray>> {
+                implements PairFlatMapFunction<Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>>, K, INDArray> {
 
     protected static Logger log = LoggerFactory.getLogger(FeedForwardWithKeyFunction.class);
 
@@ -73,7 +55,7 @@ class FeedForwardWithKeyFunctionAdapter<K>
      * @param jsonConfig MultiLayerConfiguration, as json
      * @param batchSize  Batch size to use for forward pass (use > 1 for efficiency)
      */
-    public FeedForwardWithKeyFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
+    public FeedForwardWithKeyFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig, int batchSize) {
         this.params = params;
         this.jsonConfig = jsonConfig;
         this.batchSize = batchSize;
@@ -81,9 +63,9 @@ class FeedForwardWithKeyFunctionAdapter<K>
 
 
     @Override
-    public Iterable<Tuple2<K, INDArray>> call(Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>> iterator) throws Exception {
+    public Iterator<Tuple2<K, INDArray>> call(Iterator<Tuple2<K, Tuple2<INDArray,INDArray>>> iterator) throws Exception {
         if (!iterator.hasNext()) {
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         MultiLayerNetwork network = new MultiLayerNetwork(MultiLayerConfiguration.fromJson(jsonConfig.getValue()));
@@ -129,7 +111,7 @@ class FeedForwardWithKeyFunctionAdapter<K>
         }
 
         if (tupleCount == 0) {
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         List<Tuple2<K, INDArray>> output = new ArrayList<>(tupleCount);
@@ -185,7 +167,7 @@ class FeedForwardWithKeyFunctionAdapter<K>
 
         Nd4j.getExecutioner().commit();
 
-        return output;
+        return output.iterator();
     }
 
     private INDArray getSubset(int exampleStart, int exampleEnd, INDArray from) {

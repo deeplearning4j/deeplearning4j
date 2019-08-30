@@ -16,9 +16,9 @@
 
 package org.nd4j.linalg.api.ndarray;
 
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Doubles;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import com.google.flatbuffers.FlatBufferBuilder;
 import net.ericaro.neoitertools.Generator;
 import org.nd4j.linalg.api.blas.params.MMulTranspose;

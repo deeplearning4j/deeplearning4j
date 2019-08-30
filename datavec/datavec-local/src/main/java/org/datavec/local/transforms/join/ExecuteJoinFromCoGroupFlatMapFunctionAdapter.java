@@ -16,7 +16,7 @@
 
 package org.datavec.local.transforms.join;
 
-import com.google.common.collect.Iterables;
+import org.nd4j.shade.guava.collect.Iterables;
 import org.datavec.api.transform.join.Join;
 import org.datavec.api.writable.Writable;
 import org.datavec.local.transforms.functions.FlatMapFunctionAdapter;

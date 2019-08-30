@@ -15,7 +15,7 @@
  ******************************************************************************/
 package org.deeplearning4j.nn.conf.graph;
 
-import com.google.common.base.Preconditions;
+import org.nd4j.shade.guava.base.Preconditions;
 import lombok.*;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.inputs.InputType;

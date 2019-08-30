@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.parallelism;
 
-import com.google.common.util.concurrent.AtomicDouble;
+import org.nd4j.shade.guava.util.concurrent.AtomicDouble;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.earlystopping.EarlyStoppingConfiguration;
 import org.deeplearning4j.earlystopping.EarlyStoppingResult;

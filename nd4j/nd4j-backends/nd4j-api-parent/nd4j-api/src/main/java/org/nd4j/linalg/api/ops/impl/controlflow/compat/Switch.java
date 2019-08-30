@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import lombok.Getter;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;

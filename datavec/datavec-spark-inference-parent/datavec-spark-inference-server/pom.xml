@@ -65,12 +65,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.typesafe.akka</groupId>
-            <artifactId>akka-cluster_2.11</artifactId>
-            <version>${akka.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>joda-time</groupId>
             <artifactId>joda-time</artifactId>
             <version>${jodatime.version}</version>
@@ -107,39 +101,9 @@
         </dependency>
 
         <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-annotations</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jdk8</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-        <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-java_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
             <exclusions>
                 <exclusion>
                     <groupId>com.google.code.findbugs</groupId>
@@ -161,25 +125,31 @@
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-json_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-server_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
         </dependency>
 
         <dependency>
             <groupId>com.typesafe.play</groupId>
             <artifactId>play-netty-server_2.11</artifactId>
-            <version>${play.version}</version>
+            <version>${playframework.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-cluster_2.11</artifactId>
+            <version>2.5.23</version>
         </dependency>
 
         <dependency>
@@ -194,31 +164,20 @@
             <artifactId>jcommander</artifactId>
             <version>${jcommander.version}</version>
         </dependency>
+
+        <dependency>
+            <groupId>org.apache.spark</groupId>
+            <artifactId>spark-core_2.11</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
     </dependencies>
 
     <profiles>
         <profile>
-            <id>nd4j-tests-cpu</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-native</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
+            <id>test-nd4j-native</id>
         </profile>
-
         <profile>
-            <id>nd4j-tests-cuda</id>
-            <dependencies>
-                <dependency>
-                    <groupId>org.nd4j</groupId>
-                    <artifactId>nd4j-cuda-10.1</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
+            <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
 </project>

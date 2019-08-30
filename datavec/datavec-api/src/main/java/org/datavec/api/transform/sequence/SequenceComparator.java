@@ -17,7 +17,6 @@
 package org.datavec.api.transform.sequence;
 
 import org.datavec.api.transform.schema.Schema;
-import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -30,8 +29,7 @@ import java.util.List;
  * Compare the time steps of a sequence
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyMappingHelper.SequenceComparatorHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface SequenceComparator extends Comparator<List<Writable>>, Serializable {
 
     /**

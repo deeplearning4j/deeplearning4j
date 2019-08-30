@@ -19,7 +19,6 @@ package org.deeplearning4j.nn.conf.graph;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.inputs.InvalidInputTypeException;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyGraphVertexDeserializerHelper;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,8 +32,7 @@ import java.io.Serializable;
  *
  * @author Alex Black
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyGraphVertexDeserializerHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public abstract class GraphVertex implements Cloneable, Serializable {
 
     @Override

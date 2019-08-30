@@ -16,8 +16,7 @@
 
 package org.deeplearning4j.spark.api.worker;
 
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.nd4j.linalg.dataset.AsyncDataSetIterator;
 import org.deeplearning4j.datasets.iterator.IteratorDataSetIterator;
 import org.deeplearning4j.nn.graph.ComputationGraph;
@@ -41,30 +40,16 @@ import java.util.Iterator;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerFlatMap<R extends TrainingResult> extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, R> {
-
-    public ExecuteWorkerFlatMap(TrainingWorker<R> worker) {
-        super(new ExecuteWorkerFlatMapAdapter<R>(worker));
-    }
-}
-
-
-/**
- * A FlatMapFunction for executing training on DataSets.
- * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
- *
- * @author Alex Black
- */
-class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<DataSet>, R> {
+public class ExecuteWorkerFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<DataSet>, R> {
 
     private final TrainingWorker<R> worker;
 
-    public ExecuteWorkerFlatMapAdapter(TrainingWorker<R> worker) {
+    public ExecuteWorkerFlatMap(TrainingWorker<R> worker) {
         this.worker = worker;
     }
 
     @Override
-    public Iterable<R> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterator<R> call(Iterator<DataSet> dataSetIterator) throws Exception {
         WorkerConfiguration dataConfig = worker.getDataConfiguration();
         final boolean isGraph = dataConfig.isGraphNetwork();
 
@@ -79,9 +64,9 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
 
                 Pair<R, SparkTrainingStats> pair = worker.getFinalResultNoDataWithStats();
                 pair.getFirst().setStats(s.build(pair.getSecond()));
-                return Collections.singletonList(pair.getFirst());
+                return Collections.singletonList(pair.getFirst()).iterator();
             } else {
-                return Collections.singletonList(worker.getFinalResultNoData());
+                return Collections.singletonList(worker.getFinalResultNoData()).iterator();
             }
         }
 
@@ -131,7 +116,7 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
                         SparkTrainingStats returnStats = s.build(workerStats);
                         result.getFirst().setStats(returnStats);
 
-                        return Collections.singletonList(result.getFirst());
+                        return Collections.singletonList(result.getFirst()).iterator();
                     }
                 } else {
                     R result;
@@ -141,7 +126,7 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
                         result = worker.processMinibatch(next, net, !batchedIterator.hasNext());
                     if (result != null) {
                         //Terminate training immediately
-                        return Collections.singletonList(result);
+                        return Collections.singletonList(result).iterator();
                     }
                 }
             }
@@ -155,12 +140,12 @@ class ExecuteWorkerFlatMapAdapter<R extends TrainingResult> implements FlatMapFu
                 else
                     pair = worker.getFinalResultWithStats(net);
                 pair.getFirst().setStats(s.build(pair.getSecond()));
-                return Collections.singletonList(pair.getFirst());
+                return Collections.singletonList(pair.getFirst()).iterator();
             } else {
                 if (isGraph)
-                    return Collections.singletonList(worker.getFinalResult(graph));
+                    return Collections.singletonList(worker.getFinalResult(graph)).iterator();
                 else
-                    return Collections.singletonList(worker.getFinalResult(net));
+                    return Collections.singletonList(worker.getFinalResult(net)).iterator();
             }
         } finally {
             //Make sure we shut down the async thread properly...

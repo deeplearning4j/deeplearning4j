@@ -17,10 +17,17 @@
 package org.deeplearning4j.ui.api;
 
 /**
- * Enumeration for the type of function. Mainly used in specifying {@link Route} instances
+ * Enumeration for the type of function. Mainly used in specifying {@link Route} instances<br>
+ * Supplier: No args<br>
+ * Function: 1 arg<br>
+ * BiFunction: 2 args<br>
+ * Function3: 3 args<br>
+ * Request0Function: Supplier + request, no args (as Function<Request,Result>)<br>
+ * Request1Function: Supplier + request + 1 args (as BiFunction<Request,String, Result>)<br>
  *
  * @author Alex Black
  */
 public enum FunctionType {
-    Supplier, Function, BiFunction, Function3
+    Supplier, Function, BiFunction, Function3,
+    Request0Function, Request1Function
 }

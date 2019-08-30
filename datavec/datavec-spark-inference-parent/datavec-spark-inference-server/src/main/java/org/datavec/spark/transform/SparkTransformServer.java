@@ -22,6 +22,7 @@ import org.datavec.spark.transform.model.Base64NDArrayBody;
 import org.datavec.spark.transform.model.BatchCSVRecord;
 import org.datavec.spark.transform.service.DataVecTransformService;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import play.mvc.Http;
 import play.server.Server;
 
 import static play.mvc.Controller.request;
@@ -50,25 +51,17 @@ public abstract class SparkTransformServer implements DataVecTransformService {
             server.stop();
     }
 
-    protected boolean isSequence() {
-        return request().hasHeader(SEQUENCE_OR_NOT_HEADER)
-                && request().getHeader(SEQUENCE_OR_NOT_HEADER).toUpperCase()
-                .equals("TRUE");
+    protected boolean isSequence(Http.Request request) {
+        return request.hasHeader(SEQUENCE_OR_NOT_HEADER)
+                && request.header(SEQUENCE_OR_NOT_HEADER).get().equalsIgnoreCase("true");
     }
 
-
-    protected String getHeaderValue(String value) {
-        if (request().hasHeader(value))
-            return request().getHeader(value);
-        return null;
-    }
-
-    protected String getJsonText() {
-        JsonNode tryJson = request().body().asJson();
+    protected String getJsonText(Http.Request request) {
+        JsonNode tryJson = request.body().asJson();
         if (tryJson != null)
             return tryJson.toString();
         else
-            return request().body().asText();
+            return request.body().asText();
     }
 
     public abstract Base64NDArrayBody transformSequenceArrayIncremental(BatchCSVRecord singleCsvRecord);

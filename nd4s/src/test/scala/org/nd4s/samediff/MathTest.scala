@@ -188,4 +188,16 @@ class MathTest extends FlatSpec with Matchers {
     val w3 = w1 >> 2
     w3.eval.toIntVector.head shouldBe 4
   }
+
+  "SameDiff" should "provide shifting operations with SDVariable argument" in {
+    implicit val sd = SameDiff.create()
+    val w1 = sd.constant(16)
+    val two = sd.constant(2)
+
+    val w2 = w1 << two
+    w2.eval.toIntVector.head shouldBe 64
+
+    val w3 = w1 >> two
+    w3.eval.toIntVector.head shouldBe 4
+  }
 }

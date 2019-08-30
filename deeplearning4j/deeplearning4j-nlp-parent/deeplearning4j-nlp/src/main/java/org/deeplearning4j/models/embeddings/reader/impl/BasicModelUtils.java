@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.models.embeddings.reader.impl;
 
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NonNull;

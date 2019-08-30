@@ -16,7 +16,6 @@
 
 package org.datavec.api.transform;
 
-import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.Writable;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
@@ -27,8 +26,7 @@ import java.util.List;
 /**A Transform converts an example to another example, or a sequence to another sequence
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyMappingHelper.TransformHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface Transform extends Serializable, ColumnOp {
 
     /**

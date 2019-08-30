@@ -16,11 +16,11 @@
 
 package org.nd4j.autodiff.samediff;
 
-import com.google.common.base.Predicates;
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Table;
-import com.google.common.primitives.Ints;
+import org.nd4j.shade.guava.base.Predicates;
+import org.nd4j.shade.guava.collect.HashBasedTable;
+import org.nd4j.shade.guava.collect.Maps;
+import org.nd4j.shade.guava.collect.Table;
+import org.nd4j.shade.guava.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;

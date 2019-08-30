@@ -17,8 +17,8 @@
 package org.nd4j.linalg.api.shape;
 
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
 import org.nd4j.base.Preconditions;
@@ -31,8 +31,6 @@ import org.nd4j.linalg.api.shape.options.ArrayType;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.nio.*;

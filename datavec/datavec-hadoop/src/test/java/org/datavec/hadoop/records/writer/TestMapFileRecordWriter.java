@@ -16,7 +16,7 @@
 
 package org.datavec.hadoop.records.writer;
 
-import com.google.common.io.Files;
+import org.nd4j.shade.guava.io.Files;
 import org.datavec.api.records.converter.RecordReaderConverter;
 import org.datavec.api.records.reader.RecordReader;
 import org.datavec.api.records.reader.SequenceRecordReader;

@@ -17,7 +17,7 @@
 package org.datavec.api.writable;
 
 
-import com.google.common.math.DoubleMath;
+import org.nd4j.shade.guava.math.DoubleMath;
 import org.datavec.api.io.WritableComparable;
 import org.datavec.api.io.WritableComparator;
 import org.nd4j.shade.jackson.annotation.JsonProperty;

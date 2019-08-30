@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.optimize.listeners;
 
-import com.google.common.base.Preconditions;
+import org.nd4j.shade.guava.base.Preconditions;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.Model;
 import org.deeplearning4j.nn.graph.ComputationGraph;

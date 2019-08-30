@@ -29,6 +29,16 @@
         (4, aggregateOps::CBOW) ,\
         (5, aggregateOps::GEMM)
 
+#define BROADCAST_INT_OPS \
+        (0, ShiftLeft), \
+        (1, ShiftRight), \
+        (2, CyclicShiftLeft), \
+        (3, CyclicShiftRight), \
+        (4, IntAnd), \
+        (5, IntOr), \
+        (6, IntXor)
+
+
 #define BROADCAST_BOOL_OPS \
         (0, EqualTo),\
         (1, GreaterThan),\
@@ -171,6 +181,14 @@
         (0, SummaryStatsVariance), \
         (1, SummaryStatsStandardDeviation)
 
+#define SCALAR_INT_OPS \
+        (0, ShiftLeft), \
+        (1, ShiftRight), \
+        (2, CyclicShiftLeft), \
+        (3, CyclicShiftRight), \
+        (4, IntAnd), \
+        (5, IntOr), \
+        (6, IntXor)
 
 #define SCALAR_BOOL_OPS \
         (0, EqualTo),\
@@ -299,6 +317,15 @@
         (12, AlphaDropOut),\
         (13, ExponentialDistribution),\
         (14, ExponentialDistributionInv)
+
+#define PAIRWISE_INT_OPS \
+        (0, ShiftLeft), \
+        (1, ShiftRight), \
+        (2, CyclicShiftLeft), \
+        (3, CyclicShiftRight), \
+        (4, IntAnd), \
+        (5, IntOr), \
+        (6, IntXor)
 
 #define PAIRWISE_BOOL_OPS \
         (0, EqualTo),\

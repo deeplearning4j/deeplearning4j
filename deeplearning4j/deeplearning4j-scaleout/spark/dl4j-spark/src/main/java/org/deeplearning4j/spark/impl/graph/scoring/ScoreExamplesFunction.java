@@ -16,11 +16,12 @@
 
 package org.deeplearning4j.spark.impl.graph.scoring;
 
+import lombok.extern.slf4j.Slf4j;
+import org.apache.spark.api.java.function.DoubleFlatMapFunction;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.spark.util.BaseDoubleFlatMapFunctionAdaptee;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -41,31 +42,15 @@ import java.util.List;
  * @author Alex Black
  * @see ScoreExamplesWithKeyFunction
  */
-public class ScoreExamplesFunction extends BaseDoubleFlatMapFunctionAdaptee<Iterator<MultiDataSet>> {
-
-    public ScoreExamplesFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
-                    boolean addRegularizationTerms, int batchSize) {
-        super(new ScoreExamplesFunctionAdapter(params, jsonConfig, addRegularizationTerms, batchSize));
-    }
-}
-
-
-/**Function to score examples individually. Note that scoring is batched for computational efficiency.<br>
- * This is essentially a Spark implementation of the {@link ComputationGraph#scoreExamples(MultiDataSet, boolean)} method<br>
- * <b>Note:</b> This method returns a score for each example, but the association between examples and scores is lost. In
- * cases where we need to know the score for particular examples, use {@link ScoreExamplesWithKeyFunction}
- * @author Alex Black
- * @see ScoreExamplesWithKeyFunction
- */
-class ScoreExamplesFunctionAdapter implements FlatMapFunctionAdapter<Iterator<MultiDataSet>, Double> {
-    protected static final Logger log = LoggerFactory.getLogger(ScoreExamplesFunction.class);
+@Slf4j
+public class ScoreExamplesFunction implements DoubleFlatMapFunction<Iterator<MultiDataSet>> {
 
     private final Broadcast<INDArray> params;
     private final Broadcast<String> jsonConfig;
     private final boolean addRegularization;
     private final int batchSize;
 
-    public ScoreExamplesFunctionAdapter(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
+    public ScoreExamplesFunction(Broadcast<INDArray> params, Broadcast<String> jsonConfig,
                     boolean addRegularizationTerms, int batchSize) {
         this.params = params;
         this.jsonConfig = jsonConfig;
@@ -75,9 +60,9 @@ class ScoreExamplesFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Mu
 
 
     @Override
-    public Iterable<Double> call(Iterator<MultiDataSet> iterator) throws Exception {
+    public Iterator<Double> call(Iterator<MultiDataSet> iterator) throws Exception {
         if (!iterator.hasNext()) {
-            return Collections.emptyList();
+            return Collections.emptyIterator();
         }
 
         ComputationGraph network = new ComputationGraph(ComputationGraphConfiguration.fromJson(jsonConfig.getValue()));
@@ -121,6 +106,6 @@ class ScoreExamplesFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Mu
             log.debug("Scored {} examples ", totalCount);
         }
 
-        return ret;
+        return ret.iterator();
     }
 }

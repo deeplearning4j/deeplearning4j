@@ -16,7 +16,7 @@
 
 package org.nd4j.evaluation.serde;
 
-import com.google.common.collect.Multiset;
+import org.nd4j.shade.guava.collect.Multiset;
 import org.nd4j.evaluation.classification.ConfusionMatrix;
 import org.nd4j.shade.jackson.core.JsonGenerator;
 import org.nd4j.shade.jackson.core.JsonProcessingException;

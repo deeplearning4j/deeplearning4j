@@ -16,7 +16,8 @@
 
 package org.nd4j.linalg.indexing.functions;
 
-import com.google.common.base.Function;
+
+import org.nd4j.linalg.function.Function;
 
 /**
  * Created by agibsonccc on 10/8/14.

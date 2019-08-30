@@ -16,9 +16,8 @@
 
 package org.deeplearning4j.spark.api.worker;
 
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.broadcast.Broadcast;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
 import org.datavec.spark.util.SerializableHadoopConfig;
 import org.deeplearning4j.api.loader.DataSetLoader;
 import org.deeplearning4j.spark.api.TrainingResult;
@@ -38,30 +37,15 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ExecuteWorkerPathFlatMap<R extends TrainingResult>
-                extends BaseFlatMapFunctionAdaptee<Iterator<String>, R> {
+public class ExecuteWorkerPathFlatMap<R extends TrainingResult> implements FlatMapFunction<Iterator<String>, R> {
 
-    public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker, DataSetLoader loader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
-        super(new ExecuteWorkerPathFlatMapAdapter<>(worker, loader, hadoopConfig));
-    }
-}
-
-
-/**
- * A FlatMapFunction for executing training on serialized DataSet objects, that can be loaded from a path (local or HDFS)
- * that is specified as a String
- * Used in both SparkDl4jMultiLayer and SparkComputationGraph implementations
- *
- * @author Alex Black
- */
-class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatMapFunctionAdapter<Iterator<String>, R> {
-    private final FlatMapFunctionAdapter<Iterator<DataSet>, R> workerFlatMap;
+    private final FlatMapFunction<Iterator<DataSet>, R> workerFlatMap;
     private final DataSetLoader dataSetLoader;
     private final int maxDataSetObjects;
     private final Broadcast<SerializableHadoopConfig> hadoopConfig;
 
-    public ExecuteWorkerPathFlatMapAdapter(TrainingWorker<R> worker, DataSetLoader dataSetLoader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
-        this.workerFlatMap = new ExecuteWorkerFlatMapAdapter<>(worker);
+    public ExecuteWorkerPathFlatMap(TrainingWorker<R> worker, DataSetLoader dataSetLoader, Broadcast<SerializableHadoopConfig> hadoopConfig) {
+        this.workerFlatMap = new ExecuteWorkerFlatMap<>(worker);
         this.dataSetLoader = dataSetLoader;
         this.hadoopConfig = hadoopConfig;
 
@@ -84,7 +68,7 @@ class ExecuteWorkerPathFlatMapAdapter<R extends TrainingResult> implements FlatM
     }
 
     @Override
-    public Iterable<R> call(Iterator<String> iter) throws Exception {
+    public Iterator<R> call(Iterator<String> iter) throws Exception {
         List<String> list = new ArrayList<>();
         int count = 0;
         while (iter.hasNext() && count++ < maxDataSetObjects) {

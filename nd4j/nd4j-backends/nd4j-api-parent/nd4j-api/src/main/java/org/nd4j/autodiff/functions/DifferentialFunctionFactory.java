@@ -1234,19 +1234,19 @@ public class DifferentialFunctionFactory {
         return new Xor(sameDiff(), ix, iy).outputVariable();
     }
 
-    public SDVariable shift(SDVariable ix, int shift) {
+    public SDVariable shift(SDVariable ix, SDVariable shift) {
         return new ShiftBits(sameDiff(), ix, shift).outputVariable();
     }
 
-    public SDVariable rshift(SDVariable ix, int shift) {
+    public SDVariable rshift(SDVariable ix, SDVariable shift) {
         return new RShiftBits(sameDiff(), ix, shift).outputVariable();
     }
 
-    public SDVariable rotl(SDVariable ix, int shift) {
+    public SDVariable rotl(SDVariable ix, SDVariable shift) {
         return new CyclicShiftBits(sameDiff(), ix, shift).outputVariable();
     }
 
-    public SDVariable rotr(SDVariable ix, int shift) {
+    public SDVariable rotr(SDVariable ix, SDVariable shift) {
         return new CyclicRShiftBits(sameDiff(), ix, shift).outputVariable();
     }
 

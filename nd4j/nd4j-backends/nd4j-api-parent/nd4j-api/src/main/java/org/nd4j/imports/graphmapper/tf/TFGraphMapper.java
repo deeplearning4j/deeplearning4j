@@ -17,8 +17,8 @@
 package org.nd4j.imports.graphmapper.tf;
 
 import org.nd4j.shade.protobuf.Message;
-import com.google.common.primitives.Floats;
-import com.google.common.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Floats;
+import org.nd4j.shade.guava.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;

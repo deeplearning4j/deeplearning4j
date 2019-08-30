@@ -22,23 +22,24 @@ import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.BackpropType;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
-import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.graph.LayerVertex;
-import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.BatchNormalization;
+import org.deeplearning4j.nn.conf.layers.ConvolutionLayer;
+import org.deeplearning4j.nn.conf.layers.GravesLSTM;
+import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyLayerDeserializer;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
-import org.deeplearning4j.regressiontest.customlayer100a.CustomLayer;
-import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.nd4j.linalg.activations.impl.*;
+import org.nd4j.linalg.activations.impl.ActivationIdentity;
+import org.nd4j.linalg.activations.impl.ActivationLReLU;
+import org.nd4j.linalg.activations.impl.ActivationSoftmax;
+import org.nd4j.linalg.activations.impl.ActivationTanH;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.learning.config.RmsProp;
 import org.nd4j.linalg.learning.regularization.WeightDecay;
@@ -60,6 +61,9 @@ public class RegressionTest100a extends BaseDL4JTest {
 
     @Test
     public void testCustomLayer() throws Exception {
+        //We dropped support for 1.0.0-alpha and earlier custom layers due to the maintenance overhead for a rarely used feature
+        //An upgrade path exists as a workaround - load in beta to beta4 and re-save
+        //All built-in layers can be loaded going back to 0.5.0
 
         File f = Resources.asFile("regression_testing/100a/CustomLayerExample_100a.bin");
 
@@ -68,67 +72,8 @@ public class RegressionTest100a extends BaseDL4JTest {
             fail("Expected exception");
         } catch (Exception e){
             String msg = e.getMessage();
-            assertTrue(msg, msg.contains("NeuralNetConfiguration.registerLegacyCustomClassesForJSON"));
+            assertTrue(msg, msg.contains("custom") && msg.contains("1.0.0-beta") && msg.contains("saved again"));
         }
-
-        NeuralNetConfiguration.registerLegacyCustomClassesForJSON(CustomLayer.class);
-
-        MultiLayerNetwork net = MultiLayerNetwork.load(f, true);
-
-        DenseLayer l0 = (DenseLayer) net.getLayer(0).conf().getLayer();
-        assertEquals(new ActivationTanH(), l0.getActivationFn());
-        assertEquals(new WeightDecay(0.03, false), TestUtils.getWeightDecayReg(l0));
-        assertEquals(new RmsProp(0.95), l0.getIUpdater());
-
-        CustomLayer l1 = (CustomLayer) net.getLayer(1).conf().getLayer();
-        assertEquals(new ActivationTanH(), l1.getActivationFn());
-        assertEquals(new ActivationSigmoid(), l1.getSecondActivationFunction());
-        assertEquals(new RmsProp(0.95), l1.getIUpdater());
-
-
-        INDArray outExp;
-        File f2 = Resources.asFile("regression_testing/100a/CustomLayerExample_Output_100a.bin");
-        try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
-            outExp = Nd4j.read(dis);
-        }
-
-        INDArray in;
-        File f3 = Resources.asFile("regression_testing/100a/CustomLayerExample_Input_100a.bin");
-        try(DataInputStream dis = new DataInputStream(new FileInputStream(f3))){
-            in = Nd4j.read(dis);
-        }
-
-        INDArray outAct = net.output(in);
-
-        assertEquals(outExp, outAct);
-
-
-        //Check graph
-        f = Resources.asFile("regression_testing/100a/CustomLayerExample_Graph_100a.bin");
-
-        //Deregister custom class:
-        new LegacyLayerDeserializer().getLegacyNamesMap().remove("CustomLayer");
-
-        try {
-            ComputationGraph.load(f, true);
-            fail("Expected exception");
-        } catch (Exception e){
-            String msg = e.getMessage();
-            assertTrue(msg, msg.contains("NeuralNetConfiguration.registerLegacyCustomClassesForJSON"));
-        }
-
-        NeuralNetConfiguration.registerLegacyCustomClassesForJSON(CustomLayer.class);
-
-        ComputationGraph graph = ComputationGraph.load(f, true);
-
-        f2 = Resources.asFile("regression_testing/100a/CustomLayerExample_Graph_Output_100a.bin");
-        try(DataInputStream dis = new DataInputStream(new FileInputStream(f2))){
-            outExp = Nd4j.read(dis);
-        }
-
-        outAct = graph.outputSingle(in);
-
-        assertEquals(outExp, outAct);
     }
 
 

@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.spark.data;
 
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import lombok.AllArgsConstructor;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.util.ArrayList;
@@ -38,37 +38,12 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class BatchDataSetsFunction extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, DataSet> {
-
-    public BatchDataSetsFunction(int minibatchSize) {
-        super(new BatchDataSetsFunctionAdapter(minibatchSize));
-    }
-}
-
-
-/**
- * Function used to batch DataSet objects together. Typically used to combine singe-example DataSet objects out of
- * something like {@link org.deeplearning4j.spark.datavec.DataVecDataSetFunction} together into minibatches.<br>
- *
- * Usage:
- * <pre>
- * {@code
- *      RDD<DataSet> mySingleExampleDataSets = ...;
- *      RDD<DataSet> batchData = mySingleExampleDataSets.mapPartitions(new BatchDataSetsFunction(batchSize));
- * }
- * </pre>
- *
- * @author Alex Black
- */
-class BatchDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>, DataSet> {
+@AllArgsConstructor
+public class BatchDataSetsFunction implements FlatMapFunction<Iterator<DataSet>, DataSet> {
     private final int minibatchSize;
 
-    public BatchDataSetsFunctionAdapter(int minibatchSize) {
-        this.minibatchSize = minibatchSize;
-    }
-
     @Override
-    public Iterable<DataSet> call(Iterator<DataSet> iter) throws Exception {
+    public Iterator<DataSet> call(Iterator<DataSet> iter) throws Exception {
         List<DataSet> out = new ArrayList<>();
         while (iter.hasNext()) {
             List<DataSet> list = new ArrayList<>();
@@ -88,6 +63,6 @@ class BatchDataSetsFunctionAdapter implements FlatMapFunctionAdapter<Iterator<Da
 
             out.add(next);
         }
-        return out;
+        return out.iterator();
     }
 }
