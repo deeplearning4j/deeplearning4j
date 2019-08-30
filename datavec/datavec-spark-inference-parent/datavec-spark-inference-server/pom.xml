@@ -147,6 +147,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.typesafe.akka</groupId>
+            <artifactId>akka-cluster_2.11</artifactId>
+            <version>2.5.23</version>
+        </dependency>
+
+        <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>
             <version>${unirest.version}</version>
