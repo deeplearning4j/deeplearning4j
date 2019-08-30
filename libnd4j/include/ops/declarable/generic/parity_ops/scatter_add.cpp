@@ -35,6 +35,9 @@ OP_IMPL(scatter_add, 3, 1, true) {
 
     auto output = OUTPUT_VARIABLE(0);
 
+    if (!block.isInplace())
+        output->assign(input);
+
     const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
 
     const int inRank  = input->rankOf();
@@ -68,10 +71,8 @@ OP_IMPL(scatter_add, 3, 1, true) {
         REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_ADD OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
     }
 
-    if (!block.isInplace())
-        output->assign(input);
-
-    helpers::scatter(block.launchContext(), pairwise::Add, *indices, *updates, *output, lock);
+    if (!indices->isEmpty())
+        helpers::scatter(block.launchContext(), pairwise::Add, *indices, *updates, *output, lock);
 
     return Status::OK();
 }

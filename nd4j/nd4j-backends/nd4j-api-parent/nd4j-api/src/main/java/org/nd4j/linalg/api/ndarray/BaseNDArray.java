@@ -1732,6 +1732,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(isEmpty())
             return this;
 
+        Nd4j.getCompressor().autoDecompress(this);
+
         // fixme: eventually it would be nice to have this in native code
         if (isS()) {
             val list = new ArrayList<String>();
@@ -1741,8 +1743,9 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             return Nd4j.create(list, this.shape(), this.ordering());
         }
 
-        Nd4j.getCompressor().autoDecompress(this);
-        return Shape.toOffsetZeroCopy(this, order);
+        val z = Nd4j.createUninitialized(this.dataType(), this.shape(), order);
+        z.assign(this);
+        return z;
     }
 
     /**
