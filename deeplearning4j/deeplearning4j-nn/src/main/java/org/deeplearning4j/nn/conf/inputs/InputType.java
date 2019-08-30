@@ -16,12 +16,15 @@
 
 package org.deeplearning4j.nn.conf.inputs;
 
-import lombok.*;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 import org.deeplearning4j.nn.conf.layers.Convolution3D;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.shade.jackson.annotation.JsonIgnore;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
-import org.nd4j.shade.jackson.annotation.JsonSubTypes;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 
 import java.io.Serializable;
@@ -36,12 +39,7 @@ import java.util.Arrays;
  * @author Alex Black
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.WRAPPER_OBJECT)
-@JsonSubTypes(value = {@JsonSubTypes.Type(value = InputType.InputTypeFeedForward.class, name = "FeedForward"),
-        @JsonSubTypes.Type(value = InputType.InputTypeRecurrent.class, name = "Recurrent"),
-        @JsonSubTypes.Type(value = InputType.InputTypeConvolutional.class, name = "Convolutional"),
-        @JsonSubTypes.Type(value = InputType.InputTypeConvolutionalFlat.class, name = "ConvolutionalFlat"),
-        @JsonSubTypes.Type(value = InputType.InputTypeConvolutional3D.class, name = "Convolutional3D")})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public abstract class InputType implements Serializable {
 
     /**
@@ -174,12 +172,15 @@ public abstract class InputType implements Serializable {
     }
 
 
-    @AllArgsConstructor
-    @Getter
     @NoArgsConstructor
+    @Getter
     @EqualsAndHashCode(callSuper = false)
     public static class InputTypeFeedForward extends InputType {
         private long size;
+
+        public InputTypeFeedForward(@JsonProperty("size") long size) {
+            this.size = size;
+        }
 
         @Override
         public Type getType() {
@@ -203,9 +204,8 @@ public abstract class InputType implements Serializable {
         }
     }
 
-    @Getter
     @NoArgsConstructor
-    @AllArgsConstructor
+    @Getter
     @EqualsAndHashCode(callSuper = false)
     public static class InputTypeRecurrent extends InputType {
         private long size;
@@ -213,6 +213,11 @@ public abstract class InputType implements Serializable {
 
         public InputTypeRecurrent(long size) {
             this(size, -1);
+        }
+
+        public InputTypeRecurrent(@JsonProperty("size") long size, @JsonProperty("timeSeriesLength") long timeSeriesLength) {
+            this.size = size;
+            this.timeSeriesLength = timeSeriesLength;
         }
 
         @Override
@@ -245,15 +250,19 @@ public abstract class InputType implements Serializable {
         }
     }
 
-    @AllArgsConstructor
+    @NoArgsConstructor
     @Data
     @EqualsAndHashCode(callSuper = false)
-    @NoArgsConstructor
     public static class InputTypeConvolutional extends InputType {
         private long height;
         private long width;
         private long channels;
 
+        public InputTypeConvolutional(@JsonProperty("height") long height, @JsonProperty("width") long width, @JsonProperty("channels") long channels) {
+            this.height = height;
+            this.width = width;
+            this.channels = channels;
+        }
 
         /**
          * Return the number of channels / depth for this 2D convolution. This method has been deprecated,
@@ -298,16 +307,24 @@ public abstract class InputType implements Serializable {
         }
     }
 
-    @AllArgsConstructor
+    @NoArgsConstructor
     @Data
     @EqualsAndHashCode(callSuper = false)
-    @NoArgsConstructor
     public static class InputTypeConvolutional3D extends InputType {
         private Convolution3D.DataFormat dataFormat;
         private long depth;
         private long height;
         private long width;
         private long channels;
+
+        public InputTypeConvolutional3D(@JsonProperty("dataFormat") Convolution3D.DataFormat dataFormat,
+                                        @JsonProperty("depth") long depth, @JsonProperty("height") long height, @JsonProperty("width") long width, @JsonProperty("channels") long channels) {
+            this.dataFormat = dataFormat;
+            this.depth = depth;
+            this.height = height;
+            this.width = width;
+            this.channels = channels;
+        }
 
         @Override
         public Type getType() {
@@ -336,14 +353,19 @@ public abstract class InputType implements Serializable {
         }
     }
 
-    @AllArgsConstructor
+    @NoArgsConstructor
     @Data
     @EqualsAndHashCode(callSuper = false)
-    @NoArgsConstructor
     public static class InputTypeConvolutionalFlat extends InputType {
         private long height;
         private long width;
         private long depth;
+
+        public InputTypeConvolutionalFlat(@JsonProperty("height") long height, @JsonProperty("width") long width, @JsonProperty("depth") long depth) {
+            this.height = height;
+            this.width = width;
+            this.depth = depth;
+        }
 
         @Override
         public Type getType() {
