@@ -32,6 +32,8 @@ import play.server.Server;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Base64;
+import java.util.Random;
 
 import static play.mvc.Results.*;
 
@@ -75,6 +77,18 @@ public class CSVSparkTransformServer extends SparkTransformServer {
         } else {
             log.warn("Server started with no json for transform process. Please ensure you specify a transform process via sending a post request with raw json"
                     + "to /transformprocess");
+        }
+
+        //Set play secret key, if required
+        //http://www.playframework.com/documentation/latest/ApplicationSecret
+        String crypto = System.getProperty("play.crypto.secret");
+        if (crypto == null || "changeme".equals(crypto) || "".equals(crypto) ) {
+            byte[] newCrypto = new byte[1024];
+
+            new Random().nextBytes(newCrypto);
+
+            String base64 = Base64.getEncoder().encodeToString(newCrypto);
+            System.setProperty("play.crypto.secret", base64);
         }
 
 
