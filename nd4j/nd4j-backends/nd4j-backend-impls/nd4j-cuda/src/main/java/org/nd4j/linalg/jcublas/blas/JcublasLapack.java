@@ -54,6 +54,7 @@ import static org.bytedeco.cuda.global.cusolver.*;
  *
  * @author Adam Gibson
  * @author Richard Corbishley
+ *
  */
 @Slf4j
 public class JcublasLapack extends BaseLapack {
@@ -69,7 +70,6 @@ public class JcublasLapack extends BaseLapack {
 
         if (A.ordering() == 'c')
             a = A.dup('f');
-
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
@@ -193,7 +193,7 @@ public class JcublasLapack extends BaseLapack {
 
 
     //=========================
-// Q R DECOMP
+    // Q R DECOMP
     @Override
     public void sgeqrf(int M, int N, INDArray A, INDArray R, INDArray INFO) {
         INDArray a = A;
