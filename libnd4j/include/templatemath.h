@@ -904,13 +904,13 @@ inline __device__ int16_t nd4j_atomicMax<int16_t>(int16_t* address, int16_t val)
 
 template <>
 inline __device__ float16 nd4j_atomicMax<float16>(float16* address, float16 val)  {
-	int* address_as_ull = (int*) address;
+	auto address_as_ull = (int*) address;
 
 	long addr = (long) address;
 	bool misaligned = addr & 0x3;
 
 	if (misaligned)
-		address_as_ull = (int *) (addr - 2);
+		address_as_ull = (int *) (address - 1);
 
 	PAIR old, assumed, fresh;
 
@@ -937,13 +937,13 @@ inline __device__ float16 nd4j_atomicMax<float16>(float16* address, float16 val)
 
 template <>
 inline __device__ bfloat16 nd4j_atomicMax<bfloat16>(bfloat16* address, bfloat16 val)  {
-	int* address_as_ull = (int*) address;
+	auto address_as_ull = (int*) address;
 
 	long addr = (long)(address);
 	bool misaligned = addr & 0x3;
 
 	if (misaligned)
-		address_as_ull = (int *) (addr - 2);
+		address_as_ull = (int *) (address - 1);
 
 	BPAIR old, assumed, fresh;
 
@@ -1060,13 +1060,13 @@ inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)
 #if __CUDA_ARCH__ >= 700
     atomicAdd(reinterpret_cast<__half*>(address), val.data);
 #else
-	int* address_as_ull = (int*) address;
+	auto address_as_ull = (int*) address;
 
 	long addr = (long) address;
 	bool misaligned = addr & 0x3;
 
 	if (misaligned)
-		address_as_ull = (int *) (addr - 2);
+		address_as_ull = (int *) (address - 1);
 
 	PAIR old, assumed, fresh;
 
@@ -1094,13 +1094,13 @@ inline __device__ float16 nd4j_atomicAdd<float16>(float16* address, float16 val)
 
 template <>
 inline __device__ bfloat16 nd4j_atomicAdd<bfloat16>(bfloat16* address, bfloat16 val)  {
-	int* address_as_ull = (int*) address;
+	auto address_as_ull = (int*) address;
 
-	long addr = (long)(address);
+	auto addr = (long)(address);
 	bool misaligned = addr & 0x3;
 
 	if (misaligned)
-		address_as_ull = (int *) (addr - 2);
+		address_as_ull = (int *) (address - 1);
 
 	BPAIR old, assumed, fresh;
 
@@ -1367,13 +1367,13 @@ inline __device__ Nd4jLong nd4j_atomicMul<Nd4jLong>(Nd4jLong* address, Nd4jLong 
 
 template <>
 inline __device__ bfloat16 nd4j_atomicMul<bfloat16>(bfloat16* address, bfloat16 val) {
-	int* address_as_ull = (int*) address;
+	auto address_as_ull = (int*) address;
 
 	long addr = (long)(address);
 	bool misaligned = addr & 0x3;
 
 	if (misaligned)
-		address_as_ull = (int *) (addr - 2);
+		address_as_ull = (int *) (address - 1);
 
 	BPAIR old, assumed, fresh;
 
@@ -1400,13 +1400,13 @@ inline __device__ bfloat16 nd4j_atomicMul<bfloat16>(bfloat16* address, bfloat16 
 
 template <>
 inline __device__ float16 nd4j_atomicMul<float16>(float16* address, float16 val) {
-	int* address_as_ull = (int*) address;
+	auto address_as_ull = (int*) address;
 
 	long addr = (long)(address);
 	bool misaligned = addr & 0x3;
 
 	if (misaligned)
-		address_as_ull = (int *) (addr - 2);
+		address_as_ull = (int *) (address - 1);
 
 	BPAIR old, assumed, fresh;
 
