@@ -70,6 +70,13 @@
             <artifactId>deeplearning4j-play_2.11</artifactId>
             <version>${deeplearning4j.version}</version>
             <scope>test</scope>
+            <exclusions>
+                <!-- To avoid clashing net.jpountz.lz4:lz4:1.3.0 and org.lz4:lz4-java:jar:1.4.0 - -->
+                <exclusion>
+                    <groupId>net.jpountz.lz4</groupId>
+                    <artifactId>lz4</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
