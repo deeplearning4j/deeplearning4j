@@ -64,7 +64,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
     val lv = ev.linearView(underlying)
     breakable {
       for {
-        i <- 0 until lv.length().toInt 
+        i <- 0 until lv.length().toInt
       } if (!f(ev.get(lv, i))) {
         result = true
         break()
@@ -80,7 +80,7 @@ trait CollectionLikeNDArray[A <: INDArray] {
     val lv = ev.linearView(underlying)
     breakable {
       for {
-        i <- 0 until lv.length().toInt 
+        i <- 0 until lv.length().toInt
       } if (!f(ev.get(lv, i))) {
         result = false
         break()

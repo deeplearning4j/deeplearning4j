@@ -294,7 +294,7 @@
 
     <profiles>
         <profile>
-            <id>nd4j-tests-cpu</id>
+            <id>test-nd4j-native</id>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
@@ -302,16 +302,28 @@
                     <version>${project.version}</version>
                     <scope>test</scope>
                 </dependency>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${dl4j-test-resources.version}</version>
+                    <scope>test</scope>
+                </dependency>
             </dependencies>
         </profile>
 
         <profile>
-            <id>nd4j-tests-cuda</id>
+            <id>test-nd4j-cuda-10.1</id>
             <dependencies>
                 <dependency>
                     <groupId>org.nd4j</groupId>
                     <artifactId>nd4j-cuda-10.1</artifactId>
                     <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+                <dependency>
+                    <groupId>org.deeplearning4j</groupId>
+                    <artifactId>dl4j-test-resources</artifactId>
+                    <version>${dl4j-test-resources.version}</version>
                     <scope>test</scope>
                 </dependency>
             </dependencies>
