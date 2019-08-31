@@ -130,12 +130,11 @@ namespace nd4j {
 		}
 
 		template<typename T, typename Z>
-        math_def inline Z nd4j_elu(T val) {
-			if (val >= (T) 0.f) return val;
-			else return nd4j_exp<T, Z>(val) - (Z) 1.0f;
-			//return val >= 0.0 ? val : (nd4j_exp<T>(val) - 1.0);
+        math_def inline Z nd4j_elu(T val, T alpha) {
+			if (val >= (T) 0.f)
+				return val;
+			return static_cast<Z>(alpha) * (nd4j_exp<T, Z>(val) - static_cast<Z>(1.0f));
 		}
-
 
 		template<typename T, typename Z>
         math_def inline Z nd4j_leakyrelu(T val,T alpha) {
@@ -145,13 +144,14 @@ namespace nd4j {
 			    return val;
 		}
 
-
 		template<typename T, typename Z>
-        math_def inline Z nd4j_eluderivative(T val) {
-			if (val >= (T) 0.0f) return (Z) 1.0f;
-			else return nd4j_exp<T, Z>(val);
+        math_def inline Z nd4j_eluderivative(T val, T alpha) {
+			if (val >= static_cast<T>(0.0f))
+				return static_cast<Z>(1.0f);
+			return static_cast<Z>(alpha) * nd4j_exp<T, Z>(val);
 			//return val >= 0.0 ? 1.0 : nd4j_exp(val);
 		}
+
 		template<typename T, typename Z>
         math_def inline Z nd4j_sin(T val);
 
@@ -283,7 +283,7 @@ namespace nd4j {
 #ifdef NATIVE_HALFS
 			if (value < (float16) 0.f) {
 				 return float16(__hneg(value.data));
-			} else 
+			} else
 				return value;
 #else
 			return (float16) fabsf((float) value);

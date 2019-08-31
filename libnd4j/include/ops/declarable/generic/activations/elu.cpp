@@ -25,12 +25,14 @@
 #include <ops/declarable/helpers/legacy_helpers.h>
 namespace nd4j {
     namespace ops {
-        CONFIGURABLE_OP_IMPL(elu, 1, 1, true, 0, 0) {
+        CONFIGURABLE_OP_IMPL(elu, 1, 1, true, -2, 0) {
+
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            input->applyTransform(nd4j::transform::ELU, output, nullptr);
-            STORE_RESULT(output);
+            const auto alpha = block.numT() > 0 ? T_ARG(0) : 1.f;
+
+            input->applyScalar(nd4j::scalar::ELU, alpha, output);
 
             return Status::OK();
         }
@@ -41,14 +43,18 @@ namespace nd4j {
                     ->setAllowedOutputTypes(0, {ALL_FLOATS});
         }
 
-        CONFIGURABLE_OP_IMPL(elu_bp, 2, 1, true, 0, 0) {
+        CONFIGURABLE_OP_IMPL(elu_bp, 2, 1, true, -2, 0) {
+
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
 
-            auto z = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
 
-            //input->applyPairwiseTransform(pairwise::ELUDerivativeE, epsilon, z, nullptr);
-            helpers::eluDerivative(block.launchContext(), input, epsilon, z);
+            const auto alpha = block.numT() > 0 ? T_ARG(0) : 1.f;
+
+            // input->applyPairwiseTransform(pairwise::ELUDerivativeE, epsilon, output);
+            helpers::eluDerivative(block.launchContext(), input, epsilon, output, alpha);
+
             return Status::OK();
         }
 

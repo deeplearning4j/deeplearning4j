@@ -2794,53 +2794,42 @@ TEST_F(DeclarableOpsTests3, svd_test11) {
 TEST_F(DeclarableOpsTests3, elu_test1) {
 
     auto x = NDArrayFactory::create<double>('c', {3,3}, {0.1, .2, .3, -.4,-.5,-.6, .7, .8, .9});
-//    auto expS = NDArrayFactory::create<double>('c', {3});
-//    auto expU = NDArrayFactory::create<double>('c', {3,3});
-    auto exp = NDArrayFactory::create<double>('c', {3,3}, {.1, .2, .3, -0.32968, -0.393469, -0.451188, .7, .8, .9});
+    auto exp = NDArrayFactory::create<double>('c', {3,3}, {.1, .2, .3, 0.5*-0.32968, 0.5*-0.393469, 0.5*-0.451188, .7, .8, .9});
 
     nd4j::ops::elu op;
-    auto results = op.execute({&x}, {}, {});
+    auto results = op.execute({&x}, {0.5}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto s = results->at(0);
-//    auto u = results->at(1);
-//    auto v = results->at(2);
-//    s->printIndexedBuffer("ELU");
     ASSERT_TRUE(exp.equalsTo(s));
 
     delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests3, elu_test2) {
+TEST_F(DeclarableOpsTests3, elu_bp_test1) {
 
-        auto x = NDArrayFactory::create<double>('c', {3, 3}, {0.1, .2, .3, -.4, -.5, -.6, .7, .8, .9});
-        auto eps = NDArrayFactory::create<double>('c', {3,3});
-        eps.assign(2.);
-//    auto expU = NDArrayFactory::create<double>('c', {3,3});
-        auto exp = NDArrayFactory::create<double>('c', {3, 3}, {2, 2, 2, 1.34064, 1.213061, 1.097623, 2, 2, 2});
+    auto x = NDArrayFactory::create<double>('c', {3, 3}, {0.1, .2, .3, -.4, -.5, -.6, .7, .8, .9});
+    auto eps = NDArrayFactory::create<double>('c', {3,3});
+    eps.assign(2.);
+    auto exp = NDArrayFactory::create<double>('c', {3, 3}, {2, 2, 2, 0.5*1.34064, 0.5*1.213061, 0.5*1.097623, 2, 2, 2});
 
-        nd4j::ops::elu_bp op;
-        auto results = op.execute({ &x, &eps }, {}, {});
+    nd4j::ops::elu_bp op;
+    auto results = op.execute({ &x, &eps }, {0.5}, {});
 
-        ASSERT_EQ(ND4J_STATUS_OK, results->status());
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-        auto s = results->at(0);
-//    auto u = results->at(1);
-//    auto v = results->at(2);
-//     s->printIndexedBuffer("ELU_BP");
-        ASSERT_TRUE(exp.equalsTo(s));
+    auto s = results->at(0);
+    ASSERT_TRUE(exp.equalsTo(s));
 
-        delete results;
+    delete results;
 }
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests3, lrelu_test1) {
 
     auto x = NDArrayFactory::create<double>('c', {3,3}, {1, 2, 3, -4,-5,-6, 7, 8, 9});
-//    auto expS = NDArrayFactory::create<double>('c', {3});
-//    auto expU = NDArrayFactory::create<double>('c', {3,3});
     auto exp = NDArrayFactory::create<double>('c', {3,3}, {1, 2, 3, -0.8, -1., -1.2, 7, 8, 9});
 
     nd4j::ops::lrelu op;
@@ -2849,20 +2838,16 @@ TEST_F(DeclarableOpsTests3, lrelu_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto s = results->at(0);
-//    auto u = results->at(1);
-//    auto v = results->at(2);
-//    s->printIndexedBuffer("LRELU");
     ASSERT_TRUE(exp.equalsTo(s));
 
     delete results;
 }
 
-TEST_F(DeclarableOpsTests3, lrelu_test2) {
+TEST_F(DeclarableOpsTests3, lrelu_bp_test1) {
 
     auto x = NDArrayFactory::create<double>('c', {3,3}, {1, 2, 3, -4,-5,-6, 7, 8, 9});
-//    auto expS = NDArrayFactory::create<double>('c', {3});
     auto eps = NDArrayFactory::create<double>('c', {3,3}, {2,2,2,2,2,2,2, 2,2});
-    auto exp = NDArrayFactory::create<double>('c', {3,3}, {2, 2, 2, 0, 0, 0, 2, 2, 2});
+    auto exp = NDArrayFactory::create<double>('c', {3,3}, {2, 2, 2, 0.4, 0.4, 0.4, 2, 2, 2});
 
     nd4j::ops::lrelu_bp op;
     auto results = op.execute({&x, &eps}, {0.2}, {});
@@ -2870,9 +2855,6 @@ TEST_F(DeclarableOpsTests3, lrelu_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto s = results->at(0);
-//    auto u = results->at(1);
-//    auto v = results->at(2);
-//    s->printIndexedBuffer("LRELU_BP");
     ASSERT_TRUE(exp.equalsTo(s));
 
     delete results;
@@ -2882,8 +2864,6 @@ TEST_F(DeclarableOpsTests3, lrelu_test2) {
 TEST_F(DeclarableOpsTests3, selu_test1) {
 
     auto x = NDArrayFactory::create<double>('c', {3,3}, {1, 2, 3, -4,-5,-6, 7, 8, 9});
-//    auto expS = NDArrayFactory::create<double>('c', {3});
-//    auto expU = NDArrayFactory::create<double>('c', {3,3});
     auto exp = NDArrayFactory::create<double>('c', {3,3}, {1.050701, 2.101402, 3.152103, -1.725899, -1.746253, -1.753742, 7.354907, 8.405608, 9.456309});
 
     nd4j::ops::selu op;
@@ -2892,7 +2872,6 @@ TEST_F(DeclarableOpsTests3, selu_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto s = results->at(0);
-//    s->printIndexedBuffer("SELU");
     ASSERT_TRUE(exp.equalsTo(s));
 
     delete results;

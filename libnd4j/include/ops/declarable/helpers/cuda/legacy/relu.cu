@@ -66,29 +66,35 @@ namespace nd4j {
             }
 
             template <typename T>
-            linkage void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-                auto functor = LAMBDA_TT(x, y){
-                    return x >= (T)0.f? y : T(0.f);
+            linkage void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const float alpha) {
+
+                const T alphaT = static_cast<T>(alpha);
+
+                auto functor = LAMBDA_TT(x, y, alphaT) {
+                    return x < 0 ? alphaT * y : y;
                 };
 
                 input->applyPairwiseLambda(epsilon, functor, output);
             }
 
-            void leakyReluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
-                BUILD_SINGLE_SELECTOR(theFirst->dataType(), leakyReluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+            void leakyReluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
+                BUILD_SINGLE_SELECTOR(theFirst->dataType(), leakyReluDerivative_, (theFirst, theSecond, theOutput, alpha), FLOAT_TYPES);
             }
 
             template <typename T>
-            linkage void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-                auto functor = LAMBDA_TT(x, y){
-                    return y * nd4j::math::nd4j_eluderivative<T,T>(x);
+            linkage void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const float alpha) {
+
+                const T alphaT = static_cast<T>(alpha);
+
+                auto functor = LAMBDA_TT(x, y, alphaT){
+                    return y * nd4j::math::nd4j_eluderivative<T,T>(x, alphaT);
                 };
 
                 input->applyPairwiseLambda(epsilon, functor, output);
             }
 
-            void eluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
-                BUILD_SINGLE_SELECTOR(theFirst->dataType(), eluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+            void eluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
+                BUILD_SINGLE_SELECTOR(theFirst->dataType(), eluDerivative_, (theFirst, theSecond, theOutput, alpha), FLOAT_TYPES);
             }
 
             template <typename T>
