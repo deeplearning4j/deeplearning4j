@@ -426,8 +426,10 @@ public class JcublasLapack extends BaseLapack {
     //=========================
 // CHOLESKY DECOMP
     @Override
-    public void spotrf(byte uplo, int N, INDArray A, INDArray INFO) {
+    public void spotrf(byte _uplo, int N, INDArray A, INDArray INFO) {
         INDArray a = A;
+
+        int uplo = _uplo == 'L' ? CUBLAS_FILL_MODE_LOWER : CUBLAS_FILL_MODE_UPPER;
 
         if (A.dataType() != DataType.FLOAT)
             log.warn("FLOAT potrf called for " + A.dataType());
@@ -489,7 +491,7 @@ public class JcublasLapack extends BaseLapack {
         if (a != A)
             A.assign(a);
 
-        if (uplo == 'U') {
+        if (uplo == CUBLAS_FILL_MODE_UPPER ) {
             A.assign(A.transpose());
             INDArrayIndex ix[] = new INDArrayIndex[2];
             for (int i = 1; i < Math.min(A.rows(), A.columns()); i++) {
@@ -510,8 +512,10 @@ public class JcublasLapack extends BaseLapack {
     }
 
     @Override
-    public void dpotrf(byte uplo, int N, INDArray A, INDArray INFO) {
+    public void dpotrf(byte _uplo, int N, INDArray A, INDArray INFO) {
         INDArray a = A;
+
+        int uplo = _uplo == 'L' ? CUBLAS_FILL_MODE_LOWER : CUBLAS_FILL_MODE_UPPER;
 
         if (A.dataType() != DataType.DOUBLE)
             log.warn("DOUBLE potrf called for " + A.dataType());
@@ -573,7 +577,7 @@ public class JcublasLapack extends BaseLapack {
         if (a != A)
             A.assign(a);
 
-        if (uplo == 'U') {
+        if (uplo == CUBLAS_FILL_MODE_UPPER ) {
             A.assign(A.transpose());
             INDArrayIndex ix[] = new INDArrayIndex[2];
             for (int i = 1; i < Math.min(A.rows(), A.columns()); i++) {
