@@ -53,7 +53,7 @@ import static org.bytedeco.cuda.global.cusolver.*;
  * JCublas lapack
  *
  * @author Adam Gibson
- * @author Richard Corbishley
+ * @author Richard Corbishley (signed)
  *
  */
 @Slf4j
