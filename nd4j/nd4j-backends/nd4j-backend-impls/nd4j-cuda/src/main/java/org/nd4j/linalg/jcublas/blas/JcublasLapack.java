@@ -306,8 +306,8 @@ public class JcublasLapack extends BaseLapack {
         if (r != null && r != R)
             R.assign(r);
 
-        log.info("A: {}", A);
-        if (R != null) log.info("R: {}", R);
+        log.debug("A: {}", A);
+        if (R != null) log.debug("R: {}", R);
     }
 
     @Override
@@ -419,8 +419,8 @@ public class JcublasLapack extends BaseLapack {
         if (r != null && r != R)
             R.assign(r);
 
-        log.info("A: {}", A);
-        if (R != null) log.info("R: {}", R);
+        log.debug("A: {}", A);
+        if (R != null) log.debug("R: {}", R);
     }
 
     //=========================
@@ -508,7 +508,7 @@ public class JcublasLapack extends BaseLapack {
             }
         }
 
-        log.info("A: {}", A);
+        log.debug("A: {}", A);
     }
 
     @Override
@@ -594,7 +594,7 @@ public class JcublasLapack extends BaseLapack {
             }
         }
 
-        log.info("A: {}", A);
+        log.debug("A: {}", A);
     }
 
 
