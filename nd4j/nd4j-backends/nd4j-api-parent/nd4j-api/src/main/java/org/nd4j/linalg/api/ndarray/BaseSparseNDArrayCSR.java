@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.api.ndarray;
 
-import com.google.common.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.*;
@@ -124,14 +124,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
         return this;
     }
 
-
-    /**
-     * Returns a subset of this array based on the specified
-     * indexes
-     *
-     * @param indexes the indexes in to the array
-     * @return a view of the array with the specified indices
-     */
     @Override
     public INDArray get(INDArrayIndex... indexes) {
         //check for row/column vector and point index being 0

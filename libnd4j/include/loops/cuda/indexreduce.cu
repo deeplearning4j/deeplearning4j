@@ -29,37 +29,37 @@
 using namespace simdOps;
 
 
-template <typename T>
+template <typename X, typename Z>
 static __global__ void simpleIndexReduceGeneric(const int op,
                                            void *dx,
                                            Nd4jLong *xShapeInfo, int xRank,
                                            void *extraParams,
-                                           Nd4jLong *result,
+                                           void *result,
                                            Nd4jLong *resultShapeInfo, int zRank,
                                            int *dimension,
                                            int dimensionLength,
                                            int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
-     functions::indexreduce::IndexReduce<T>::transform(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
+     functions::indexreduce::IndexReduce<X, Z>::transform(op,dx,xShapeInfo,extraParams,result,resultShapeInfo,dimension,dimensionLength,postProcessOrNot,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
 }
 
 namespace functions {
     namespace indexreduce {
 
-        template <typename T>
-        _CUDA_H void IndexReduce<T>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream,
+        template <typename X, typename Z>
+        _CUDA_H void IndexReduce<X,Z>::executeIndexReduceScalar(dim3 launchDims, cudaStream_t *stream,
                                                                 const int opNum,
                                                                 void *dx, Nd4jLong *xShapeInfo,
                                                                 int xRank,
                                                                 void *extraParams,
-                                                                Nd4jLong *result, Nd4jLong *resultShapeInfo,
+                                                                void *result, Nd4jLong *resultShapeInfo,
                                                                 int zRank,
                                                                 int *dimension, int dimensionLength,
                                                                 int postProcessOrNot,
                                                                 int *allocationBuffer, void *reductionBuffer,
                                                                 Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
-            simpleIndexReduceGeneric<T><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(opNum,
+            simpleIndexReduceGeneric<X, Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(opNum,
                                                                                             dx, xShapeInfo, xRank,
                                                                                             extraParams,
                                                                                             result, resultShapeInfo, 0,
@@ -67,13 +67,11 @@ namespace functions {
                                                                                             1,
                                                                                             allocationBuffer, reductionBuffer,
                                                                                             tadOnlyShapeInfo, tadOffsets);
-
-            nd4j::DebugHelper::checkErrorCode(stream, "execIndexReduceScalar(...) failed");
         }
 
-        template <typename T>
-        _CUDA_H void IndexReduce<T>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            simpleIndexReduceGeneric<T><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
+        template <typename X, typename Z>
+        _CUDA_H void IndexReduce<X, Z>::executeIndexReduce(dim3 launchDims, cudaStream_t *stream, const int opNum, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *result, Nd4jLong *resultShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot, int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
+            simpleIndexReduceGeneric<X, Z><<<launchDims.x,launchDims.y,launchDims.z, *stream>>>(
 			 opNum,
 			 dx,
 			 xShapeInfo, xRank,
@@ -83,8 +81,6 @@ namespace functions {
 			 dimension,
 			 dimensionLength,
 			 1, allocationBuffer, reductionBuffer, tadOnlyShapeInfo, tadOffsets);
-
-            DEBUG_KERNEL(stream, opNum);
         }
 
         // This is the un-specialized struct.  Note that we prevent instantiation of this
@@ -122,14 +118,14 @@ namespace functions {
             }
         };
 
-        template <typename T>
+        template <typename X, typename Z>
         template <typename OpType>
-        __device__ void IndexReduce<T>::aggregatePartials(IndexValue<T> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *vextraParams) {
+        __device__ void IndexReduce<X, Z>::aggregatePartials(IndexValue<X> **sPartialsRef, Nd4jLong tid, Nd4jLong numElements, void *vextraParams) {
             // start the shared memory loop on the next power of 2 less
             // than the block size.  If block size is not a power of 2,
             // accumulate the intermediate sums in the remainder range.
-            auto extraParams = static_cast<T*>(vextraParams);
-            IndexValue<T> *sPartials = *sPartialsRef;
+            auto extraParams = static_cast<X*>(vextraParams);
+            IndexValue<X> *sPartials = *sPartialsRef;
             Nd4jLong floorPow2 = blockDim.x;
 
             if (floorPow2 & (floorPow2 - 1)) {
@@ -138,8 +134,8 @@ namespace functions {
                 }
 
                 if (tid >= floorPow2) {
-                    IndexValue<T> prev = sPartials[tid - floorPow2];
-                    IndexValue<T> curr = sPartials[tid];
+                    IndexValue<X> prev = sPartials[tid - floorPow2];
+                    IndexValue<X> curr = sPartials[tid];
                     sPartials[tid - floorPow2] = OpType::update(prev,curr,extraParams);
                 }
                 __syncthreads();
@@ -147,21 +143,21 @@ namespace functions {
 
             for (int activeThreads = floorPow2 >> 1;activeThreads; activeThreads >>= 1) {
                 if (tid < activeThreads && tid + activeThreads < numElements) {
-                    IndexValue<T> curr = sPartials[tid];
-                    IndexValue<T> next = sPartials[tid + activeThreads];
+                    IndexValue<X> curr = sPartials[tid];
+                    IndexValue<X> next = sPartials[tid + activeThreads];
                     sPartials[tid] = OpType::update(curr,next,extraParams);
                 }
                 __syncthreads();
             }
         }
 
-        template <typename X>
-        __device__ void IndexReduce<X>::transform(
+        template <typename X, typename Y>
+        __device__ void IndexReduce<X, Y>::transform(
                 const int opNum,
                 void *x,
                 Nd4jLong *xShapeInfo,
                 void *extraParams,
-                Nd4jLong *result,
+                void *result,
                 Nd4jLong *resultShapeInfo,
                 int *dimension,
                 int dimensionLength,
@@ -170,15 +166,15 @@ namespace functions {
                 void *reductionBuffer,
                 Nd4jLong *tadShapeInfo,
                 Nd4jLong *tadOffset) {
-             DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+             DISPATCH_BY_OPNUM_TT(transform, PARAMS(x, xShapeInfo, extraParams, result, resultShapeInfo, dimension, dimensionLength, postProcessOrNot, allocationBuffer, reductionBuffer, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
         }
 
 
-        template <typename T>
+        template <typename X, typename Z>
         template <typename OpType>
-        __device__ void IndexReduce<T>::transform(void *vdx, Nd4jLong *xShapeInfo,
+        __device__ void IndexReduce<X, Z>::transform(void *vdx, Nd4jLong *xShapeInfo,
                                                 void *vextraParams,
-                                                Nd4jLong *result, Nd4jLong *resultShapeInfo,
+                                                void *vresult, Nd4jLong *resultShapeInfo,
                                                 int *dimension, int dimensionLength,
                                                 int postProcessOrNot,
                                                 int *allocationBuffer, void *vreductionBuffer,
@@ -186,18 +182,19 @@ namespace functions {
             /**int
              * Gpu information for the problem
              */
-            auto dx = static_cast<T*>(vdx);
-            auto extraParams = static_cast<T*>(vextraParams);
-            auto reductionBuffer = static_cast<T*>(vreductionBuffer);
+            auto dx = reinterpret_cast<X*>(vdx);
+            auto result = reinterpret_cast<Z*>(vresult);
+            auto extraParams = static_cast<X*>(vextraParams);
+            auto reductionBuffer = static_cast<X*>(vreductionBuffer);
             auto order = shape::order(xShapeInfo);
             int tid = blockIdx.x * blockDim.x + threadIdx.x;
             __shared__ volatile int resultScalar;
 
             //shared memory space for storing intermediate results
-            __shared__ IndexValue<T>* sPartials;
+            __shared__ IndexValue<X>* sPartials;
             if(threadIdx.x == 0) {
                 extern __shared__ unsigned char shmem[];
-                sPartials = reinterpret_cast<IndexValue<T>*>(shmem);
+                sPartials = reinterpret_cast<IndexValue<X>*>(shmem);
             }
             __syncthreads();
 
@@ -210,7 +207,7 @@ namespace functions {
 
 
             //only compute the tad indexes once
-            IndexValue <T> reduction = OpType::startingIndexValue(dx);
+            IndexValue<X> reduction = OpType::startingIndexValue(dx);
 
             if (threadIdx.x == 0) {
                 if (resultShapeInfo != nullptr)
@@ -255,7 +252,7 @@ namespace functions {
 
                         for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {                            
                             auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
-                            IndexValue<T> comp {dx[xOffset], i};
+                            IndexValue<X> comp {dx[xOffset], i};
                             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], comp, extraParams);
                         }
 
@@ -264,7 +261,7 @@ namespace functions {
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
-                            result[r] = sPartials[threadIdx.x].index;
+                            result[r] = (Z) sPartials[threadIdx.x].index;
                         }
                         __syncthreads();
                     }
@@ -276,7 +273,7 @@ namespace functions {
                         sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
                         for (int x = threadIdx.x; x < tadLength; x+= blockDim.x) {
-                            IndexValue<T> comp {dx[tadOffsetForBlock + x * tadEWS], x};
+                            IndexValue<X> comp {dx[tadOffsetForBlock + x * tadEWS], x};
                             sPartials[threadIdx.x] =  OpType::update(sPartials[threadIdx.x], comp, extraParams);
                         }
 
@@ -285,7 +282,7 @@ namespace functions {
 
                         __syncthreads();
                         if (threadIdx.x == 0) {
-                            result[i] = sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
+                            result[i] = (Z) sPartials[threadIdx.x].index; //postProcess(sPartials[0],tadLength ,extraParams);
                         }
                         __syncthreads();
                     }
@@ -296,14 +293,14 @@ namespace functions {
 
                 if(xElementWiseStride >= 1 && order == 'c') {
                     for(Nd4jLong i = tid;i < n; i += (blockDim.x * gridDim.x)) {
-                        IndexValue <T> indexVal = {dx[i * xElementWiseStride], i};
+                        IndexValue<X> indexVal = {dx[i * xElementWiseStride], i};
                         reduction = OpType::update(reduction, indexVal, extraParams);
                     }
                 } else {
                                         
                     for(Nd4jLong i = tid;i < n; i += blockDim.x * gridDim.x) {                                                
                         auto offset = shape::getIndexOffset(i, xShapeInfo, n);
-                        IndexValue <T> indexVal = {dx[offset], i};
+                        IndexValue<X> indexVal = {dx[offset], i};
                         reduction = OpType::update(reduction, indexVal, extraParams);
                     }
                 }
@@ -320,7 +317,7 @@ namespace functions {
                     unsigned int *tc = (unsigned int *) reductionBuffer;
                     tid = threadIdx.x;
                     if (threadIdx.x == 0) {
-                        auto pBuffer = reinterpret_cast<IndexValue<T> *>(reductionBuffer);
+                        auto pBuffer = reinterpret_cast<IndexValue<X> *>(reductionBuffer);
                         pBuffer[blockIdx.x] = {sPartials[0].value, sPartials[0].index};
                     }
                     __threadfence();
@@ -335,7 +332,7 @@ namespace functions {
 
                     if (amLast) {
                         tc[16384] = 0;
-                        IndexValue<T> *pBuffer = (IndexValue<T> *) reductionBuffer;
+                        IndexValue<X> *pBuffer = (IndexValue<X> *) reductionBuffer;
 
                         sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
@@ -348,14 +345,14 @@ namespace functions {
 
                         __syncthreads();
                         if (tid == 0) {
-                            result[0] = sPartials[0].index;
+                            result[0] = (Z) sPartials[0].index;
                         }
                     }
                 } else {
                     if (tid == 0) {
                         auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
                         tc[16384] = 0;
-                        result[0] = sPartials[0].index;
+                        result[0] = (Z) sPartials[0].index;
                     }
                 }
 
@@ -365,30 +362,30 @@ namespace functions {
 
 
 
-        template <typename T>
-        Nd4jLong IndexReduce<T>::execScalar(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams) {
+        template <typename X, typename Z>
+        Nd4jLong IndexReduce<X,Z>::execScalar(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams) {
             return 0;
         }
 
-        template <typename T>
-        void IndexReduce<T>::exec(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
+        template <typename X, typename Z>
+        void IndexReduce<X,Z>::exec(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
 
         }
 
-        template <typename T>
+        template <typename X, typename Z>
         template<typename OpType>
-        Nd4jLong IndexReduce<T>:: execScalar(void *x, Nd4jLong *xShapeInfo, void *extraParams) {
+        Nd4jLong IndexReduce<X,Z>:: execScalar(void *x, Nd4jLong *xShapeInfo, void *extraParams) {
             return 0;
         }
 
-        template <typename T>
+        template <typename X, typename Z>
         template<typename OpType>
-        _CUDA_H void IndexReduce<T>::exec(void *x, Nd4jLong *xShapeInfo, void *extraParams, Nd4jLong *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
+        _CUDA_H void IndexReduce<X,Z>::exec(void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
 
         }
 
 
-        BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
+        BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES, INDEXING_TYPES);
     }
 }
 

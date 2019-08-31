@@ -24,6 +24,7 @@ import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.i18n.I18NResource;
+import play.libs.Files;
 import play.libs.Json;
 import play.mvc.Http;
 import play.mvc.Result;
@@ -31,9 +32,9 @@ import play.mvc.Results;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
-import static play.mvc.Controller.request;
 import static play.mvc.Results.badRequest;
 import static play.mvc.Results.ok;
 
@@ -63,8 +64,8 @@ public class TsneModule implements UIModule {
                         () -> ok(org.deeplearning4j.ui.views.html.tsne.Tsne.apply()));
         Route r2 = new Route("/tsne/sessions", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
         Route r3 = new Route("/tsne/coords/:sid", HttpMethod.GET, FunctionType.Function, this::getCoords);
-        Route r4 = new Route("/tsne/upload", HttpMethod.POST, FunctionType.Supplier, this::uploadFile);
-        Route r5 = new Route("/tsne/post/:sid", HttpMethod.POST, FunctionType.Function, this::postFile);
+        Route r4 = Route.request0Function("/tsne/upload", HttpMethod.POST, this::uploadFile);
+        Route r5 = Route.request1Function("/tsne/post/:sid", HttpMethod.POST, this::postFile);
         return Arrays.asList(r1, r2, r3, r4, r5);
     }
 
@@ -106,22 +107,22 @@ public class TsneModule implements UIModule {
         }
     }
 
-    private Result uploadFile() {
-        Http.MultipartFormData body = request().body().asMultipartFormData();
-        List<Http.MultipartFormData.FilePart> fileParts = body.getFiles();
+    private Result uploadFile(Http.Request request) {
+        Http.MultipartFormData<Files.TemporaryFile> body = request.body().asMultipartFormData();
+        List<Http.MultipartFormData.FilePart<Files.TemporaryFile>> fileParts = body.getFiles();
 
         if (fileParts.isEmpty()) {
             return badRequest("No file uploaded");
         }
 
-        Http.MultipartFormData.FilePart uploadedFile = fileParts.get(0);
+        Http.MultipartFormData.FilePart<Files.TemporaryFile> uploadedFile = fileParts.get(0);
 
         String fileName = uploadedFile.getFilename();
         String contentType = uploadedFile.getContentType();
-        File file = uploadedFile.getFile();
+        File file = uploadedFile.getRef().path().toFile();
 
         try {
-            uploadedFileLines = FileUtils.readLines(file);
+            uploadedFileLines = FileUtils.readLines(file, StandardCharsets.UTF_8);
         } catch (IOException e) {
             return badRequest("Could not read from uploaded file");
         }
@@ -129,21 +130,21 @@ public class TsneModule implements UIModule {
         return ok("File uploaded: " + fileName + ", " + contentType + ", " + file);
     }
 
-    private Result postFile(String sid) {
+    private Result postFile(Http.Request request, String sid) {
         //        System.out.println("POST FILE CALLED: " + sid);
-        Http.MultipartFormData body = request().body().asMultipartFormData();
-        List<Http.MultipartFormData.FilePart> fileParts = body.getFiles();
+        Http.MultipartFormData<Files.TemporaryFile> body = request.body().asMultipartFormData();
+        List<Http.MultipartFormData.FilePart<Files.TemporaryFile>> fileParts = body.getFiles();
 
         if (fileParts.isEmpty()) {
             //            System.out.println("**** NO FILE ****");
             return badRequest("No file uploaded");
         }
 
-        Http.MultipartFormData.FilePart uploadedFile = fileParts.get(0);
+        Http.MultipartFormData.FilePart<Files.TemporaryFile> uploadedFile = fileParts.get(0);
 
         String fileName = uploadedFile.getFilename();
         String contentType = uploadedFile.getContentType();
-        File file = uploadedFile.getFile();
+        File file = uploadedFile.getRef().path().toFile();
 
         List<String> lines;
         try {

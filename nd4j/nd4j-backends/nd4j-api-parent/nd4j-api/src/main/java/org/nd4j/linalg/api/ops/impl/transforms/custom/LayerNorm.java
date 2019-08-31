@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -41,30 +42,28 @@ import java.util.List;
 public class LayerNorm extends DynamicCustomOp {
 
     private boolean noBias = false;
+    private boolean channelsFirst;
 
-    public LayerNorm(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
-        super(null, sameDiff, new SDVariable[] {input, gain, bias}, false);
-        Preconditions.checkArgument(bias != null, "LayerNorm: Use constructor without bias argument if bias is null / not available.");
+    public LayerNorm(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable gain, SDVariable bias, boolean channelsFirst, int... dimensions) {
+        super(null, sameDiff, wrapFilterNull(input, gain, bias), false);
+        this.noBias = bias == null;
+        this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
 
-    public LayerNorm(SameDiff sameDiff, SDVariable input, SDVariable gain, int... dimensions) {
-        super(null, sameDiff, new SDVariable[] {input, gain}, false);
-        noBias = true;
+    public LayerNorm(SameDiff sameDiff, SDVariable input, SDVariable gain, boolean channelsFirst, int... dimensions) {
+        this(sameDiff, input, gain, null, channelsFirst, dimensions);
+    }
+
+    public LayerNorm(INDArray input, INDArray gain, INDArray bias, INDArray result, boolean channelsFirst, int... dimensions) {
+        super("layer_norm", wrapFilterNull(input, gain, bias), wrapOrNull(result));
+        this.noBias = bias == null;
+        this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
 
-    public LayerNorm(INDArray input, INDArray gain, INDArray bias, INDArray result, int... dimensions) {
-        super("layer_norm", new INDArray[]{input, gain, bias}, new INDArray[]{result});
-        Preconditions.checkArgument(bias != null, "LayerNorm: Use different constructor if bias is null.");
-
-        setDimensions(dimensions);
-    }
-
-    public LayerNorm(INDArray input, INDArray gain, INDArray result, int... dimensions) {
-        super("layer_norm", new INDArray[]{input, gain}, new INDArray[]{result});
-        noBias = true;
-        setDimensions(dimensions);
+    public LayerNorm(INDArray input, INDArray gain, INDArray result, boolean channelsFirst, int... dimensions) {
+        this(input, gain, null, result, channelsFirst, dimensions);
     }
 
     @Override
@@ -73,7 +72,10 @@ public class LayerNorm extends DynamicCustomOp {
         Preconditions.checkArgument(dimensions.length > 0, "LayerNorm: You have to provide dimensions");
 
         this.dimensions = dimensions;
+        this.iArguments.clear();
         addIArgument(dimensions);
+        this.bArguments.clear();
+        this.bArguments.add(channelsFirst);
     }
 
     @Override
@@ -96,9 +98,9 @@ public class LayerNorm extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> gradient) {
         SDVariable[] ret;
         if(noBias){
-            ret = f().layerNormBp(arg(0), arg(1), gradient.get(0), dimensions);
+            ret = f().layerNormBp(arg(0), arg(1), gradient.get(0), channelsFirst, dimensions);
         }else{
-            ret = f().layerNormBp(arg(0), arg(1), arg(2), gradient.get(0), dimensions);
+            ret = f().layerNormBp(arg(0), arg(1), arg(2), gradient.get(0), channelsFirst, dimensions);
         }
         return Arrays.asList(ret);
     }
@@ -115,4 +117,8 @@ public class LayerNorm extends DynamicCustomOp {
         return Collections.singletonList(first);
     }
 
+    @Override
+    public int numOutputArguments() {
+        return noBias ? 2 : 3;
+    }
 }

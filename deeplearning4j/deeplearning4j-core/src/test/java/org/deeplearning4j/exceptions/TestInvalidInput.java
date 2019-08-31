@@ -22,12 +22,16 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.*;
+import org.deeplearning4j.nn.conf.layers.recurrent.SimpleRnn;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import static org.junit.Assert.fail;
+import java.util.Map;
+
+import static org.junit.Assert.*;
 
 /**
  * A set of tests to ensure that useful exceptions are thrown on invalid input
@@ -267,23 +271,44 @@ public class TestInvalidInput extends BaseDL4JTest {
         //Idea: Using rnnTimeStep with a different number of examples between calls
         //(i.e., not calling reset between time steps)
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
-                        .layer(0, new GravesLSTM.Builder().nIn(5).nOut(5).build())
-                        .layer(1, new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build()).build();
+        for(String layerType : new String[]{"simple", "lstm", "graves"}) {
 
-        MultiLayerNetwork net = new MultiLayerNetwork(conf);
-        net.init();
+            Layer l;
+            switch (layerType){
+                case "simple":
+                    l = new SimpleRnn.Builder().nIn(5).nOut(5).build();
+                    break;
+                case "lstm":
+                    l = new LSTM.Builder().nIn(5).nOut(5).build();
+                    break;
+                case "graves":
+                    l = new GravesLSTM.Builder().nIn(5).nOut(5).build();
+                    break;
+                default:
+                    throw new RuntimeException();
+            }
 
-        net.rnnTimeStep(Nd4j.create(3, 5, 10));
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder().list()
+                    .layer(l)
+                    .layer(new RnnOutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX).build()).build();
 
-        try {
-            net.rnnTimeStep(Nd4j.create(5, 5, 10));
-            fail("Expected DL4JException");
-        } catch (DL4JException e) {
-            System.out.println("testInvalidRnnTimeStep(): " + e.getMessage());
-        } catch (Exception e) {
-            e.printStackTrace();
-            fail("Expected DL4JException");
+            MultiLayerNetwork net = new MultiLayerNetwork(conf);
+            net.init();
+
+            net.rnnTimeStep(Nd4j.create(3, 5, 10));
+
+            Map<String, INDArray> m = net.rnnGetPreviousState(0);
+            assertNotNull(m);
+            assertFalse(m.isEmpty());
+
+            try {
+                net.rnnTimeStep(Nd4j.create(5, 5, 10));
+                fail("Expected Exception - " + layerType);
+            } catch (Exception e) {
+//                e.printStackTrace();
+                String msg = e.getMessage();
+                assertTrue(msg, msg != null && msg.contains("rnn") && msg.contains("batch"));
+            }
         }
     }
 }

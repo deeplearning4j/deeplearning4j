@@ -97,15 +97,16 @@
                 </plugins>
             </build>
         </profile>
+
+        <profile>
+            <id>test-nd4j-native</id>
+        </profile>
+        <profile>
+            <id>test-nd4j-cuda-10.1</id>
+        </profile>
     </profiles>
 
     <dependencies>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>arbiter-core</artifactId>
@@ -125,22 +126,12 @@
         </dependency>
 
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>junit</groupId>
             <artifactId>junit</artifactId>
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-
-
 
     <build>
         <extensions>
@@ -222,5 +213,4 @@
             </plugins>
         </pluginManagement>
     </build>
-
 </project>

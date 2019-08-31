@@ -31,26 +31,27 @@ namespace functions   {
 namespace indexreduce {
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X> Nd4jLong IndexReduce<X>::execScalar( const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams) {
-    RETURNING_DISPATCH_BY_OPNUM_T(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
+template <typename X, typename Y>
+Nd4jLong IndexReduce<X,Y>::execScalar( const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams) {
+    RETURNING_DISPATCH_BY_OPNUM_TT(execScalar, PARAMS(x, xShapeInfo, extraParams), INDEX_REDUCE_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X>
-void IndexReduce<X>::exec(const int opNum,
+template <typename X, typename Y>
+void IndexReduce<X,Y>::exec(const int opNum,
                         void *x,  Nd4jLong *xShapeInfo,
                         void *extraParams,
-                        Nd4jLong *z, Nd4jLong *zShapeInfo,
+                        void *z, Nd4jLong *zShapeInfo,
                         int *dimension, int dimensionLength,
                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
 
-DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X>
+template <typename X, typename Y>
 template<typename OpType>
-Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextraParams) {
+Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextraParams) {
 
     auto x = reinterpret_cast<X *>(vx);
     auto extraParams = reinterpret_cast<X *>(vextraParams);
@@ -105,15 +106,16 @@ Nd4jLong IndexReduce<X>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vextra
 
 
 ////////////////////////////////////////////////////////////////////////
-template <typename X>
+template <typename X, typename Z>
 template<typename OpType>
-void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
+void IndexReduce<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                         void *vextraParams,
-                        Nd4jLong *z, Nd4jLong *zShapeInfo,
+                        void *vz, Nd4jLong *zShapeInfo,
                         int *dimension, int dimensionLength,
                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
 
     auto x = reinterpret_cast<X *>(vx);
+    auto z = reinterpret_cast<Z *>(vz);
     auto extraParams = reinterpret_cast<X *>(vextraParams);
 
     const Nd4jLong zLen = shape::length(zShapeInfo);
@@ -124,12 +126,12 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
         const auto indexValue = OpType::startingIndexValue(x);
         PRAGMA_OMP_PARALLEL_FOR_IF(zLen > nd4j::Environment::getInstance()->elementwiseThreshold())
         for (uint i = 0; i < zLen; i++)
-            z[i] = indexValue.index;;
+            z[i] = (Z) indexValue.index;;
         return;
     }
 
     if(shape::isScalar(zShapeInfo)) {
-        z[0] = execScalar<OpType>(x,xShapeInfo,extraParams);
+        z[0] = (Z) execScalar<OpType>(x,xShapeInfo,extraParams);
         return;
     }
 
@@ -146,11 +148,11 @@ void IndexReduce<X>::exec(void *vx, Nd4jLong *xShapeInfo,
         tadOffsets = tadPack.primaryOffsets();
     }
 
-    nd4j::IndexReductionLoops<X>::template loopIndexReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+    nd4j::IndexReductionLoops<X,Z>::template loopIndexReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
 }
 
 
-BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES);
+BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES, INDEXING_TYPES);
 
 }
 }

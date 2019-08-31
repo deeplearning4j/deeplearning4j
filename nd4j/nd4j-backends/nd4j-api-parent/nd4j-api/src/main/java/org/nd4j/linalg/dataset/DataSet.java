@@ -16,8 +16,7 @@
 
 package org.nd4j.linalg.dataset;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -26,8 +25,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.BooleanIndexing;
-import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.FeatureUtil;
@@ -374,7 +371,7 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
         long nTensors = labels.tensorsAlongDimension(1);
         for (int i = 0; i < nTensors; i++) {
             INDArray row = labels.tensorAlongDimension(i, 1);
-            INDArray javaRow = labels.javaTensorAlongDimension(i, 1);
+            INDArray javaRow = labels.tensorAlongDimension(i, 1);
             int maxIdx = Nd4j.getBlasWrapper().iamax(row);
             int maxIdxJava = Nd4j.getBlasWrapper().iamax(javaRow);
             if (maxIdx < 0)

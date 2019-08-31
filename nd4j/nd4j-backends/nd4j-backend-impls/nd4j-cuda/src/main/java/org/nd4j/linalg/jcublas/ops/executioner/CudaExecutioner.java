@@ -207,6 +207,10 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
         }
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
+
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
         profilingConfigurableHookOut(op, st);
@@ -222,6 +226,21 @@ public class CudaExecutioner extends DefaultOpExecutioner {
      */
     protected INDArray naiveExec(ReduceOp op, int... dimension) {
         long st = profilingConfigurableHookIn(op);
+
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+            //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
+            //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
+            if(op.z() != null){
+                Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
+                        " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
+                op.z().assign(op.x());
+                return op.z();
+            } else {
+                op.setZ(op.x().dup());
+                return op.z();
+            }
+        }
+
         INDArray ret = op.z();
 
         checkForCompression(op);
@@ -461,6 +480,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
             }
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         profilingConfigurableHookOut(op, st);
 
         return op.z();
@@ -474,6 +496,20 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public INDArray exec(ReduceOp op) {
         checkForCompression(op);
+
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+            //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
+            //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
+            if(op.z() != null){
+                Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
+                        " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
+                op.z().assign(op.x());
+                return op.z();
+            } else {
+                op.setZ(op.x().dup());
+                return op.z();
+            }
+        }
 
         val dimension = op.dimensions().toIntVector();
 
@@ -619,7 +655,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                 null);
 
-
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
@@ -777,6 +814,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException("Unknown opType: " + op.getOpType());
         }
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
         profilingConfigurableHookOut(op, st);
@@ -854,19 +894,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
             //long dimensionPointer = AtomicAllocator.getInstance().getPointer(Nd4j.createBuffer(dimension), context);
             Pointer dimensionPointer = AtomicAllocator.getInstance()
-                    .getPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension), context);
+                    .getHostPointer(AtomicAllocator.getInstance().getConstantBuffer(dimension));
 
             nativeOps.execIndexReduce(xShapeInfoHostPointer, op.opNum(),
                     null, (LongPointer) hostXShapeInfo, x, (LongPointer) xShapeInfo,
                      extraArgs,
                     null, (LongPointer) hostZShapeInfo, z, (LongPointer) zShapeInfo,
-                    null,
+                    dimensionPointer,
                     (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                     AtomicAllocator.getInstance().getPointer(op.dimensions(), context),
                     null);
 
             AtomicAllocator.getInstance().registerAction(context, null, op.x(), op.y());
         }
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         profilingConfigurableHookOut(op, st);
 
@@ -876,6 +919,22 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
 
     protected CudaContext invoke(ReduceOp op, int[] dimension) {
+        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
+
+        if(op instanceof BaseReduceOp && ((BaseReduceOp)op).isEmptyReduce()){
+            //Edge case for TF import compatibility: [x,y].reduce(empty) = [x,y]
+            //Note that "empty" axis is NOT the same as length 0, as in INDArray.sum(new int[0]), which means "all dimensions"
+            if(op.z() != null){
+                Preconditions.checkState(op.x().equalShapes(op.z()), "For empty reductions, result (z) array must have same shape as x shape." +
+                        " Got: x=%ndShape, z=%ndShape", op.x(), op.z());
+                op.z().assign(op.x());
+                return context;
+            } else {
+                op.setZ(op.x().dup());
+                return context;
+            }
+        }
+
         long st = profilingConfigurableHookIn(op);
 
         checkForCompression(op);
@@ -899,17 +958,15 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new ND4JIllegalStateException("Op target dimension " + Arrays.toString(dimension)
                         + " contains element that higher then rank of op.X: [" + op.x().rank() + "]");
 
-        CudaContext context = AtomicAllocator.getInstance().getFlowController().prepareAction(op.z(), op.x(), op.y());
-
         if (CudaEnvironment.getInstance().getConfiguration().isDebug())
             lastOp.set(op.opName());
 
-        val tadBuffers = tadManager.getTADOnlyShapeInfo(op.x(), dimension);
+        val tadBuffers = op.x().isEmpty() ? Pair.<DataBuffer, DataBuffer>makePair(op.x().data(), null) : tadManager.getTADOnlyShapeInfo(op.x(), dimension);
 
         val hostTadShapeInfo = AddressRetriever.retrieveHostPointer(tadBuffers.getFirst());
         val devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context);
 
-        val offsets = tadBuffers.getSecond();
+        val offsets = op.x().isEmpty() ? null : tadBuffers.getSecond();
         val devTadOffsets = offsets == null ? null : AtomicAllocator.getInstance().getPointer(offsets, context);
 
         Pointer x = AtomicAllocator.getInstance().getPointer(op.x(), context);
@@ -1105,6 +1162,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
         }
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         profilingConfigurableHookOut(op, st);
 
@@ -1194,6 +1253,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException();
         }
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
 
         profilingConfigurableHookOut(op, st);
@@ -1267,6 +1329,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             default:
                 throw new UnsupportedOperationException("Unknown op type: " + op.getOpType());
         }
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.scalar());
 
@@ -1423,6 +1488,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             }
         }
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         AtomicAllocator.getInstance().registerAction(context, op.z(), op.x(), op.y());
 
@@ -1582,6 +1649,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(),
                     AtomicAllocator.getInstance().getPointer(surfaceBuffer, context), FlatBuffersMapper.getDataTypeAsByte(dataType));
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         surfacePoint.tickHostWrite();
     }
 
@@ -1676,6 +1746,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     numIndexArguments, iPtr, numIntArrays,
                     AtomicAllocator.getInstance().getPointer(realsBuffer.data(), context),
                     numRealArguments, FlatBuffersMapper.getDataTypeAsByte(dataType));
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
     }
 
     /**
@@ -1738,6 +1811,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                         null, (LongPointer) hostZShapeInfo, AtomicAllocator.getInstance().getPointer(op.z(), context), (LongPointer) AtomicAllocator.getInstance().getPointer(op.z().shapeInfoDataBuffer(), context),
                          AtomicAllocator.getInstance().getPointer(op.extraArgsDataBuff(op.z().dataType()), context));
         }
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, op.z(), op.x(), op.y());
 
@@ -1969,6 +2045,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         nativeOps.decodeThreshold(extras, AtomicAllocator.getInstance().getPointer(buffer), compressedLength, AtomicAllocator.getInstance().getPointer(result), (LongPointer) AtomicAllocator.getInstance().getHostPointer(target.shapeInfoDataBuffer()));
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         AtomicAllocator.getInstance().getAllocationPoint(result).tickDeviceWrite();
 
         return target;
@@ -2013,7 +2092,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                     (IntPointer) AtomicAllocator.getInstance().getPointer(buffer, context),
                     (float) threshold);
 
-
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, indArray);
 
@@ -2039,6 +2119,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         nativeOps.decodeBitmap(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), AtomicAllocator.getInstance().getPointer(target, context), (LongPointer) AtomicAllocator.getInstance().getHostPointer(target.shapeInfoDataBuffer()));
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, target);
 
@@ -2151,6 +2233,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments());
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         if (ptrptr == null)
             throw new RuntimeException();
 
@@ -2221,109 +2306,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
         }
-
-        /*
-        long st = profilingConfigurableHookIn(op);
-
-        CudaContext context =(CudaContext) AtomicAllocator.getInstance().getDeviceContext().getContext();
-        //AtomicAllocator.getInstance().getFlowController().prepareActionAllWrite(op.outputArguments());
-
-        if (extraz.get() == null)
-            extraz.set(new PointerPointer(32));
-
-
-        PointerPointer extras = extraz.get().put(
-                new CudaPointer(1),
-                context.getOldStream(),
-                context.getBufferScalar(),
-                context.getBufferReduction());
-
-        val outputArgs = op.outputArguments();
-        val inputArgs = op.inputArguments();
-
-        if (outputArgs.length == 0 && !op.isInplaceCall())
-            throw new ND4JIllegalStateException("You can't execute non-inplace CustomOp without outputs being specified");
-
-        val lc = op.opName().toLowerCase();
-        val hash = op.opHash();
-
-
-        val inputShapes = new PointerPointer<>(inputArgs.length * 2);
-        val inputBuffers = new PointerPointer<>(inputArgs.length * 2);
-
-        int cnt= 0;
-        for (val in: inputArgs) {
-            val hp = AtomicAllocator.getInstance().getHostPointer(in.shapeInfoDataBuffer());
-            inputBuffers.put(cnt,  AtomicAllocator.getInstance().getHostPointer(in));
-            inputShapes.put(cnt, hp);
-
-
-            val dp = AtomicAllocator.getInstance().getPointer(in.shapeInfoDataBuffer(), context);
-
-            inputBuffers.put(cnt + inputArgs.length, AtomicAllocator.getInstance().getPointer(in, context));
-            inputShapes.put(cnt+ inputArgs.length, dp);
-
-            if (op.isInplaceCall()) {
-                val ap = AtomicAllocator.getInstance().getAllocationPoint(in);
-                if (ap != null)
-                    ap.tickHostWrite();
-            }
-
-            cnt++;
-        }
-
-
-        val outputShapes = new PointerPointer<>(outputArgs.length * 2);
-        val outputBuffers = new PointerPointer<>(outputArgs.length * 2);
-
-        cnt= 0;
-        for (val out: outputArgs) {
-            outputBuffers.put(cnt,  AtomicAllocator.getInstance().getHostPointer(out));
-            outputShapes.put(cnt,  AtomicAllocator.getInstance().getHostPointer(out.shapeInfoDataBuffer()));
-
-            outputBuffers.put(cnt + outputArgs.length,  AtomicAllocator.getInstance().getPointer(out, context));
-            outputShapes.put(cnt + outputArgs.length,  AtomicAllocator.getInstance().getPointer(out.shapeInfoDataBuffer(), context));
-
-            val ap = AtomicAllocator.getInstance().getAllocationPoint(out);
-
-            if (ap != null)
-                ap.tickHostWrite();
-
-            cnt++;
-        }
-
-        val iArgs = op.iArgs().length > 0 ? new LongPointer(op.iArgs().length) : null;
-
-        cnt = 0;
-        for (val i: op.iArgs())
-            iArgs.put(cnt++, i);
-
-
-        val tArgs = op.tArgs().length > 0 ? new DoublePointer(op.tArgs().length) : null;
-
-        val bArgs = op.bArgs().length > 0 ? new BooleanPointer(op.numBArguments()) : null;
-
-        cnt = 0;
-        for (val t: op.tArgs())
-            tArgs.put(cnt++, t);
-
-        cnt = 0;
-        for (val b: op.bArgs())
-            bArgs.put(cnt++, b);
-
-        try {
-            val status = OpStatus.byNumber(nativeOps.execCustomOp(extras, hash, inputBuffers, inputShapes, inputArgs.length, outputBuffers, outputShapes, outputArgs.length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments(), op.isInplaceCall()));
-            if (status != OpStatus.ND4J_STATUS_OK)
-                throw new ND4JIllegalStateException("Op execution failed: " + status);
-        } catch (Exception e) {
-            throw new RuntimeException("Op [" + op.opName() + "] execution failed");
-        }
-
-        //AtomicAllocator.getInstance().getFlowController().prepareActionAllWrite(op.outputArguments());
-
-        profilingConfigurableHookOut(op, st);
-        return op.outputArguments();
-         */
     }
 
     @Override
@@ -2341,6 +2323,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public void registerGraph(long id, Pointer graph) {
         nativeOps.registerGraph(null, id, graph);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
     }
 
     @Override
@@ -2367,6 +2352,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         val newMap = new LinkedHashMap<String, INDArray>();
 
         OpaqueVariablesSet result = nativeOps.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         OpStatus status = OpStatus.byNumber(nativeOps.getVariablesSetStatus(result));
 
@@ -2398,6 +2386,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             newMap.put(nodeName, array);
         }
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         nativeOps.deleteVariablesSet(result);
 
         return newMap;
@@ -2406,6 +2397,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public void forgetGraph(long id) {
         nativeOps.unregisterGraph(null, id);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
     }
 
     /**
@@ -2474,6 +2468,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 null, (LongPointer) AtomicAllocator.getInstance().getHostPointer(tadY.getFirst()), null, AtomicAllocator.getInstance().getPointer(updates, context), (LongPointer) AtomicAllocator.getInstance().getPointer(tadY.getFirst()), (LongPointer) AtomicAllocator.getInstance().getPointer(tadY.getSecond()),
                 null, (IntPointer) AtomicAllocator.getInstance().getPointer(indices, context));
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         AtomicAllocator.getInstance().getFlowController().registerAction(context, array, indices, updates);
     }
 
@@ -2490,8 +2487,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         ((CudaOpContext) context).setCudaStream(ctx.getOldStream(), ctx.getBufferReduction(), ctx.getBufferAllocation());
 
         val status = nativeOps.execCustomOp2(null, op.opHash(), context.contextPointer());
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         if (status != 0)
             throw new RuntimeException("Op [" + op.opName() + "] execution failed");
+
+
 
         for (val arr:op.outputArguments())
             AtomicAllocator.getInstance().registerAction(ctx, arr);
@@ -2527,6 +2529,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         nativeOps.inspectArray(extras, AtomicAllocator.getInstance().getHostPointer(array), (LongPointer) AtomicAllocator.getInstance().getHostPointer(array.shapeInfoDataBuffer()), AtomicAllocator.getInstance().getPointer(array, ctx), (LongPointer) AtomicAllocator.getInstance().getPointer(array.shapeInfoDataBuffer()), debugInfo);
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         return INDArrayStatistics.builder()
                 .minValue(debugInfo._minValue())
                 .maxValue(debugInfo._maxValue())
@@ -2545,6 +2550,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
         OpaqueConstantDataBuffer dbf = nativeOps.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         val result = new CudaLongDataBuffer(nativeOps.getConstantDataBufferPrimary(dbf), nativeOps.getConstantDataBufferSpecial(dbf), Shape.shapeInfoLength(shape.length));
 
         nativeOps.deleteShapeBuffer(dbf);
@@ -2555,6 +2563,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
         OpaqueTadPack pack = nativeOps.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new IntPointer(dimension), dimension.length);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         val tadShape = new CudaLongDataBuffer(nativeOps.getPrimaryShapeInfo(pack), nativeOps.getSpecialShapeInfo(pack), nativeOps.getShapeInfoLength(pack));
         val tadOffsets = new CudaLongDataBuffer(nativeOps.getPrimaryOffsets(pack), nativeOps.getSpecialOffsets(pack), nativeOps.getNumberOfTads(pack));
@@ -2568,6 +2579,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     public DataBuffer createConstantBuffer(long[] values, DataType desiredType) {
         OpaqueConstantDataBuffer dbf = nativeOps.constantBufferLong(desiredType.toInt(), new LongPointer(values), values.length);
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         val buffer = Nd4j.createBuffer(nativeOps.getConstantDataBufferPrimary(dbf), nativeOps.getConstantDataBufferSpecial(dbf), values.length, desiredType);
         buffer.setConstant(true);
 
@@ -2577,6 +2591,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @Override
     public DataBuffer createConstantBuffer(double[] values, DataType desiredType)  {
         OpaqueConstantDataBuffer dbf = nativeOps.constantBufferDouble(desiredType.toInt(), new DoublePointer(values), values.length);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         val buffer = Nd4j.createBuffer(nativeOps.getConstantDataBufferPrimary(dbf), nativeOps.getConstantDataBufferSpecial(dbf), values.length, desiredType);
         buffer.setConstant(true);

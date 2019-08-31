@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.api.ops.impl.reduce;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NoArgsConstructor;
 import lombok.val;
 import onnx.Onnx;

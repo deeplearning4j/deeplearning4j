@@ -18,12 +18,10 @@ package org.deeplearning4j.clustering.vptree;
 
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.clustering.BaseDL4JTest;
 import org.deeplearning4j.clustering.sptree.DataPoint;
 import org.joda.time.Duration;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -33,7 +31,6 @@ import org.nd4j.linalg.primitives.Counter;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
-import java.util.concurrent.TimeUnit;
 
 import static org.junit.Assert.*;
 

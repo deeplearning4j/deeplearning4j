@@ -64,6 +64,7 @@ public class DifferentialFunctionClassHolder {
         add("outputVariables");
         add("tArguments");
         add("iArguments");
+        add("bArguments");
         add("hash");
         add("opName");
         add("sameDiff");

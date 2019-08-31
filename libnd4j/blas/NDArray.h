@@ -34,6 +34,7 @@
 #include <op_enums.h>
 #include <ops/BroadcastOpsTuple.h>
 #include <ops/BroadcastBoolOpsTuple.h>
+#include <ops/BroadcastIntOpsTuple.h>
 #include <array/ExtraArguments.h>
 #include <Status.h>
 #include <ShapeDescriptor.h>
@@ -659,6 +660,8 @@ namespace nd4j {
 
         void applyPairwiseTransform(nd4j::pairwise::BoolOps op, const NDArray *other, NDArray *target, ExtraArguments *extraParams = nullptr) const;
 
+        void applyPairwiseTransform(nd4j::pairwise::IntOps op, const NDArray *other, NDArray *target, ExtraArguments *extraParams = nullptr) const;
+
         /**
         *  apply operation which requires broadcasting, broadcast a smaller array (tad) along  bigger one (this)
         *  tad - array to broadcast
@@ -671,6 +674,9 @@ namespace nd4j {
         void applyBroadcast(nd4j::broadcast::Ops op, const std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, ExtraArguments *extraArgs = nullptr);
 
         void applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, ExtraArguments *extraArgs = nullptr);
+
+        void applyBroadcast(nd4j::broadcast::IntOps op, const std::vector<int> &dimensions, const NDArray *tad, NDArray *target = nullptr, ExtraArguments *extraArgs = nullptr);
+
 
         /**
         *  apply operation which requires broadcasting, broadcast one tensor along another, also this method checks the possibility of broadcasting
@@ -692,6 +698,9 @@ namespace nd4j {
 
         void applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, ExtraArguments *extraArgs = nullptr) const;
 
+        void applyTrueBroadcast(nd4j::BroadcastIntOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape = true, ExtraArguments *extraArgs = nullptr) const;
+
+
         /**
         *  apply a scalar operation to an array
         *  scalar - input scalar
@@ -704,6 +713,9 @@ namespace nd4j {
         template <typename T>
         void applyScalar(nd4j::scalar::BoolOps op, const T scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
+        template <typename T>
+        void applyScalar(nd4j::scalar::IntOps op, const T scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
+
         /**
         *  apply a scalar operation to an array
         *  scalar - input array which is simple scalar
@@ -714,6 +726,7 @@ namespace nd4j {
 
         void applyScalarArr(nd4j::scalar::BoolOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
+        void applyScalarArr(nd4j::scalar::IntOps op, const NDArray* scalar, NDArray* target, ExtraArguments *extraParams = nullptr) const;
 
 #if defined(__CUDABLAS__) //&& defined(BUILD_TESTS)
         template <typename Lambda>

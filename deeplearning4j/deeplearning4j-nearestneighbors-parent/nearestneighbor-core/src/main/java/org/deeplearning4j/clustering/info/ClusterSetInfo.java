@@ -16,8 +16,8 @@
 
 package org.deeplearning4j.clustering.info;
 
-import com.google.common.collect.HashBasedTable;
-import com.google.common.collect.Table;
+import org.nd4j.shade.guava.collect.HashBasedTable;
+import org.nd4j.shade.guava.collect.Table;
 import org.deeplearning4j.clustering.cluster.Cluster;
 import org.deeplearning4j.clustering.cluster.ClusterSet;
 

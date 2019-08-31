@@ -40,19 +40,16 @@ namespace nd4j {
             static __global__ void
             segmentMaxLinearKernel(void *input, Nd4jLong *inputShape, int *starts, int *lengths, Nd4jLong numOfClasses,
                                    void *output, Nd4jLong *outputShape) {
-                __shared__
-                T *val;
-                __shared__
-                Nd4jLong xLen, zLen, segment, zIndex;
-                __shared__
-                T *x;
-                __shared__
-                T *z;
+                __shared__                 T *val;
+                __shared__                Nd4jLong xLen, zLen, zIndex;
+                __shared__                T *x;
+                __shared__                T *z;
                 __shared__ int threadsPerSegment, start, finish;
 
+                auto segment = blockIdx.x;
                 if (threadIdx.x == 0) {
-                    threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
-                    segment = blockIdx.x / threadsPerSegment;
+//                    threadsPerSegment = (gridDim.x + numOfClasses - 1) / numOfClasses;
+//                    segment = blockIdx.x / threadsPerSegment;
                     x = reinterpret_cast<T *>(input);
                     z = reinterpret_cast<T *>(output);
                     extern __shared__ unsigned char shmem[];
@@ -83,19 +80,14 @@ namespace nd4j {
             unsortedSegmentMaxLinearKernel(void *input, Nd4jLong *inputShape, void *indices, Nd4jLong *indicesShape,
                                            int *starts, int *lengths, Nd4jLong numOfClasses, void *output,
                                            Nd4jLong *outputShape) {
-                __shared__
-                T *val;
-                __shared__
-                Nd4jLong xLen, zLen, segment, zIndex;
-                __shared__
-                T *x;
-                __shared__
-                T *z;
-                __shared__
-                I *y; //int threadsPerSegment, start, finish;
+                __shared__                 T *val;
+                __shared__                Nd4jLong xLen, zLen, zIndex;
+                __shared__                T *x;
+                __shared__                T *z;
+                __shared__                I *y; //int threadsPerSegment, start, finish;
+                auto segment = blockIdx.x;
 
                 if (threadIdx.x == 0) {
-                    segment = blockIdx.x;
                     x = reinterpret_cast<T *>(input);
                     z = reinterpret_cast<T *>(output);
                     y = reinterpret_cast<I *>(indices);
@@ -127,9 +119,10 @@ namespace nd4j {
                                                        Nd4jLong* outputShape, Nd4jLong* outputTads, Nd4jLong* outputTadOffsets, T filler = 0) {
 
                 __shared__ T* val;
-                __shared__ Nd4jLong len, segment, zIndex, total;
+                __shared__ Nd4jLong len, zIndex, total;
                 __shared__ T* z;
                 __shared__ int start, finish;
+                __shared__ I segment;
 
                 if (threadIdx.x == 0) {
                     segment = indices[blockIdx.x]; // / threadsPerSegment;
@@ -143,20 +136,22 @@ namespace nd4j {
                 __syncthreads();
 
                 auto idx = blockIdx.x;
-                if (blockIdx.x <= total) {
+                if (idx <= total) {
                     auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
                     if (blockIdx.x == start) {
                         for (auto e = threadIdx.x; e < len; e += blockDim.x) {
                             auto xIndex = shape::getIndexOffset(e, inputTads, len);
                             auto zIndex = shape::getIndexOffset(e, outputTads, len);
-                            z[zIndex] = x[xIndex];
+                            nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+                            //z[zIndex] = x[xIndex];
                         }
                     }
                     else {
                         for (auto e = threadIdx.x; e < len; e += blockDim.x) {
                             auto xIndex = shape::getIndexOffset(e, inputTads, len);
                             auto zIndex = shape::getIndexOffset(e, outputTads, len);
-                            nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
+                            if (lengths[segment])
+                                nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                         }
                     }
                 }
@@ -168,6 +163,7 @@ namespace nd4j {
                 //int numClasses = output->sizeAt(0);
                 // if input is a vector: (as if in doc sample)
                 //Nd4jLong idx = indices->e<Nd4jLong>(0);
+                output->assign(-DataTypeUtils::infOrMax<T>());
                 auto stream = context->getCudaStream();
                 indices->syncToHost();
                 Nd4jLong numOfClasses = indices->e<Nd4jLong>(indices->lengthOf() - 1) + 1;
@@ -201,7 +197,9 @@ namespace nd4j {
             }
             // -------------------------------------------------------------------------------------------------------------- //
             void segmentMaxFunctor(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* output) {
+                NDArray::prepareSpecialUse({output}, {input, indices});
                 BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), segmentMaxFunctor_, (context, input, indices, output), NUMERIC_TYPES, INDEXING_TYPES);
+                NDArray::registerSpecialUse({output}, {input, indices});
             }
             // -------------------------------------------------------------------------------------------------------------- //
 
@@ -209,6 +207,8 @@ namespace nd4j {
             static void unsortedSegmentMaxFunctor_(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
                 auto stream = context->getCudaStream();
 //        NDArray classes = NDArrayFactory::create<int>('c', {numOfClasses, 2});
+                output->assign(DataTypeUtils::infOrMax<T>());
+
                 NDArray classesRangesBegs = NDArrayFactory::create<int>('c', {numOfClasses});
                 NDArray classesRangesLens = NDArrayFactory::create<int>('c', {numOfClasses});
 //        NDArray row = NDArrayFactory::create<int>('c', {1, 2}, {(int)indices->lengthOf(), (int)0});
@@ -240,7 +240,10 @@ namespace nd4j {
             }
             // -------------------------------------------------------------------------------------------------------------- //
             void unsortedSegmentMaxFunctor(nd4j::LaunchContext* context, NDArray* input, NDArray* indices, Nd4jLong numOfClasses, NDArray* output) {
+                NDArray::prepareSpecialUse({output}, {input, indices});
+                output->nullify();
                 BUILD_DOUBLE_SELECTOR(input->dataType(), indices->dataType(), unsortedSegmentMaxFunctor_, (context, input, indices, numOfClasses, output), NUMERIC_TYPES, INDEXING_TYPES);
+                NDArray::registerSpecialUse({output}, {input, indices});
             }
 
             // -------------------------------------------------------------------------------------------------------------- //
@@ -370,8 +373,10 @@ namespace nd4j {
             }
             // -------------------------------------------------------------------------------------------------------------- //
             int segmentMaxFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, NDArray* output) {
+                NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
                 BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return segmentMaxFunctorBP_, (context, input,
                         indices, gradOut, output), FLOAT_TYPES, INDEXING_TYPES);
+                NDArray::registerSpecialUse({output}, {input, indices, gradOut});
             }
 
             // -------------------------------------------------------------------------------------------------------------- //
@@ -416,7 +421,9 @@ namespace nd4j {
             }
             // -------------------------------------------------------------------------------------------------------------- //
             int unsortedSegmentMaxFunctorBP(nd4j::LaunchContext* context , NDArray* input, NDArray* indices, NDArray* gradOut, Nd4jLong numOfClasses, NDArray* output) {
+                NDArray::prepareSpecialUse({output}, {input, indices, gradOut});
                 BUILD_DOUBLE_SELECTOR(output->dataType(), indices->dataType(), return unsortedSegmentMaxFunctorBP_, (context, input, indices, gradOut, numOfClasses, output), FLOAT_TYPES, INDEXING_TYPES);
+                NDArray::registerSpecialUse({output}, {input, indices, gradOut});
             }
         }
     }

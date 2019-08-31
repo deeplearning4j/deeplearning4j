@@ -38,15 +38,6 @@ public class LoopCond extends BaseCompatOp {
     }
 
     @Override
-    public List<LongShapeDescriptor> calculateOutputShape() {
-        if(arg().getArr() != null) {
-            return Collections.singletonList(LongShapeDescriptor.fromShape(arg().getShape(), arg().dataType()));
-        }
-        else
-            return Collections.emptyList();
-    }
-
-    @Override
     public SDVariable[] outputVariables() {
         return super.outputVariables();
     }

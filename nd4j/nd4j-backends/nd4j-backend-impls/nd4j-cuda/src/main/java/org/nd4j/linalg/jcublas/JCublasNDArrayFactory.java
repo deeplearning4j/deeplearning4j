@@ -24,6 +24,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.DataTypeEx;
 import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
+import org.nd4j.linalg.api.ops.custom.Flatten;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.performance.PerformanceTracker;
 import org.nd4j.linalg.api.shape.options.ArrayOptionsHelper;
@@ -104,6 +105,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         functions.put(11, Loader.addressof("cusolverDnSgesvd"));
         functions.put(12, Loader.addressof("cusolverDnDgesvd"));
         nativeOps.initializeFunctions(functions);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
     }
 
     @Override
@@ -335,75 +339,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        int length = 0;
-        DataType t = null;
-        for (INDArray m : matrices) {
-            length += m.length();
-            if (t == null)
-                t = m.dataType();
-
-            Preconditions.checkArgument(t == m.dataType(), "Arrays must have same data type");
-        }
-
-        INDArray ret = Nd4j.create(t, new long[] {length}, order);
-        int linearIndex = 0;
-
-        AtomicAllocator allocator = AtomicAllocator.getInstance();
-
-
-        for (INDArray m : matrices) {
-            if (m.isEmpty())
-                continue;
-
-            CudaContext context = allocator.getFlowController().prepareAction(ret, m);
-
-            if (m.ordering() == order && ret.elementWiseStride() == m.elementWiseStride()
-                            && ret.elementWiseStride() == 1) {
-                // do memcpy in proper direction and forget about that
-                // FIXME: get rid of this
-                ((BaseCudaDataBuffer) m.data()).lazyAllocateHostPointer();
-                allocator.memcpyAsync(ret.data(), new CudaPointer(allocator.getHostPointer(m).address()),
-                                AllocationUtils.getRequiredMemory(AllocationUtils.buildAllocationShape(m)),
-                                linearIndex * (m.data().dataType() == DataType.DOUBLE ? 8
-                                                : m.data().dataType() == DataType.FLOAT ? 4 : 2));
-                linearIndex += m.length();
-            } else {
-                Pointer hostYShapeInfo = AddressRetriever.retrieveHostPointer(m.shapeInfoDataBuffer());
-
-                PointerPointer extras = new PointerPointer(
-                                AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()), context.getOldStream(),
-                                allocator.getDeviceIdPointer(), null,
-                                context.getBufferReduction(), context.getBufferScalar(), null,
-                                hostYShapeInfo, AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()));
-
-
-                nativeOps.flatten(extras, linearIndex, order,
-                                     null,
-                                    (LongPointer) allocator.getHostPointer(ret.shapeInfoDataBuffer()),
-                                     allocator.getPointer(ret, context),
-                                    (LongPointer) allocator.getPointer(ret.shapeInfoDataBuffer(), context),
-                                     null,
-                                    (LongPointer) allocator.getHostPointer(m.shapeInfoDataBuffer()),
-                                     allocator.getPointer(m, context),
-                                    (LongPointer) allocator.getPointer(m.shapeInfoDataBuffer(), context));
-
-
-
-
-                //Works for all cases...
-
-                /* NdIndexIterator iter = new NdIndexIterator(order, m.shape());
-                while (iter.hasNext()) {
-                    ret.putScalar(linearIndex++, m.getDouble(iter.next()));
-                }*/
-
-                linearIndex += m.length();
-            }
-
-            if (ret != null)
-                allocator.registerAction(context, ret, m);
-        }
-        return ret;
+        return Nd4j.exec(new Flatten(order, matrices.toArray(new INDArray[0])))[0];
     }
 
     @Override
@@ -412,131 +348,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
         return Nd4j.exec(new Concat(dimension, toConcat))[0];
-
-        // legacy implementation
-/*
-        boolean allScalars = true;
-
-        var outputShape = ArrayUtil.copy(toConcat[0].shape());
-
-        if (toConcat.length == 1)
-            return toConcat[0];
-
-        int sumAlongDim = 0;
-        for (int i = 0; i < toConcat.length; i++) {
-            if (toConcat[i].isCompressed())
-                Nd4j.getCompressor().decompressi(toConcat[i]);
-
-            allScalars &= toConcat[i].rank() == 0;
-
-            sumAlongDim += toConcat[i].size(dimension);
-        }
-
-        if (allScalars) {
-            outputShape = new long[]{sumAlongDim};
-        } else {
-            outputShape[dimension] = sumAlongDim;
-        }
-
-        INDArray ret = Nd4j.createUninitialized(toConcat[0].dataType(), outputShape, Nd4j.order());
-
-        AtomicAllocator allocator = AtomicAllocator.getInstance();
-
-        CudaContext context = allocator.getFlowController().prepareAction(ret, toConcat);
-
-        val shapeInfoPointers = new long[toConcat.length];
-        val dataPointers = new long[toConcat.length];
-        val tadPointers = new long[toConcat.length];
-        val offsetsPointers = new long[toConcat.length];
-        val hostShapeInfoPointers = new long[toConcat.length];
-
-        TADManager tadManager = Nd4j.getExecutioner().getTADManager();
-        for (int i = 0; i < toConcat.length; i++) {
-            shapeInfoPointers[i] = AddressRetriever.retrieveDeviceAddress(toConcat[i].shapeInfoDataBuffer(), context);
-            dataPointers[i] = AtomicAllocator.getInstance().getPointer(toConcat[i], context).address();
-            hostShapeInfoPointers[i] = AtomicAllocator.getInstance().getHostPointer(toConcat[i].shapeInfoDataBuffer()).address();
-
-            sumAlongDim += toConcat[i].size(dimension);
-            for (int j = 0; j < toConcat[i].rank(); j++)
-                if (j != dimension && toConcat[i].size(j) != outputShape[j]) {
-                    throw new IllegalArgumentException(
-                                    "Illegal concatenation at array " + i + " and shape element " + j);
-                }
-
-            if (!allScalars) {
-                val tadBuffers = tadManager.getTADOnlyShapeInfo(toConcat[i], new int[]{dimension});
-
-                long devTadShapeInfo = AtomicAllocator.getInstance().getPointer(tadBuffers.getFirst(), context).address();
-
-                val offsets = tadBuffers.getSecond();
-                long devTadOffsets = AtomicAllocator.getInstance().getPointer(offsets, context).address();
-
-                tadPointers[i] = devTadShapeInfo;
-                offsetsPointers[i] = devTadOffsets;
-            }
-        }
-
-        // getting tadOnlyShape for result
-        val zBuffers = tadManager.getTADOnlyShapeInfo(ret, new int[] {dimension});
-        val hostPointers = new LongPointer(hostShapeInfoPointers);
-        val hosthost = new PointerPointerWrapper(hostPointers);
-
-        //System.out.println("shapePointers: " + Arrays.toString(shapeInfoPointers));
-
-        val dZ = AtomicAllocator.getInstance().getPointer(ret, context);
-        val dZShapeInfo = AddressRetriever.retrieveDevicePointer(ret.shapeInfoDataBuffer(), context);
-
-
-
-        //val tempData = new CudaDoubleDataBuffer(toConcat.length);
-        //val tempShapes = new CudaDoubleDataBuffer(toConcat.length);
-        //val tempTAD = new CudaDoubleDataBuffer(toConcat.length);
-        //val tempOffsets = new CudaDoubleDataBuffer(toConcat.length);
-
-        //AtomicAllocator.getInstance().memcpyBlocking(tempData, new LongPointer(dataPointers), dataPointers.length * 8,0);
-        //AtomicAllocator.getInstance().memcpyBlocking(tempShapes, new LongPointer(shapeInfoPointers), shapeInfoPointers.length * 8, 0);
-        //AtomicAllocator.getInstance().memcpyBlocking(tempTAD, new LongPointer(tadPointers), tadPointers.length * 8, 0);
-        //AtomicAllocator.getInstance().memcpyBlocking(tempOffsets, new LongPointer(offsetsPointers), offsetsPointers.length * 8, 0);
-
-        val dataPointer = new PointerPointerWrapper(new LongPointer(dataPointers)); //AtomicAllocator.getInstance().getPointer(tempData, context);
-        val shapesPointer = new PointerPointerWrapper(new LongPointer(shapeInfoPointers));//AtomicAllocator.getInstance().getPointer(tempShapes, context);
-        //val tadPointer = AtomicAllocator.getInstance().getPointer(tempTAD, context);
-        //val offsetPointer = AtomicAllocator.getInstance().getPointer(tempOffsets, context);
-
-
-        // System.out.println("ShapesPointer after conversion: " + shapesPointer);
-
-        val extras = new PointerPointer(AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
-                        context.getOldStream(), allocator.getDeviceIdPointer(), null,
-                        context.getBufferReduction(), context.getBufferScalar(), null,
-                        AddressRetriever.retrieveHostPointer(toConcat[0].shapeInfoDataBuffer()),
-                        AddressRetriever.retrieveHostPointer(ret.shapeInfoDataBuffer()),
-                        new LongPointer(hostShapeInfoPointers),
-                        AtomicAllocator.getInstance().getPointer(zBuffers.getFirst(), context), // getting zTADShape
-                        AtomicAllocator.getInstance().getPointer(zBuffers.getSecond(), context) // getting zOffset
-        );
-
-
-        nativeOps.concat(extras,
-                dimension,
-                toConcat.length,
-                null,
-                hosthost,
-                dataPointer,
-                shapesPointer,
-                null,
-                (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
-                dZ,
-                (LongPointer) dZShapeInfo,
-                 null,
-                null);
-
-
-        allocator.registerAction(context, ret, toConcat);
-
-        return ret;
-        //return super.concat(dimension, toConcat);
-        */
     }
 
 
@@ -590,6 +401,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     (LongPointer) ret.shapeInfoDataBuffer().addressPointer(),
                     null, null);
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         AllocationPoint point = allocator.getAllocationPoint(ret);
 
@@ -597,6 +410,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         nativeOps.memcpyAsync(point.getDevicePointer(), point.getHostPointer(), ret.lengthLong() * Nd4j.sizeOfDataType(ret.data().dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
         context.getSpecialStream().synchronize();
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         PerformanceTracker.getInstance().helperRegisterTransaction(point.getDeviceId(), perfD, point.getNumberOfBytes(), MemcpyDirection.HOST_TO_DEVICE);
 
@@ -729,6 +545,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 (LongPointer) zTadShapeInfo,
                 new LongPointerWrapper(zTadOffsets));
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         allocator.registerAction(context, ret, source);
 
@@ -743,7 +561,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             return target.assign(arrays[0]);
 
         // we do averaging on GPU only if ALL devices have p2p links
-        //if (CudaEnvironment.getInstance().getConfiguration().isCrossDeviceAccessAllowed() && nativeOps.isP2PAvailable()) {
         if (true) {
             Nd4j.getExecutioner().push();
 
@@ -780,6 +597,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             PointerPointer x = new PointerPointer(AtomicAllocator.getInstance().getPointer(tempX, context));
 
             nativeOps.accumulate(extras, null, (LongPointer) arrays[0].shapeInfoDataBuffer().addressPointer(), x, null, null, (LongPointer)  allocator.getHostPointer(target.shapeInfoDataBuffer()) , z, (LongPointer)  allocator.getPointer(target.shapeInfoDataBuffer()), arrays.length, len);
+
+            if (nativeOps.lastErrorCode() != 0)
+                throw new RuntimeException(nativeOps.lastErrorMessage());
 
             allocator.getFlowController().registerAction(context, target, arrays);
 
@@ -824,6 +644,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     arrays.length,
                     len);
 
+            if (nativeOps.lastErrorCode() != 0)
+                throw new RuntimeException(nativeOps.lastErrorMessage());
 
             AtomicAllocator.getInstance().getAllocationPoint(target).tickHostWrite();
 
@@ -895,6 +717,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     arrays.length,
                     len, true);
 
+            if (nativeOps.lastErrorCode() != 0)
+                throw new RuntimeException(nativeOps.lastErrorMessage());
+
             allocator.getFlowController().registerAction(context, target, arrays);
 
             return target;
@@ -939,6 +764,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     null,
                     arrays.length,
                     len, true);
+
+            if (nativeOps.lastErrorCode() != 0)
+                throw new RuntimeException(nativeOps.lastErrorMessage());
 
             if (target != null)
                 AtomicAllocator.getInstance().getAllocationPoint(target).tickHostWrite();
@@ -1115,6 +943,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                             (IntPointer) shuffleMap, new PointerPointer(allocator.getPointer(tempTAD, context)),
                             new PointerPointer(allocator.getPointer(tempOffsets, context)));
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         for (int f = 0; f < arrays.size(); f++) {
             allocator.getFlowController().registerAction(context, arrays.get(f));
         }
@@ -1260,6 +1091,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         val p = new PointerPointer<>(new Pointer[]{null, stream});
 
         nativeOps.convertTypes(p, typeSrc.ordinal(), source, length, typeDst.ordinal(), target);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
     }
 
     @Override
@@ -1277,7 +1111,13 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             srcPtr = nativeOps.mallocDevice(ssize, 0, 0);
             dstPtr = nativeOps.mallocDevice(size, 0, 0);
 
+            if (nativeOps.lastErrorCode() != 0)
+                throw new RuntimeException(nativeOps.lastErrorMessage());
+
             nativeOps.memcpyAsync(srcPtr, source, ssize, CudaConstants.cudaMemcpyHostToDevice, stream);
+
+            if (nativeOps.lastErrorCode() != 0)
+                throw new RuntimeException(nativeOps.lastErrorMessage());
         } else {
             // decompressing
             throw new UnsupportedOperationException();
@@ -1288,9 +1128,15 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         stream.synchronize();
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         if (buffer instanceof CompressedDataBuffer) {
             nativeOps.freeDevice(srcPtr, 0);
             nativeOps.freeDevice(dstPtr, 0);
+
+            if (nativeOps.lastErrorCode() != 0)
+                throw new RuntimeException(nativeOps.lastErrorMessage());
         }
     }
 
@@ -1309,13 +1155,15 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 val size = ((CompressedDataBuffer) source).getCompressionDescriptor().getCompressedLength();
                 srcPtr = ws.alloc(size, MemoryKind.DEVICE, DataType.HALF, false);
                 nativeOps.memcpyAsync(srcPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
+
+                if (nativeOps.lastErrorCode() != 0)
+                    throw new RuntimeException(nativeOps.lastErrorMessage());
             }
 
             // if true - we're compressing into host memory
             if (target instanceof CompressedDataBuffer) {
                 val size = ((CompressedDataBuffer) target).getCompressionDescriptor().getCompressedLength();
                 dstPtr = ws.alloc(size, MemoryKind.DEVICE, DataType.HALF, false);
-                //nativeOps.memcpyAsync(dstPtr, target.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
             }
         } else {
             // if true - we're decompressing from host memory
@@ -1325,6 +1173,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 srcPtr = nativeOps.mallocDevice(size, 0, 0);
                 nativeOps.memcpyAsync(srcPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
                 stream.synchronize();
+
+                if (nativeOps.lastErrorCode() != 0)
+                    throw new RuntimeException(nativeOps.lastErrorMessage());
             } else
                 srcPtr = AtomicAllocator.getInstance().getPointer(source);
 
@@ -1333,14 +1184,18 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 log.info("Replacing target ptr");
                 val size = ((CompressedDataBuffer) target).getCompressionDescriptor().getCompressedLength();
                 dstPtr = nativeOps.mallocDevice(size, 0, 0);
-                //nativeOps.memcpyAsync(dstPtr, source.addressPointer(), size, CudaConstants.cudaMemcpyHostToHost, stream);
-                //stream.synchronize();
+
+                if (nativeOps.lastErrorCode() != 0)
+                    throw new RuntimeException(nativeOps.lastErrorMessage());
             } else
                 dstPtr = AtomicAllocator.getInstance().getPointer(target);
         }
 
 
         convertDataEx(typeSrc, srcPtr, typeDst, dstPtr, target.length());
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         Nd4j.getExecutioner().commit();
 
@@ -1363,6 +1218,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 nativeOps.freeDevice(srcPtr, 0);
 
         }
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         Nd4j.getExecutioner().commit();
     }
@@ -1462,6 +1320,9 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     new LongPointerWrapper(AtomicAllocator.getInstance().getPointer(tadBuffers.getSecond(), context))
             );
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+
         AtomicAllocator.getInstance().getFlowController().registerActionAllWrite(context, result);
         AtomicAllocator.getInstance().getFlowController().registerAction(context,null, result);
 
@@ -1517,6 +1378,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     descending
             );
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, x);
 
@@ -1565,6 +1428,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                     descending
             );
 
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         AtomicAllocator.getInstance().getFlowController().registerAction(context, x);
 

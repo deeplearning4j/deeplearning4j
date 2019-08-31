@@ -344,6 +344,8 @@ public class TFGraphTestAllHelper {
                                 System.out.println("Pass: " + varName);
                             } else {
                                 System.out.println("FAIL: " + varName);
+                                System.out.println("TF:\n" + tfValue);
+                                System.out.println("SD:\n" + sdVal);
                             }
 
                         }

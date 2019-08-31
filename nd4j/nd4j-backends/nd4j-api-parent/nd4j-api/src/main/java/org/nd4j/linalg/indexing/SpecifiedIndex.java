@@ -16,7 +16,7 @@
 
 package org.nd4j.linalg.indexing;
 
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.Data;
 import net.ericaro.neoitertools.Generator;
 import net.ericaro.neoitertools.Itertools;

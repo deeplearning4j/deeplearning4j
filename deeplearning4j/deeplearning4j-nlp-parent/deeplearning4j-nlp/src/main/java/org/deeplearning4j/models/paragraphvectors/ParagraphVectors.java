@@ -16,7 +16,7 @@
 
 package org.deeplearning4j.models.paragraphvectors;
 
-import com.google.common.collect.Lists;
+import org.nd4j.shade.guava.collect.Lists;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import lombok.Getter;

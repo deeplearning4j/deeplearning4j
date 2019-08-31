@@ -41,45 +41,44 @@ import org.nd4j.linalg.string.NDArrayStrings;
  */
 public interface INDArray extends Serializable, AutoCloseable {
     /**
-     * Returns the shape information debugging
-     * information
-     * @return the shape information debugging information
+     * Returns the shape information debugging information
+     * @return the shape information.
      */
     String shapeInfoToString();
 
     /**
      * Shape info
-     * @return
+     * @return Shape info
      */
     DataBuffer shapeInfoDataBuffer();
 
     /**
      * Sparse info
-     * @return
+     * @return Sparse info.
      */
     DataBuffer sparseInfoDataBuffer();
 
     /**
      * Shape info
-     * @return
+     * @return Shape info
      */
     LongBuffer shapeInfo();
 
     /**
-     * Returns true if this array is a view or not
-     * @return
+     * Check if this array is a view or not.
+     * @return true if array is a view.
      */
     boolean isView();
 
     /**
-     * Returns true if this array is sparse
-     * @return
+     * Check if this array is sparse
+     * @return true if this array is sparse.
      */
     boolean isSparse();
 
     /**
-     * Returns true if this array is compressed, and false otherwise
-     * @return
+     * Check if this array is compressed.
+     * @return true if this array is compressed.
      */
     boolean isCompressed();
 
@@ -87,10 +86,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      * This method marks INDArray instance as compressed
      * PLEASE NOTE: Do not use this method unless you 100% have to
      *
-     * @param reallyCompressed
+     * @param reallyCompressed new value for compressed.
      */
     void markAsCompressed(boolean reallyCompressed);
-
 
     /**
      * Returns the rank of the ndarray (the number of dimensions).
@@ -108,27 +106,31 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * Element wise stride
+     * @return the element wise stride
      */
     int elementWiseStride();
 
     /**
-     * Get a scalar
-     * at the given linear offset
+     * Get a double at the given linear offset unsafe, without checks.
      * @param offset the offset to get at
-     * @return this
+     * @return double value at offset
      */
-    double getDoubleUnsafe(long offset);
+    double getDoubleUnsafe(long offset); //TODO: consider deleting.
 
+    /**
+     * Get string value at given index.
+     * @param index index to retreive
+     * @return string value at index.
+     */
     String getString(long index);
 
     /**
-     * Insert a scalar
-     * at the given linear offset
+     * Insert a scalar at the given linear offset
      * @param offset the offset to insert at
      * @param value the value to insert
      * @return this
      */
-    INDArray putScalarUnsafe(long offset, double value);
+    INDArray putScalarUnsafe(long offset, double value); //TODO: consider deleting.
 
     /**
      * Returns the number of possible vectors for a given dimension
@@ -165,17 +167,6 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray tensorAlongDimension(long index, int... dimension);
 
     /**
-     * Get the vector along a particular dimension
-     *
-     * @param index     the index of the vector to getScalar
-     * @param dimension the dimension to getScalar the vector from
-     * @return the vector along a particular dimension
-     */
-    @Deprecated
-    INDArray javaTensorAlongDimension(int index, int... dimension);
-
-
-    /**
      * Returns the cumulative sum along a dimension. In-place method.
      *
      * @param dimension the dimension to perform cumulative sum along.
@@ -192,8 +183,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray cumsum(int dimension);
 
     /**
-     * Assign all of the elements in the given
-     * ndarray to this ndarray
+     * Assign all of the elements in the given ndarray to this ndarray
      *
      * @param arr the elements to assign
      * @return this
@@ -256,9 +246,19 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray putScalar(int[] i, double value);
 
-
+    /**
+     * See {@link #putScalar(int[], double)}
+     */
     INDArray putScalar(long[] i, double value);
+
+    /**
+     * See {@link #putScalar(int[], double)}
+     */
     INDArray putScalar(long[] i, float value);
+
+    /**
+     * See {@link #putScalar(int[], double)}
+     */
     INDArray putScalar(long[] i, int value);
 
     /**
@@ -302,7 +302,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray lt(Number other);
 
-
     /**
      * Put the specified float value at the specified indices in this array
      *
@@ -328,8 +327,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the binary ndarray for "Epsilon equals" comparison.
      */
     INDArray eps(Number other);
-
-
 
     /**
      * Returns the binary ndarray for "Equals" comparison.
@@ -369,9 +366,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param other the ndarray to compare.
      * @return the binary ndarray for "Less" comparison.
      */
-
     INDArray lt(INDArray other);
-
 
     /**
      * Returns the binary ndarray for "Epsilon equals" comparison.
@@ -405,7 +400,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray eq(INDArray other);
 
-
     /**
      * Returns the binary ndarray for "Greater Than" comparison.
      *
@@ -425,8 +419,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * are not infinite
      */
     INDArray isNaN();
-
-
 
     /**
      * Returns the ndarray negative (cloned)
@@ -466,7 +458,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rsub(Number n);
 
-
     /**
      * Reverse subtraction in place - i.e., (n - thisArrayValues)
      *
@@ -474,7 +465,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return This array after reverse subtraction
      */
     INDArray rsubi(Number n);
-
 
     /**
      * Division by a number
@@ -492,7 +482,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray divi(Number n);
 
-
     /**
      * Scalar multiplication (copy)
      *
@@ -509,7 +498,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray muli(Number n);
 
-
     /**
      * Scalar subtraction (copied)
      *
@@ -517,7 +505,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return Copy of this array after applying subtraction operation
      */
     INDArray sub(Number n);
-
 
     /**
      * In place scalar subtraction
@@ -543,7 +530,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addi(Number n);
 
-
     /**
      * Reverse division (number / ndarray)
      *
@@ -552,7 +538,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return Result array
      */
     INDArray rdiv(Number n, INDArray result);
-
 
     /**
      * Reverse in place division
@@ -581,11 +566,12 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rsubi(Number n, INDArray result);
 
-
     /**
-     * @param n
-     * @param result
-     * @return
+     * Division if ndarray by number
+     *
+     * @param n      the number to divide by
+     * @param result the result ndarray
+     * @return the result ndarray
      */
     INDArray div(Number n, INDArray result);
 
@@ -594,24 +580,35 @@ public interface INDArray extends Serializable, AutoCloseable {
      *
      * @param n      the number to divide by
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray divi(Number n, INDArray result);
 
-
+    /**
+     * Multiplication of ndarray.
+     *
+     * @param n the number to multiply by
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     INDArray mul(Number n, INDArray result);
-
 
     /**
      * In place multiplication of this ndarray
      *
      * @param n      the number to divide by
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray muli(Number n, INDArray result);
 
-
+    /**
+     * Subtraction of this ndarray
+     *
+     * @param n      the number to subtract by
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     INDArray sub(Number n, INDArray result);
 
     /**
@@ -623,6 +620,12 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray subi(Number n, INDArray result);
 
+    /**
+     * Addition of this ndarray.
+     * @param n      the number to add
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     INDArray add(Number n, INDArray result);
 
     /**
@@ -634,25 +637,24 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addi(Number n, INDArray result);
 
-
     /**
-     * Returns a subset of this array based on the specified
-     * indexes
+     * Returns a subset of this array based on the specified indexes
      *
      * @param indexes the indexes in to the array
      * @return a view of the array with the specified indices
      */
     INDArray get(INDArrayIndex... indexes);
 
+    //TODO: revisit after #8166 is resolved.
     /**
-     * Return a mask on whether each element
-     * matches the given condition
+     * Return a mask on whether each element matches the given condition
      * @param comp
      * @param condition
      * @return
      */
     INDArray match(INDArray comp,Condition condition);
 
+    //TODO: revisit after #8166 is resolved.
     /**
      * Returns a mask
      * @param comp
@@ -681,54 +683,51 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray getWhere(Number comp,Condition condition);
 
+    //TODO: unused / untested method. (only used to forward calls from putWhere(Number,INDArray ,Condition).
     /**
-     * Assign the element according
-     * to the comparison array
+     * Assign the element according to the comparison array
      * @param comp the comparison array
      * @param put the elements to put
      * @param condition the condition for masking on
-     * @return
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhere(INDArray comp,INDArray put,Condition condition);
 
-
+    //TODO: unused / untested method.
     /**
-     * Assign the element according
-     * to the comparison array
+     * Assign the element according to the comparison array
      * @param comp the comparison array
      * @param put the elements to put
      * @param condition the condition for masking on
-     * @return
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhere(Number comp,INDArray put,Condition condition);
 
-
+    //TODO: unused / untested method. (only used to forward calls from  other putWhereWithMask implementations.
     /**
-     * Use a pre computed mask
-     * for assigning arrays
+     * Use a pre computed mask for assigning arrays
      * @param mask the mask to use
      * @param put the array to put
-     * @return the resulting array
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhereWithMask(INDArray mask,INDArray put);
 
-
+    //TODO: unused / untested method.
     /**
-     * Use a pre computed mask
-     * for assigning arrays
+     * Use a pre computed mask for assigning arrays
      * @param mask the mask to use
      * @param put the array to put
-     * @return the resulting array
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhereWithMask(INDArray mask,Number put);
 
+    //TODO: unused / untested method.
     /**
-     * Assign the element according
-     * to the comparison array
+     * Assign the element according to the comparison array
      * @param comp the comparison array
      * @param put the elements to put
      * @param condition the condition for masking on
-     * @return
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhere(Number comp,Number put,Condition condition);
 
@@ -738,14 +737,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the elements to get the array for
      */
     INDArray get(INDArray indices);
-
-    /**
-     * Get the elements from this ndarray based on the specified indices
-     * @param indices an ndaray of the indices to get the elements for
-     * @return the elements to get the array for
-     */
-    @Deprecated
-    INDArray get(List<List<Integer>> indices);
 
     /**
      * Get an INDArray comprised of the specified columns only. Copy operation.
@@ -779,20 +770,20 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rdivi(INDArray other);
 
-
+    //TODO: unused / untested method.
     /**
      * Reverse division
      *
-     * @param other  the matrix to subtract from
+     * @param other  the matrix to divide from
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray rdiv(INDArray other, INDArray result);
 
     /**
      * Reverse division (in-place)
      *
-     * @param other  the other ndarray to subtract
+     * @param other  the matrix to divide from
      * @param result the result ndarray
      * @return the ndarray with the operation applied
      */
@@ -803,10 +794,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray rsub(INDArray other, INDArray result);
-
 
     /**
      * Element-wise reverse subtraction (copy op). i.e., other - this
@@ -850,21 +840,18 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray assign(boolean value);
 
     /**
-     * Get the linear index of the data in to
-     * the array
+     * Get the linear index of the data in to the array
      *
      * @param i the index to getScalar
      * @return the linear index in to the data
      */
     long linearIndex(long i);
 
-
+    //TODO: unused / untested method. only used recursively.
     /**
-     *
-     * @param list
+     * Flattens the array for linear indexing in list.
      */
     void sliceVectors(List<INDArray> list);
-
 
     /**
      * Assigns the given matrix (put) to the specified slice
@@ -883,15 +870,14 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray cond(Condition condition);
 
-
     /**
      * Replicate and tile array to fill out to the given shape
-     *
+     * See:
+     * https://github.com/numpy/numpy/blob/master/numpy/matlib.py#L310-L358
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
      */
     INDArray repmat(int... shape);
-
 
     /**
      * Repeat elements along a specified dimension.
@@ -902,11 +888,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray repeat(int dimension, long... repeats);
 
-
     /**
      * Insert a row in to this array
-     * Will throw an exception if this
-     * ndarray is not a matrix
+     * Will throw an exception if this ndarray is not a matrix
      *
      * @param row   the row insert into
      * @param toPut the row to insert
@@ -916,8 +900,7 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * Insert a column in to this array
-     * Will throw an exception if this
-     * ndarray is not a matrix
+     * Will throw an exception if this ndarray is not a matrix
      *
      * @param column the column to insert
      * @param toPut  the array to put
@@ -927,7 +910,6 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * Returns the element at the specified row/column
-     * This will throw an exception if the
      *
      * @param row    the row of the element to return
      * @param column the row of the element to return
@@ -958,14 +940,11 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     double distance1(INDArray other);
 
-
     /**
      * Put element in to the indices denoted by
      * the indices ndarray.
-     * This is equivalent to:
+     * In numpy this is equivalent to:
      * a[indices] = element
-     *
-     *  in numpy.
      *
      * @param indices the indices to put
      * @param element the element array to put
@@ -973,11 +952,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray put(INDArray indices,INDArray element);
 
-
-
     /**
-     * Put the elements of the ndarray
-     * in to the specified indices
+     * Put the elements of the ndarray in to the specified indices
      *
      * @param indices the indices to put the ndarray in to
      * @param element the ndarray to put
@@ -986,8 +962,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray put(INDArrayIndex[] indices, INDArray element);
 
     /**
-     * Put the elements of the ndarray
-     * in to the specified indices
+     * Put the elements of the ndarray in to the specified indices
      *
      * @param indices the indices to put the ndarray in to
      * @param element the ndarray to put
@@ -1015,7 +990,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray put(int i, int j, INDArray element);
 
-
     /**
      * Inserts the element at the specified index
      *
@@ -1026,7 +1000,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray put(int i, int j, Number element);
 
-
     /**
      * Inserts the element at the specified index
      *
@@ -1035,7 +1008,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return a scalar ndarray of the element at this index
      */
     INDArray put(int i, INDArray element);
-
 
     /**
      * In place division of a column vector

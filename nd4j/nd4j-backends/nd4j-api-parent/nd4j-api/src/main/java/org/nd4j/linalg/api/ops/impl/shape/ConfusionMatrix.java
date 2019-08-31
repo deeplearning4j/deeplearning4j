@@ -67,11 +67,6 @@ public class ConfusionMatrix extends DynamicCustomOp {
     }
 
     @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        super.resolvePropertiesFromSameDiffBeforeExecution();
-    }
-
-    @Override
     public String opName() {
         return "confusion_matrix";
     }

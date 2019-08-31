@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.factory;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
 import lombok.val;
 import lombok.var;
@@ -103,7 +103,6 @@ import java.text.NumberFormat;
 import java.text.ParseException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Logger;
 
@@ -153,7 +152,6 @@ public class Nd4j {
     public static RandomFactory randomFactory;
     private static MemoryWorkspaceManager workspaceManager;
     private static DeallocatorService deallocatorService;
-    private static final AtomicInteger numThreads = new AtomicInteger(-1);
     private static AtomicReference<DataType> defaultFloatingPointDataType;
 
     private static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
@@ -2267,15 +2265,12 @@ public class Nd4j {
                 Preconditions.checkState(data.length == numColumns,
                         "Data has inconsistent number of columns: data length %s, numColumns %s", data.length, numColumns);
             data2.add(readSplit(data));
-
-
         }
-        ret = Nd4j.create(dataType, data2.size(), numColumns);
-        for (int i = 0; i < data2.size(); i++) {
-            float[] row = data2.get(i);
-            INDArray arr = Nd4j.create(row, new long[]{1, row.length}, dataType);
-            ret.putRow(i, arr);
+        float[][] fArr = new float[data2.size()][0];
+        for(int i=0; i<data2.size(); i++ ){
+            fArr[i] = data2.get(i);
         }
+        ret = Nd4j.createFromArray(fArr).castTo(dataType);
         return ret;
     }
 
@@ -4755,7 +4750,7 @@ public class Nd4j {
      * @param toStrip the ndarray to newShapeNoCopy
      * @return the reshaped ndarray
      */
-    @SuppressWarnings("WeakerAccess") // Needs tests if part of public API.
+    @SuppressWarnings({"unused"}) // Needs tests if part of public API.
     public static INDArray stripOnes(INDArray toStrip) {
         if (toStrip.isVector())
             return toStrip;

@@ -16,7 +16,7 @@
 
 //
 // @author Created by raver119 on 24.11.17.
-// @author Yurii Shyrma (iuriish@yahoo.com)    
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
@@ -28,21 +28,24 @@
 namespace nd4j {
     namespace ops {
         OP_IMPL(scatter_div, 3, 1, true) {
-            
+
             auto input = INPUT_VARIABLE(0);
             auto indices = INPUT_VARIABLE(1);
             auto updates = INPUT_VARIABLE(2);
 
             auto output = OUTPUT_VARIABLE(0);
 
+            if (!block.isInplace())
+                output->assign(input);
+
             const bool lock = block.getBArguments()->empty() ? false : B_ARG(0);
 
             const int inRank  = input->rankOf();
             const int indRank = indices->rankOf();
             const int updRank = updates->rankOf();
-    
+
             REQUIRE_TRUE(inRank > 0, 0, "SCATTER_DIV OP: input should not be scalar !");
-    
+
             if(inRank == 1) {
                 REQUIRE_TRUE(indices->isSameShape(updates), 0, "SCATTER_DIV OP: when input array has rank = 1 then indices and updates must have the same shapes, but got %s and %s correspondingly !", ShapeUtils::shapeAsString(indices).c_str(), ShapeUtils::shapeAsString(updates).c_str());
             }
@@ -50,28 +53,27 @@ namespace nd4j {
 
                 std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
                 std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
-                std::vector<Nd4jLong> expectedUpdShape = {indices->lengthOf()}; 
+                std::vector<Nd4jLong> expectedUpdShape = {indices->lengthOf()};
                 expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
-        
+
                 REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_DIV OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
             }
             else {
-        
+
                 REQUIRE_TRUE(updRank == indRank + inRank - 1, 0, "SCATTER_DIV OP: wrong rank of updates array, expected is %i, but got %i instead !", indRank + inRank - 1 , updRank);
-                
+
                 std::vector<Nd4jLong> updShape = updates->getShapeAsVector();
                 std::vector<Nd4jLong> inShape  = input->getShapeAsVector();
-                std::vector<Nd4jLong> expectedUpdShape = indices->getShapeAsVector();        
+                std::vector<Nd4jLong> expectedUpdShape = indices->getShapeAsVector();
                 expectedUpdShape.insert(expectedUpdShape.end(), inShape.begin()+1, inShape.end());
-        
+
                 REQUIRE_TRUE(expectedUpdShape == updShape, 0, "SCATTER_DIV OP: wrong shape of updates array, expected is %s, but got %s instead !", ShapeUtils::shapeAsString(expectedUpdShape).c_str(), ShapeUtils::shapeAsString(updShape).c_str());
             }
 
-            if (!block.isInplace())
-                output->assign(input);
+            if (!indices->isEmpty())
+                // ScatterHelper<T>::template scatterApply<simdOps::Divide<T>>(output, indices, updates);
+                helpers::scatter(block.launchContext(), pairwise::Divide, *indices, *updates, *output, lock);
 
-            // ScatterHelper<T>::template scatterApply<simdOps::Divide<T>>(output, indices, updates);        
-            helpers::scatter(block.launchContext(), pairwise::Divide, *indices, *updates, *output, lock);
             return Status::OK();
         }
         DECLARE_SYN(ScatterDiv, scatter_div);

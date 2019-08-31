@@ -40,6 +40,7 @@ import org.nd4j.jita.workspace.CudaWorkspace;
 import org.nd4j.linalg.api.buffer.BaseDataBuffer;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.buffer.Utf8Buffer;
 import org.nd4j.linalg.api.memory.enums.MemoryKind;
 import org.nd4j.linalg.api.memory.pointers.PagedPointer;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -284,10 +285,16 @@ public class AtomicAllocator implements Allocator {
      */
     @Override
     public Pointer getPointer(@NonNull DataBuffer buffer, CudaContext context) {
+        if (buffer instanceof Utf8Buffer)
+            return null;
+
         return memoryHandler.getDevicePointer(buffer, context);
     }
 
     public Pointer getPointer(DataBuffer buffer) {
+        if (buffer instanceof Utf8Buffer)
+            return null;
+
         return memoryHandler.getDevicePointer(buffer, getDeviceContext());
     }
 
@@ -312,7 +319,7 @@ public class AtomicAllocator implements Allocator {
     @Override
     public Pointer getPointer(INDArray array, CudaContext context) {
         //    DataBuffer buffer = array.data().originalDataBuffer() == null ? array.data() : array.data().originalDataBuffer();
-        if (array.isEmpty())
+        if (array.isEmpty() || array.isS())
             return null;
 
         return memoryHandler.getDevicePointer(array.data(), context);

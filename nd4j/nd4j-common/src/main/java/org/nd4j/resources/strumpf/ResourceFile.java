@@ -1,6 +1,6 @@
 package org.nd4j.resources.strumpf;
 
-import com.google.common.io.Files;
+import org.nd4j.shade.guava.io.Files;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

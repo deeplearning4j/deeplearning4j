@@ -17,8 +17,8 @@
 package org.nd4j.linalg.jcublas.util;
 
 
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
+import org.nd4j.shade.guava.collect.ArrayListMultimap;
+import org.nd4j.shade.guava.collect.Multimap;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import org.nd4j.linalg.api.ndarray.INDArray;

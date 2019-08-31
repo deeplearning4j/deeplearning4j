@@ -530,7 +530,7 @@ public abstract class DifferentialFunction {
     public SDVariable arg(int num){
         SDVariable[] args = args();
         Preconditions.checkNotNull(args, "Arguments are null for function %s", this.getOwnName());
-        Preconditions.checkArgument(num >= 0 && num < args.length, "Invalid index: must be 0 to numArgs (0 <= idx < %s)", args.length);
+        Preconditions.checkArgument(num >= 0 && num < args.length, "Invalid index: must be 0 to numArgs (0 <= idx < %s), got %s", args.length, num);
         return args[num];
     }
 
@@ -547,8 +547,11 @@ public abstract class DifferentialFunction {
     /**
      * Resolve properties and arguments right before execution of
      * this operation.
+     *
+     * @deprecated Will be removed in the future.  Ops should support array arguments.  Should not bs used or overridden.
      */
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
+    @Deprecated
+    public final void resolvePropertiesFromSameDiffBeforeExecution() {
         val properties = sameDiff.propertiesToResolveForFunction(this);
         val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
         val currentFields = this.propertiesForFunction();

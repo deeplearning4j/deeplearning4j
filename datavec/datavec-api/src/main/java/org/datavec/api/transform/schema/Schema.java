@@ -21,7 +21,6 @@ import lombok.EqualsAndHashCode;
 import org.datavec.api.transform.ColumnType;
 import org.datavec.api.transform.metadata.*;
 import org.datavec.api.transform.serde.JsonMappers;
-import org.datavec.api.transform.serde.legacy.LegacyMappingHelper;
 import org.datavec.api.writable.*;
 import org.joda.time.DateTimeZone;
 import org.nd4j.shade.jackson.annotation.*;
@@ -29,9 +28,11 @@ import org.nd4j.shade.jackson.core.JsonFactory;
 import org.nd4j.shade.jackson.databind.DeserializationFeature;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
 import org.nd4j.shade.jackson.databind.SerializationFeature;
+import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 
+import java.io.IOException;
 import java.io.Serializable;
 import java.util.*;
 
@@ -48,8 +49,7 @@ import java.util.*;
  */
 @JsonIgnoreProperties({"columnNames", "columnNamesIndex"})
 @EqualsAndHashCode
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyMappingHelper.SchemaHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 @Data
 public class Schema implements Serializable {
 
@@ -358,6 +358,16 @@ public class Schema implements Serializable {
     public static Schema fromJson(String json) {
         try{
             return JsonMappers.getMapper().readValue(json, Schema.class);
+        } catch (InvalidTypeIdException e){
+            if(e.getMessage().contains("@class")){
+                try{
+                    //JSON may be legacy (1.0.0-alpha or earlier), attempt to load it using old format
+                    return JsonMappers.getLegacyMapper().readValue(json, Schema.class);
+                } catch (IOException e2){
+                    throw new RuntimeException(e2);
+                }
+            }
+            throw new RuntimeException(e);
         } catch (Exception e){
             //TODO better exceptions
             throw new RuntimeException(e);
@@ -375,21 +385,6 @@ public class Schema implements Serializable {
             return JsonMappers.getMapperYaml().readValue(yaml, Schema.class);
         } catch (Exception e){
             //TODO better exceptions
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static Schema fromJacksonString(String str, JsonFactory factory) {
-        ObjectMapper om = new ObjectMapper(factory);
-        om.registerModule(new JodaModule());
-        om.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-        om.configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false);
-        om.enable(SerializationFeature.INDENT_OUTPUT);
-        om.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-        om.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-        try {
-            return om.readValue(str, Schema.class);
-        } catch (Exception e) {
             throw new RuntimeException(e);
         }
     }

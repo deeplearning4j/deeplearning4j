@@ -34,18 +34,16 @@ import java.util.List;
  */
 public class ShiftBits extends BaseDynamicTransformOp {
 
-    public ShiftBits(SameDiff sameDiff, SDVariable x, int shift) {
-        super(sameDiff, new SDVariable[] {x} ,false);
-        this.addIArgument(shift);
+    public ShiftBits(SameDiff sameDiff, SDVariable x, SDVariable y) {
+        super(sameDiff, new SDVariable[] {x, y} ,false);
     }
 
-    public ShiftBits(INDArray input, int shift,  INDArray output) {
-        super(new INDArray[]{input}, new INDArray[]{output});
-        this.addIArgument(shift);
+    public ShiftBits(INDArray x, INDArray y,  INDArray output) {
+        super(new INDArray[]{x, y}, new INDArray[]{output});
     }
 
-    public ShiftBits(INDArray input, int shift) {
-        this(input, shift,null);
+    public ShiftBits(INDArray x, INDArray y) {
+        this(x, y,x.ulike());
     }
 
     public ShiftBits() {}

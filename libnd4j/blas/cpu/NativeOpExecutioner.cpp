@@ -24,6 +24,10 @@
 #include <broadcasting_bool.h>
 #include <scalar_bool.h>
 
+#include <pairwise_int.h>
+#include <broadcasting_int.h>
+#include <scalar_int.h>
+
 #include <loops/transform_float.h>
 #include <loops/transform_bool.h>
 #include <loops/transform_any.h>
@@ -79,9 +83,10 @@ void NativeOpExecutioner::execIndexReduceScalar(nd4j::LaunchContext  *lc, int op
 #endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     auto hz = reinterpret_cast<Nd4jLong*>(hZ);
 
-    BUILD_SINGLE_SELECTOR(xType, hz[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum,hX,hXShapeInfo,extraParams), LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, hz[0] = functions::indexreduce::IndexReduce, ::execScalar(opNum,hX,hXShapeInfo,extraParams), LIBND4J_TYPES, INDEXING_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -111,9 +116,10 @@ void NativeOpExecutioner::execIndexReduce(nd4j::LaunchContext  *lc,
 #endif
 
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
     Nd4jLong* hz = reinterpret_cast<Nd4jLong*>(hZ);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, extraParams, hz, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, extraParams, hz, hZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES, INDEXING_TYPES);
 //    BUILD_SINGLE_SELECTOR(xType, functions::indexreduce::IndexReduce, ::exec(opNum, hX, hXShapeInfo, dX, dXShapeInfo, extraParams, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffsets), LIBND4J_TYPES);
 }
 
@@ -240,6 +246,66 @@ void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
 }
 
+
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execBroadcastInt(nd4j::LaunchContext  *lc,
+                                            int opNum,
+                                            void *hX, Nd4jLong *hXShapeInfo,
+                                            void *dX, Nd4jLong *dXShapeInfo,
+                                            void *hY, Nd4jLong *hYShapeInfo,
+                                            void *dY, Nd4jLong *dYShapeInfo,
+                                            void *hZ, Nd4jLong *hZShapeInfo,
+                                            void *dZ, Nd4jLong *dZShapeInfo,
+                                            int *dimension, int dimensionLength,
+                                            Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                            Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != yType || xType != zType)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execBroadcastInt", zType, xType, yType);
+
+    if (!nd4j::DataTypeUtils::isZ(zType))
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), INTEGER_TYPES);
+}
+
+void NativeOpExecutioner::execInverseBroadcastInt(nd4j::LaunchContext  *lc,
+                                                   int opNum,
+                                                   void *hX, Nd4jLong *hXShapeInfo,
+                                                   void *dX, Nd4jLong *dXShapeInfo,
+                                                   void *hY, Nd4jLong *hYShapeInfo,
+                                                   void *dY, Nd4jLong *dYShapeInfo,
+                                                   void *hZ, Nd4jLong *hZShapeInfo,
+                                                   void *dZ, Nd4jLong *dZShapeInfo,
+                                                   int *dimension, int dimensionLength,
+                                                   Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
+                                                   Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
+
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != yType || xType != zType)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execPairwiseIntTransform", zType, xType, yType);
+
+    if (!nd4j::DataTypeUtils::isZ(zType))
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), INTEGER_TYPES);
+}
+
 ////////////////////////////////////////////////////////////////////////
 /**
 *
@@ -295,7 +361,40 @@ void NativeOpExecutioner::execPairwiseBoolTransform(nd4j::LaunchContext  *lc,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    if (xType != yType)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execPairwiseBoolTransform", xType, yType);
+
+    if (zType != nd4j::DataType::BOOL)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execPairwiseBoolTransform", nd4j::DataType::BOOL, zType);
+
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::pairwise_transforms::PairWiseBoolTransform, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execPairwiseIntTransform(nd4j::LaunchContext  *lc,
+                                                    int opNum,
+                                                    void *hX, Nd4jLong *hXShapeInfo,
+                                                    void *dX, Nd4jLong *dXShapeInfo,
+                                                    void *hY, Nd4jLong *hYShapeInfo,
+                                                    void *dY, Nd4jLong *dYShapeInfo,
+                                                    void *hZ, Nd4jLong *hZShapeInfo,
+                                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                                    void *extraParams) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != yType || xType != zType)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execPairwiseIntTransform", zType, xType, yType);
+
+    if (!nd4j::DataTypeUtils::isZ(zType))
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execSPairwiseInt requires integer data type", zType);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::pairwise_transforms::PairWiseIntTransform, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, extraParams), INTEGER_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -735,6 +834,64 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarBool", nd4j::DataType::BOOL, zType);
 
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+}
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
+                                         int opNum,
+                                         void *hX, Nd4jLong *hXShapeInfo,
+                                         void *dX, Nd4jLong *dXShapeInfo,
+                                         void *hZ, Nd4jLong *hZShapeInfo,
+                                         void *dZ, Nd4jLong *dZShapeInfo,
+                                         void *hScalar, Nd4jLong *hSscalarShapeInfo,
+                                         void *dScalar, Nd4jLong *dSscalarShapeInfo,
+                                         void *extraParams, bool allowParallelism) {
+
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hSscalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != yType || xType != zType)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarInt", xType, yType);
+
+    if (!nd4j::DataTypeUtils::isZ(zType))
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarInt", nd4j::DataType::INT32, zType);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), INTEGER_TYPES);
+}
+
+////////////////////////////////////////////////////////////////////////
+void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
+                                         int opNum,
+                                         void *hX, Nd4jLong *hXShapeInfo,
+                                         void *dX, Nd4jLong *dXShapeInfo,
+                                         void *extraParams,
+                                         void *hZ, Nd4jLong *hZShapeInfo,
+                                         void *dZ, Nd4jLong *dZShapeInfo,
+                                         void *hScalars, Nd4jLong *hScalarShapeInfo,
+                                         void *dScalars, Nd4jLong *dScalarShapeInfo,
+                                         int *dimension, int dimensionLength,
+                                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
+                                         Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+#ifdef _OPENMP
+    omp_set_nested(1);
+#endif
+
+    auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
+    auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
+    auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (xType != yType || xType != zType)
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarInt", xType, yType);
+
+    if (!nd4j::DataTypeUtils::isZ(zType))
+        throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarInt requires integer data type", zType);
+
+    BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), INTEGER_TYPES);
 }
 
 ////////////////////////////////////////////////////////////////////////

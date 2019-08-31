@@ -39,11 +39,28 @@ namespace helpers {
 
     template <typename T>
     static void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-        auto functor = LAMBDA_TT(x, y){
-            return x > (T)0.f ? y : T(0.f);
+
+        T zero = (T) 0.f;
+        auto functor = LAMBDA_TT(x, y, zero){
+            return x > zero ? y : zero;
         };
 
         input->applyPairwiseLambda<T>(epsilon, functor, output);
+
+        /*
+        auto x =  input->bufferAsT<T>();
+        auto y =  epsilon->bufferAsT<T>();
+        auto z =  output->bufferAsT<T>();
+
+        int length = input->lengthOf();
+
+        T zero = (T) 0.f;
+
+        PRAGMA_OMP_PARALLEL_FOR
+        for (int e = 0; e < length; e++) {
+            z[e] = x[e] > zero ? y[e] : zero;
+        }
+        */
     }
 
     void reluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {

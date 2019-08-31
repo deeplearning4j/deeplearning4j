@@ -16,7 +16,7 @@
 
 package org.nd4j.aeron.ipc.chunk;
 
-import com.google.common.collect.Maps;
+import org.nd4j.shade.guava.collect.Maps;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.aeron.ipc.NDArrayMessage;
 

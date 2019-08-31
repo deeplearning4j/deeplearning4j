@@ -234,6 +234,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         null);
             }
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
         profilingConfigurableHookOut(op, st);
         return op.z();
     }
@@ -563,6 +566,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 }
             }
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
         return ret;
     }
 
@@ -644,6 +650,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException();
         }
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
     }
 
     public INDArray exec(ScalarOp op) {
@@ -689,6 +697,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
             default:
                 throw new ND4JIllegalStateException("Unknown op type: [" + op.getOpType() +"]");
         }
+
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
 
         profilingConfigurableHookOut(op, st);
 
@@ -886,6 +897,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
             }
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
         profilingConfigurableHookOut(op, st);
     }
 
@@ -962,6 +976,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 throw new UnsupportedOperationException("Unknown operation type: [" + op.getOpType() + "]");
         }
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
 
         return op.z();
     }
@@ -1091,6 +1107,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     batch.getSample().maxIntArrays(), batch.getSample().maxIntArraySize(),
                     batch.getSample().maxIndexArguments(), batch.getSample().maxRealArguments(), pointer, FlatBuffersMapper.getDataTypeAsByte(dataType));
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
     }
 
     /**
@@ -1197,6 +1216,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                     numIndexArguments, intArrays, numIntArrays, block.getRealArgumentsPointer(),
                     numRealArguments, FlatBuffersMapper.getDataTypeAsByte(dataType));
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
     }
 
     /**
@@ -1284,6 +1305,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         op.extraArgsDataBuff(op.z().dataType()).addressPointer());
         }
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
         profilingConfigurableHookOut(op, st);
 
         return op.z();
@@ -1370,6 +1394,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 (float) threshold);
         //long t2 = System.currentTimeMillis();
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
         if (cntAbs < 2)
             return null;
 
@@ -1429,6 +1456,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         loop.convertTypes(null, DataTypeEx.THRESHOLD.ordinal(), buffer.addressPointer(), target.length(), typeDst.ordinal(), target.data().addressPointer());
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
         return target;
     }
 
@@ -1460,6 +1490,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 (IntPointer) buffer.addressPointer(),
                 (float) threshold);
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
         return affected;
     }
 
@@ -1472,6 +1505,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 target.data().addressPointer(),
                 (LongPointer) target.shapeInfoDataBuffer().addressPointer()
         );
+
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
 
         return target;
     }
@@ -1673,136 +1709,6 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         } catch (Exception e) {
             throw new RuntimeException("Op [" + name + "] execution failed", e);
         }
-/*
-        val name = op.opName().toLowerCase();
-        val hash = op.opHash();
-
-        if (name.equals("noop")) {
-            return op.outputArguments();
-        }
-
-        val inputShapes = getInputShapes(op.numInputArguments());
-        val inputBuffers = getInputBuffers(op.numInputArguments());
-
-        int cnt= 0;
-        val inputArgs = op.inputArguments();
-        for (val in: inputArgs) {
-            if(in == null)
-                throw new NullPointerException("Input argument is null for op " + op.getClass().getName());
-
-            if (!in.isEmpty())
-                inputBuffers.put(cnt, in.data().addressPointer());
-
-            inputShapes.put(cnt++, in.shapeInfoDataBuffer().addressPointer());
-        }
-
-        val outputArgs = op.outputArguments();
-        for(int i = 0; i < outputArgs.length; i++) {
-            if(outputArgs[i] == null)
-                throw new ND4JIllegalStateException("Op output arguments must not be null! Op " + op.getClass().getName());
-        }
-
-
-        val outputShapes = getOutputShapes(op.numOutputArguments());
-        val outputBuffers = getOutputBuffers(op.numOutputArguments());
-
-        cnt= 0;
-        for (val out: outputArgs) {
-            if(out.isEmpty()){
-                outputBuffers.put(cnt, null);
-            } else {
-                outputBuffers.put(cnt, out.data().addressPointer());
-            }
-            outputShapes.put(cnt++, out.shapeInfoDataBuffer().addressPointer());
-        }
-
-        val iArgs = op.numIArguments() > 0 ? getLongPointerFrom(iArgsPointer,op.numIArguments()) : null;
-        val tArgs = op.numTArguments() > 0 ? getDoublePointerFrom(tArgsPointer,op.numTArguments()) : null;
-        val bArgs = op.numBArguments() > 0 ? getBooleanPointerFrom(bArgsPointer,op.numBArguments()) : null;
-
-        cnt = 0;
-        val iArgs1 = op.iArgs();
-        for (val i: iArgs1)
-            iArgs.put(cnt++, i);
-
-        cnt = 0;
-        val bArgs1 = op.bArgs();
-        for (val b: bArgs1)
-            bArgs.put(cnt++, b);
-
-        cnt = 0;
-        val tArgs1 = op.tArgs();
-        for (val t: tArgs1)
-            tArgs.put(cnt++, t);
-
-        val t = op.numInputArguments();
-
-        OpStatus status = OpStatus.ND4J_STATUS_OK;
-        try {
-            val code = loop.execCustomOp(
-                        null,
-                        hash,
-                        inputBuffers,
-                        inputShapes,
-                        op.numInputArguments(),
-                        outputBuffers,
-                        outputShapes,
-                        op.numOutputArguments(),
-                        tArgs, op.numTArguments(),
-                        iArgs, op.numIArguments(),
-                        bArgs, op.numBArguments(),
-                        op.isInplaceCall());
-
-                status = OpStatus.byNumber(code);
-
-                if (status != OpStatus.ND4J_STATUS_OK)
-                    throw new ND4JIllegalStateException("Failed to execute op [" + name + "] with error code [" + status +"]");
-            }catch(Exception e) {
-                val sb = new StringBuilder();
-                sb.append("Inputs: [(");
-                for( int i=0; i<inputArgs.length; i++ ){
-                    if(i > 0)
-                        sb.append("), (");
-                    sb.append(Shape.shapeToStringShort(inputArgs[i]));
-                }
-                sb.append(")]. Outputs: [(");
-                for( int i=0; i<outputArgs.length; i++){
-                    if(i > 0)
-                        sb.append("), (");
-                    sb.append(Shape.shapeToStringShort(outputArgs[i]));
-                }
-                sb.append(")]. tArgs: ");
-                if(op.numTArguments() > 0){
-                    sb.append(Arrays.toString(op.tArgs()));
-                } else {
-                    sb.append("-");
-                }
-                sb.append(". iArgs: ");
-                if(op.numIArguments() > 0){
-                    sb.append(Arrays.toString(op.iArgs()));
-                } else {
-                    sb.append("-");
-                }
-                if(op instanceof DifferentialFunction){
-                    String n = ((DifferentialFunction) op).getOwnName();
-                    if(n != null && !n.equals(op.opName())){
-                        sb.append(". Op own name: \"").append(n).append("\"");
-                    }
-                }
-                log.error("Failed to execute op " + op.opName() + ". Attempted to execute with " +
-                                String.valueOf(op.numInputArguments()) + " inputs, " +
-                                String.valueOf(op.numOutputArguments()) + " outputs, "+
-                                String.valueOf(op.numTArguments()) + " targs and " +
-                                String.valueOf(op.numIArguments()) + " iargs. " +
-                                sb.toString() +
-                " - Please see above message (printed out from c++) for a possible cause of error.");
-                throw e;
-        }
-
-        profilingConfigurableHookOut(op, st);
-
-        return op.outputArguments();
- */
     }
 
     protected LongShapeDescriptor getShapeFromPointer(LongPointer ptr) {
@@ -1870,6 +1776,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 ptrptr = loop.calculateOutputShapes2(null,
                         hash, inputBuffers, inputShapes, op.numInputArguments(), tArgs,
                         op.numTArguments(), iArgs, op.numIArguments(), bArgs, op.numBArguments());
+
+                if (loop.lastErrorCode() != 0)
+                    throw new RuntimeException(loop.lastErrorMessage());
             } catch (Throwable t){
                 StringBuilder sb = new StringBuilder();
                 sb.append("Inputs: [(");
@@ -1892,6 +1801,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         " - Please see above message (printed out from c++) for a possible cause of error.");
                 throw t;
             }
+
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
 
             if (ptrptr == null)
                 throw new RuntimeException();
@@ -1929,6 +1841,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public void registerGraph(long id, Pointer graph) {
          loop.registerGraph(null, id, graph);
+
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
     }
 
     @Override
@@ -1952,7 +1867,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         val newMap = new LinkedHashMap<String, INDArray>();
 
-            OpaqueVariablesSet result = loop.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+        OpaqueVariablesSet result = loop.executeStoredGraph(null, id, ptrBuffers, ptrShapes, ptrIndices, map.size());
+
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
 
             OpStatus status = OpStatus.byNumber(loop.getVariablesSetStatus(result));
 
@@ -1996,6 +1914,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public void forgetGraph(long id) {
         loop.unregisterGraph(null, id);
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
     }
 
     /**
@@ -2055,6 +1975,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 array.data().addressPointer(), (LongPointer) tadX.getFirst().addressPointer(), (LongPointer) tadX.getSecond().addressPointer(), null, null, null,
                 updates.data().addressPointer(), (LongPointer) tadY.getFirst().addressPointer(), (LongPointer) tadY.getSecond().addressPointer(), null, null, null,
                 (IntPointer) indices.data().addressPointer(), null);
+
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
     }
 
     @Override
@@ -2078,6 +2001,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
 
             val status = loop.execCustomOp2(null, op.opHash(), context.contextPointer());
+
+            if (loop.lastErrorCode() != 0)
+                throw new RuntimeException(loop.lastErrorMessage());
+
             if (status != 0)
                 throw new RuntimeException("Op [" + op.opName() + "] execution failed");
 
@@ -2155,6 +2082,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         loop.inspectArray(null, array.data().addressPointer(), (LongPointer) array.shapeInfoDataBuffer().addressPointer(), null, null, debugInfo);
 
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
         return INDArrayStatistics.builder()
                 .minValue(debugInfo._minValue())
                 .maxValue(debugInfo._maxValue())
@@ -2171,6 +2101,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public DataBuffer createShapeInfo(long[] shape, long[] stride, long elementWiseStride, char order, DataType dtype, boolean empty) {
         OpaqueConstantDataBuffer dbf = loop.shapeBuffer(shape.length, new LongPointer(shape), new LongPointer(stride), dtype.toInt(), order, elementWiseStride, empty);
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
 
         val result = new LongBuffer(loop.getConstantDataBufferPrimary(dbf), Shape.shapeInfoLength(shape.length));
 
@@ -2182,6 +2114,9 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
     @Override
     public TadPack tadShapeInfoAndOffsets(INDArray array, int[] dimension) {
         OpaqueTadPack pack = loop.tadOnlyShapeInfo((LongPointer) array.shapeInfoDataBuffer().addressPointer(), new IntPointer(dimension), dimension.length);
+
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
 
         val tadShape = new LongBuffer(loop.getPrimaryShapeInfo(pack), loop.getShapeInfoLength(pack));
         val tadOffsets = new LongBuffer(loop.getPrimaryOffsets(pack), loop.getNumberOfTads(pack));
@@ -2205,11 +2140,19 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public String runLightBenchmarkSuit(boolean printOut) {
-        return loop.runLightBenchmarkSuit(printOut);
+        val s = loop.runLightBenchmarkSuit(printOut);
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
+        return s;
     }
 
     @Override
     public String runFullBenchmarkSuit(boolean printOut) {
-        return loop.runFullBenchmarkSuit(printOut);
+        val s = loop.runFullBenchmarkSuit(printOut);
+        if (loop.lastErrorCode() != 0)
+            throw new RuntimeException(loop.lastErrorMessage());
+
+        return s;
     }
 }

@@ -1343,6 +1343,26 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testSegmentMean(){
+        INDArray x = Nd4j.linspace(DataType.FLOAT, 1, 18, 1).reshape(6, 3);
+        INDArray segmentIds = Nd4j.createFromArray(0, 0, 1, 1, 2, 2);
+
+        INDArray out = Nd4j.create(DataType.FLOAT, 3, 3);
+
+        Nd4j.exec(DynamicCustomOp.builder("segment_mean")
+                .addInputs(x, segmentIds)
+                .addOutputs(out)
+                .build());
+
+        INDArray exp = out.like();
+        exp.putRow(0, x.getRow(0).add(x.getRow(1)).muli(0.5));
+        exp.putRow(1, x.getRow(2).add(x.getRow(3)).muli(0.5));
+        exp.putRow(2, x.getRow(4).add(x.getRow(5)).muli(0.5));
+
+        assertEquals(exp, out);
+    }
+
+    @Test
     public void testSequenceMask() {
         OpValidationSuite.ignoreFailing();  //2018-01-09: output datatype issue?
         SameDiff sameDiff = SameDiff.create();
@@ -1597,21 +1617,6 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray arr2 = Nd4j.concat(0, arr, arr);  // (1, 4), (1, 4) -> (2, 4)
         INDArray expected = Nd4j.concat(1, arr2, arr2);  // (2, 4), (2, 4) -> (2, 8)
         assertEquals(expected, result.eval());
-    }
-
-    @Test
-    public void testBroadcast() {
-        OpValidationSuite.ignoreFailing();
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.rand(3, 4));
-        SDVariable broadcast = sd.f().broadcast(in, 3, 4, 5);
-
-        INDArray out = sd.execAndEndResult();
-        assertArrayEquals(new long[]{3, 4, 5}, out.shape());
-
-        for (int i = 0; i < 5; i++) {
-            assertEquals(in.getArr(), out.get(all(), all(), point(i)));
-        }
     }
 
 
@@ -2110,6 +2115,38 @@ public class ShapeOpValidation extends BaseOpValidation {
     }
 
     @Test
+    public void testConcatEmpty2(){
+        INDArray empty10a = Nd4j.create(DataType.INT, 1, 0);
+        INDArray empty10b = Nd4j.create(DataType.INT, 1, 0);
+
+        DynamicCustomOp op = DynamicCustomOp.builder("concat")
+                .addInputs(empty10a, empty10b)
+                .addIntegerArguments(0) //axis = 0
+                .build();
+
+        List<LongShapeDescriptor> l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+        assertArrayEquals(new long[]{2, 0}, l.get(0).getShape());
+        assertEquals(DataType.INT, l.get(0).dataType());
+
+        op.addOutputArgument(Nd4j.create(DataType.INT, 2, 0));
+        Nd4j.exec(op);
+
+
+        op = DynamicCustomOp.builder("concat")
+                .addInputs(empty10a, empty10b)
+                .addIntegerArguments(1) //axis = 1
+                .build();
+        l = op.calculateOutputShape();
+        assertEquals(1, l.size());
+        assertTrue(l.get(0).isEmpty());
+        assertArrayEquals(new long[]{1, 0}, l.get(0).getShape());
+        op.addOutputArgument(Nd4j.create(DataType.INT, 1, 0));
+        Nd4j.exec(op);
+    }
+
+    @Test
     public void testEmptyGather(){
         /*
         tf.reset_default_graph()
@@ -2434,4 +2471,5 @@ public class ShapeOpValidation extends BaseOpValidation {
                 .addInputs(Nd4j.createFromArray(1, 0))
                 .build();
     }
+
 }

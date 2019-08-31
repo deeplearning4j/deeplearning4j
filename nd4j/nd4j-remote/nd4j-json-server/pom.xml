@@ -123,45 +123,14 @@
       <artifactId>activation</artifactId>
       <version>1.1</version>
     </dependency>
+
+    <dependency>
+      <groupId>com.google.code.gson</groupId>
+      <artifactId>gson</artifactId>
+      <version>${gson.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
-
-
-  <profiles>
-    <profile>
-      <id>nd4j-tests-cpu</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.nd4j</groupId>
-          <artifactId>nd4j-native</artifactId>
-          <version>${project.version}</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-
-    <profile>
-      <id>nd4j-tests-cuda</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-      </activation>
-      <dependencies>
-        <dependency>
-          <groupId>org.nd4j</groupId>
-          <artifactId>nd4j-cuda-10.1</artifactId>
-          <version>${project.version}</version>
-          <scope>test</scope>
-        </dependency>
-      </dependencies>
-    </profile>
-
-    <profile>
-      <id>testresources</id>
-    </profile>
-
-  </profiles>
 
   <build>
     <plugins>
@@ -175,4 +144,34 @@
       </plugin>
     </plugins>
   </build>
+
+  <profiles>
+    <profile>
+      <id>nd4j-tests-cpu</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.nd4j</groupId>
+          <artifactId>nd4j-native</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>nd4j-tests-cuda</id>
+      <dependencies>
+        <dependency>
+          <groupId>org.nd4j</groupId>
+          <artifactId>nd4j-cuda-10.1</artifactId>
+          <version>${project.version}</version>
+          <scope>test</scope>
+        </dependency>
+      </dependencies>
+    </profile>
+
+    <profile>
+      <id>testresources</id>
+    </profile>
+  </profiles>
 </project>

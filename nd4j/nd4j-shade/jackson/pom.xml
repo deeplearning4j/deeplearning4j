@@ -32,6 +32,79 @@
         <skipTestResourceEnforcement>true</skipTestResourceEnforcement>
     </properties>
 
+
+
+    <dependencies>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+            <!-- Without optional=true, users will still be able to import this dependency and compile, yet will get a NoClassDefFoundError at runtime -->
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.databind.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+            <version>${jackson.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-xml</artifactId>
+            <version>${jackson.version}</version>
+            <optional>true</optional>
+
+            <!-- Exclude Jaxb annotation module to avoid issues with Spring framework tools.
+                See DL4J Issue: https://github.com/deeplearning4j/deeplearning4j/issues/2459 -->
+            <exclusions>
+                <exclusion>
+                    <artifactId>jackson-module-jaxb-annotations</artifactId>
+                    <groupId>com.fasterxml.jackson.module</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.datatype</groupId>
+            <artifactId>jackson-datatype-joda</artifactId>
+            <version>${jackson.version}</version>
+            <optional>true</optional>
+        </dependency>
+
+        <!-- Manually promote transitive dependencies to direct also. Optional fixes one issue, but makes all transitive essentially provided scope -->
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-annotations</artifactId>
+            <version>${jackson.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.yaml</groupId>
+            <artifactId>snakeyaml</artifactId>
+            <version>${shaded.snakeyaml.version}</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>org.codehaus.woodstox</groupId>
+            <artifactId>stax2-api</artifactId>
+            <version>3.1.4</version>
+            <optional>true</optional>
+        </dependency>
+        <dependency>
+            <groupId>com.fasterxml.woodstox</groupId>
+            <artifactId>woodstox-core</artifactId>
+            <version>5.1.0</version>
+            <optional>true</optional>
+        </dependency>
+
+    </dependencies>
+
+
     <profiles>
       <profile>
         <id>custom-lifecycle</id>
@@ -139,6 +212,9 @@
                         <includes>
                             <include>com.fasterxml.jackson:*</include>
                             <include>com.fasterxml.jackson.*:*</include>
+                            <include>com.fasterxml.woodstox:*</include>
+                            <include>org.yaml*:*</include>
+                            <include>org.codehaus*:*</include>
                         </includes>
                     </artifactSet>
 
@@ -147,6 +223,20 @@
                         <relocation>
                             <pattern>com.fasterxml.jackson</pattern>
                             <shadedPattern>org.nd4j.shade.jackson</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>com.ctc.wstx</pattern>
+                            <shadedPattern>org.nd4j.shade.wstx</shadedPattern>
+                        </relocation>
+                        <!-- Snake YAML that Jackson depends on -->
+                        <relocation>
+                            <pattern>org.yaml</pattern>
+                            <shadedPattern>org.nd4j.shade.yaml</shadedPattern>
+                        </relocation>
+                        <!-- stax2-api - from jackson dataformat xml -->
+                        <relocation>
+                            <pattern>org.codehaus</pattern>
+                            <shadedPattern>org.nd4j.shade.codehaus</shadedPattern>
                         </relocation>
                     </relocations>
 
@@ -214,45 +304,4 @@
             </plugin>
         </plugins>
     </build>
-
-    <dependencies>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-databind</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-yaml</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.dataformat</groupId>
-            <artifactId>jackson-dataformat-xml</artifactId>
-            <version>${jackson.version}</version>
-
-            <!-- Exclude Jaxb annotation module to avoid issues with Spring framework tools.
-                See DL4J Issue: https://github.com/deeplearning4j/deeplearning4j/issues/2459 -->
-            <exclusions>
-                <exclusion>
-                    <artifactId>jackson-module-jaxb-annotations</artifactId>
-                    <groupId>com.fasterxml.jackson.module</groupId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-joda</artifactId>
-            <version>${jackson.version}</version>
-        </dependency>
-
-
-
-    </dependencies>
-
 </project>

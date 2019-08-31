@@ -20,11 +20,26 @@
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java</artifactId>
             <version>3.8.0</version>
+            <!-- Without optional=true, users will still be able to import this dependency and compile, yet will get a NoClassDefFoundError at runtime -->
+            <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>com.google.protobuf</groupId>
             <artifactId>protobuf-java-util</artifactId>
             <version>3.8.0</version>
+            <optional>true</optional>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.google.guava</groupId>
+                    <artifactId>guava</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>26.0-android</version>
+            <optional>true</optional>
         </dependency>
     </dependencies>
 
@@ -150,6 +165,7 @@
                         <includes>
                             <include>com.google.protobuf:*</include>
                             <include>com.google.protobuf.*:*</include>
+                            <include>com.google.guava:*</include>
                         </includes>
                     </artifactSet>
 
@@ -158,6 +174,11 @@
                         <relocation>
                             <pattern>com.google.protobuf</pattern>
                             <shadedPattern>org.nd4j.shade.protobuf</shadedPattern>
+                        </relocation>
+                        <!-- Guava dependencies -->
+                        <relocation>
+                            <pattern>com.google.common</pattern>
+                            <shadedPattern>org.nd4j.shade.protobuf.common</shadedPattern>
                         </relocation>
                     </relocations>
 

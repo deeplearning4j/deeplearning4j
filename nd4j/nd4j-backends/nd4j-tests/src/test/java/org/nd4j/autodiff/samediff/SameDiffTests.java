@@ -53,7 +53,6 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
-import org.nd4j.linalg.api.ops.impl.layers.Linear;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.LocalResponseNormalizationConfig;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
@@ -519,39 +518,6 @@ public class SameDiffTests extends BaseNd4jTest {
         val placeholder = sd.placeHolder("somevar", DataType.FLOAT, 2, 2);
         assertTrue(sd.isPlaceHolder(placeholder.getVarName()));
         sd.resolveVariablesWith(Collections.singletonMap(placeholder.getVarName(), Nd4j.linspace(1, 4, 4)));
-    }
-
-
-    @Test
-    public void testLinearModule() {
-        int nIn = 5;
-        Linear linear = Linear.execBuilder()
-                .nIn(nIn)
-                .nOut(4)
-                .weightInitScheme(new UniformInitScheme('f', nIn))
-                .biasWeightInitScheme(new ZeroInitScheme('f'))
-                .build();
-        linear.exec(Nd4j.linspace(1, 20, 20).reshape(4, 5));
-        assertEquals(1, linear.numOutputArguments());
-
-    }
-
-
-    @Test
-    public void testLinearModule2() {
-        Linear linear = Linear.execBuilder()
-                .nIn(3)
-                .nOut(2)
-                .weightInitScheme(new OneInitScheme('f'))
-                .biasWeightInitScheme(new ZeroInitScheme('f'))
-                .build();
-        linear.exec(Nd4j.linspace(1, 6, 6).reshape(2, 3));
-        INDArray assertion = Nd4j.create(new double[][]{
-                {6, 6},
-                {15, 15}
-        });
-        assertEquals(assertion, linear.outputArguments()[0]);
-
     }
 
 
@@ -3576,5 +3542,25 @@ public class SameDiffTests extends BaseNd4jTest {
         val e = Nd4j.createFromArray(1.f, 2.f, 3.f);
 
         assertEquals(e, mod.eval());
+    }
+
+    @Test
+    public void castShapeTest1(){
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.constant(Nd4j.createFromArray(1, 2, 3, 4));
+        SDVariable casted = x.castTo(DataType.FLOAT);
+
+        assertEquals(casted.dataType(), DataType.FLOAT);
+    }
+
+    @Test
+    @Ignore // casted shape is null
+    public void castShapeTestEmpty(){
+        SameDiff sd = SameDiff.create();
+        SDVariable x = sd.constant(Nd4j.empty(DataType.INT));
+        SDVariable casted = x.castTo(DataType.FLOAT);
+
+        assertEquals(casted.dataType(), DataType.FLOAT);
+        assertTrue(casted.getShapeDescriptor().isEmpty());
     }
 }

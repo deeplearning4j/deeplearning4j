@@ -467,6 +467,60 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 // #endif //DEV_TESTS_TADPACK_H
 
 
+// Parsed from execution/ErrorReference.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef DEV_TESTS_ERRORREFERENCE_H
+// #define DEV_TESTS_ERRORREFERENCE_H
+
+// #include <string>
+// #include <dll.h>
+    @Namespace("sd") @NoOffset public static class ErrorReference extends Pointer {
+        static { Loader.load(); }
+        /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+        public ErrorReference(Pointer p) { super(p); }
+        /** Native array allocator. Access with {@link Pointer#position(long)}. */
+        public ErrorReference(long size) { super((Pointer)null); allocateArray(size); }
+        private native void allocateArray(long size);
+        @Override public ErrorReference position(long position) {
+            return (ErrorReference)super.position(position);
+        }
+    
+        public ErrorReference() { super((Pointer)null); allocate(); }
+        private native void allocate();
+
+        public native int errorCode();
+        public native @Cast("char*") String errorMessage();
+
+        public native void setErrorCode(int errorCode);
+        public native void setErrorMessage(@StdString BytePointer message);
+        public native void setErrorMessage(@StdString String message);
+    }
+
+
+
+// #endif //DEV_TESTS_ERRORREFERENCE_H
+
+
 // Parsed from Environment.h
 
 /*******************************************************************************
@@ -687,6 +741,18 @@ bool verbose = false;
 // #include <graph/execution/LogicExecutor.h>
 // #include <graph/ResultWrapper.h>
 // #include <DebugInfo.h>
+
+/**
+ * This function returns last error code stored,
+ * @return non-zero if something bad happened
+ */
+public native int lastErrorCode();
+
+/**
+ * This function returns last error message, if last error code > 0
+ * @return
+ */
+public native @Cast("char*") String lastErrorMessage();
 
 /**
  *
@@ -1709,72 +1775,6 @@ public native void execScalarBoolTad(@Cast("Nd4jPointer*") PointerPointer extraP
                 Pointer dDimension, @Cast("Nd4jLong*") long[] dDimensionShape,
                 @Cast("Nd4jLong*") long[] tadShapeInfo, @Cast("Nd4jLong*") long[] tadOffsets,
                 @Cast("Nd4jLong*") long[] tadShapeInfoZ, @Cast("Nd4jLong*") long[] tadOffsetsZ);
-
-
-/**
-* Append an input array
-* to the end of a flat array
-* in a particular order
-* @param offset the offset of the array to start at
-* @param order the order
-* @param result the result array
-* @param resultShapeInfo the shape info for te array
-* @param input the input for the array
-* @param inputShapeInfo the shape information for that array
-*/
-public native void flatten(
-        @Cast("Nd4jPointer*") PointerPointer extraPointers,
-        int offset,
-        char order,
-        Pointer result, @Cast("Nd4jLong*") LongPointer resultShapeInfo,
-        Pointer dresult, @Cast("Nd4jLong*") LongPointer dresultShapeInfo,
-        Pointer input, @Cast("Nd4jLong*") LongPointer inputShapeInfo,
-        Pointer dinput, @Cast("Nd4jLong*") LongPointer dinputShapeInfo);
-public native void flatten(
-        @Cast("Nd4jPointer*") PointerPointer extraPointers,
-        int offset,
-        char order,
-        Pointer result, @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
-        Pointer dresult, @Cast("Nd4jLong*") LongBuffer dresultShapeInfo,
-        Pointer input, @Cast("Nd4jLong*") LongBuffer inputShapeInfo,
-        Pointer dinput, @Cast("Nd4jLong*") LongBuffer dinputShapeInfo);
-public native void flatten(
-        @Cast("Nd4jPointer*") PointerPointer extraPointers,
-        int offset,
-        char order,
-        Pointer result, @Cast("Nd4jLong*") long[] resultShapeInfo,
-        Pointer dresult, @Cast("Nd4jLong*") long[] dresultShapeInfo,
-        Pointer input, @Cast("Nd4jLong*") long[] inputShapeInfo,
-        Pointer dinput, @Cast("Nd4jLong*") long[] dinputShapeInfo);
-
-public native void concat(
-        @Cast("Nd4jPointer*") PointerPointer extraPointers,
-        int dimension,
-        int numArrays,
-        @Cast("Nd4jPointer*") PointerPointer data, @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-        @Cast("Nd4jPointer*") PointerPointer ddata, @Cast("Nd4jPointer*") PointerPointer dinputShapeInfo,
-        Pointer result, @Cast("Nd4jLong*") LongPointer resultShapeInfo,
-        Pointer dresult, @Cast("Nd4jLong*") LongPointer dresultShapeInfo,
-        @Cast("Nd4jPointer*") PointerPointer tadPointers, @Cast("Nd4jPointer*") PointerPointer offsetPointers);
-public native void concat(
-        @Cast("Nd4jPointer*") PointerPointer extraPointers,
-        int dimension,
-        int numArrays,
-        @Cast("Nd4jPointer*") PointerPointer data, @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-        @Cast("Nd4jPointer*") PointerPointer ddata, @Cast("Nd4jPointer*") PointerPointer dinputShapeInfo,
-        Pointer result, @Cast("Nd4jLong*") LongBuffer resultShapeInfo,
-        Pointer dresult, @Cast("Nd4jLong*") LongBuffer dresultShapeInfo,
-        @Cast("Nd4jPointer*") PointerPointer tadPointers, @Cast("Nd4jPointer*") PointerPointer offsetPointers);
-public native void concat(
-        @Cast("Nd4jPointer*") PointerPointer extraPointers,
-        int dimension,
-        int numArrays,
-        @Cast("Nd4jPointer*") PointerPointer data, @Cast("Nd4jPointer*") PointerPointer inputShapeInfo,
-        @Cast("Nd4jPointer*") PointerPointer ddata, @Cast("Nd4jPointer*") PointerPointer dinputShapeInfo,
-        Pointer result, @Cast("Nd4jLong*") long[] resultShapeInfo,
-        Pointer dresult, @Cast("Nd4jLong*") long[] dresultShapeInfo,
-        @Cast("Nd4jPointer*") PointerPointer tadPointers, @Cast("Nd4jPointer*") PointerPointer offsetPointers);
-
 
 public native void specialConcat(
         @Cast("Nd4jPointer*") PointerPointer extraPointers,
@@ -3594,6 +3594,7 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
 // #include <op_enums.h>
 // #include <ops/BroadcastOpsTuple.h>
 // #include <ops/BroadcastBoolOpsTuple.h>
+// #include <ops/BroadcastIntOpsTuple.h>
 // #include <array/ExtraArguments.h>
 // #include <Status.h>
 // #include <ShapeDescriptor.h>
@@ -16496,15 +16497,18 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * creates identity 2D matrix or batch of identical 2D identity matrices
-         * 
+         *
          * Input array:
          * provide some array - in any case operation simply neglects it
-         * 
+         *
+         * Input float argument (if passed):
+         * TArgs[0] - type of elements of output array, default value is 5 (float)
+         *
          * Input integer arguments:
          * IArgs[0]       - order of output identity matrix, 99 -> 'c'-order, 102 -> 'f'-order
          * IArgs[1]       - the number of rows in output inner-most 2D identity matrix
          * IArgs[2]       - optional, the number of columns in output inner-most 2D identity matrix, if this argument is not provided then it is taken to be equal to number of rows
-         * IArgs[3,4,...] - optional, shape of batch, output matrix will have leading batch dimensions of this shape         
+         * IArgs[3,4,...] - optional, shape of batch, output matrix will have leading batch dimensions of this shape
          */
 //         #if NOT_EXCLUDED(OP_eye)
         @Namespace("nd4j::ops") public static class eye extends DeclarableCustomOp {
@@ -16598,10 +16602,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * clip a list of given tensors with given average norm when needed
-         * 
+         *
          * Input:
          *    a list of tensors (at least one)
-         * 
+         *
          * Input floating point argument:
          *    clip_norm - a value that used as threshold value and norm to be used
          *
@@ -16749,12 +16753,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
         /**
          * returns histogram (as 1D array) with fixed bins width
-         * 
+         *
          * Input arrays:
-         * - input array with elements to be binned into output histogram 
+         * - input array with elements to be binned into output histogram
          * - range array with first element being bottom limit and second element being top limit of histogram,
              please note that input_value <= range[0] will be mapped to histogram[0], input_value >= range[1] will be mapped to histogram[-1]
-         * 
+         *
          * Input integer arguments:
          *    nbins (optional) - number of histogram bins, default value is 100
          */
@@ -21822,7 +21826,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * \tparam T
          */
 //         #if NOT_EXCLUDED(OP_shift_bits)
-        @Namespace("nd4j::ops") public static class shift_bits extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class shift_bits extends BroadcastableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public shift_bits(Pointer p) { super(p); }
@@ -21835,7 +21839,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public shift_bits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
 
@@ -21847,7 +21850,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * \tparam T
          */
 //         #if NOT_EXCLUDED(OP_rshift_bits)
-        @Namespace("nd4j::ops") public static class rshift_bits extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class rshift_bits extends BroadcastableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public rshift_bits(Pointer p) { super(p); }
@@ -21860,7 +21863,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public rshift_bits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
 
@@ -21872,7 +21874,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * \tparam T
          */
 //         #if NOT_EXCLUDED(OP_cyclic_shift_bits)
-        @Namespace("nd4j::ops") public static class cyclic_shift_bits extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class cyclic_shift_bits extends BroadcastableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public cyclic_shift_bits(Pointer p) { super(p); }
@@ -21885,7 +21887,6 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         
                                                                                     public cyclic_shift_bits() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
-                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
 //         #endif
 
@@ -21897,7 +21898,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * \tparam T
          */
 //         #if NOT_EXCLUDED(OP_cyclic_rshift_bits)
-        @Namespace("nd4j::ops") public static class cyclic_rshift_bits extends DeclarableOp {
+        @Namespace("nd4j::ops") public static class cyclic_rshift_bits extends BroadcastableOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
             public cyclic_rshift_bits(Pointer p) { super(p); }
@@ -21909,6 +21910,30 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public cyclic_rshift_bits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
+
+        /**
+         * This operation returns hamming distance based on bits
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_bits_hamming_distance)
+        @Namespace("nd4j::ops") public static class bits_hamming_distance extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public bits_hamming_distance(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public bits_hamming_distance(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public bits_hamming_distance position(long position) {
+                return (bits_hamming_distance)super.position(position);
+            }
+        
+                                                                                    public bits_hamming_distance() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
@@ -22877,6 +22902,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 // #include <dll.h>
 // #include <pointercast.h>
+// #include <execution/ErrorReference.h>
     @Namespace("nd4j") @NoOffset public static class ContextBuffers extends Pointer {
         static { Loader.load(); }
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
@@ -22911,6 +22937,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         public native void setReductionBuffer(Pointer pointer);
         public native void setScalarBuffer(Pointer pointer);
         public native void setAllocationBuffer(Pointer pointer);
+
+        public native ErrorReference errorReference();
 
         public native void triggerOwnership(@Cast("bool") boolean isOwner);
 
@@ -22961,6 +22989,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <vector>
 // #include <mutex>
 // #include <execution/ContextBuffers.h>
+// #include <execution/ErrorReference.h>
 
 @Namespace("nd4j") @NoOffset public static class LaunchContext extends Pointer {
     static { Loader.load(); }
@@ -22985,9 +23014,12 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
     	public native int getDeviceID();
     	public native void setDeviceID(int deviceID);
+        public native ErrorReference errorReference();
 
     	public static native @Cast("bool") boolean isInitialized();
     	public static native void releaseBuffers();
+
+
 	    public static native LaunchContext defaultContext();
 
 

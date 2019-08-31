@@ -23,8 +23,8 @@ import org.datavec.api.writable.Writable;
 
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
+import static org.nd4j.shade.guava.base.Preconditions.checkArgument;
+import static org.nd4j.shade.guava.base.Preconditions.checkNotNull;
 
 /**
  * A variant of {@link DispatchOp} that for each operation, tests the input list of {@Writable} elements for a {@link Condition},

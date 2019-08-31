@@ -82,12 +82,4 @@ public class Linspace extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> gradients){
         return Arrays.asList(f().zerosLike(arg(0)), f().zerosLike(arg(1)), f().zerosLike(arg(2)));
     }
-
-    @Override
-    public List<LongShapeDescriptor> calculateOutputShape(){
-        INDArray l = arg(2).getArr();
-        if(l == null)
-            return Collections.emptyList();
-        return Collections.singletonList(LongShapeDescriptor.fromShape(new long[]{l.getLong(0)}, dataType));
-    }
 }

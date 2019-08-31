@@ -100,20 +100,7 @@ public class IndexingTests extends BaseNd4jTest {
         INDArray vals = Nd4j.valueArrayOf(new long[] {2,2,2,2},5, DataType.DOUBLE);
         assertEquals(vals,x);
     }
-
-
-    @Test @Ignore
-    public void testIndexGetDuplicate() {
-        List<List<Integer>> indices = new ArrayList<>();
-        indices.add(Arrays.asList(0,0));
-        INDArray linspace = Nd4j.linspace(1,16,16, DataType.DOUBLE).reshape('c',2,2,2,2).castTo(DataType.DOUBLE);
-        INDArray get = linspace.get(indices);
-        INDArray assertion = Nd4j.create(new double[] {1, 2, 3, 4, 5, 6, 7, 8, 1, 2, 3, 4, 5, 6, 7, 8}).reshape('c',2,2,2,2).castTo(DataType.DOUBLE);
-        assertEquals(assertion,get);
-    }
-
-
-
+    
     @Test
     public void testGetScalar() {
         INDArray arr = Nd4j.linspace(1, 5, 5, DataType.DOUBLE);

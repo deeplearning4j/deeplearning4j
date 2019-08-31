@@ -133,23 +133,8 @@ import org.nd4j.linalg.api.ops.impl.reduce3.EuclideanDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.HammingDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.JaccardDistance;
 import org.nd4j.linalg.api.ops.impl.reduce3.ManhattanDistance;
-import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
-import org.nd4j.linalg.api.ops.impl.scalar.LogX;
+import org.nd4j.linalg.api.ops.impl.scalar.*;
 import org.nd4j.linalg.api.ops.impl.scalar.Pow;
-import org.nd4j.linalg.api.ops.impl.scalar.PowDerivative;
-import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
-import org.nd4j.linalg.api.ops.impl.scalar.Relu6;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarAdd;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarDivision;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarFMod;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMax;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMin;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarMultiplication;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseDivision;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarReverseSubtraction;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarSet;
-import org.nd4j.linalg.api.ops.impl.scalar.ScalarSubtraction;
-import org.nd4j.linalg.api.ops.impl.scalar.Step;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarEquals;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThan;
 import org.nd4j.linalg.api.ops.impl.scalar.comparison.ScalarGreaterThanOrEqual;
@@ -163,7 +148,6 @@ import org.nd4j.linalg.api.ops.impl.scatter.ScatterMin;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterMul;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterSub;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
-import org.nd4j.linalg.api.ops.impl.shape.Broadcast;
 import org.nd4j.linalg.api.ops.impl.shape.Concat;
 import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
 import org.nd4j.linalg.api.ops.impl.shape.Cross;
@@ -790,20 +774,20 @@ public class DifferentialFunctionFactory {
         return new StandardizeBp(sameDiff(), stdInput, gradient, dimensions).outputVariable();
     }
 
-    public SDVariable layerNorm(SDVariable input, SDVariable gain, SDVariable bias, int... dimensions) {
-        return new LayerNorm(sameDiff(), input, gain, bias, dimensions).outputVariable();
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, SDVariable bias, boolean channelsFirst, int... dimensions) {
+        return new LayerNorm(sameDiff(), input, gain, bias, channelsFirst, dimensions).outputVariable();
     }
 
-    public SDVariable[] layerNormBp(SDVariable input, SDVariable gain, SDVariable bias, SDVariable gradient, int... dimensions) {
-        return new LayerNormBp(sameDiff(), input, gain, bias, gradient, dimensions).outputVariables();
+    public SDVariable[] layerNormBp(SDVariable input, SDVariable gain, SDVariable bias, SDVariable gradient, boolean channelsFirst, int... dimensions) {
+        return new LayerNormBp(sameDiff(), input, gain, bias, gradient, channelsFirst, dimensions).outputVariables();
     }
 
-    public SDVariable layerNorm(SDVariable input, SDVariable gain, int... dimensions) {
-        return new LayerNorm(sameDiff(), input, gain, dimensions).outputVariable();
+    public SDVariable layerNorm(SDVariable input, SDVariable gain, boolean channelsFirst, int... dimensions) {
+        return new LayerNorm(sameDiff(), input, gain, channelsFirst, dimensions).outputVariable();
     }
 
-    public SDVariable[] layerNormBp(SDVariable input, SDVariable gain, SDVariable gradient, int... dimensions) {
-        return new LayerNormBp(sameDiff(), input, gain, gradient, dimensions).outputVariables();
+    public SDVariable[] layerNormBp(SDVariable input, SDVariable gain, SDVariable gradient, boolean channelsFirst, int... dimensions) {
+        return new LayerNormBp(sameDiff(), input, gain, gradient, channelsFirst, dimensions).outputVariables();
     }
 
     public SDVariable squaredNorm(SDVariable input, boolean keepDims, int... dimensions) {
@@ -1235,19 +1219,19 @@ public class DifferentialFunctionFactory {
         return new Xor(sameDiff(), ix, iy).outputVariable();
     }
 
-    public SDVariable shift(SDVariable ix, int shift) {
+    public SDVariable shift(SDVariable ix, SDVariable shift) {
         return new ShiftBits(sameDiff(), ix, shift).outputVariable();
     }
 
-    public SDVariable rshift(SDVariable ix, int shift) {
+    public SDVariable rshift(SDVariable ix, SDVariable shift) {
         return new RShiftBits(sameDiff(), ix, shift).outputVariable();
     }
 
-    public SDVariable rotl(SDVariable ix, int shift) {
+    public SDVariable rotl(SDVariable ix, SDVariable shift) {
         return new CyclicShiftBits(sameDiff(), ix, shift).outputVariable();
     }
 
-    public SDVariable rotr(SDVariable ix, int shift) {
+    public SDVariable rotr(SDVariable ix, SDVariable shift) {
         return new CyclicRShiftBits(sameDiff(), ix, shift).outputVariable();
     }
 
@@ -1339,6 +1323,10 @@ public class DifferentialFunctionFactory {
 
     public SDVariable relu(SDVariable iX, double cutoff) {
         return new RectifiedLinear(sameDiff(), iX, false, cutoff).outputVariable();
+    }
+
+    public SDVariable reluDerivative(SDVariable input, SDVariable grad){
+        return new RectifiedLinearDerivative(sameDiff(), input, grad).outputVariable();
     }
 
     public SDVariable relu6(SDVariable iX, double cutoff) {
@@ -1448,14 +1436,6 @@ public class DifferentialFunctionFactory {
 
     public SDVariable matrixInverse(SDVariable in){
         return new MatrixInverse(sameDiff(), in, false).outputVariable();
-    }
-
-    public SDVariable broadcast(SDVariable iX, int... shape) {
-        return broadcast(iX, ArrayUtil.toLongArray(shape));
-    }
-
-    public SDVariable broadcast(SDVariable iX, long... shape) {
-        return new Broadcast(sameDiff(), iX, shape).outputVariable();
     }
 
     public SDVariable onehot(SDVariable indices, int depth, int axis, double on, double off, DataType dataType) {

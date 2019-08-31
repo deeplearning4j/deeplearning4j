@@ -1112,12 +1112,12 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testLayerNorm() {
-        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
-        final INDArray gain = Nd4j.rand(new int[]{1, 4});
-        final INDArray bias = Nd4j.rand(new int[]{1, 4});
+        final INDArray gain = Nd4j.rand(DataType.DOUBLE, 4);
+        final INDArray bias = Nd4j.rand(DataType.DOUBLE, 4);
         final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
         final INDArray expOut = res.norm1();
 
@@ -1126,38 +1126,70 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);
         SDVariable sdBias = sd.var("bias", bias);
-        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, axis);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, true, axis);
         out.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
                 .expectedOutput("out", expOut)
                 .gradientCheck(true));
-        assertNull(err, err);
+        assertNull(err);
     }
 
     @Test
+    public void testLayerNorm4d() {
+        int mb = 3;
+        int ch = 4;
+        for(boolean nchw : new boolean[]{true, false}) {
+            double eps = 0.0;
+            INDArray x = Nd4j.rand(DataType.DOUBLE, nchw ? new long[]{mb, ch, 8, 8} : new long[]{mb, 8, 8, ch});
+            INDArray gain4d = Nd4j.rand(DataType.DOUBLE, nchw ? new long[]{1, ch, 1, 1} : new long[]{1, 1, 1, ch});
+            INDArray bias4d = Nd4j.rand(DataType.DOUBLE, nchw ? new long[]{1, ch, 1, 1} : new long[]{1, 1, 1, ch});
+            INDArray mean = x.mean(true, 1, 2, 3);
+            INDArray std = Transforms.sqrt(x.var(false,1,2,3).addi(eps)).reshape(mb, 1, 1, 1);
+
+            INDArray standardized = x.sub(mean).div(std);
+            INDArray exp = standardized.mul(gain4d).add(bias4d);
+
+            final int[] axis = new int[]{1, 2, 3};
+            SameDiff sd = SameDiff.create();
+            SDVariable sdInput = sd.var("input", x);
+            SDVariable sdGain = sd.var("gain", gain4d.reshape(ch));
+            SDVariable sdBias = sd.var("bias", bias4d.reshape(ch));
+            SDVariable out = sd.nn.layerNorm("layernorm", sdInput, sdGain, sdBias, nchw, axis);
+
+            SDVariable loss = sd.loss.l2Loss(out);
+
+            String err = OpValidation.validate(new TestCase(sd)
+                    .expectedOutput("layernorm", exp)
+                    .gradientCheck(true));
+            assertNull(err);
+        }
+    }
+
+
+    @Test
     public void testLayerNormOP() {
-        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
-        final INDArray gain = Nd4j.rand(new int[]{1, 4});
-        final INDArray bias = Nd4j.rand(new int[]{1, 4});
+        final INDArray gain = Nd4j.rand(DataType.DOUBLE, 4);
+        final INDArray bias = Nd4j.rand(DataType.DOUBLE, 4);
         final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
 
         final INDArray output = Nd4j.zerosLike(res);
-        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, bias, output, 1));
+        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, bias, output, true, 1));
 
         assertEquals(res, output);
     }
 
     @Test
     public void testLayerNormNoBias() {
-        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
-        final INDArray gain = Nd4j.rand(new int[]{1, 4});
+        final INDArray gain = Nd4j.rand(DataType.DOUBLE, 4);
         final INDArray res = standardized.mulRowVector(gain);
         final INDArray expOut = res.norm1();
 
@@ -1165,7 +1197,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);
-        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, axis);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, true, axis);
         out.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -1176,22 +1208,22 @@ public class LayerOpValidation extends BaseOpValidation {
 
     @Test
     public void testLayerNormOPNoBias() {
-        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
-        final INDArray gain = Nd4j.rand(new int[]{1, 4});
+        final INDArray gain = Nd4j.rand(DataType.DOUBLE,4);
         final INDArray res = standardized.mulRowVector(gain);
 
         final INDArray output = Nd4j.zerosLike(res);
-        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, output, 1));
+        Nd4j.getExecutioner().exec(new LayerNorm(standardized, gain, output, true, 1));
 
         assertEquals(res, output);
     }
 
     @Test
     public void testLayerNormNoDeviation() {
-        final INDArray random = Nd4j.rand(new int[]{10, 4});
+        final INDArray random = Nd4j.rand(DataType.DOUBLE, 10, 4);
         for (int i = 0; i < 4; i++) {
             random.putScalar(1,i, 7);
         }
@@ -1199,8 +1231,8 @@ public class LayerOpValidation extends BaseOpValidation {
         final INDArray standardized = random.ulike();
         Nd4j.getExecutioner().exec(new Standardize(random, standardized, 1));
 
-        final INDArray gain = Nd4j.rand(new int[]{1, 4});
-        final INDArray bias = Nd4j.rand(new int[]{1, 4});
+        final INDArray gain = Nd4j.rand(DataType.DOUBLE, 4);
+        final INDArray bias = Nd4j.rand(DataType.DOUBLE, 4);
         final INDArray res = standardized.mulRowVector(gain).addRowVector(bias);
         final INDArray expOut = res.norm1();
 
@@ -1209,7 +1241,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable sdInput = sd.var("input", standardized);
         SDVariable sdGain = sd.var("gain", gain);
         SDVariable sdBias = sd.var("bias", bias);
-        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, axis);
+        SDVariable out = sd.nn.layerNorm(sdInput, sdGain, sdBias, true, axis);
         out.norm1("out");
 
         String err = OpValidation.validate(new TestCase(sd)
@@ -1297,12 +1329,11 @@ public class LayerOpValidation extends BaseOpValidation {
     }
 
     @Test
-    @Ignore("AB 2019/06/24 - Failing: Ignored to get to all passing baseline to prevent regressions via CI - see issue #7912")
     public void testLayerNormMixedOrders(){
         Nd4j.getRandom().setSeed(12345);
         INDArray input = Nd4j.rand(DataType.DOUBLE, 3, 8).dup('f');
-        INDArray gain = Nd4j.rand(DataType.DOUBLE, 1, 8).dup('f');
-        INDArray bias = Nd4j.rand(DataType.DOUBLE, 1, 8).dup('f');
+        INDArray gain = Nd4j.rand(DataType.DOUBLE, 8).dup('f');
+        INDArray bias = Nd4j.rand(DataType.DOUBLE, 8).dup('f');
 
         INDArray outFF = Nd4j.create(DataType.DOUBLE, new long[]{3,8}, 'f');
         INDArray outCC = Nd4j.create(DataType.DOUBLE, new long[]{3,8}, 'c');

@@ -17,7 +17,6 @@
 package org.deeplearning4j.nn.layers.recurrent;
 
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -31,8 +30,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.util.OneTimeLogger;
-
-import java.util.Properties;
 
 /**
  * LSTM layer implementation.
@@ -116,10 +113,12 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
         }
 
 
-        Pair<Gradient,INDArray> p = LSTMHelpers.backpropGradientHelper(this.conf, this.layerConf().getGateActivationFn(), this.input,
+        Pair<Gradient,INDArray> p = LSTMHelpers.backpropGradientHelper(this,
+                        this.conf, this.layerConf().getGateActivationFn(), this.input,
                         recurrentWeights, inputWeights, epsilon, truncatedBPTT, tbpttBackwardLength, fwdPass, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, LSTMParamInitializer.RECURRENT_WEIGHT_KEY,
-                        LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper, workspaceMgr);
+                        LSTMParamInitializer.BIAS_KEY, gradientViews, null, false, helper, workspaceMgr,
+                        layerConf().isHelperAllowFallback());
 
         weightNoiseParams.clear();
         p.setSecond(backpropDropOutIfPresent(p.getSecond()));
@@ -161,7 +160,7 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                         this.input, recurrentWeights, inputWeights, biases, training, prevOutputActivations,
                         prevMemCellState, (training && cacheMode != CacheMode.NONE) || forBackprop, true,
                         LSTMParamInitializer.INPUT_WEIGHT_KEY, maskArray, false, helper,
-                        forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr);
+                        forBackprop ? cacheMode : CacheMode.NONE, workspaceMgr, layerConf().isHelperAllowFallback());
 
         if (training && cacheMode != CacheMode.NONE) {
             cachedFwdPass = fwd;

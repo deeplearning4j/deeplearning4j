@@ -22,17 +22,14 @@ import org.nd4j.parameterserver.model.MasterStatus;
 import org.nd4j.parameterserver.model.ServerTypeJson;
 import org.nd4j.parameterserver.model.SlaveStatus;
 import org.nd4j.parameterserver.model.SubscriberState;
+import play.BuiltInComponents;
 import play.Mode;
-import play.libs.F;
 import play.libs.Json;
-import play.mvc.Result;
+import play.routing.Router;
 import play.routing.RoutingDsl;
 import play.server.Server;
 
-import java.util.List;
-
 import static play.libs.Json.toJson;
-import static play.mvc.Controller.request;
 import static play.mvc.Results.ok;
 
 
@@ -70,74 +67,35 @@ public class StatusServer {
      */
     public static Server startServer(StatusStorage statusStorage, int statusServerPort) {
         log.info("Starting server on port " + statusServerPort);
-        RoutingDsl dsl = new RoutingDsl();
-        dsl.GET("/ids/").routeTo(new F.Function0<Result>() {
-
-            @Override
-            public Result apply() throws Throwable {
-                List<Integer> ids = statusStorage.ids();
-                return ok(toJson(ids));
-            }
-        });
-
-
-        dsl.GET("/state/:id").routeTo(new F.Function<String, Result>() {
-            @Override
-            public Result apply(String id) throws Throwable {
-                return ok(toJson(statusStorage.getState(Integer.parseInt(id))));
-            }
-        });
-
-        dsl.GET("/opType/:id").routeTo(new F.Function<String, Result>() {
-            @Override
-            public Result apply(String id) throws Throwable {
-                return ok(toJson(ServerTypeJson.builder()
-                                .type(statusStorage.getState(Integer.parseInt(id)).serverType())));
-            }
-        });
-
-
-        dsl.GET("/started/:id").routeTo(new F.Function<String, Result>() {
-            @Override
-            public Result apply(String id) throws Throwable {
-                return statusStorage.getState(Integer.parseInt(id)).isMaster()
-                                ? ok(toJson(MasterStatus.builder()
-                                                .master(statusStorage.getState(Integer.parseInt(id)).getServerState())
-                                                //note here that a responder is id + 1
-                                                .responder(statusStorage
-                                                                .getState(Integer.parseInt(id) + 1).getServerState())
-                                                .responderN(statusStorage
-                                                                .getState(Integer.parseInt(id)).getTotalUpdates())
-                                                .build()))
-                                : ok(toJson(SlaveStatus.builder()
-                                                .slave(statusStorage.getState(Integer.parseInt(id)).serverType())
-                                                .build()));
-            }
-        });
-
-
-
-        dsl.GET("/connectioninfo/:id").routeTo(new F.Function<String, Result>() {
-            @Override
-            public Result apply(String id) throws Throwable {
-                return ok(toJson(statusStorage.getState(Integer.parseInt(id)).getConnectionInfo()));
-            }
-        });
-
-        dsl.POST("/updatestatus/:id").routeTo(new F.Function<String, Result>() {
-            @Override
-            public Result apply(String id) throws Throwable {
-                SubscriberState subscriberState = Json.fromJson(request().body().asJson(), SubscriberState.class);
-                statusStorage.updateState(subscriberState);
-                return ok(toJson(subscriberState));
-            }
-        });
-
-        Server server = Server.forRouter(dsl.build(), Mode.PROD, statusServerPort);
-
-        return server;
-
+        return Server.forRouter(Mode.PROD, statusServerPort, builtInComponents -> createRouter(statusStorage, builtInComponents));
     }
 
+    protected static Router createRouter(StatusStorage statusStorage, BuiltInComponents builtInComponents){
+        RoutingDsl dsl = RoutingDsl.fromComponents(builtInComponents);
+        dsl.GET("/ids/").routingTo(request -> ok(toJson(statusStorage.ids())));
+        dsl.GET("/state/:id").routingTo((request, id) -> ok(toJson(statusStorage.getState(Integer.parseInt(id.toString())))));
+        dsl.GET("/opType/:id").routingTo((request, id) -> ok(toJson(ServerTypeJson.builder()
+                .type(statusStorage.getState(Integer.parseInt(id.toString())).serverType()))));
+        dsl.GET("/started/:id").routingTo((request, id) -> {
+            boolean isMaster = statusStorage.getState(Integer.parseInt(id.toString())).isMaster();
+            if(isMaster){
+                return ok(toJson(MasterStatus.builder().master(statusStorage.getState(Integer.parseInt(id.toString())).getServerState())
+                        //note here that a responder is id + 1
+                        .responder(statusStorage.getState(Integer.parseInt(id.toString()) + 1).getServerState())
+                        .responderN(statusStorage.getState(Integer.parseInt(id.toString())).getTotalUpdates())
+                        .build()));
+            } else {
+                return ok(toJson(SlaveStatus.builder().slave(statusStorage.getState(Integer.parseInt(id.toString())).serverType()).build()));
+            }
+        });
+        dsl.GET("/connectioninfo/:id").routingTo((request, id) -> ok(toJson(statusStorage.getState(Integer.parseInt(id.toString())).getConnectionInfo())));
 
+        dsl.POST("/updatestatus/:id").routingTo((request, id) -> {
+            SubscriberState subscriberState = Json.fromJson(request.body().asJson(), SubscriberState.class);
+            statusStorage.updateState(subscriberState);
+            return ok(toJson(subscriberState));
+        });
+
+        return dsl.build();
+    }
 }

@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.api.ndarray;
 
-import com.google.common.primitives.Ints;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import net.ericaro.neoitertools.Generator;
@@ -153,7 +153,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                             arrList.set(j,put);
                         }
                     }
-
                 }
             }
             else if(indices.isRowVector()) {
@@ -161,12 +160,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                     arrList.add(slice(indices.getInt(i)));
                 }
             }
-
             return Nd4j.concat(0,arrList.toArray(new INDArray[arrList.size()]));
-
         }
-
-
     }
 
     @Override
@@ -260,20 +255,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray get(List<List<Integer>> indices) {
-        return null;
-    }
-
-    @Override
     public INDArray put(INDArray indices, INDArray element) {
         INDArrayIndex[] realIndices = new INDArrayIndex[indices.rank()];
         for(int i = 0; i < realIndices.length; i++) {
             realIndices[i] = new SpecifiedIndex(indices.slice(i).dup().data().asInt());
         }
-
-
         return put(realIndices,element);
-
     }
 
     @Override
@@ -328,12 +315,10 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return sparseInformation;
     }
 
-
     @Override
     public LongBuffer shapeInfo() {
         return null;
     }
-
 
     @Override
     public boolean isCompressed() {
@@ -363,7 +348,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public int[] sparseOffsets() {
         return Shape.sparseOffsets(sparseInformation);
     }
-
 
     @Override
     public int stride(int dimension) {
@@ -411,11 +395,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray tensorAlongDimension(long index, int... dimension) {
-        return null;
-    }
-
-    @Override
-    public INDArray javaTensorAlongDimension(int index, int... dimension) {
         return null;
     }
 
@@ -478,7 +457,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public INDArray putScalar(long[] i, int value) {
         return null;
     }
-
 
     @Override
     public INDArray isInfinite() {
@@ -554,6 +532,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     public INDArray lte(Number other) {
         return null;
     }
+
     @Override
     public INDArray lt(INDArray other) {
         return null;

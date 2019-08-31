@@ -16,9 +16,9 @@
 
 package org.deeplearning4j.spark.datavec;
 
+import lombok.AllArgsConstructor;
 import org.apache.spark.api.java.JavaRDD;
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.datavec.spark.transform.BaseFlatMapFunctionAdaptee;
+import org.apache.spark.api.java.function.FlatMapFunction;
 import org.nd4j.linalg.dataset.DataSet;
 
 import java.io.Serializable;
@@ -44,22 +44,12 @@ public class RDDMiniBatches implements Serializable {
         return toSplitJava.mapPartitions(new MiniBatchFunction(miniBatches));
     }
 
-    public static class MiniBatchFunction extends BaseFlatMapFunctionAdaptee<Iterator<DataSet>, DataSet> {
-
-        public MiniBatchFunction(int batchSize) {
-            super(new MiniBatchFunctionAdapter(batchSize));
-        }
-    }
-
-    static class MiniBatchFunctionAdapter implements FlatMapFunctionAdapter<Iterator<DataSet>, DataSet> {
-        private int batchSize = 10;
-
-        public MiniBatchFunctionAdapter(int batchSize) {
-            this.batchSize = batchSize;
-        }
+    @AllArgsConstructor
+    public static class MiniBatchFunction implements FlatMapFunction<Iterator<DataSet>, DataSet> {
+        private int batchSize;
 
         @Override
-        public Iterable<DataSet> call(Iterator<DataSet> dataSetIterator) throws Exception {
+        public Iterator<DataSet> call(Iterator<DataSet> dataSetIterator) throws Exception {
             List<DataSet> ret = new ArrayList<>();
             List<DataSet> temp = new ArrayList<>();
             while (dataSetIterator.hasNext()) {
@@ -74,10 +64,7 @@ public class RDDMiniBatches implements Serializable {
             if (temp.size() > 0)
                 ret.add(DataSet.merge(temp));
 
-            return ret;
+            return ret.iterator();
         }
-
     }
-
-
 }

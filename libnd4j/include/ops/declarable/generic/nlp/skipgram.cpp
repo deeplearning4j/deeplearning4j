@@ -79,7 +79,7 @@ namespace nd4j {
                     ->setAllowedInputTypes(9, {ALL_FLOATS})
                     ->setAllowedInputTypes(10, nd4j::DataType::INT64)
                     ->setAllowedInputTypes(11, {ALL_FLOATS})
-                    ->setAllowedOutputTypes(nd4j::DataType::INT8);
+                    ->setAllowedOutputTypes(nd4j::DataType::ANY);
         }
 
         /*

@@ -31,18 +31,10 @@
             <artifactId>datavec-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
             <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-native</artifactId>
-            <version>${nd4j.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -75,7 +67,6 @@
             <artifactId>imageio-bmp</artifactId>
             <version>3.1.1</version>
         </dependency>
-
         <dependency>
             <groupId>com.google.android</groupId>
             <artifactId>android</artifactId>
@@ -88,7 +79,6 @@
             </exclusions>
             <optional>true</optional>
         </dependency>
-
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
@@ -99,25 +89,21 @@
             <artifactId>javacv</artifactId>
             <version>${javacv.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>opencv-platform</artifactId>
             <version>${opencv.version}-${javacpp-presets.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>leptonica-platform</artifactId>
             <version>${leptonica.version}-${javacpp-presets.version}</version>
         </dependency>
-
         <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>hdf5-platform</artifactId>
             <version>${hdf5.version}-${javacpp-presets.version}</version>
         </dependency>
-
     </dependencies>
 
     <build>
@@ -143,5 +129,4 @@
             <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
-
 </project>

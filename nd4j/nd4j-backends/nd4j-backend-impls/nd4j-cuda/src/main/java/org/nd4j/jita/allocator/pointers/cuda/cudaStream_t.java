@@ -36,8 +36,9 @@ public class cudaStream_t extends CudaPointer {
     public int synchronize() {
         NativeOps nativeOps = NativeOpsHolder.getInstance().getDeviceNativeOps();
         int res = nativeOps.streamSynchronize(this);
-        if (res == 0)
-            throw new ND4JException("CUDA exception happened. Terminating. Last op: [" + Nd4j.getExecutioner().getLastOp() +"]");
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
 
         return res;
     }

@@ -16,9 +16,9 @@
 
 package org.nd4j.linalg.api.ops;
 
-import com.google.common.collect.Lists;
-import com.google.common.primitives.Doubles;
-import com.google.common.primitives.Longs;
+import org.nd4j.shade.guava.collect.Lists;
+import org.nd4j.shade.guava.primitives.Doubles;
+import org.nd4j.shade.guava.primitives.Longs;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import onnx.Onnx;
@@ -35,6 +35,7 @@ import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 /**
@@ -609,6 +610,21 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
 
     protected static INDArray[] wrapOrNull(INDArray in){
         return in == null ? null : new INDArray[]{in};
+    }
+
+    protected static <T> T[] wrapFilterNull(T... in){
+        int count = 0;
+        for( int i=0; i<in.length; i++ ) {
+            if (in[i] != null) count++;
+        }
+        T[] out = (T[]) Array.newInstance(in.getClass().getComponentType(), count);
+        int j=0;
+        for( int i=0; i<in.length; i++ ){
+            if(in[i] != null){
+                out[j++] = in[i];
+            }
+        }
+        return out;
     }
 
     public static class DynamicCustomOpsBuilder {

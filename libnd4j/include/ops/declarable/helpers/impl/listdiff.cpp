@@ -42,10 +42,11 @@ namespace helpers {
     Nd4jLong listDiffCount(nd4j::LaunchContext * context, NDArray* values, NDArray* keep) {
         auto xType = values->dataType();
 
-        values->syncToHost();
-        keep->syncToHost();
+        NDArray::preparePrimaryUse({},{values, keep});
 
         BUILD_SINGLE_SELECTOR(xType, return listDiffCount_, (values, keep), LIBND4J_TYPES);
+
+        NDArray::registerPrimaryUse({},{values, keep});
     }
 
     BUILD_SINGLE_TEMPLATE(template Nd4jLong listDiffCount_, (NDArray* values, NDArray* keep);, LIBND4J_TYPES);
@@ -97,16 +98,7 @@ namespace helpers {
     int listDiffFunctor(nd4j::LaunchContext * context, NDArray* values, NDArray* keep, NDArray* output1, NDArray* output2) {
         auto xType = values->dataType();
 
-        values->syncToHost();
-
-        if (keep != nullptr)
-            keep->syncToHost();
-
-        if (output1 != nullptr)
-            output1->syncToHost();
-
-        if (output2 != nullptr)
-            output2->syncToHost();
+        NDArray::preparePrimaryUse({output1, output2}, {values, keep});
 
         int result = 0;
 
@@ -118,14 +110,7 @@ namespace helpers {
             throw std::runtime_error("ListDiff: Only integer and floating point data types are supported");
         }
 
-        if (keep != nullptr)
-            keep->syncToDevice();
-
-        if (output1 != nullptr)
-            output1->syncToDevice();
-
-        if (output2 != nullptr)
-            output2->syncToDevice();
+        NDArray::registerPrimaryUse({output1, output2}, {values, keep});
 
         return result;
     }

@@ -400,6 +400,32 @@ TEST_F(JavaInteropTests, Test_Synonyms_3) {
     ASSERT_EQ(nameRef, name);
 }
 
+TEST_F(JavaInteropTests, Test_FastPath_Validation_1) {
+    auto x = NDArrayFactory::create<int>('c', {4}, {1, 2, 3, 4});
+    auto z = NDArrayFactory::create<int>('c', {4}, {1, 2, 3, 4});
+
+    Context ctx(1);
+    ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+    nd4j::ops::softmax op;
+    auto status = op.execute(&ctx);
+    ASSERT_NE(Status::OK(), status);
+}
+
+TEST_F(JavaInteropTests, Test_FastPath_Validation_2) {
+    auto x = NDArrayFactory::create<float>('c', {4}, {1.f, 2.f, 3.f, 4.f});
+    auto z = NDArrayFactory::create<int>('c', {4}, {1, 2, 3, 4});
+
+    Context ctx(1);
+    ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+    nd4j::ops::softmax op;
+    auto status = op.execute(&ctx);
+    ASSERT_NE(Status::OK(), status);
+}
+
 /*
 TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
     int inOutH = 35;

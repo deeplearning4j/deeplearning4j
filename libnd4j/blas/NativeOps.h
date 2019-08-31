@@ -80,6 +80,18 @@ bool verbose = false;
 extern "C" {
 
 /**
+ * This function returns last error code stored,
+ * @return non-zero if something bad happened
+ */
+ND4J_EXPORT int lastErrorCode();
+
+/**
+ * This function returns last error message, if last error code > 0
+ * @return
+ */
+ND4J_EXPORT const char* lastErrorMessage();
+
+/**
  *
  * @param p
  * @param len
@@ -556,38 +568,6 @@ ND4J_EXPORT void execScalarBoolTad(Nd4jPointer *extraPointers,
                 void *dDimension, Nd4jLong *dDimensionShape,
                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                 Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ);
-
-
-/**
-* Append an input array
-* to the end of a flat array
-* in a particular order
-* @param offset the offset of the array to start at
-* @param order the order
-* @param result the result array
-* @param resultShapeInfo the shape info for te array
-* @param input the input for the array
-* @param inputShapeInfo the shape information for that array
-*/
-ND4J_EXPORT void flatten(
-        Nd4jPointer *extraPointers,
-        int offset,
-        char order,
-        void *result, Nd4jLong *resultShapeInfo,
-        void *dresult, Nd4jLong *dresultShapeInfo,
-        void *input, Nd4jLong *inputShapeInfo,
-        void *dinput, Nd4jLong *dinputShapeInfo);
-
-ND4J_EXPORT void concat(
-        Nd4jPointer *extraPointers,
-        int dimension,
-        int numArrays,
-        Nd4jPointer *data, Nd4jPointer *inputShapeInfo,
-        Nd4jPointer *ddata, Nd4jPointer *dinputShapeInfo,
-        void *result, Nd4jLong *resultShapeInfo,
-        void *dresult, Nd4jLong *dresultShapeInfo,
-        Nd4jPointer *tadPointers, Nd4jPointer *offsetPointers);
-
 
 ND4J_EXPORT void specialConcat (
         Nd4jPointer *extraPointers,

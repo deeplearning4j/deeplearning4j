@@ -111,15 +111,6 @@ public class Repeat extends DynamicCustomOp {
     }
 
     @Override
-    public void resolvePropertiesFromSameDiffBeforeExecution() {
-        if (numOutputArguments() < getDescriptor().getNumOutputs()) {
-            for (val output : outputVariables()) {
-                addOutputArgument(output.getArr());
-            }
-        }
-    }
-
-    @Override
     public String onnxName() {
         return "Repeat";
     }

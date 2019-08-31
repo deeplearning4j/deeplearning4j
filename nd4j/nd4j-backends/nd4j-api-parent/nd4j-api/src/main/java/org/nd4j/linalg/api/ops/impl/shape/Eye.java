@@ -98,6 +98,9 @@ public class Eye extends DynamicCustomOp {
     }
 
     protected void addArgs() {
+        iArguments.clear();
+        tArguments.clear();
+
         addIArgument(numRows);
         addIArgument(numCols);
         if(batchDimension != null) {
@@ -105,6 +108,8 @@ public class Eye extends DynamicCustomOp {
                 addIArgument(dim);
             }
         }
+
+        addTArgument((double) dataType.toInt());
     }
 
     @Override

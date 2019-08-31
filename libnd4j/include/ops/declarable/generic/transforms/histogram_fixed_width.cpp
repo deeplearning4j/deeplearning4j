@@ -49,7 +49,7 @@ CUSTOM_OP_IMPL(histogram_fixed_width, 2, 1, false, 0, 0) {
 DECLARE_TYPES(histogram_fixed_width) {
     getOpDescriptor()
         ->setAllowedInputTypes(nd4j::DataType::ANY)
-        ->setAllowedOutputTypes({ALL_INTS});
+        ->setAllowedOutputTypes({ALL_INDICES});
 }
 
 

@@ -45,7 +45,7 @@ DECLARE_SYN(IsMax, ismax);
     DECLARE_TYPES(ismax) {
         getOpDescriptor()
                 ->setAllowedInputTypes(0, DataType::ANY)
-                ->setAllowedOutputTypes(0, DataType::BOOL);
+                ->setAllowedOutputTypes(0, DataType::ANY);
 
     }
 

@@ -31,20 +31,8 @@
             </dependency>
             <dependency>
                 <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-native</artifactId>
-                <version>${nd4j.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.nd4j</groupId>
                 <artifactId>nd4j-common</artifactId>
                 <version>${nd4j.version}</version>
-            </dependency>
-            <dependency>
-                <groupId>org.nd4j</groupId>
-                <artifactId>nd4j-cuda-10.1</artifactId>
-                <version>${nd4j.version}</version>
-                <scope>test</scope>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -82,7 +70,6 @@
             <scope>test</scope>
         </dependency>
 
-
         <dependency>
             <groupId>org.deeplearning4j</groupId>
             <artifactId>deeplearning4j-nn</artifactId>
@@ -110,18 +97,6 @@
         </dependency>
 
         <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>com.google.code.findbugs</groupId>
-                <artifactId>jsr305</artifactId>
-              </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>nd4j-api</artifactId>
         </dependency>
@@ -132,8 +107,6 @@
             <version>${commonslang.version}</version>
         </dependency>
 
-
-
         <!-- ND4J Shaded Jackson Dependency -->
         <dependency>
             <groupId>org.nd4j</groupId>
@@ -141,7 +114,6 @@
             <version>${nd4j.version}</version>
         </dependency>
 
-       
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
@@ -180,9 +152,26 @@
     <profiles>
         <profile>
             <id>test-nd4j-native</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-native</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
+
         <profile>
             <id>test-nd4j-cuda-10.1</id>
+            <dependencies>
+                <dependency>
+                    <groupId>org.nd4j</groupId>
+                    <artifactId>nd4j-cuda-10.1</artifactId>
+                    <version>${project.version}</version>
+                    <scope>test</scope>
+                </dependency>
+            </dependencies>
         </profile>
     </profiles>
 </project>

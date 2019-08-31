@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.controlflow.compat;
 
+import java.util.List;
 import lombok.NonNull;
 import lombok.val;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -25,6 +26,7 @@ import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -88,5 +90,10 @@ public abstract class BaseCompatOp extends DynamicCustomOp {
     @Override
     public Map<String, Map<String, AttributeAdapter>> attributeAdaptersForFunction() {
         return super.attributeAdaptersForFunction();
+    }
+
+    @Override
+    public List<LongShapeDescriptor> calculateOutputShape() {
+        throw new UnsupportedOperationException("calculateOutputShape() is not supported for control flow ops.");
     }
 }

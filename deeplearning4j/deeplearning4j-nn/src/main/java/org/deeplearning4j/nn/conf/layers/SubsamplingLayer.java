@@ -480,13 +480,28 @@ public class SubsamplingLayer extends NoParamLayer {
         }
 
         /**
-         * When using CuDNN and an error is encountered, should fallback to the non-CuDNN implementatation be allowed?
-         * If set to false, an exception in CuDNN will be propagated back to the user. If false, the built-in
-         * (non-CuDNN) implementation for ConvolutionLayer will be used
+         * When using CuDNN or MKLDNN and an error is encountered, should fallback to the non-helper implementation be allowed?
+         * If set to false, an exception in the helper will be propagated back to the user. If true, the built-in
+         * (non-MKL/CuDNN) implementation for ConvolutionLayer will be used
+         *
+         * @deprecated Use {@link #helperAllowFallback(boolean)}
          *
          * @param allowFallback Whether fallback to non-CuDNN implementation should be used
          */
+        @Deprecated
         public T cudnnAllowFallback(boolean allowFallback) {
+            this.cudnnAllowFallback = allowFallback;
+            return (T) this;
+        }
+
+        /**
+         * When using CuDNN or MKLDNN and an error is encountered, should fallback to the non-helper implementation be allowed?
+         * If set to false, an exception in the helper will be propagated back to the user. If true, the built-in
+         * (non-MKL/CuDNN) implementation for SubsamplingLayer will be used
+         *
+         * @param allowFallback Whether fallback to non-CuDNN implementation should be used
+         */
+        public T helperAllowFallback(boolean allowFallback) {
             this.cudnnAllowFallback = allowFallback;
             return (T) this;
         }

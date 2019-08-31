@@ -16,8 +16,7 @@
 
 package org.deeplearning4j.spark.impl.common.repartition;
 
-import org.datavec.spark.functions.FlatMapFunctionAdapter;
-import org.deeplearning4j.spark.util.BasePairFlatMapFunctionAdaptee;
+import org.apache.spark.api.java.function.PairFlatMapFunction;
 import scala.Tuple2;
 
 import java.util.ArrayList;
@@ -30,22 +29,14 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class MapTupleToPairFlatMap<T, U> extends BasePairFlatMapFunctionAdaptee<Iterator<Tuple2<T, U>>, T, U> {
-
-    public MapTupleToPairFlatMap() {
-        super(new MapTupleToPairFlatMapAdapter<T, U>());
-    }
-}
-
-
-class MapTupleToPairFlatMapAdapter<T, U> implements FlatMapFunctionAdapter<Iterator<Tuple2<T, U>>, Tuple2<T, U>> {
+public class MapTupleToPairFlatMap<T, U> implements PairFlatMapFunction<Iterator<Tuple2<T, U>>, T, U> {
 
     @Override
-    public Iterable<Tuple2<T, U>> call(Iterator<Tuple2<T, U>> tuple2Iterator) throws Exception {
+    public Iterator<Tuple2<T, U>> call(Iterator<Tuple2<T, U>> tuple2Iterator) throws Exception {
         List<Tuple2<T, U>> list = new ArrayList<>();
         while (tuple2Iterator.hasNext()) {
             list.add(tuple2Iterator.next());
         }
-        return list;
+        return list.iterator();
     }
 }

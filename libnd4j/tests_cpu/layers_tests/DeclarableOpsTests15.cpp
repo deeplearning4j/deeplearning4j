@@ -245,25 +245,45 @@ TEST_F(DeclarableOpsTests15, test_check_numeric_3) {
 
 TEST_F(DeclarableOpsTests15, Test_layer_norm_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto g = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto b = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto g = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
+    auto b = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
 
     nd4j::ops::layer_norm op;
-    auto result = op.execute({&x, &g, &b}, {}, {0}, {});
+    auto result = op.execute({&x, &g, &b}, {}, {0}, {false});
     ASSERT_EQ(Status::OK(), result->status());
     delete result;
 }
 
 TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_1) {
     auto x = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto g = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
-    auto b = NDArrayFactory::create<float>('c', {1, 5}, {1., 2., 3., 4., 5.});
+    auto g = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
+    auto b = NDArrayFactory::create<float>('c', {5}, {1., 2., 3., 4., 5.});
     auto eps = NDArrayFactory::create<float>('c', {1, 5}, {0., 0., 0., 0., 0.});
 
     nd4j::ops::layer_norm_bp op;
-    auto result = op.execute({&x, &g, &b, &eps}, {}, {0}, {});
+    auto result = op.execute({&x, &g, &b, &eps}, {}, {0}, {false});
     ASSERT_EQ(Status::OK(), result->status());
     delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests15, Test_layer_norm_bp_2) {
+
+    NDArray x('c', {3, 4, 8, 8}, nd4j::DataType::FLOAT32);
+    NDArray gain('c', {4}, {-0.1, 0.1, -0.2, 0.2}, nd4j::DataType::FLOAT32);
+    NDArray bias('c', {4}, {-0.05, 0.05, -1.05, 1.05}, nd4j::DataType::FLOAT32);
+    NDArray gradO('c', {3, 4, 8, 8}, nd4j::DataType::FLOAT32);
+
+    NDArray gradI('c', {3, 4, 8, 8}, nd4j::DataType::FLOAT32);
+    NDArray gradG('c', {4}, nd4j::DataType::FLOAT32);
+    NDArray gradB('c', {4}, nd4j::DataType::FLOAT32);
+
+    x.linspace(-20, 0.5);
+    gradO.linspace(-4, 0.05);
+
+    nd4j::ops::layer_norm_bp op;
+    auto status = op.execute({&x, &gain, &bias, &gradO}, {&gradI, &gradG, &gradB}, {}, {1,2,3}, {true});
+    ASSERT_EQ(Status::OK(), status);
 }
 
 TEST_F(DeclarableOpsTests15, test_hashCode_1) {

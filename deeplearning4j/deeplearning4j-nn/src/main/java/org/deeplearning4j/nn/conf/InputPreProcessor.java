@@ -19,7 +19,6 @@ package org.deeplearning4j.nn.conf;
 
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.inputs.InputType;
-import org.deeplearning4j.nn.conf.serde.legacyformat.LegacyPreprocessorDeserializerHelper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -34,8 +33,7 @@ import java.io.Serializable;
  *
  * @author Adam Gibson
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class",
-        defaultImpl = LegacyPreprocessorDeserializerHelper.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public interface InputPreProcessor extends Serializable, Cloneable {
 
     /**

@@ -38,13 +38,6 @@
     </plugins>
   </build>
   <properties>
-    <!-- These Spark version properties have to defined be here, and NOT in the deeplearning4j-parent pom. Otherwise,
-         the properties will be resolved to their defaults (and not the values present during the build). Whereas when
-         defined here (the version is spark 1 vs. 2 specific) we can have different version properties simultaneously
-         (in different pom files) instead of a single global property -->
-    <spark.version>2.1.0</spark.version>
-    <spark.major.version>2</spark.major.version>
-
     <!-- Default scala versions, may be overwritten by build profiles -->
     <scala.version>2.11.12</scala.version>
     <scala.binary.version>2.11</scala.binary.version>
@@ -103,11 +96,6 @@
       <version>${jsch.version}</version>
     </dependency>
     <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-      <version>${guava.version}</version>
-    </dependency>
-    <dependency>
       <groupId>com.google.inject</groupId>
       <artifactId>guice</artifactId>
       <version>${guice.version}</version>
@@ -151,21 +139,6 @@
       <groupId>com.sun.xml.bind</groupId>
       <artifactId>jaxb-impl</artifactId>
       <version>${jaxb.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-actor_2.11</artifactId>
-      <version>${akka.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-remote_2.11</artifactId>
-      <version>${akka.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.typesafe.akka</groupId>
-      <artifactId>akka-slf4j_2.11</artifactId>
-      <version>${akka.version}</version>
     </dependency>
     <dependency>
       <groupId>io.netty</groupId>

@@ -32,12 +32,19 @@ namespace ops  {
         auto input = INPUT_VARIABLE(0);
         auto gain = INPUT_VARIABLE(1);
         auto output = OUTPUT_VARIABLE(0);
-        
+
         std::vector<int> axis = *block.getIArguments();
 
+        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
+        const int dimC = isNCHW ? 1 : input->rankOf() - 1;
+
+        REQUIRE_TRUE(gain->rankOf() == 1 && gain->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM OP: wrong shape of gain array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());
+
         NDArray* bias = nullptr;
-        if (block.width() > 2)
+        if (block.width() > 2) {
             bias = INPUT_VARIABLE(2);
+            REQUIRE_TRUE(bias->rankOf() == 1 && bias->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM OP: wrong shape of bias array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(bias).c_str());
+        }
 
         std::vector<Nd4jLong> longAxis = ArrayUtils::toLongVector(axis);
 
@@ -48,9 +55,12 @@ namespace ops  {
         std::vector<bool> bargs = {};
         standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
 
-        output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, output);
-        if(bias != nullptr)
-            output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), bias, output);
+        // output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, output);
+        output->applyBroadcast(nd4j::broadcast::Multiply, {dimC}, gain);
+        if(bias != nullptr) {
+            // output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), bias, output);
+            output->applyBroadcast(nd4j::broadcast::Add, {dimC}, bias);
+        }
 
         return Status::OK();
     }
@@ -71,12 +81,20 @@ namespace ops  {
         auto dLdg = OUTPUT_VARIABLE(1);
         auto dLdb = block.width() == 4 ? OUTPUT_VARIABLE(2) : nullptr;
 
+        const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
+        const int dimC = isNCHW ? 1 : input->rankOf() - 1;
+
+        REQUIRE_TRUE(gain->rankOf() == 1 && gain->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM_BP OP: wrong shape of gain array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());
+
         std::vector<int> axis = *block.getIArguments();
 
         std::vector<Nd4jLong> longAxis = ArrayUtils::toLongVector(axis);
 
-        if(bias != nullptr)
-            eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, {0}, true);
+        if(bias != nullptr) {
+            REQUIRE_TRUE(bias->rankOf() == 1 && bias->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM_BP OP: wrong shape of bias array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(bias).c_str());
+            // eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, {0}, true);
+            eps->reduceAlongDimension(nd4j::reduce::Sum, dLdb, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}));
+        }
 
         NDArray standardized(input->shapeInfo(), false, block.launchContext());
 
@@ -88,10 +106,11 @@ namespace ops  {
 
         standardizeOp.execute(inputs, outputs, targs, longAxis, bargs);
         standardized.applyPairwiseTransform(nd4j::pairwise::Multiply, eps, &standardized, nullptr);
-        standardized.reduceAlongDimension(nd4j::reduce::Sum, dLdg, {0}, true);
+        standardized.reduceAlongDimension(nd4j::reduce::Sum, dLdg, ShapeUtils::evalDimsToExclude(input->rankOf(), {dimC}));
 
         nd4j::ops::standardize_bp standardizeBp;
-        eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
+        // eps->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Multiply(), gain, dLdx);
+        eps->applyBroadcast(nd4j::broadcast::Multiply, {dimC}, gain, dLdx);
 
         auto dLdx_tmp = dLdx->dup();
         std::vector<NDArray *> standardizeBpArgs = {input, dLdx_tmp};

@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.transforms.custom;
 
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
@@ -39,33 +40,30 @@ import java.util.List;
 public class LayerNormBp extends DynamicCustomOp {
 
     private boolean noBias = false;
+    private boolean channelsFirst;
 
 
-    public LayerNormBp(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable bias, SDVariable gradient, int... dimensions) {
-        super(null, sameDiff, new SDVariable[] {input, gain, bias, gradient}, false);
-        Preconditions.checkArgument(bias != null, "LayerNormBp: Use constructor without bias argument if bias is null / not available.");
-
+    public LayerNormBp(@NonNull SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable gain, SDVariable bias, @NonNull SDVariable gradient, boolean channelsFirst, int... dimensions) {
+        super(null, sameDiff, wrapFilterNull(input, gain, bias, gradient), false);
+        this.noBias = bias == null;
+        this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
 
-    public LayerNormBp(INDArray input, INDArray gain, INDArray bias, INDArray grad, INDArray dLdx, INDArray dLdg, INDArray dLdb, int... dimensions) {
-        super("layer_norm_bp", new INDArray[]{input, gain, bias, grad}, new INDArray[]{dLdx, dLdg, dLdb});
-        Preconditions.checkArgument(bias != null, "LayerNormBp: Use constructor without bias argument if bias is null / not available.");
-
+    public LayerNormBp(@NonNull INDArray input, @NonNull INDArray gain, INDArray bias, @NonNull INDArray grad, @NonNull INDArray dLdx, @NonNull INDArray dLdg, INDArray dLdb, boolean channelsFirst, int... dimensions) {
+        super("layer_norm_bp", wrapFilterNull(input, gain, bias, grad), wrapFilterNull(dLdx, dLdg, dLdb));
+        this.noBias = bias == null;
+        this.channelsFirst = channelsFirst;
         setDimensions(dimensions);
     }
 
 
-    public LayerNormBp(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable gradient, int... dimensions) {
-        super(null, sameDiff, new SDVariable[] {input, gain, gradient}, false);
-        noBias = true;
-        setDimensions(dimensions);
+    public LayerNormBp(SameDiff sameDiff, SDVariable input, SDVariable gain, SDVariable gradient, boolean channelsFirst, int... dimensions) {
+        this(sameDiff, input, gain, null, gradient, channelsFirst, dimensions);
     }
 
-    public LayerNormBp(INDArray input, INDArray gain, INDArray grad, INDArray dLdx, INDArray dLdg, int... dimensions) {
-        super("layer_norm_bp", new INDArray[]{input, gain, grad}, new INDArray[]{dLdx, dLdg});
-        noBias = true;
-        setDimensions(dimensions);
+    public LayerNormBp(INDArray input, INDArray gain, INDArray grad, INDArray dLdx, INDArray dLdg, boolean channelsFirst, int... dimensions) {
+        this(input, gain, null, grad, dLdx, dLdg, null, channelsFirst, dimensions);
     }
 
     @Override
@@ -74,7 +72,10 @@ public class LayerNormBp extends DynamicCustomOp {
         Preconditions.checkArgument(dimensions.length > 0, "LayerNormBp: You have to provide dimensions");
 
         this.dimensions = dimensions;
+        this.iArguments.clear();
         addIArgument(dimensions);
+        this.bArguments.clear();
+        addBArgument(channelsFirst);
     }
 
     @Override

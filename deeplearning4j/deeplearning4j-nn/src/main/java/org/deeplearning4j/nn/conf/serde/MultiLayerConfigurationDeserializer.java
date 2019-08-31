@@ -21,6 +21,7 @@ import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
+import org.deeplearning4j.nn.conf.layers.BaseOutputLayer;
 import org.deeplearning4j.nn.conf.layers.BatchNormalization;
 import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.weightnoise.DropConnect;
@@ -59,6 +60,8 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
 
         boolean requiresLegacyRegularizationHandling = requiresRegularizationFromLegacy(layers);
         boolean requiresLegacyWeightInitHandling = requiresWeightInitFromLegacy(layers);
+        boolean requiresLegacyActivationHandling = requiresActivationFromLegacy(layers);
+        boolean requiresLegacyLossHandling = requiresLegacyLossHandling(layers);
 
         if(attemptIUpdaterFromLegacy || requiresLegacyRegularizationHandling || requiresLegacyWeightInitHandling) {
             JsonLocation endLocation = jp.getCurrentLocation();
@@ -115,38 +118,34 @@ public class MultiLayerConfigurationDeserializer extends BaseNetConfigDeserializ
                     }
                 }
 
-                if(requiresLegacyRegularizationHandling) {
-                    if (layers[i] instanceof BaseLayer && ((BaseLayer) layers[i]).getRegularization() == null) {
-                        if(on.has("layer")){
-                            //Legacy format
-                            ObjectNode layerNode = (ObjectNode)on.get("layer");
-                            if(layerNode.has("@class")){
-                                //Later legacy format: class field for JSON subclass
-                                on = layerNode;
-                            } else {
-                                //Early legacy format: wrapper object for JSON subclass
-                                on = (ObjectNode) on.get("layer").elements().next();
-                            }
+                if(requiresLegacyRegularizationHandling || requiresLegacyWeightInitHandling || requiresLegacyActivationHandling){
+                    if(on.has("layer")){
+                        //Legacy format
+                        ObjectNode layerNode = (ObjectNode)on.get("layer");
+                        if(layerNode.has("@class")){
+                            //Later legacy format: class field for JSON subclass
+                            on = layerNode;
+                        } else {
+                            //Early legacy format: wrapper object for JSON subclass
+                            on = (ObjectNode) on.get("layer").elements().next();
                         }
-                        handleL1L2BackwardCompatibility((BaseLayer) layers[i], on);
                     }
                 }
 
-                if(requiresLegacyWeightInitHandling){
-                    if (layers[i] instanceof BaseLayer && ((BaseLayer) layers[i]).getWeightInitFn() == null) {
-                        if(on.has("layer")){
-                            //Legacy format
-                            ObjectNode layerNode = (ObjectNode)on.get("layer");
-                            if(layerNode.has("@class")){
-                                //Later legacy format: class field for JSON subclass
-                                on = layerNode;
-                            } else {
-                                //Early legacy format: wrapper object for JSON subclass
-                                on = (ObjectNode) on.get("layer").elements().next();
-                            }
-                        }
-                        handleWeightInitBackwardCompatibility((BaseLayer) layers[i], on);
-                    }
+                if(requiresLegacyRegularizationHandling && layers[i] instanceof BaseLayer && ((BaseLayer) layers[i]).getRegularization() == null) {
+                    handleL1L2BackwardCompatibility((BaseLayer) layers[i], on);
+                }
+
+                if(requiresLegacyWeightInitHandling && layers[i] instanceof BaseLayer && ((BaseLayer) layers[i]).getWeightInitFn() == null) {
+                    handleWeightInitBackwardCompatibility((BaseLayer) layers[i], on);
+                }
+
+                if(requiresLegacyActivationHandling && layers[i] instanceof BaseLayer && ((BaseLayer)layers[i]).getActivationFn() == null){
+                    handleActivationBackwardCompatibility((BaseLayer) layers[i], on);
+                }
+
+                if(requiresLegacyLossHandling && layers[i] instanceof BaseOutputLayer && ((BaseOutputLayer)layers[i]).getLossFn() == null){
+                    handleLossBackwardCompatibility((BaseOutputLayer) layers[i], on);
                 }
             }
         }

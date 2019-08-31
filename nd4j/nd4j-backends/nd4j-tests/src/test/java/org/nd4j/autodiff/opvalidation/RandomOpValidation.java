@@ -27,6 +27,7 @@ import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.reduce.bool.All;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
 import org.nd4j.linalg.api.ops.random.impl.BinomialDistribution;
@@ -371,6 +372,14 @@ public class RandomOpValidation extends BaseOpValidation {
 
             assertNull(OpValidation.validate(tc));
         }
+    }
 
+    @Test
+    public void testAllEmptyReduce(){
+        INDArray x = Nd4j.createFromArray(true, true, true);
+        All all = new All(x);
+        all.setEmptyReduce(true);   //For TF compatibility - empty array for axis (which means no-op - and NOT all array reduction)
+        INDArray out = Nd4j.exec(all);
+        assertEquals(x, out);
     }
 }

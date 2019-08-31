@@ -69,9 +69,6 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
             pad = ConvolutionUtils.getSameModeTopLeftPadding(new int[]{(int)epsilon.size(2), (int)epsilon.size(3)}, new int[] {(int)input.size(2), (int)input.size(3)}, kernel, strides, dilation);
         }
 
-        input = input.dup();
-        epsilon = epsilon.dup();
-
         Pooling2DConfig conf = Pooling2DConfig.builder()
                 .isSameMode(convolutionMode == ConvolutionMode.Same)
                 .kH(kernel[0]).kW(kernel[1])

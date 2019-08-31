@@ -90,8 +90,13 @@ class SDVariableWrapper {
   def |(other: SDVariable)(implicit sameDiff: SameDiff): SDVariable = sameDiff.math.or(thisVariable, other)
   def &(other: SDVariable)(implicit sameDiff: SameDiff): SDVariable = sameDiff.math.and(thisVariable, other)
 
-  def <<(x: Int)(implicit sameDiff: SameDiff): SDVariable = sameDiff.math.bitShift(null, thisVariable, x)
-  def >>(x: Int)(implicit sameDiff: SameDiff): SDVariable = sameDiff.math.bitShiftRight(null, thisVariable, x)
+  def <<(other: SDVariable)(implicit sameDiff: SameDiff): SDVariable = sameDiff.math.bitShift(null, thisVariable, other)
+  def >>(other: SDVariable)(implicit sameDiff: SameDiff): SDVariable =
+    sameDiff.math.bitShiftRight(null, thisVariable, other)
+  def <<(x: Int)(implicit sameDiff: SameDiff): SDVariable =
+    sameDiff.math.bitShift(null, thisVariable, sameDiff.constant(x))
+  def >>(x: Int)(implicit sameDiff: SameDiff): SDVariable =
+    sameDiff.math.bitShiftRight(null, thisVariable, sameDiff.constant(x))
 
   // Overloads for numeric arguments
   // Float

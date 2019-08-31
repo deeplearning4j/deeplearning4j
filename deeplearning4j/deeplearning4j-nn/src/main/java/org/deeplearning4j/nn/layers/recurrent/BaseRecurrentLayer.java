@@ -41,6 +41,8 @@ public abstract class BaseRecurrentLayer<LayerConfT extends org.deeplearning4j.n
      */
     protected Map<String, INDArray> tBpttStateMap = new ConcurrentHashMap<>();
 
+    protected int helperCountFail = 0;
+
     public BaseRecurrentLayer(NeuralNetConfiguration conf, DataType dataType) {
         super(conf, dataType);
     }

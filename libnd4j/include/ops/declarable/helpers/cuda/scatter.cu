@@ -398,10 +398,15 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
         const int xRank = indices.rankOf();
 
         std::vector<int> zTadDims = ShapeUtils::evalDimsToExclude(output.rankOf(), {0});
-        std::vector<int> yTadDims(xRank);
-        std::iota(yTadDims.begin(), yTadDims.end(), xRank == 1 ? 0 : xRank);
 
-        auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), yTadDims);
+        int sizeOfUpdDims = xRank;
+        if(output.rankOf() == updates.rankOf() && indices.isVector())
+            sizeOfUpdDims = 1;
+
+        std::vector<int> yTadDims(sizeOfUpdDims);
+        std::iota(yTadDims.begin(), yTadDims.end(), 0);
+
+        auto packY = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(updates.getShapeInfo(), ShapeUtils::evalDimsToExclude(updates.rankOf(), yTadDims));
         auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output.getShapeInfo(), zTadDims);
 
         const Nd4jLong zTadLen = shape::length(packZ.primaryShapeInfo());

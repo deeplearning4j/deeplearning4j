@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.conf.layers.recurrent.LastTimeStep;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -41,6 +42,7 @@ import org.nd4j.linalg.lossfunctions.impl.LossMSE;
 import org.nd4j.linalg.lossfunctions.impl.LossNegativeLogLikelihood;
 import org.nd4j.shade.jackson.databind.JsonNode;
 import org.nd4j.shade.jackson.databind.ObjectMapper;
+import org.nd4j.shade.jackson.databind.exc.InvalidTypeIdException;
 import org.nd4j.shade.jackson.databind.node.ArrayNode;
 
 import java.io.IOException;
@@ -157,6 +159,26 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
         ObjectMapper mapper = NeuralNetConfiguration.mapper();
         try {
             conf = mapper.readValue(json, MultiLayerConfiguration.class);
+        } catch (InvalidTypeIdException e){
+            if(e.getMessage().contains("@class")){
+                try {
+                    //JSON may be legacy (1.0.0-alpha or earlier), attempt to load it using old format
+                    return JsonMappers.getLegacyMapper().readValue(json, MultiLayerConfiguration.class);
+                } catch (InvalidTypeIdException e2){
+                    //Check for legacy custom layers: "Could not resolve type id 'CustomLayer' as a subtype of [simple type, class org.deeplearning4j.nn.conf.layers.Layer]: known type ids = [Bidirectional, CenterLossOutputLayer, CnnLossLayer, ..."
+                    //1.0.0-beta5: dropping support for custom layers defined in pre-1.0.0-beta format. Built-in layers from these formats still work
+                    String msg = e2.getMessage();
+                    if(msg != null && msg.contains("Could not resolve type id")){
+                        throw new RuntimeException("Error deserializing MultiLayerConfiguration - configuration may have a custom " +
+                                "layer, vertex or preprocessor, in pre version 1.0.0-beta JSON format.\nModels in legacy format with custom" +
+                                " layers should be loaded in 1.0.0-beta to 1.0.0-beta4 and saved again, before loading in the current version of DL4J", e);
+                    }
+                    throw new RuntimeException(e2);
+                } catch (IOException e2){
+                    throw new RuntimeException(e2);
+                }
+            }
+            throw new RuntimeException(e);
         } catch (IOException e) {
             //Check if this exception came from legacy deserializer...
             String msg = e.getMessage();

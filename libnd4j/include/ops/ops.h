@@ -660,6 +660,98 @@ namespace simdOps {
 		}
 	};
 
+    template <typename X>
+    class IntOr {
+    public:
+
+        op_def static X op(X d1, X d2) {
+            return d2 | d1;
+        }
+
+        op_def static X op(X d1, X d2, X *params) {
+            return op(d1, d2);
+        }
+    };
+
+    template <typename X>
+    class IntAnd {
+    public:
+
+        op_def static X op(X d1, X d2) {
+            return d2 & d1;
+        }
+
+        op_def static X op(X d1, X d2, X *params) {
+            return op(d1, d2);
+        }
+    };
+
+    template <typename X>
+    class IntXor {
+    public:
+
+        op_def static X op(X d1, X d2) {
+            return d2 ^ d1;
+        }
+
+        op_def static X op(X d1, X d2, X *params) {
+            return op(d1, d2);
+        }
+    };
+
+    template <typename X>
+    class ShiftLeft {
+    public:
+
+        op_def static X op(X d1, X d2) {
+            return d1 << d2;
+        }
+
+        op_def static X op(X d1, X d2, X *params) {
+            return op(d1, d2);
+        }
+    };
+
+    template <typename X>
+    class ShiftRight {
+    public:
+
+        op_def static X op(X d1, X d2) {
+            return d1 >> d2;
+        }
+
+        op_def static X op(X d1, X d2, X *params) {
+            return op(d1, d2);
+        }
+    };
+
+    template <typename X>
+    class CyclicShiftLeft {
+    public:
+
+        op_def static X op(X d1, X d2) {
+            return d1 << d2 | d1 >> ((sizeof(X) * 8) - d2);
+        }
+
+        op_def static X op(X d1, X d2, X *params) {
+            return op(d1, d2);
+        }
+    };
+
+    template <typename X>
+    class CyclicShiftRight {
+    public:
+
+        op_def static X op(X d1, X d2) {
+            return d1 >> d2 | d1 << ((sizeof(X) * 8) - d2);
+        }
+
+        op_def static X op(X d1, X d2, X *params) {
+            return op(d1, d2);
+        }
+    };
+
+
 	template <typename X, typename Z>
 	class Or {
 	public:
@@ -3746,7 +3838,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IndexAbsoluteMax  {
 	public:
 		static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
@@ -3799,7 +3891,7 @@ namespace simdOps {
 		}
 	};
 
-    template <typename X>
+    template <typename X, typename Z>
     class FirstIndex {
     public:
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
@@ -3861,7 +3953,7 @@ namespace simdOps {
     };
 
 
-    template <typename X>
+    template <typename X, typename Z>
     class LastIndex {
     public:
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(functions::indexreduce::IndexValue<X> val, X *extraParams) {
@@ -3920,7 +4012,7 @@ namespace simdOps {
     };
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IndexMax  {
 	public:
 
@@ -3974,7 +4066,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IndexAbsoluteMin {
 	public:
 		static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(
@@ -4030,7 +4122,7 @@ namespace simdOps {
 	};
 
 
-	template <typename X>
+	template <typename X, typename Z>
 	class IndexMin {
 	public:
         static _CUDA_HD inline functions::indexreduce::IndexValue<X> op(
