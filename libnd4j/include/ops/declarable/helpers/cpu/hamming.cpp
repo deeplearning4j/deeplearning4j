@@ -24,6 +24,18 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
+
+            static Nd4jLong hamming_distance(unsigned long long x, unsigned long long y) {
+                Nd4jLong dist = 0;
+
+                for (unsigned long long val = x ^ y; val > 0; val /= 2) {
+                    if (val & 1)
+                        dist++;
+                }
+                return dist;
+            }
+
+
             template <typename X, typename Z>
             static void _hamming(NDArray &x, NDArray &y, NDArray &z) {
                 auto xEws = x.ews();
@@ -47,7 +59,7 @@ namespace nd4j {
                         auto _x = static_cast<unsigned long long>(xBuffer[e]);
                         auto _y = static_cast<unsigned long long>(yBuffer[e]);
 
-                        intermediate[omp_get_thread_num()] += __builtin_popcountll(_x ^ _y);
+                        intermediate[omp_get_thread_num()] += hamming_distance(_x ^ _y);
                     }
 
                 } else if (xEws > 1 && yEws > 1 && x.ordering() == y.ordering()) {
@@ -56,7 +68,7 @@ namespace nd4j {
                         auto _x = static_cast<unsigned long long>(xBuffer[e * xEws]);
                         auto _y = static_cast<unsigned long long>(yBuffer[e * yEws]);
 
-                        intermediate[omp_get_thread_num()] += __builtin_popcountll(_x ^ _y);
+                        intermediate[omp_get_thread_num()] += hamming_distance(_x ^ _y);
                     }
                 } else {
                     PRAGMA_OMP_PARALLEL_FOR
@@ -64,7 +76,7 @@ namespace nd4j {
                         auto _x = static_cast<unsigned long long>(x.e<Nd4jLong>(e));
                         auto _y = static_cast<unsigned long long>(y.e<Nd4jLong>(e));
 
-                        intermediate[omp_get_thread_num()] += __builtin_popcountll(_x ^ _y);
+                        intermediate[omp_get_thread_num()] += hamming_distance(_x ^ _y);
                     }
                 }
 
