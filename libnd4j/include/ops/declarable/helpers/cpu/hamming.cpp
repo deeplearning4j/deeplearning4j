@@ -59,7 +59,7 @@ namespace nd4j {
                         auto _x = static_cast<unsigned long long>(xBuffer[e]);
                         auto _y = static_cast<unsigned long long>(yBuffer[e]);
 
-                        intermediate[omp_get_thread_num()] += hamming_distance(_x ^ _y);
+                        intermediate[omp_get_thread_num()] += hamming_distance(_x, _y);
                     }
 
                 } else if (xEws > 1 && yEws > 1 && x.ordering() == y.ordering()) {
@@ -68,7 +68,7 @@ namespace nd4j {
                         auto _x = static_cast<unsigned long long>(xBuffer[e * xEws]);
                         auto _y = static_cast<unsigned long long>(yBuffer[e * yEws]);
 
-                        intermediate[omp_get_thread_num()] += hamming_distance(_x ^ _y);
+                        intermediate[omp_get_thread_num()] += hamming_distance(_x, _y);
                     }
                 } else {
                     PRAGMA_OMP_PARALLEL_FOR
@@ -76,7 +76,7 @@ namespace nd4j {
                         auto _x = static_cast<unsigned long long>(x.e<Nd4jLong>(e));
                         auto _y = static_cast<unsigned long long>(y.e<Nd4jLong>(e));
 
-                        intermediate[omp_get_thread_num()] += hamming_distance(_x ^ _y);
+                        intermediate[omp_get_thread_num()] += hamming_distance(_x, _y);
                     }
                 }
 
