@@ -30,7 +30,7 @@ namespace nd4j {
 
                 shared[threadIdx.x] = 0;
 
-
+                // each thread will compare 2 elements: E and E+1
                 for (int e = tid; e < length - 1; e += blockDim.x * gridDim.x) {
                     auto val0 = x[shape::getIndexOffset(e, xShapeInfo, length)];
                     auto val1 = x[shape::getIndexOffset(e+1, xShapeInfo, length)];
@@ -41,11 +41,12 @@ namespace nd4j {
                     else
                         v = val1 >= val0;
 
+                    // store comparison result in shared memory
                     shared[threadIdx.x] += v ? 0 : 1;
                 }
                 __syncthreads();
 
-                // aggregate sum
+                // aggregate sums in shared memory
                 for (uint activeThreads = blockDim.x / 2; activeThreads > 0; activeThreads /= 2) {
                     if (threadIdx.x < activeThreads)
                         shared[threadIdx.x] += shared[threadIdx.x + activeThreads];
@@ -53,7 +54,7 @@ namespace nd4j {
                 }
 
 
-                // store over the grid
+                // store over the grid if we have more than 1 block
                 if (gridDim.x > 1) {
 
                     auto tc = reinterpret_cast<unsigned int *>(reductionBuffer);
@@ -96,7 +97,7 @@ namespace nd4j {
                     }
                 }
                 else {
-
+                    // if we have only 1 block, we just store results right away
                     if (threadIdx.x == 0) {
                         auto tc = reinterpret_cast<unsigned int*>(reductionBuffer);
                         tc[16384] = 0;

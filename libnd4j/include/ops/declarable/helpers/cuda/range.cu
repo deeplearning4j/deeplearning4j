@@ -28,7 +28,7 @@ namespace helpers {
     template <typename T>
     static __global__ void global_range(void *output, Nd4jLong length, T start, T delta) {
         auto buff = reinterpret_cast<T*>(output);
-        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
 
         for(Nd4jLong i = tid; i < length; i += step)
@@ -43,10 +43,11 @@ namespace helpers {
     }
 
     void range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {
+        NDArray::prepareSpecialUse({&outVector}, {&start, &delta});
         BUILD_SINGLE_SELECTOR(outVector.dataType(), _range, (context, start, delta, outVector), LIBND4J_TYPES);
+        NDArray::registerSpecialUse({&outVector}, {&start, &delta});
     }
 
-    BUILD_SINGLE_TEMPLATE(template void _range, (nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector), NUMERIC_TYPES);
 }
 }
 }

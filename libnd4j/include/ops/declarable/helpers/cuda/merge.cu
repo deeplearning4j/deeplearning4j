@@ -37,7 +37,7 @@ namespace nd4j {
             static __global__ void global_mergeMaxIndex_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
                 auto output = reinterpret_cast<Z*>(voutput);
 
-                const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+                const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
                 const auto step = gridDim.x * blockDim.x;
 
                 for (Nd4jLong e = tid; e < length; e += step) {
@@ -81,7 +81,13 @@ namespace nd4j {
             }
 
             void mergeMaxIndex(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+                NDArray::prepareSpecialUse({&output}, {});
+                for (auto v:inArrs)
+                    v->syncToDevice();
+
                 BUILD_DOUBLE_SELECTOR(inArrs[0]->dataType(), output.dataType(), mergeMaxIndex_, (context, inArrs, output), LIBND4J_TYPES, INDEXING_TYPES);
+
+                NDArray::registerSpecialUse({&output}, {});
             }
 
 
@@ -90,7 +96,7 @@ namespace nd4j {
             static __global__ void global_mergeMax_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
                 auto output = reinterpret_cast<T*>(voutput);
 
-                const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+                const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
                 const auto step = gridDim.x * blockDim.x;
 
                 for (Nd4jLong e = tid; e < length; e += step) {
@@ -131,7 +137,12 @@ namespace nd4j {
             }
 
             void mergeMax(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+                NDArray::prepareSpecialUse({&output}, {});
+                for (auto v:inArrs)
+                    v->syncToDevice();
+
                 BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (context, inArrs, output), LIBND4J_TYPES);
+                NDArray::registerSpecialUse({&output}, {});
             }
 
             //////////////////////////////////////////////////////////////////////////
@@ -139,7 +150,7 @@ namespace nd4j {
             static __global__ void global_mergeAvg_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
                 auto output = reinterpret_cast<T*>(voutput);
 
-                const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+                const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
                 const auto step = gridDim.x * blockDim.x;
 
                 for (Nd4jLong e = tid; e < length; e += step) {
@@ -178,7 +189,13 @@ namespace nd4j {
             }
 
             void mergeAvg(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+                NDArray::prepareSpecialUse({&output}, {});
+                for (auto v:inArrs)
+                    v->syncToDevice();
+
                 BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (context, inArrs, output), FLOAT_TYPES);
+
+                NDArray::registerSpecialUse({&output}, {});
             }
 
             //////////////////////////////////////////////////////////////////////////
@@ -186,7 +203,7 @@ namespace nd4j {
             static __global__ void global_mergeAdd_(void **inArrs, void **inShapes, const int numArrays, void *voutput, Nd4jLong *outputShape, Nd4jLong length) {
                 auto output = reinterpret_cast<T*>(voutput);
 
-                const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+                const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
                 const auto step = gridDim.x * blockDim.x;
 
                 for (Nd4jLong e = tid; e < length; e += step) {
@@ -226,7 +243,13 @@ namespace nd4j {
             BUILD_SINGLE_TEMPLATE(template void mergeAdd_, (nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output), NUMERIC_TYPES);
 
             void mergeAdd(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+                NDArray::prepareSpecialUse({&output}, {});
+                for (auto v:inArrs)
+                    v->syncToDevice();
+
                 BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (context, inArrs, output), NUMERIC_TYPES);
+
+                NDArray::registerSpecialUse({&output}, {});
             }
         }
     }

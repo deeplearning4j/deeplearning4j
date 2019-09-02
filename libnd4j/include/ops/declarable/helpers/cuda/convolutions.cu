@@ -424,7 +424,7 @@ static __global__ void avgPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
     }
     __syncthreads();
 
-    int tid = blockIdx.x * gridDim.x + threadIdx.x;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
 
@@ -519,7 +519,7 @@ static __global__ void pnormPooling2dCuda(const void *vx, const Nd4jLong *xShape
     }
     __syncthreads();
 
-    int tid = blockIdx.x * gridDim.x + threadIdx.x;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
 
@@ -610,7 +610,7 @@ static __global__ void maxPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
     }
     __syncthreads();
 
-    int tid = blockIdx.x * gridDim.x + threadIdx.x;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
 

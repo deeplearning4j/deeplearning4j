@@ -74,17 +74,14 @@ static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerB
 ///////////////////////////////////////////////////////////////////
 void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& z) {
 
-    if(!n.isActualOnDeviceSide()) n.syncToDevice();
-    if(!x.isActualOnDeviceSide()) x.syncToDevice();    
+    NDArray::prepareSpecialUse({&z}, {&n, &x});
         
     int threadsPerBlock = MAX_NUM_THREADS;
     int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
     
     BUILD_SINGLE_SELECTOR(n.dataType(), polyGammaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), n.getSpecialBuffer(), n.getSpecialShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo()), FLOAT_TYPES);
 
-    n.tickReadHost();
-    x.tickReadHost();
-    z.tickWriteDevice();
+    NDArray::registerSpecialUse({&z}, {&n, &x});
 }
 
 BUILD_SINGLE_TEMPLATE(template void polyGammaCudaLauncher, (const int blocksPerGrid, const int threadsPerBlock, const cudaStream_t *stream, const void *vn, const Nd4jLong *nShapeInfo, const void *vx, const Nd4jLong *xShapeInfo, void *vz, const Nd4jLong *zShapeInfo), FLOAT_TYPES);

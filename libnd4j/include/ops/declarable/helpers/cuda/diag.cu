@@ -39,7 +39,7 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
     }
     __syncthreads();
 
-    const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
     const auto step = gridDim.x * blockDim.x;
     for (int t = tid; t < inputLength; t += step) {
         z[shape::getIndexOffset(t * (inputLength + 1), outputShape, outputLength)] = x[shape::getIndexOffset(t, inputShape, inputLength)]; //tX];
@@ -59,7 +59,7 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
         }
         __syncthreads();
 
-        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
         Nd4jLong i = threadIdx.x * (outputLength + 1);
         for (int t = tid; t < outputLength && i < inputLength; t += step) {
