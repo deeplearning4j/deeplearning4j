@@ -16,17 +16,20 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
-import java.util.Collections;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.tensorflow.framework.AttrValue;
+import org.tensorflow.framework.GraphDef;
+import org.tensorflow.framework.NodeDef;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * ELU: Exponential Linear Unit (alpha=1.0)<br>
@@ -37,25 +40,20 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ELU extends BaseTransformStrictOp {
-    public ELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+public class ELU extends DynamicCustomOp {
+    public ELU(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, new SDVariable[]{i_v});
     }
 
     public ELU() {
     }
 
     public ELU(INDArray x, INDArray z) {
-        super(x, z);
+        super(null, wrapOrNull(x), wrapOrNull(z));
     }
 
     public ELU(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public int opNum() {
-        return 35;
+        this(x, null);
     }
 
     @Override
@@ -74,10 +72,22 @@ public class ELU extends BaseTransformStrictOp {
     }
 
     @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
+    }
+
+    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //ELU: e^x-1 if x<0, x otherwise
         //dL/dIn = dL/Out * dOut/dIn
         return Collections.singletonList(f().eluBp(arg(), i_v.get(0)));
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 datatype for ELU, got %s", dataTypes);
+        Preconditions.checkState(dataTypes.get(0).isFPType(), "Expected floating point input type for ELU, got %s", dataTypes);
+
+        return dataTypes;
+    }
 }

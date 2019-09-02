@@ -438,7 +438,7 @@ public class Transforms {
 
 
     public static INDArray elu(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().exec(new ELU(in, (copy ? in.ulike() : in)));
+        return Nd4j.getExecutioner().exec(new ELU(in, (copy ? in.ulike() : in)))[0];
     }
 
     public static INDArray eluDerivative(INDArray arr) {

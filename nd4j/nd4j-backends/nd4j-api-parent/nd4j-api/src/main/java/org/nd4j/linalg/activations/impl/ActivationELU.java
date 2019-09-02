@@ -58,7 +58,7 @@ public class ActivationELU extends BaseActivationFunction {
     public INDArray getActivation(INDArray in, boolean training) {
         // no support in ELU native to override alpha
         if (this.alpha != 1.00) {
-            INDArray alphaMultiple = Nd4j.getExecutioner().exec(new ELU(in.dup()));
+            INDArray alphaMultiple = Nd4j.getExecutioner().exec(new ELU(in.dup()))[0];
             alphaMultiple.muli(alpha);
             BooleanIndexing.replaceWhere(in, alphaMultiple, Conditions.lessThan(0));
         } else {

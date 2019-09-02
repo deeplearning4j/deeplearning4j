@@ -1559,7 +1559,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable elu(SDVariable iX) {
-        return new ELU(sameDiff(), iX, false).outputVariable();
+        return new ELU(sameDiff(), iX).outputVariable();
 
     }
 
