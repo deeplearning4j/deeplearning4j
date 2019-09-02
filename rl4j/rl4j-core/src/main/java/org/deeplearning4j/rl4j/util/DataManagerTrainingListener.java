@@ -15,12 +15,12 @@ public class DataManagerTrainingListener implements TrainingListener {
     }
 
     @Override
-    public ListenerResponse onTrainingStart(ITrainingEvent event) {
+    public ListenerResponse onTrainingStart() {
         return ListenerResponse.CONTINUE;
     }
 
     @Override
-    public void onTrainingEnd(ITrainingEvent event) {
+    public void onTrainingEnd() {
 
     }
 

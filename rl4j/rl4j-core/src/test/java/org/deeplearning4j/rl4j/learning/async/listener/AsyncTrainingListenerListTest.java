@@ -13,7 +13,7 @@ public class AsyncTrainingListenerListTest {
         TrainingListenerList sut = new TrainingListenerList();
 
         // Act
-        boolean resultTrainingStarted = sut.notifyTrainingStarted(null);
+        boolean resultTrainingStarted = sut.notifyTrainingStarted();
         boolean resultNewEpoch = sut.notifyNewEpoch(null);
         boolean resultEpochTrainingResult = sut.notifyEpochTrainingResult(null);
 
@@ -65,12 +65,12 @@ public class AsyncTrainingListenerListTest {
         public ListenerResponse onTrainingProgressResponse = ListenerResponse.CONTINUE;
 
         @Override
-        public ListenerResponse onTrainingStart(ITrainingEvent event) {
+        public ListenerResponse onTrainingStart() {
             return ListenerResponse.CONTINUE;
         }
 
         @Override
-        public void onTrainingEnd(ITrainingEvent event) {
+        public void onTrainingEnd() {
 
         }
 

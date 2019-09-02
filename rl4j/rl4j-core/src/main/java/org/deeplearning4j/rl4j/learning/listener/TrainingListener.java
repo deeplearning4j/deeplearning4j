@@ -37,12 +37,12 @@ public interface TrainingListener {
      * Called once when the training starts.
      * @return A ListenerResponse telling the source of the event if it should go on or cancel the training.
      */
-    ListenerResponse onTrainingStart(ITrainingEvent event);
+    ListenerResponse onTrainingStart();
 
     /**
      * Called once when the training has finished. This method is called even when the training has been aborted.
      */
-    void onTrainingEnd(ITrainingEvent event);
+    void onTrainingEnd();
 
     /**
      * Called before the start of every epoch.

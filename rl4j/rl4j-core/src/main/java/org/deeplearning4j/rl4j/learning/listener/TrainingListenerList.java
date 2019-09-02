@@ -39,9 +39,9 @@ public class TrainingListenerList {
      * Notify the listeners that the training has started. Will stop early if a listener returns {@link org.deeplearning4j.rl4j.learning.listener.TrainingListener.ListenerResponse#STOP}
      * @return whether or not the source training should be stopped
      */
-    public boolean notifyTrainingStarted(ITrainingEvent event) {
+    public boolean notifyTrainingStarted() {
         for (TrainingListener listener : listeners) {
-            if (listener.onTrainingStart(event) == TrainingListener.ListenerResponse.STOP) {
+            if (listener.onTrainingStart() == TrainingListener.ListenerResponse.STOP) {
                 return false;
             }
         }
@@ -52,9 +52,9 @@ public class TrainingListenerList {
     /**
      * Notify the listeners that the training has finished.
      */
-    public void notifyTrainingFinished(ITrainingEvent event) {
+    public void notifyTrainingFinished() {
         for (TrainingListener listener : listeners) {
-            listener.onTrainingEnd(event);
+            listener.onTrainingEnd();
         }
     }
 

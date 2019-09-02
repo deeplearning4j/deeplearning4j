@@ -28,7 +28,7 @@ public class MockTrainingListener implements TrainingListener {
 
 
     @Override
-    public ListenerResponse onTrainingStart(ITrainingEvent event) {
+    public ListenerResponse onTrainingStart() {
         ++onTrainingStartCallCount;
         --remainingTrainingStartCallCount;
         return remainingTrainingStartCallCount < 0 ? ListenerResponse.STOP : ListenerResponse.CONTINUE;
@@ -57,7 +57,7 @@ public class MockTrainingListener implements TrainingListener {
     }
 
     @Override
-    public void onTrainingEnd(ITrainingEvent event) {
+    public void onTrainingEnd() {
         ++onTrainingEndCallCount;
     }
 }

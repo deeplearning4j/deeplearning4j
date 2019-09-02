@@ -107,22 +107,22 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
      * returns {@link org.deeplearning4j.rl4j.learning.listener.TrainingListener.ListenerResponse TrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
      * Events:
      * <ul>
-     *   <li>{@link TrainingListener#onTrainingStart(ITrainingEvent) onTrainingStart()} is called once when the training starts.</li>
-     *   <li>{@link TrainingListener#onTrainingEnd(ITrainingEvent) onTrainingEnd()}  is always called at the end of the training, even if the training was cancelled by a listener.</li>
+     *   <li>{@link TrainingListener#onTrainingStart() onTrainingStart()} is called once when the training starts.</li>
+     *   <li>{@link TrainingListener#onTrainingEnd() onTrainingEnd()}  is always called at the end of the training, even if the training was cancelled by a listener.</li>
      * </ul>
      */
     public void train() {
 
         log.info("AsyncLearning training starting.");
 
-        canContinue = listeners.notifyTrainingStarted(buildTrainingStartedEvent());
+        canContinue = listeners.notifyTrainingStarted();
         if (canContinue) {
             launchThreads();
             monitorTraining();
         }
 
         cleanupPostTraining();
-        listeners.notifyTrainingFinished(buildTrainingFinishedEvent());
+        listeners.notifyTrainingFinished();
     }
 
     protected void monitorTraining() {
