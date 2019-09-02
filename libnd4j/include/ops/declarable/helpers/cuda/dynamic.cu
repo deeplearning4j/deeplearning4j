@@ -43,7 +43,7 @@ namespace nd4j {
                 }
                 __syncthreads();
 
-
+                // we run things in blocks, 1 partition per block of threads
                 for (Nd4jLong o = blockIdx.x; o < numOutputs; o += gridDim.x) {
                     auto z = reinterpret_cast<X*>(vz[o]);
 
@@ -89,9 +89,11 @@ namespace nd4j {
                 auto x = reinterpret_cast<X*>(vx);
                 auto indices = reinterpret_cast<Y*>(vindices);
 
+                // we run things in blocks, 1 partition per block of threads
                 for (int i = blockIdx.x; i < numOutputs; i += gridDim.x) {
                     auto z = reinterpret_cast<X*>(vz[i]);
 
+                    // each thread has own counter for partitions
                     int outCnt = 0;
 
                     for (Nd4jLong e = 0; e < iLength; e++) {
@@ -145,6 +147,7 @@ namespace nd4j {
                         tadOffsets[i] = packZ.platformOffsets();
                     }
 
+                    // we copy pointers to device
                     auto dOutBuffers = reinterpret_cast<void **>(pm.replicatePointer(outBuffers.data(), outBuffers.size() * sizeof(void *)));
                     auto dOutTadShapes = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(tadShapes.data(), tadShapes.size() * sizeof(Nd4jLong *)));
                     auto dOutTadOffsets = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(tadOffsets.data(), tadOffsets.size() * sizeof(Nd4jLong *)));
@@ -248,6 +251,7 @@ namespace nd4j {
                         indicesShapes[e] = indices.at(e)->getSpecialShapeInfo();
                     }
 
+                    // copying pointers to buffers to device
                     auto dInputBuffers = reinterpret_cast<void **>(pm.replicatePointer(inputBuffers.data(), inputSize * sizeof(void *)));
                     auto dIndicesBuffers = reinterpret_cast<void **>(pm.replicatePointer(indicesBuffers.data(), inputSize * sizeof(void *)));
                     auto dInputShapes = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(inputShapes.data(), inputSize * sizeof(Nd4jLong *)));
@@ -283,6 +287,7 @@ namespace nd4j {
                         inputTadOffsets[e] = packX.platformOffsets();
                     }
 
+                    // copying pointers to buffers to device
                     auto dInputBuffers = reinterpret_cast<void **>(pm.replicatePointer(inputBuffers.data(), inputSize * sizeof(void *)));
                     auto dInputTadShapes = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(inputTadShapes.data(), inputSize * sizeof(Nd4jLong *)));
                     auto dInputTadOffsets = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(inputTadOffsets.data(), inputSize * sizeof(Nd4jLong *)));
@@ -313,6 +318,7 @@ namespace nd4j {
 
                 NDArray::registerSpecialUse({}, {indices, input});
 
+                // TODO: it would be nice to have NDArray::registerSpecialUse signature that accepts something else beyond initializer_list
                 for (auto v:outputList) {
                     v->tickWriteDevice();
                 }

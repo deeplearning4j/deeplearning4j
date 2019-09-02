@@ -79,14 +79,6 @@ public class SparseNDArrayCSR extends BaseSparseNDArrayCSR {
         return null;
     }
 
-    /**
-     * Perform an copy matrix multiplication
-     *
-     * @param other         the other matrix to perform matrix multiply with
-     * @param result        the result ndarray
-     * @param mMulTranspose the transpose status of each array
-     * @return the result of the matrix multiplication
-     */
     @Override
     public INDArray mmul(INDArray other, INDArray result, MMulTranspose mMulTranspose) {
         return null;

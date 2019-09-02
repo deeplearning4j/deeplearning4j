@@ -69,9 +69,7 @@ public class HardSigmoid extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable in = arg();
-        SDVariable dOutdIn = new HardSigmoidDerivative(sameDiff, in, false).outputVariables()[0];
-        return Collections.singletonList(dOutdIn.mul(f1.get(0)));
+        return Collections.singletonList(f().hardSigmoidBp(arg(), f1.get(0)));
     }
 
 

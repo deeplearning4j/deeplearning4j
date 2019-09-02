@@ -2761,7 +2761,7 @@ TEST_F(DeclarableOpsTests5, ELU_1) {
     auto exp     = NDArrayFactory::create<double>('c', {2, 2, 2}, { -0.63212055,  2. , 1.5, -0.753403, 1.,   2.,  2.,   1.});
     auto res     = NDArrayFactory::create<double>('c', {2, 2, 2});
 
-    input.applyTransform(transform::ELU, &res);
+    input.applyScalar(nd4j::scalar::ELU, 1.f, &res);
 
     ASSERT_TRUE(res.equalsTo(&exp));
 }

@@ -31,18 +31,18 @@ namespace helpers {
 
     template <typename T>
     static __global__ void fillUpElementKernel(void* outputBuffer, Nd4jLong* outputShapeInfo, void* inputBuffer, Nd4jLong* inputShapeInfo, Nd4jLong* pTadShape, Nd4jLong* pTadOffsets, Nd4jLong n) {
-        __shared__ T *z, *x;
         __shared__ Nd4jLong bufferLength, arrLen;
 
+        auto z = reinterpret_cast<T*>(outputBuffer);
+        auto x = reinterpret_cast<T*>(inputBuffer);
+
         if (threadIdx.x == 0) {
-            z = reinterpret_cast<T*>(outputBuffer);
-            x = reinterpret_cast<T*>(inputBuffer);
             arrLen = shape::length(pTadShape);
             bufferLength = shape::length(outputShapeInfo);
         }
         __syncthreads();
 
-        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
         for (int t = tid; t < bufferLength; t += step) {
             auto tX = x + pTadOffsets[t];
@@ -77,8 +77,6 @@ namespace helpers {
 //            manager.synchronize();
             sortedVals.tickWriteDevice();
             sortedVals.syncToHost();
-            sortedVals.printIndexedBuffer("Hello");
-            sortedVals.printBuffer("Hello line");
             auto stream = context->getCudaStream();
             fillUpElementKernel<T><<<32, 64, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), pTadShape, pTadOffsets, n);
         }

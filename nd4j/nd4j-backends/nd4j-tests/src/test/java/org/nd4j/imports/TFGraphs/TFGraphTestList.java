@@ -52,7 +52,8 @@ public class TFGraphTestList {
     public TemporaryFolder testDir = new TemporaryFolder();
 
     public static String[] modelNames = new String[]{
-            "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME"
+//            "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME"
+            "cnn2d_layers/channels_last_b1_k2_s1_d1_SAME_elu"
     };
 
     @After

@@ -12859,7 +12859,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         /**
          * This is Concatenated RELU implementation.
          * What happens inside: RELU(Concat((x, -x, {-1})))
-         * 
+         *
          * PLEASE NOTE: Concatenation will double amount of features available in input
          */
 //         #if NOT_EXCLUDED(OP_crelu)

@@ -25,15 +25,15 @@
 #include <ops/declarable/helpers/legacy_helpers.h>
 namespace nd4j {
     namespace ops {
-        CONFIGURABLE_OP_IMPL(lrelu, 1, 1, true, 1, 0) {
+        CONFIGURABLE_OP_IMPL(lrelu, 1, 1, true, -2, 0) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            float t = block.numT() > 0 ? T_ARG(0) : 0.0f;
+            float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
 
-            input->applyScalar(nd4j::scalar::LeakyRELU, t, output);
+            input->applyScalar(nd4j::scalar::LeakyRELU, alpha, output);
             STORE_RESULT(output);
-            
+
             return Status::OK();
         }
 
@@ -42,15 +42,17 @@ namespace nd4j {
                     ->setAllowedInputTypes(0, DataType::ANY)
                     ->setAllowedOutputTypes(0, {ALL_FLOATS});
         }
-        
-        CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, 0, 0) {
+
+        CONFIGURABLE_OP_IMPL(lrelu_bp, 2, 1, true, -2, 0) {
             auto input = INPUT_VARIABLE(0);
             auto epsilon = INPUT_VARIABLE(1);
 
             auto z = OUTPUT_VARIABLE(0);
 
+            float alpha = block.numT() > 0 ? T_ARG(0) : 0.01f;
+
             //input->applyPairwiseTransform(pairwise::LRELUDerivativeE, epsilon, z, nullptr);
-            helpers::leakyReluDerivative(block.launchContext(), input, epsilon, z);
+            helpers::leakyReluDerivative(block.launchContext(), input, epsilon, z, alpha);
             return Status::OK();
         }
 

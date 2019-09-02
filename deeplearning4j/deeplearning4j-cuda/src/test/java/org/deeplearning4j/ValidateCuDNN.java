@@ -248,7 +248,7 @@ public class ValidateCuDNN extends BaseDL4JTest {
             Nd4j.getRandom().setSeed(12345);
             INDArray features = Nd4j.rand(fShape);
             INDArray labels = Nd4j.rand(lShape);
-            labels = Nd4j.exec(new IsMax(labels, 1));
+            labels = Nd4j.exec(new IsMax(labels, 1))[0].castTo(features.dataType());
 
             List<CuDNNValidationUtil.TestCase> testCaseList = new ArrayList<>();
 
@@ -256,7 +256,7 @@ public class ValidateCuDNN extends BaseDL4JTest {
             for (int i = 0; i < 6; i++) {
                 INDArray f = Nd4j.rand(fShape);
                 INDArray l = Nd4j.rand(lShape);
-                Nd4j.exec(new IsMax(l, 1))[0];
+                l = Nd4j.exec(new IsMax(l, 1))[0].castTo(features.dataType());
                 dataSets.add(new DataSet(f, l));
             }
             DataSetIterator iter = new ExistingDataSetIterator(dataSets);

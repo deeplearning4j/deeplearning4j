@@ -116,7 +116,6 @@
 
 
 #define TRANSFORM_STRICT_OPS \
-        (3, ELUDerivative), \
         (4, TanhDerivative), \
         (5, HardTanhDerivative), \
         (6, SigmoidDerivative), \
@@ -148,7 +147,6 @@
         (32, ATan), \
         (33, HardTanh), \
         (34, SoftSign), \
-        (35, ELU), \
         (36, HardSigmoid), \
         (37, RationalTanh) ,\
         (38, RectifiedTanh) ,\
@@ -211,6 +209,8 @@
         (4, ReverseDivide),\
         (5, ReverseSubtract),\
         (6, MaxPairwise),\
+        (7, ELU), \
+        (8, ELUDerivative), \
         (13, MinPairwise),\
         (14, CopyPws),\
         (15, Mod),\

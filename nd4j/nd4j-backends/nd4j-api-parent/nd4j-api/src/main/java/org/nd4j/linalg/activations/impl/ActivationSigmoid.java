@@ -18,7 +18,8 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -41,9 +42,10 @@ public class ActivationSigmoid extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdz = Nd4j.getExecutioner().exec(new SigmoidDerivative(in));
-        dLdz.muli(epsilon);
-        return new Pair<>(dLdz, null);
+
+        Nd4j.getExecutioner().execAndReturn(new SigmoidDerivative(in, epsilon, in));
+
+        return new Pair<>(in, null);
     }
 
     @Override

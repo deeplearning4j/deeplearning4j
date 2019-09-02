@@ -46,7 +46,7 @@ public class XavierUniformInitScheme extends BaseWeightInitScheme {
         //As per Glorot and Bengio 2010: Uniform distribution U(-s,s) with s = sqrt(6/(fanIn + fanOut))
         //Eq 16: http://jmlr.org/proceedings/papers/v9/glorot10a/glorot10a.pdf
         double s = Math.sqrt(6.0) / Math.sqrt(fanIn + fanOut);
-        return Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-s, s));
+        return Nd4j.rand(Nd4j.getDistributions().createUniform(-s, s), shape);
     }
 
 

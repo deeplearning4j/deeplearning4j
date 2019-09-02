@@ -31,8 +31,11 @@ import java.util.List;
  *
  * https://arxiv.org/pdf/1706.02515.pdf
  *
+ * @deprecated Use {@link SeluBp}
+ *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class SELUDerivative extends BaseTransformStrictOp {
 
     private static final double SELU_ALPHA = 1.6732632423543772848170429916717;

@@ -204,20 +204,29 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.segment.SegmentSum;
 import org.nd4j.linalg.api.ops.impl.transforms.dtype.Cast;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.RSqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.DynamicPartitionBp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LogSoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.RectifiedTanhBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.RectifiedTanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.Relu6Derivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SELUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SeluBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SigmoidDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxBp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.*;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.*;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.bool.And;
@@ -1126,10 +1135,26 @@ public class DifferentialFunctionFactory {
         return new org.nd4j.linalg.api.ops.impl.transforms.gradient.TanhDerivative(sameDiff(), iX, wrt).outputVariable();
     }
 
+    public SDVariable tanhRationalBp(SDVariable in, SDVariable epsilon) {
+        return new RationalTanhBp(sameDiff(), in, epsilon).outputVariable();
+    }
+
+    public SDVariable tanhRectifiedBp(SDVariable in, SDVariable epsilon) {
+        return new RectifiedTanhBp(sameDiff(), in, epsilon).outputVariable();
+    }
+
+    /**
+     * Use {@link #tanhRationalBp(SDVariable, SDVariable)}
+     */
+    @Deprecated
     public SDVariable tanhRationalDerivative(SDVariable in) {
         return new RationalTanhDerivative(sameDiff(), in, false).outputVariable();
     }
 
+    /**
+     * Use {@link #tanhRectifiedBp(SDVariable, SDVariable)}
+     */
+    @Deprecated
     public SDVariable tanhRectifiedDerivative(SDVariable in) {
         return new RectifiedTanhDerivative(sameDiff(), in, false).outputVariable();
     }
@@ -1280,6 +1305,14 @@ public class DifferentialFunctionFactory {
         return new Cube(sameDiff(), iX, false).outputVariable();
     }
 
+    public SDVariable cubeBp(SDVariable in, SDVariable epsilon) {
+        return new CubeBp(sameDiff(), in, epsilon).outputVariable();
+    }
+
+    /**
+     * @deprecated Use {@link #cubeBp(SDVariable, SDVariable)}
+     */
+    @Deprecated
     public SDVariable cubeDerivative(SDVariable iX) {
         return new CubeDerivative(sameDiff(), iX, false).outputVariable();
     }
@@ -1329,6 +1362,14 @@ public class DifferentialFunctionFactory {
         return new RectifiedLinearDerivative(sameDiff(), input, grad).outputVariable();
     }
 
+    public SDVariable thresholdRelu(SDVariable in, SDVariable epsilon, double cutoff){
+        return new ThresholdRelu(sameDiff(), in, cutoff).outputVariable();
+    }
+
+    public SDVariable thresholdReluBp(SDVariable in, SDVariable epsilon, double cutoff){
+        return new ThresholdReluBp(sameDiff(), in, epsilon, cutoff).outputVariable();
+    }
+
     public SDVariable relu6(SDVariable iX, double cutoff) {
         return new Relu6(sameDiff(), iX, false, cutoff).outputVariable();
     }
@@ -1350,6 +1391,14 @@ public class DifferentialFunctionFactory {
         return new HardTanh(sameDiff(), iX, false).outputVariable();
     }
 
+    public SDVariable hardTanhBp(SDVariable in, SDVariable epsilon) {
+        return new HardTanhBp(sameDiff(), in, epsilon).outputVariable();
+    }
+
+    /**
+     * @deprecated Use {@link #hardTanhBp(SDVariable, SDVariable)}
+     */
+    @Deprecated
     public SDVariable hardTanhDerivative(SDVariable iX) {
         return new HardTanhDerivative(sameDiff(), iX, false).outputVariable();
     }
@@ -1358,6 +1407,9 @@ public class DifferentialFunctionFactory {
         return new HardSigmoid(sameDiff(), in, false).outputVariable();
     }
 
+    public SDVariable hardSigmoidBp(SDVariable in, SDVariable epsilon){
+        return new HardSigmoidBp(sameDiff(), in, epsilon).outputVariable();
+    }
 
     public SDVariable sigmoid(SDVariable iX) {
         return new Sigmoid(sameDiff(), iX, false).outputVariable();
@@ -1486,10 +1538,16 @@ public class DifferentialFunctionFactory {
 
     }
 
+    public SDVariable softsignBp(SDVariable in, SDVariable epsilon) {
+        return new SoftSignBp(sameDiff(), in, epsilon).outputVariable();
+    }
 
+    /**
+     * @deprecated Use {@link #softsignBp(SDVariable, SDVariable)}
+     */
+    @Deprecated
     public SDVariable softsignDerivative(SDVariable iX) {
         return new SoftSignDerivative(sameDiff(), iX, false).outputVariable();
-
     }
 
 
@@ -1500,14 +1558,12 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable elu(SDVariable iX) {
-        return new ELU(sameDiff(), iX, false).outputVariable();
+        return new ELU(sameDiff(), iX).outputVariable();
 
     }
 
-
-    public SDVariable eluDerivative(SDVariable iX) {
-        return new ELUDerivative(sameDiff(), iX, false).outputVariable();
-
+    public SDVariable eluBp(SDVariable in, SDVariable epsilon) {
+        return new EluBp(sameDiff(), in, epsilon).outputVariable();
     }
 
 
@@ -1516,6 +1572,14 @@ public class DifferentialFunctionFactory {
 
     }
 
+    public SDVariable leakyReluBp(SDVariable in, SDVariable epsilon, double cutoff) {
+        return new LeakyReLUBp(sameDiff(), in, epsilon, cutoff).outputVariable();
+    }
+
+    /**
+     * @deprecated Use {@link #leakyReluBp(SDVariable, SDVariable, double)}
+     */
+    @Deprecated
     public SDVariable leakyReluDerivative(SDVariable iX, double cutoff) {
         return new LeakyReLUDerivative(sameDiff(), iX, false, cutoff).outputVariable();
     }
@@ -1832,7 +1896,15 @@ public class DifferentialFunctionFactory {
         return new SELU(sameDiff(), arg, false).outputVariable();
     }
 
+    public SDVariable seluBp(SDVariable in, SDVariable epsilon) {
+        validateDifferentialFunctionsameDiff(in);
+        return new SeluBp(sameDiff(), in, epsilon).outputVariable();
+    }
 
+    /**
+     * @deprecated Use {@link #seluBp(SDVariable, SDVariable)}
+     */
+    @Deprecated
     public SDVariable seluDerivative(SDVariable arg) {
         validateDifferentialFunctionsameDiff(arg);
         return new SELUDerivative(sameDiff(), arg, false).outputVariable();

@@ -164,31 +164,6 @@ public class SDNN extends SDOps {
     }
 
     /**
-     * Element-wise derivative exponential linear unit (ELU) function, dOut/dIn given input.
-     * {@link #elu(SDVariable)}
-     *
-     * @param x Input variable
-     * @return Output variable
-     */
-    public SDVariable eluDerivative(SDVariable x) {
-        return eluDerivative(null, x);
-    }
-
-    /**
-     * Element-wise derivative exponential linear unit (ELU) function, dOut/dIn given input.
-     * {@link #elu(SDVariable)}
-     *
-     * @param name Output variable name
-     * @param x    Input variable
-     * @return Output variable
-     */
-    public SDVariable eluDerivative(String name, SDVariable x) {
-        validateFloatingPoint("eluDerivative", x);
-        SDVariable result = f().eluDerivative(x);
-        return updateVariableNameAndReference(result, name);
-    }
-
-    /**
      * GELU activation function - Gaussian Error Linear Units<br>
      * For more details, see <i>Gaussian Error Linear Units (GELUs)</i> - <a href="https://arxiv.org/abs/1606.08415">https://arxiv.org/abs/1606.08415</a>
      * This method uses the sigmoid approximation

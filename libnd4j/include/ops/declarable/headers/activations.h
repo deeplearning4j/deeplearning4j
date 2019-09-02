@@ -82,8 +82,8 @@ namespace nd4j {
          * Math is: x < 0 ?  alpha * x : x;
          */
         #if NOT_EXCLUDED(OP_lrelu)
-        DECLARE_CONFIGURABLE_OP(lrelu, 1, 1, true, 0, 0);
-        DECLARE_CONFIGURABLE_OP(lrelu_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(lrelu, 1, 1, true, -2, 0);
+        DECLARE_CONFIGURABLE_OP(lrelu_bp, 2, 1, true, -2, 0);
         #endif
 
         /**
@@ -91,8 +91,8 @@ namespace nd4j {
          * Math is: x >= 0 ? x : exp(x) - 1;
          */
         #if NOT_EXCLUDED(OP_elu)
-        DECLARE_CONFIGURABLE_OP(elu, 1, 1, true, 0, 0);
-        DECLARE_CONFIGURABLE_OP(elu_bp, 2, 1, true, 0, 0);
+        DECLARE_CONFIGURABLE_OP(elu, 1, 1, true, -2, 0);
+        DECLARE_CONFIGURABLE_OP(elu_bp, 2, 1, true, -2, 0);
         #endif
 
         /**
@@ -157,7 +157,7 @@ namespace nd4j {
         /**
          * This is Concatenated RELU implementation.
          * What happens inside: RELU(Concat((x, -x, {-1})))
-         * 
+         *
          * PLEASE NOTE: Concatenation will double amount of features available in input
          */
         #if NOT_EXCLUDED(OP_crelu)

@@ -46,7 +46,7 @@ public class SigmoidUniformInitScheme extends BaseWeightInitScheme {
     @Override
     public INDArray doCreate(DataType dataType, long[] shape, INDArray paramsView) {
         double r = 4.0 * Math.sqrt(6.0 / (fanIn + fanOut));
-        return Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-r, r));
+        return Nd4j.rand(Nd4j.getDistributions().createUniform(-r, r), shape);
     }
 
 

@@ -16,10 +16,12 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
@@ -36,6 +38,12 @@ public class SoftmaxBp extends DynamicCustomOp {
 
     public SoftmaxBp(SameDiff sd, SDVariable input, SDVariable grad, Integer dimension){
         super(null, sd, new SDVariable[]{input, grad});
+        if(dimension != null)
+            addIArgument(dimension);
+    }
+
+    public SoftmaxBp(@NonNull INDArray input, @NonNull INDArray grad, INDArray output, Integer dimension){
+        super(new INDArray[]{input, grad}, wrapOrNull(output));
         if(dimension != null)
             addIArgument(dimension);
     }

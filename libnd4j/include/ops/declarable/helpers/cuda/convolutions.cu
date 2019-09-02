@@ -424,7 +424,7 @@ static __global__ void avgPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
     }
     __syncthreads();
 
-    int tid = blockIdx.x * gridDim.x + threadIdx.x;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
 
@@ -519,7 +519,7 @@ static __global__ void pnormPooling2dCuda(const void *vx, const Nd4jLong *xShape
     }
     __syncthreads();
 
-    int tid = blockIdx.x * gridDim.x + threadIdx.x;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
 
@@ -610,7 +610,7 @@ static __global__ void maxPooling2dCuda(const void *vx, const Nd4jLong *xShapeIn
     }
     __syncthreads();
 
-    int tid = blockIdx.x * gridDim.x + threadIdx.x;
+    int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
     for (int index = tid; index < length; index += blockDim.x * gridDim.x) {
 
@@ -908,7 +908,7 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
         /*** max ***/
         case 0: {
             coord2 = hstart;
-            coord3 = hend;
+            coord3 = wstart;
 
             T max = -DataTypeUtils::max<T>();
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
@@ -923,8 +923,9 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             }
             coords[2] = coord2;
             coords[3] = coord3;
-            nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank)], y[yOffset]);
-
+            auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+            nd4j::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], y[yOffset]);
+            //z[zOffset] += y[yOffset];
         }
         break;
 
@@ -987,7 +988,7 @@ void ConvolutionUtils::pooling2dBP(nd4j::graph::Context& block, const NDArray& i
 
     PointersManager manager(block.launchContext(), "pooling2dBP");
 
-    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int threadsPerBlock = 256;
     const int blocksPerGrid = (gradO.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
     const int sharedMem = gradO.rankOf() * sizeof(Nd4jLong) * threadsPerBlock + 128;
 

@@ -273,9 +273,11 @@ namespace nd4j {
          * @param writeList
          * @param readList
          */
+         // TODO: it would be nice to have NDArray::registerSpecialUse signature that accepts something else beyond initializer_list
         static void registerSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList);
         static void prepareSpecialUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables = false);
 
+        // TODO: it would be nice to have NDArray::registerSpecialUse signature that accepts something else beyond initializer_list
         static void registerPrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList);
         static void preparePrimaryUse(const std::initializer_list<const NDArray*>& writeList, const std::initializer_list<const NDArray*>& readList, bool synchronizeWritables = false);
 
