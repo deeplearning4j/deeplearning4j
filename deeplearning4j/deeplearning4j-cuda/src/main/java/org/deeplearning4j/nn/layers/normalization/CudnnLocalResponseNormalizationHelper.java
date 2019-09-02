@@ -171,7 +171,7 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
         Pointer zData = allocator.getPointer(activations, context);
         Pointer dstData = allocator.getPointer(nextEpsilon, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream())));
         checkCudnn(cudnnLRNCrossChannelBackward(cudnnContext, cudnnContext.lrnDesc, CUDNN_LRN_CROSS_CHANNEL_DIM1,
                         this.alpha, cudnnContext.deltaTensorDesc, zData, cudnnContext.deltaTensorDesc, epsData,
                         cudnnContext.srcTensorDesc, srcData, this.beta, cudnnContext.dstTensorDesc, dstData));
@@ -215,7 +215,7 @@ public class CudnnLocalResponseNormalizationHelper extends BaseCudnnHelper imple
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream())));
         checkCudnn(cudnnLRNCrossChannelForward(cudnnContext, cudnnContext.lrnDesc, CUDNN_LRN_CROSS_CHANNEL_DIM1,
                         this.alpha, cudnnContext.srcTensorDesc, srcData, this.beta, cudnnContext.dstTensorDesc,
                         dstData));

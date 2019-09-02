@@ -194,7 +194,7 @@ public class CudnnDropoutHelper extends BaseCudnnHelper implements DropoutHelper
         Pointer xPtr = allocator.getPointer(input, context);
         Pointer yPtr = allocator.getPointer(resultArray, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream())));
         checkCudnn(cudnnDropoutForward(cudnnContext, cudnnContext.dropoutDesc, cudnnContext.xTensorDesc, xPtr,
                 cudnnContext.yTensorDesc, yPtr, mask, mask.capacity()));
 

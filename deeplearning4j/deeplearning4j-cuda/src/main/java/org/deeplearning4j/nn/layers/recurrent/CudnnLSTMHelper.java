@@ -248,7 +248,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         Pointer rwGradientsOutData = allocator.getPointer(rwGradientsOut, context);
         Pointer bGradientsOutData = allocator.getPointer(bGradientsOut, context);
 
-        CUstream_st stream = new CUstream_st(context.getOldStream());
+        CUstream_st stream = new CUstream_st(context.getCublasStream());
         checkCudnn(cudnnSetStream(cudnnContext, stream));
 
         if (truncatedBPTT) {
@@ -531,7 +531,7 @@ public class CudnnLSTMHelper extends BaseCudnnHelper implements LSTMHelper {
         Pointer finalMemCellStateData = allocator.getPointer(finalMemCellState, context);
         Pointer finalTimeStepActivationsData = allocator.getPointer(finalStepActivations, context);
 
-        CUstream_st stream = new CUstream_st(context.getOldStream());
+        CUstream_st stream = new CUstream_st(context.getCublasStream());
         checkCudnn(cudnnSetStream(cudnnContext, stream));
 
         checkCuda(cudaMemsetAsync(weightsSpace, 0, weightsSpace.limit(), stream));

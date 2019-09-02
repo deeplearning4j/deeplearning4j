@@ -271,7 +271,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         Pointer deltaData = allocator.getPointer(delta, context);
         Pointer dstData = allocator.getPointer(epsNext, context);
 
-        code = cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream()));
+        code = cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream()));
         checkCudnn(false, "cudnnSetStream", code, input, weights, null, delta, kernel, strides, pad, mode, null, bwdFilterAlgo, bwdDataAlgo, convolutionMode, dilation);
 
         code = cudnnSetTensor4dDescriptorEx(cudnnContext.dstTensorDesc, dataType, (int) miniBatch, (int) inDepth, (int) inH, (int) inW,
@@ -456,7 +456,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         Pointer biasData = allocator.getPointer(bias, context);
         Pointer dstData = allocator.getPointer(z, context);
 
-        code = cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream()));
+        code = cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream()));
         checkCudnn(true, "cudnnSetStream", code, input, weights, bias, null, kernel, strides, pad, mode, fwdAlgo, null, null, convolutionMode, dilation);
 
         code = cudnnGetConvolutionForwardWorkspaceSize(cudnnContext, cudnnContext.srcTensorDesc,
@@ -546,7 +546,7 @@ public class CudnnConvolutionHelper extends BaseCudnnHelper implements Convoluti
         CudaContext context = allocator.getFlowController().prepareAction(z);
         Pointer dstData = allocator.getPointer(z, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream())));
         switch (afn.toString()) {
             case "identity":
                 break;
