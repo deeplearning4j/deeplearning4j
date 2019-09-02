@@ -16,17 +16,13 @@
 
 package org.nd4j.linalg.api.ops.impl.scalar;
 
-import org.nd4j.autodiff.samediff.SDVariable;
-import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.graph.DataType;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseScalarOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
-
-import java.util.Arrays;
-import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.BaseScalarOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -108,8 +104,7 @@ public class LeakyReLU extends BaseScalarOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().leakyReluDerivative(arg(), alpha).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().leakyReluBp(arg(), i_v.get(0), alpha));
     }
 
     @Override

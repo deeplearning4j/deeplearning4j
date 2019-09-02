@@ -27,7 +27,11 @@ import java.util.List;
 
 /**
  * Cube derivative, e.g. 3x^2
+ *
+ * @deprecated Use {@link CubeBp}
+ *
  */
+@Deprecated
 public class CubeDerivative extends BaseTransformStrictOp {
     public CubeDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

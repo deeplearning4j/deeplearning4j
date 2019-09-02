@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import java.util.Collections;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -76,8 +77,7 @@ public class ELU extends BaseTransformStrictOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //ELU: e^x-1 if x<0, x otherwise
         //dL/dIn = dL/Out * dOut/dIn
-        SDVariable ret = f().eluDerivative(arg()).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().eluBp(arg(), i_v.get(0)));
     }
 
 }

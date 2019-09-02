@@ -31,9 +31,12 @@ import java.util.List;
  * Rational Tanh Derivative, as described at https://github.com/deeplearning4j/libnd4j/issues/351
  * Calculates dOut/dIn given input, not dL/dIn given dL/dOut and input
  *
+ * @deprecated Use {@link RationalTanhBp}
+ *
  * @author raver119@gmail.com
  * @author AlexDBlack
  */
+@Deprecated
 public class RationalTanhDerivative extends BaseTransformStrictOp {
     public RationalTanhDerivative(SameDiff sameDiff, SDVariable in, boolean inPlace) {
         super(sameDiff, in, inPlace);

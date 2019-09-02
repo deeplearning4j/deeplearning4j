@@ -43,7 +43,7 @@ public class UniformInitScheme extends BaseWeightInitScheme {
     @Override
     public INDArray doCreate(DataType dataType, long[] shape, INDArray paramsView) {
         double a = 1.0 / Math.sqrt(fanIn);
-        return Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-a, a));
+        return Nd4j.rand(Nd4j.getDistributions().createUniform(-a, a), shape);
     }
 
 

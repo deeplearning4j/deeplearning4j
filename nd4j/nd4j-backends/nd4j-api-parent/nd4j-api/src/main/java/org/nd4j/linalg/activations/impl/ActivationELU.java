@@ -18,6 +18,7 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -85,9 +86,8 @@ public class ActivationELU extends BaseActivationFunction {
         }
 
         else {
-            INDArray dLdz = Nd4j.getExecutioner().exec(new ELUDerivative(in));
-            dLdz.muli(epsilon);
-            return new Pair<>(dLdz, null);
+            Nd4j.getExecutioner().execAndReturn(new EluBp(in, epsilon, in));
+            return new Pair<>(in, null);
         }
     }
 

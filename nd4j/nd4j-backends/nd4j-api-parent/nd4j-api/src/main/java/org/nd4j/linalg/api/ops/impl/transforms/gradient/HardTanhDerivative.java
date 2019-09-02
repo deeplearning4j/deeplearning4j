@@ -31,8 +31,11 @@ import java.util.List;
 /**
  * Hard tanh elementwise derivative function
  *
+ * @deprecated Use {@link HardTanhBp}
+ *
  * @author Adam Gibson
  */
+@Deprecated
 public class HardTanhDerivative extends BaseTransformStrictOp {
     public HardTanhDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

@@ -16,15 +16,18 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.gradient;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
 import java.util.List;
+import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
 
 /**
  * Derivative of Rectified linear unit 6, i.e. min(max(input, cutoff), 6), where cutoff can be chosen.
@@ -33,7 +36,9 @@ import java.util.List;
  */
 public class Relu6Derivative extends DynamicCustomOp {
 
-    private double cutoff = 0.0;
+    private static final double DEFAULT_CUTOFF = 0.0;
+
+    private double cutoff = DEFAULT_CUTOFF;
 
     public Relu6Derivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2, double cutoff) {
         super("relu6_bp", sameDiff, new SDVariable[]{i_v1, i_v2});
@@ -42,6 +47,16 @@ public class Relu6Derivative extends DynamicCustomOp {
     }
 
     public Relu6Derivative() {
+        this.extraArgs = new Object[]{cutoff};
+    }
+
+    public Relu6Derivative(@NonNull INDArray input, @NonNull INDArray gradient, INDArray output){
+        this(input, gradient, output, DEFAULT_CUTOFF);
+    }
+
+    public Relu6Derivative(@NonNull INDArray input, @NonNull INDArray gradient, INDArray output, double cutoff){
+        super(new INDArray[]{input, gradient}, wrapOrNull(output));
+        this.cutoff = cutoff;
         this.extraArgs = new Object[]{cutoff};
     }
 

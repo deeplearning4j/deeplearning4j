@@ -29,7 +29,10 @@ import java.util.List;
 
 /**
  * SoftSign derivative.
+ *
+ * @deprecated Use {@link SoftSignBp}
  */
+@Deprecated
 public class SoftSignDerivative extends BaseTransformStrictOp {
     public SoftSignDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

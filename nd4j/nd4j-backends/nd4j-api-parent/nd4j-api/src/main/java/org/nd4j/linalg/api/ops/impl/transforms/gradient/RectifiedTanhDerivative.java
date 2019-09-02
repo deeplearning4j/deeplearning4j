@@ -30,9 +30,12 @@ import java.util.List;
 /**
  * Rectified Tanh Derivative
  *
+ * @deprecated Use {@link RectifiedTanhBp}
+ *
  * @author raver119@gmail.com
  * @author AlexDBlack
  */
+@Deprecated
 public class RectifiedTanhDerivative extends BaseTransformStrictOp {
     public RectifiedTanhDerivative(SameDiff sameDiff, SDVariable in, boolean inPlace) {
         super(sameDiff, in, inPlace);

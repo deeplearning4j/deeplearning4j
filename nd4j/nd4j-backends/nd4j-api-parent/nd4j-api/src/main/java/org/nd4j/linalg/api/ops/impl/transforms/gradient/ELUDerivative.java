@@ -35,8 +35,11 @@ import java.util.List;
  * Djork-Arné Clevert, Thomas Unterthiner, Sepp Hochreiter (2015)<br>
  * <a href="http://arxiv.org/abs/1511.07289">http://arxiv.org/abs/1511.07289</a>
  *
+ * @deprecated Use {@link EluBp}
+ *
  * @author Alex Black
  */
+@Deprecated
 public class ELUDerivative extends BaseTransformStrictOp {
     public ELUDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
