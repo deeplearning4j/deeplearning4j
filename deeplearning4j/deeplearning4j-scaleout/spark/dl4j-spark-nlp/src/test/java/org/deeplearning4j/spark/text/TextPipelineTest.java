@@ -25,7 +25,6 @@ import org.deeplearning4j.models.word2vec.Huffman;
 import org.deeplearning4j.models.word2vec.VocabWord;
 import org.deeplearning4j.models.word2vec.wordstore.VocabCache;
 import org.deeplearning4j.spark.models.embeddings.word2vec.FirstIterationFunction;
-import org.deeplearning4j.spark.models.embeddings.word2vec.FirstIterationFunctionAdapter;
 import org.deeplearning4j.spark.models.embeddings.word2vec.MapToPairFunction;
 import org.deeplearning4j.spark.models.embeddings.word2vec.Word2Vec;
 import org.deeplearning4j.spark.text.functions.CountCumSum;
@@ -470,11 +469,11 @@ public class TextPipelineTest extends BaseSparkTest {
 
         Iterator<Tuple2<List<VocabWord>, Long>> iterator = vocabWordListSentenceCumSumRDD.collect().iterator();
 
-        FirstIterationFunctionAdapter firstIterationFunction = new FirstIterationFunctionAdapter(
+        FirstIterationFunction firstIterationFunction = new FirstIterationFunction(
                         word2vecVarMapBroadcast, expTableBroadcast, pipeline.getBroadCastVocabCache());
 
-        Iterable<Map.Entry<VocabWord, INDArray>> ret = firstIterationFunction.call(iterator);
-        assertTrue(ret.iterator().hasNext());
+        Iterator<Map.Entry<VocabWord, INDArray>> ret = firstIterationFunction.call(iterator);
+        assertTrue(ret.hasNext());
     }
 
     @Test
