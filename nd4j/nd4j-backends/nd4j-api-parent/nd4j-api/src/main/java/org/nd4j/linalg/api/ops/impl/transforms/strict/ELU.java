@@ -72,11 +72,6 @@ public class ELU extends DynamicCustomOp {
     }
 
     @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //ELU: e^x-1 if x<0, x otherwise
         //dL/dIn = dL/Out * dOut/dIn

@@ -37,8 +37,13 @@ public class EluBp extends DynamicCustomOp {
         super(sd, new SDVariable[]{input, gradient});
     }
 
-    public EluBp(@NonNull INDArray input, @NonNull INDArray gradient, INDArray output){
+    public EluBp(@NonNull INDArray input, @NonNull INDArray gradient, INDArray output) {
+        this(input, gradient, output, 1.0);
+    }
+
+    public EluBp(@NonNull INDArray input, @NonNull INDArray gradient, INDArray output, double alpha){
         super(new INDArray[]{input, gradient}, wrapOrNull(output));
+        addTArgument(alpha);
     }
 
     @Override

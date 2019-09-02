@@ -881,7 +881,6 @@ public class OpValidation {
                 SoftmaxBp.class,
 
                 CubeDerivative.class,
-                ELUDerivative.class,
                 GELUDerivative.class,
                 PreciseGELUDerivative.class,
                 HardSigmoidDerivative.class,

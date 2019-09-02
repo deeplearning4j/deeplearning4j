@@ -37,7 +37,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.custom.Reverse;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.floating.*;
 import org.nd4j.linalg.api.ops.impl.transforms.comparison.*;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
@@ -441,13 +441,13 @@ public class Transforms {
         return Nd4j.getExecutioner().exec(new ELU(in, (copy ? in.ulike() : in)))[0];
     }
 
-    public static INDArray eluDerivative(INDArray arr) {
-        return eluDerivative(arr, true);
+    public static INDArray eluDerivative(INDArray arr, INDArray grad) {
+        return eluDerivative(arr, grad,true);
     }
 
 
-    public static INDArray eluDerivative(INDArray in, boolean copy) {
-        return Nd4j.getExecutioner().exec(new ELUDerivative(in, (copy ? in.ulike() : in)));
+    public static INDArray eluDerivative(INDArray in, INDArray grad, boolean copy) {
+        return Nd4j.getExecutioner().exec(new EluBp(in, grad, (copy ? in.ulike() : in)))[0];
     }
 
 

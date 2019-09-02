@@ -207,7 +207,6 @@ import org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.DynamicPartitionBp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp;
@@ -1565,14 +1564,6 @@ public class DifferentialFunctionFactory {
 
     public SDVariable eluBp(SDVariable in, SDVariable epsilon) {
         return new EluBp(sameDiff(), in, epsilon).outputVariable();
-    }
-
-    /**
-     * @deprecated Use {@link #eluBp(SDVariable, SDVariable)}
-     */
-    @Deprecated
-    public SDVariable eluDerivative(SDVariable iX) {
-        return new ELUDerivative(sameDiff(), iX, false).outputVariable();
     }
 
 

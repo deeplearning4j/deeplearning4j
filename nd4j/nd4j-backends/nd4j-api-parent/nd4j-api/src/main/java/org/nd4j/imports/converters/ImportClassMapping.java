@@ -422,7 +422,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.floating.Sqrt.class,
             org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative.class,
             org.nd4j.linalg.api.ops.impl.transforms.gradient.DynamicPartitionBp.class,
-            org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative.class,
             org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker.class,
             org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidDerivative.class,
             org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative.class,

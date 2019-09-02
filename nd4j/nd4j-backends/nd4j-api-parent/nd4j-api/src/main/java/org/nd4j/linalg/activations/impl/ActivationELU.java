@@ -23,7 +23,6 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.ELU;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.ELUDerivative;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.conditions.Conditions;
@@ -75,20 +74,8 @@ public class ActivationELU extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        // no support in ELU native to override alpha
-        if (alpha != 1.00) {
-            INDArray dLdz = Nd4j.getExecutioner().exec(new ELUDerivative(in.dup()));
-            dLdz.muli(alpha);
-            BooleanIndexing.replaceWhere(dLdz, 1, Conditions.equals(alpha));
-
-            dLdz.muli(epsilon);
-            return new Pair<>(dLdz, null);
-        }
-
-        else {
-            Nd4j.getExecutioner().execAndReturn(new EluBp(in, epsilon, in));
-            return new Pair<>(in, null);
-        }
+        Nd4j.getExecutioner().execAndReturn(new EluBp(in, epsilon, in));
+        return new Pair<>(in, null);
     }
 
     @Override
