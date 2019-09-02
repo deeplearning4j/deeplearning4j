@@ -1180,16 +1180,23 @@ public class CudaZeroHandler implements MemoryHandler {
         return getCudaContext();
     }
 
+    //
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-
-    protected synchronized cublasHandle_t getCudaCublasHandle(OpaqueLaunchContext lc) {
+    protected cublasHandle_t getCudaCublasHandle(OpaqueLaunchContext lc) {
         val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        if (cublasHandles.get(deviceId) == null) {
-            cublasHandles.remove(deviceId);
-            cublasHandles.add(deviceId, new cublasHandle_t(nativeOps.lcBlasHandle(lc)));
-        }
+        try {
+            lock.writeLock().lock();
 
-        return cublasHandles.get(deviceId);
+            if (cublasHandles.get(deviceId) == null) {
+                cublasHandles.remove(deviceId);
+                cublasHandles.add(deviceId, new cublasHandle_t(nativeOps.lcBlasHandle(lc)));
+            }
+
+            return cublasHandles.get(deviceId);
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
