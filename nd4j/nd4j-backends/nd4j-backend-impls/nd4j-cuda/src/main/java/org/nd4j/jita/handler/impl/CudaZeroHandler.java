@@ -1184,9 +1184,10 @@ public class CudaZeroHandler implements MemoryHandler {
 
     protected synchronized cublasHandle_t getCudaCublasHandle(OpaqueLaunchContext lc) {
         val deviceId = Nd4j.getAffinityManager().getDeviceForCurrentThread();
-        if (cublasHandles.get(deviceId) == null)
+        if (cublasHandles.get(deviceId) == null) {
             cublasHandles.remove(deviceId);
             cublasHandles.add(deviceId, new cublasHandle_t(nativeOps.lcBlasHandle(lc)));
+        }
 
         return cublasHandles.get(deviceId);
     }
