@@ -2836,156 +2836,78 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return putScalar(i, element.getDouble(0));
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray diviColumnVector(INDArray columnVector) {
         validateNumericalArray("diviColumnVector", false);
         return doColumnWise(columnVector, 'd');
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray divColumnVector(INDArray columnVector) {
         validateNumericalArray("divColumnVector", false);
         return dup().diviColumnVector(columnVector);
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param rowVector the row vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray diviRowVector(INDArray rowVector) {
         validateNumericalArray("diviRowVector", false);
         return doRowWise(rowVector, 'd');
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param rowVector the row vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray divRowVector(INDArray rowVector) {
         validateNumericalArray("divRowVector", false);
         return dup().diviRowVector(rowVector);
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray muliColumnVector(INDArray columnVector) {
         validateNumericalArray("muliColumnVector", false);
         return doColumnWise(columnVector, 'm');
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray mulColumnVector(INDArray columnVector) {
         validateNumericalArray("mulColumnVector", false);
         return dup().muliColumnVector(columnVector);
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param rowVector the row vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray muliRowVector(INDArray rowVector) {
         validateNumericalArray("muliRowVector", false);
         return doRowWise(rowVector, 'm');
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param rowVector the row vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray mulRowVector(INDArray rowVector) {
         validateNumericalArray("mulRowVector", false);
         return dup().muliRowVector(rowVector);
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray subiColumnVector(INDArray columnVector) {
         validateNumericalArray("subiColumnVector", false);
         return doColumnWise(columnVector, 's');
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray subColumnVector(INDArray columnVector) {
         validateNumericalArray("subColumnVector", false);
         return dup().subiColumnVector(columnVector);
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param rowVector the row vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray subiRowVector(INDArray rowVector) {
         validateNumericalArray("subiRowVector", false);
         return doRowWise(rowVector, 's');
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param rowVector the row vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray subRowVector(INDArray rowVector) {
         validateNumericalArray("subRowVector", false);
         return dup().subiRowVector(rowVector);
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray addiColumnVector(INDArray columnVector) {
         validateNumericalArray("addiColumnVector", false);
@@ -2997,24 +2919,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return doColumnWise(columnVector, 'p');
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param columnVector the column vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray addColumnVector(INDArray columnVector) {
         validateNumericalArray("addColumnVector", false);
         return dup().addiColumnVector(columnVector);
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param rowVector the row vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray addiRowVector(INDArray rowVector) {
         validateNumericalArray("addiRowVector", false);
@@ -3027,47 +2937,22 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return doRowWise(rowVector, 'p');
     }
 
-    /**
-     * In place addition of a column vector
-     *
-     * @param rowVector the row vector to add
-     * @return the result of the addition
-     */
     @Override
     public INDArray addRowVector(INDArray rowVector) {
         validateNumericalArray("addRowVector", false);
         return dup().addiRowVector(rowVector);
     }
 
-
-    /**
-     * Perform a copy matrix multiplication
-     *
-     * @param other the other matrix to perform matrix multiply with
-     * @return the result of the matrix multiplication
-     */
     @Override
     public INDArray mmul(INDArray other, INDArray result, MMulTranspose mMulTranspose) {
         return mMulTranspose.exec(this, other, result);
     }
 
-    /**
-     * Perform a copy matrix multiplication
-     *
-     * @param other the other matrix to perform matrix multiply with
-     * @return the result of the matrix multiplication
-     */
     @Override
     public INDArray mmul(INDArray other, MMulTranspose mMulTranspose) {
         return mMulTranspose.exec(this, other, null);
     }
 
-    /**
-     * Perform a copy matrix multiplication
-     *
-     * @param other the other matrix to perform matrix multiply with
-     * @return the result of the matrix multiplication
-     */
     @Override
     public INDArray mmul(INDArray other) {
         Preconditions.checkState(this.dataType() == other.dataType(), "Matrix multiplication: arrays must have same dtype: %s vs. %s", this.dataType(), other.dataType());
@@ -3105,8 +2990,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-
-
         return dup().data().asDouble();
     }
 
@@ -3115,7 +2998,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!isVectorOrScalar()) {
             throw new ND4JIllegalStateException("Unable to create a 1d array from a non vector! Shape: " + Shape.shapeToStringShort(this));
         }
-
         return dup().data().asFloat();
     }
 

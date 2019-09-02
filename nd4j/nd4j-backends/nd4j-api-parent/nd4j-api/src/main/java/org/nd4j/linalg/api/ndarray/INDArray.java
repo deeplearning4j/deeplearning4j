@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -15,9 +15,6 @@
  ******************************************************************************/
 
 package org.nd4j.linalg.api.ndarray;
-
-import static org.nd4j.linalg.factory.Nd4j.compressDebug;
-import static org.nd4j.linalg.factory.Nd4j.preventUnpack;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
@@ -52,6 +49,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     DataBuffer shapeInfoDataBuffer();
 
+    // TODO: Unused untested method.
     /**
      * Sparse info
      * @return Sparse info.
@@ -110,12 +108,13 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     int elementWiseStride();
 
+    // TODO: Unused untested method.
     /**
      * Get a double at the given linear offset unsafe, without checks.
      * @param offset the offset to get at
      * @return double value at offset
      */
-    double getDoubleUnsafe(long offset); //TODO: consider deleting.
+    double getDoubleUnsafe(long offset);
 
     /**
      * Get string value at given index.
@@ -124,13 +123,14 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     String getString(long index);
 
+    // TODO: Unused untested method.
     /**
      * Insert a scalar at the given linear offset
      * @param offset the offset to insert at
      * @param value the value to insert
      * @return this
      */
-    INDArray putScalarUnsafe(long offset, double value); //TODO: consider deleting.
+    INDArray putScalarUnsafe(long offset, double value);
 
     /**
      * Returns the number of possible vectors for a given dimension
@@ -190,6 +190,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray assign(INDArray arr);
 
+    // TODO: Unused untested method.
     /**
      * Assign all elements from given ndarray that are matching given condition,
      * ndarray to this ndarray
@@ -553,7 +554,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      *
      * @param n      the number to subtract by
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray rsub(Number n, INDArray result);
 
@@ -1041,7 +1042,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray divRowVector(INDArray rowVector);
 
-
     /**
      * In place reverse divison of a column vector
      *
@@ -1066,6 +1066,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rdiviRowVector(INDArray rowVector);
 
+    //TODO: unused / untested method.
     /**
      * Reverse division of a column vector (copy)
      *
@@ -1073,7 +1074,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the result of the division 
      */
     INDArray rdivRowVector(INDArray rowVector);
-
 
     /**
      * In place multiplication of a column vector
@@ -1107,7 +1107,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray mulRowVector(INDArray rowVector);
 
-
     /**
      * In place reverse subtraction of a column vector
      *
@@ -1132,6 +1131,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rsubiRowVector(INDArray rowVector);
 
+    //TODO: unused / untested method.
     /**
      * Reverse subtraction of a row vector (copy)
      *
@@ -1180,7 +1180,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addiColumnVector(INDArray columnVector);
 
-
     /**
      * In place assignment of a column vector
      *
@@ -1221,6 +1220,12 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addRowVector(INDArray rowVector);
 
+    /**
+     * Perform a copy matrix multiplication
+     *
+     * @param other the other matrix to perform matrix multiply with
+     * @return the result of the matrix multiplication
+     */
     INDArray mmul(INDArray other, MMulTranspose mMulTranspose);
 
     /**
@@ -1230,8 +1235,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the result of the matrix multiplication
      */
     INDArray mmul(INDArray other);
-
-
 
     /**
      * Convert this ndarray to a 2d double matrix.
@@ -1283,6 +1286,14 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     int[] toIntVector();
 
+    /**
+     * Convert this ndarray to a 1d long matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 1d long array
+     */
     long[] toLongVector();
 
     /**
