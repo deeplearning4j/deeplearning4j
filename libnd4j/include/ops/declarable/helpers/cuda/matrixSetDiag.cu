@@ -15,63 +15,87 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 07.12.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include "ResultSet.h"
 #include <ops/declarable/helpers/matrixSetDiag.h>
+#include <PointersManager.h>
 
-namespace nd4j {
-namespace ops {
+namespace nd4j    {
+namespace ops     {
 namespace helpers {
 
+///////////////////////////////////////////////////////////////////
+template<typename T>
+__global__ static void matrixSetDiagCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const bool zeroPad) {
 
-    template <typename T>
-    static __global__ void matrixSetDiagKernel(void* outputBuffer, Nd4jLong* outputShape, void const* diagonalBuffer, Nd4jLong* diagonalShape, Nd4jLong lastDimSize, Nd4jLong last2DimSize, Nd4jLong lastSmallDim, Nd4jLong batchSize) {
-        __shared__ T* z;
-        __shared__ T const* x;
-        __shared__ Nd4jLong outLength, diagonalLen;
-        if (threadIdx.x == 0) {
-            z = reinterpret_cast<T*>(outputBuffer);
-            x = reinterpret_cast<T const*>(diagonalBuffer);
-            outLength = shape::length(outputShape);
-            diagonalLen = shape::length(diagonalShape);
-        }
-        __syncthreads();
+    // x - input,    shape [A,B,C]
+    // y - diagonal, shape [A,B]
+    // z - output,   shape [A,B,C]
+    // input and output are the same array (x == z) when zeroPad = true
 
-        for(int i = blockIdx.x; i < batchSize; i+= gridDim.x )
-            for(int j = threadIdx.x; j < lastSmallDim; j += blockDim.x) {
-//                z[i * last2DimSize + j * (lastDimSize + 1)] = x[i * lastSmallDim + j];
-                z[shape::getIndexOffset(i * last2DimSize + j * (lastDimSize + 1), outputShape, outLength)] = x[shape::getIndexOffset(i * lastSmallDim + j, diagonalShape, diagonalLen)];
-            }
-    }
-    //////////////////////////////////////////////////////////////////////////
-    // Returns a batched matrix tensor with new batched diagonal values.
-    // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
-    template <typename T>
-    static void _matrixSetDiag(nd4j::LaunchContext * context, const NDArray* input, const NDArray* diagonal, NDArray* output) {
-        *output = *input;
+    const auto x = reinterpret_cast<const T*>(vx);
+    const auto y = reinterpret_cast<const T*>(vy);
+          auto z = reinterpret_cast<T*>(vz);
 
-        const int lastDimSize = input->sizeAt(-1);
-        const int last2DimSize = input->sizeAt(-1) * input->sizeAt(-2);
-        const int lastSmallDim = diagonal->sizeAt(-1);
-        const int batchSize = input->lengthOf()/last2DimSize;
-        auto stream = context->getCudaStream();
-        dim3 launchDims(256, 512, 8192);
-        matrixSetDiagKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), diagonal->getSpecialBuffer(), diagonal->getSpecialShapeInfo(), lastDimSize, last2DimSize, lastSmallDim, batchSize);
-//// #pragma omp parallel for if(batchSize > Environment::getInstance()->elementwiseThreshold()) schedule(static)
-//        for(int i = 0; i < batchSize; ++i )
-//            for(int j = 0; j < lastSmallDim; ++j) {
-//                output->p(i*last2DimSize + j*(lastDimSize + 1), diagonal->e<T>(i*lastSmallDim + j));
-//            }
+    __shared__ int xRank;       // xRank = zRank, xRank = yRank + 1
+    __shared__ Nd4jLong xLen, *sharedMem;   // xLen = zLen
+    __shared__ bool areSameOffsets;
 
+    if (threadIdx.x == 0) {
+
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+
+        areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);    // shapes are definitely the same, but strides might not
+
+        xRank = shape::rank(xShapeInfo);
+        xLen  = shape::length(xShapeInfo);
     }
 
-    void matrixSetDiag(nd4j::LaunchContext * context, const NDArray* input, const NDArray* diagonal, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _matrixSetDiag, (context, input, diagonal, output), LIBND4J_TYPES);
-    }
+    __syncthreads();
 
-    BUILD_SINGLE_TEMPLATE(template void _matrixSetDiag, (nd4j::LaunchContext * context, const NDArray* input, const NDArray* diagonal, NDArray* output), LIBND4J_TYPES);
+    auto coords = sharedMem + threadIdx.x * xRank;               // we provide (xRank * sizeof(Nd4jLong) * threadIdx.x) amount of shared memory per each thread
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < xLen; i += gridDim.x * blockDim.x) {
+
+        shape::index2coords(xRank, xShapeInfo + 1, i, xLen, coords);
+
+        const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xRank + 1, coords, xRank);
+        const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(0, zShapeInfo + 1, zShapeInfo + xRank + 1, coords, xRank);
+
+        // condition to be on diagonal of innermost matrix
+        if(coords[xRank - 2] == coords[xRank - 1])
+            z[zOffset] = y[shape::getOffset(0, yShapeInfo + 1, yShapeInfo + xRank, coords, xRank - 1)];
+        else
+            z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
+    }
+}
+
+///////////////////////////////////////////////////////////////////
+template<typename T>
+static void matrixSetDiagCudaLauncher(const int blocksPerGrid, const int threadsPerBlock, const int sharedMem, const cudaStream_t *stream,  const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const bool zeroPad) {
+
+    matrixSetDiagCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, zeroPad);
+}
+
+///////////////////////////////////////////////////////////////////
+void matrixSetDiag(nd4j::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+
+    const int threadsPerBlock = MAX_NUM_THREADS / 2;
+    const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
+    const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * input.rankOf() + 128;
+
+    PointersManager manager(context, "matrixSetDiag");
+
+    NDArray::prepareSpecialUse({&output}, {&input, &diagonal});
+    BUILD_SINGLE_SELECTOR(input.dataType(), matrixSetDiagCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context->getCudaStream(), input.getSpecialBuffer(), input.getSpecialShapeInfo(), diagonal.getSpecialBuffer(), diagonal.getSpecialShapeInfo(), output.specialBuffer(), output.specialShapeInfo(), zeroPad), LIBND4J_TYPES);
+    NDArray::registerSpecialUse({&output}, {&input, &diagonal});
+
+    manager.synchronize();
+}
 
 }
 }

@@ -117,9 +117,9 @@ TEST_F(DeclarableOpsTests3, Test_Unique_1) {
 
     auto v = result->at(0);
     auto i = result->at(1);
-    v->printIndexedBuffer("Values");
-    i->printIndexedBuffer("Indices");
-    i->printShapeInfo("Indices shape");
+    // v->printIndexedBuffer("Values");
+    // i->printIndexedBuffer("Indices");
+    // i->printShapeInfo("Indices shape");
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
 
@@ -145,12 +145,12 @@ TEST_F(DeclarableOpsTests3, Test_Unique_2) {
     auto i = result->at(1);
     auto c = result->at(2);
 
-     v->printShapeInfo();
-     v->printIndexedBuffer("Values");
-     i->printShapeInfo();
-     i->printIndexedBuffer("Indices");
-     c->printShapeInfo();
-     c->printIndexedBuffer("Counts");
+     // v->printShapeInfo();
+     // v->printIndexedBuffer("Values");
+     // i->printShapeInfo();
+     // i->printIndexedBuffer("Indices");
+     // c->printShapeInfo();
+     // c->printIndexedBuffer("Counts");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
@@ -200,11 +200,11 @@ TEST_F(DeclarableOpsTests3, Test_Norm_1) {
     auto result1 = op.execute({&x}, {1.}, {1});
     ASSERT_EQ(result1->status(), ND4J_STATUS_OK);
     auto z1 = result1->at(0);
-    z1->printIndexedBuffer("Z1");
+    // z1->printIndexedBuffer("Z1");
     auto exp1 = x.reduceAlongDims(reduce::Norm2, dims, false, false);
-    exp1.printIndexedBuffer("EXP1");
-    z1->printShapeInfo("Z1 shape");
-    exp1.printShapeInfo("EXP1 shape");
+    // exp1.printIndexedBuffer("EXP1");
+    // z1->printShapeInfo("Z1 shape");
+    // exp1.printShapeInfo("EXP1 shape");
     ASSERT_TRUE(exp1.isSameShape(z1));
     ASSERT_TRUE(exp1.equalsTo(z1));
 
@@ -714,7 +714,7 @@ TEST_F(DeclarableOpsTests3, Test_Batched_Gemm_7) {
 
     auto exp = MmulHelper::mmul(&x, &y);
 
-    exp->printShapeInfo("exp shape");
+    // exp->printShapeInfo("exp shape");
 
     nd4j::ops::batched_gemm op;
     auto result = op.execute({&a, &b, &x, &x, &x, &y, &y, &y}, {}, {112, 112, 2, 3, 5, 5, 3, 2, 3});
