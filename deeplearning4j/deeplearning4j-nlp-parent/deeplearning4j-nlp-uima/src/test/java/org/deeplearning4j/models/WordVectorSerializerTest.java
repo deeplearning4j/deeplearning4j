@@ -833,14 +833,14 @@ public class WordVectorSerializerTest extends BaseDL4JTest {
     public void testB64_1() throws Exception {
         String wordA = "night";
         String wordB = "night day";
-        String encA = WordVectorSerializer.encodeB64(wordA);
-        String encB = WordVectorSerializer.encodeB64(wordB);
+        String encA = WordVectorSerializer.ReadHelper.encodeB64(wordA);
+        String encB = WordVectorSerializer.ReadHelper.encodeB64(wordB);
 
-        assertEquals(wordA, WordVectorSerializer.decodeB64(encA));
-        assertEquals(wordB, WordVectorSerializer.decodeB64(encB));
+        assertEquals(wordA, WordVectorSerializer.ReadHelper.decodeB64(encA));
+        assertEquals(wordB, WordVectorSerializer.ReadHelper.decodeB64(encB));
 
-        assertEquals(wordA, WordVectorSerializer.decodeB64(wordA));
-        assertEquals(wordB, WordVectorSerializer.decodeB64(wordB));
+        assertEquals(wordA, WordVectorSerializer.ReadHelper.decodeB64(wordA));
+        assertEquals(wordB, WordVectorSerializer.ReadHelper.decodeB64(wordB));
 
     }
 

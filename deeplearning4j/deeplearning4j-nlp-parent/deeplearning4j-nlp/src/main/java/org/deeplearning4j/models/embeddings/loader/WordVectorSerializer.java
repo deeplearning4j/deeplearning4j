@@ -3241,7 +3241,7 @@ public class WordVectorSerializer {
     /**
     *   Helper static methods to read data from input stream.
     */
-    private static class ReadHelper {
+    public static class ReadHelper {
         /**
          * Read a float from a data input stream Credit to:
          * https://github.com/NLPchina/Word2VEC_java/blob/master/src/com/ansj/vec/Word2VEC.java
@@ -3308,7 +3308,7 @@ public class WordVectorSerializer {
          * @param word String
          * @return String
          */
-        private static String encodeB64(String word) {
+        public static String encodeB64(String word) {
             try {
                 return B64 + Base64.encodeBase64String(word.getBytes("UTF-8")).replaceAll("(\r|\n)", "");
             } catch (Exception e) {
@@ -3323,7 +3323,7 @@ public class WordVectorSerializer {
          * @return String
          */
 
-        private static String decodeB64(String word) {
+        public static String decodeB64(String word) {
             if (word.startsWith(B64)) {
                 String arp = word.replaceFirst(B64, "");
                 try {
