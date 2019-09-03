@@ -24,11 +24,13 @@
 #include <map>
 #include <array/ConstantDescriptor.h>
 #include <array/ConstantDataBuffer.h>
+#include <mutex>
 
 namespace nd4j {
     class ConstantHolder {
     private:
         int _deviceId = 0;
+        std::mutex _mutex;
 
         std::map<nd4j::DataType, ConstantDataBuffer> _buffers;
     public:
@@ -53,6 +55,8 @@ namespace nd4j {
 
         template <typename T>
         ConstantDataBuffer* getConstantDataBuffer();
+
+        std::mutex* mutex();
     };
 }
 

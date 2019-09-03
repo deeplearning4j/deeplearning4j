@@ -57,10 +57,6 @@ LaunchContext::LaunchContext() {
     _deviceID = 0;
 
     _isAllocated = true;
-
-    _cublasHandle = CublasHelper::getInstance()->handle();
-
-    _cusolverHandle = CublasHelper::getInstance()->solver();
 }
 
     LaunchContext::LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer scalarPointer, Nd4jPointer allocationPointer) {
@@ -89,13 +85,13 @@ LaunchContext::LaunchContext() {
 
             _contexts.resize(numDevices);
             for (int e = 0; e < numDevices; e++) {
-                AffinityManager::setCurrentDevice(e);
+                AffinityManager::setCurrentNativeDevice(e);
 
                 LaunchContext::_contexts[e] = std::make_shared<LaunchContext>();
             }
 
             // don't forget to restore device back again
-            AffinityManager::setCurrentDevice(deviceId);
+            AffinityManager::setCurrentNativeDevice(deviceId);
         }
         _mutex.unlock();
 
@@ -117,11 +113,11 @@ LaunchContext::LaunchContext() {
     };
 
     void* LaunchContext::getCublasHandle() const {
-        return _cublasHandle;
+        return CublasHelper::getInstance()->handle();
     };
 
     void* LaunchContext::getCusolverHandle() const {
-        return _cusolverHandle;
+        return CublasHelper::getInstance()->solver();
     };
 
     cudaStream_t* LaunchContext::getCudaStream() const {
@@ -162,6 +158,7 @@ LaunchContext::LaunchContext() {
     };
 
     void LaunchContext::releaseBuffers() {
+        nd4j_printf("LaunchContext::releaseBuffers() was invoked\n", "");
         contextBuffers.release();
     }
 

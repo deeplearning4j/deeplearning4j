@@ -18,6 +18,7 @@ package org.nd4j.jita.allocator.pointers.cuda;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.val;
 import org.bytedeco.javacpp.Pointer;
 import org.nd4j.jita.allocator.pointers.CudaPointer;
 import org.nd4j.linalg.exception.ND4JException;
@@ -69,8 +70,9 @@ public class cudaEvent_t extends CudaPointer {
             if (res == 0)
                 throw new ND4JException("CUDA exception happened. Terminating. Last op: [" + Nd4j.getExecutioner().getLastOp() +"]");
 
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode() != 0)
-                throw new RuntimeException(NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage());
+            val code = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
+            if (code != 0)
+                throw new RuntimeException(NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage() + "; Error code: " + code);
         }
     }
 
@@ -78,8 +80,9 @@ public class cudaEvent_t extends CudaPointer {
         if (!isDestroyed()) {
             int res = NativeOpsHolder.getInstance().getDeviceNativeOps().registerEvent(this, stream);
 
-            if (NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode() != 0)
-                throw new RuntimeException(NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage());
+            val code = NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorCode();
+            if (code != 0)
+                throw new RuntimeException(NativeOpsHolder.getInstance().getDeviceNativeOps().lastErrorMessage() + "; Error code: " + code);
         }
     }
 }

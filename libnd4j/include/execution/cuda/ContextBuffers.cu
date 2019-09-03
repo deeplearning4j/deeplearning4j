@@ -107,7 +107,6 @@ namespace nd4j {
 
             //////
             _allocated = false;
-            _initialized = false;
             _deviceId = -1;
 
             this->_specialStream = nullptr;
@@ -116,6 +115,8 @@ namespace nd4j {
             this->_reductionPointer = nullptr;
             this->_scalarPointer = nullptr;
         }
+
+        _initialized = false;
     }
 
     ContextBuffers::~ContextBuffers() {
@@ -163,21 +164,21 @@ namespace nd4j {
     }
 
     void* ContextBuffers::reductionBuffer() {
-        if (_reductionPointer == nullptr)
+        if (!_initialized)
             initialize();
 
         return _reductionPointer;
     }
 
     void* ContextBuffers::scalarBuffer() {
-        if (_scalarPointer == nullptr)
+        if (!_initialized)
             initialize();
 
         return _scalarPointer;
     }
 
     void* ContextBuffers::allocationBuffer() {
-        if (_allocationPointer == nullptr)
+        if (!_initialized)
             initialize();
 
         return _allocationPointer;
@@ -204,15 +205,23 @@ namespace nd4j {
     }
 
     void* ContextBuffers::execStream() {
-        if (_execStream == nullptr)
+        if (!_initialized) {
+            //nd4j_printf("execStream not initialized\n", "");
             initialize();
+        } else {
+            //nd4j_printf("execStream is initialized\n", "");
+        }
 
         return _execStream;
     }
 
     void* ContextBuffers::specialStream() {
-        if (_specialStream == nullptr)
+        if (!_initialized) {
+            //nd4j_printf("specialStream not initialized\n", "");
             initialize();
+        } else {
+            //nd4j_printf("specialStream is initialized\n", "");
+        }
 
         return _specialStream;
     }

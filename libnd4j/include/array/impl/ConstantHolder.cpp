@@ -16,6 +16,10 @@ namespace nd4j {
         return _buffers.count(dataType) > 0;
     }
 
+    std::mutex* ConstantHolder::mutex() {
+        return &_mutex;
+    }
+
     template <typename T>
     bool ConstantHolder::hasBuffer() {
         return hasBuffer(DataTypeUtils::fromT<T>());
