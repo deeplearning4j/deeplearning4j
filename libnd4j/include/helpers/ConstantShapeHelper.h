@@ -48,10 +48,10 @@ namespace nd4j {
         static ConstantShapeHelper* getInstance();
 
 
-        ConstantDataBuffer& bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
-        ConstantDataBuffer& bufferForShapeInfo(const ShapeDescriptor &descriptor);
-        ConstantDataBuffer& bufferForShapeInfo(const Nd4jLong *shapeInfo);
-        ConstantDataBuffer& bufferForShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
+        ConstantDataBuffer bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape);
+        ConstantDataBuffer bufferForShapeInfo(const ShapeDescriptor &descriptor);
+        ConstantDataBuffer bufferForShapeInfo(const Nd4jLong *shapeInfo);
+        ConstantDataBuffer bufferForShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape);
 
 
         Nd4jLong* emptyShapeInfo(const nd4j::DataType dataType);

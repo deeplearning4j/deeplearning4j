@@ -23,13 +23,9 @@ import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.tensorflow.framework.AttrValue;
-import org.tensorflow.framework.GraphDef;
-import org.tensorflow.framework.NodeDef;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 /**
  * ELU: Exponential Linear Unit (alpha=1.0)<br>
@@ -41,19 +37,31 @@ import java.util.Map;
  * @author Alex Black
  */
 public class ELU extends DynamicCustomOp {
+    public static final double DEFAULT_ALPHA = 1.0;
+
+    protected double alpha;
+
     public ELU(SameDiff sameDiff, SDVariable i_v) {
         super(sameDiff, new SDVariable[]{i_v});
+        this.alpha = DEFAULT_ALPHA;
+        addTArgument(alpha);
     }
 
     public ELU() {
     }
 
     public ELU(INDArray x, INDArray z) {
+        this(x, z, DEFAULT_ALPHA);
+    }
+
+    public ELU(INDArray x, INDArray z, double alpha) {
         super(null, wrapOrNull(x), wrapOrNull(z));
+        this.alpha = alpha;
+        addTArgument(alpha);
     }
 
     public ELU(INDArray x) {
-        this(x, null);
+        this(x, null, DEFAULT_ALPHA);
     }
 
     @Override
@@ -75,7 +83,7 @@ public class ELU extends DynamicCustomOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //ELU: e^x-1 if x<0, x otherwise
         //dL/dIn = dL/Out * dOut/dIn
-        return Collections.singletonList(f().eluBp(arg(), i_v.get(0)));
+        return Collections.singletonList(f().eluBp(arg(), i_v.get(0), alpha));
     }
 
     @Override

@@ -1404,7 +1404,13 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray add(INDArray other, INDArray result);
 
-
+    /**
+     * Perform an copy matrix multiplication
+     *
+     * @param other the other matrix to perform matrix multiply with
+     * @param transpose the transpose status of each ndarray
+     * @return the result of the matrix multiplication
+     */
     INDArray mmuli(INDArray other, MMulTranspose transpose);
 
     /**
@@ -1415,7 +1421,13 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray mmuli(INDArray other);
 
-
+    /**
+     * Perform an in place matrix multiplication
+     *
+     * @param other  the other matrix to perform matrix multiply with
+     * @param result the result ndarray
+     * @return the result of the matrix multiplication
+     */
     INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose);
 
     /**
@@ -1497,7 +1509,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addi(INDArray other, INDArray result);
 
-
     /**
      * Returns the max norm (aka infinity norm, equal to the maximum absolute value) along the specified dimension(s)
      *
@@ -1505,7 +1516,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return Max norm along the specified dimension
      */
     INDArray normmax(int... dimension);
-
 
     /**
      * Returns the max norm (aka infinity norm, equal to the maximum absolute value) along the specified dimension(s)
@@ -1585,7 +1595,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Calculate the standard deviation for the entire array
      *
-     * @return
+     * @return standard deviation
      */
     Number stdNumber();
 

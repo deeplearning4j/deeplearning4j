@@ -1562,8 +1562,8 @@ public class DifferentialFunctionFactory {
 
     }
 
-    public SDVariable eluBp(SDVariable in, SDVariable epsilon) {
-        return new EluBp(sameDiff(), in, epsilon).outputVariable();
+    public SDVariable eluBp(SDVariable in, SDVariable epsilon, double alpha) {
+        return new EluBp(sameDiff(), in, epsilon, alpha).outputVariable();
     }
 
 

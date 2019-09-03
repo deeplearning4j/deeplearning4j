@@ -1232,8 +1232,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
-
-
     @Override
     public INDArray normmax(boolean keepDims, int... dimension) {
         return null;

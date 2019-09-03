@@ -2411,7 +2411,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
                                         for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
                                             for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
                                                 for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                    pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f);
+                                                    pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f) *  nd4j::math::nd4j_sgn<T,T>(pIn[kd + kh + kw]);
                                     }
                                     else {
 

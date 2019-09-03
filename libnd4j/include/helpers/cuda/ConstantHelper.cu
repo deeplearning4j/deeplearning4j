@@ -68,7 +68,7 @@ namespace nd4j {
                 throw cuda_exception::build("cudaSetDevice failed", res);
              auto constant = getConstantSpace();
 
-            std::map<ConstantDescriptor, ConstantHolder> devCache;
+            std::map<ConstantDescriptor, ConstantHolder*> devCache;
 
             _devicePointers[e] = constant;
             _deviceOffsets[e] = 0;
@@ -136,15 +136,24 @@ namespace nd4j {
     ConstantDataBuffer* ConstantHelper::constantBuffer(const ConstantDescriptor &descriptor, nd4j::DataType dataType) {
         const auto deviceId = getCurrentDevice();
 
-        if (_cache[deviceId].count(descriptor) == 0) {
-            ConstantHolder holder;
-            _cache[deviceId][descriptor] = holder;
-        }
+        // all cache modifications are synchronous
+        _mutexHolder.lock();
 
-        ConstantHolder* holder = &_cache[deviceId][descriptor];
+        if (_cache[deviceId].count(descriptor) == 0) {
+            _cache[deviceId][descriptor] = new ConstantHolder();
+        }
+        auto holder = _cache[deviceId][descriptor];
+
+        // release cache lock
+        _mutexHolder.unlock();
+
+        ConstantDataBuffer* result;
+
+        // access to this holder instance is synchronous
+        holder->mutex()->lock();
 
         if (holder->hasBuffer(dataType)) {
-            return holder->getConstantDataBuffer(dataType);
+             result = holder->getConstantDataBuffer(dataType);
         } else {
             auto numBytes = descriptor.length() * DataTypeUtils::sizeOf(dataType);
             auto cbuff = new int8_t[numBytes];
@@ -160,10 +169,14 @@ namespace nd4j {
             auto dbuff = replicatePointer(cbuff, descriptor.length() * DataTypeUtils::sizeOf(dataType));
 
             ConstantDataBuffer dataBuffer(cbuff, dbuff, descriptor.length(), DataTypeUtils::sizeOf(dataType));
-            holder->addBuffer(dataBuffer, dataType);
 
-            return holder->getConstantDataBuffer(dataType);
+            holder->addBuffer(dataBuffer, dataType);
+            result = holder->getConstantDataBuffer(dataType);
         }
+        // release holder lock
+        holder->mutex()->unlock();
+
+        return result;
     }
 
     Nd4jLong ConstantHelper::getCachedAmount(int deviceId) {

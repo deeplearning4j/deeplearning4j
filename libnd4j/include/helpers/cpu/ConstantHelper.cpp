@@ -33,7 +33,8 @@ namespace nd4j {
         _cache.resize(numDevices);
         _counters.resize(numDevices);
         for (int e = 0; e < numDevices; e++) {
-            std::map<ConstantDescriptor, ConstantHolder> map;
+            std::map<ConstantDescriptor, ConstantHolder*> map;
+
             _cache[e] = map;
             _counters[e] = 0L;
         }
@@ -70,15 +71,26 @@ namespace nd4j {
     ConstantDataBuffer* ConstantHelper::constantBuffer(const ConstantDescriptor &descriptor, nd4j::DataType dataType) {
         const auto deviceId = getCurrentDevice();
 
+        // we're locking away cache modification
+        _mutexHolder.lock();
+
         if (_cache[deviceId].count(descriptor) == 0) {
-            ConstantHolder holder;
-            _cache[deviceId][descriptor] = holder;
+            _cache[deviceId][descriptor] = new ConstantHolder();
         }
 
-        ConstantHolder* holder = &_cache[deviceId][descriptor];
+        auto holder = _cache[deviceId][descriptor];
+
+        // releasing cache lock
+        _mutexHolder.unlock();
+
+
+        ConstantDataBuffer* result;
+
+        // access to this holder instance is synchronous
+        holder->mutex()->lock();
 
         if (holder->hasBuffer(dataType))
-            return holder->getConstantDataBuffer(dataType);
+            result = holder->getConstantDataBuffer(dataType);
         else {
             auto size = descriptor.length() * DataTypeUtils::sizeOf(dataType);
             auto cbuff = new int8_t[size];
@@ -94,8 +106,11 @@ namespace nd4j {
             ConstantDataBuffer dataBuffer(cbuff, nullptr, descriptor.length(), DataTypeUtils::sizeOf(dataType));
             holder->addBuffer(dataBuffer, dataType);
 
-            return holder->getConstantDataBuffer(dataType);
+            result = holder->getConstantDataBuffer(dataType);
         }
+        holder->mutex()->unlock();
+
+        return result;
     }
 
     Nd4jLong ConstantHelper::getCachedAmount(int deviceId) {

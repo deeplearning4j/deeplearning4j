@@ -162,9 +162,6 @@ namespace functions {
                     }
                 }
             }
-
-            // update rng state
-            rng->rewindH(length);
         };
 
 
@@ -223,8 +220,6 @@ namespace functions {
                     }
                 }
             }
-            // update rng state
-            rng->rewindH(length);
         }
 
 
@@ -256,9 +251,6 @@ namespace functions {
                     z[offset] = OpClass::op(i+threadOffset, length, rng, extraArguments);
                 }
             }
-            
-            // update rng state
-            rng->rewindH(length);
         }
 
         template<typename X>

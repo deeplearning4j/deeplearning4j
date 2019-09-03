@@ -15,49 +15,53 @@
  ******************************************************************************/
 
 //
-// Created to use with batched tensor by GS <sgazeos@gmail.com> 3/21/2018
+// @author GS <sgazeos@gmail.com> 3/21/2018
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <ops/declarable/CustomOperations.h>
-#include <ops/declarable/helpers/matrix_diag.h>
-
+#include <ops/declarable/helpers/matrixSetDiag.h>
 
 namespace nd4j {
-    namespace ops {
-        CUSTOM_OP_IMPL(matrix_diag, 1, 1, false, 0, 0) {
-            auto input  = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+namespace ops  {
 
-            REQUIRE_TRUE(!input->isScalar(), 0, "CUSTOM_OP matrix_diag: input array must be at list a vector, but scalar was given!");
+CUSTOM_OP_IMPL(matrix_diag, 1, 1, false, 0, 0) {
 
-            output->nullify();
-            return helpers::matrixDiag(block.launchContext(), input, output);
-        }
+    auto diagonal = INPUT_VARIABLE(0);
+    auto output   = OUTPUT_VARIABLE(0);
 
-        DECLARE_SHAPE_FN(matrix_diag) {
-            Nd4jLong* outShapeInfo = nullptr;
-            auto in = inputShape->at(0);
-            int inRank = shape::rank(in);
+    REQUIRE_TRUE(!diagonal->isScalar(), 0, "CUSTOM_OP matrix_diag: input diagonal array must be at list a vector, but scalar was given!");
 
-            int outRank = inRank + 1;
-            auto lastDimension = shape::sizeAt(in, -1);
+    helpers::matrixSetDiag(block.launchContext(), *output, *diagonal, *output, true);
 
-            ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
-            outShapeInfo[0] = outRank;
-            for(int i = 0; i < inRank; ++i)
-                outShapeInfo[i + 1] = shape::sizeAt(in, i);
-            outShapeInfo[outRank] = lastDimension;
+    return Status::OK();
+}
 
-            ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
+DECLARE_SHAPE_FN(matrix_diag) {
 
-            return SHAPELIST(CONSTANT(outShapeInfo));
-        }
+    Nd4jLong* outShapeInfo = nullptr;
+    auto in = inputShape->at(0);
+    int inRank = shape::rank(in);
 
-        DECLARE_TYPES(matrix_diag) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setSameMode(true);
-        }
+    int outRank = inRank + 1;
+    auto lastDimension = shape::sizeAt(in, -1);
+
+    ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
+    outShapeInfo[0] = outRank;
+    for(int i = 0; i < inRank; ++i)
+        outShapeInfo[i + 1] = shape::sizeAt(in, i);
+    outShapeInfo[outRank] = lastDimension;
+
+    ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
+
+    return SHAPELIST(CONSTANT(outShapeInfo));
+}
+
+DECLARE_TYPES(matrix_diag) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setSameMode(true);
+}
 }
 }
 

@@ -43,25 +43,25 @@ namespace nd4j {
         return _INSTANCE;
     }
 
-    TadPack& ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, int dimension, const bool keepUnitiesInShape) {
+    TadPack ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, int dimension, const bool keepUnitiesInShape) {
         return tadForDimensions(originalShape, &dimension, 1, keepUnitiesInShape);
     }
 
-    TadPack& ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, const std::vector<int> &dimensions, const bool keepUnitiesInShape) {
+    TadPack ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, const std::vector<int> &dimensions, const bool keepUnitiesInShape) {
         return tadForDimensions(originalShape, const_cast<int *>(dimensions.data()), dimensions.size(), keepUnitiesInShape);
     }
 
-    TadPack& ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, int* dimensions, int dimLength, const bool keepUnitiesInShape) {
+    TadPack ConstantTadHelper::tadForDimensions(const Nd4jLong *originalShape, int* dimensions, int dimLength, const bool keepUnitiesInShape) {
         TadDescriptor tadDescriptor(originalShape, dimensions, dimLength, keepUnitiesInShape);
         return tadForDimensions(tadDescriptor);
     }
 
-    TadPack& ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions, const bool keepUnitiesInShape) {
+    TadPack ConstantTadHelper::tadForDimensions(ShapeDescriptor &descriptor, std::vector<int> &dimensions, const bool keepUnitiesInShape) {
         TadDescriptor tadDescriptor(descriptor, dimensions, keepUnitiesInShape);
         return tadForDimensions(tadDescriptor);
     }
 
-    TadPack& ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
+    TadPack ConstantTadHelper::tadForDimensions(TadDescriptor &descriptor) {
         const int deviceId = AffinityManager::currentDeviceId();
 
         _mutex.lock();
@@ -96,14 +96,14 @@ namespace nd4j {
             TadPack t(shapesBuffer, offsetsBuffer, numOfSubArrs);
             _cache[deviceId][descriptor] = t;
 
-            TadPack &r = _cache[deviceId][descriptor];
+            TadPack r = _cache[deviceId][descriptor];
             _mutex.unlock();
 
             delete[] shapeInfo;
 
             return r;
         } else {
-            TadPack &r = _cache[deviceId][descriptor];
+            TadPack r = _cache[deviceId][descriptor];
             _mutex.unlock();
 
             return r;

@@ -24,11 +24,13 @@
 #include <dll.h>
 #include <pointercast.h>
 #include <vector>
+#include <mutex>
 
 namespace nd4j {
     class CublasHelper {
     private:
         static CublasHelper *_INSTANCE;
+        static std::mutex _mutex;
 
         std::vector<void*> _cache;
         std::vector<void*> _solvers;

@@ -17,6 +17,7 @@
 package org.nd4j.linalg.jcublas.blas;
 
 
+import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.bytedeco.javacpp.DoublePointer;
 import org.bytedeco.javacpp.FloatPointer;
@@ -52,6 +53,7 @@ import static org.nd4j.linalg.jcublas.blas.CudaBlas.*;
  *
  * @author Adam Gibson
  */
+@Slf4j
 public class JcublasLevel3 extends BaseLevel3 {
     private Allocator allocator = AtomicAllocator.getInstance();
     private Nd4jBlas nd4jBlas = (Nd4jBlas) Nd4j.factory().blas();
@@ -78,7 +80,7 @@ public class JcublasLevel3 extends BaseLevel3 {
 
             int arch = CudaEnvironment.getInstance().getCurrentDeviceArchitecture();
 
-            if ((CUDA_VERSION >= 8000 && (arch == 53 || arch == 60 || arch == 70)) || (CUDA_VERSION >= 8000 &&  CUDA_VERSION < 9020)) {
+            if ((CUDA_VERSION >= 8000 && (arch == 53 || arch == 60 || arch >= 70)) || (CUDA_VERSION >= 8000 &&  CUDA_VERSION < 9020)) {
                 // on these selected archs we run with cublasHgemm
                 __half alphaHalf = new __half();
                 __half betaHalf = new __half();
@@ -96,7 +98,11 @@ public class JcublasLevel3 extends BaseLevel3 {
                                 new FloatPointer(alpha), (ShortPointer) cAPointer.getDevicePointer(), 2, lda,
                                 (ShortPointer) cBPointer.getDevicePointer(), 2, ldb, new FloatPointer(beta),
                                 (ShortPointer) cCPointer.getDevicePointer(), 2, ldc);
+
+
             }
+
+            ctx.getOldStream().synchronize();
         }
 
         allocator.registerAction(ctx, C, A, B);
@@ -114,18 +120,24 @@ public class JcublasLevel3 extends BaseLevel3 {
 
         val ctx = allocator.getFlowController().prepareAction(C, A, B);
 
+        //log.info("Synchronizing CUDA stream");
+        ctx.getOldStream().synchronize();
+
         val cAPointer = new CublasPointer(A, ctx);
         val cBPointer = new CublasPointer(B, ctx);
         val cCPointer = new CublasPointer(C, ctx);
 
         val handle = ctx.getCublasHandle();
         synchronized (handle) {
+            //log.info("Handle: {}; Stream: {}", handle.address(), ctx.getCublasStream().address());
             cublasSetStream_v2(new cublasContext(handle), new CUstream_st(ctx.getCublasStream()));
 
             cublasSgemm_v2(new cublasContext(handle), convertTranspose(TransA), convertTranspose(TransB), M, N, K,
                             new FloatPointer(alpha), (FloatPointer) cAPointer.getDevicePointer(), lda,
                             (FloatPointer) cBPointer.getDevicePointer(), ldb, new FloatPointer(beta),
                             (FloatPointer) cCPointer.getDevicePointer(), ldc);
+
+            ctx.getOldStream().synchronize();
         }
 
         allocator.registerAction(ctx, C, A, B);
@@ -244,6 +256,8 @@ public class JcublasLevel3 extends BaseLevel3 {
                             new DoublePointer(alpha), (DoublePointer) cAPointer.getDevicePointer(), lda,
                             (DoublePointer) cBPointer.getDevicePointer(), ldb, new DoublePointer(beta),
                             (DoublePointer) cCPointer.getDevicePointer(), ldc);
+
+            ctx.getOldStream().synchronize();
         }
 
         allocator.registerAction(ctx, C, A, B);

@@ -47,7 +47,7 @@ namespace nd4j {
 
             _currentMutex.unlock();
 
-            setCurrentDevice(globalThreadToDevice);
+            setCurrentNativeDevice(globalThreadToDevice);
         }
 
         // if we already know affinity - just return it
@@ -92,6 +92,8 @@ namespace nd4j {
 
     void AffinityManager::setCurrentNativeDevice(int deviceId) {
         auto res = cudaSetDevice(deviceId);
+        if (res != 0)
+            throw cuda_exception::build("setCurrentDevice failed", res);
     }
 
     void AffinityManager::setCurrentDevice(int deviceId) {
@@ -104,17 +106,22 @@ namespace nd4j {
             res = cudaStreamSynchronize(*LaunchContext::defaultContext()->getCudaSpecialStream());
             if (res != 0)
                 throw cuda_exception::build("setCurrentDevice -> specialSync failed", res);
+
+            if (deviceId != previousDeviceId) {
+                // discard existing stuff
+                nd4j_printf("AffinityManager::setCurrentDevice() was invoked, releasing buffers\n", "");
+                LaunchContext::releaseBuffers();
+            }
         }
 
-        auto res = cudaSetDevice(deviceId);
-        if (res != 0)
-            throw cuda_exception::build("cudaSetDevice failed", res);
+        if (deviceId != previousDeviceId) {
+            auto res = cudaSetDevice(deviceId);
+            if (res != 0)
+                throw cuda_exception::build("cudaSetDevice failed", res);
+        }
 
         // update thread-device affinity
         globalThreadToDevice = deviceId;
-
-        // discard existing stuff
-        LaunchContext::releaseBuffers();
     }
 
     std::atomic<int> AffinityManager::_lastDevice;// = std::atomic<int>(initialV);
