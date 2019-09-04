@@ -40,8 +40,8 @@ public class DeConv2DDerivative extends DeConv2D {
     public DeConv2DDerivative() {}
 
     @Builder(builderMethodName = "derivativeBuilder")
-    public DeConv2DDerivative(SameDiff sameDiff, SDVariable[] inputs, INDArray[] inputArrays, INDArray[] outputs, DeConv2DConfig config) {
-        super(sameDiff, inputs, inputArrays, outputs, config);
+    public DeConv2DDerivative(SameDiff sameDiff, SDVariable[] inputs, DeConv2DConfig config) {
+        super(sameDiff, inputs, config);
     }
 
     @Override

@@ -39,8 +39,8 @@ public class Conv3DDerivative extends Conv3D {
     public Conv3DDerivative() {}
 
     @Builder(builderMethodName = "derivativeBuilder")
-    public Conv3DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputs, INDArray[] outputs, Conv3DConfig conv3DConfig) {
-        super(sameDiff, inputFunctions, inputs, outputs, conv3DConfig);
+    public Conv3DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, Conv3DConfig conv3DConfig) {
+        super(sameDiff, inputFunctions, conv3DConfig);
     }
 
     @Override

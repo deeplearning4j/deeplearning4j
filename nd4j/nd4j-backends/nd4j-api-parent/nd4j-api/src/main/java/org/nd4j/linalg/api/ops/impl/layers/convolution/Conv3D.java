@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -33,6 +34,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -55,25 +57,27 @@ public class Conv3D extends DynamicCustomOp {
     public Conv3D() {
     }
 
-    @Builder(builderMethodName = "builder")
-    public Conv3D(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputs, INDArray[] outputs,
-                  Conv3DConfig conv3DConfig) {
-        super(null, sameDiff, inputFunctions, false);
-        setSameDiff(sameDiff);
+    @Builder(builderMethodName = "sameDiffBuilder")
+    public Conv3D(SameDiff sameDiff, SDVariable[] inputFunctions, Conv3DConfig config) {
+        super(sameDiff, inputFunctions);
+        initConfig(config);
+    }
 
-        if (inputs != null)
-            addInputArgument(inputs);
-        if (outputs != null)
-            addOutputArgument(outputs);
-        this.config = conv3DConfig;
+    public Conv3D(INDArray[] inputs, INDArray[] outputs, Conv3DConfig config){
+        super(inputs, outputs);
+        initConfig(config);
+    }
+
+    public Conv3D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv3DConfig config){
+        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
+    }
+
+    private void initConfig(Conv3DConfig config){
+        this.config = config;
         Preconditions.checkState(config.getSW() >= 1 && config.getPH() >= 0 && config.getDW() >= 1,
-                                    INVALID_CONFIGURATION,
-                                    config.getSW(), config.getPH(), config.getDW());
+                INVALID_CONFIGURATION,
+                config.getSW(), config.getPH(), config.getDW());
         addArgs();
-
-
-        //for (val arg: iArgs())
-        //  System.out.println(getIArgument(arg));
     }
 
 
@@ -259,8 +263,6 @@ public class Conv3D extends DynamicCustomOp {
         inputs.add(f1.get(0));
         Conv3DDerivative conv3DDerivative = Conv3DDerivative.derivativeBuilder()
                 .conv3DConfig(config)
-                .inputFunctions(args())
-                .outputs(outputArguments())
                 .inputFunctions(inputs.toArray(new SDVariable[inputs.size()]))
                 .sameDiff(sameDiff)
                 .build();

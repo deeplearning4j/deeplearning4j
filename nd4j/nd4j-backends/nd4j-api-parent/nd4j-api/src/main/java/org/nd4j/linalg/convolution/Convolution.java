@@ -235,24 +235,20 @@ public class Convolution {
     public static INDArray pooling2D(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw,
                                      int dh, int dw, boolean isSameMode, Pooling2D.Pooling2DType type, Pooling2D.Divisor divisor,
                                      double extra, int virtualHeight, int virtualWidth, INDArray out) {
-        Pooling2D pooling = Pooling2D.builder()
-                .arrayInputs(new INDArray[]{img})
-                .arrayOutputs(new INDArray[]{out})
-                .config(Pooling2DConfig.builder()
-                        .dH(dh)
-                        .dW(dw)
-                        .extra(extra)
-                        .kH(kh)
-                        .kW(kw)
-                        .pH(ph)
-                        .pW(pw)
-                        .isSameMode(isSameMode)
-                        .sH(sy)
-                        .sW(sx)
-                        .type(type)
-                        .divisor(divisor)
-                        .build())
-                .build();
+        Pooling2D pooling = new Pooling2D(img, out, Pooling2DConfig.builder()
+                .dH(dh)
+                .dW(dw)
+                .extra(extra)
+                .kH(kh)
+                .kW(kw)
+                .pH(ph)
+                .pW(pw)
+                .isSameMode(isSameMode)
+                .sH(sy)
+                .sW(sx)
+                .type(type)
+                .divisor(divisor)
+                .build());
         Nd4j.getExecutioner().execAndReturn(pooling);
         return out;
     }

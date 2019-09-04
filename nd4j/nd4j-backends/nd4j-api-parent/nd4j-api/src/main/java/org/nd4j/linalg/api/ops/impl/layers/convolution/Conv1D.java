@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.Onnx;
@@ -39,6 +40,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv1DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -59,18 +61,28 @@ public class Conv1D extends DynamicCustomOp {
     protected Conv1DConfig config;
     private static final String INVALID_CONFIGURATION = "Invalid Conv1D configuration : s = %s p = %s ";
 
-    @Builder(builderMethodName = "builder")
+    @Builder(builderMethodName = "sameDiffBuilder")
     public Conv1D(SameDiff sameDiff,
                   SDVariable[] inputFunctions,
-                  INDArray[] inputArrays, INDArray[] outputs,
                   Conv1DConfig config) {
-        super(null, inputArrays, outputs);
-        this.sameDiff = sameDiff;
+        super(sameDiff, inputFunctions);
+        initConfig(config);
+    }
+
+    public Conv1D(INDArray[] inputs, INDArray[] outputs, Conv1DConfig config){
+        super(inputs, outputs);
+
+        initConfig(config);
+    }
+
+    public Conv1D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv1DConfig config){
+        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
+    }
+
+    private void initConfig(Conv1DConfig config){
         this.config = config;
         Preconditions.checkState(config.getS() >= 1 && config.getP() >= 0, INVALID_CONFIGURATION, config.getS(), config.getP());
         addArgs();
-        sameDiff.putOpForId(this.getOwnName(), this);
-        sameDiff.addArgsFor(inputFunctions, this);
     }
 
     protected void addArgs() {

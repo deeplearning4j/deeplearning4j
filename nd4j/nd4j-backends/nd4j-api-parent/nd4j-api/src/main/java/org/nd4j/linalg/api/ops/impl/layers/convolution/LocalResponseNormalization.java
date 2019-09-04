@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.Onnx;
@@ -48,18 +49,19 @@ public class LocalResponseNormalization extends DynamicCustomOp {
     protected LocalResponseNormalizationConfig config;
 
 
-    @Builder(builderMethodName = "builder")
-    public LocalResponseNormalization(SameDiff sameDiff, SDVariable[] inputFunctions,
-                                      INDArray[] inputs, INDArray[] outputs,boolean inPlace,
+    @Builder(builderMethodName = "sameDiffBuilder")
+    public LocalResponseNormalization(SameDiff sameDiff, SDVariable[] inputFunctions, boolean inPlace,
                                       LocalResponseNormalizationConfig config) {
         super(null,sameDiff, inputFunctions, inPlace);
+
         this.config = config;
-        if(inputs != null) {
-            addInputArgument(inputs);
-        }
-        if(outputs!= null) {
-            addOutputArgument(outputs);
-        }
+        addArgs();
+    }
+
+    public LocalResponseNormalization(@NonNull INDArray input, INDArray output, @NonNull LocalResponseNormalizationConfig config){
+        super(new INDArray[]{input}, wrapOrNull(output));
+
+        this.config = config;
         addArgs();
     }
 
