@@ -594,21 +594,46 @@ namespace nd4j {
 
 
         /**
+         * This operation rearranges data from depth into blocks of spatial data. This is the reverse transformation
+         * of space_to_depth op. This op output is a copy of the input tensor where values from the depth dimension
+         * are moved in spatial blocks to the height and width dimensions. Int attr 0 indicates the input
+         * block size and how the data is moved.
+         * Input:
+         *     0 - 4D tensor on given type
+         * Output:
+         *     0 - 4D tensor of given type and proper shape
          *
-         *
-         *
+         * Int arguments:
+         *     0 - block size
+         *     1 - output data format: 0 ("NHWC"): shape{ batch, height, width, channels }
+         *                             1 ("NCHW"): shape{ batch, channels, height, width }
+         *                             2 ("NCHW_VECT_C"): int8 shape{ batch, channels / 4, height, width, 4 }
+         *                             optional (default 0)
          */
         #if NOT_EXCLUDED(OP_depth_to_space)
-        DECLARE_CUSTOM_OP(depth_to_space, 1, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(depth_to_space, 1, 1, false, 0, -1);
         #endif
 
         /**
+         * This operation rearranges blocks of spatial data, into depth.This op output is a copy of the input tensor
+         * where values from the height and width dimensions are moved to the depth dimension. Int attr 0 indicates
+         * the input block size.
          *
+         * Input:
+         *     - 4D tensor of given type
+         * Output:
+         *     - 4D tensor
          *
+         * Int arguments:
+         *     0 - block size
+         *     1 - output data format: 0 ("NHWC"): shape{ batch, height, width, channels }
+         *                             1 ("NCHW"): shape{ batch, channels, height, width }
+         *                             2 ("NCHW_VECT_C"): int8 shape{ batch, channels / 4, height, width, 4 }
+         *                             optional (default 0)
          *
          */
         #if NOT_EXCLUDED(OP_space_to_depth)
-        DECLARE_CUSTOM_OP(space_to_depth, 1, 1, false, 0, 2);
+        DECLARE_CUSTOM_OP(space_to_depth, 1, 1, false, 0, -1);
         #endif
 
         /**
@@ -622,13 +647,42 @@ namespace nd4j {
         #endif
 
         /**
+         * Zero-pads and then rearranges (permutes) blocks of spatial data into batch. More specifically, this op
+         * outputs a copy of the input tensor where values from the height and width dimensions are moved to the
+         * batch dimension. After the zero-padding, both height and width of the input must be divisible by the block
+         * size.
          *
+         * Inputs:
+         *  0 - input tensor
+         *  1 - 2D paddings tensor (shape {M, 2})
+         *
+         *  Output:
+         *    - result tensor
+         *
+         *  Int args:
+         *      0 - block size (M)
          *
          */
         #if NOT_EXCLUDED(OP_space_to_batch)
         DECLARE_CUSTOM_OP(space_to_batch, 2, 1, false, 0, 1);
         #endif
 
+        /*
+         * This operation divides "spatial" dimensions [1, ..., M] of the input into a grid of blocks of shape
+         * block_shape, and interleaves these blocks with the "batch" dimension (0) such that in the output,
+         * the spatial dimensions [1, ..., M] correspond to the position within the grid, and the batch dimension
+         * combines both the position within a spatial block and the original batch position. Prior to division into
+         * blocks, the spatial dimensions of the input are optionally zero padded according to paddings.
+         *
+         * Inputs:
+         *      0 - input (N-D tensor)
+         *      1 - block_shape - int 1D tensor with M length
+         *      2 - paddings - int 2D tensor with shape {M, 2}
+         *
+         * Output:
+         *      - N-D tensor with the same type as input 0.
+         *
+         * */
         #if NOT_EXCLUDED(OP_space_to_batch_nd)
         DECLARE_CUSTOM_OP(space_to_batch_nd, 3, 1, false, 0, 0);
         #endif
@@ -973,7 +1027,7 @@ namespace nd4j {
          * return value:
          *    tensor with min values according to indices sets.
          */
-        #if NOT_EXCLUDED(OP_segment_min_bp)
+        #if NOT_EXCLUDED(OP_segment_min)
         DECLARE_CUSTOM_OP(segment_min, 2, 1, false, 0, 0);
         #endif
         #if NOT_EXCLUDED(OP_segment_min_bp)

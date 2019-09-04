@@ -3357,6 +3357,18 @@ void deleteTadPack(nd4j::TadPack* ptr) {
     delete ptr;
 }
 
+bool isBlasVersionMatches(int major, int minor, int build) {
+    auto result = major == Environment::getInstance()->_blasMajorVersion && minor == Environment::getInstance()->_blasMinorVersion && build == Environment::getInstance()->_blasPatchVersion;
+
+    if (!result) {
+        nd4j_printf("CUDA/cuBLAS version mismatch. Expected: %i.%i.%i but got %i.%i.%i instead\n", Environment::getInstance()->_blasMajorVersion, Environment::getInstance()->_blasMinorVersion, Environment::getInstance()->_blasPatchVersion, major, minor, build);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(152);
+        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("CUDA/cuBLAS version mismatch");
+    }
+
+    return result;
+}
+
 nd4j::ConstantDataBuffer* constantBufferLong(nd4j::DataType dtype, Nd4jLong *data, int length) {
     return nd4j::ConstantHelper::getInstance()->constantBuffer(ConstantDescriptor(data, length), dtype);
 }

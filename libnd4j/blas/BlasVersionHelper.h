@@ -14,29 +14,27 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-include "array.fbs";
-include "utils.fbs";
+//
+// @author raver119@gmail.com
+//
 
-namespace nd4j.graph;
+#ifndef SAMEDIFF_BLASVERSIONHELPER_H
+#define SAMEDIFF_BLASVERSIONHELPER_H
 
-// Variable type for variables
-enum VarType:byte {
-    VARIABLE,
-    CONSTANT,
-    ARRAY,
-    PLACEHOLDER
+#include <dll.h>
+#include <cuda.h>
+#include <cuda_runtime.h>
+
+namespace nd4j {
+    class ND4J_EXPORT BlasVersionHelper {
+    public:
+        int _blasMajorVersion = 0;
+        int _blasMinorVersion = 0;
+        int _blasPatchVersion = 0;
+
+        BlasVersionHelper();
+        ~BlasVersionHelper() = default;
+    };
 }
 
-table FlatVariable {
-    id:IntPair; // ID of the Variable, in format of IntPair.first is node Id, IntPair.second is output index of the node
-    name:string; // symbolic ID of the Variable (if defined)
-    dtype:DType;
-
-    shape:[long]; // shape is absolutely optional. either shape or ndarray might be set
-    ndarray:FlatArray;
-
-    device:int; // default is -1, which means _auto_
-	variabletype:VarType;
-}
-
-root_type FlatVariable;
+#endif //DEV_TESTS_BLASVERSIONHELPER_H

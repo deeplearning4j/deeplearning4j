@@ -219,7 +219,7 @@ namespace nd4j {
                             throw std::runtime_error("CONSTANT variable must have NDArray bundled");
 
                         auto ar = flatVariable->ndarray();
-                        if (ar->dtype() == DataType_UTF8) {
+                        if (ar->dtype() == DType_UTF8) {
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
                         } else {
                             _ndarray = nd4j::graph::FlatUtils::fromFlatArray(ar);
@@ -320,7 +320,7 @@ namespace nd4j {
                 auto fBuffer = builder.CreateVector(array->asByteVector());
 
                 // packing array
-                auto fArray = CreateFlatArray(builder, fShape, fBuffer, (nd4j::graph::DataType) array->dataType());
+                auto fArray = CreateFlatArray(builder, fShape, fBuffer, (nd4j::graph::DType) array->dataType());
 
                 // packing id/index of this var
                 auto fVid = CreateIntPair(builder, this->_id, this->_index);
@@ -331,7 +331,7 @@ namespace nd4j {
                     stringId = builder.CreateString(this->_name);
 
                 // returning array
-                return CreateFlatVariable(builder, fVid, stringId, static_cast<nd4j::graph::DataType>(array->dataType()), 0, fArray);
+                return CreateFlatVariable(builder, fVid, stringId, static_cast<nd4j::graph::DType>(array->dataType()), 0, fArray);
             } else {
                 throw std::runtime_error("Variable::asFlatVariable isn't possible for NDArrayList");
             }

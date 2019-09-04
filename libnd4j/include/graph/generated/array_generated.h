@@ -40,56 +40,56 @@ inline const char *EnumNameByteOrder(ByteOrder e) {
   return EnumNamesByteOrder()[index];
 }
 
-enum DataType {
-  DataType_INHERIT = 0,
-  DataType_BOOL = 1,
-  DataType_FLOAT8 = 2,
-  DataType_HALF = 3,
-  DataType_HALF2 = 4,
-  DataType_FLOAT = 5,
-  DataType_DOUBLE = 6,
-  DataType_INT8 = 7,
-  DataType_INT16 = 8,
-  DataType_INT32 = 9,
-  DataType_INT64 = 10,
-  DataType_UINT8 = 11,
-  DataType_UINT16 = 12,
-  DataType_UINT32 = 13,
-  DataType_UINT64 = 14,
-  DataType_QINT8 = 15,
-  DataType_QINT16 = 16,
-  DataType_BFLOAT16 = 17,
-  DataType_UTF8 = 50,
-  DataType_MIN = DataType_INHERIT,
-  DataType_MAX = DataType_UTF8
+enum DType {
+  DType_INHERIT = 0,
+  DType_BOOL = 1,
+  DType_FLOAT8 = 2,
+  DType_HALF = 3,
+  DType_HALF2 = 4,
+  DType_FLOAT = 5,
+  DType_DOUBLE = 6,
+  DType_INT8 = 7,
+  DType_INT16 = 8,
+  DType_INT32 = 9,
+  DType_INT64 = 10,
+  DType_UINT8 = 11,
+  DType_UINT16 = 12,
+  DType_UINT32 = 13,
+  DType_UINT64 = 14,
+  DType_QINT8 = 15,
+  DType_QINT16 = 16,
+  DType_BFLOAT16 = 17,
+  DType_UTF8 = 50,
+  DType_MIN = DType_INHERIT,
+  DType_MAX = DType_UTF8
 };
 
-inline const DataType (&EnumValuesDataType())[19] {
-  static const DataType values[] = {
-    DataType_INHERIT,
-    DataType_BOOL,
-    DataType_FLOAT8,
-    DataType_HALF,
-    DataType_HALF2,
-    DataType_FLOAT,
-    DataType_DOUBLE,
-    DataType_INT8,
-    DataType_INT16,
-    DataType_INT32,
-    DataType_INT64,
-    DataType_UINT8,
-    DataType_UINT16,
-    DataType_UINT32,
-    DataType_UINT64,
-    DataType_QINT8,
-    DataType_QINT16,
-    DataType_BFLOAT16,
-    DataType_UTF8
+inline const DType (&EnumValuesDType())[19] {
+  static const DType values[] = {
+    DType_INHERIT,
+    DType_BOOL,
+    DType_FLOAT8,
+    DType_HALF,
+    DType_HALF2,
+    DType_FLOAT,
+    DType_DOUBLE,
+    DType_INT8,
+    DType_INT16,
+    DType_INT32,
+    DType_INT64,
+    DType_UINT8,
+    DType_UINT16,
+    DType_UINT32,
+    DType_UINT64,
+    DType_QINT8,
+    DType_QINT16,
+    DType_BFLOAT16,
+    DType_UTF8
   };
   return values;
 }
 
-inline const char * const *EnumNamesDataType() {
+inline const char * const *EnumNamesDType() {
   static const char * const names[] = {
     "INHERIT",
     "BOOL",
@@ -147,9 +147,9 @@ inline const char * const *EnumNamesDataType() {
   return names;
 }
 
-inline const char *EnumNameDataType(DataType e) {
+inline const char *EnumNameDType(DType e) {
   const size_t index = static_cast<int>(e);
-  return EnumNamesDataType()[index];
+  return EnumNamesDType()[index];
 }
 
 struct FlatArray FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
@@ -165,8 +165,8 @@ struct FlatArray FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::Vector<int8_t> *buffer() const {
     return GetPointer<const flatbuffers::Vector<int8_t> *>(VT_BUFFER);
   }
-  DataType dtype() const {
-    return static_cast<DataType>(GetField<int8_t>(VT_DTYPE, 0));
+  DType dtype() const {
+    return static_cast<DType>(GetField<int8_t>(VT_DTYPE, 0));
   }
   ByteOrder byteOrder() const {
     return static_cast<ByteOrder>(GetField<int8_t>(VT_BYTEORDER, 0));
@@ -192,7 +192,7 @@ struct FlatArrayBuilder {
   void add_buffer(flatbuffers::Offset<flatbuffers::Vector<int8_t>> buffer) {
     fbb_.AddOffset(FlatArray::VT_BUFFER, buffer);
   }
-  void add_dtype(DataType dtype) {
+  void add_dtype(DType dtype) {
     fbb_.AddElement<int8_t>(FlatArray::VT_DTYPE, static_cast<int8_t>(dtype), 0);
   }
   void add_byteOrder(ByteOrder byteOrder) {
@@ -214,7 +214,7 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArray(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<flatbuffers::Vector<int8_t>> buffer = 0,
-    DataType dtype = DataType_INHERIT,
+    DType dtype = DType_INHERIT,
     ByteOrder byteOrder = ByteOrder_LE) {
   FlatArrayBuilder builder_(_fbb);
   builder_.add_buffer(buffer);
@@ -228,7 +228,7 @@ inline flatbuffers::Offset<FlatArray> CreateFlatArrayDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     const std::vector<int64_t> *shape = nullptr,
     const std::vector<int8_t> *buffer = nullptr,
-    DataType dtype = DataType_INHERIT,
+    DType dtype = DType_INHERIT,
     ByteOrder byteOrder = ByteOrder_LE) {
   return nd4j::graph::CreateFlatArray(
       _fbb,

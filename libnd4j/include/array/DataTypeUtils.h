@@ -38,7 +38,7 @@ namespace nd4j {
     public:
         static int asInt(DataType type);
         static DataType fromInt(int dtype);
-        static DataType fromFlatDataType(nd4j::graph::DataType dtype);
+        static DataType fromFlatDataType(nd4j::graph::DType dtype);
         FORCEINLINE static std::string  asString(DataType dataType);
 
         template <typename T>

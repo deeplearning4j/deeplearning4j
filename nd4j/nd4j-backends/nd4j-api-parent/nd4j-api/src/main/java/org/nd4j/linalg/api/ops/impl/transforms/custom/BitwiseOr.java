@@ -28,29 +28,29 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * Element-wise shift operation, shift bits to the right, >>
+ * Bit-wise OR operation, broadcastable
  *
  * @author raver119@gmail.com
  */
-public class RShiftBits extends BaseDynamicTransformOp {
+public class BitwiseOr extends BaseDynamicTransformOp {
 
-    public RShiftBits(SameDiff sameDiff, SDVariable x, SDVariable y) {
+    public BitwiseOr(SameDiff sameDiff, SDVariable x, SDVariable y) {
         super(sameDiff, new SDVariable[] {x, y} ,false);
     }
 
-    public RShiftBits(INDArray input, INDArray shift, INDArray output) {
-        super(new INDArray[]{input, shift}, new INDArray[]{output});
+    public BitwiseOr(INDArray x, INDArray y, INDArray output) {
+        super(new INDArray[]{x, y}, new INDArray[]{output});
     }
 
-    public RShiftBits(INDArray input, INDArray shift) {
-        this(input, shift,input.ulike());
+    public BitwiseOr(INDArray x, INDArray y) {
+        this(x, y,x.ulike());
     }
 
-    public RShiftBits() {}
+    public BitwiseOr() {}
 
     @Override
     public String opName() {
-        return "rshift_bits";
+        return "bitwise_or";
     }
 
 
@@ -61,7 +61,7 @@ public class RShiftBits extends BaseDynamicTransformOp {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No TensorFlow op opName found for " +  opName());
+        return "bitwise_or";
     }
 
 

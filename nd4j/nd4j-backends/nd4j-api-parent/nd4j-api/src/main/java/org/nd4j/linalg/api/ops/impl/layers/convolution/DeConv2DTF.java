@@ -53,25 +53,21 @@ public class DeConv2DTF extends DynamicCustomOp {
 
     protected DeConv2DConfig config;
 
-    @Builder(builderMethodName = "builder")
+    @Builder(builderMethodName = "sameDiffBuilder")
     public DeConv2DTF(SameDiff sameDiff,
                       SDVariable[] inputs,
-                      INDArray[] inputArrays, INDArray[] outputs,
                       DeConv2DConfig config) {
-        super(null, inputArrays, outputs);
-        this.sameDiff = sameDiff;
+        super(sameDiff, inputs);
+
         this.config = config;
-
-        if (inputArrays != null) {
-            addInputArgument(inputArrays);
-        }
-        if (outputs != null) {
-            addOutputArgument(outputs);
-        }
-
         addArgs();
-        sameDiff.putOpForId(this.getOwnName(), this);
-        sameDiff.addArgsFor(inputs, this);
+    }
+
+    public DeConv2DTF(INDArray[] inputs, INDArray[] outputs, DeConv2DConfig config){
+        super(inputs, outputs);
+
+        this.config = config;
+        addArgs();
     }
 
     @Override

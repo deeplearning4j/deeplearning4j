@@ -544,8 +544,8 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_1) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests13, adjustSaturation_2) {
 
-    NDArray input('c', {2,2,3}, {0,100,56,    17,220,5,          150,97,230,        255,2,13}, nd4j::DataType::FLOAT32);
-    NDArray exp  ('c', {2,2,3}, {0.,100.,56., 12.279087,220.,0., 91.654228,0.,230., 255.,0.,11.087015}, nd4j::DataType::FLOAT32);
+    NDArray input('c', {2,2,3}, {0,100,56,    17,220,5,          150,97,230,        255,2,13}, nd4j::DataType::DOUBLE);
+    NDArray exp  ('c', {2,2,3}, {0.,100.,56., 12.279087,220.,0., 91.654228,0.,230., 255.,0.,11.087015}, nd4j::DataType::DOUBLE);
 
     nd4j::ops::adjust_saturation op;
     auto results = op.execute({&input}, {10}, {2});
@@ -553,7 +553,8 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    // result->printIndexedBuffer();
+//    result->printIndexedBuffer("Result2");
+//    exp.printIndexedBuffer("Expect2");
 
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));

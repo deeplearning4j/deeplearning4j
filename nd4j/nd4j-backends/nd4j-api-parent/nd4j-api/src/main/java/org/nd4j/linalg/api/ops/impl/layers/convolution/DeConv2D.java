@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.Onnx;
@@ -31,6 +32,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv3DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -51,25 +53,25 @@ public class DeConv2D extends DynamicCustomOp {
 
     protected DeConv2DConfig config;
 
-    @Builder(builderMethodName = "builder")
+    @Builder(builderMethodName = "sameDiffBuilder")
     public DeConv2D(SameDiff sameDiff,
                     SDVariable[] inputs,
-                    INDArray[] inputArrays, INDArray[] outputs,
                     DeConv2DConfig config) {
-        super(null, inputArrays, outputs);
-        this.sameDiff = sameDiff;
+        super(sameDiff, inputs);
         this.config = config;
 
-        if (inputArrays != null) {
-            addInputArgument(inputArrays);
-        }
-        if (outputs != null) {
-            addOutputArgument(outputs);
-        }
-
         addArgs();
-        sameDiff.putOpForId(this.getOwnName(), this);
-        sameDiff.addArgsFor(inputs, this);
+    }
+
+    public DeConv2D(INDArray[] inputs, INDArray[] outputs, DeConv2DConfig config){
+        super(inputs, outputs);
+
+        this.config = config;
+        addArgs();
+    }
+
+    public DeConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull DeConv2DConfig config){
+        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
     @Override

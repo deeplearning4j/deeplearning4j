@@ -108,6 +108,22 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
+/*
+        val major = new int[1];
+        val minor = new int[1];
+        val build = new int[1];
+        org.bytedeco.cuda.global.cublas.cublasGetProperty(0, major);
+        org.bytedeco.cuda.global.cublas.cublasGetProperty(1, minor);
+        org.bytedeco.cuda.global.cublas.cublasGetProperty(2, build);
+
+        val pew = new int[100];
+        org.bytedeco.cuda.global.cudart.cudaDriverGetVersion(pew);
+
+        nativeOps.isBlasVersionMatches(major[0], minor[0], build[0]);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+        */
     }
 
     @Override

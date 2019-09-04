@@ -33,12 +33,13 @@ namespace nd4j {
          * 0: 1D row-vector (or with shape (1, m))
          * 1: 1D integer vector with slice nums
          * 2: 1D float-point values vector with same shape as above
+         * 3: 2D float-point matrix with data to search
          * 
          * Int args:
          * 0: N - number of slices
          * 
          * Output:
-         * 0: 1D vector with edge forces for input and values
+         * 0: 2D matrix with the same shape and type as the 3th argument
          */
         #if NOT_EXCLUDED(OP_barnes_edge_forces)
         DECLARE_CUSTOM_OP(barnes_edge_forces, 4, 1, false, 0, 1);
@@ -52,9 +53,11 @@ namespace nd4j {
          * 0: 1D int row-vector
          * 1: 1D int col-vector
          * 2: 1D float vector with values
-         * 
+         *
          * Output:
-         * 0: symmetric 2D matrix with given values on given places
+         * 0: 1D int result row-vector
+         * 1: 1D int result col-vector
+         * 2: a float-point tensor with shape 1xN, with values from the last input vector
          */
         #if NOT_EXCLUDED(OP_barnes_symmetrized)
         DECLARE_CUSTOM_OP(barnes_symmetrized, 3, 3, false, 0, -1);

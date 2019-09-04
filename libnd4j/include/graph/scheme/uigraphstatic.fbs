@@ -51,7 +51,7 @@ table UIVariable {
     id:IntPair;                     //Existing IntPair class
     name:string;
     type:VarType;                   //Use existing VarType:     VARIABLE, CONSTANT, ARRAY, PLACEHOLDER
-	datatype:DataType;
+	datatype:DType;
 	shape:[long];
 	controlDeps:[string];			//Input control dependencies: variable x -> this
     outputOfOp:string;              //Null for placeholders/constants. For array type SDVariables, the name of the op it's an output of

@@ -48,7 +48,7 @@ table FlatNode {
     opName:string;              //Used to help resolving the class. In a few cases, multiple classes/opNames are mapped to same hash, and might have different config/properties/differentiability
 
     // output data types (optional)
-    outputTypes:[DataType];
+    outputTypes:[DType];
 	
 	//Scalar value - used for scalar ops. Should be single value only.
 	scalar:FlatArray;

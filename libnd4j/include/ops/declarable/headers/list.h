@@ -120,7 +120,7 @@ namespace nd4j {
         #endif
 
         /**
-         * This operation unstacks given NDArray into NDArrayList
+         * This operation unstacks given NDArray into NDArrayList by the first dimension
          */
         #if NOT_EXCLUDED(OP_unstack_list)
         DECLARE_LIST_OP(unstack_list, 1, 1, 0, 0);

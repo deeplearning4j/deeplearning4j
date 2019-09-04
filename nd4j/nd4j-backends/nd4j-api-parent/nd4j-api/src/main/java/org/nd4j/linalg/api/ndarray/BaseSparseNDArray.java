@@ -469,16 +469,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public void setStride(long... stride) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setShape(long... shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public INDArray putScalar(long row, long col, double value) {
         return null;
     }
@@ -1284,17 +1274,10 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
-
     }
 
     @Override
     public void setOrder(char order) {
-
-    }
-
-    @Override
-    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
-        return null;
     }
 
     @Override
@@ -1842,49 +1825,26 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
-    /**
-     * Returns entropy value for this INDArray
-     * @return
-     */
     @Override
     public Number entropyNumber() {
         return entropy(Integer.MAX_VALUE).getDouble(0);
     }
 
-    /**
-     * Returns non-normalized Shannon entropy value for this INDArray
-     * @return
-     */
     @Override
     public Number shannonEntropyNumber() {
         return shannonEntropy(Integer.MAX_VALUE).getDouble(0);
     }
 
-
-    /**
-     * Returns log entropy value for this INDArray
-     * @return
-     */
     @Override
     public Number logEntropyNumber() {
         return logEntropy(Integer.MAX_VALUE).getDouble(0);
     }
 
-    /**
-     * Returns entropy along dimension
-     * @param dimension
-     * @return
-     */
     @Override
     public INDArray entropy(int... dimension) {
         return Nd4j.getExecutioner().exec(new Entropy(this, dimension));
     }
 
-    /**
-     * Returns non-normalized Shannon entropy along dimension
-     * @param dimension
-     * @return
-     */
     @Override
     public INDArray shannonEntropy(int... dimension) {
         return Nd4j.getExecutioner().exec(new ShannonEntropy(this, dimension));

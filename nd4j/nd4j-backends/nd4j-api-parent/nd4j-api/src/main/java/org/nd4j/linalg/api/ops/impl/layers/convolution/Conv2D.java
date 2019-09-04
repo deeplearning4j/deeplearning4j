@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.Onnx;
@@ -56,23 +57,32 @@ public class Conv2D extends DynamicCustomOp {
     protected Conv2DConfig config;
     private static final String INVALID_CONFIGURATION = "Invalid Conv2D configuration : sW = %s pH = %s dW = %s ";
 
-    @Builder(builderMethodName = "builder")
+    @Builder(builderMethodName = "sameDiffBuilder")
     public Conv2D(SameDiff sameDiff,
                   SDVariable[] inputFunctions,
-                  INDArray[] inputArrays, INDArray[] outputs,
                   Conv2DConfig config) {
-        super(null, inputArrays, outputs);
-        this.sameDiff = sameDiff;
+        super(sameDiff, inputFunctions);
+
+        initConfig(config);
+    }
+
+    public Conv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
+        super(inputs, outputs);
+
+        initConfig(config);
+    }
+
+    public Conv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config){
+        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
+    }
+
+    protected void initConfig(Conv2DConfig config){
         this.config = config;
 
         Preconditions.checkState(config.getSW() >= 1 && config.getPH() >= 0 && config.getDW() >= 1,
-                                    INVALID_CONFIGURATION,
-                                    config.getSH(), config.getPH(), config.getDW());
+                INVALID_CONFIGURATION,
+                config.getSH(), config.getPH(), config.getDW());
         addArgs();
-        if(sameDiff != null) {
-            sameDiff.putOpForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
-            sameDiff.addArgsFor(inputFunctions, this);
-        }
     }
 
     protected void addArgs() {
@@ -252,7 +262,6 @@ public class Conv2D extends DynamicCustomOp {
         Conv2DDerivative conv2DDerivative = Conv2DDerivative.derivativeBuilder()
                 .sameDiff(sameDiff)
                 .config(config)
-                .outputs(outputArguments())
                 .inputFunctions(inputs.toArray(new SDVariable[inputs.size()]))
                 .build();
         List<SDVariable> ret = Arrays.asList(conv2DDerivative.outputVariables());

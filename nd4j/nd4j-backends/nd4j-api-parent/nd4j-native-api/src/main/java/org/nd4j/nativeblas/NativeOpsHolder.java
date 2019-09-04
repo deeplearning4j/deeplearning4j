@@ -101,7 +101,7 @@ public class NativeOpsHolder {
             }
             //deviceNativeOps.setOmpNumThreads(4);
 
-            log.info("Number of threads used for NativeOps: {}", deviceNativeOps.ompGetMaxThreads());
+            log.info("Number of threads used for OpenMP: {}", deviceNativeOps.ompGetMaxThreads());
         } catch (Exception | Error e) {
             throw new RuntimeException(
                             "ND4J is probably missing dependencies. For more information, please refer to: http://nd4j.org/getstarted.html",

@@ -37,8 +37,8 @@ import java.util.List;
 public class Conv2DDerivative extends Conv2D {
 
     @Builder(builderMethodName = "derivativeBuilder")
-    public Conv2DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig config) {
-        super(sameDiff, inputFunctions, inputArrays, outputs, config);
+    public Conv2DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, Conv2DConfig config) {
+        super(sameDiff, inputFunctions, config);
     }
 
     public Conv2DDerivative() {}

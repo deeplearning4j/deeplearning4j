@@ -1151,4 +1151,6 @@ public interface NativeOps {
 
     int lastErrorCode();
     String lastErrorMessage();
+
+    boolean isBlasVersionMatches(int major, int minor, int build);
 }

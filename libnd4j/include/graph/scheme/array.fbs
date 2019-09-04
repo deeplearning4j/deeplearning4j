@@ -23,7 +23,7 @@ enum ByteOrder:byte {
 }
 
 // DataType for arrays/buffers
-enum DataType:byte {
+enum DType:byte {
     INHERIT,
     BOOL,
     FLOAT8,
@@ -49,7 +49,7 @@ enum DataType:byte {
 table FlatArray {
     shape:[long]; // shape in Nd4j format
     buffer:[byte]; // byte buffer with data
-    dtype:DataType; // data type of actual data within buffer
+    dtype:DType; // data type of actual data within buffer
     byteOrder:ByteOrder; // byte order of buffer
 }
 

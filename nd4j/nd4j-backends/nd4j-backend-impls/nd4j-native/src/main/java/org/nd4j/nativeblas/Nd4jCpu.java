@@ -557,6 +557,13 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
         public Environment(Pointer p) { super(p); }
     
+        /**
+         * These 3 fields are mostly for CUDA/cuBLAS version tracking
+         */
+        public native int _blasMajorVersion(); public native Environment _blasMajorVersion(int setter);
+        public native int _blasMinorVersion(); public native Environment _blasMinorVersion(int setter);
+        public native int _blasPatchVersion(); public native Environment _blasPatchVersion(int setter);
+
         public static native Environment getInstance();
 
         public native @Cast("bool") boolean isVerbose();
@@ -1874,7 +1881,7 @@ public native void setOmpNumThreads(int threads);
 public native void setOmpMinThreads(int threads);
 
 
-
+public native @Cast("bool") boolean isBlasVersionMatches(int major, int minor, int build);
 
 /**
  *
@@ -21925,6 +21932,78 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public cyclic_rshift_bits() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
+
+        /**
+         * This operation applies bitwise AND
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_bitwise_and)
+        @Namespace("nd4j::ops") public static class bitwise_and extends BroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public bitwise_and(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public bitwise_and(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public bitwise_and position(long position) {
+                return (bitwise_and)super.position(position);
+            }
+        
+                                                                                    public bitwise_and() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
+
+        /**
+         * This operation applies bitwise OR
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_bitwise_or)
+        @Namespace("nd4j::ops") public static class bitwise_or extends BroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public bitwise_or(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public bitwise_or(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public bitwise_or position(long position) {
+                return (bitwise_or)super.position(position);
+            }
+        
+                                                                                    public bitwise_or() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                }
+//         #endif
+
+        /**
+         * This operation applies bitwise XOR
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * \tparam T
+         */
+//         #if NOT_EXCLUDED(OP_bitwise_xor)
+        @Namespace("nd4j::ops") public static class bitwise_xor extends BroadcastableOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public bitwise_xor(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public bitwise_xor(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public bitwise_xor position(long position) {
+                return (bitwise_xor)super.position(position);
+            }
+        
+                                                                                    public bitwise_xor() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                 }
 //         #endif

@@ -65,8 +65,8 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const flatbuffers::String *name() const {
     return GetPointer<const flatbuffers::String *>(VT_NAME);
   }
-  DataType dtype() const {
-    return static_cast<DataType>(GetField<int8_t>(VT_DTYPE, 0));
+  DType dtype() const {
+    return static_cast<DType>(GetField<int8_t>(VT_DTYPE, 0));
   }
   const flatbuffers::Vector<int64_t> *shape() const {
     return GetPointer<const flatbuffers::Vector<int64_t> *>(VT_SHAPE);
@@ -106,7 +106,7 @@ struct FlatVariableBuilder {
   void add_name(flatbuffers::Offset<flatbuffers::String> name) {
     fbb_.AddOffset(FlatVariable::VT_NAME, name);
   }
-  void add_dtype(DataType dtype) {
+  void add_dtype(DType dtype) {
     fbb_.AddElement<int8_t>(FlatVariable::VT_DTYPE, static_cast<int8_t>(dtype), 0);
   }
   void add_shape(flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape) {
@@ -137,7 +137,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<IntPair> id = 0,
     flatbuffers::Offset<flatbuffers::String> name = 0,
-    DataType dtype = DataType_INHERIT,
+    DType dtype = DType_INHERIT,
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0,
@@ -157,7 +157,7 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     flatbuffers::FlatBufferBuilder &_fbb,
     flatbuffers::Offset<IntPair> id = 0,
     const char *name = nullptr,
-    DataType dtype = DataType_INHERIT,
+    DType dtype = DType_INHERIT,
     const std::vector<int64_t> *shape = nullptr,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0,

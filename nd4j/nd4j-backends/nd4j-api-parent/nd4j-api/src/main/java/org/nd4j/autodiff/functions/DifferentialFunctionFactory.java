@@ -469,7 +469,7 @@ public class DifferentialFunctionFactory {
      * @return
      */
     public SDVariable localResponseNormalization(SDVariable input, LocalResponseNormalizationConfig lrnConfig) {
-        LocalResponseNormalization lrn = LocalResponseNormalization.builder()
+        LocalResponseNormalization lrn = LocalResponseNormalization.sameDiffBuilder()
                 .inputFunctions(new SDVariable[]{input})
                 .sameDiff(sameDiff())
                 .config(lrnConfig)
@@ -487,8 +487,36 @@ public class DifferentialFunctionFactory {
      * @return
      */
     public SDVariable conv1d(SDVariable input, SDVariable weights, Conv1DConfig conv1DConfig) {
-        Conv1D conv1D = Conv1D.builder()
+        Conv1D conv1D = Conv1D.sameDiffBuilder()
                 .inputFunctions(new SDVariable[]{input, weights})
+                .sameDiff(sameDiff())
+                .config(conv1DConfig)
+                .build();
+
+        return conv1D.outputVariable();
+    }
+
+    /**
+     * Conv1d operation.
+     *
+     * @param input        the inputs to conv1d
+     * @param weights      conv1d weights
+     * @param bias         conv1d bias
+     * @param conv1DConfig the configuration
+     * @return
+     */
+    public SDVariable conv1d(SDVariable input, SDVariable weights, SDVariable bias, Conv1DConfig conv1DConfig) {
+
+        SDVariable[] args;
+
+        if(bias == null){
+            args = new SDVariable[]{input, weights};
+        } else {
+            args = new SDVariable[]{input, weights, bias};
+        }
+
+        Conv1D conv1D = Conv1D.sameDiffBuilder()
+                .inputFunctions(args)
                 .sameDiff(sameDiff())
                 .config(conv1DConfig)
                 .build();
@@ -504,7 +532,7 @@ public class DifferentialFunctionFactory {
      * @return
      */
     public SDVariable conv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
-        Conv2D conv2D = Conv2D.builder()
+        Conv2D conv2D = Conv2D.sameDiffBuilder()
                 .inputFunctions(inputs)
                 .sameDiff(sameDiff())
                 .config(conv2DConfig)
@@ -530,7 +558,7 @@ public class DifferentialFunctionFactory {
      * @return
      */
     public SDVariable avgPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
-        AvgPooling2D avgPooling2D = AvgPooling2D.builder()
+        AvgPooling2D avgPooling2D = AvgPooling2D.sameDiffBuilder()
                 .input(input)
                 .sameDiff(sameDiff())
                 .config(pooling2DConfig)
@@ -547,7 +575,7 @@ public class DifferentialFunctionFactory {
      * @return
      */
     public SDVariable maxPooling2d(SDVariable input, Pooling2DConfig pooling2DConfig) {
-        MaxPooling2D maxPooling2D = MaxPooling2D.builder()
+        MaxPooling2D maxPooling2D = MaxPooling2D.sameDiffBuilder()
                 .input(input)
                 .sameDiff(sameDiff())
                 .config(pooling2DConfig)
@@ -590,7 +618,7 @@ public class DifferentialFunctionFactory {
      * @return
      */
     public SDVariable sconv2d(SDVariable[] inputs, Conv2DConfig conv2DConfig) {
-        SConv2D sconv2D = SConv2D.sBuilder()
+        SConv2D sconv2D = SConv2D.sameDiffSBuilder()
                 .inputFunctions(inputs)
                 .sameDiff(sameDiff())
                 .conv2DConfig(conv2DConfig)
@@ -609,7 +637,7 @@ public class DifferentialFunctionFactory {
      * @return
      */
     public SDVariable depthWiseConv2d(SDVariable[] inputs, Conv2DConfig depthConv2DConfig) {
-        SConv2D depthWiseConv2D = SConv2D.sBuilder()
+        SConv2D depthWiseConv2D = SConv2D.sameDiffSBuilder()
                 .inputFunctions(inputs)
                 .sameDiff(sameDiff())
                 .conv2DConfig(depthConv2DConfig)
@@ -627,7 +655,7 @@ public class DifferentialFunctionFactory {
      * @return
      */
     public SDVariable deconv2d(SDVariable[] inputs, DeConv2DConfig deconv2DConfig) {
-        DeConv2D deconv2D = DeConv2D.builder()
+        DeConv2D deconv2D = DeConv2D.sameDiffBuilder()
                 .inputs(inputs)
                 .sameDiff(sameDiff())
                 .config(deconv2DConfig)
@@ -654,9 +682,9 @@ public class DifferentialFunctionFactory {
      * @return
      */
     public SDVariable conv3d(SDVariable[] inputs, Conv3DConfig conv3DConfig) {
-        Conv3D conv3D = Conv3D.builder()
+        Conv3D conv3D = Conv3D.sameDiffBuilder()
                 .inputFunctions(inputs)
-                .conv3DConfig(conv3DConfig)
+                .config(conv3DConfig)
                 .sameDiff(sameDiff())
                 .build();
 
@@ -1258,6 +1286,22 @@ public class DifferentialFunctionFactory {
 
     public SDVariable rotr(SDVariable ix, SDVariable shift) {
         return new CyclicRShiftBits(sameDiff(), ix, shift).outputVariable();
+    }
+
+    public SDVariable bitwiseHammingDist(SDVariable x, SDVariable y) {
+        return new BitsHammingDistance(sameDiff(), x, y).outputVariable();
+    }
+
+    public SDVariable bitwiseAnd(SDVariable x, SDVariable y){
+        return new BitwiseAnd(sameDiff(), x, y).outputVariable();
+    }
+
+    public SDVariable bitwiseOr(SDVariable x, SDVariable y){
+        return new BitwiseOr(sameDiff(), x, y).outputVariable();
+    }
+
+    public SDVariable bitwiseXor(SDVariable x, SDVariable y){
+        return new BitwiseXor(sameDiff(), x, y).outputVariable();
     }
 
     public SDVariable eq(SDVariable iX, SDVariable i_y) {

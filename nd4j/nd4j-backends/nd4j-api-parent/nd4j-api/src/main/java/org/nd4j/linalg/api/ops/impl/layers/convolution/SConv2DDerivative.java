@@ -38,8 +38,8 @@ import java.util.List;
 public class SConv2DDerivative extends SConv2D {
 
     @Builder(builderMethodName = "sDerviativeBuilder")
-    public SConv2DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
-        super(sameDiff, inputFunctions, inputArrays, outputs, conv2DConfig);
+    public SConv2DDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, Conv2DConfig conv2DConfig) {
+        super(sameDiff, inputFunctions, conv2DConfig);
     }
 
     public SConv2DDerivative() {}

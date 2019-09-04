@@ -56,6 +56,13 @@ namespace nd4j{
         Environment();
         ~Environment();
     public:
+        /**
+         * These 3 fields are mostly for CUDA/cuBLAS version tracking
+         */
+        int _blasMajorVersion = 0;
+        int _blasMinorVersion = 0;
+        int _blasPatchVersion = 0;
+
         static Environment* getInstance();
 
         bool isVerbose();

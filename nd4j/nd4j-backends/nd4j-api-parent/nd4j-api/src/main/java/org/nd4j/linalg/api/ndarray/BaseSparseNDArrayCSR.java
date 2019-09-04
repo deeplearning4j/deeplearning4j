@@ -214,11 +214,6 @@ public abstract class BaseSparseNDArrayCSR extends BaseSparseNDArray {
     }
 
     @Override
-    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public boolean equals(Object o) {
         //TODO use op
         // fixme
