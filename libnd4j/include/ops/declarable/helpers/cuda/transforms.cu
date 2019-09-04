@@ -906,7 +906,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
             linearBuffers = shape::elementWiseStride(inputShape) == shape::elementWiseStride(outputShape) && shape::elementWiseStride(inputShape) == 1;
         }
         __syncthreads();
-        const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
+        const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
 
         for (Nd4jLong e = tid; e < length; e += step) {

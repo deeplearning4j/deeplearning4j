@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import java.util.Collections;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -70,7 +71,6 @@ public class HardTanh extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().hardTanhDerivative(arg()).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().hardTanhBp(arg(), i_v.get(0)));
     }
 }

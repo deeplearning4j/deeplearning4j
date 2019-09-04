@@ -29,8 +29,11 @@ import java.util.List;
 /**
  * HardSigmoid derivative
  *
+ * @deprecated Use {@link HardSigmoidBp}
+ *
  * @author raver119@gmail.com
  */
+@Deprecated
 public class HardSigmoidDerivative extends BaseTransformStrictOp {
     public HardSigmoidDerivative(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);

@@ -27,7 +27,7 @@ namespace nd4j {
         return (DataType) val;
     }
 
-    DataType DataTypeUtils::fromFlatDataType(nd4j::graph::DataType dtype) {
+    DataType DataTypeUtils::fromFlatDataType(nd4j::graph::DType dtype) {
         return (DataType) dtype;
     }
 

@@ -41,12 +41,12 @@ namespace helpers {
         const T tbeta  = static_cast<T>(beta);
         const T talpha = static_cast<T>(alpha);
 
-
+        // one block of threads processes 1 example within batch
         for (uint i = blockIdx.x; i < numTads; i += gridDim.x) {
             auto x = reinterpret_cast<T*>(vx) + xTadOffsets[i];
             auto z = reinterpret_cast<T*>(vz) + zTadOffsets[i];
 
-            // load everything into shared memory
+            // load everything into shared memory, so we'll operate on shared memory from now on
             shared[threadIdx.x] = x[threadIdx.x * xEws];
             __syncthreads();
 
@@ -94,7 +94,7 @@ namespace helpers {
             sharedY[threadIdx.x] = 0.f;
             __syncthreads();
 
-
+            // we're operating in shared memory
             for (int s = begin; s < end; s++)
                 sharedY[threadIdx.x] = sharedY[threadIdx.x] + sharedX[s] * sharedX[s];
             __syncthreads();

@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
+import java.util.Collections;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -73,8 +74,7 @@ public class SoftSign extends BaseTransformStrictOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
-        SDVariable ret = f().softsignDerivative(arg()).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().softsignBp(arg(), i_v.get(0)));
     }
 
 }

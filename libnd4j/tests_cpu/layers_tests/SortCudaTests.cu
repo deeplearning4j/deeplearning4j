@@ -79,7 +79,7 @@ TEST_F(SortCudaTests, test_linear_sort_by_val_2) {
     sortByValue(extras, k.buffer(), k.shapeInfo(), k.specialBuffer(), k.specialShapeInfo(), v.buffer(), v.shapeInfo(), v.specialBuffer(), v.specialShapeInfo(), true);
     k.tickWriteDevice();
     v.tickWriteDevice();
-    k.printIndexedBuffer("KEYS");
+    // k.printIndexedBuffer("KEYS");
     ASSERT_EQ(ek, k);
     ASSERT_EQ(ev, v);
 }
@@ -98,8 +98,8 @@ TEST_F(SortCudaTests, test_tad_sort_by_key_1) {
     k.tickWriteDevice();
     v.tickWriteDevice();
 
-    k.printIndexedBuffer("k");
-    v.printIndexedBuffer("v");
+    // k.printIndexedBuffer("k");
+    // v.printIndexedBuffer("v");
 
     ASSERT_EQ(ek, k);
     ASSERT_EQ(ev, v);

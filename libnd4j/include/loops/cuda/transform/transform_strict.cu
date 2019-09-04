@@ -96,13 +96,13 @@ namespace functions {
 		        }
 		        else {
 					if(vx == vz) {
-						for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+						for (Nd4jLong i = tid; i < length; i+= totalThreads) {
 							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);
 	    			    	z[xOffset] = OpType::op(x[xOffset], params);
 		    	    	}
 					}
 					else {
-		    	    	for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
+		    	    	for (Nd4jLong i = tid; i < length; i+= totalThreads) {
 							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);
 							auto zOffset = shape::getIndexOffset(i, zShapeInfo, length);
 	    			    	z[zOffset] = OpType::op(x[xOffset], params);

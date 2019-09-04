@@ -18,13 +18,13 @@ package org.nd4j.linalg.api.ops.impl.transforms.strict;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformFloatOp;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
-import org.nd4j.linalg.api.ops.BaseTransformStrictOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -36,25 +36,32 @@ import java.util.List;
  *
  * @author Alex Black
  */
-public class ELU extends BaseTransformStrictOp {
-    public ELU(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
-        super(sameDiff, i_v, inPlace);
+public class ELU extends DynamicCustomOp {
+    public static final double DEFAULT_ALPHA = 1.0;
+
+    protected double alpha;
+
+    public ELU(SameDiff sameDiff, SDVariable i_v) {
+        super(sameDiff, new SDVariable[]{i_v});
+        this.alpha = DEFAULT_ALPHA;
+        addTArgument(alpha);
     }
 
     public ELU() {
     }
 
     public ELU(INDArray x, INDArray z) {
-        super(x, z);
+        this(x, z, DEFAULT_ALPHA);
+    }
+
+    public ELU(INDArray x, INDArray z, double alpha) {
+        super(null, wrapOrNull(x), wrapOrNull(z));
+        this.alpha = alpha;
+        addTArgument(alpha);
     }
 
     public ELU(INDArray x) {
-        super(x);
-    }
-
-    @Override
-    public int opNum() {
-        return 35;
+        this(x, null, DEFAULT_ALPHA);
     }
 
     @Override
@@ -76,8 +83,14 @@ public class ELU extends BaseTransformStrictOp {
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         //ELU: e^x-1 if x<0, x otherwise
         //dL/dIn = dL/Out * dOut/dIn
-        SDVariable ret = f().eluDerivative(arg()).mul(i_v.get(0));
-        return Arrays.asList(ret);
+        return Collections.singletonList(f().eluBp(arg(), i_v.get(0), alpha));
     }
 
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        Preconditions.checkState(dataTypes != null && dataTypes.size() == 1, "Expected exactly 1 datatype for ELU, got %s", dataTypes);
+        Preconditions.checkState(dataTypes.get(0).isFPType(), "Expected floating point input type for ELU, got %s", dataTypes);
+
+        return dataTypes;
+    }
 }

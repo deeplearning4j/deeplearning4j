@@ -33,13 +33,13 @@ public struct FlatArray : IFlatbufferObject
   public ArraySegment<byte>? GetBufferBytes() { return __p.__vector_as_arraysegment(6); }
 #endif
   public sbyte[] GetBufferArray() { return __p.__vector_as_array<sbyte>(6); }
-  public DataType Dtype { get { int o = __p.__offset(8); return o != 0 ? (DataType)__p.bb.GetSbyte(o + __p.bb_pos) : DataType.INHERIT; } }
+  public DType Dtype { get { int o = __p.__offset(8); return o != 0 ? (DType)__p.bb.GetSbyte(o + __p.bb_pos) : DType.INHERIT; } }
   public ByteOrder ByteOrder { get { int o = __p.__offset(10); return o != 0 ? (ByteOrder)__p.bb.GetSbyte(o + __p.bb_pos) : ByteOrder.LE; } }
 
   public static Offset<FlatArray> CreateFlatArray(FlatBufferBuilder builder,
       VectorOffset shapeOffset = default(VectorOffset),
       VectorOffset bufferOffset = default(VectorOffset),
-      DataType dtype = DataType.INHERIT,
+      DType dtype = DType.INHERIT,
       ByteOrder byteOrder = ByteOrder.LE) {
     builder.StartObject(4);
     FlatArray.AddBuffer(builder, bufferOffset);
@@ -58,7 +58,7 @@ public struct FlatArray : IFlatbufferObject
   public static VectorOffset CreateBufferVector(FlatBufferBuilder builder, sbyte[] data) { builder.StartVector(1, data.Length, 1); for (int i = data.Length - 1; i >= 0; i--) builder.AddSbyte(data[i]); return builder.EndVector(); }
   public static VectorOffset CreateBufferVectorBlock(FlatBufferBuilder builder, sbyte[] data) { builder.StartVector(1, data.Length, 1); builder.Add(data); return builder.EndVector(); }
   public static void StartBufferVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(1, numElems, 1); }
-  public static void AddDtype(FlatBufferBuilder builder, DataType dtype) { builder.AddSbyte(2, (sbyte)dtype, 0); }
+  public static void AddDtype(FlatBufferBuilder builder, DType dtype) { builder.AddSbyte(2, (sbyte)dtype, 0); }
   public static void AddByteOrder(FlatBufferBuilder builder, ByteOrder byteOrder) { builder.AddSbyte(3, (sbyte)byteOrder, 0); }
   public static Offset<FlatArray> EndFlatArray(FlatBufferBuilder builder) {
     int o = builder.EndObject();

@@ -185,7 +185,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         Pointer zData = allocator.getPointer(reduced, context);
         Pointer dstData = allocator.getPointer(outEpsilon, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream())));
         checkCudnn(cudnnPoolingBackward(cudnnContext, cudnnContext.poolingDesc, alpha, cudnnContext.deltaTensorDesc,
                         zData, cudnnContext.deltaTensorDesc, epsData, cudnnContext.srcTensorDesc, srcData, beta,
                         cudnnContext.dstTensorDesc, dstData));
@@ -259,7 +259,7 @@ public class CudnnSubsamplingHelper extends BaseCudnnHelper implements Subsampli
         Pointer srcData = allocator.getPointer(input, context);
         Pointer dstData = allocator.getPointer(reduced, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream())));
         checkCudnn(cudnnPoolingForward(cudnnContext, cudnnContext.poolingDesc, alpha, cudnnContext.srcTensorDesc,
                         srcData, beta, cudnnContext.dstTensorDesc, dstData));
 

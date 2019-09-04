@@ -63,7 +63,7 @@ public class ActivationRReLU extends BaseActivationFunction {
     public INDArray getActivation(INDArray in, boolean training) {
         if (training) {
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-                this.alpha = Nd4j.rand(in.shape(), l, u, Nd4j.getRandom());
+                this.alpha = Nd4j.rand(l, u, Nd4j.getRandom(), in.shape());
             }
             INDArray inTimesAlpha = in.mul(alpha);
             BooleanIndexing.replaceWhere(in, inTimesAlpha, Conditions.lessThan(0));

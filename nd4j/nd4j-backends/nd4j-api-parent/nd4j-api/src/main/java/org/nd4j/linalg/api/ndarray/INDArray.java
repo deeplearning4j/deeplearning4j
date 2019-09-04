@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -15,9 +15,6 @@
  ******************************************************************************/
 
 package org.nd4j.linalg.api.ndarray;
-
-import static org.nd4j.linalg.factory.Nd4j.compressDebug;
-import static org.nd4j.linalg.factory.Nd4j.preventUnpack;
 
 import com.google.flatbuffers.FlatBufferBuilder;
 import lombok.NonNull;
@@ -52,6 +49,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     DataBuffer shapeInfoDataBuffer();
 
+    // TODO: Unused untested method.
     /**
      * Sparse info
      * @return Sparse info.
@@ -110,12 +108,13 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     int elementWiseStride();
 
+    // TODO: Unused untested method.
     /**
      * Get a double at the given linear offset unsafe, without checks.
      * @param offset the offset to get at
      * @return double value at offset
      */
-    double getDoubleUnsafe(long offset); //TODO: consider deleting.
+    double getDoubleUnsafe(long offset);
 
     /**
      * Get string value at given index.
@@ -124,13 +123,14 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     String getString(long index);
 
+    // TODO: Unused untested method.
     /**
      * Insert a scalar at the given linear offset
      * @param offset the offset to insert at
      * @param value the value to insert
      * @return this
      */
-    INDArray putScalarUnsafe(long offset, double value); //TODO: consider deleting.
+    INDArray putScalarUnsafe(long offset, double value);
 
     /**
      * Returns the number of possible vectors for a given dimension
@@ -190,6 +190,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray assign(INDArray arr);
 
+    // TODO: Unused untested method.
     /**
      * Assign all elements from given ndarray that are matching given condition,
      * ndarray to this ndarray
@@ -458,7 +459,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rsub(Number n);
 
-
     /**
      * Reverse subtraction in place - i.e., (n - thisArrayValues)
      *
@@ -466,7 +466,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return This array after reverse subtraction
      */
     INDArray rsubi(Number n);
-
 
     /**
      * Division by a number
@@ -484,7 +483,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray divi(Number n);
 
-
     /**
      * Scalar multiplication (copy)
      *
@@ -501,7 +499,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray muli(Number n);
 
-
     /**
      * Scalar subtraction (copied)
      *
@@ -509,7 +506,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return Copy of this array after applying subtraction operation
      */
     INDArray sub(Number n);
-
 
     /**
      * In place scalar subtraction
@@ -535,7 +531,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addi(Number n);
 
-
     /**
      * Reverse division (number / ndarray)
      *
@@ -544,7 +539,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return Result array
      */
     INDArray rdiv(Number n, INDArray result);
-
 
     /**
      * Reverse in place division
@@ -560,7 +554,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      *
      * @param n      the number to subtract by
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray rsub(Number n, INDArray result);
 
@@ -573,11 +567,12 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rsubi(Number n, INDArray result);
 
-
     /**
-     * @param n
-     * @param result
-     * @return
+     * Division if ndarray by number
+     *
+     * @param n      the number to divide by
+     * @param result the result ndarray
+     * @return the result ndarray
      */
     INDArray div(Number n, INDArray result);
 
@@ -586,24 +581,35 @@ public interface INDArray extends Serializable, AutoCloseable {
      *
      * @param n      the number to divide by
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray divi(Number n, INDArray result);
 
-
+    /**
+     * Multiplication of ndarray.
+     *
+     * @param n the number to multiply by
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     INDArray mul(Number n, INDArray result);
-
 
     /**
      * In place multiplication of this ndarray
      *
      * @param n      the number to divide by
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray muli(Number n, INDArray result);
 
-
+    /**
+     * Subtraction of this ndarray
+     *
+     * @param n      the number to subtract by
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     INDArray sub(Number n, INDArray result);
 
     /**
@@ -615,6 +621,12 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray subi(Number n, INDArray result);
 
+    /**
+     * Addition of this ndarray.
+     * @param n      the number to add
+     * @param result the result ndarray
+     * @return the result ndarray
+     */
     INDArray add(Number n, INDArray result);
 
     /**
@@ -626,25 +638,24 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addi(Number n, INDArray result);
 
-
     /**
-     * Returns a subset of this array based on the specified
-     * indexes
+     * Returns a subset of this array based on the specified indexes
      *
      * @param indexes the indexes in to the array
      * @return a view of the array with the specified indices
      */
     INDArray get(INDArrayIndex... indexes);
 
+    //TODO: revisit after #8166 is resolved.
     /**
-     * Return a mask on whether each element
-     * matches the given condition
+     * Return a mask on whether each element matches the given condition
      * @param comp
      * @param condition
      * @return
      */
     INDArray match(INDArray comp,Condition condition);
 
+    //TODO: revisit after #8166 is resolved.
     /**
      * Returns a mask
      * @param comp
@@ -673,54 +684,51 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray getWhere(Number comp,Condition condition);
 
+    //TODO: unused / untested method. (only used to forward calls from putWhere(Number,INDArray ,Condition).
     /**
-     * Assign the element according
-     * to the comparison array
+     * Assign the element according to the comparison array
      * @param comp the comparison array
      * @param put the elements to put
      * @param condition the condition for masking on
-     * @return
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhere(INDArray comp,INDArray put,Condition condition);
 
-
+    //TODO: unused / untested method.
     /**
-     * Assign the element according
-     * to the comparison array
+     * Assign the element according to the comparison array
      * @param comp the comparison array
      * @param put the elements to put
      * @param condition the condition for masking on
-     * @return
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhere(Number comp,INDArray put,Condition condition);
 
-
+    //TODO: unused / untested method. (only used to forward calls from  other putWhereWithMask implementations.
     /**
-     * Use a pre computed mask
-     * for assigning arrays
+     * Use a pre computed mask for assigning arrays
      * @param mask the mask to use
      * @param put the array to put
-     * @return the resulting array
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhereWithMask(INDArray mask,INDArray put);
 
-
+    //TODO: unused / untested method.
     /**
-     * Use a pre computed mask
-     * for assigning arrays
+     * Use a pre computed mask for assigning arrays
      * @param mask the mask to use
      * @param put the array to put
-     * @return the resulting array
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhereWithMask(INDArray mask,Number put);
 
+    //TODO: unused / untested method.
     /**
-     * Assign the element according
-     * to the comparison array
+     * Assign the element according to the comparison array
      * @param comp the comparison array
      * @param put the elements to put
      * @param condition the condition for masking on
-     * @return
+     * @return a copy of this array with the conditional assignments.
      */
     INDArray putWhere(Number comp,Number put,Condition condition);
 
@@ -730,14 +738,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the elements to get the array for
      */
     INDArray get(INDArray indices);
-
-    /**
-     * Get the elements from this ndarray based on the specified indices
-     * @param indices an ndaray of the indices to get the elements for
-     * @return the elements to get the array for
-     */
-    @Deprecated
-    INDArray get(List<List<Integer>> indices);
 
     /**
      * Get an INDArray comprised of the specified columns only. Copy operation.
@@ -771,20 +771,20 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rdivi(INDArray other);
 
-
+    //TODO: unused / untested method.
     /**
      * Reverse division
      *
-     * @param other  the matrix to subtract from
+     * @param other  the matrix to divide from
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray rdiv(INDArray other, INDArray result);
 
     /**
      * Reverse division (in-place)
      *
-     * @param other  the other ndarray to subtract
+     * @param other  the matrix to divide from
      * @param result the result ndarray
      * @return the ndarray with the operation applied
      */
@@ -795,10 +795,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      *
      * @param other  the matrix to subtract from
      * @param result the result ndarray
-     * @return
+     * @return the result ndarray
      */
     INDArray rsub(INDArray other, INDArray result);
-
 
     /**
      * Element-wise reverse subtraction (copy op). i.e., other - this
@@ -842,21 +841,18 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray assign(boolean value);
 
     /**
-     * Get the linear index of the data in to
-     * the array
+     * Get the linear index of the data in to the array
      *
      * @param i the index to getScalar
      * @return the linear index in to the data
      */
     long linearIndex(long i);
 
-
+    //TODO: unused / untested method. only used recursively.
     /**
-     *
-     * @param list
+     * Flattens the array for linear indexing in list.
      */
     void sliceVectors(List<INDArray> list);
-
 
     /**
      * Assigns the given matrix (put) to the specified slice
@@ -875,15 +871,14 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray cond(Condition condition);
 
-
     /**
      * Replicate and tile array to fill out to the given shape
-     *
+     * See:
+     * https://github.com/numpy/numpy/blob/master/numpy/matlib.py#L310-L358
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
      */
     INDArray repmat(int... shape);
-
 
     /**
      * Repeat elements along a specified dimension.
@@ -894,11 +889,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray repeat(int dimension, long... repeats);
 
-
     /**
      * Insert a row in to this array
-     * Will throw an exception if this
-     * ndarray is not a matrix
+     * Will throw an exception if this ndarray is not a matrix
      *
      * @param row   the row insert into
      * @param toPut the row to insert
@@ -908,8 +901,7 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * Insert a column in to this array
-     * Will throw an exception if this
-     * ndarray is not a matrix
+     * Will throw an exception if this ndarray is not a matrix
      *
      * @param column the column to insert
      * @param toPut  the array to put
@@ -919,7 +911,6 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * Returns the element at the specified row/column
-     * This will throw an exception if the
      *
      * @param row    the row of the element to return
      * @param column the row of the element to return
@@ -950,14 +941,11 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     double distance1(INDArray other);
 
-
     /**
      * Put element in to the indices denoted by
      * the indices ndarray.
-     * This is equivalent to:
+     * In numpy this is equivalent to:
      * a[indices] = element
-     *
-     *  in numpy.
      *
      * @param indices the indices to put
      * @param element the element array to put
@@ -965,11 +953,8 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray put(INDArray indices,INDArray element);
 
-
-
     /**
-     * Put the elements of the ndarray
-     * in to the specified indices
+     * Put the elements of the ndarray in to the specified indices
      *
      * @param indices the indices to put the ndarray in to
      * @param element the ndarray to put
@@ -978,8 +963,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     INDArray put(INDArrayIndex[] indices, INDArray element);
 
     /**
-     * Put the elements of the ndarray
-     * in to the specified indices
+     * Put the elements of the ndarray in to the specified indices
      *
      * @param indices the indices to put the ndarray in to
      * @param element the ndarray to put
@@ -1007,7 +991,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray put(int i, int j, INDArray element);
 
-
     /**
      * Inserts the element at the specified index
      *
@@ -1018,7 +1001,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray put(int i, int j, Number element);
 
-
     /**
      * Inserts the element at the specified index
      *
@@ -1027,7 +1009,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return a scalar ndarray of the element at this index
      */
     INDArray put(int i, INDArray element);
-
 
     /**
      * In place division of a column vector
@@ -1061,7 +1042,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray divRowVector(INDArray rowVector);
 
-
     /**
      * In place reverse divison of a column vector
      *
@@ -1086,6 +1066,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rdiviRowVector(INDArray rowVector);
 
+    //TODO: unused / untested method.
     /**
      * Reverse division of a column vector (copy)
      *
@@ -1093,7 +1074,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the result of the division 
      */
     INDArray rdivRowVector(INDArray rowVector);
-
 
     /**
      * In place multiplication of a column vector
@@ -1127,7 +1107,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray mulRowVector(INDArray rowVector);
 
-
     /**
      * In place reverse subtraction of a column vector
      *
@@ -1152,6 +1131,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray rsubiRowVector(INDArray rowVector);
 
+    //TODO: unused / untested method.
     /**
      * Reverse subtraction of a row vector (copy)
      *
@@ -1200,7 +1180,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addiColumnVector(INDArray columnVector);
 
-
     /**
      * In place assignment of a column vector
      *
@@ -1241,6 +1220,12 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addRowVector(INDArray rowVector);
 
+    /**
+     * Perform a copy matrix multiplication
+     *
+     * @param other the other matrix to perform matrix multiply with
+     * @return the result of the matrix multiplication
+     */
     INDArray mmul(INDArray other, MMulTranspose mMulTranspose);
 
     /**
@@ -1250,8 +1235,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the result of the matrix multiplication
      */
     INDArray mmul(INDArray other);
-
-
 
     /**
      * Convert this ndarray to a 2d double matrix.
@@ -1303,6 +1286,14 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     int[] toIntVector();
 
+    /**
+     * Convert this ndarray to a 1d long matrix.
+     * Note that THIS SHOULD NOT BE USED FOR SPEED.
+     * This is mainly used for integrations with other libraries.
+     * Due to nd4j's off  heap nature, moving data on heap is very expensive
+     * and should not be used if possible.
+     * @return a copy of this array as a 1d long array
+     */
     long[] toLongVector();
 
     /**
@@ -1413,7 +1404,13 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray add(INDArray other, INDArray result);
 
-
+    /**
+     * Perform an copy matrix multiplication
+     *
+     * @param other the other matrix to perform matrix multiply with
+     * @param transpose the transpose status of each ndarray
+     * @return the result of the matrix multiplication
+     */
     INDArray mmuli(INDArray other, MMulTranspose transpose);
 
     /**
@@ -1424,7 +1421,13 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray mmuli(INDArray other);
 
-
+    /**
+     * Perform an in place matrix multiplication
+     *
+     * @param other  the other matrix to perform matrix multiply with
+     * @param result the result ndarray
+     * @return the result of the matrix multiplication
+     */
     INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose);
 
     /**
@@ -1506,7 +1509,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray addi(INDArray other, INDArray result);
 
-
     /**
      * Returns the max norm (aka infinity norm, equal to the maximum absolute value) along the specified dimension(s)
      *
@@ -1514,7 +1516,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return Max norm along the specified dimension
      */
     INDArray normmax(int... dimension);
-
 
     /**
      * Returns the max norm (aka infinity norm, equal to the maximum absolute value) along the specified dimension(s)
@@ -1594,7 +1595,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Calculate the standard deviation for the entire array
      *
-     * @return
+     * @return standard deviation
      */
     Number stdNumber();
 
@@ -1853,63 +1854,47 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * Returns entropy value for this INDArray
-     * @return
+     * @return entropy value
      */
     Number entropyNumber();
 
     /**
      * Returns non-normalized Shannon entropy value for this INDArray
-     * @return
+     * @return non-normalized Shannon entropy
      */
     Number shannonEntropyNumber();
 
     /**
      * Returns log entropy value for this INDArray
-     * @return
+     * @return log entropy value
      */
     Number logEntropyNumber();
 
     /**
      * Returns entropy value for this INDArray along specified dimension(s)
-     * @return
+     * @param dimension specified dimension(s)
+     * @return entropy value
      */
     INDArray entropy(int... dimension);
 
     /**
-     * Returns entropy value for this INDArray along specified dimension(s)
-     * @return
+     * Returns Shannon entropy value for this INDArray along specified dimension(s)
+     * @param dimension specified dimension(s)
+     * @return Shannon entropy
      */
     INDArray shannonEntropy(int... dimension);
 
     /**
-     * Returns entropy value for this INDArray along specified dimension(s)
-     * @return
+     * Returns log entropy value for this INDArray along specified dimension(s)
+     * @param dimension specified dimension(s)
+     * @return log entropy value
      */
     INDArray logEntropy(int... dimension);
 
-
-    /**
-     * stride setter
-     * @param stride
-     * @deprecated, use {@link #reshape(int...) }
-     */
-    @Deprecated
-    void setStride(long... stride);
-
-    /**
-     * Shape setter
-     * @param shape
-     * @deprecated, use {@link #reshape(int...) }
-     */
-
-
-    @Deprecated
-    void setShape(long... shape);
-
     /**
      * Shape and stride setter
-     * @param shape
-     * @param stride
+     * @param shape new value for shape
+     * @param stride new value for stride
      */
     void setShapeAndStride(int[] shape, int[] stride);
 
@@ -1918,15 +1903,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param order the ordering to set
      */
     void setOrder(char order);
-
-    /**
-     * @param offsets
-     * @param shape
-     * @param stride
-     * @return
-     */
-    INDArray subArray(long[] offsets, int[] shape, int[] stride);
-
+    
     /**
      * Returns the elements at the specified indices
      *

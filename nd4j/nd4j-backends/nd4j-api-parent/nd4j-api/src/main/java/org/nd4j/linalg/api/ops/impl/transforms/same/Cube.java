@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.transforms.same;
 
+import java.util.Collections;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -70,7 +71,6 @@ public class Cube extends BaseTransformSameOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable g = f().mul(f().cubeDerivative(arg()),f1.get(0));
-        return Arrays.asList(g);
+        return Collections.singletonList(f().cubeBp(arg(), f1.get(0)));
     }
 }

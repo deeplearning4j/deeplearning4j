@@ -35,9 +35,11 @@ namespace helpers {
         T const* input = reinterpret_cast<T const*>(inputBuf);
         T* output = reinterpret_cast<T*>(outputBuf);
 
+        // trivial idea: loop through all elements, get independent probability for each element to be nullified
         for (Nd4jLong e = 0; e < inLen; ++e) {
             T val = nodeRng->relativeT(e, T(0.f), T(1.f));
 
+            // if probability is ok - we're saving scaled value
             if (double(val) < probVal)
                 output[shape::getIndexOffset(e, outputShape, inLen)] = T(input[shape::getIndexOffset(e, inputShape, inLen)] / probVal);
         }
@@ -80,7 +82,7 @@ namespace helpers {
             std::vector<Nd4jLong> dims(reduceShape->lengthOf());
             reduceShape->syncToHost(); // to ensure that follows are actual
             bool fit = true;
-//            PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(fit))
+
             for( int i = 0; i < dims.size(); i++ ) {
                 if (fit) {
                     dims[i] = reduceShape->e<Nd4jLong>(i);
@@ -96,8 +98,7 @@ namespace helpers {
             REQUIRE_TRUE(fit, 0, "dropout: Noise shape should fit to input rank.");
             std::unique_ptr<NDArray> chunk(new NDArray('c', dims, output->dataType(), context.launchContext()));
             chunk->assign(1.f);
-            //chunk->applyRandom<randomOps::DropOutInverted<T>>(rng, nullptr, chunk.get(), &probValue);
-            //NativeOpExecutioner::execRandom(random::DropOutInverted, rng, chunk->buffer(), chunk->shapeInfo(), chunk->buffer(), chunk->shapeInfo(), &prob);
+
             dropoutSimple<T>(context.launchContext(), chunk.get(), chunk.get(), probValue, seed);
             // broadcast chunk to full matrix
             std::unique_ptr<NDArray> dropOutMultiplier(new NDArray(*input));
@@ -105,6 +106,7 @@ namespace helpers {
 
             *dropOutMultiplier += *chunk;
 
+            // FIXME: we could do this in one step, aren't we?
             output->assign(*input * *dropOutMultiplier); //input->applyPairwiseTransform(pairwise::Multiply, dropOutMultiplier.get(), output, nullptr);
         }
 
@@ -113,8 +115,11 @@ namespace helpers {
 
     int dropOutFunctor(graph::Context& context, NDArray* input, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
         auto xType = input->dataType();
+        NDArray::prepareSpecialUse({output}, {input});
 
         BUILD_SINGLE_SELECTOR(xType, return _dropOutFunctor, (context, input, output, reduceShape, seed, probValue), FLOAT_TYPES);
+
+        NDArray::registerSpecialUse({output}, {input});
     }
 
 /////////////////////////////////// backrpopagations ///////////////////////////////////////////////
@@ -136,6 +141,8 @@ namespace helpers {
 
         for (int e = tid; e < len; e += step) {
             const auto zOffset = shape::getIndexOffset(e, outputShape, len);
+
+            // if probability was non-zero on FF step, we'll scale grads back
             if (output[zOffset] != T(0.))
                 output[zOffset] = T(input[shape::getIndexOffset(e, gradOutShape, len)] / probValue);
 
@@ -143,11 +150,16 @@ namespace helpers {
     }
     template <typename T>
     static int dropOutFunctorBP_(graph::Context& context, NDArray* input, NDArray* gradOut, NDArray* output, NDArray* reduceShape, int seed, double probValue) {
+        // we're making additional FF run to see how probabilities played out with given seeds
         int res = dropOutFunctor(context, input, output, reduceShape, seed, probValue);
         auto stream = context.launchContext()->getCudaStream();
 
+        NDArray::prepareSpecialUse({output}, {input, gradOut});
+
         if (ND4J_STATUS_OK == res)
             dropoutBPKernel<T><<<128, 256, 1024, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), gradOut->specialBuffer(), gradOut->specialShapeInfo(), probValue);
+
+        NDArray::registerSpecialUse({output}, {input, gradOut});
 
         return res;
     }
@@ -239,6 +251,7 @@ namespace helpers {
 
         int res = alphaDropOutFunctor(context, input, output, reduceShape, seed, probValue, alpha, alpha1, beta);
         if (res == ND4J_STATUS_OK) {
+            // FIXME: can we make it single-loop?
             (*output) *= alpha;
             (*output) *= (*gradOut); //->applyPairwiseTransform<transform::Multiply>(gradOut, output, nullptr);
         }

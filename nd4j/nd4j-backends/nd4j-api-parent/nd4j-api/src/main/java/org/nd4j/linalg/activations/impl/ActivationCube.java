@@ -21,6 +21,8 @@ import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeBp;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Cube;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeDerivative;
 import org.nd4j.linalg.factory.Nd4j;
@@ -42,9 +44,9 @@ public class ActivationCube extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(@NonNull INDArray in, @NonNull INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdz = Nd4j.getExecutioner().exec(new CubeDerivative(in));
-        dLdz.muli(epsilon);
-        return new Pair<>(dLdz, null);
+        Nd4j.getExecutioner().execAndReturn(new CubeBp(in, epsilon, in));
+
+        return new Pair<>(in, null);
     }
 
     @Override

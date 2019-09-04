@@ -39,11 +39,28 @@ namespace helpers {
 
     template <typename T>
     static void reluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-        auto functor = LAMBDA_TT(x, y){
-            return x > (T)0.f ? y : T(0.f);
+
+        T zero = (T) 0.f;
+        auto functor = LAMBDA_TT(x, y, zero){
+            return x > zero ? y : zero;
         };
 
         input->applyPairwiseLambda<T>(epsilon, functor, output);
+
+        /*
+        auto x =  input->bufferAsT<T>();
+        auto y =  epsilon->bufferAsT<T>();
+        auto z =  output->bufferAsT<T>();
+
+        int length = input->lengthOf();
+
+        T zero = (T) 0.f;
+
+        PRAGMA_OMP_PARALLEL_FOR
+        for (int e = 0; e < length; e++) {
+            z[e] = x[e] > zero ? y[e] : zero;
+        }
+        */
     }
 
     void reluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
@@ -64,29 +81,35 @@ namespace helpers {
     }
 
     template <typename T>
-    static void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-        auto functor = LAMBDA_TT(x, y){
-            return x >= (T)0.f? y : T(0.f);
+    static void leakyReluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const float alpha) {
+
+        const T alphaT = static_cast<T>(alpha);
+
+        auto functor = LAMBDA_TT(x, y, alphaT) {
+            return x < 0 ? alphaT * y : y;
         };
 
         input->applyPairwiseLambda<T>(epsilon, functor, output);
     }
 
-    void leakyReluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
-        BUILD_SINGLE_SELECTOR(theFirst->dataType(), leakyReluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+    void leakyReluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), leakyReluDerivative_, (theFirst, theSecond, theOutput, alpha), FLOAT_TYPES);
     }
 
     template <typename T>
-    static void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
-        auto functor = LAMBDA_TT(x, y){
-            return y * nd4j::math::nd4j_eluderivative<T,T>(x);
+    static void eluDerivative_(NDArray* input, NDArray* epsilon, NDArray* output, const float alpha) {
+
+        const T alphaT = static_cast<T>(alpha);
+
+        auto functor = LAMBDA_TT(x, y, alphaT){
+            return y * nd4j::math::nd4j_eluderivative<T,T>(x, alphaT);
         };
 
         input->applyPairwiseLambda<T>(epsilon, functor, output);
     }
 
-    void eluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
-        BUILD_SINGLE_SELECTOR(theFirst->dataType(), eluDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
+    void eluDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput, const float alpha) {
+        BUILD_SINGLE_SELECTOR(theFirst->dataType(), eluDerivative_, (theFirst, theSecond, theOutput, alpha), FLOAT_TYPES);
     }
 
     template <typename T>

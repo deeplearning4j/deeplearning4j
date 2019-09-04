@@ -76,11 +76,11 @@ nd4j.graph.FlatVariable.prototype.name = function(optionalEncoding) {
 };
 
 /**
- * @returns {nd4j.graph.DataType}
+ * @returns {nd4j.graph.DType}
  */
 nd4j.graph.FlatVariable.prototype.dtype = function() {
   var offset = this.bb.__offset(this.bb_pos, 8);
-  return offset ? /** @type {nd4j.graph.DataType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.DataType.INHERIT;
+  return offset ? /** @type {nd4j.graph.DType} */ (this.bb.readInt8(this.bb_pos + offset)) : nd4j.graph.DType.INHERIT;
 };
 
 /**
@@ -150,10 +150,10 @@ nd4j.graph.FlatVariable.addName = function(builder, nameOffset) {
 
 /**
  * @param {flatbuffers.Builder} builder
- * @param {nd4j.graph.DataType} dtype
+ * @param {nd4j.graph.DType} dtype
  */
 nd4j.graph.FlatVariable.addDtype = function(builder, dtype) {
-  builder.addFieldInt8(2, dtype, nd4j.graph.DataType.INHERIT);
+  builder.addFieldInt8(2, dtype, nd4j.graph.DType.INHERIT);
 };
 
 /**

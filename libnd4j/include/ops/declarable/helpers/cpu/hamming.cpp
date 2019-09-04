@@ -24,6 +24,18 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
+
+            static Nd4jLong hamming_distance(unsigned long long x, unsigned long long y) {
+                Nd4jLong dist = 0;
+
+                for (unsigned long long val = x ^ y; val > 0; val /= 2) {
+                    if (val & 1)
+                        dist++;
+                }
+                return dist;
+            }
+
+
             template <typename X, typename Z>
             static void _hamming(NDArray &x, NDArray &y, NDArray &z) {
                 auto xEws = x.ews();
@@ -33,33 +45,44 @@ namespace nd4j {
                 auto yBuffer = y.bufferAsT<X>();
 
                 Nd4jLong distance = 0;
+                auto lengthOf = x.lengthOf();
+                const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
+                Nd4jLong intermediate[256];
+
+                // nullify temp values
+                for (int e = 0; e < maxThreads; e++)
+                    intermediate[e] = 0;
 
                 if (xEws == 1 && yEws == 1 && x.ordering() == y.ordering()) {
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:distance)
-                    for (Nd4jLong e = 0; e < x.lengthOf(); e++) {
+                    PRAGMA_OMP_PARALLEL_FOR
+                    for (Nd4jLong e = 0; e < lengthOf; e++) {
                         auto _x = static_cast<unsigned long long>(xBuffer[e]);
                         auto _y = static_cast<unsigned long long>(yBuffer[e]);
 
-                        distance += __builtin_popcountll(_x ^ _y);
+                        intermediate[omp_get_thread_num()] += hamming_distance(_x, _y);
                     }
 
                 } else if (xEws > 1 && yEws > 1 && x.ordering() == y.ordering()) {
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:distance)
-                    for (Nd4jLong e = 0; e < x.lengthOf(); e++) {
+                    PRAGMA_OMP_PARALLEL_FOR
+                    for (Nd4jLong e = 0; e < lengthOf; e++) {
                         auto _x = static_cast<unsigned long long>(xBuffer[e * xEws]);
                         auto _y = static_cast<unsigned long long>(yBuffer[e * yEws]);
 
-                        distance += __builtin_popcountll(_x ^ _y);
+                        intermediate[omp_get_thread_num()] += hamming_distance(_x, _y);
                     }
                 } else {
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:distance)
-                    for (Nd4jLong e = 0; e < x.lengthOf(); e++) {
+                    PRAGMA_OMP_PARALLEL_FOR
+                    for (Nd4jLong e = 0; e < lengthOf; e++) {
                         auto _x = static_cast<unsigned long long>(x.e<Nd4jLong>(e));
                         auto _y = static_cast<unsigned long long>(y.e<Nd4jLong>(e));
 
-                        distance += __builtin_popcountll(_x ^ _y);
+                        intermediate[omp_get_thread_num()] += hamming_distance(_x, _y);
                     }
                 }
+
+                // accumulate intermediate variables into output array
+                for (int e = 0; e < maxThreads; e++)
+                    distance += intermediate[e];
 
                 z.p(0, distance);
             }

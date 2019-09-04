@@ -42,7 +42,7 @@ public class VarScalingNormalUniformFanOutInitScheme extends BaseWeightInitSchem
     @Override
     public INDArray doCreate(DataType dataType, long[] shape, INDArray paramsView) {
         double scalingFanOut = 3.0 / Math.sqrt(fanOut);
-        return Nd4j.rand(shape, Nd4j.getDistributions().createUniform(-scalingFanOut, scalingFanOut));
+        return Nd4j.rand(Nd4j.getDistributions().createUniform(-scalingFanOut, scalingFanOut), shape);
     }
 
 

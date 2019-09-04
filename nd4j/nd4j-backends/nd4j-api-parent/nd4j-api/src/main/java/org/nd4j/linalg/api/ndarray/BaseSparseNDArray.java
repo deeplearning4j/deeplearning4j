@@ -153,7 +153,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                             arrList.set(j,put);
                         }
                     }
-
                 }
             }
             else if(indices.isRowVector()) {
@@ -161,12 +160,8 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
                     arrList.add(slice(indices.getInt(i)));
                 }
             }
-
             return Nd4j.concat(0,arrList.toArray(new INDArray[arrList.size()]));
-
         }
-
-
     }
 
     @Override
@@ -260,20 +255,12 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public INDArray get(List<List<Integer>> indices) {
-        return null;
-    }
-
-    @Override
     public INDArray put(INDArray indices, INDArray element) {
         INDArrayIndex[] realIndices = new INDArrayIndex[indices.rank()];
         for(int i = 0; i < realIndices.length; i++) {
             realIndices[i] = new SpecifiedIndex(indices.slice(i).dup().data().asInt());
         }
-
-
         return put(realIndices,element);
-
     }
 
     @Override
@@ -478,16 +465,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public INDArray isNaN() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setStride(long... stride) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public void setShape(long... shape) {
         throw new UnsupportedOperationException();
     }
 
@@ -1245,8 +1222,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
-
-
     @Override
     public INDArray normmax(boolean keepDims, int... dimension) {
         return null;
@@ -1299,17 +1274,10 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
 
     @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
-
     }
 
     @Override
     public void setOrder(char order) {
-
-    }
-
-    @Override
-    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
-        return null;
     }
 
     @Override
@@ -1857,49 +1825,26 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return null;
     }
 
-    /**
-     * Returns entropy value for this INDArray
-     * @return
-     */
     @Override
     public Number entropyNumber() {
         return entropy(Integer.MAX_VALUE).getDouble(0);
     }
 
-    /**
-     * Returns non-normalized Shannon entropy value for this INDArray
-     * @return
-     */
     @Override
     public Number shannonEntropyNumber() {
         return shannonEntropy(Integer.MAX_VALUE).getDouble(0);
     }
 
-
-    /**
-     * Returns log entropy value for this INDArray
-     * @return
-     */
     @Override
     public Number logEntropyNumber() {
         return logEntropy(Integer.MAX_VALUE).getDouble(0);
     }
 
-    /**
-     * Returns entropy along dimension
-     * @param dimension
-     * @return
-     */
     @Override
     public INDArray entropy(int... dimension) {
         return Nd4j.getExecutioner().exec(new Entropy(this, dimension));
     }
 
-    /**
-     * Returns non-normalized Shannon entropy along dimension
-     * @param dimension
-     * @return
-     */
     @Override
     public INDArray shannonEntropy(int... dimension) {
         return Nd4j.getExecutioner().exec(new ShannonEntropy(this, dimension));

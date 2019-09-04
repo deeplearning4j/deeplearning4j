@@ -436,8 +436,11 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
     @Override
     public int batchSize() {
+        //In 99+% of cases, the input and labels dimension 0 size should be identical
+        //The only real exceptions: space to batch, and batch to space layers
+        //In those cases, we should base it on the labels size, as this impacts gradient calculation
         // FIXME: int cast
-        return (int) input.size(0);
+        return labels == null ? (int) input.size(0) : (int)labels.size(0);
     }
 
     @Override
@@ -1362,6 +1365,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
 
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
 
+            if(t != null){
+                if(t instanceof RuntimeException){
+                    throw ((RuntimeException)t);
+                }
+                throw new RuntimeException("Error during neural network forward pass", t);
+            }
+
             if(outputWorkspace == null || outputWorkspace instanceof DummyWorkspace) {
                 WorkspaceUtils.assertNoWorkspacesOpen("Expected no workspace active at the end of outputOfLayerDetached", true);
             } else {
@@ -2007,6 +2017,13 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 }
             }
             Nd4j.getMemoryManager().setCurrentWorkspace(initialWorkspace);
+
+            if(t != null){
+                if(t instanceof RuntimeException){
+                    throw ((RuntimeException)t);
+                }
+                throw new RuntimeException("Error during neural network forward pass", t);
+            }
         }
 
         if (layerWiseConfigurations.getTrainingWorkspaceMode() == WorkspaceMode.NONE) {

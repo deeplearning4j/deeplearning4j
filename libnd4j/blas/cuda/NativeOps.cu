@@ -931,13 +931,13 @@ void initializeFunctions(Nd4jPointer *functions) {
 Nd4jPointer mallocHost(Nd4jLong memorySize, int flags) {
 	Nd4jPointer pointer;
 	// cudaHostAllocMapped |cudaHostAllocPortable
-	auto res = cudaHostAlloc(reinterpret_cast<void **>(&pointer), memorySize, cudaHostAllocDefault);
+	auto res = cudaHostAlloc(reinterpret_cast<void **>(&pointer), memorySize + 8, cudaHostAllocDefault);
 	if (res != 0) {
 	    nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
 	    nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaHostAlloc failed");
     }
 
-	return pointer;
+	return reinterpret_cast<int8_t*>(pointer);
 }
 
 /**
@@ -950,13 +950,13 @@ Nd4jPointer mallocHost(Nd4jLong memorySize, int flags) {
  */
 Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
 	Nd4jPointer pointer;
-	auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize);
+	auto res = cudaMalloc(reinterpret_cast<void **>(&pointer), memorySize + 8);
 	if (res != 0) {
         nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(res);
         nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage("cudaMalloc failed");
 	}
 
-	return pointer;
+	return reinterpret_cast<int8_t*>(pointer);
 }
 
 /**

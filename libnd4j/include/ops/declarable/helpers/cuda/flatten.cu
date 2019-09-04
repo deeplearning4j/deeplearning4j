@@ -29,6 +29,7 @@ namespace nd4j {
 
                 Nd4jLong xCoord[MAX_RANK];
 
+                // each block of threads works on 1 input array
                 for (Nd4jLong e = blockIdx.x; e < numInputs; e += gridDim.x) {
                     auto z = reinterpret_cast<T*>(zBuffer) + offsets[e];
 
@@ -39,6 +40,7 @@ namespace nd4j {
                     auto xRank = shape::rank(xShapeInfo);
                     auto xLength = shape::length(xShapeInfo);
 
+                    // each element of this input array has own place within common output array
                     for (uint i = threadIdx.x; i < xLength; i += blockDim.x) {
                         shape::index2coords(xRank, xShape, i, xLength, xCoord, order);
                         auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
@@ -65,6 +67,7 @@ namespace nd4j {
                     hdShapes[e] = inputs[e]->specialShapeInfo();
                 }
 
+                // copying pointers to device
                 auto dBuffers = (void **) pm.replicatePointer(hdBuffers.data(), inputs.size() * sizeof(void*));
                 auto dShapes = (Nd4jLong **)pm.replicatePointer(hdShapes.data(), inputs.size() * sizeof(Nd4jLong*));
                 auto dOffsets = (Nd4jLong *) pm.replicatePointer(hOffsets.data(), inputs.size() * sizeof(Nd4jLong));
@@ -76,6 +79,7 @@ namespace nd4j {
             }
 
             void flatten(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order) {
+                // FIXME: we want NDArrayFactory::prepareSpecialUse here eventually
                 for (auto v:inputs)
                     v->syncToDevice();
 

@@ -41,18 +41,18 @@ namespace nd4j {
         return _INSTANCE;
     }
 
-    ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape) {
+    ConstantDataBuffer ConstantShapeHelper::bufferForShapeInfo(nd4j::DataType dataType, char order, const std::vector<Nd4jLong> &shape) {
         ShapeDescriptor descriptor(dataType, order, shape);
         return bufferForShapeInfo(descriptor);
     }
 
-    ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape) {
+    ConstantDataBuffer ConstantShapeHelper::bufferForShapeInfo(const nd4j::DataType dataType, const char order, const int rank, const Nd4jLong* shape) {
         ShapeDescriptor descriptor(dataType, order, shape, rank);
         return bufferForShapeInfo(descriptor);
     }
 
 
-    ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
+    ConstantDataBuffer ConstantShapeHelper::bufferForShapeInfo(const ShapeDescriptor &descriptor) {
         int deviceId = 0;
 
         _mutex.lock();
@@ -62,19 +62,19 @@ namespace nd4j {
             ConstantDataBuffer buffer(hPtr, nullptr, shape::shapeInfoLength(hPtr)*sizeof(Nd4jLong), DataType::INT64);
             ShapeDescriptor descriptor1(descriptor);
             _cache[deviceId][descriptor1] = buffer;
-            ConstantDataBuffer &r = _cache[deviceId][descriptor1];
+            auto r = _cache[deviceId][descriptor1];
             _mutex.unlock();
 
             return r;
         } else {
-            ConstantDataBuffer &r = _cache[deviceId].at(descriptor);
+            auto r = _cache[deviceId].at(descriptor);
             _mutex.unlock();
 
             return r;
         }
     }
 
-    ConstantDataBuffer& ConstantShapeHelper::bufferForShapeInfo(const Nd4jLong *shapeInfo) {
+    ConstantDataBuffer ConstantShapeHelper::bufferForShapeInfo(const Nd4jLong *shapeInfo) {
         ShapeDescriptor descriptor(shapeInfo);
         return bufferForShapeInfo(descriptor);
     }

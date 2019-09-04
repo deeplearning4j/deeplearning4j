@@ -2271,26 +2271,26 @@ namespace simdOps {
         }
     };
 
-	template <typename X>
+	template <typename X, typename Y, typename Z>
 	class ELU {
 	public:
 		no_op_exec_special_same
 		no_op_exec_special_same_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_elu<X,X>(d1);
+		op_def static Z op(X d1, Y d2, Z *params) {
+			return nd4j::math::nd4j_elu<X,Z>(d1, static_cast<X>(d2));
 		}
 	};
 
 
-	template <typename X>
+	template <typename X, typename Y, typename Z>
 	class ELUDerivative {
 	public:
 		no_op_exec_special_same
 		no_op_exec_special_same_cuda
 
-		op_def static X op(X d1, X *params) {
-			return nd4j::math::nd4j_eluderivative<X,X>(d1);
+		op_def static Z op(X d1, Y d2, Z *params) {
+			return nd4j::math::nd4j_eluderivative<X,Z>(d1, static_cast<X>(d2));
 		}
 	};
 
@@ -3716,7 +3716,7 @@ namespace simdOps {
             return reduction;
         }
 
-        op_def static Z op(X d1, X d2, Z *extraParamsRef) {        	
+        op_def static Z op(X d1, X d2, Z *extraParamsRef) {
 			double eps = nd4j::math::nd4j_abs<double>(extraParamsRef[2]);
 			return static_cast<Z>(!nd4j::math::nd4j_eq<X>(d1, d2, eps));
         }
@@ -4540,4 +4540,4 @@ namespace simdOps {
 }
 
 #endif
-	
+

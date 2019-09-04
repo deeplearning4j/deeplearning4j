@@ -44,6 +44,7 @@ namespace nd4j {
 
                 X binSize = X((*max_val - *min_val) / numBins);
 
+                // nullify bins
                 for (int e = threadIdx.x; e < numBins; e += blockDim.x) {
                     bins[e] = (Z) 0;
                 }
@@ -53,14 +54,12 @@ namespace nd4j {
                     int idx = int((dx[e] - *min_val) / binSize);
                     idx = math::nd4j_max(idx, 0); //atomicMax(&idx, 0);//atomicMax(&idx, 0);
                     idx = math::nd4j_min(idx, int(numBins - 1)); //atomicMin(&idx, int(numBins - 1));
-                    nd4j::math::atomics::nd4j_atomicAdd(&bins[idx], (Z)1);
-//                    bins[idx]++;
+                    nd4j::math::atomics::nd4j_atomicAdd<Z>(&bins[idx], (Z)1);
                 }
                 __syncthreads();
+                // at this point all bins in shared memory are calculated, so we aggregate them now via threadfence trick
 
                 // transfer shared memory to reduction memory
-
-
                 if (gridDim.x > 1) {
                     unsigned int *tc = (unsigned int *)reductionPointer;
                     __shared__ bool amLast;

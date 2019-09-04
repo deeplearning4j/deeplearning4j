@@ -568,13 +568,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return this;
     }
 
-    /**
-     * Returns a subset of this array based on the specified
-     * indexes
-     *
-     * @param indexes the indexes in to the array
-     * @return a view of the array with the specified indices
-     */
     @Override
     public INDArray get(INDArrayIndex... indexes) {
 
@@ -1023,13 +1016,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return extendedFlags;
     }
 
-    @Override
-    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
-        throw new UnsupportedOperationException();
-    }
-
-
-
     /**
      * Returns the underlying indices of the element of the given index
      * such as there really are in the original ndarray
@@ -1130,14 +1116,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return null;
     }
 
-    /**
-     * Perform an copy matrix multiplication
-     *
-     * @param other         the other matrix to perform matrix multiply with
-     * @param result        the result ndarray
-     * @param mMulTranspose the transpose status of each array
-     * @return the result of the matrix multiplication
-     */
     @Override
     public INDArray mmul(INDArray other, INDArray result, MMulTranspose mMulTranspose) {
         return null;
@@ -1151,16 +1129,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose) {
         return null;
-    }
-
-    @Override
-    public void setStride(long... stride) {
-
-    }
-
-    @Override
-    public void setShape(long... shape) {
-
     }
 
     /**

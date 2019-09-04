@@ -3830,6 +3830,9 @@ public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc
          * @param writeList
          * @param readList
          */
+         // TODO: it would be nice to have NDArray::registerSpecialUse signature that accepts something else beyond initializer_list
+
+        // TODO: it would be nice to have NDArray::registerSpecialUse signature that accepts something else beyond initializer_list
 
 
         /**

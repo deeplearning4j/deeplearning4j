@@ -111,7 +111,7 @@ namespace nd4j {
 
             auto bo = static_cast<nd4j::graph::ByteOrder>(BitwiseUtils::asByteOrder());
 
-            return CreateFlatArray(builder, fShape, fBuffer, static_cast<nd4j::graph::DataType>(array.dataType()), bo);
+            return CreateFlatArray(builder, fShape, fBuffer, static_cast<nd4j::graph::DType>(array.dataType()), bo);
         }
     }
 }

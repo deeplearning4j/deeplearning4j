@@ -312,11 +312,11 @@ nd4j.graph.FlatNode.prototype.opName = function(optionalEncoding) {
 
 /**
  * @param {number} index
- * @returns {nd4j.graph.DataType}
+ * @returns {nd4j.graph.DType}
  */
 nd4j.graph.FlatNode.prototype.outputTypes = function(index) {
   var offset = this.bb.__offset(this.bb_pos, 38);
-  return offset ? /** @type {nd4j.graph.DataType} */ (this.bb.readInt8(this.bb.__vector(this.bb_pos + offset) + index)) : /** @type {nd4j.graph.DataType} */ (0);
+  return offset ? /** @type {nd4j.graph.DType} */ (this.bb.readInt8(this.bb.__vector(this.bb_pos + offset) + index)) : /** @type {nd4j.graph.DType} */ (0);
 };
 
 /**
@@ -686,7 +686,7 @@ nd4j.graph.FlatNode.addOutputTypes = function(builder, outputTypesOffset) {
 
 /**
  * @param {flatbuffers.Builder} builder
- * @param {Array.<nd4j.graph.DataType>} data
+ * @param {Array.<nd4j.graph.DType>} data
  * @returns {flatbuffers.Offset}
  */
 nd4j.graph.FlatNode.createOutputTypesVector = function(builder, data) {

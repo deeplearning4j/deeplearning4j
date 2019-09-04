@@ -188,7 +188,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         Pointer meanCacheData = allocator.getPointer(meanCache, context);
         Pointer varCacheData = allocator.getPointer(varCache, context);
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream())));
         checkCudnn(cudnnBatchNormalizationBackward(cudnnContext, batchNormMode, alpha, beta, alpha, alpha,
                         cudnnContext.srcTensorDesc, srcData, cudnnContext.deltaTensorDesc, epsData,
                         cudnnContext.dstTensorDesc, dstData, cudnnContext.gammaBetaTensorDesc, gammaData, dGammaData,
@@ -268,7 +268,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
             ((GridExecutioner) Nd4j.getExecutioner()).flushQueue();
 
-        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getOldStream())));
+        checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream())));
         if (training) {
             if(meanCache == null || meanCache.length() < mean.length()){
                 try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {

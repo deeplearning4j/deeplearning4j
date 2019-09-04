@@ -70,12 +70,12 @@ public class SpaceToBatch extends AbstractLayer<org.deeplearning4j.nn.conf.layer
 
     private INDArray getBlocksArray() {
         int[] intBlocks = layerConf().getBlocks();
-        return Nd4j.create(new double[] {intBlocks[0], intBlocks[1]});
+        return Nd4j.createFromArray(intBlocks);
     }
 
     private INDArray getPaddingArray() {
         int[][] intPad = layerConf().getPadding();
-        return Nd4j.create( new double[][] { {intPad[0][0], intPad[0][1]}, {intPad[1][0], intPad[1][1]}});
+        return Nd4j.createFromArray(intPad);
     }
 
 

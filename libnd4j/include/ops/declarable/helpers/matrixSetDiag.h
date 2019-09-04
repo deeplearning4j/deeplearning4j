@@ -28,8 +28,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void matrixSetDiag(nd4j::LaunchContext * context, const NDArray* input, const NDArray* diagonal, NDArray* output);
-    
+    void matrixSetDiag(nd4j::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad);
 
 }
 }

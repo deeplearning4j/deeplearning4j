@@ -76,8 +76,20 @@ namespace nd4j {
         #endif
 
         /**
-         * Returns a batched matrix tensor with new batched diagonal values.
-         */
+        * Inserts elements provided by diagonal array into the main diagonal of innermost matrices of input array
+        *
+        * Input arrays:
+        *    input:    input array, considered as batch of matrices
+        *    diagonal: array containing elements to be inserted into input array,
+        *              following rank condition should be satisfied: diagonal_rank = input_rank - 1,
+        *              the shapes of diagonal and input arrays must be equal except last dimension of input array,
+        *              for example if input_shape = [A,B,C,D] then diagonal_shape = [A,B,C],
+        *              also last dimension of diagonal array should be equal to smaller of last and last but one input dimensions
+        *              that is: diagonal_shape[-1] = min(input_shape[-1], input_shape[-2])
+        *
+        * Output array:
+        *    has the same shape as input, corresponding diagonal elements are substituted
+        */
         #if NOT_EXCLUDED(OP_matrix_set_diag)
         DECLARE_CONFIGURABLE_OP(matrix_set_diag, 2, 1, false, 0, 0);
         #endif

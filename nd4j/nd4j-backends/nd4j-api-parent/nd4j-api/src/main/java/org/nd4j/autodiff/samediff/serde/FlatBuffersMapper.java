@@ -31,7 +31,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
-import org.nd4j.graph.DataType;
+import org.nd4j.graph.DType;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.graph.FlatNode;
 import org.nd4j.graph.FlatProperties;
@@ -66,33 +66,33 @@ public class FlatBuffersMapper {
     public static byte getDataTypeAsByte(@NonNull org.nd4j.linalg.api.buffer.DataType type) {
         switch (type) {
             case FLOAT:
-                return DataType.FLOAT;
+                return DType.FLOAT;
             case DOUBLE:
-                return DataType.DOUBLE;
+                return DType.DOUBLE;
             case HALF:
-                return DataType.HALF;
+                return DType.HALF;
             case INT:
-                return DataType.INT32;
+                return DType.INT32;
             case LONG:
-                return DataType.INT64;
+                return DType.INT64;
             case BOOL:
-                return DataType.BOOL;
+                return DType.BOOL;
             case SHORT:
-                return DataType.INT16;
+                return DType.INT16;
             case BYTE:
-                return DataType.INT8;
+                return DType.INT8;
             case UBYTE:
-                return DataType.UINT8;
+                return DType.UINT8;
             case UTF8:
-                return DataType.UTF8;
+                return DType.UTF8;
             case UINT16:
-                return DataType.UINT16;
+                return DType.UINT16;
             case UINT32:
-                return DataType.UINT32;
+                return DType.UINT32;
             case UINT64:
-                return DataType.UINT64;
+                return DType.UINT64;
             case BFLOAT16:
-                return DataType.BFLOAT16;
+                return DType.BFLOAT16;
             default:
                 throw new ND4JIllegalStateException("Unknown or unsupported DataType used: [" + type + "]");
         }
@@ -102,33 +102,33 @@ public class FlatBuffersMapper {
      * This method converts enums for DataType
      */
     public static org.nd4j.linalg.api.buffer.DataType getDataTypeFromByte(byte val) {
-        if (val == DataType.FLOAT) {
+        if (val == DType.FLOAT) {
             return org.nd4j.linalg.api.buffer.DataType.FLOAT;
-        } else if (val == DataType.DOUBLE) {
+        } else if (val == DType.DOUBLE) {
             return org.nd4j.linalg.api.buffer.DataType.DOUBLE;
-        } else if (val == DataType.HALF) {
+        } else if (val == DType.HALF) {
             return org.nd4j.linalg.api.buffer.DataType.HALF;
-        } else if (val == DataType.INT32) {
+        } else if (val == DType.INT32) {
             return org.nd4j.linalg.api.buffer.DataType.INT;
-        } else if (val == DataType.INT64) {
+        } else if (val == DType.INT64) {
             return org.nd4j.linalg.api.buffer.DataType.LONG;
-        } else if (val == DataType.INT8) {
+        } else if (val == DType.INT8) {
             return org.nd4j.linalg.api.buffer.DataType.BYTE;
-        } else if (val == DataType.BOOL) {
+        } else if (val == DType.BOOL) {
             return org.nd4j.linalg.api.buffer.DataType.BOOL;
-        } else if (val == DataType.UINT8) {
+        } else if (val == DType.UINT8) {
             return org.nd4j.linalg.api.buffer.DataType.UBYTE;
-        } else if (val == DataType.INT16) {
+        } else if (val == DType.INT16) {
             return org.nd4j.linalg.api.buffer.DataType.SHORT;
-        } else if (val == DataType.UTF8) {
+        } else if (val == DType.UTF8) {
             return org.nd4j.linalg.api.buffer.DataType.UTF8;
-        } else if (val == DataType.UINT16) {
+        } else if (val == DType.UINT16) {
             return org.nd4j.linalg.api.buffer.DataType.UINT16;
-        } else if (val == DataType.UINT32) {
+        } else if (val == DType.UINT32) {
             return org.nd4j.linalg.api.buffer.DataType.UINT32;
-        } else if (val == DataType.UINT64) {
+        } else if (val == DType.UINT64) {
             return org.nd4j.linalg.api.buffer.DataType.UINT64;
-        } else if (val == DataType.BFLOAT16){
+        } else if (val == DType.BFLOAT16){
             return org.nd4j.linalg.api.buffer.DataType.BFLOAT16;
         } else {
             throw new RuntimeException("Unknown datatype: " + val);

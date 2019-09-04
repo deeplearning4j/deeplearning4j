@@ -4,7 +4,7 @@ import java.lang.reflect.Field
 import java.util
 import java.util.{ Arrays, Collections, HashMap, List, Map }
 
-import com.google.common.collect.{ Lists, Maps }
+import org.nd4j.shade.guava.collect.{ Lists, Maps }
 import org.junit.Assert._
 import org.junit.Assume.assumeNotNull
 import org.nd4j.autodiff.samediff._

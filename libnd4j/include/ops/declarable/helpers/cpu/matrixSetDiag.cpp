@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 07.12.2017.
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include "ResultSet.h"
@@ -27,31 +27,48 @@ namespace helpers {
 
 
 //////////////////////////////////////////////////////////////////////////
-// Returns a batched matrix tensor with new batched diagonal values.
-// for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
-template <typename T>
-static void _matrixSetDiag(const NDArray* input, const NDArray* diagonal, NDArray* output) {
+template<typename T>
+void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
 
-    *output = *input;
+    // input and output are the same array (x == z) when zeroPad = true
+    // xRank = zRank, xRank = yRank + 1
+    // xLen = zLen
 
-    const int lastDimSize = input->sizeAt(-1);
-    const int last2DimSize = input->sizeAt(-1) * input->sizeAt(-2);
-    const int lastSmallDim = diagonal->sizeAt(-1);
-    const int batchSize = input->lengthOf()/last2DimSize;
+    const T* x = input.bufferAsT<T>();
+    const T* y = diagonal.bufferAsT<T>();
+          T* z = output.bufferAsT<T>();
 
-    for(int i = 0; i < batchSize; ++i )
-        for(int j = 0; j < lastSmallDim; ++j) {
-            output->p(i*last2DimSize + j*(lastDimSize + 1), diagonal->e<T>(i*lastSmallDim + j));
-        }
-             
+    const Nd4jLong* xShapeInfo = input.getShapeInfo();
+    const Nd4jLong* yShapeInfo = diagonal.getShapeInfo();
+    const Nd4jLong* zShapeInfo = output.getShapeInfo();
 
+    const bool areSameOffsets = shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo);    // shapes are definitely the same, but strides might not
+
+    const int xRank = input.rankOf();
+    const auto xLen = input.lengthOf();
+
+    std::vector<Nd4jLong> coords(xRank);  // we use the same coordinates storage both for input and output since their ranks are the same
+
+    PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
+    for (Nd4jLong i = 0; i < xLen; ++i) {
+
+        shape::index2coords(xRank, xShapeInfo + 1, i, xLen, coords.data());
+
+        const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xRank + 1, coords.data(), xRank);
+        const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(0, zShapeInfo + 1, zShapeInfo + xRank + 1, coords.data(), xRank);
+
+        // condition to be on diagonal of innermost matrix
+        if(coords[xRank - 2] == coords[xRank - 1])
+            z[zOffset] = y[shape::getOffset(0, yShapeInfo + 1, yShapeInfo + xRank, coords.data(), xRank - 1)];
+        else
+            z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
+    }
 }
 
-    void matrixSetDiag(nd4j::LaunchContext * context, const NDArray* input, const NDArray* diagonal, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), _matrixSetDiag, (input, diagonal, output), LIBND4J_TYPES);
-    }
-
-    BUILD_SINGLE_TEMPLATE(template void _matrixSetDiag, (const NDArray* input, const NDArray* diagonal, NDArray* output), LIBND4J_TYPES);
+//////////////////////////////////////////////////////////////////////////
+void matrixSetDiag(nd4j::LaunchContext* context, const NDArray& input, const NDArray& diagonal, NDArray& output, const bool zeroPad) {
+    BUILD_SINGLE_SELECTOR(input.dataType(), matrixSetDiag_, (input, diagonal, output, zeroPad), LIBND4J_TYPES);
+}
 
 }
 }

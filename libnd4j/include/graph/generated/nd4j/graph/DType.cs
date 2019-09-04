@@ -5,7 +5,7 @@
 namespace nd4j.graph
 {
 
-public enum DataType : sbyte
+public enum DType : sbyte
 {
  INHERIT = 0,
  BOOL = 1,

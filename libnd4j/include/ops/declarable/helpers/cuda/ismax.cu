@@ -64,6 +64,7 @@ static void ismax_(nd4j::LaunchContext * context, const NDArray* input, NDArray*
 
         auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), copy.data(), copy.size());
 
+        // we launch legacy IndexMax op, to get indices of max values along dimension
         auto indexMaxArr = input->applyIndexReduce(indexreduce::IndexMax, dimensions);
 
         dim3 launchDims(256, 256, 16384);

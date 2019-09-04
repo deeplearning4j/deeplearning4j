@@ -207,6 +207,46 @@ TEST_F(EmptyTests, Test_dup_1) {
     delete dup;
 }
 
+TEST_F(EmptyTests, test_empty_scatter_1) {
+    auto x = NDArrayFactory::create<float>('c', {5});
+    auto indices = NDArrayFactory::create<int>('c', {0});
+    auto updates = NDArrayFactory::create<float>('c', {0});
+
+    x.linspace(1.0f);
+
+    nd4j::ops::scatter_upd op;
+    auto result = op.execute({&x, &indices, &updates}, {}, {}, {true});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    ASSERT_EQ(x, *z);
+
+    delete result;
+}
+
+TEST_F(EmptyTests, test_empty_scatter_2) {
+    auto x = NDArrayFactory::create<float>('c', {5});
+    auto z = NDArrayFactory::create<float>('c', {5});
+    auto indices = NDArrayFactory::create<int>('c', {0});
+    auto updates = NDArrayFactory::create<float>('c', {0});
+
+    x.linspace(1.0f);
+
+    Context ctx(1);
+    ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
+    ctx.setInputArray(1, indices.buffer(), indices.shapeInfo(), indices.specialBuffer(), indices.specialShapeInfo());
+    ctx.setInputArray(2, updates.buffer(), updates.shapeInfo(), updates.specialBuffer(), updates.specialShapeInfo());
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+    bool args[] = {true};
+    ctx.setBArguments(args, 1);
+
+    nd4j::ops::scatter_upd op;
+    auto result = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), result);
+
+    ASSERT_EQ(x, z);
+}
+
 TEST_F(EmptyTests, test_shaped_empty_1) {
     auto empty = NDArrayFactory::create<float>('c', {2, 0, 3});
     std::vector<Nd4jLong> shape = {2, 0, 3};

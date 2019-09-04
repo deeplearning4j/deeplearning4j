@@ -27,6 +27,7 @@
 #include <execution/AffinityManager.h>
 
 namespace nd4j {
+    std::mutex CublasHelper::_mutex;
 
     static void* handle_() {
         auto _handle = new cublasHandle_t();
@@ -56,22 +57,24 @@ namespace nd4j {
     }
 
     CublasHelper::CublasHelper() {
+        //nd4j_printf("Initializing cuBLAS\n","");
         auto numDevices = AffinityManager::numberOfDevices();
         auto currentDevice = AffinityManager::currentDeviceId();
         _cache.resize(numDevices);
         _solvers.resize(numDevices);
         for (int e = 0; e < numDevices; e++) {
-            AffinityManager::setCurrentDevice(e);
+            AffinityManager::setCurrentNativeDevice(e);
 
             _cache[e] = handle_();
             _solvers[e] = solver_();
         }
 
         // don't forget to restore back original device
-        AffinityManager::setCurrentDevice(currentDevice);
+        AffinityManager::setCurrentNativeDevice(currentDevice);
     }
 
     CublasHelper::~CublasHelper() {
+        nd4j_printf("Releasing cuBLAS\n","");
         auto numDevices = AffinityManager::numberOfDevices();
 
         for (int e = 0; e < numDevices; e++)
@@ -79,8 +82,10 @@ namespace nd4j {
     }
 
     CublasHelper* CublasHelper::getInstance() {
+        _mutex.lock();
         if (!_INSTANCE)
             _INSTANCE = new nd4j::CublasHelper();
+        _mutex.unlock();
 
         return _INSTANCE;
     }
