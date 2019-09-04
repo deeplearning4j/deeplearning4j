@@ -1016,13 +1016,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return extendedFlags;
     }
 
-    @Override
-    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
-        throw new UnsupportedOperationException();
-    }
-
-
-
     /**
      * Returns the underlying indices of the element of the given index
      * such as there really are in the original ndarray
@@ -1136,16 +1129,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     @Override
     public INDArray mmuli(INDArray other, INDArray result, MMulTranspose transpose) {
         return null;
-    }
-
-    @Override
-    public void setStride(long... stride) {
-
-    }
-
-    @Override
-    public void setShape(long... shape) {
-
     }
 
     /**

@@ -1854,63 +1854,47 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * Returns entropy value for this INDArray
-     * @return
+     * @return entropy value
      */
     Number entropyNumber();
 
     /**
      * Returns non-normalized Shannon entropy value for this INDArray
-     * @return
+     * @return non-normalized Shannon entropy
      */
     Number shannonEntropyNumber();
 
     /**
      * Returns log entropy value for this INDArray
-     * @return
+     * @return log entropy value
      */
     Number logEntropyNumber();
 
     /**
      * Returns entropy value for this INDArray along specified dimension(s)
-     * @return
+     * @param dimension specified dimension(s)
+     * @return entropy value
      */
     INDArray entropy(int... dimension);
 
     /**
-     * Returns entropy value for this INDArray along specified dimension(s)
-     * @return
+     * Returns Shannon entropy value for this INDArray along specified dimension(s)
+     * @param dimension specified dimension(s)
+     * @return Shannon entropy
      */
     INDArray shannonEntropy(int... dimension);
 
     /**
-     * Returns entropy value for this INDArray along specified dimension(s)
-     * @return
+     * Returns log entropy value for this INDArray along specified dimension(s)
+     * @param dimension specified dimension(s)
+     * @return log entropy value
      */
     INDArray logEntropy(int... dimension);
 
-
-    /**
-     * stride setter
-     * @param stride
-     * @deprecated, use {@link #reshape(int...) }
-     */
-    @Deprecated
-    void setStride(long... stride);
-
-    /**
-     * Shape setter
-     * @param shape
-     * @deprecated, use {@link #reshape(int...) }
-     */
-
-
-    @Deprecated
-    void setShape(long... shape);
-
     /**
      * Shape and stride setter
-     * @param shape
-     * @param stride
+     * @param shape new value for shape
+     * @param stride new value for stride
      */
     void setShapeAndStride(int[] shape, int[] stride);
 
@@ -1919,15 +1903,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param order the ordering to set
      */
     void setOrder(char order);
-
-    /**
-     * @param offsets
-     * @param shape
-     * @param stride
-     * @return
-     */
-    INDArray subArray(long[] offsets, int[] shape, int[] stride);
-
+    
     /**
      * Returns the elements at the specified indices
      *

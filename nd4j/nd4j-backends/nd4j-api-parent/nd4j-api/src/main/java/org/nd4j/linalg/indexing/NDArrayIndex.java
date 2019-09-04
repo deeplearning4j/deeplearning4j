@@ -97,57 +97,6 @@ public abstract class NDArrayIndex implements INDArrayIndex {
     }
 
     /**
-     * Set the shape and stride for
-     * new axes based dimensions
-     * @param arr the array to update
-     *            the shape/strides for
-     * @param indexes the indexes to update based on
-     */
-    public static void updateForNewAxes(INDArray arr, INDArrayIndex... indexes) {
-        int numNewAxes = NDArrayIndex.numNewAxis(indexes);
-        if (numNewAxes >= 1 && (indexes[0].length() > 1 || indexes[0] instanceof NDArrayIndexAll)) {
-            List<Long> newShape = new ArrayList<>();
-            List<Long> newStrides = new ArrayList<>();
-            int currDimension = 0;
-            for (int i = 0; i < indexes.length; i++) {
-                if (indexes[i] instanceof NewAxis) {
-                    newShape.add(1L);
-                    newStrides.add(0L);
-                } else {
-                    newShape.add(arr.size(currDimension));
-                    newStrides.add(arr.size(currDimension));
-                    currDimension++;
-                }
-            }
-
-            while (currDimension < arr.rank()) {
-                newShape.add((long) currDimension);
-                newStrides.add((long) currDimension);
-                currDimension++;
-            }
-
-            long[] newShapeArr = Longs.toArray(newShape);
-            long[] newStrideArr = Longs.toArray(newStrides);
-
-            // FIXME: this is wrong, it breaks shapeInfo immutability
-            arr.setShape(newShapeArr);
-            arr.setStride(newStrideArr);
-
-
-        } else {
-            if (numNewAxes > 0) {
-                long[] newShape = Longs.concat(ArrayUtil.toLongArray(ArrayUtil.nTimes(numNewAxes, 1)), arr.shape());
-                long[] newStrides = Longs.concat(new long[numNewAxes], arr.stride());
-                arr.setShape(newShape);
-                arr.setStride(newStrides);
-            }
-        }
-
-    }
-
-
-
-    /**
      * Compute the offset given an array of offsets.
      * The offset is computed(for both fortran an d c ordering) as:
      * sum from i to n - 1 o[i] * s[i]

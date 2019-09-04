@@ -1150,16 +1150,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public void setShape(long[] shape) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape, stride(), elementWiseStride(), ordering(), this.dataType(), isEmpty()));
-    }
-
-    @Override
-    public void setStride(long[] stride) {
-        setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(shape(), stride, elementWiseStride(), ordering(), this.dataType(), isEmpty()));
-    }
-
-    @Override
     public void setShapeAndStride(int[] shape, int[] stride) {
         setShapeInformation(Nd4j.getShapeInfoProvider().createShapeInformation(ArrayUtil.toLongArray(shape), ArrayUtil.toLongArray(stride),  0, ordering(), this.dataType(), false));
     }
@@ -1283,29 +1273,16 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return scalar.getDouble(0);
     }
 
-    /**
-     * Returns entropy value for this INDArray
-     * @return
-     */
     @Override
     public Number entropyNumber() {
         return entropy(Integer.MAX_VALUE).getDouble(0);
     }
 
-    /**
-     * Returns non-normalized Shannon entropy value for this INDArray
-     * @return
-     */
     @Override
     public Number shannonEntropyNumber() {
         return shannonEntropy(Integer.MAX_VALUE).getDouble(0);
     }
 
-
-    /**
-     * Returns log entropy value for this INDArray
-     * @return
-     */
     @Override
     public Number logEntropyNumber() {
         return logEntropy(Integer.MAX_VALUE).getDouble(0);
@@ -2295,37 +2272,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     @Override
     public long slices() {
         return size(0);
-    }
-
-    @Override
-    public INDArray subArray(long[] offsets, int[] shape, int[] stride) {
-        Nd4j.getCompressor().autoDecompress(this);
-        int n = shape.length;
-
-        // FIXME: shapeInfo should be used here
-        if (shape.length < 1)
-            return create(Nd4j.createBufferDetached(shape));
-        if (offsets.length != n)
-            throw new IllegalArgumentException("Invalid offset " + Arrays.toString(offsets));
-        if (stride.length != n)
-            throw new IllegalArgumentException("Invalid stride " + Arrays.toString(stride));
-
-        if (Shape.contentEquals(shape, shapeOf())) {
-            if (ArrayUtil.isZero(offsets)) {
-                return this;
-            } else {
-                throw new IllegalArgumentException("Invalid subArray offsets");
-            }
-        }
-
-        long[] dotProductOffsets = offsets;
-        int[] dotProductStride = stride;
-
-        long offset = Shape.offset(jvmShapeInfo.javaShapeInformation) + NDArrayIndex.offset(dotProductStride, dotProductOffsets);
-        if (offset >= data().length())
-            offset = ArrayUtil.sumLong(offsets);
-
-        return create(data, Arrays.copyOf(shape, shape.length), stride, offset, ordering());
     }
 
     protected INDArray create(DataBuffer buffer) {
@@ -4016,58 +3962,30 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.getExecutioner().exec(new AMin(this, dimension));
     }
 
-    /**
-     * Returns the sum along the specified dimension(s) of this ndarray
-     *
-     * @param dimension the dimension to getScalar the sum along
-     * @return the sum along the specified dimension of this ndarray
-     */
     @Override
     public INDArray sum(int... dimension) {
         validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, dimension));
     }
 
-    /**
-     * Returns the sum along the last dimension of this ndarray
-     *
-     * @param dimension the dimension to getScalar the sum along
-     * @return the sum along the specified dimension of this ndarray
-     */
     @Override
     public INDArray sum(boolean keepDim, int... dimension) {
         validateNumericalArray("sum", true);
         return Nd4j.getExecutioner().exec(new Sum(this, null, keepDim, dimension));
     }
 
-
-    /**
-     * Returns entropy along dimension
-     * @param dimension
-     * @return
-     */
     @Override
     public INDArray entropy(int... dimension) {
         validateNumericalArray("entropy", false);
         return Nd4j.getExecutioner().exec(new Entropy(this, dimension));
     }
 
-    /**
-     * Returns non-normalized Shannon entropy along dimension
-     * @param dimension
-     * @return
-     */
     @Override
     public INDArray shannonEntropy(int... dimension) {
         validateNumericalArray("shannonEntropy", false);
         return Nd4j.getExecutioner().exec(new ShannonEntropy(this, dimension));
     }
 
-    /**
-     * Returns log entropy along dimension
-     * @param dimension
-     * @return
-     */
     @Override
     public INDArray logEntropy(int... dimension) {
         validateNumericalArray("logEntropy", false);
