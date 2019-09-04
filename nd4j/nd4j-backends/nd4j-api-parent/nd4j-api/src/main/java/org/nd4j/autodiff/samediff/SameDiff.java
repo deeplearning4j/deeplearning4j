@@ -189,6 +189,11 @@ public class SameDiff extends SDBaseOps {
     public final SDImage image = new SDImage(this);
 
     /**
+     * Op creator object for bitwise operations
+     */
+    public final SDBitwise bitwise = new SDBitwise(this);
+
+    /**
      * Op creator object for math operations
      */
     public SDMath math() {
@@ -235,6 +240,13 @@ public class SameDiff extends SDBaseOps {
      */
     public SDImage image() {
         return image;
+    }
+
+    /**
+     * Op creator object for bitwise operations
+     */
+    public SDBitwise bitwise(){
+        return bitwise;
     }
 
 

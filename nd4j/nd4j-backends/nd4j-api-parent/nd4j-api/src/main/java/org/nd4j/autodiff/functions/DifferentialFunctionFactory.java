@@ -1288,6 +1288,22 @@ public class DifferentialFunctionFactory {
         return new CyclicRShiftBits(sameDiff(), ix, shift).outputVariable();
     }
 
+    public SDVariable bitwiseHammingDist(SDVariable x, SDVariable y) {
+        return new BitsHammingDistance(sameDiff(), x, y).outputVariable();
+    }
+
+    public SDVariable bitwiseAnd(SDVariable x, SDVariable y){
+        return new BitwiseAnd(sameDiff(), x, y).outputVariable();
+    }
+
+    public SDVariable bitwiseOr(SDVariable x, SDVariable y){
+        return new BitwiseOr(sameDiff(), x, y).outputVariable();
+    }
+
+    public SDVariable bitwiseXor(SDVariable x, SDVariable y){
+        return new BitwiseXor(sameDiff(), x, y).outputVariable();
+    }
+
     public SDVariable eq(SDVariable iX, SDVariable i_y) {
         return new EqualTo(sameDiff(), new SDVariable[]{iX, i_y}, false).outputVariable();
     }

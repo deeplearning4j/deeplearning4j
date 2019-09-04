@@ -353,6 +353,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.custom.Choose.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.CumProd.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.CumSum.class,
+            org.nd4j.linalg.api.ops.impl.transforms.custom.BitsHammingDistance.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseAnd.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseXor.class,
             org.nd4j.linalg.api.ops.impl.transforms.custom.BitwiseOr.class,
