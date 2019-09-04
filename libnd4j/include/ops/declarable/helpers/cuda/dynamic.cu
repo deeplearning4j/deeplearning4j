@@ -118,19 +118,19 @@ namespace nd4j {
 
                 PointersManager pm(context, "dynamicPartition");
 
-                if (sourceDimsLen) {
+                if (sourceDimsLen) { // non-linear case
                     std::vector<int> sourceDims(sourceDimsLen);
 
                     for (int i = sourceDimsLen; i > 0; i--)
                         sourceDims[sourceDimsLen - i] = input->rankOf() - i;
-
+                    //compute tad array for given dimensions
                     auto packX = ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(), sourceDims);
 
                     std::vector<void *> outBuffers(outSize);
                     std::vector<Nd4jLong *> tadShapes(outSize);
                     std::vector<Nd4jLong *> tadOffsets(outSize);
                     std::vector<Nd4jLong> numTads(outSize);
-
+                    // fill up dimensions array for before kernel
                     for (unsigned int i = 0; i < outSize; i++) {
                         outputs[i].first = outputList[i];
                         std::vector<int> outDims(outputs[i].first->rankOf() - 1);
@@ -151,10 +151,10 @@ namespace nd4j {
                     auto dOutBuffers = reinterpret_cast<void **>(pm.replicatePointer(outBuffers.data(), outBuffers.size() * sizeof(void *)));
                     auto dOutTadShapes = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(tadShapes.data(), tadShapes.size() * sizeof(Nd4jLong *)));
                     auto dOutTadOffsets = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(tadOffsets.data(), tadOffsets.size() * sizeof(Nd4jLong *)));
-
+                    // run kernel on device
                     dynamicPartitionTadKernel<X,Y><<<256, 256, 1024, *context->getCudaStream()>>>(input->getSpecialBuffer(), packX.platformShapeInfo(), packX.platformOffsets(), shape::length(packX.primaryShapeInfo()), indices->getSpecialBuffer(), indices->getSpecialShapeInfo(), indices->lengthOf(), dOutBuffers, dOutTadShapes, dOutTadOffsets, outSize);
 
-                } else {
+                } else { // linear case
                     auto numThreads = 256;
                     auto shmemSize = numThreads * sizeof(Y) * 2 + 1024;
 
@@ -168,7 +168,6 @@ namespace nd4j {
 
                     auto dOutBuffers = reinterpret_cast<void **>(pm.replicatePointer(outBuffers.data(), outBuffers.size() * sizeof(void *)));
                     auto dOutShapes = reinterpret_cast<Nd4jLong **>(pm.replicatePointer(outShapes.data(), outShapes.size() * sizeof(Nd4jLong *)));
-
 
                     dynamicPartitionScalarKernel<X,Y><<<256, numThreads, shmemSize, *context->getCudaStream()>>>(input->getSpecialBuffer(), input->getSpecialShapeInfo(), indices->getSpecialBuffer(), indices-> getSpecialShapeInfo(), dOutBuffers, dOutShapes, outSize);
                 }
