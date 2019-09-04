@@ -39,7 +39,7 @@ namespace nd4j {
         ~ConstantHolder() = default;
 
         ConstantHolder& operator=(const ConstantHolder& other) = default;
-        ConstantHolder& operator=(ConstantHolder&& other) noexcept = default;
+        ConstantHolder& operator=(ConstantHolder&& other) = default;
 
         bool hasBuffer(nd4j::DataType dataType);
 
