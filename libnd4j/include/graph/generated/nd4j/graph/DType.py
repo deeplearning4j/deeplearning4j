@@ -2,7 +2,7 @@
 
 # namespace: graph
 
-class DataType(object):
+class DType(object):
     INHERIT = 0
     BOOL = 1
     FLOAT8 = 2
