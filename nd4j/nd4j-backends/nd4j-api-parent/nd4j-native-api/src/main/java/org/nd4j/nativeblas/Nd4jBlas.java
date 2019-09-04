@@ -51,7 +51,8 @@ public abstract class Nd4jBlas implements Blas {
                     numThreads = NativeOpsHolder.getCores(Runtime.getRuntime().availableProcessors());
                 setMaxThreads(numThreads);
             }
-            log.info("Number of threads used for BLAS: {}", getMaxThreads());
+
+            log.info("Number of threads used for OpenMP BLAS: {}", getMaxThreads());
         }
     }
 

@@ -647,7 +647,7 @@ ND4J_EXPORT void setOmpNumThreads(int threads);
 ND4J_EXPORT void setOmpMinThreads(int threads);
 
 
-
+ND4J_EXPORT bool isBlasVersionMatches(int major, int minor, int build);
 
 /**
  *

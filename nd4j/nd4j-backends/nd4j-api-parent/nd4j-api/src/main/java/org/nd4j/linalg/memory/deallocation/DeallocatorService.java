@@ -54,7 +54,7 @@ public class DeallocatorService {
         deallocatorThreads = new Thread[numThreads];
         queues = new ReferenceQueue[numThreads];
         for (int e = 0; e < numThreads; e++) {
-            log.debug("Starting deallocator thread {}", e + 1);
+            log.trace("Starting deallocator thread {}", e + 1);
             queues[e] = new ReferenceQueue<>();
 
             int deviceId = e % numDevices;

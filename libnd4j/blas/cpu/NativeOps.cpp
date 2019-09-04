@@ -728,6 +728,10 @@ void execReduce3Tad(Nd4jPointer *extraPointers,
     }
 }
 
+bool isBlasVersionMatches(int major, int minor, int build) {
+    return true;
+}
+
 /**
  *
  * @param opNum

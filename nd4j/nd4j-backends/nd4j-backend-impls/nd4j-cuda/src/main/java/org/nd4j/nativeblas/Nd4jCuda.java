@@ -557,6 +557,13 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
         /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
         public Environment(Pointer p) { super(p); }
     
+        /**
+         * These 3 fields are mostly for CUDA/cuBLAS version tracking
+         */
+        public native int _blasMajorVersion(); public native Environment _blasMajorVersion(int setter);
+        public native int _blasMinorVersion(); public native Environment _blasMinorVersion(int setter);
+        public native int _blasPatchVersion(); public native Environment _blasPatchVersion(int setter);
+
         public static native Environment getInstance();
 
         public native @Cast("bool") boolean isVerbose();
@@ -1874,7 +1881,7 @@ public native void setOmpNumThreads(int threads);
 public native void setOmpMinThreads(int threads);
 
 
-
+public native @Cast("bool") boolean isBlasVersionMatches(int major, int minor, int build);
 
 /**
  *
