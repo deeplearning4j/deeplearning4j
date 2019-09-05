@@ -23,7 +23,7 @@
 namespace nd4j {
     namespace ops {
         namespace helpers {
-            void ismax(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions); {
+            void ismax(nd4j::LaunchContext * context, const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
                 nd4j_printf("Launching optimized ismax version\n","");
             }
         }
