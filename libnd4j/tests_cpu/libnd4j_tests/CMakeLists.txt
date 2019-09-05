@@ -227,24 +227,24 @@ endfunction()
 # now we ned to join two lists
 # first of all we'll build truncated list of files in platform sources
 # and list of priority implementations from platform helpers
-set(CUSTOMOPS_HELPERS_SOURCES "")
-set(SHORT_NAMES "")
-foreach(LONG_NAME ${CUSTOMOPS_PLATFORM_SOURCES})
-    SHORTNAME("${LONG_NAME}" "SHORT_NAME")
-    set(CUSTOMOPS_HELPERS_SOURCES ${CUSTOMOPS_HELPERS_SOURCES} ${LONG_NAME})
-    set(SHORT_NAMES ${SHORT_NAMES} ${SHORT_NAME})
-endforeach()
+#set(CUSTOMOPS_HELPERS_SOURCES "")
+#set(SHORT_NAMES "")
+#foreach(LONG_NAME ${CUSTOMOPS_PLATFORM_SOURCES})
+#    SHORTNAME("${LONG_NAME}" "SHORT_NAME")
+#    set(CUSTOMOPS_HELPERS_SOURCES ${CUSTOMOPS_HELPERS_SOURCES} ${LONG_NAME})
+#    set(SHORT_NAMES ${SHORT_NAMES} ${SHORT_NAME})
+#endforeach()
 
 # now we're going to filter generic helpers, to exclude platform implementations
-foreach(LONG_NAME ${CUSTOMOPS_GENERIC_SOURCES})
-    SHORTNAME("${LONG_NAME}" "SHORT_NAME")
+#foreach(LONG_NAME ${CUSTOMOPS_GENERIC_SOURCES})
+#    SHORTNAME("${LONG_NAME}" "SHORT_NAME")
 
     # and now we add this op ONLY if it wasn't announced in platform helpers
-    string(FIND "${SHORT_NAMES}" "${SHORT_NAME}" "LOC")
-    if (${LOC} EQUAL -1)
-        set(CUSTOMOPS_HELPERS_SOURCES ${CUSTOMOPS_HELPERS_SOURCES} ${LONG_NAME})
-    endif()
-endforeach()
+#    string(FIND "${SHORT_NAMES}" "${SHORT_NAME}" "LOC")
+#    if (${LOC} EQUAL -1)
+#        set(CUSTOMOPS_HELPERS_SOURCES ${CUSTOMOPS_HELPERS_SOURCES} ${LONG_NAME})
+#    endif()
+#endforeach()
 
 
 file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/*.cpp ../layers_tests/*.h)
@@ -264,7 +264,7 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
         ../../blas/cpu/NativeOpExecutioner.cpp ../../blas/cpu/NDArray.cpp ../../blas/cpu/NDArrayFactory.cpp
     ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
     ../../blas/Environment.cpp ../../blas/Environment.h ${EXEC_SOURCES} ${HELPERS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
+    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_PLATFORM_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES})
 
 target_link_libraries(runtests gtest ${MKLDNN} gtest_main ${BLAS_LIBRARIES})
