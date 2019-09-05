@@ -615,12 +615,11 @@ TEST_F(DeclarableOpsTests9, concat_test17) {
 
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, concat_test18) {
-    std::array<NDArray*, 2000> arrays;
     Context context(1);
     Nd4jLong axis = 0;
 
     // we crate bunch of arrays, filled with specific values
-    for (int e = 0; e < arrays.size(); e++) {
+    for (int e = 0; e < 2000; e++) {
         auto array = NDArrayFactory::create_<float>('c', {1, 300});
         array->assign(e);
         context.setInputArray(e, array, true);
@@ -633,7 +632,7 @@ TEST_F(DeclarableOpsTests9, concat_test18) {
     nd4j::ops::concat op;
     op.execute(&context);
 
-    for (int e = 0; e < arrays.size(); e++) {
+    for (int e = 0; e < 2000; e++) {
         auto row = z.tensorAlongDimension(e, {1});
 
         ASSERT_NEAR((float) e, row->e<float>(0), 1e-5f);
@@ -645,25 +644,24 @@ TEST_F(DeclarableOpsTests9, concat_test18) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, concat_test19) {
 
-    std::array<NDArray*, 10> arrays;
     Context context(1);
     Nd4jLong axis = 0;
 
     // we crate bunch of arrays, filled with specific values
-    for (int e = 0; e < arrays.size(); e++) {
+    for (int e = 0; e < 10; e++) {
         auto array = NDArrayFactory::create_<float>('c', {1, 5, 20});
         array->assign(e);
         context.setInputArray(e, array, true);
     }
 
-    auto z = NDArrayFactory::create<float>('c', {(Nd4jLong) arrays.size(), 5, 20});
+    auto z = NDArrayFactory::create<float>('c', {10, 5, 20});
     context.setOutputArray(0, &z, false);
     context.setIArguments(&axis, 1);
 
     nd4j::ops::concat op;
     op.execute(&context);
 
-    for (int e = 0; e < arrays.size(); e++)
+    for (int e = 0; e < 10; e++)
         ASSERT_NEAR((float) e, z(e, {0}).meanNumber().e<float>(0), 1e-5f);
 }
 
