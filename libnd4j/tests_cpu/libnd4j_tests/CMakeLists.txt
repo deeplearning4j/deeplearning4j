@@ -201,10 +201,11 @@ file(GLOB_RECURSE ARRAY_SOURCES false ../../include/array/*.cpp ../../include/ar
 file(GLOB_RECURSE MEMORY_SOURCES false ../../include/memory/*.cpp ../../include/memory/*.h)
 file(GLOB_RECURSE GRAPH_SOURCES false ../../include/graph/*.cpp ../../include/graph/*.h)
 file(GLOB_RECURSE CUSTOMOPS_SOURCES false ../../include/ops/declarable/generic/*.cpp)
-file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES false ../../include/ops/declarable/helpers/cpu/*.cpp ../../include/ops/declarable/helpers/impl/*.cpp)
+file(GLOB_RECURSE CUSTOMOPS_PLATFORM_SOURCES false ../../include/ops/declarable/platform/mkl-dnn/*.cpp)
+file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES false ../../include/ops/declarable/helpers/cpu/*.cpp ../../include/ops/declarable/helpers/impl/*.cpp)
 file(GLOB_RECURSE OPS_SOURCES false ../../include/ops/impl/*.cpp ../../include/ops/declarable/impl/*.cpp  ../../include/ops/*.h)
 file(GLOB_RECURSE INDEXING_SOURCES false ../../include/indexing/*.cpp ../../include/indexing/*.h)
-file(GLOB_RECURSE HELPERS_SOURCES false ../../include/helpers/*.cpp ../../include/helpers/*.h)
+file(GLOB_RECURSE HELPERS_SOURCES false ../../include/helpers/*.cpp)
 file(GLOB_RECURSE LOOPS_SOURCES false ../../include/loops/*.cpp ../../include/loops/*.h)
 
 message("CPU BLAS")
@@ -216,8 +217,37 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(MINGW) AND NOT(APPLE))
 endif()
 
 
+# this function strips path from file name, basically making up short file name, i.e. file.cpp
+function(SHORTNAME LONG_NAME OUTPUT)
+    SET(_TMP_STR "")
+    string (REGEX REPLACE ".*/" "" _TMP_STR "${LONG_NAME}")
+    set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
+endfunction()
+
+# now we ned to join two lists
+# first of all we'll build truncated list of files in platform sources
+# and list of priority implementations from platform helpers
+set(CUSTOMOPS_HELPERS_SOURCES "")
+set(SHORT_NAMES "")
+foreach(LONG_NAME ${CUSTOMOPS_PLATFORM_SOURCES})
+    SHORTNAME("${LONG_NAME}" "SHORT_NAME")
+    set(CUSTOMOPS_HELPERS_SOURCES ${CUSTOMOPS_HELPERS_SOURCES} ${LONG_NAME})
+    set(SHORT_NAMES ${SHORT_NAMES} ${SHORT_NAME})
+endforeach()
+
+# now we're going to filter generic helpers, to exclude platform implementations
+foreach(LONG_NAME ${CUSTOMOPS_GENERIC_SOURCES})
+    SHORTNAME("${LONG_NAME}" "SHORT_NAME")
+
+    # and now we add this op ONLY if it wasn't announced in platform helpers
+    string(FIND "${SHORT_NAMES}" "${SHORT_NAME}" "LOC")
+    if (${LOC} EQUAL -1)
+        set(CUSTOMOPS_HELPERS_SOURCES ${CUSTOMOPS_HELPERS_SOURCES} ${LONG_NAME})
+    endif()
+endforeach()
+
+
 file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/*.cpp ../layers_tests/*.h)
-# file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/DeclarableOpsTests6.cpp ../layers_tests/*.h)
 
 
 # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
