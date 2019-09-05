@@ -173,6 +173,9 @@ namespace nd4j {
         }
 
         void OpRegistrator::registerHelper(nd4j::ops::PlatformHelper* op) {
+            if (_helpersLH.count(op->hash()) > 0)
+                throw std::runtime_error("Tried to double register PlatformHelper");
+
             _uniqueH.emplace_back(op);
 
             std::pair<std::string, nd4j::ops::PlatformHelper*> pair(op->name(), op);
