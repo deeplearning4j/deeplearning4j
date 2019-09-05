@@ -16,16 +16,17 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
+import java.util.Map;
+import lombok.Getter;
 import onnx.Onnx;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUCellConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.SRUWeights;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
-
-import java.util.Map;
 
 /**
  * A simple recurrent unit cell.
@@ -34,14 +35,15 @@ import java.util.Map;
  */
 public class SRUCell extends DynamicCustomOp {
 
-    private SRUCellConfiguration configuration;
+    @Getter
+    private SRUWeights weights;
 
     public SRUCell() {
     }
 
-    public SRUCell(SameDiff sameDiff, SRUCellConfiguration configuration) {
-        super(null, sameDiff, configuration.args());
-        this.configuration = configuration;
+    public SRUCell(SameDiff sameDiff, SDVariable x, SDVariable cLast, SRUWeights weights) {
+        super(null, sameDiff, weights.argsWithInputs(x, cLast));
+        this.weights = weights;
     }
 
     @Override

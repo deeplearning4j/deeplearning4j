@@ -14,25 +14,16 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.arbiter.optimize.serde.jackson;
+//
+// @author raver119@gmail.com
+//
 
-import org.nd4j.shade.jackson.core.JsonGenerator;
-import org.nd4j.shade.jackson.core.JsonProcessingException;
-import org.nd4j.shade.jackson.databind.JsonSerializer;
-import org.nd4j.shade.jackson.databind.SerializerProvider;
+#include "../BlasVersionHelper.h"
 
-import java.io.IOException;
-
-/**
- * Created by Alex on 15/02/2017.
- */
-public class GenericSerializer extends JsonSerializer<Object> {
-    @Override
-    public void serialize(Object o, JsonGenerator j, SerializerProvider serializerProvider)
-                    throws IOException, JsonProcessingException {
-        j.writeStartObject();
-        j.writeStringField("@class", o.getClass().getName());
-        j.writeObjectField("value", o);
-        j.writeEndObject();
+namespace nd4j {
+    BlasVersionHelper::BlasVersionHelper() {
+        _blasMajorVersion = __CUDACC_VER_MAJOR__;
+        _blasMinorVersion = __CUDACC_VER_MINOR__;
+        _blasPatchVersion = __CUDACC_VER_BUILD__;
     }
 }

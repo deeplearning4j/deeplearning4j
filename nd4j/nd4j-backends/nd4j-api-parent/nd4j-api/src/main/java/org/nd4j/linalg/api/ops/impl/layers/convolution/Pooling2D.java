@@ -16,8 +16,14 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.Onnx;
@@ -32,9 +38,6 @@ import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
-
-import java.lang.reflect.Field;
-import java.util.*;
 
 
 /**
@@ -70,21 +73,27 @@ public class Pooling2D extends DynamicCustomOp {
 
     public Pooling2D() {}
 
-    @Builder(builderMethodName = "builder")
+    @Builder(builderMethodName = "sameDiffBuilder")
     @SuppressWarnings("Used in lombok")
-    public Pooling2D(SameDiff sameDiff, SDVariable[] inputs,INDArray[] arrayInputs, INDArray[] arrayOutputs,Pooling2DConfig config) {
-        super(null,sameDiff, inputs, false);
-       if(arrayInputs != null) {
-           addInputArgument(arrayInputs);
-       }
+    public Pooling2D(SameDiff sameDiff, SDVariable[] inputs,
+            Pooling2DConfig config) {
+        super(null, sameDiff, inputs, false);
 
-       if(arrayOutputs != null) {
-           addOutputArgument(arrayOutputs);
-       }
+        this.config = config;
+        addArgs();
+    }
 
-       this.config = config;
+    public Pooling2D(@NonNull INDArray[] inputs, INDArray[] outputs, @NonNull Pooling2DConfig config){
+        super(inputs, outputs);
 
+        this.config = config;
+        addArgs();
+    }
 
+    public Pooling2D(@NonNull INDArray input, INDArray output, @NonNull Pooling2DConfig config){
+        super(new INDArray[]{input}, wrapOrNull(output));
+
+        this.config = config;
         addArgs();
     }
 

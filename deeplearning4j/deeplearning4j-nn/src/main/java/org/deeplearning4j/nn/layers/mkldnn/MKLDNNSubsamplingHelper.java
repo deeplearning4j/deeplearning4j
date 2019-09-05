@@ -87,11 +87,7 @@ public class MKLDNNSubsamplingHelper implements SubsamplingHelper {
                 break;
         }
 
-        Pooling2DDerivative d = Pooling2DDerivative.derivativeBuilder()
-                .config(conf)
-                .arrayInputs(new INDArray[]{input, epsilon})
-                .arrayOutputs(new INDArray[]{gradAtInput})
-                .build();
+        Pooling2DDerivative d = new Pooling2DDerivative(input, epsilon, gradAtInput, conf);
 
         Nd4j.exec(d);
         return new Pair<Gradient,INDArray>(new DefaultGradient(), gradAtInput);

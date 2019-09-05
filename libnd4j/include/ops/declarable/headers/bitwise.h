@@ -82,6 +82,39 @@ namespace nd4j {
         #endif
 
         /**
+         * This operation applies bitwise AND
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_bitwise_and)
+        DECLARE_BROADCASTABLE_OP(bitwise_and,  0, 0);
+        #endif
+
+        /**
+         * This operation applies bitwise OR
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_bitwise_or)
+        DECLARE_BROADCASTABLE_OP(bitwise_or,  0, 0);
+        #endif
+
+        /**
+         * This operation applies bitwise XOR
+         *
+         * PLEASE NOTE: This operation is applicable only to integer data types
+         *
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_bitwise_xor)
+        DECLARE_BROADCASTABLE_OP(bitwise_xor,  0, 0);
+        #endif
+
+        /**
          * This operation returns hamming distance based on bits
          *
          * PLEASE NOTE: This operation is applicable only to integer data types

@@ -5155,7 +5155,7 @@ public class Nd4jTestsC extends BaseNd4jTest {
 
         INDArray res = x.entropy(1);
 
-        assertEquals(10, res.lengthLong());
+        assertEquals(10, res.length());
 
         for (int t = 0; t < x.rows(); t++) {
             double exp = MathUtils.entropy(x.getRow(t).dup().data().asDouble());

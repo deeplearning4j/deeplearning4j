@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -36,8 +37,12 @@ import java.util.List;
 @Slf4j
 public class Pooling2DDerivative extends Pooling2D {
     @Builder(builderMethodName = "derivativeBuilder")
-    public Pooling2DDerivative(SameDiff sameDiff, SDVariable[] inputs, INDArray[] arrayInputs, INDArray[] arrayOutputs, Pooling2DConfig config) {
-        super(sameDiff, inputs, arrayInputs, arrayOutputs, config);
+    public Pooling2DDerivative(SameDiff sameDiff, SDVariable[] inputs, Pooling2DConfig config) {
+        super(sameDiff, inputs, config);
+    }
+
+    public Pooling2DDerivative(@NonNull INDArray input, @NonNull INDArray grad, INDArray output, Pooling2DConfig config){
+        super(new INDArray[]{input, grad}, wrapOrNull(output), config);
     }
 
     public Pooling2DDerivative() {}

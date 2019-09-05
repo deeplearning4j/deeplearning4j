@@ -279,11 +279,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return (int) length();
     }
 
-    @Override
-    public long lengthLong() {
-        return length;
-    }
-
     protected void init(long[] shape) {
 
         if (shape.length == 1) {

@@ -389,10 +389,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .build();
 
         INDArray input = Nd4j.create(inSize);
-        AvgPooling2D avgPooling2D = AvgPooling2D.builder()
-                .arrayInput(input)
-                .config(conf)
-                .build();
+        AvgPooling2D avgPooling2D = new AvgPooling2D(input, null, conf);
 
         val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
 
@@ -410,10 +407,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
 
         //Test backprop:
-        Pooling2DDerivative avg2dDeriv = Pooling2DDerivative.derivativeBuilder()
-                .arrayInputs(new INDArray[]{input, grad})
-                .config(conf)
-                .build();
+        Pooling2DDerivative avg2dDeriv = new Pooling2DDerivative(input, grad, null, conf);
 
         val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
@@ -435,10 +429,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .build();
 
         INDArray input = Nd4j.create(inSize);
-        AvgPooling2D avgPooling2D = AvgPooling2D.builder()
-                .arrayInput(input)
-                .config(conf)
-                .build();
+        AvgPooling2D avgPooling2D = new AvgPooling2D(input, null, conf);
 
         val outSizes = Nd4j.getExecutioner().calculateOutputShape(avgPooling2D);
         assertEquals(1, outSizes.size());
@@ -454,11 +445,7 @@ public class LayerOpValidation extends BaseOpValidation {
         INDArray grad = Nd4j.create(exp);
 
         //Test backprop:
-        Pooling2DDerivative avg2dDeriv = Pooling2DDerivative.derivativeBuilder()
-                .arrayInputs(new INDArray[]{input, grad})           //Original input, and output gradient (eps - same shape as output)
-                .arrayOutputs(new INDArray[]{Nd4j.create(inSize)})  //Output for BP: same shape as original input
-                .config(conf)
-                .build();
+        Pooling2DDerivative avg2dDeriv = new Pooling2DDerivative(input, grad, Nd4j.create(inSize), conf);
 
         val outSizesBP = Nd4j.getExecutioner().calculateOutputShape(avg2dDeriv);
         assertEquals(1, outSizesBP.size());
@@ -749,7 +736,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 .isSameMode(false)
                 .build();
 
-        SDVariable out = sd.cnn().conv2d(vars, c);
+        SDVariable out = sd.cnn().conv2d("conv", vars, c);
         out = sd.nn().tanh("out", out);
 
         INDArray outArr = sd.execAndEndResult();

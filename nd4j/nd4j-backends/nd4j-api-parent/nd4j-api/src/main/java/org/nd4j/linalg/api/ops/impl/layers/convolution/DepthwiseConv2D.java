@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
 import lombok.Getter;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.Onnx;
@@ -35,6 +36,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Conv2DConfig;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -53,17 +55,25 @@ public class DepthwiseConv2D extends DynamicCustomOp {
 
     protected Conv2DConfig config;
 
-    @Builder(builderMethodName = "builder")
+    @Builder(builderMethodName = "sameDiffBuilder")
     public DepthwiseConv2D(SameDiff sameDiff,
                            SDVariable[] inputFunctions,
-                           INDArray[] inputArrays, INDArray[] outputs,
                            Conv2DConfig config) {
-        super(null, inputArrays, outputs);
-        this.sameDiff = sameDiff;
+        super(sameDiff, inputFunctions);
+
         this.config = config;
         addArgs();
-        sameDiff.putOpForId(this.getOwnName(), this);    //Normally called in DynamicCustomOp constructor, via setInstanceId - but sameDiff field is null at that point
-        sameDiff.addArgsFor(inputFunctions, this);
+    }
+
+    public DepthwiseConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
+        super(inputs, outputs);
+
+        this.config = config;
+        addArgs();
+    }
+
+    public DepthwiseConv2D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull Conv2DConfig config){
+        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
     public DepthwiseConv2D() {

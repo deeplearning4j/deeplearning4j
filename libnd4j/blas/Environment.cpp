@@ -35,7 +35,7 @@
 
 #include <cuda.h>
 #include <cuda_runtime.h>
-
+#include "BlasVersionHelper.h"
 #endif
 
 namespace nd4j {
@@ -66,6 +66,13 @@ namespace nd4j {
 #endif
 
 #ifdef __CUDABLAS__
+        BlasVersionHelper ver;
+        _blasMajorVersion = ver._blasMajorVersion;
+        _blasMinorVersion = ver._blasMinorVersion;
+        _blasPatchVersion = ver._blasPatchVersion;
+        printf("ND4J CUDA build version: %i.%i.%i\n", _blasMajorVersion, _blasMinorVersion, _blasPatchVersion);
+        fflush(stdout);
+
         int devCnt = 0;
 	    cudaGetDeviceCount(&devCnt);
 	    auto devProperties = new cudaDeviceProp[devCnt];

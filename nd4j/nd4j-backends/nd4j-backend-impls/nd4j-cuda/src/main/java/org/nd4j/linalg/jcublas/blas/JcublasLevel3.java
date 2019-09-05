@@ -28,10 +28,12 @@ import org.nd4j.jita.allocator.impl.AtomicAllocator;
 import org.nd4j.jita.allocator.pointers.cuda.cublasHandle_t;
 import org.nd4j.jita.conf.CudaEnvironment;
 import org.nd4j.linalg.api.blas.impl.BaseLevel3;
+import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
 import org.nd4j.linalg.factory.DataTypeValidation;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.jcublas.CublasPointer;
@@ -113,15 +115,17 @@ public class JcublasLevel3 extends BaseLevel3 {
     @Override
     protected void sgemm(char Order, char TransA, char TransB, int M, int N, int K, float alpha, INDArray A, int lda,
                     INDArray B, int ldb, float beta, INDArray C, int ldc) {
-        //A = Shape.toOffsetZero(A);
-        //B = Shape.toOffsetZero(B);
+        /*
+        val ctx = AtomicAllocator.getInstance().getDeviceContext();
+        val handle = ctx.getCublasHandle();
+        synchronized (handle) {
+            Nd4j.exec(new Mmul(A, B, C, MMulTranspose.builder().transposeA(false).transposeB(false).build()));
+        }
+        */
 
         Nd4j.getExecutioner().push();
 
         val ctx = allocator.getFlowController().prepareAction(C, A, B);
-
-        //log.info("Synchronizing CUDA stream");
-        ctx.getOldStream().synchronize();
 
         val cAPointer = new CublasPointer(A, ctx);
         val cBPointer = new CublasPointer(B, ctx);
@@ -141,6 +145,7 @@ public class JcublasLevel3 extends BaseLevel3 {
         }
 
         allocator.registerAction(ctx, C, A, B);
+
         OpExecutionerUtil.checkForAny(C);
     }
 

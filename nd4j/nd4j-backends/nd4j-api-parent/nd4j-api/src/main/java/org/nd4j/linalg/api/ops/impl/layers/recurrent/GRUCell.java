@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
+import lombok.Getter;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -23,6 +24,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.GRUWeights;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -39,14 +41,15 @@ import java.util.Map;
  */
 public class GRUCell extends DynamicCustomOp {
 
-    private GRUCellConfiguration configuration;
+    @Getter
+    private GRUWeights weights;
 
     public GRUCell() {
     }
 
-    public GRUCell(SameDiff sameDiff, GRUCellConfiguration configuration) {
-        super(null, sameDiff, configuration.args());
-        this.configuration = configuration;
+    public GRUCell(SameDiff sameDiff, SDVariable x, SDVariable hLast, GRUWeights weights) {
+        super(null, sameDiff, weights.argsWithInputs(x, hLast));
+        this.weights = weights;
     }
 
     @Override

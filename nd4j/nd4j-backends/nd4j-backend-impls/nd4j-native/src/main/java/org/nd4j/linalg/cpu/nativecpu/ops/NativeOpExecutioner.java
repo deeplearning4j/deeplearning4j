@@ -303,11 +303,11 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         }
                     } else {
                         //Every X TAD vs. entirety of Y
-                        val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
+                        val xTADSize = op.x().length() / op.x().tensorsAlongDimension(dimension);
 
                         if (xTADSize != op.y().length()) {
                             throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
-                                    " (x TAD size = " + xTADSize + ", y size = " + op.y().lengthLong());
+                                    " (x TAD size = " + xTADSize + ", y size = " + op.y().length());
                         }
                     }
                 }
@@ -329,7 +329,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                 long xT = op.x().tensorsAlongDimension(dimension);
                 long yT = op.y().tensorsAlongDimension(dimension);
 
-                if (op.z().lengthLong() != xT * yT)
+                if (op.z().length() != xT * yT)
                     throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + (xT * yT) + "]");
             }
 
@@ -358,7 +358,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         // we're going to check, if that's TAD vs TAD comparison or TAD vs full array. if later - we're going slightly different route
         boolean tvf = false;
         if (op.y() != null) {
-            if (op.x().tensorAlongDimension(0, dimension).lengthLong() == op.y().lengthLong()) {
+            if (op.x().tensorAlongDimension(0, dimension).length() == op.y().length()) {
                 tvf = true;
             }
         }
@@ -366,10 +366,10 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         if (op.isComplexAccumulation()) {
             yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
 
-            if (op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().tensorAlongDimension(0, dimension).lengthLong())
+            if (op.x().tensorAlongDimension(0, dimension).length() != op.y().tensorAlongDimension(0, dimension).length())
                 throw new ND4JIllegalStateException("Impossible to issue AllDistances operation: TAD lengths mismatch along given dimension: " +
-                        "x TAD length = " + op.x().tensorAlongDimension(0, dimension).lengthLong() + ", y TAD length " +
-                        op.y().tensorAlongDimension(0, dimension).lengthLong());
+                        "x TAD length = " + op.x().tensorAlongDimension(0, dimension).length() + ", y TAD length " +
+                        op.y().tensorAlongDimension(0, dimension).length());
         }
 
         /**
@@ -659,7 +659,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
         //validateDataType(Nd4j.dataType(), op);
 
-        if (op.x().lengthLong() != op.z().lengthLong())
+        if (op.x().length() != op.z().length())
             throw new ND4JIllegalStateException("op.X length should be equal to op.Z length: " +
                     "x.length()=" + op.x().length() + ", z.length()=" + op.z().length() + " - x shape info = ["
                     + Arrays.toString(op.x().shapeInfoDataBuffer().asInt()) + "], z shape info = ["
@@ -1449,8 +1449,8 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         long originalLength = buffer.getInt(1);
         float threshold = buffer.getInt(2);
 
-        if (target.lengthLong() != originalLength)
-            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.lengthLong()+"]");
+        if (target.length() != originalLength)
+            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.length()+"]");
 
         DataTypeEx typeDst = AbstractCompressor.getBufferTypeEx(target.data());
 
@@ -1465,7 +1465,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
 
     @Override
     public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
-        long length = indArray.lengthLong();
+        long length = indArray.length();
         long tLen = target.data().length();
 
         if (tLen != (length / 16 + 5))

@@ -28,6 +28,7 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -53,10 +54,21 @@ public class DeConv3D extends DynamicCustomOp {
 
     protected DeConv3DConfig config;
 
-    public DeConv3D(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, DeConv3DConfig config) {
+    public DeConv3D(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull DeConv3DConfig config) {
         super(sameDiff, toArr(input, weights, bias));
         this.config = config;
         addArgs();
+    }
+
+    public DeConv3D(INDArray[] inputs, INDArray[] outputs, DeConv3DConfig config){
+        super(inputs, outputs);
+
+        this.config = config;
+        addArgs();
+    }
+
+    public DeConv3D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull DeConv3DConfig config){
+        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
     }
 
     private static SDVariable[] toArr(SDVariable input, SDVariable weights, SDVariable bias){

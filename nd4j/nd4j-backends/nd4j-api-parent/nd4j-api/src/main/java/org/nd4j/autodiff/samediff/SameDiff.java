@@ -189,6 +189,11 @@ public class SameDiff extends SDBaseOps {
     public final SDImage image = new SDImage(this);
 
     /**
+     * Op creator object for bitwise operations
+     */
+    public final SDBitwise bitwise = new SDBitwise(this);
+
+    /**
      * Op creator object for math operations
      */
     public SDMath math() {
@@ -235,6 +240,13 @@ public class SameDiff extends SDBaseOps {
      */
     public SDImage image() {
         return image;
+    }
+
+    /**
+     * Op creator object for bitwise operations
+     */
+    public SDBitwise bitwise(){
+        return bitwise;
     }
 
 
@@ -6498,5 +6510,23 @@ public class SameDiff extends SDBaseOps {
     @Override
     public String generateNewVarName(String base, int argIndex) {
         return generateNewVarName(base, argIndex, true);
+    }
+
+    /**
+     * Returns an unused variable name of the format &lt;base&gt;_#.
+     *
+     * Intended to be used for custom variables (like weights), arguments and op outputs should use {@link #generateNewVarName(String, int)}.
+     */
+    public String generateDistinctCustomVariableName(String base){
+        if(!variables.containsKey(base))
+            return base;
+
+        int inc = 1;
+
+        while(variables.containsKey(base + "_" + inc)){
+            inc++;
+        }
+
+        return base + "_" + inc;
     }
 }

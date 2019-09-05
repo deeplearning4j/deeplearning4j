@@ -61,7 +61,7 @@ public class CyclicRShiftBits extends BaseDynamicTransformOp {
 
     @Override
     public String tensorflowName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
+        throw new NoOpNameFoundException("No TensorFlow op opName found for " +  opName());
     }
 
 

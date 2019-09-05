@@ -33,8 +33,8 @@ import java.util.List;
 @Slf4j
 public class LocalResponseNormalizationDerivative extends LocalResponseNormalization {
     @Builder(builderMethodName = "derivativeBuilder")
-    public LocalResponseNormalizationDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputs, INDArray[] outputs, boolean inPlace, LocalResponseNormalizationConfig config) {
-        super(sameDiff, inputFunctions, inputs, outputs, inPlace, config);
+    public LocalResponseNormalizationDerivative(SameDiff sameDiff, SDVariable[] inputFunctions, boolean inPlace, LocalResponseNormalizationConfig config) {
+        super(sameDiff, inputFunctions, inPlace, config);
     }
 
     public LocalResponseNormalizationDerivative() {}

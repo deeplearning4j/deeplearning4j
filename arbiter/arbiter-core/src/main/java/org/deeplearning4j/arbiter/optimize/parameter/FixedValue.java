@@ -17,13 +17,14 @@
 package org.deeplearning4j.arbiter.optimize.parameter;
 
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
 import org.deeplearning4j.arbiter.optimize.api.ParameterSpace;
-import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericDeserializer;
-import org.deeplearning4j.arbiter.optimize.serde.jackson.GenericSerializer;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.FixedValueDeserializer;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.FixedValueSerializer;
 import org.deeplearning4j.arbiter.util.ObjectUtils;
 import org.nd4j.shade.jackson.annotation.JsonCreator;
-import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
 import org.nd4j.shade.jackson.annotation.JsonProperty;
+import org.nd4j.shade.jackson.annotation.JsonTypeInfo;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
@@ -37,9 +38,11 @@ import java.util.Map;
  * @param <T> Type of (fixed) value
  */
 @EqualsAndHashCode
+@JsonSerialize(using = FixedValueSerializer.class)
+@JsonDeserialize(using = FixedValueDeserializer.class)
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY, property = "@class")
 public class FixedValue<T> implements ParameterSpace<T> {
-    @JsonSerialize(using = GenericSerializer.class)
-    @JsonDeserialize(using = GenericDeserializer.class)
+    @Getter
     private Object value;
     private int index;
 

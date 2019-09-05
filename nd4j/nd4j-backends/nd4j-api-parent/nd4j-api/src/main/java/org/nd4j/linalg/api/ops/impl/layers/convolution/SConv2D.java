@@ -17,6 +17,7 @@
 package org.nd4j.linalg.api.ops.impl.layers.convolution;
 
 import lombok.Builder;
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -39,9 +40,17 @@ import java.util.List;
 @Slf4j
 public class SConv2D extends Conv2D {
 
-    @Builder(builderMethodName = "sBuilder")
-    public SConv2D(SameDiff sameDiff, SDVariable[] inputFunctions, INDArray[] inputArrays, INDArray[] outputs, Conv2DConfig conv2DConfig) {
-        super(sameDiff, inputFunctions, inputArrays, outputs, conv2DConfig);
+    @Builder(builderMethodName = "sameDiffSBuilder")
+    public SConv2D(SameDiff sameDiff, SDVariable[] inputFunctions, Conv2DConfig conv2DConfig) {
+        super(sameDiff, inputFunctions, conv2DConfig);
+    }
+
+    public SConv2D(INDArray[] inputs, INDArray[] outputs, Conv2DConfig config){
+        super(inputs, outputs, config);
+    }
+
+    public SConv2D(@NonNull INDArray input, @NonNull INDArray depthWeights, INDArray pointWeights, INDArray bias, INDArray output, @NonNull Conv2DConfig config){
+        this(wrapFilterNull(input, depthWeights, pointWeights, bias), wrapOrNull(output), config);
     }
 
     public SConv2D() {}

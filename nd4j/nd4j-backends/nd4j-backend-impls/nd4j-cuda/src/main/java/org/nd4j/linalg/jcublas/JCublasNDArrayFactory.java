@@ -108,6 +108,22 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
+/*
+        val major = new int[1];
+        val minor = new int[1];
+        val build = new int[1];
+        org.bytedeco.cuda.global.cublas.cublasGetProperty(0, major);
+        org.bytedeco.cuda.global.cublas.cublasGetProperty(1, minor);
+        org.bytedeco.cuda.global.cublas.cublasGetProperty(2, build);
+
+        val pew = new int[100];
+        org.bytedeco.cuda.global.cudart.cudaDriverGetVersion(pew);
+
+        nativeOps.isBlasVersionMatches(major[0], minor[0], build[0]);
+
+        if (nativeOps.lastErrorCode() != 0)
+            throw new RuntimeException(nativeOps.lastErrorMessage());
+        */
     }
 
     @Override
@@ -408,7 +424,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
         val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
-        nativeOps.memcpyAsync(point.getDevicePointer(), point.getHostPointer(), ret.lengthLong() * Nd4j.sizeOfDataType(ret.data().dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
+        nativeOps.memcpyAsync(point.getDevicePointer(), point.getHostPointer(), ret.length() * Nd4j.sizeOfDataType(ret.data().dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getSpecialStream());
         context.getSpecialStream().synchronize();
 
         if (nativeOps.lastErrorCode() != 0)
@@ -564,7 +580,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         if (true) {
             Nd4j.getExecutioner().push();
 
-            long len = target.lengthLong();
+            long len = target.length();
 
             AtomicAllocator allocator = AtomicAllocator.getInstance();
 
@@ -582,7 +598,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 if (arrays[i].elementWiseStride() != 1)
                     throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
 
-                if (arrays[i].lengthLong() != len)
+                if (arrays[i].length() != len)
                     throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
                 AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
@@ -605,7 +621,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             return target;
         } else {
-            long len = target.lengthLong();
+            long len = target.length();
 
             Nd4j.getExecutioner().commit();
 
@@ -621,7 +637,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 if (arrays[i].elementWiseStride() != 1)
                     throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
 
-                if (arrays[i].lengthLong() != len)
+                if (arrays[i].length() != len)
                     throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
                 ((BaseCudaDataBuffer) arrays[i].data()).lazyAllocateHostPointer();
@@ -673,7 +689,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
             Nd4j.getExecutioner().push();
 
-            long len = target != null ? target.lengthLong() : arrays[0].lengthLong();
+            long len = target != null ? target.length() : arrays[0].length();
 
             AtomicAllocator allocator = AtomicAllocator.getInstance();
 
@@ -691,7 +707,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 if (arrays[i].elementWiseStride() != 1)
                     throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
 
-                if (arrays[i].lengthLong() != len)
+                if (arrays[i].length() != len)
                     throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
                 AllocationPoint point = allocator.getAllocationPoint(arrays[i]);
@@ -728,7 +744,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
             /**
              * We expect all operations are complete at this point
              */
-            long len = target == null ? arrays[0].lengthLong() : target.lengthLong();
+            long len = target == null ? arrays[0].length() : target.length();
 
             val context = (CudaContext) AtomicAllocator.getInstance().getDeviceContext();
 
@@ -742,7 +758,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 if (arrays[i].elementWiseStride() != 1)
                     throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
 
-                if (arrays[i].lengthLong() != len)
+                if (arrays[i].length() != len)
                     throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
                 ((BaseCudaDataBuffer) arrays[i].data()).lazyAllocateHostPointer();
@@ -1287,7 +1303,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
         }
 
 
-        int numTads = (int)(tensor.lengthLong() / tadLength);
+        int numTads = (int)(tensor.length() / tadLength);
         INDArray[] result = new INDArray[numTads];
 
         long[] xPointers = new long[numTads];
@@ -1362,7 +1378,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
                 new CudaPointer(0));
 
         // we're sending > 10m elements to radixSort
-        boolean isRadix = !x.isView() && (x.lengthLong() > 1024 * 1024 * 10);
+        boolean isRadix = !x.isView() && (x.length() > 1024 * 1024 * 10);
         INDArray tmpX = x;
 
         // we need to guarantee all threads are finished here

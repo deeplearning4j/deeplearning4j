@@ -52,6 +52,7 @@ public class JCublasBackend extends Nd4jBackend {
             throw new RuntimeException("No CUDA devices were found in system");
         }
         Loader.load(org.bytedeco.cuda.global.cublas.class);
+
         return true;
     }
 
