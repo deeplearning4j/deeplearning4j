@@ -21,16 +21,16 @@ function selectStdevChart(fieldName) {
         $("#stdevUpdates").attr("class", "active");
     }
 
-    renderOverviewPage(false);
+    renderOverviewPage(true);
 }
 
 /* ---------- Render page ---------- */
 var lastUpdateTime = -1;
 var lastUpdateSession = "";
-function renderOverviewPage(firstLoad) {
+function renderOverviewPage(forceupdate) {
     updateSessionWorkerSelect();
 
-    if(firstLoad || !lastUpdateSession || lastUpdateSession == "" || lastUpdateSession != currSession){
+    if(forceupdate || !lastUpdateSession || lastUpdateSession == "" || lastUpdateSession != currSession){
         executeOverviewUpdate();
     } else {
         //Check last update time first - see if data has actually changed...
