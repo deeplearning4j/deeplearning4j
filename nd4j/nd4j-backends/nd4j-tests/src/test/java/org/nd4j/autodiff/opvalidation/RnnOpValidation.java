@@ -16,14 +16,19 @@
 
 package org.nd4j.autodiff.opvalidation;
 
+import java.util.Arrays;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
+import org.nd4j.autodiff.samediff.SDIndex;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.GRUCellConfiguration;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMBlockCellConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.outputs.LSTMCellOutputs;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.GRUWeights;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -59,23 +64,18 @@ public class RnnOpValidation extends BaseOpValidation {
         SDVariable b = sd.constant(Nd4j.rand(DataType.FLOAT, 4*nOut));
 
         double fb = 1.0;
-        LSTMBlockCellConfiguration conf = LSTMBlockCellConfiguration.builder()
-                .xt(x)
-                .cLast(cLast)
-                .yLast(yLast)
-                .W(W)
-                .Wci(Wci)
-                .Wcf(Wcf)
-                .Wco(Wco)
-                .b(b)
+        LSTMConfiguration conf = LSTMConfiguration.builder()
                 .peepHole(true)
                 .forgetBias(fb)
                 .clippingCellValue(0.0)
                 .build();
 
-        List<SDVariable> v = sd.rnn().lstmBlockCell("lstm", conf);  //Output order: i, c, f, o, z, h, y
+        LSTMWeights weights = LSTMWeights.builder().weights(W).bias(b)
+                .inputPeepholeWeights(Wci).forgetPeepholeWeights(Wcf).outputPeepholeWeights(Wco).build();
+
+        LSTMCellOutputs v = sd.rnn().lstmCell(x, cLast, yLast, weights, conf);  //Output order: i, c, f, o, z, h, y
         List<String> toExec = new ArrayList<>();
-        for(SDVariable sdv : v){
+        for(SDVariable sdv : v.getAllOutputs()){
             toExec.add(sdv.getVarName());
         }
 
@@ -167,23 +167,18 @@ public class RnnOpValidation extends BaseOpValidation {
         SDVariable b = sd.constant(Nd4j.zeros(DataType.FLOAT, 8));
 
         double fb = 1.0;
-        LSTMBlockCellConfiguration conf = LSTMBlockCellConfiguration.builder()
-                .xt(x)
-                .cLast(cLast)
-                .yLast(yLast)
-                .W(W)
-                .Wci(Wci)
-                .Wcf(Wcf)
-                .Wco(Wco)
-                .b(b)
+        LSTMConfiguration conf = LSTMConfiguration.builder()
                 .peepHole(false)
                 .forgetBias(fb)
                 .clippingCellValue(0.0)
                 .build();
 
-        List<SDVariable> v = sd.rnn().lstmBlockCell("lstm", conf);  //Output order: i, c, f, o, z, h, y
+        LSTMWeights weights = LSTMWeights.builder().weights(W).bias(b)
+                .inputPeepholeWeights(Wci).forgetPeepholeWeights(Wcf).outputPeepholeWeights(Wco).build();
+
+        LSTMCellOutputs v = sd.rnn().lstmCell(x, cLast, yLast, weights, conf);  //Output order: i, c, f, o, z, h, y
         List<String> toExec = new ArrayList<>();
-        for(SDVariable sdv : v){
+        for(SDVariable sdv : v.getAllOutputs()){
             toExec.add(sdv.getVarName());
         }
 
@@ -228,16 +223,14 @@ public class RnnOpValidation extends BaseOpValidation {
         SDVariable bc = sd.constant(Nd4j.rand(DataType.FLOAT, nOut));
 
         double fb = 1.0;
-        GRUCellConfiguration conf = GRUCellConfiguration.builder()
-                .xt(x)
-                .hLast(hLast)
-                .Wru(Wru)
-                .Wc(Wc)
-                .bru(bru)
-                .bc(bc)
+        GRUWeights weights = GRUWeights.builder()
+                .ruWeight(Wru)
+                .cWeight(Wc)
+                .ruBias(bru)
+                .cBias(bc)
                 .build();
 
-        List<SDVariable> v = sd.rnn().gru("gru", conf);
+        List<SDVariable> v = sd.rnn().gru("gru", x, hLast, weights).getAllOutputs();
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v){
             toExec.add(sdv.getVarName());

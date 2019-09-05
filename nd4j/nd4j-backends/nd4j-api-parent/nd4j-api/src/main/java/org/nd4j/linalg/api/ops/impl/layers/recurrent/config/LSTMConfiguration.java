@@ -19,13 +19,15 @@ package org.nd4j.linalg.api.ops.impl.layers.recurrent.config;
 import lombok.Builder;
 import lombok.Data;
 import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMBlockCell;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
 
 /**
- * LSTM Configuration - for {@link org.nd4j.linalg.api.ops.impl.layers.recurrent.LSTMLayer}
+ * LSTM Configuration - for {@link LSTMLayer} and {@link LSTMBlockCell}
  *
  * @author Alex Black
  */
@@ -33,29 +35,41 @@ import java.util.Map;
 @Data
 public class LSTMConfiguration {
 
+    /**
+     * Whether to provide peephole connections.
+     */
     private boolean peepHole;           //IArg(0)
-    @Builder.Default private RnnDataFormat dataFormat = RnnDataFormat.TNS;  //IArg(1)
+
+    /**
+     * The data format of the input.  Only used in {@link LSTMLayer}, ignored in {@link LSTMBlockCell}.
+     */
+    @Builder.Default private RnnDataFormat dataFormat = RnnDataFormat.TNS;  //IArg(1) (only for lstmBlock, not lstmBlockCell)
+
+    /**
+     * The bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training.
+     */
     private double forgetBias;          //TArg(0)
+
+    /**
+     * Clipping value for cell state, if it is not equal to zero, then cell state is clipped.
+     */
     private double clippingCellValue;   //TArg(1)
 
-    private SDVariable xt, cLast, yLast, W, Wci, Wcf, Wco, b;
-
-    public Map<String,Object> toProperties()  {
+    public Map<String,Object> toProperties(boolean includeDataFormat)  {
         Map<String,Object> ret = new LinkedHashMap<>();
         ret.put("peepHole",peepHole);
         ret.put("clippingCellValue",clippingCellValue);
         ret.put("forgetBias",forgetBias);
-        ret.put("dataFormat", dataFormat);
+        if(includeDataFormat)
+            ret.put("dataFormat", dataFormat);
         return ret;
     }
 
-    public SDVariable[] args()  {
-        return new SDVariable[] {xt,cLast, yLast, W, Wci, Wcf, Wco, b};
-    }
 
-
-    public int[] iArgs() {
-        return new int[] {ArrayUtil.fromBoolean(peepHole), dataFormat.ordinal()};
+    public int[] iArgs(boolean includeDataFormat) {
+        if(includeDataFormat) {
+            return new int[]{ArrayUtil.fromBoolean(peepHole), dataFormat.ordinal()};
+        } else return new int[]{ArrayUtil.fromBoolean(peepHole)};
     }
 
     public double[] tArgs() {
