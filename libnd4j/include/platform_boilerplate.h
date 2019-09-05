@@ -35,10 +35,10 @@
                                         } \
                                     }; \
                                     static __registratorHelper_##NAME platformHelper##NAME; \
-                                    Nd4jStatus PLATFORM_##NAME::invokeHelper(nd4j::graph::Context &context)
+                                    Nd4jStatus PLATFORM_##NAME::invokeHelper(nd4j::graph::Context &block)
 
 
-#define PLATFORM_CHECK(NAME)        bool PLATFORM_##NAME::isUsable(graph::Context &context)
+#define PLATFORM_CHECK(NAME)        bool PLATFORM_##NAME::isUsable(graph::Context &block)
 
 
 #endif //SD_PLATFORM_BOILERPLATE_H

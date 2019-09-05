@@ -21,6 +21,7 @@
 #ifndef SD_PLATFORMHELPER_H
 #define SD_PLATFORMHELPER_H
 
+#include <ShapeUtils.h>
 #include <graph/Context.h>
 #include <string>
 #include <pointercast.h>
@@ -60,6 +61,14 @@ namespace  nd4j {
              * @return
              */
             virtual Nd4jStatus invokeHelper(graph::Context &context) = 0;
+
+            /**
+             * Helper method, needed for compatibility with DeclarableOp macros
+             * @param ctx
+             * @param inputId
+             * @return
+             */
+            nd4j::NDArray* getZ(graph::Context & ctx, int inputId);
         };
     }
 }
