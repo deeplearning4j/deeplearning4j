@@ -24,9 +24,6 @@ import org.nd4j.shade.jackson.databind.SerializationFeature;
 import org.nd4j.shade.jackson.dataformat.yaml.YAMLFactory;
 import org.nd4j.shade.jackson.datatype.joda.JodaModule;
 
-import java.util.Collections;
-import java.util.Map;
-
 /**
  * Created by Alex on 16/11/2016.
  */
@@ -44,6 +41,7 @@ public class JsonMapper {
         mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
         mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
         mapper.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
+        mapper.setVisibility(PropertyAccessor.SETTER, JsonAutoDetect.Visibility.ANY);
         yamlMapper = new ObjectMapper(new YAMLFactory());
         yamlMapper.registerModule(new JodaModule());
         yamlMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
