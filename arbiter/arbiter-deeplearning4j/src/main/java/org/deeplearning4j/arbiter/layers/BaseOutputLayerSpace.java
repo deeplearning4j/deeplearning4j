@@ -32,7 +32,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
  */
 @Data
 @EqualsAndHashCode(callSuper = true)
-@NoArgsConstructor(access = AccessLevel.PROTECTED) //For Jackson JSON/YAML deserialization
+@NoArgsConstructor(access = AccessLevel.PUBLIC) //For Jackson JSON/YAML deserialization
 public abstract class BaseOutputLayerSpace<L extends BaseOutputLayer> extends FeedForwardLayerSpace<L> {
 
     protected ParameterSpace<ILossFunction> lossFunction;

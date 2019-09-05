@@ -19,22 +19,19 @@ package org.deeplearning4j.ui.module.remote;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.*;
-import org.deeplearning4j.ui.api.FunctionType;
 import org.deeplearning4j.ui.api.HttpMethod;
 import org.deeplearning4j.ui.api.Route;
 import org.deeplearning4j.ui.api.UIModule;
 import org.deeplearning4j.ui.i18n.I18NResource;
+import play.mvc.Http;
 import play.mvc.Result;
 import play.mvc.Results;
 
 import javax.xml.bind.DatatypeConverter;
-import java.io.File;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static play.mvc.Http.Context.Implicit.request;
 
 /**
  *
@@ -73,7 +70,7 @@ public class RemoteReceiverModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r = new Route("/remoteReceive", HttpMethod.POST, FunctionType.Supplier, this::receiveData);
+        Route r = Route.request0Function("/remoteReceive", HttpMethod.POST, this::receiveData);
         return Collections.singletonList(r);
     }
 
@@ -98,7 +95,7 @@ public class RemoteReceiverModule implements UIModule {
         return Collections.emptyList();
     }
 
-    private Result receiveData() {
+    private Result receiveData(Http.Request request) {
         if (!enabled.get()) {
             return Results.forbidden(
                             "UI server remote listening is currently disabled. Use UIServer.getInstance().enableRemoteListener()");
@@ -109,7 +106,7 @@ public class RemoteReceiverModule implements UIModule {
                             "UI Server remote listener: no StatsStorage instance is set/available to store results");
         }
 
-        JsonNode jn = request().body().asJson();
+        JsonNode jn = request.body().asJson();
         JsonNode type = jn.get("type");
         JsonNode dataClass = jn.get("class");
         JsonNode data = jn.get("data");

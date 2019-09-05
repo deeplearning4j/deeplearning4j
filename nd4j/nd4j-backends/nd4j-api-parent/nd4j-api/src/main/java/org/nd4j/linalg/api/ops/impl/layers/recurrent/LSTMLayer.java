@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
+import lombok.Getter;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -24,6 +25,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
 import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.RnnDataFormat;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -75,13 +77,17 @@ public class LSTMLayer extends DynamicCustomOp {
 
     private LSTMConfiguration configuration;
 
+    @Getter
+    private LSTMWeights weights;
+
     public LSTMLayer() {
     }
 
-    public LSTMLayer(@NonNull SameDiff sameDiff, @NonNull LSTMConfiguration configuration) {
-        super(null, sameDiff, configuration.args());
+    public LSTMLayer(@NonNull SameDiff sameDiff, SDVariable maxTSLength, SDVariable x, SDVariable cLast, SDVariable yLast, LSTMWeights weights, LSTMConfiguration configuration) {
+        super(null, sameDiff, weights.argsWithInputs(maxTSLength, x, cLast, yLast));
         this.configuration = configuration;
-        addIArgument(configuration.iArgs());
+        this.weights = weights;
+        addIArgument(configuration.iArgs(true));
         addTArgument(configuration.tArgs());
     }
 
@@ -107,7 +113,7 @@ public class LSTMLayer extends DynamicCustomOp {
                 .peepHole(attributesForNode.get("use_peephole").getB())
                 .dataFormat(RnnDataFormat.TNS)  //Always time major for TF BlockLSTM
                 .build();
-        addIArgument(configuration.iArgs());
+        addIArgument(configuration.iArgs(true));
         addTArgument(configuration.tArgs());
     }
 
@@ -118,7 +124,7 @@ public class LSTMLayer extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        return configuration.toProperties();
+        return configuration.toProperties(true);
     }
 
     @Override

@@ -135,7 +135,7 @@ public class EncodingHandler implements MessageHandler {
         iterations.get().incrementAndGet();
 
         if (boundary != null && atomicBoundary.get() < 0)
-            atomicBoundary.compareAndSet(-1, (int) (updates.lengthLong() * boundary));
+            atomicBoundary.compareAndSet(-1, (int) (updates.length() * boundary));
 
         INDArray encoded;
 
@@ -160,11 +160,11 @@ public class EncodingHandler implements MessageHandler {
             double encLen = encoded.data().getInt(0);
 
             // if updates are too dense - we fallback to bitmap encoding
-            if (encLen >= (updates.lengthLong() / 16)) {
+            if (encLen >= (updates.length() / 16)) {
                 log.debug("Switching back to bitmapEncoding: iteration {}, epoch {}, threshold {}, encoded length {}", iteration, epoch, currThreshold, encLen);
                 bitmapMode.get().set(true);
 
-                DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
+                DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.length() / 16 + 5);
                 encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
 
                 Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
@@ -186,12 +186,12 @@ public class EncodingHandler implements MessageHandler {
             }
         } else {
             //Dense bitmap updates
-            DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.lengthLong() / 16 + 5);
+            DataBuffer buffer = Nd4j.getDataBufferFactory().createInt(updates.length() / 16 + 5);
             encoded = Nd4j.createArrayFromShapeBuffer(buffer, updates.shapeInfoDataBuffer());
 
             long values = Nd4j.getExecutioner().bitmapEncode(updates, encoded, currentThreshold.get().get());
 
-            if (values < (updates.lengthLong() / 16 + 5) / 2) {
+            if (values < (updates.length() / 16 + 5) / 2) {
                 boolean current = bitmapMode.get().get();
                 bitmapMode.get().set(false);
                 if(!current) {

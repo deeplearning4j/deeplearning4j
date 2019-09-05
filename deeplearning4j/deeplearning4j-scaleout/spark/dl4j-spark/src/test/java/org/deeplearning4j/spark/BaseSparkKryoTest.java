@@ -19,6 +19,10 @@ package org.deeplearning4j.spark;
 import org.apache.spark.SparkConf;
 import org.apache.spark.api.java.JavaSparkContext;
 
+import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * Created by Alex on 04/07/2017.
  */
@@ -29,6 +33,31 @@ public class BaseSparkKryoTest extends BaseSparkTest {
         if (sc != null) {
             return sc;
         }
+
+        //Ensure SPARK_USER environment variable is set for Spark Kryo tests
+        String u = System.getenv("SPARK_USER");
+        if(u == null || u.isEmpty()){
+            try {
+                Class[] classes = Collections.class.getDeclaredClasses();
+                Map<String, String> env = System.getenv();
+                for (Class cl : classes) {
+                    if ("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
+                        Field field = cl.getDeclaredField("m");
+                        field.setAccessible(true);
+                        Object obj = field.get(env);
+                        Map<String, String> map = (Map<String, String>) obj;
+                        String user = System.getProperty("user.name");
+                        if(user == null || user.isEmpty())
+                            user = "user";
+                        map.put("SPARK_USER", user);
+                    }
+                }
+            } catch (Exception e){
+                throw new RuntimeException(e);
+            }
+        }
+
+
 
         SparkConf sparkConf = new SparkConf().setMaster("local[" + numExecutors() + "]").setAppName("sparktest");
 

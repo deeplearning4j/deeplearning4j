@@ -26,13 +26,14 @@ import org.deeplearning4j.arbiter.optimize.api.OptimizationResult;
 import org.deeplearning4j.arbiter.optimize.runner.CandidateInfo;
 import org.deeplearning4j.arbiter.optimize.runner.IOptimizationRunner;
 import org.deeplearning4j.arbiter.optimize.runner.listener.StatusListener;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
 import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
-import org.deeplearning4j.arbiter.ui.misc.JsonMapper;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.nd4j.linalg.primitives.Pair;
 
+import java.io.IOException;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -217,7 +218,11 @@ public class ArbiterStatusListener implements StatusListener {
 //        }
         //TODO: cache global config, but we don't want to have outdated info (like uninitialized termination conditions)
 
-        ocJson = JsonMapper.asJson(r.getConfiguration());
+        try {
+            ocJson = JsonMapper.getMapper().writeValueAsString(r.getConfiguration());
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
 
         GlobalConfigPersistable p = new GlobalConfigPersistable.Builder()
                 .sessionId(sessionId)

@@ -27,6 +27,7 @@ import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.serde.jackson.shaded.NDArrayTextDeSerializer;
 import org.nd4j.serde.jackson.shaded.NDArrayTextSerializer;
 import org.nd4j.shade.jackson.annotation.JsonInclude;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 import org.nd4j.shade.jackson.databind.annotation.JsonDeserialize;
 import org.nd4j.shade.jackson.databind.annotation.JsonSerialize;
 
@@ -58,7 +59,7 @@ public class LossL2 implements ILossFunction {
      *
      * @param weights Weights array (row vector). May be null.
      */
-    public LossL2(INDArray weights) {
+    public LossL2(@JsonProperty("weights") INDArray weights) {
         if (weights != null && !weights.isRowVector()) {
             throw new IllegalArgumentException("Weights array must be a row vector");
         }
