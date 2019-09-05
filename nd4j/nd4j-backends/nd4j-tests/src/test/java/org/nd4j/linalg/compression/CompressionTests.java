@@ -168,7 +168,7 @@ public class CompressionTests extends BaseNd4jTest {
         INDArray decompressed = Nd4j.create(1, initial.length());
         Nd4j.getExecutioner().thresholdDecode(compressed, decompressed);
 
-        log.info("Decompressed length: {}", decompressed.lengthLong());
+        log.info("Decompressed length: {}", decompressed.length());
 
         assertEquals(exp_d, decompressed);
     }

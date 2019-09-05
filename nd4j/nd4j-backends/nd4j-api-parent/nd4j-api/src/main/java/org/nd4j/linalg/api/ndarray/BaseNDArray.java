@@ -4641,17 +4641,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return jvmShapeInfo.length;
     }
 
-    /**
-     * Returns the total number of elements in the ndarray
-     *
-     * @return the number of elements in the ndarray
-     */
-    @Override
-    @Deprecated
-    public long lengthLong() {
-        return jvmShapeInfo.length;
-    }
-
     @Override
     public INDArray broadcast(INDArray result) {
         Nd4j.getCompressor().autoDecompress(this);

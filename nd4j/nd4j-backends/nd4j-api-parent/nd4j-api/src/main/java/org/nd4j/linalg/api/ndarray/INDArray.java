@@ -2377,17 +2377,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the number of elements in the ndarray
      */
     long length();
-
-    /**
-     * Returns the total number of elements in the ndarray
-     *
-     * @return the number of elements in the ndarray
-     * @deprecated use {@link #length()}
-     */
-    @Deprecated
-    long lengthLong();
-
-
+    
     /**
      * Broadcasts this ndarray to be the specified shape
      *

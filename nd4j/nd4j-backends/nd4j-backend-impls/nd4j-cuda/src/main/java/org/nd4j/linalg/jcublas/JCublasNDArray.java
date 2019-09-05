@@ -664,7 +664,7 @@ public class JCublasNDArray extends BaseNDArray {
         //if (1 < 0) {
             Nd4j.getExecutioner().commit();
 
-            DataBuffer buffer = Nd4j.createBuffer(this.lengthLong(), false);
+            DataBuffer buffer = Nd4j.createBuffer(this.length(), false);
 
             AllocationPoint pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
             AllocationPoint pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
@@ -686,10 +686,10 @@ public class JCublasNDArray extends BaseNDArray {
             val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (pointSrc.isActualOnDeviceSide()) {
-                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
                     throw new ND4JIllegalStateException("memcpyAsync failed");
             } else {
-                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
                     throw new ND4JIllegalStateException("memcpyAsync failed");
 
                 direction = MemcpyDirection.HOST_TO_DEVICE;
@@ -738,7 +738,7 @@ public class JCublasNDArray extends BaseNDArray {
         if (!this.isView()) {
             Nd4j.getExecutioner().commit();
 
-            val buffer = Nd4j.createBuffer(this.dataType(), this.lengthLong(), false);
+            val buffer = Nd4j.createBuffer(this.dataType(), this.length(), false);
 
             val pointDst = AtomicAllocator.getInstance().getAllocationPoint(buffer);
             val pointSrc = AtomicAllocator.getInstance().getAllocationPoint(this.data);
@@ -749,10 +749,10 @@ public class JCublasNDArray extends BaseNDArray {
             val perfD = PerformanceTracker.getInstance().helperStartTransaction();
 
             if (pointSrc.isActualOnDeviceSide()) {
-                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getDevicePointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyDeviceToDevice, context.getOldStream()) == 0)
                     throw new ND4JIllegalStateException("memcpyAsync failed");
             } else {
-                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.lengthLong() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
+                if (NativeOpsHolder.getInstance().getDeviceNativeOps().memcpyAsync(pointDst.getDevicePointer(), pointSrc.getHostPointer(), this.length() * Nd4j.sizeOfDataType(buffer.dataType()), CudaConstants.cudaMemcpyHostToDevice, context.getOldStream()) == 0)
                     throw new ND4JIllegalStateException("memcpyAsync failed");
 
                 direction = MemcpyDirection.HOST_TO_DEVICE;

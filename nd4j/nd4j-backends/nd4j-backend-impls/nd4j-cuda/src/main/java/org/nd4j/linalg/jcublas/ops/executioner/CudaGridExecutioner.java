@@ -655,7 +655,7 @@ public class CudaGridExecutioner extends CudaExecutioner implements GridExecutio
             op.setZ(ret);
         } else {
             // compare length
-            if (op.z().lengthLong() != ArrayUtil.prodLong(retShape))
+            if (op.z().length() != ArrayUtil.prodLong(retShape))
                 throw new ND4JIllegalStateException("Shape of target array for reduction [" + Arrays.toString(op.z().shape()) + "] doesn't match expected [" + Arrays.toString(retShape) + "]");
 
             ret = op.z();
