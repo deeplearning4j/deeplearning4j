@@ -127,7 +127,10 @@ namespace nd4j {
             int isSameMode = INT_ARG(8);                                                // 0-VALID, 1-SAME
             bool isNCHW    = block.getIArguments()->size() > 9 ? !INT_ARG(9) : 1;       // INT_ARG(9): 0-NCHW,  1-NHWC
 
-            conv2d_mkldnn(block, input, weights, bias, output, 0, 0, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW);
+            int kH = INT_ARG(0) > 0 ? INT_ARG(0) : static_cast<int>(weights->sizeAt(0)); // filter(kernel) height
+            int kW = INT_ARG(1) > 0 ? INT_ARG(1) : static_cast<int>(weights->sizeAt(1)); // filter(kernel) width
+
+            conv2d_mkldnn(block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW);
 
             return Status::OK();
         }

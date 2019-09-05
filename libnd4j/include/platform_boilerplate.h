@@ -29,7 +29,6 @@
                                     }; \
                                     struct __registratorHelper_##NAME { \
                                         __registratorHelper_##NAME() { \
-                                            nd4j_printf("Registrator invoked\n", ""); \
                                             auto helper = new PLATFORM_##NAME(); \
                                             OpRegistrator::getInstance()->registerHelper(helper); \
                                         } \
