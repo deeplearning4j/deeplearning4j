@@ -24,6 +24,7 @@
 #include <NDArrayFactory.h>
 #include <exceptions/graph_exception.h>
 #include <exceptions/unresolved_input_exception.h>
+#include <ops/declarable/OpRegistrator.h>
 
 namespace nd4j {
     namespace ops {
@@ -501,7 +502,22 @@ namespace nd4j {
                 prepTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeStart - timeEnter).count();
             }
 
-            Nd4jStatus status = this->validateAndExecute(*block);
+
+            Nd4jStatus status;
+            bool hasHelper = false;
+
+            // if we have platform-specific helper for this op - invoke it
+            if (OpRegistrator::getInstance()->hasHelper(this->getOpHash())) {
+                auto helper =  OpRegistrator::getInstance()->getPlatformHelper(this->getOpHash());
+                if (helper->isUsable(*block)) {
+                    status = helper->invokeHelper(*block);
+                    hasHelper = true;
+                }
+            }
+
+            // if we don't have platform-specific helper - invoke generic implementation
+            if (!hasHelper)
+                status = this->validateAndExecute(*block);
 
             // optionally saving execution time
             if (Environment::getInstance()->isProfiling()) {

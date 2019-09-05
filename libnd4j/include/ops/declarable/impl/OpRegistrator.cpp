@@ -113,7 +113,12 @@ namespace nd4j {
             for (auto x : _uniqueD)
                 delete x;
 
+            for (auto x: _uniqueH)
+                delete x;
+
             _uniqueD.clear();
+
+            _uniqueH.clear();
 
             _declarablesD.clear();
 
@@ -144,6 +149,8 @@ namespace nd4j {
 
             return _opsList.c_str();
         }
+
+
         bool OpRegistrator::registerOperation(const char* name, nd4j::ops::DeclarableOp* op) {
             std::string str(name);
             std::pair<std::string, nd4j::ops::DeclarableOp*> pair(str, op);
@@ -163,6 +170,16 @@ namespace nd4j {
         bool OpRegistrator::registerOperation(nd4j::ops::DeclarableOp *op) {
             _uniqueD.emplace_back(op);
             return registerOperation(op->getOpName()->c_str(), op);
+        }
+
+        void OpRegistrator::registerHelper(nd4j::ops::PlatformHelper* op) {
+            _uniqueH.emplace_back(op);
+
+            std::pair<std::string, nd4j::ops::PlatformHelper*> pair(op->name(), op);
+            _helpersH.insert(pair);
+
+            std::pair<Nd4jLong, nd4j::ops::PlatformHelper*> pair2(op->hash(), op);
+            _helpersLH.insert(pair2);
         }
 
         nd4j::ops::DeclarableOp* OpRegistrator::getOperation(const char *name) {
@@ -207,6 +224,16 @@ namespace nd4j {
             return _declarablesD.at(name);
         }
 
+        nd4j::ops::PlatformHelper* OpRegistrator::getPlatformHelper(Nd4jLong hash) {
+            if (_helpersLH.count(hash) == 0)
+                throw std::runtime_error("Requested helper can't be found");
+
+            return _helpersLH[hash];
+        }
+
+        bool OpRegistrator::hasHelper(Nd4jLong hash) {
+            return _helpersLH.count(hash) > 0;
+        }
 
         int OpRegistrator::numberOfOperations() {
             return (int) _declarablesLD.size();
