@@ -335,8 +335,6 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
             return std::string("INT8");
         case INT16:
             return std::string("INT16");
-        case UINT16:
-            return std::string("UINT16");
         case INT32:
             return std::string("INT32");
         case INT64:
@@ -353,10 +351,16 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
             return std::string("BOOL");
         case UINT8:
             return std::string("UINT8");
+        case UINT16:
+            return std::string("UINT16");
+        case UINT32:
+            return std::string("UINT32");
+        case UINT64:
+            return std::string("UINT64");
         case UTF8:
             return std::string("UTF8");
         default:
-            throw new std::runtime_error("Unknown data type used");
+            throw std::runtime_error("Unknown data type used");
     }
 }
 
