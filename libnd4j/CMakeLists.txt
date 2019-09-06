@@ -39,6 +39,7 @@ if(NATIVE)
 endif()
 
 if(NOT CUDA_BLAS)
+    # old mkl-dnn entry
     if (NOT "${MKLDNN_PATH}" STREQUAL "")
         set(HAVE_MKLDNN 1)
         include_directories(${MKLDNN_PATH}/include/)
@@ -53,6 +54,66 @@ if(NOT CUDA_BLAS)
         include_directories(${OPENBLAS_PATH}/include/)
         link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
         set(OPENBLAS_LIBRARIES openblas)
+    endif()
+
+
+    # new mkl-dnn entry
+    if (${HELPERS_mkldnn})
+        if ("${MKLDNN_PATH}" STREQUAL "")
+            message("Going to pull & build mkldnn")
+            set(HAVE_MKLDNN 1)
+
+            configure_file(./CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
+            execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+            if(result)
+                message(FATAL_ERROR "CMake step for mkldnn failed: ${result}")
+            endif()
+            execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
+            if(result)
+                message(FATAL_ERROR "Build step for mkldnn failed: ${result}")
+            endif()
+
+            add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src
+                    ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build
+                    EXCLUDE_FROM_ALL)
+
+            set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build)
+            set(mkldnn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
+            set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
+            include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_EXT_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
+            set(MKLDNN mkldnn)
+        endif()
+
+        # there's a chance, we have no BLAS provided externally
+        if ("${OPENBLAS_PATH}" STREQUAL "")
+            #we want static OpenBLAS
+            set(BLA_STATIC ON)
+            set(BLA_VENDOR OpenBLAS)
+
+            # look around for system blas instead
+            find_package(BLAS REQUIRED)
+            if (BLAS_FOUND)
+
+                # workaround for for cmake being unable to find static blas library
+                SET(_TMP_B "")
+                if (APPLE)
+                    string(REGEX REPLACE "\\.dylib$" ".lib" _TMP_B "${BLAS_LIBRARIES}")
+                elseif (WIN32)
+                    string(REGEX REPLACE "\\.dll" ".lib" _TMP_B "${BLAS_LIBRARIES}")
+                else()
+                    string(REGEX REPLACE "\\.so$" ".a" _TMP_B "${BLAS_LIBRARIES}")
+                endif()
+                set(BLAS_LIBRARIES "${_TMP_B}")
+
+                message("Found external BLAS implementation...")
+                add_definitions(-D__EXTERNAL_BLAS__=true)
+                message("BLAS_LIBRARIES: ${BLAS_LIBRARIES} STATIC: ${BLA_STATIC}")
+            endif()
+        endif()
     endif()
 endif()
 

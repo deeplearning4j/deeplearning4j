@@ -53,6 +53,7 @@ CLEAN="false"
 MINIFIER="false"
 TESTS="false"
 VERBOSE="false"
+HELPER=
 NAME=
 while [[ $# > 0 ]]
 do
@@ -60,6 +61,10 @@ key="$1"
 value="${2:-}"
 #Build type (release/debug), packaging type, chip: cpu,cuda, lib type (static/dynamic)
 case $key in
+    -h|--helper)
+    HELPER="$value"
+    shift # past argument
+    ;;
     -o|-platform|--platform)
     OS="$value"
     shift # past argument
@@ -501,6 +506,21 @@ mkbuilddir() {
     cd "blasbuild/$CHIP"
 }
 
+if [ "$HELPER" == "" ]; then
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+  echo "!!                                                                                                           !!"
+  echo "!!                                                                                                           !!"
+  echo "!!                                                                                                           !!"
+  echo "!!                                                                                                           !!"
+  echo "!!                                                 WARNING!                                                  !!"
+  echo "!!                                      No helper packages configured!                                       !!"
+  echo "!!                          You can specify helper by using -h key. I.e. <-h mkldnn>                         !!"
+  echo "!!                                                                                                           !!"
+  echo "!!                                                                                                           !!"
+  echo "!!                                                                                                           !!"
+  echo "!!                                                                                                           !!"
+  echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+fi
 
 echo PACKAGING  = "${PACKAGING}"
 echo BUILD  = "${BUILD}"
@@ -517,9 +537,10 @@ echo TESTS = "${TESTS_ARG}"
 echo NAME = "${NAME_ARG}"
 echo MKLDNN_PATH = "$MKLDNN_PATH"
 echo OPENBLAS_PATH = "$OPENBLAS_PATH"
+echo HELPERS = "$HELPER"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DMKLDNN_PATH="$MKLDNN_PATH" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DHELPERS_"$HELPER"=true "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DMKLDNN_PATH="$MKLDNN_PATH" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
 if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
 fi

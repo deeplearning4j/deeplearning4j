@@ -21,7 +21,7 @@ endif()
 # OPTIONAL MKL-DNN
 if ("${BUILD_MKLDNN}")
     # Download and unpack mkl-dnn at configure time
-    configure_file(./CMakeLists.txt.in mkldnn-download/CMakeLists.txt)
+    configure_file(../../CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
@@ -40,7 +40,6 @@ if ("${BUILD_MKLDNN}")
         EXCLUDE_FROM_ALL)
     set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
     set(HAVE_MKLDNN 1)
-    add_definitions(-DHAVE_MKLDNN=true)
     include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_SOURCE_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
     set(MKLDNN mkldnn)
 endif()
@@ -209,7 +208,7 @@ file(GLOB_RECURSE LOOPS_SOURCES false ../../include/loops/*.cpp ../../include/lo
 
 # optionally build mkldnn
 if ("${BUILD_MKLDNN}")
-    file(GLOB_RECURSE CUSTOMOPS_PLATFORM_SOURCES false ../../include/ops/declarable/platform/mkl-dnn/*.cpp)
+    file(GLOB_RECURSE CUSTOMOPS_PLATFORM_SOURCES false ../../include/ops/declarable/platform/mkldnn/*.cpp)
 endif()
 
 message("CPU BLAS")
