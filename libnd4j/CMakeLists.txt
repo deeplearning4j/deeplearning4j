@@ -62,6 +62,7 @@ if(NOT CUDA_BLAS)
         if ("${MKLDNN_PATH}" STREQUAL "")
             message("Going to pull & build mkldnn")
             set(HAVE_MKLDNN 1)
+            set(MKLDNN_LIBRARY_TYPE "STATIC")
 
             configure_file(./CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
             execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
@@ -84,8 +85,9 @@ if(NOT CUDA_BLAS)
             set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build)
             set(mkldnn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
             set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
-            include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_EXT_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
+            include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_SOURCE_DIR})
             set(MKLDNN mkldnn)
+            #add_library(${MKLDNN}       STATIC)
         endif()
 
         # there's a chance, we have no BLAS provided externally
