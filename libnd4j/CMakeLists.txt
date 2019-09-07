@@ -62,7 +62,7 @@ if(NOT CUDA_BLAS)
         if ("${MKLDNN_PATH}" STREQUAL "")
             message("Going to pull & build mkldnn")
             set(HAVE_MKLDNN 1)
-            set(MKLDNN_LIBRARY_TYPE "STATIC")
+            set(MKLDNN_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
             configure_file(./CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
             execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
