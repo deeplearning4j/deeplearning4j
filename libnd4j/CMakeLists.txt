@@ -39,6 +39,9 @@ if(NATIVE)
 endif()
 
 if(NOT CUDA_BLAS)
+    # we need this definition to avoid global memory use within mkldnn
+    add_definitions(-DMKLDNN_ENABLE_CONCURRENT_EXEC=true)
+
     # old mkl-dnn entry
     if (NOT "${MKLDNN_PATH}" STREQUAL "")
         message("We have manually provided MKLDNN: ${MKLDNN_PATH}")
