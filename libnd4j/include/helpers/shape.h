@@ -4417,8 +4417,10 @@ INLINEDEF void calcOffsets(const Nd4jLong* shapeInfo, Nd4jLong* offsets, const c
         if(order == shape::order(shapeInfo) || e == 1) {    // e==1 means common vector
             e = 1;
             Nd4jLong len = shape::length(shapeInfo);
-            while(e < len)
-                offsets[e++] = offsets[e - 1] + ews;
+            while(e < len) {
+                offsets[e] = offsets[e - 1] + ews;
+                e++;
+            }
             return;
         }
     }
@@ -4464,8 +4466,10 @@ INLINEDEF void calcOffsets(const int rank, const Nd4jLong* shape, const Nd4jLong
             if(shape[j] == 1) { --j; continue; } // ignore dimensions equal to unity
 
             if(j == rankMinusOne) {              // last dimension
-                for(int l = 1; l < shape[j]; ++l)
-                    offsets[i++] = offsets[i - 1] + strides[j];
+                for(int l = 1; l < shape[j]; ++l) {
+                    offsets[i] = offsets[i - 1] + strides[j];
+                    i++;
+                }
                 --j;
             }
             else if(idx[j] < shape[j] - 1) {
@@ -4489,8 +4493,10 @@ INLINEDEF void calcOffsets(const int rank, const Nd4jLong* shape, const Nd4jLong
             if(shape[j] == 1) { ++j; continue; } // ignore dimensions equal to unity
 
             if(j == 0) {              // last dimension
-                for(int l = 1; l < shape[j]; ++l)
-                    offsets[i++] = offsets[i - 1] + strides[j];
+                for(int l = 1; l < shape[j]; ++l) {
+                    offsets[i] = offsets[i - 1] + strides[j];
+                    i++;
+                }
                 ++j;
             }
             else if(idx[j] < shape[j] - 1) {

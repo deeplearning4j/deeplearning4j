@@ -30,7 +30,7 @@ namespace nd4j {
     namespace ops {
         class ND4J_EXPORT BroadcastableOp : public DeclarableCustomOp{
         protected:
-            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
+            Nd4jStatus validateAndExecute(Context& block) override = 0;
         public:
             BroadcastableOp(const char *name, int numTArgs, int numIArgs);
             ~BroadcastableOp();
