@@ -21,7 +21,7 @@
 
 
 #include <helpers/TAD.h>
-#include<ops/declarable/helpers/conv2d.h>
+#include<ops/declarable/helpers/ismax.h>
 #include<loops/special_kernels.h>
 #include <helpers/DebugHelper.h>
 #include <cuda_exception.h>
