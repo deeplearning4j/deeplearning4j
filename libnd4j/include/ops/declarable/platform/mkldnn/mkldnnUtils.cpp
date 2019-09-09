@@ -14,6 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+//
+// @author saudet
+//
 
 #include <mkldnn_types.h>
 #include "mkldnnUtils.h"

@@ -14,6 +14,9 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
+//
+// @author saudet
+//
 
 #ifndef DEV_TESTS_MKLDNNUTILS_H
 #define DEV_TESTS_MKLDNNUTILS_H
