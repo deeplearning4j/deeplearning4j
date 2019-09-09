@@ -30,7 +30,7 @@ using namespace mkldnn;
 
 namespace nd4j {
     namespace ops {
-        PLATFORM_IMPL(avgpooling2d_bp) {
+        PLATFORM_IMPL(avgpool2d_bp) {
             auto input = INPUT_VARIABLE(0);                          // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
             auto gradO = INPUT_VARIABLE(1);                          // [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
             auto gradI = OUTPUT_VARIABLE(0);                         // [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW), epsilon
@@ -91,71 +91,42 @@ namespace nd4j {
                 // input is sometimes null, so we can't rely on pool_src_md being valid
                 auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm,
                                                        input->buffer() != nullptr ? pool_src_md : pool_diff_src_md,
-                                                       pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+                                                       pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
                 auto engine = streams[0].getEngine();
                 auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
 
-                auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md,
-                                                         pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+                auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
                 auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, engine, pool_prim_desc);
-                auto userB_src_memory = mkldnn::memory({user_src_md, engine}, gradI->buffer());
-                auto userB_dst_memory = mkldnn::memory({user_dst_md, engine}, gradO->buffer());
+                auto userB_src_memory = mkldnn::memory(user_src_md, engine, gradI->buffer());
+                auto userB_dst_memory = mkldnn::memory(user_dst_md, engine, gradO->buffer());
 
                 auto poolB_src_memory = userB_src_memory;
-                streams[0].addMemory(userB_src_memory);
-                if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
-                    != userB_src_memory.get_primitive_desc()) {
-                    poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc());
-                    streams[0].addMemory(poolB_src_memory);
+                mkldnn::stream stream(engine);
+                if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
+                    poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_desc(), engine);
                 }
 
                 auto poolB_dst_memory = userB_dst_memory;
-                streams[0].addMemory(userB_dst_memory);
-                if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_dst_primitive_desc())
-                    != userB_dst_memory.get_primitive_desc()) {
-                    poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc());
-                    streams[0].addMemory(poolB_dst_memory);
-                    streams[0].addOperation(reorder(userB_dst_memory, poolB_dst_memory));
+                if (poolB_prim_desc.diff_dst_desc() != userB_dst_memory.get_desc()) {
+                    poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_desc(), engine);
+                    reorder(userB_dst_memory, poolB_dst_memory).execute(stream, userB_dst_memory, poolB_dst_memory);
                 }
 
-                if (algorithm == mkldnn::pooling_max) {
-                    auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
+                pooling_backward(poolB_prim_desc).execute(stream, {{MKLDNN_ARG_DST, poolB_dst_memory}, {MKLDNN_ARG_SRC, poolB_src_memory}});
 
-                    auto pool_src_memory = user_src_memory;
-                    streams[0].addMemory(user_src_memory);
-                    if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
-                        != user_src_memory.get_primitive_desc()) {
-                        pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
-                        streams[0].addMemory(pool_src_memory);
-                        streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
-                    }
-
-                    auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
-                    streams[0].addMemory(pool_dst_memory);
-
-                    auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
-                    streams[0].addMemory(pool_workspace_memory);
-
-                    streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
-                    streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
-                } else {
-                    streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
+                if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
+                    reorder(poolB_src_memory, userB_src_memory).execute(stream, poolB_src_memory, userB_src_memory);
                 }
 
-                if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
-                    != userB_src_memory.get_primitive_desc()) {
-                    streams[0].addOperation(reorder(poolB_src_memory, userB_src_memory));
-                }
+                stream.wait();
             }
-
-            streams[0].submitAndWait();
 
             return Status::OK();
         }
 
-        PLATFORM_CHECK(avgpooling2d_bp) {
+        PLATFORM_CHECK(avgpool2d_bp) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
