@@ -11607,6 +11607,81 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #endif //LIBND4J_OPDESCRIPTOR_H
 
 
+// Parsed from ops/declarable/PlatformHelper.h
+
+/*******************************************************************************
+ * Copyright (c) 2015-2018 Skymind, Inc.
+ *
+ * This program and the accompanying materials are made available under the
+ * terms of the Apache License, Version 2.0 which is available at
+ * https://www.apache.org/licenses/LICENSE-2.0.
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ * WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ ******************************************************************************/
+
+//
+// @author raver119@gmail.com
+//
+
+// #ifndef SD_PLATFORMHELPER_H
+// #define SD_PLATFORMHELPER_H
+
+// #include <ShapeUtils.h>
+// #include <graph/Context.h>
+// #include <string>
+// #include <pointercast.h>
+// #include <dll.h>
+            /**
+             * This abstract class defines methods used by platform-specific helpers implementations
+             */
+            @Namespace("nd4j::ops::platforms") @NoOffset public static class PlatformHelper extends Pointer {
+                static { Loader.load(); }
+                /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+                public PlatformHelper(Pointer p) { super(p); }
+            
+
+                public native @StdString BytePointer name();
+
+                public native @Cast("Nd4jLong") long hash();
+
+                /**
+                 * This method checks, if given helper can be used with given input/output/configuration options
+                 *
+                 * @param context
+                 * @return
+                 */
+                public native @Cast("bool") boolean isUsable(@ByRef Context context);
+
+                /**
+                 * This method invokes helper. Typically this method replaces actual op execution
+                 *
+                 * @param context
+                 * @return
+                 */
+                public native @Cast("Nd4jStatus") int invokeHelper(@ByRef Context context);
+
+                /**
+                 * Helper method, needed for compatibility with DeclarableOp macros
+                 * @param ctx
+                 * @param inputId
+                 * @return
+                 */
+                public native NDArray getZ(@ByRef Context ctx, int inputId);
+            }
+        
+    
+
+
+
+// #endif //SD_PLATFORMHELPER_H
+
+
 // Parsed from ops/declarable/BroadcastableOp.h
 
 /*******************************************************************************
@@ -12080,6 +12155,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <map>
 // #include <mutex>
 // #include <ops/declarable/DeclarableOp.h>
+// #include <ops/declarable/PlatformHelper.h>
 
 // handlers part
 // #include <cstdlib>
@@ -12107,7 +12183,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("char*") String getAllCustomOperations();
 
             /**
-            * This method registers operation
+            * This method registers operation in our registry, so we can use them later
             *
             * @param op
             */
@@ -12115,9 +12191,15 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             public native @Cast("bool") boolean registerOperation(@Cast("char*") BytePointer name, DeclarableOp op);
             public native @Cast("bool") boolean registerOperation(DeclarableOp op);
 
+            public native void registerHelper(PlatformHelper op);
+
+            public native @Cast("bool") boolean hasHelper(@Cast("Nd4jLong") long hash);
+
             public native DeclarableOp getOperation(@Cast("char*") String name);
             public native DeclarableOp getOperation(@Cast("char*") BytePointer name);
             public native DeclarableOp getOperation(@Cast("Nd4jLong") long hash);
+
+            public native PlatformHelper getPlatformHelper(@Cast("Nd4jLong") long hash);
 
             public native @Cast("Nd4jLong*") @StdVector LongPointer getAllHashes();
 
@@ -15405,7 +15487,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * This operation unstacks given NDArray into NDArrayList
+         * This operation unstacks given NDArray into NDArrayList by the first dimension
          */
 //         #if NOT_EXCLUDED(OP_unstack_list)
         @Namespace("nd4j::ops") public static class unstack_list extends DeclarableListOp {
@@ -18168,9 +18250,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 
         /**
+         * This operation rearranges data from depth into blocks of spatial data. This is the reverse transformation
+         * of space_to_depth op. This op output is a copy of the input tensor where values from the depth dimension
+         * are moved in spatial blocks to the height and width dimensions. Int attr 0 indicates the input
+         * block size and how the data is moved.
+         * Input:
+         *     0 - 4D tensor on given type
+         * Output:
+         *     0 - 4D tensor of given type and proper shape
          *
-         *
-         *
+         * Int arguments:
+         *     0 - block size
+         *     1 - output data format: 0 ("NHWC"): shape{ batch, height, width, channels }
+         *                             1 ("NCHW"): shape{ batch, channels, height, width }
+         *                             2 ("NCHW_VECT_C"): int8 shape{ batch, channels / 4, height, width, 4 }
+         *                             optional (default 0)
          */
 //         #if NOT_EXCLUDED(OP_depth_to_space)
         @Namespace("nd4j::ops") public static class depth_to_space extends DeclarableCustomOp {
@@ -18191,8 +18285,21 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * This operation rearranges blocks of spatial data, into depth.This op output is a copy of the input tensor
+         * where values from the height and width dimensions are moved to the depth dimension. Int attr 0 indicates
+         * the input block size.
          *
+         * Input:
+         *     - 4D tensor of given type
+         * Output:
+         *     - 4D tensor
          *
+         * Int arguments:
+         *     0 - block size
+         *     1 - output data format: 0 ("NHWC"): shape{ batch, height, width, channels }
+         *                             1 ("NCHW"): shape{ batch, channels, height, width }
+         *                             2 ("NCHW_VECT_C"): int8 shape{ batch, channels / 4, height, width, 4 }
+         *                             optional (default 0)
          *
          */
 //         #if NOT_EXCLUDED(OP_space_to_depth)
@@ -18238,7 +18345,20 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
+         * Zero-pads and then rearranges (permutes) blocks of spatial data into batch. More specifically, this op
+         * outputs a copy of the input tensor where values from the height and width dimensions are moved to the
+         * batch dimension. After the zero-padding, both height and width of the input must be divisible by the block
+         * size.
          *
+         * Inputs:
+         *  0 - input tensor
+         *  1 - 2D paddings tensor (shape {M, 2})
+         *
+         *  Output:
+         *    - result tensor
+         *
+         *  Int args:
+         *      0 - block size (M)
          *
          */
 //         #if NOT_EXCLUDED(OP_space_to_batch)
@@ -18259,6 +18379,22 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
+        /*
+         * This operation divides "spatial" dimensions [1, ..., M] of the input into a grid of blocks of shape
+         * block_shape, and interleaves these blocks with the "batch" dimension (0) such that in the output,
+         * the spatial dimensions [1, ..., M] correspond to the position within the grid, and the batch dimension
+         * combines both the position within a spatial block and the original batch position. Prior to division into
+         * blocks, the spatial dimensions of the input are optionally zero padded according to paddings.
+         *
+         * Inputs:
+         *      0 - input (N-D tensor)
+         *      1 - block_shape - int 1D tensor with M length
+         *      2 - paddings - int 2D tensor with shape {M, 2}
+         *
+         * Output:
+         *      - N-D tensor with the same type as input 0.
+         *
+         * */
 //         #if NOT_EXCLUDED(OP_space_to_batch_nd)
         @Namespace("nd4j::ops") public static class space_to_batch_nd extends DeclarableCustomOp {
             static { Loader.load(); }
@@ -19009,7 +19145,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          * return value:
          *    tensor with min values according to indices sets.
          */
-//         #if NOT_EXCLUDED(OP_segment_min_bp)
+//         #if NOT_EXCLUDED(OP_segment_min)
         @Namespace("nd4j::ops") public static class segment_min extends DeclarableCustomOp {
             static { Loader.load(); }
             /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */

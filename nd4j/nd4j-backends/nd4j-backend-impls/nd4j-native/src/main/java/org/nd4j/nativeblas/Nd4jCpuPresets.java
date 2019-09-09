@@ -76,6 +76,7 @@ import java.util.Scanner;
                                               //"op_enums.h",
                                               "ops/InputType.h",
                                               "ops/declarable/OpDescriptor.h",
+                                              "ops/declarable/PlatformHelper.h",
                                               "ops/declarable/BroadcastableOp.h",                                              
                                               "ops/declarable/DeclarableOp.h",
                                               "ops/declarable/DeclarableListOp.h",

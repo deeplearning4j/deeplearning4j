@@ -32,11 +32,10 @@
 #define PLATFORM_IMPL(NAME)         struct ND4J_EXPORT __registratorPlatformHelper_##NAME { \
                                         __registratorPlatformHelper_##NAME() { \
                                             auto helper = new PLATFORM_##NAME(); \
-                                            nd4j_printf("Registering [%s]\n", helper->name().c_str()); \
                                             OpRegistrator::getInstance()->registerHelper(helper); \
                                         } \
                                     }; \
-                                    __registratorPlatformHelper_##NAME platformHelper_##NAME; \
+                                    static __registratorPlatformHelper_##NAME platformHelper_##NAME; \
                                     Nd4jStatus PLATFORM_##NAME::invokeHelper(nd4j::graph::Context &block)
 
 
