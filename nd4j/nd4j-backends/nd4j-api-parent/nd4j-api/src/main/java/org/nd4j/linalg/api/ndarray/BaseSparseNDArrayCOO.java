@@ -683,12 +683,12 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
     }
 
     @Override
-    public float getFloat(int[] indices) {
+    public float getFloat(int... indices) {
         return (float) getDouble(indices);
     }
 
     @Override
-    public float getFloat(long[] indices) {
+    public float getFloat(long... indices) {
         return 0;
     }
 
@@ -860,11 +860,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return Nd4j.createBuffer(Doubles.toArray(val));
     }
 
-    /**
-     * Returns the indices of non-zero element of the vector
-     *
-     * @return indices in Databuffer
-     * */
     @Override
     public DataBuffer getVectorCoordinates() {
         int idx;
@@ -884,10 +879,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return Nd4j.createBuffer(temp);
     }
 
-    /**
-     * Converts the sparse ndarray into a dense one
-     * @return a dense ndarray
-     */
     @Override
     public INDArray toDense() {
         // TODO support view conversion
@@ -1131,11 +1122,6 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
         return null;
     }
 
-    /**
-     * This method returns true if this INDArray is special case: no-value INDArray
-     *
-     * @return
-     */
     @Override
     public boolean isEmpty() {
         return false;

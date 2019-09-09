@@ -1296,7 +1296,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public float getFloat(long[] indices) {
+    public float getFloat(long... indices) {
         return 0;
     }
 
@@ -1321,7 +1321,7 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public float getFloat(int[] indices) {
+    public float getFloat(int... indices) {
         return 0;
     }
 
@@ -1514,22 +1514,15 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
         return isMatrix() && rows() == columns();
     }
 
-    /**
-     * Checks whether the matrix is a row vector.
-     */
     @Override
     public boolean isRowVector() {
         return rank == 2 && rows == 1;
     }
 
-    /**
-     * Checks whether the matrix is a column vector.
-     */
     @Override
     public boolean isColumnVector() {
         return rank == 2 && columns == 1;
     }
-
 
     @Override
     public boolean isMatrix() {

@@ -1912,6 +1912,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray getScalar(int... indices);
 
+    /**
+     * See {@link #getScalar(int[])}
+     */
     INDArray getScalar(long... indices);
 
     /**
@@ -1921,12 +1924,32 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     int getInt(int... indices);
 
+    /**
+     * Get a long value at the specified index.
+     * @param index Index to get the integer at.
+     * @return long value at the specified index
+     */
     long getLong(long index);
 
+    /**
+     * Get a long value at the specified indices.
+     * @param indices Indices to get the double at. Number of indices must match the array rank.
+     * @return long value at the specified index
+     */
     long getLong(long... indices);
 
+    /**
+     * Get the numeric value at the specified index.
+     * @param index index to retreive.
+     * @return numeric value at the specified index.
+     */
     Number getNumber(long index);
 
+    /**
+     * Get a numeric value at the specified indices.
+     * @param indices Indices to get the value from. Number of indices must match the array rank.
+     * @return Numeric value at the specified index
+     */
     Number getNumber(long... indices);
 
     /**
@@ -1936,6 +1959,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     double getDouble(int... indices);
 
+    /**
+     * See {@link #getDouble(int[])}
+     */
     double getDouble(long... indices);
 
     /**
@@ -1944,10 +1970,12 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param indices the indices to getScalar
      * @return the array with the specified elements
      */
-    float getFloat(int[] indices);
+    float getFloat(int... indices);
 
-    float getFloat(long[] indices);
-
+    /**
+     * See {@link #getFloat(int...)}
+     */
+    float getFloat(long... indices);
 
     /**
      * Get the double value at the specified linear index in the array
@@ -1962,7 +1990,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      *
      * @param i Dimension 0 (row) index
      * @param j Dimension 1 (column) index
-     * @return
+     * @return double value at the specified indices
      */
     double getDouble(long i, long j);
 
@@ -1983,7 +2011,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the item at row i column j
      */
     float getFloat(long i, long j);
-
 
     /**
      * Returns a copy of this ndarray
@@ -2007,7 +2034,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray ravel();
 
-
     /**
      * Returns a flattened version (row vector) of this ndarray
      *
@@ -2015,10 +2041,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray ravel(char order);
 
-
     /**
-     *
-     * @param data
+     * Set the data for this ndarray.
+     * @param data new value for the ndarray data.
      */
     void setData(DataBuffer data);
 
@@ -2046,14 +2071,14 @@ public interface INDArray extends Serializable, AutoCloseable {
     int getLeadingOnes();
 
     /**
-     * Returns the specified slice of this ndarray
+     * Returns the slice of this from the specified dimension
      *
-     * @param i         the index of the slice to return
-     * @param dimension the dimension to return the slice for
-     * @return the specified slice of this ndarray
+     * @param i the index of the slice to return
+     * @param dimension the dimension of the slice to return
+     * @return the slice of this matrix from the specified dimension
+     * and dimension
      */
     INDArray slice(long i, int dimension);
-
 
     /**
      * Returns the specified slice of this ndarray
@@ -2063,22 +2088,20 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray slice(long i);
 
-
     /**
-     * Returns the start of where the ndarray is
-     * for the underlying data
+     * Returns the start of where the ndarray is for the underlying data
      *
      * @return the starting offset
      */
     long offset();
 
-
+    // TODO: Unused untested method.
     /**
      * Returns the start of where the ndarray is for the original data buffer
-     * @return
+     *
+     * @return original offset.
      */
     long originalOffset();
-
 
     /**
      * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
@@ -2110,7 +2133,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray reshape(char order, boolean enforceView, long... newShape);
 
-
     /**
      * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
      * without copying is impossible.
@@ -2121,7 +2143,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray reshape(char order, int rows, int columns);
 
-
     /**
      * Reshapes the ndarray (can't change the length of the ndarray). Typically this will be a view, unless reshaping
      * without copying is impossible.
@@ -2131,6 +2152,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray reshape(long... newShape);
 
+    /**
+     * See {@link #reshape(long[])}
+     */
     INDArray reshape(int[] shape);
 
     /**
@@ -2149,7 +2173,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the flipped rows and columns of a matrix
      */
     INDArray transpose();
-
 
     /**
      * Flip the rows and columns of a matrix, in-place
@@ -2216,8 +2239,11 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return the newly permuted array
      */
     INDArray dimShuffle(Object[] rearrange, int[] newOrder, boolean[] broadCastable);
-    INDArray dimShuffle(Object[] rearrange, long[] newOrder, boolean[] broadCastable);
 
+    /**
+     * See {@link #dimShuffle(Object[], int[], boolean[])
+     */
+    INDArray dimShuffle(Object[] rearrange, long[] newOrder, boolean[] broadCastable);
 
     /**
      * Returns the specified column.
@@ -2336,7 +2362,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     boolean isScalar();
 
-
     /**
      * Returns the shape of this ndarray
      *
@@ -2346,7 +2371,7 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * Returns shape descriptor of this ndarray
-     * @return
+     * @return shape descriptor
      */
     LongShapeDescriptor shapeDescriptor();
 
@@ -2386,14 +2411,12 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray broadcast(long... shape);
 
-
     /**
      * Broadcasts this ndarray to be the specified shape
      *
      * @return the broadcasted ndarray
      */
     INDArray broadcast(INDArray result);
-
 
     /**
      * Returns a scalar (individual element)
@@ -2413,9 +2436,9 @@ public interface INDArray extends Serializable, AutoCloseable {
     /**
      * This method checks 2 INDArrays equality with given eps
      *
-     * @param o
+     * @param o   INDArray to compare against.
      * @param eps Epsilon value to use for the quality operation
-     * @return
+     * @return True if ndarrays are equal within eps.
      */
     boolean equalsWithEps(Object o, double eps);
 
@@ -2448,7 +2471,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Remainder operator
      * @param denominator the denominator
-     * @return
+     * @return remainder
      */
     INDArray remainder(INDArray denominator);
 
@@ -2456,75 +2479,86 @@ public interface INDArray extends Serializable, AutoCloseable {
      * Remainder operator
      * @param denominator the denominator
      * @param result the result array to put this in
-     * @return
+     * @return Remainder
      */
     INDArray remainder(INDArray denominator, INDArray result);
 
     /**
-     * The scalar denominator
+     * The scalar remainder
      * @param denominator the denominator as a scalar
-     * @return
+     * @return Remainder
      */
     INDArray remainder(Number denominator);
 
     /**
-     *
-     * @param denominator
-     * @param result
-     * @return
+     * The scalar remainder
+     * @param denominator the denominator as a scalar
+     * @param result the result array to put this in
+     * @return Remainder
      */
     INDArray remainder(Number denominator, INDArray result);
 
+    // TODO: Unused untested method.
     /**
      * In place remainder
-     * @param denominator
-     * @return
+     * @param denominator the denominator
+     * @return Remainder
      */
     INDArray remainderi(INDArray denominator);
 
+    // TODO: Unused untested method.
     /**
      * In place remainder
-     * @param denominator
-     * @return
+     * @param denominator the denominator
+     * @return Remainder
      */
     INDArray remainderi(Number denominator);
 
     /**
      * remainder of division
-     * @param denominator the array of denominators for each element
-     *                    in this array
-     * @return
+     * @param denominator the array of denominators for each element in this array
+     * @return array of remainders
      */
     INDArray fmod(INDArray denominator);
 
     /**
      *  remainder of division
-     * @param denominator the
+     * @param denominator the array of denominators for each element in this array
      * @param result the result array
-     * @return
+     * @return array of remainders
      */
     INDArray fmod(INDArray denominator, INDArray result);
 
     /**
+     * remainder of division by scalar.
      *
-     * @param denominator
-     * @return
+     * @param denominator the denominator
+     * @return array of remainders
      */
     INDArray fmod(Number denominator);
 
+    /**
+     * remainder of division by scalar.
+     *
+     * @param denominator the denominator
+     * @param result the result array
+     * @return array of remainders
+     */
     INDArray fmod(Number denominator, INDArray result);
 
+    // TODO: Unused untested method.
     /**
      * In place fmod
-     * @param denominator
-     * @return
+     * @param denominator the array of denominators for each element in this array
+     * @return array of remainders
      */
     INDArray fmodi(INDArray denominator);
 
+    // TODO: Unused untested method.
     /**
      * In place fmod
-     * @param denominator
-     * @return
+     * @param denominator the denominator as a scalar
+     * @return array of remainders
      */
     INDArray fmodi(Number denominator);
 
@@ -2546,7 +2580,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * This method checks, if given attached INDArray is still in scope of its parent Workspace
      *
      * PLEASE NOTE: if this INDArray isn't attached to any Workspace, this method will return true
-     * @return
+     * @return true if attached to workspace.
      */
     boolean isInScope();
 
@@ -2563,12 +2597,11 @@ public interface INDArray extends Serializable, AutoCloseable {
     /**
      * This method detaches INDArray from current Workspace, and attaches it to Workspace above, if any.
      *
-     * PLEASE NOTE: If this INDArray instance is
-     * NOT attached - it will be returned unmodified.
+     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
      * PLEASE NOTE: If current Workspace is the top-tier one,
      * effect will be equal to detach() call - detached copy will be returned
      *
-     * @return
+     * @return this ndarray or a detached copy.
      */
     INDArray leverage();
 
@@ -2576,8 +2609,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id - if a workspace
      * with that ID exists. If no workspace with the specified ID exists, the current INDArray is returned unmodified.
      *
-     * @param id ID of the workspace to leverage to
-     * @return
      * @see #leverageTo(String, boolean)
      */
     INDArray leverageTo(String id);
@@ -2635,7 +2666,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * This method returns percentile value for this INDArray
      *
      * @param percentile target percentile in range of 0..100
-     * @return
+     * @return percentile value
      */
     Number percentileNumber(Number percentile);
 
@@ -2648,29 +2679,28 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * This method returns median along given dimension(s)
-     * @param dimension
+     * @param dimension Dimension to calculate median
      * @return Median along specified dimensions
      */
     INDArray median(int... dimension);
 
     /**
-     * This method returns median along given dimension(s)
+     * This method returns percentile along given dimension(s)
      * @param percentile target percentile in range of 0..100
      * @param dimension  Dimension to calculate percentile for
-     * @return
+     * @return array with percentiles
      */
     INDArray percentile(Number percentile, int... dimension);
 
-    /**
+    /*
      * ------------ Sparse methods ------------
      */
-
 
     /**
      * Return a array of non-major pointers
      * i.e. return the column indexes in case of row-major ndarray
      * @return a DataBuffer of indexes
-     * */
+     */
     DataBuffer getVectorCoordinates();
 
     /**
@@ -2681,7 +2711,7 @@ public interface INDArray extends Serializable, AutoCloseable {
     /**
      * Return the number of non-null element
      * @return nnz
-     * */
+     */
     int nnz();
 
     /**
@@ -2691,14 +2721,17 @@ public interface INDArray extends Serializable, AutoCloseable {
      * */
     SparseFormat getFormat();
 
+    //TODO: Undocumented but often used method.
     int[] flags();
 
+    //TODO: Undocumented but often used method.
     int[] hiddenDimensions();
 
+    //TODO: Undocumented but often used method.
     int[] sparseOffsets();
 
+    //TODO: Undocumented but often used method.
     int underlyingRank();
-
 
     /**
      * Add an {@link INDArray}
@@ -2710,19 +2743,19 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * This method returns true if this INDArray is special case: no-value INDArray
-     * @return
+     * @return True if empty.
      */
     boolean isEmpty();
 
     /**
      * This method returns shapeInformation as jvm long array
-     * @return
+     * @return shapeInformation
      */
     long[] shapeInfoJava();
 
     /**
      * This method returns dtype for this INDArray
-     * @return
+     * @return Datattype
      */
     DataType dataType();
 
@@ -2734,45 +2767,45 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * This method checks if this INDArray instance is one of integer types
-     * @return
+     * @return true if integer type
      */
     boolean isZ();
 
     /**
      * This method checks if this INDArray instance has boolean type
-     * @return
+     * @return true if boolean type.
      */
     boolean isB();
 
     /**
      * This method checks if this INDArray instance has String type
-     * @return
+     * @return true if string type.
      */
     boolean isS();
 
     /**
      * This method cast elements of this INDArray to new data type
      *
-     * @param dataType
-     * @return
+     * @param dataType new datatype.
+     * @return this if datatype matches, otherwise a new array of specified datatype.
      */
     INDArray castTo(DataType dataType);
 
     /**
      * This method checks if all elements within this array are non-zero (or true, in case of boolean)
-     * @return
+     * @return true if all non-zero.
      */
     boolean all();
 
     /**
      * This method checks if any of the elements within this array are non-zero (or true, in case of boolean)
-     * @return
+     * @return true if any non-zero.
      */
     boolean any();
 
     /**
      * This method checks if any of the elements within this array are non-zero (or true, in case of boolean)
-     * @return
+     * @return true if any non-zero
      */
     boolean none();
 
@@ -2798,21 +2831,15 @@ public interface INDArray extends Serializable, AutoCloseable {
 
     /**
      * This method returns empty array with the same dtype/order/shape as this one
-     * @return
+     * @return empty array with the same dtype/order/shape
      */
     INDArray like();
 
     /**
      * This method returns uninitialized array with the same dtype/order/shape as this one
-     * @return
+     * @return uninitialized array with the same dtype/order/shape
      */
     INDArray ulike();
-
-    /**
-     * This method returns array with gains for Barnes-Hut-Tsne algorithm
-     * @return
-     */
-    //INDArray[] gains(INDArray input, INDArray gradx, INDArray epsilon);
 
     /**
      * Get a string representation of the array with configurable formatting
@@ -2820,13 +2847,13 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     String toString(@NonNull NDArrayStrings options);
 
-
     /**
      * Get a string representation of the array
      *
      * @param maxElements Summarize if more than maxElements in the array
      * @param forceSummarize Force a summary instead of a full print
      * @param precision The number of decimals to print.  Doesn't print trailing 0s if negative
+     * @return string representation of the array
      */
     String toString(long maxElements, boolean forceSummarize, int precision);
 
