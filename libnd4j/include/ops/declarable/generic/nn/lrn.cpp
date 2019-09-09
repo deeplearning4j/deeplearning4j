@@ -41,7 +41,6 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "lrn: Input rank of 4 expected, but got %i instead", input->rankOf());
 
-            // FIXME: double?
             double alpha = T_ARG(1);
             double beta = T_ARG(2);
             double bias = T_ARG(0);
