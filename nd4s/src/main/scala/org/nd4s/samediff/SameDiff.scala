@@ -49,7 +49,7 @@ class SameDiffWrapper {
     sd.`var`(name, dataType, shape: _*)
 
   def placeHolder(name: String, dataType: DataType, shape: Long*): SDVariable =
-    sd.placeHolder("ph1", DataType.FLOAT, 3, 4)
+    sd.placeHolder(name, dataType, shape: _*)
 }
 
 class SDVariableWrapper {

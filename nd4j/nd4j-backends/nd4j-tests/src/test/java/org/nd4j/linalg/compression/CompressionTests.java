@@ -458,7 +458,7 @@ public class CompressionTests extends BaseNd4jTest {
     @Test
     public void testBitmapEncoding4() {
         Nd4j.getRandom().setSeed(119);
-        INDArray initial = Nd4j.rand(1, 10000, 0, 1, Nd4j.getRandom());
+        INDArray initial = Nd4j.rand(new int[]{1, 10000}, 0, 1, Nd4j.getRandom());
         INDArray exp_1 = initial.dup();
 
         INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-1);
@@ -471,7 +471,7 @@ public class CompressionTests extends BaseNd4jTest {
     @Test
     public void testBitmapEncoding5() {
         Nd4j.getRandom().setSeed(119);
-        INDArray initial = Nd4j.rand(1, 10000, -1, -0.5, Nd4j.getRandom());
+        INDArray initial = Nd4j.rand(new int[]{1, 10000}, -1, -0.5, Nd4j.getRandom());
         INDArray exp_0 = initial.dup().addi(1e-1);
         INDArray exp_1 = initial.dup();
 
@@ -486,7 +486,7 @@ public class CompressionTests extends BaseNd4jTest {
     @Test
     public void testBitmapEncoding6() {
         Nd4j.getRandom().setSeed(119);
-        INDArray initial = Nd4j.rand(1, 100000, -1, 1, Nd4j.getRandom());
+        INDArray initial = Nd4j.rand(new int[]{1, 100000}, -1, 1, Nd4j.getRandom());
         INDArray exp_1 = initial.dup();
 
         INDArray enc = Nd4j.getExecutioner().bitmapEncode(initial, 1e-3);
