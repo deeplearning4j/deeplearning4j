@@ -50,13 +50,13 @@ namespace helpers {
         int n = inputMatrix->rows();
         invertedMatrix->assign(0.f);
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
+       // PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n; i++)
             invertedMatrix->p(i, i, 1.0f);
 
         if (inputMatrix->isIdentityMatrix()) return;
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
+        //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 1; i < n; i++)
             invertedMatrix->t<T>(i, i - 1) = -inputMatrix->t<T>(i, i - 1);
 
@@ -83,11 +83,11 @@ namespace helpers {
             return;
         }
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
+        //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n; i++)
             invertedMatrix->t<T>(i, i) /= inputMatrix->t<T>(i, i);
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
+        //PRAGMA_OMP_PARALLEL_FOR_IF(n > Environment::getInstance()->elementwiseThreshold())
         for (int i = 0; i < n - 1; i++)
             invertedMatrix->t<T>(i, i + 1) -= (inputMatrix->t<T>(i, i + 1) * invertedMatrix->t<T>(i + 1, i + 1) / inputMatrix->t<T>(i, i));
 
@@ -124,7 +124,7 @@ namespace helpers {
         for(int i = 0; i < rowNum; i++ ) {
             pivotValue = T(0.0);
             pivot = -1;
-            PRAGMA_OMP_PARALLEL_FOR //_ARGS(firstprivate(pivot,pivotValue))
+            //PRAGMA_OMP_PARALLEL_FOR //_ARGS(firstprivate(pivot,pivotValue))
             for(int rowCounter = i; rowCounter < rowNum; rowCounter++ ) {
                 if (nd4j::math::nd4j_abs(compoundMatrix.t<T>(rowCounter, i)) > pivotValue) {
                     pivotValue = nd4j::math::nd4j_abs(compoundMatrix.t<T>(rowCounter, i));
@@ -140,7 +140,7 @@ namespace helpers {
 
                 for( int j = i + 1; j < rowNum; j++ ) {
                     compoundMatrix.t<T>(j, i) /= compoundMatrix.t<T>(i, i);
-                    PRAGMA_OMP_PARALLEL_FOR
+                    //PRAGMA_OMP_PARALLEL_FOR
                     for( int k = i + 1; k < rowNum; k++ ) {
                         compoundMatrix.t<T>(j, k) -= compoundMatrix.t<T>(j, i) * compoundMatrix.t<T>(i, k);
                     }

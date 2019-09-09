@@ -957,26 +957,27 @@ void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, 
 
     template <typename T>
     static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
-        NDArray globalNorm = NDArrayFactory::create<T>(0, inputs[0]->getContext()); //sqrt(sum([l2norm(t)**2 for t in t_list]))
-        PRAGMA_OMP_PARALLEL_FOR
+        T globalNorm = 0; //NDArrayFactory::create<T>(0, inputs[0]->getContext()); //sqrt(sum([l2norm(t)**2 for t in t_list]))
+//        PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(sumT : globalNorm)
         for (size_t i = 0; i < inputs.size(); i++) {
             auto input = inputs[i];
             auto l2norm = input->reduceNumber(reduce::Norm2);
-            globalNorm += l2norm * l2norm;
+            globalNorm += l2norm.t<T>(0) * l2norm.t<T>(0);
         }
 
-        globalNorm.applyTransform(transform::Sqrt, nullptr, nullptr);// = nd4j::math::nd4j_sqrt(globalNorm);
-        outputs[inputs.size()]->p(0, globalNorm);
+        //globalNorm.applyTransform(transform::Sqrt, nullptr, nullptr);// = nd4j::math::nd4j_sqrt(globalNorm);
+        auto normS = nd4j::math::nd4j_sqrt<T,T>(globalNorm);
+        outputs[inputs.size()]->p(0, normS);
 
-        const T factor = clipNorm / globalNorm.e<T>(0);
+        const T factor = clipNorm / normS;
 
-        PRAGMA_OMP_PARALLEL_FOR
+//        PRAGMA_OMP_PARALLEL_FOR
         for (size_t e = 0; e < inputs.size(); e++) {
             // all-reduce
             auto input = inputs[e];
             auto output = outputs[e];
 
-            if (globalNorm.e<double>(0) <= clipNorm) {
+            if (normS <= clipNorm) {
                 output->assign(input);
             }
             else {
