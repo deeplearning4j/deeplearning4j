@@ -511,6 +511,7 @@ namespace nd4j {
                 auto helper =  OpRegistrator::getInstance()->getPlatformHelper(this->getOpHash());
                 if (helper->isUsable(*block)) {
                     status = helper->invokeHelper(*block);
+                    nd4j_printf("Helper executed!\n", "");
                     hasHelper = true;
                 }
             }

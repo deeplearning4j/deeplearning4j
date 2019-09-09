@@ -31,62 +31,68 @@ using namespace mkldnn;
 
 namespace nd4j {
     namespace ops {
-        PLATFORM_IMPL(lrn) {
-            auto input  = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
+        namespace platforms {
+            PLATFORM_IMPL(lrn) {
+                auto input = INPUT_VARIABLE(0);
+                auto output = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(input->rankOf() == 4, 0, "lrn: Input rank of 4 expected, but got %i instead", input->rankOf());
+                REQUIRE_TRUE(input->rankOf() == 4, 0, "lrn: Input rank of 4 expected, but got %i instead",
+                             input->rankOf());
 
-            double alpha = T_ARG(1);
-            double beta = T_ARG(2);
-            double bias = T_ARG(0);
-            int depth = INT_ARG(0);
+                double alpha = T_ARG(1);
+                double beta = T_ARG(2);
+                double bias = T_ARG(0);
+                int depth = INT_ARG(0);
 
-            std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-            if (streams.empty()) {
-                streams.emplace_back(MKLDNNStream("lrn"));
+                std::vector<nd4j::MKLDNNStream> &streams = block.getMKLDNNStreams();
+                if (streams.empty()) {
+                    streams.emplace_back(MKLDNNStream("lrn"));
+                }
+
+                if (streams[0].checkAndReset({input}, {output}, {(float) bias, (float) alpha, (float) beta}, {depth})) {
+                    mkldnn_memory_desc_t empty;
+                    mkldnn::memory::desc lrn_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_dst_md(empty);
+
+                    mkldnnUtils::getMKLDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md,
+                                                        &user_src_md, nullptr, &user_dst_md, input->rankOf() - 1);
+
+                    auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, algorithm::lrn_across_channels,
+                                                      lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
+
+                    auto engine = streams[0].getEngine();
+                    mkldnn::stream stream(engine);
+                    auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
+                    auto user_src_memory = mkldnn::memory(user_src_md, engine, input->buffer());
+                    auto user_dst_memory = mkldnn::memory(user_dst_md, engine, output->buffer());
+
+                    auto lrn_src_memory = user_src_memory;
+                    if (lrn_prim_desc.src_desc() != user_src_memory.get_desc()) {
+                        lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_desc(), engine);
+                        reorder(user_src_memory, lrn_src_memory).execute(stream, user_src_memory, lrn_src_memory);
+                    }
+
+                    auto lrn_dst_memory = user_dst_memory;
+                    if (lrn_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
+                        lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_desc(), engine);
+                    }
+
+                    lrn_forward(lrn_prim_desc).execute(stream, {{MKLDNN_ARG_SRC, lrn_src_memory},
+                                                                {MKLDNN_ARG_DST, lrn_dst_memory}});
+
+                    if (lrn_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
+                        reorder(lrn_dst_memory, user_dst_memory).execute(stream, lrn_dst_memory, user_dst_memory);
+                    }
+                }
+
+                return Status::OK();
+            };
+
+            PLATFORM_CHECK(lrn) {
+                auto input = INPUT_VARIABLE(0);
+                auto output = OUTPUT_VARIABLE(0);
+
+                return block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, output});
             }
-
-            if (streams[0].checkAndReset({input}, {output}, {(float)bias, (float)alpha, (float)beta}, {depth})) {
-                mkldnn_memory_desc_t empty;
-                mkldnn::memory::desc lrn_src_md(empty), lrn_dst_md(empty), user_src_md(empty), user_dst_md(empty);
-
-                mkldnnUtils::getMKLDNNMemoryDescLrn(input, nullptr, output, &lrn_src_md, nullptr, &lrn_dst_md, &user_src_md, nullptr, &user_dst_md, input->rankOf() - 1);
-
-                auto lrn_desc = lrn_forward::desc(prop_kind::forward_inference, algorithm::lrn_across_channels, lrn_src_md, (2 * depth + 1), alpha * (2 * depth + 1), beta, bias);
-
-                auto engine = streams[0].getEngine();
-                mkldnn::stream stream(engine);
-                auto lrn_prim_desc = lrn_forward::primitive_desc(lrn_desc, engine);
-                auto user_src_memory = mkldnn::memory(user_src_md, engine, input->buffer());
-                auto user_dst_memory = mkldnn::memory(user_dst_md, engine, output->buffer());
-
-                auto lrn_src_memory = user_src_memory;
-                if (lrn_prim_desc.src_desc() != user_src_memory.get_desc()) {
-                    lrn_src_memory = mkldnn::memory(lrn_prim_desc.src_desc(), engine);
-                    reorder(user_src_memory, lrn_src_memory).execute(stream, user_src_memory, lrn_src_memory);
-                }
-
-                auto lrn_dst_memory = user_dst_memory;
-                if (lrn_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
-                    lrn_dst_memory = mkldnn::memory(lrn_prim_desc.dst_desc(), engine);
-                }
-
-                lrn_forward(lrn_prim_desc).execute(stream, {{MKLDNN_ARG_SRC, lrn_src_memory}, {MKLDNN_ARG_DST, lrn_dst_memory}});
-
-                if (lrn_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
-                    reorder(lrn_dst_memory, user_dst_memory).execute(stream, lrn_dst_memory, user_dst_memory);
-                }
-            }
-
-            return Status::OK();
-        };
-
-        PLATFORM_CHECK(lrn) {
-            auto input  = INPUT_VARIABLE(0);
-            auto output = OUTPUT_VARIABLE(0);
-
-            return block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, output});
         }
     }
 }

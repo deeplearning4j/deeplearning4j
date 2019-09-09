@@ -23,11 +23,52 @@
 
 #include <NDArray.h>
 #include <MKLDNNStream.h>
+#include <graph/Context.h>
+#include <ops/declarable/PlatformHelper.h>
+#include <platform_boilerplate.h>
 
 
 namespace nd4j{
+    namespace ops {
+        namespace platforms {
+            /**
+             * Here we actually declare our platform helpers
+             */
+            DECLARE_PLATFORM(conv2d);
+
+            DECLARE_PLATFORM(conv2d_bp);
+
+            DECLARE_PLATFORM(avgpool2d);
+
+            DECLARE_PLATFORM(avgpool2d_bp);
+
+            DECLARE_PLATFORM(maxpool2d);
+
+            DECLARE_PLATFORM(maxpool2d_bp);
+
+            DECLARE_PLATFORM(conv3dnew);
+
+            DECLARE_PLATFORM(conv3dnew_bp);
+
+            DECLARE_PLATFORM(maxpool3dnew);
+
+            DECLARE_PLATFORM(maxpool3dnew_bp);
+
+            DECLARE_PLATFORM(avgpool3dnew);
+
+            DECLARE_PLATFORM(avgpool3dnew_bp);
+
+            DECLARE_PLATFORM(lrn);
+
+            DECLARE_PLATFORM(batchnorm_new);
+        }
+    }
+
     namespace mkldnnUtils {
 
+        /**
+         * Utility methods for MKLDNN
+         */
         void getMKLDNNMemoryDescConv2d(
                 int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, bool isNCHW,
                 int bS, int iC, int iH, int iW, int oC, int oH, int oW, const NDArray* src, const NDArray* diff_src,

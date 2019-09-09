@@ -308,7 +308,7 @@ elseif(CPU_BLAS)
 
     #if MKLDNN is enabled - we're building mkldnn-powered helpers
     if (HAVE_MKLDNN)
-        file(GLOB_RECURSE CUSTOMOPS_PLATFORM_SOURCES false ../include/ops/declarable/platform/mkldnn/*.cpp)
+        file(GLOB_RECURSE CUSTOMOPS_PLATFORM_SOURCES false ../include/ops/declarable/platform/mkldnn/*.cpp ../include/ops/declarable/platform/mkldnn/mkldnnUtils.h)
     endif()
 
     message("CPU BLAS")

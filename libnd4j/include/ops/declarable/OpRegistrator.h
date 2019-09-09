@@ -66,9 +66,9 @@ namespace nd4j {
             std::vector<nd4j::ops::DeclarableOp *> _uniqueD;
 
             // pointers to platform-specific helpers
-            std::map<Nd4jLong, nd4j::ops::PlatformHelper*> _helpersLH;
-            std::map<std::string, nd4j::ops::PlatformHelper*> _helpersH;
-            std::vector<nd4j::ops::PlatformHelper*> _uniqueH;
+            std::map<Nd4jLong, nd4j::ops::platforms::PlatformHelper*> _helpersLH;
+            std::map<std::string, nd4j::ops::platforms::PlatformHelper*> _helpersH;
+            std::vector<nd4j::ops::platforms::PlatformHelper*> _uniqueH;
 
             std::mutex _locker;
             std::string _opsList;
@@ -96,7 +96,7 @@ namespace nd4j {
             bool registerOperation(const char* name, nd4j::ops::DeclarableOp* op);
             bool registerOperation(nd4j::ops::DeclarableOp *op);
 
-            void registerHelper(nd4j::ops::PlatformHelper* op);
+            void registerHelper(nd4j::ops::platforms::PlatformHelper* op);
 
             bool hasHelper(Nd4jLong hash);
 
@@ -104,7 +104,7 @@ namespace nd4j {
             nd4j::ops::DeclarableOp* getOperation(Nd4jLong hash);
             nd4j::ops::DeclarableOp* getOperation(std::string &name);
 
-            nd4j::ops::PlatformHelper* getPlatformHelper(Nd4jLong hash);
+            nd4j::ops::platforms::PlatformHelper* getPlatformHelper(Nd4jLong hash);
 
             std::vector<Nd4jLong> getAllHashes();
 

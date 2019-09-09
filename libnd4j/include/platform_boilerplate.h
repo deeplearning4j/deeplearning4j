@@ -21,19 +21,22 @@
 #ifndef SD_PLATFORM_BOILERPLATE_H
 #define SD_PLATFORM_BOILERPLATE_H
 
-#define PLATFORM_IMPL(NAME)         class ND4J_EXPORT PLATFORM_##NAME : public PlatformHelper {\
+
+#define DECLARE_PLATFORM(NAME)      class ND4J_EXPORT PLATFORM_##NAME : public PlatformHelper {\
                                     public: \
                                         PLATFORM_##NAME() :  PlatformHelper(#NAME) { } \
                                         bool isUsable(graph::Context &context) override; \
                                         Nd4jStatus invokeHelper(graph::Context &context) override; \
-                                    }; \
-                                    struct __registratorHelper_##NAME { \
-                                        __registratorHelper_##NAME() { \
+                                    };
+
+#define PLATFORM_IMPL(NAME)         struct ND4J_EXPORT __registratorPlatformHelper_##NAME { \
+                                        __registratorPlatformHelper_##NAME() { \
                                             auto helper = new PLATFORM_##NAME(); \
+                                            nd4j_printf("Registering [%s]\n", helper->name().c_str()); \
                                             OpRegistrator::getInstance()->registerHelper(helper); \
                                         } \
                                     }; \
-                                    static __registratorHelper_##NAME platformHelper##NAME; \
+                                    __registratorPlatformHelper_##NAME platformHelper_##NAME; \
                                     Nd4jStatus PLATFORM_##NAME::invokeHelper(nd4j::graph::Context &block)
 
 

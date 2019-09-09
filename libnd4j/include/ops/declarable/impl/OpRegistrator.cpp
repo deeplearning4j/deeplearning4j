@@ -172,16 +172,16 @@ namespace nd4j {
             return registerOperation(op->getOpName()->c_str(), op);
         }
 
-        void OpRegistrator::registerHelper(nd4j::ops::PlatformHelper* op) {
+        void OpRegistrator::registerHelper(nd4j::ops::platforms::PlatformHelper* op) {
             if (_helpersLH.count(op->hash()) > 0)
                 throw std::runtime_error("Tried to double register PlatformHelper");
 
             _uniqueH.emplace_back(op);
 
-            std::pair<std::string, nd4j::ops::PlatformHelper*> pair(op->name(), op);
+            std::pair<std::string, nd4j::ops::platforms::PlatformHelper*> pair(op->name(), op);
             _helpersH.insert(pair);
 
-            std::pair<Nd4jLong, nd4j::ops::PlatformHelper*> pair2(op->hash(), op);
+            std::pair<Nd4jLong, nd4j::ops::platforms::PlatformHelper*> pair2(op->hash(), op);
             _helpersLH.insert(pair2);
         }
 
@@ -227,7 +227,7 @@ namespace nd4j {
             return _declarablesD.at(name);
         }
 
-        nd4j::ops::PlatformHelper* OpRegistrator::getPlatformHelper(Nd4jLong hash) {
+        nd4j::ops::platforms::PlatformHelper* OpRegistrator::getPlatformHelper(Nd4jLong hash) {
             if (_helpersLH.count(hash) == 0)
                 throw std::runtime_error("Requested helper can't be found");
 

@@ -29,47 +29,51 @@
 
 namespace  nd4j {
     namespace ops {
-        /**
-         * This abstract class defines methods used by platform-specific helpers implementations
-         */
-        class ND4J_EXPORT PlatformHelper {
-        protected:
-            // name of the operation this helper is built for
-            std::string _name;
-
-            // hash of the operation this helper is built for
-            Nd4jLong _hash;
-        public:
-            PlatformHelper(const char *name);
-            ~PlatformHelper() = default;
-
-            std::string name();
-            Nd4jLong hash();
-
+        namespace platforms {
             /**
-             * This method checks, if given helper can be used with given input/output/configuration options
-             *
-             * @param context
-             * @return
+             * This abstract class defines methods used by platform-specific helpers implementations
              */
-            virtual bool isUsable(graph::Context &context) = 0;
+            class ND4J_EXPORT PlatformHelper {
+            protected:
+                // name of the operation this helper is built for
+                std::string _name;
 
-            /**
-             * This method invokes helper. Typically this method replaces actual op execution
-             *
-             * @param context
-             * @return
-             */
-            virtual Nd4jStatus invokeHelper(graph::Context &context) = 0;
+                // hash of the operation this helper is built for
+                Nd4jLong _hash;
+            public:
+                PlatformHelper(const char *name);
 
-            /**
-             * Helper method, needed for compatibility with DeclarableOp macros
-             * @param ctx
-             * @param inputId
-             * @return
-             */
-            nd4j::NDArray* getZ(graph::Context & ctx, int inputId);
-        };
+                ~PlatformHelper() = default;
+
+                std::string name();
+
+                Nd4jLong hash();
+
+                /**
+                 * This method checks, if given helper can be used with given input/output/configuration options
+                 *
+                 * @param context
+                 * @return
+                 */
+                virtual bool isUsable(graph::Context &context) = 0;
+
+                /**
+                 * This method invokes helper. Typically this method replaces actual op execution
+                 *
+                 * @param context
+                 * @return
+                 */
+                virtual Nd4jStatus invokeHelper(graph::Context &context) = 0;
+
+                /**
+                 * Helper method, needed for compatibility with DeclarableOp macros
+                 * @param ctx
+                 * @param inputId
+                 * @return
+                 */
+                nd4j::NDArray *getZ(graph::Context &ctx, int inputId);
+            };
+        }
     }
 }
 
