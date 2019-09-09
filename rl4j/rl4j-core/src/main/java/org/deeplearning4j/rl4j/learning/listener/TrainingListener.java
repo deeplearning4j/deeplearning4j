@@ -15,6 +15,10 @@
  ******************************************************************************/
 package org.deeplearning4j.rl4j.learning.listener;
 
+import org.deeplearning4j.rl4j.learning.IEpochTrainer;
+import org.deeplearning4j.rl4j.learning.ILearning;
+import org.deeplearning4j.rl4j.util.IDataManager;
+
 /**
  * The base definition of all training event listeners
  *
@@ -46,21 +50,23 @@ public interface TrainingListener {
 
     /**
      * Called before the start of every epoch.
+     * @param trainer A {@link IEpochTrainer}
      * @return A ListenerResponse telling the source of the event if it should continue or stop the training.
      */
-    ListenerResponse onNewEpoch(IEpochTrainingEvent event);
+    ListenerResponse onNewEpoch(IEpochTrainer trainer);
 
     /**
      * Called when an epoch has been completed
-     * @param event A EpochTrainingResultEvent containing the results of the epoch training
+     * @param trainer A {@link IEpochTrainer}
+     * @param statEntry A {@link org.deeplearning4j.rl4j.util.IDataManager.StatEntry}
      * @return A ListenerResponse telling the source of the event if it should continue or stop the training.
      */
-    ListenerResponse onEpochTrainingResult(IEpochTrainingResultEvent event);
+    ListenerResponse onEpochTrainingResult(IEpochTrainer trainer, IDataManager.StatEntry statEntry);
 
     /**
      * Called regularly to monitor the training progress.
-     * @param event A {@link ITrainingProgressEvent}
+     * @param learning A {@link ILearning}
      * @return A ListenerResponse telling the source of the event if it should continue or stop the training.
      */
-    ListenerResponse onTrainingProgress(ITrainingProgressEvent event);
+    ListenerResponse onTrainingProgress(ILearning learning);
 }

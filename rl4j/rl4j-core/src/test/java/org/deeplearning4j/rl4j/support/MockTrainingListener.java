@@ -1,6 +1,8 @@
 package org.deeplearning4j.rl4j.support;
 
 import lombok.Setter;
+import org.deeplearning4j.rl4j.learning.IEpochTrainer;
+import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.listener.*;
 import org.deeplearning4j.rl4j.util.IDataManager;
 
@@ -35,22 +37,22 @@ public class MockTrainingListener implements TrainingListener {
     }
 
     @Override
-    public ListenerResponse onNewEpoch(IEpochTrainingEvent event) {
+    public ListenerResponse onNewEpoch(IEpochTrainer trainer) {
         ++onNewEpochCallCount;
         --remainingOnNewEpochCallCount;
         return remainingOnNewEpochCallCount < 0 ? ListenerResponse.STOP : ListenerResponse.CONTINUE;
     }
 
     @Override
-    public ListenerResponse onEpochTrainingResult(IEpochTrainingResultEvent event) {
+    public ListenerResponse onEpochTrainingResult(IEpochTrainer trainer, IDataManager.StatEntry statEntry) {
         ++onEpochTrainingResultCallCount;
         --remainingOnEpochTrainingResult;
-        statEntries.add(event.getStatEntry());
+        statEntries.add(statEntry);
         return remainingOnEpochTrainingResult < 0 ? ListenerResponse.STOP : ListenerResponse.CONTINUE;
     }
 
     @Override
-    public ListenerResponse onTrainingProgress(ITrainingProgressEvent event) {
+    public ListenerResponse onTrainingProgress(ILearning learning) {
         ++onTrainingProgressCallCount;
         --remainingonTrainingProgressCallCount;
         return remainingonTrainingProgressCallCount < 0 ? ListenerResponse.STOP : ListenerResponse.CONTINUE;

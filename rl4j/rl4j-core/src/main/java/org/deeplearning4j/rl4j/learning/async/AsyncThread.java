@@ -21,10 +21,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.rl4j.learning.HistoryProcessor;
-import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
-import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.StepCountable;
+import org.deeplearning4j.rl4j.learning.*;
 import org.deeplearning4j.rl4j.learning.listener.*;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -46,8 +43,9 @@ import org.nd4j.linalg.factory.Nd4j;
  */
 @Slf4j
 public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-                extends Thread implements StepCountable {
+                extends Thread implements StepCountable, IEpochTrainer {
 
+    @Getter
     private int threadNumber;
     @Getter
     protected final int deviceNum;
@@ -103,8 +101,8 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
      * TrainingListener.ListenerResponse.STOP}, the remaining listeners in the list won't be called.<br>
      * Events:
      * <ul>
-     *   <li>{@link TrainingListener#onNewEpoch(IEpochTrainingEvent) onNewEpoch()} is called when a new epoch is started.</li>
-     *   <li>{@link TrainingListener#onEpochTrainingResult(IEpochTrainingResultEvent) onEpochTrainingResult()} is called at the end of every
+     *   <li>{@link TrainingListener#onNewEpoch(IEpochTrainer) onNewEpoch()} is called when a new epoch is started.</li>
+     *   <li>{@link TrainingListener#onEpochTrainingResult(IEpochTrainer, IDataManager.StatEntry) onEpochTrainingResult()} is called at the end of every
      *   epoch. It will not be called if onNewEpoch() stops the training.</li>
      * </ul>
      */
@@ -154,14 +152,14 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     private boolean initWork(RunContext context) {
         initNewEpoch(context);
         preEpoch();
-        return listeners.notifyNewEpoch(buildonNewEpochEvent());
+        return listeners.notifyNewEpoch(this);
     }
 
     private boolean startNewEpoch(RunContext context) {
         initNewEpoch(context);
         epochCounter++;
         preEpoch();
-        return listeners.notifyNewEpoch(buildonNewEpochEvent());
+        return listeners.notifyNewEpoch(this);
     }
 
     private boolean finishEpoch(RunContext context) {
@@ -170,7 +168,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
         log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + context.rewards);
 
-        return listeners.notifyEpochTrainingResult(buildEpochTrainingResultEvent(statEntry));
+        return listeners.notifyEpochTrainingResult(this, statEntry);
     }
 
     private void terminateWork() {
@@ -178,27 +176,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
         getAsyncGlobal().terminate();
     }
 
-    /**
-     * An overridable method that builds the event passed to notifyNewEpoch
-     * @return The event that will be passed to notifyNewEpoch
-     */
-    protected IEpochTrainingEvent buildonNewEpochEvent() {
-        return new EpochTrainingEvent(getEpochCounter(), getStepCounter());
-    }
-
-    /**
-     * An overridable method that builds the event passed to notifyEpochTrainingResult
-     * @param statEntry An instance of IDataManager.StatEntry
-     * @return The event that will be passed to notifyEpochTrainingResult
-     */
-    protected IEpochTrainingResultEvent buildEpochTrainingResultEvent(IDataManager.StatEntry statEntry) {
-        return new EpochTrainingResultEvent(getEpochCounter(), getStepCounter(), statEntry);
-    }
-
-
     protected abstract NN getCurrent();
-
-    protected abstract int getThreadNumber();
 
     protected abstract IAsyncGlobal<NN> getAsyncGlobal();
 

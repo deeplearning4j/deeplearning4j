@@ -38,6 +38,7 @@ public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> ex
 
     MDP<O, A, AS> getMdp();
 
+    IHistoryProcessor getHistoryProcessor();
 
     interface LConfiguration {
 

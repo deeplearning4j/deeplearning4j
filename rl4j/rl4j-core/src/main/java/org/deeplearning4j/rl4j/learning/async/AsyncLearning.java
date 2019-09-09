@@ -75,6 +75,9 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
 
     private boolean canContinue = true;
 
+    /**
+     * Number of milliseconds between calls to onTrainingProgress
+     */
     @Getter @Setter
     private int progressMonitorFrequency = 20000;
 
@@ -128,7 +131,7 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
     protected void monitorTraining() {
         try {
             while (canContinue && !isTrainingComplete() && getAsyncGlobal().isRunning()) {
-                canContinue = listeners.notifyTrainingProgress(buildProgressEpochEvent());
+                canContinue = listeners.notifyTrainingProgress(this);
                 if(!canContinue) {
                     return;
                 }
@@ -140,10 +143,6 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
         } catch (InterruptedException e) {
             log.error("Training interrupted.", e);
         }
-    }
-
-    protected ITrainingProgressEvent buildProgressEpochEvent() {
-        return new TrainingProgressEvent(this);
     }
 
     protected void cleanupPostTraining() {

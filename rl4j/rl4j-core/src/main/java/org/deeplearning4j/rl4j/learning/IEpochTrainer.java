@@ -14,20 +14,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.deeplearning4j.rl4j.learning.listener;
+package org.deeplearning4j.rl4j.learning;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import org.deeplearning4j.rl4j.mdp.MDP;
 
 /**
- * This event contains informations about the epoch being handled.
+ * The common API between Learning and AsyncThread.
  *
  * @author Alexandre Boulanger
  */
-@AllArgsConstructor
-public class EpochTrainingEvent implements IEpochTrainingEvent {
-    @Getter
-    private int epochCount;
-    @Getter
-    private int stepNum;
+public interface IEpochTrainer {
+    int getStepCounter();
+    int getEpochCounter();
+    IHistoryProcessor getHistoryProcessor();
+    MDP getMdp();
 }

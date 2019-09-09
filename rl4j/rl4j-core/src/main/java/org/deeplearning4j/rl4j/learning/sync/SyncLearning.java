@@ -16,7 +16,11 @@
 
 package org.deeplearning4j.rl4j.learning.sync;
 
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.rl4j.learning.IEpochTrainer;
+import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.listener.*;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -33,7 +37,7 @@ import org.deeplearning4j.rl4j.util.IDataManager;
  */
 @Slf4j
 public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
-        extends Learning<O, A, AS, NN> {
+        extends Learning<O, A, AS, NN> implements IEpochTrainer {
 
     private final TrainingListenerList listeners = new TrainingListenerList();
 
@@ -51,6 +55,18 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
     }
 
     /**
+     * Number of epochs between calls to onTrainingProgress. Default is 5
+     */
+    @Getter
+    private int progressMonitorFrequency = 5;
+
+    public void setProgressMonitorFrequency(int value) {
+        if(value == 0) throw new IllegalArgumentException("The progressMonitorFrequency cannot be 0");
+
+        progressMonitorFrequency = value;
+    }
+
+    /**
      * This method will train the model<p>
      * The training stop when:<br>
      * - the number of steps reaches the maximum defined in the configuration (see {@link LConfiguration#getMaxStep() LConfiguration.getMaxStep()})<br>
@@ -63,8 +79,8 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
      * Events:
      * <ul>
      *   <li>{@link TrainingListener#onTrainingStart() onTrainingStart()} is called once when the training starts.</li>
-     *   <li>{@link TrainingListener#onNewEpoch(IEpochTrainingEvent) onNewEpoch()} and {@link TrainingListener#onEpochTrainingResult(IEpochTrainingResultEvent) onEpochTrainingResult()}  are called for every epoch. onEpochTrainingResult will not be called if onNewEpoch stops the training</li>
-     *   <li>{@link TrainingListener#onTrainingProgress(ITrainingProgressEvent) onTrainingProgress()} is called after onEpochTrainingResult()</li>
+     *   <li>{@link TrainingListener#onNewEpoch(IEpochTrainer) onNewEpoch()} and {@link TrainingListener#onEpochTrainingResult(IEpochTrainer, IDataManager.StatEntry) onEpochTrainingResult()}  are called for every epoch. onEpochTrainingResult will not be called if onNewEpoch stops the training</li>
+     *   <li>{@link TrainingListener#onTrainingProgress(ILearning) onTrainingProgress()} is called after onEpochTrainingResult()</li>
      *   <li>{@link TrainingListener#onTrainingEnd() onTrainingEnd()} is always called at the end of the training, even if the training was cancelled by a listener.</li>
      * </ul>
      */
@@ -76,22 +92,24 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
         if (canContinue) {
             while (getStepCounter() < getConfiguration().getMaxStep()) {
                 preEpoch();
-                canContinue = listeners.notifyNewEpoch(buildNewEpochEvent());
+                canContinue = listeners.notifyNewEpoch(this);
                 if (!canContinue) {
                     break;
                 }
 
                 IDataManager.StatEntry statEntry = trainEpoch();
-                canContinue = listeners.notifyEpochTrainingResult(buildEpochTrainingResultEvent(statEntry));
+                canContinue = listeners.notifyEpochTrainingResult(this, statEntry);
                 if (!canContinue) {
                     break;
                 }
 
                 postEpoch();
 
-                canContinue = listeners.notifyTrainingProgress(buildProgressEpochEvent());
-                if (!canContinue) {
-                    break;
+                if(getEpochCounter() % progressMonitorFrequency == 0) {
+                    canContinue = listeners.notifyTrainingProgress(this);
+                    if (!canContinue) {
+                        break;
+                    }
                 }
 
                 log.info("Epoch: " + getEpochCounter() + ", reward: " + statEntry.getReward());
@@ -100,17 +118,6 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
         }
 
         listeners.notifyTrainingFinished();
-    }
-
-    protected IEpochTrainingEvent buildNewEpochEvent() {
-        return new EpochTrainingEvent(getEpochCounter(), getStepCounter());
-    }
-    protected IEpochTrainingResultEvent buildEpochTrainingResultEvent(IDataManager.StatEntry statEntry) {
-        return new EpochTrainingResultEvent(getEpochCounter(), getStepCounter(), statEntry);
-    }
-
-    protected ITrainingProgressEvent buildProgressEpochEvent() {
-        return new TrainingProgressEvent(this);
     }
 
     protected abstract void preEpoch();

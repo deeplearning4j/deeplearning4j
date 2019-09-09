@@ -138,11 +138,6 @@ public class AsyncThreadTest {
         }
 
         @Override
-        protected int getThreadNumber() {
-            return 0;
-        }
-
-        @Override
         protected IAsyncGlobal getAsyncGlobal() {
             return asyncGlobal;
         }

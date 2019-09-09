@@ -16,6 +16,10 @@
 
 package org.deeplearning4j.rl4j.learning.listener;
 
+import org.deeplearning4j.rl4j.learning.IEpochTrainer;
+import org.deeplearning4j.rl4j.learning.ILearning;
+import org.deeplearning4j.rl4j.util.IDataManager;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -62,9 +66,9 @@ public class TrainingListenerList {
      * Notify the listeners that a new epoch has started. Will stop early if a listener returns {@link org.deeplearning4j.rl4j.learning.listener.TrainingListener.ListenerResponse#STOP}
      * @return whether or not the source training should be stopped
      */
-    public boolean notifyNewEpoch(IEpochTrainingEvent event) {
+    public boolean notifyNewEpoch(IEpochTrainer trainer) {
         for (TrainingListener listener : listeners) {
-            if (listener.onNewEpoch(event) == TrainingListener.ListenerResponse.STOP) {
+            if (listener.onNewEpoch(trainer) == TrainingListener.ListenerResponse.STOP) {
                 return false;
             }
         }
@@ -76,9 +80,9 @@ public class TrainingListenerList {
      * Notify the listeners that an epoch has been completed and the training results are available. Will stop early if a listener returns {@link org.deeplearning4j.rl4j.learning.listener.TrainingListener.ListenerResponse#STOP}
      * @return whether or not the source training should be stopped
      */
-    public boolean notifyEpochTrainingResult(IEpochTrainingResultEvent event) {
+    public boolean notifyEpochTrainingResult(IEpochTrainer trainer, IDataManager.StatEntry statEntry) {
         for (TrainingListener listener : listeners) {
-            if (listener.onEpochTrainingResult(event) == TrainingListener.ListenerResponse.STOP) {
+            if (listener.onEpochTrainingResult(trainer, statEntry) == TrainingListener.ListenerResponse.STOP) {
                 return false;
             }
         }
@@ -89,9 +93,9 @@ public class TrainingListenerList {
     /**
      * Notify the listeners that they update the progress ot the trainning.
      */
-    public boolean notifyTrainingProgress(ITrainingProgressEvent event) {
+    public boolean notifyTrainingProgress(ILearning learning) {
         for (TrainingListener listener : listeners) {
-            if (listener.onTrainingProgress(event) == TrainingListener.ListenerResponse.STOP) {
+            if (listener.onTrainingProgress(learning) == TrainingListener.ListenerResponse.STOP) {
                 return false;
             }
         }
