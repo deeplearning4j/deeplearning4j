@@ -186,12 +186,12 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
             int i = 0;
             // Randomly generate scaling constants and add offsets
             // to get aA and bB
-            INDArray aA = a == 1 ? Nd4j.ones(1, nFeatures) : Nd4j.rand(1, nFeatures, randSeed).mul(a); //a = 1, don't scale
-            INDArray bB = Nd4j.rand(1, nFeatures, randSeed).mul(b); //b = 0 this zeros out
+            INDArray aA = a == 1 ? Nd4j.ones(1, nFeatures) : Nd4j.rand(new int[]{1, nFeatures}, randSeed).mul(a); //a = 1, don't scale
+            INDArray bB = Nd4j.rand(new int[]{1, nFeatures}, randSeed).mul(b); //b = 0 this zeros out
             // transform ndarray as X = aA + bB * X
             INDArray randomFeatures = Nd4j.zeros(nSamples, nFeatures);
             while (i < nFeatures) {
-                INDArray randomSlice = Nd4j.randn(nSamples, 1, randSeed);
+                INDArray randomSlice = Nd4j.randn(new int[]{nSamples, 1}, randSeed);
                 randomSlice.muli(aA.getScalar(0, i));
                 randomSlice.addi(bB.getScalar(0, i));
                 randomFeatures.putColumn(i, randomSlice);
