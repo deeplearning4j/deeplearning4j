@@ -3563,4 +3563,26 @@ public class SameDiffTests extends BaseNd4jTest {
         assertEquals(casted.dataType(), DataType.FLOAT);
         assertTrue(casted.getShapeDescriptor().isEmpty());
     }
+
+
+    @Test
+    public void testEmptyShapeVar(){
+        SameDiff sd = SameDiff.create();
+
+        try {
+            sd.var(DataType.FLOAT, 1, 0, 2);
+            fail("Expected exception");
+        } catch (IllegalArgumentException e){
+            String m = e.getMessage();
+            assertTrue(m, m.contains("variable") && m.contains("empty") && m.contains("0"));
+        }
+
+        try {
+            sd.var(Nd4j.create(1, 0, 2));
+            fail("Expected exception");
+        } catch (IllegalArgumentException e){
+            String m = e.getMessage().toLowerCase();
+            assertTrue(m, m.contains("variable") && m.contains("empty") && m.contains("0"));
+        }
+    }
 }

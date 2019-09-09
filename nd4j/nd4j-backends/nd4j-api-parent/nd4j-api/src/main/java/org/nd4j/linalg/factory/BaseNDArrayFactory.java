@@ -17,6 +17,7 @@
 package org.nd4j.linalg.factory;
 
 
+import lombok.NonNull;
 import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.blas.*;
@@ -959,8 +960,18 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
      *
      * @param arrs
      */
-    public INDArray hstack(INDArray... arrs) {
-        return Nd4j.concat(1, arrs);
+    public INDArray hstack(@NonNull INDArray... arrs) {
+        int firstRank = arrs[0].rank();
+        Preconditions.checkState(firstRank > 0 && firstRank <= 2, "Only rank 1 and 2 arrays may be horizontally stacked; first input has rank %ndRank shape %nhShape", arrs[0], arrs[0]);
+        for( int i=1; i<arrs.length; i++ ){
+            Preconditions.checkState(firstRank == arrs[i].rank(), "Array ranks must be equal for horizontal stacking, arrs[0].rank=%s, arrs[%s].rank=%s",
+                    arrs[0].rank(), i, arrs[i].rank());
+        }
+        if(firstRank == 1){
+            return Nd4j.concat(0, arrs);
+        } else {
+            return Nd4j.concat(1, arrs);
+        }
     }
 
     /**
@@ -972,7 +983,6 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
     @Override
     public INDArray vstack(final INDArray... arrs) {
         return Nd4j.concat(0, arrs);
-
     }
 
 

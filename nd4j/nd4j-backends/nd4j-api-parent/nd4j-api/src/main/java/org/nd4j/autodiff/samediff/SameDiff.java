@@ -3367,7 +3367,9 @@ public class SameDiff extends SDBaseOps {
      */
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
                           org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
-
+        for(long l : shape){
+            Preconditions.checkArgument(l != 0, "Cannot create variable with a shape that contains zeros (empty array shape) - got shape %s", shape);
+        }
 
         if (name == null || name.length() < 1)
             name = getNewVarName();
@@ -3582,7 +3584,7 @@ public class SameDiff extends SDBaseOps {
         Preconditions.checkState(arr.dataType().isFPType(), "Cannot create variable with non-floating point type:" +
                 " provided array has datatype %s. Variables must be floating point type to be trainable by backpropagation.\n" +
                 "For non floating point types, these should be created as placeholders or constants instead.", arr.dataType());
-
+        Preconditions.checkArgument(!arr.isEmpty(), "Empty arrays cannot be used when creating variables. Array shape: %ndShape", arr);
 
         if (name == null || name.length() < 1)
             name = getNewVarName();
