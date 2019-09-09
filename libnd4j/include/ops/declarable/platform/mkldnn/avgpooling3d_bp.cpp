@@ -122,7 +122,7 @@ namespace nd4j {
                 }
 
 
-                pooling_backward(poolB_prim_desc).execute(stream, {{MKLDNN_ARG_DST, poolB_dst_memory}, {MKLDNN_ARG_SRC, poolB_src_memory}});
+                pooling_backward(poolB_prim_desc).execute(stream, {{MKLDNN_ARG_DIFF_DST, poolB_dst_memory}, {MKLDNN_ARG_DIFF_SRC, poolB_src_memory}});
 
 
                 if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {

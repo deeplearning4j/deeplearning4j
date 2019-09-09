@@ -130,9 +130,9 @@ namespace nd4j {
 
                     if (gradB != nullptr) {
                         auto convW_bias_memory = mkldnn::memory(convW_prim_desc.diff_bias_desc(), engine, gradB->buffer());
-                        convolution_backward_weights(convW_prim_desc).execute(stream, {{MKLDNN_ARG_SRC, convW_src_memory}, {MKLDNN_ARG_DST, convW_dst_memory}, {MKLDNN_ARG_WEIGHTS, convW_weights_memory}, {MKLDNN_ARG_BIAS, convW_bias_memory}});
+                        convolution_backward_weights(convW_prim_desc).execute(stream, {{MKLDNN_ARG_SRC, convW_src_memory}, {MKLDNN_ARG_DIFF_DST, convW_dst_memory}, {MKLDNN_ARG_DIFF_WEIGHTS, convW_weights_memory}, {MKLDNN_ARG_DIFF_BIAS, convW_bias_memory}});
                     } else {
-                        convolution_backward_weights(convW_prim_desc).execute(stream, {{MKLDNN_ARG_SRC, convW_src_memory}, {MKLDNN_ARG_DST, convW_dst_memory}, {MKLDNN_ARG_WEIGHTS, convW_weights_memory}});
+                        convolution_backward_weights(convW_prim_desc).execute(stream, {{MKLDNN_ARG_SRC, convW_src_memory}, {MKLDNN_ARG_DIFF_DST, convW_dst_memory}, {MKLDNN_ARG_DIFF_WEIGHTS, convW_weights_memory}});
                     }
 
                     if (convW_prim_desc.diff_weights_desc() != userW_weights_memory.get_desc()) {
@@ -141,6 +141,8 @@ namespace nd4j {
 
                     stream.wait();
                 }
+
+                nd4j_printf("Finished weights step\n", "");
 
                 if (gradI != nullptr) {
                     auto convI_desc =
@@ -170,11 +172,13 @@ namespace nd4j {
                         reorder(userI_dst_memory, convI_dst_memory).execute(stream, userI_dst_memory, convI_dst_memory);
                     }
 
-                    convolution_backward_data(convI_prim_desc).execute(stream, {{MKLDNN_ARG_DST, convI_dst_memory}, {MKLDNN_ARG_WEIGHTS, convI_weights_memory}, {MKLDNN_ARG_SRC, convI_src_memory}});
+                    convolution_backward_data(convI_prim_desc).execute(stream, {{MKLDNN_ARG_DIFF_DST, convI_dst_memory}, {MKLDNN_ARG_WEIGHTS, convI_weights_memory}, {MKLDNN_ARG_DIFF_SRC, convI_src_memory}});
 
                     if (convI_prim_desc.diff_src_desc() != userI_src_memory.get_desc()) {
                         reorder(convI_src_memory, userI_src_memory).execute(stream, convI_src_memory, userI_src_memory);
                     }
+
+                    stream.wait();
                 }
             }
 

@@ -135,7 +135,7 @@ namespace nd4j {
                 auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_desc(), engine);
 
                 pooling_forward(pool_prim_desc).execute(stream, {{MKLDNN_ARG_SRC, pool_src_memory}, {MKLDNN_ARG_DST, pool_dst_memory}, {MKLDNN_ARG_WORKSPACE, pool_workspace_memory}});
-                pooling_backward(poolB_prim_desc).execute(stream, {{MKLDNN_ARG_DST, poolB_dst_memory}, {MKLDNN_ARG_WORKSPACE, pool_workspace_memory}, {MKLDNN_ARG_SRC, poolB_src_memory}});
+                pooling_backward(poolB_prim_desc).execute(stream, {{MKLDNN_ARG_DIFF_DST, poolB_dst_memory}, {MKLDNN_ARG_WORKSPACE, pool_workspace_memory}, {MKLDNN_ARG_DIFF_SRC, poolB_src_memory}});
 
 
                 if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {

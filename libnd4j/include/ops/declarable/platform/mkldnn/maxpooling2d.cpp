@@ -49,7 +49,6 @@ namespace nd4j {
             const auto dH = INT_ARG(6);
             const auto dW = INT_ARG(7);
             const auto isSameMode = static_cast<bool>(INT_ARG(8));
-            const auto extraParam0 = INT_ARG(9);
 
             REQUIRE_TRUE(dH != 0 && dW != 0, 0, "AVGPOOL2D op: dilation must not be zero, but got instead {%i, %i}", dH, dW);
 
@@ -82,6 +81,7 @@ namespace nd4j {
 
 
             auto poolingMode = PoolingType::MAX_POOL;
+            int extraParam0 = 1;
 
             if (streams[0].checkAndReset({input}, {output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0})) {
                 mkldnn_memory_desc_t empty;
