@@ -105,7 +105,6 @@ namespace nd4j {
                 auto userB_dst_memory = mkldnn::memory(user_dst_md, engine, gradO->buffer());
 
                 auto poolB_src_memory = userB_src_memory;
-                streams[0].addMemory(userB_src_memory);
                 if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
                     poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_desc(), engine);
                 }
@@ -132,7 +131,7 @@ namespace nd4j {
                 pooling_backward(poolB_prim_desc).execute(stream, {{MKLDNN_ARG_DST, poolB_dst_memory}, {MKLDNN_ARG_WORKSPACE, pool_workspace_memory}, {MKLDNN_ARG_SRC, poolB_src_memory}});
 
                 if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
-                    streams[0].addOperation(reorder(poolB_src_memory, userB_src_memory));
+                    reorder(poolB_src_memory, userB_src_memory).execute(stream, poolB_src_memory, userB_src_memory);
                 }
 
                 stream.wait();

@@ -39,7 +39,6 @@ namespace nd4j {
         std::vector<int> _intArguments;
 
         mkldnn::engine _engine = mkldnn::engine(mkldnn::engine::kind::cpu, 0);
-        std::vector<mkldnn::memory> _memory;
         std::vector<mkldnn::primitive> _operations;
 
     public:
@@ -67,7 +66,6 @@ namespace nd4j {
                 _floatArguments = floatArguments;
                 _intArguments = intArguments;
                 _operations.clear();
-                _memory.clear();
                 return true;
             }
             return false;
@@ -75,14 +73,6 @@ namespace nd4j {
 
         const mkldnn::engine &getEngine() { return _engine; }
         void setEngine(const mkldnn::engine &engine) { _engine = engine; }
-
-        const std::vector<mkldnn::memory> &getMemory() { return _memory; }
-        void setMemory(const std::vector<mkldnn::memory> &memory) { _memory = memory; }
-        void addMemory(const mkldnn::memory &memory) { _memory.push_back(memory); }
-
-        const std::vector<mkldnn::primitive> &getOperations() { return _operations; }
-        void setOperations(const std::vector<mkldnn::primitive> &operations) { _operations = operations; }
-        void addOperation(const mkldnn::primitive &operation) { _operations.push_back(operation); }
     };
 }
 #endif
