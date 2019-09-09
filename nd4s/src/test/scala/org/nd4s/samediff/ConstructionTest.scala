@@ -140,7 +140,7 @@ class ConstructionTest extends FlatSpec with Matchers {
     val X2 = sd.placeHolder("x2", DataType.FLOAT, 8, 1)
     val y = sd.placeHolder("y", DataType.FLOAT)
     // There's no option to pass Trainable=True
-    val w = sd.`var`("w", DataType.FLOAT, 0, 0, 0)
+    val w = sd.bind("w", DataType.FLOAT, Array[Int](0, 0, 0))
 
     // tf.math.sigmoid -> where can I get sigmoid ? sd.nn : Transform
     val tmp = w.get(SDIndex.point(1)) * (X1 + w.get(SDIndex.point(0)))
@@ -168,7 +168,8 @@ class ConstructionTest extends FlatSpec with Matchers {
     val mds = new MultiDataSet(Array[INDArray](x1s, x2s, ys), new Array[INDArray](0))
 
     sd.setTrainingConfig(conf)
-    sd.fit(new SingletonMultiDataSetIterator(mds), 1)
+    //TODO: uncomment me
+    //sd.fit(new SingletonMultiDataSetIterator(mds), 1)
 
     import org.nd4j.linalg.api.ndarray.INDArray
     Console.print(sd.outputs())
