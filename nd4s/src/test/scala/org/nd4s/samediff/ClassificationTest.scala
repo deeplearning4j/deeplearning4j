@@ -1,13 +1,14 @@
 package org.nd4s.samediff
 
-import org.nd4j.autodiff.samediff.{SDIndex, SameDiff, TrainingConfig}
+import org.nd4j.autodiff.samediff.{ SDIndex, SameDiff, TrainingConfig }
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.dataset.{DataSet, MultiDataSet}
+import org.nd4j.linalg.dataset.{ DataSet, MultiDataSet }
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4j.linalg.learning.config.Sgd
 import org.nd4s.samediff.implicits.Implicits._
+import org.nd4s.Implicits._
 import org.scalatest.FlatSpec
 import shapeless.ops.record.Updater
 
@@ -28,7 +29,7 @@ object ClassificationTest extends FlatSpec {
 
     // Must have implicit sd here for some ops, inobvious
     implicit val sd = SameDiff.create
-    val ys = Nd4j.scalar(0.0).mul(x1_label1.length()).add(Nd4j.scalar(1.0).mul(x1_label2.length()))
+    val ys = (Nd4j.scalar(0.0) * x1_label1.length()) + (Nd4j.scalar(1.0) * x1_label2.length())
 
     // empty sequence
     val X1 = sd.placeHolder("x1", DataType.FLOAT, 10, 1)

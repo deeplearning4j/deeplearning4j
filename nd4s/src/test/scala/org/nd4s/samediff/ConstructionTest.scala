@@ -168,8 +168,7 @@ class ConstructionTest extends FlatSpec with Matchers {
     val mds = new MultiDataSet(Array[INDArray](x1s, x2s, ys), new Array[INDArray](0))
 
     sd.setTrainingConfig(conf)
-    //TODO: uncomment me
-    //sd.fit(new SingletonMultiDataSetIterator(mds), 1)
+    sd.fit(new SingletonMultiDataSetIterator(mds), 1)
 
     import org.nd4j.linalg.api.ndarray.INDArray
     Console.print(sd.outputs())
