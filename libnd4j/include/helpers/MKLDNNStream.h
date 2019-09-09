@@ -38,7 +38,7 @@ namespace nd4j {
         std::vector<float> _floatArguments;
         std::vector<int> _intArguments;
 
-        mkldnn::engine _engine = mkldnn::engine(mkldnn::engine::cpu, 0);
+        mkldnn::engine _engine = mkldnn::engine(mkldnn::engine::kind::cpu, 0);
         std::vector<mkldnn::memory> _memory;
         std::vector<mkldnn::primitive> _operations;
 
@@ -83,13 +83,6 @@ namespace nd4j {
         const std::vector<mkldnn::primitive> &getOperations() { return _operations; }
         void setOperations(const std::vector<mkldnn::primitive> &operations) { _operations = operations; }
         void addOperation(const mkldnn::primitive &operation) { _operations.push_back(operation); }
-
-        bool submitAndWait(mkldnn::stream::kind kind = mkldnn::stream::kind::eager) {
-            nd4j_debug("Executing %s with MKL-DNN\n", _opName.c_str());
-            // need to create a new one because already executed streams become unusable
-            mkldnn::stream stream(kind);
-            return stream.submit(_operations).wait();
-        }
     };
 }
 #endif

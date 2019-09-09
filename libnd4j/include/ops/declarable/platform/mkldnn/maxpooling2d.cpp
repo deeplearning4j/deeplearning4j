@@ -30,7 +30,7 @@ using namespace mkldnn;
 
 namespace nd4j {
     namespace ops {
-        PLATFORM_IMPL(maxpooling2d) {
+        PLATFORM_IMPL(maxpool2d) {
             auto input = INPUT_VARIABLE(0);
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "Input should have rank of 4, but got %i instead", input->rankOf());
@@ -95,39 +95,33 @@ namespace nd4j {
                                                        pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
                 auto pool_desc = pooling_forward::desc(prop_kind::forward_inference, algorithm, pool_src_md, pool_dst_md,
-                                                       pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
+                                                       pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
                 auto engine = streams[0].getEngine();
                 auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
-                auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
-                auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
+                auto user_src_memory = mkldnn::memory(user_src_md, engine, input->buffer());
+                auto user_dst_memory = mkldnn::memory(user_dst_md, engine, output->buffer());
 
                 auto pool_src_memory = user_src_memory;
-                streams[0].addMemory(user_src_memory);
-                if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
-                    != user_src_memory.get_primitive_desc()) {
-                    pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
-                    streams[0].addMemory(pool_src_memory);
-                    streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
+                mkldnn::stream stream(engine);
+                if (pool_prim_desc.src_desc() != user_src_memory.get_desc()) {
+                    pool_src_memory = mkldnn::memory(pool_prim_desc.src_desc(), engine);
+                    reorder(user_src_memory, pool_src_memory).execute(stream, user_src_memory, pool_src_memory);
                 }
 
                 auto pool_dst_memory = user_dst_memory;
-                streams[0].addMemory(user_dst_memory);
-                if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                    pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
-                    streams[0].addMemory(pool_dst_memory);
+                if (pool_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
+                    pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_desc(), engine);
                 }
 
-                streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
+                pooling_forward(pool_prim_desc).execute(stream, {{MKLDNN_ARG_SRC, pool_src_memory}, {MKLDNN_ARG_DST, pool_dst_memory}});
 
-                if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                    streams[0].addOperation(reorder(pool_dst_memory, user_dst_memory));
+                if (pool_prim_desc.dst_desc()  != user_dst_memory.get_desc()) {
+                    reorder(pool_dst_memory, user_dst_memory).execute(stream, pool_dst_memory, user_dst_memory);
                 }
+
+                stream.wait();
             }
-
-            streams[0].submitAndWait();
 
             if(!isNCHW) {
                 delete input;
@@ -137,7 +131,7 @@ namespace nd4j {
             return Status::OK();
         }
 
-        PLATFORM_CHECK(maxpooling2d) {
+        PLATFORM_CHECK(maxpool2d) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
