@@ -8,12 +8,19 @@ set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS OFF)
 
 option(BUILD_TESTS "Build tests" OFF)
 
+set(X86_BUILD false)
+
+if (NOT IOS_BUILD AND NOT ANDROID_BUILD AND NOT ${ARCH} MATCHES "power*")
+    set(X86_BUILD true)
+endif()
+
 # -fsanitize=address
 # -fsanitize=leak
 if (APPLE)
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
     set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
 elseif(WIN32)
+    set(X86_BUILD true)
     if (NOT CUDA_BLAS)
         set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D_RELEASE=true")
         set(CMAKE_CXX_FLAGS_DEBUG  " -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2")
@@ -32,6 +39,7 @@ endif()
 
 if(NATIVE)
     IF(${CMAKE_SYSTEM_PROCESSOR} MATCHES "ppc64*")
+        set(X86_BUILD false)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mcpu=native")
     ELSE()
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -march=native")
@@ -121,6 +129,32 @@ if(NOT CUDA_BLAS)
             set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
             include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_SOURCE_DIR})
             set(MKLDNN mkldnn)
+        endif()
+
+
+        # building cpu_features
+        if (X86_BUILD)
+            configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
+            execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
+
+            if(result)
+                message(FATAL_ERROR "CMake step for cpu_features failed: ${result}")
+            endif()
+            execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                    RESULT_VARIABLE result
+                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
+            if(result)
+                message(FATAL_ERROR "Build step for cpu_features failed: ${result}")
+            endif()
+
+            add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src
+                    ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-build
+                    EXCLUDE_FROM_ALL)
+            set(CPUF_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src)
+            include_directories(${CPUF_SOURCE_DIR}/include)
+            set(CPU_FEATURES cpu_features)
         endif()
     endif()
 endif()
