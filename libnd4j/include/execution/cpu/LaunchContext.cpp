@@ -23,7 +23,7 @@
 #include <exceptions/cuda_exception.h>
 #include <thread>
 
-#ifdef IOS_BUILD
+#if defined(IOS_BUILD) || defined(APPLE_BUILD) || defined(ANDROID_BUILD)
 nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
 #else
 thread_local nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
