@@ -52,7 +52,7 @@ namespace nd4j {
                 const int dH = INT_ARG(10);                                                 // dilations height
                 const int dW = INT_ARG(11);                                                 // dilations width
                 const int isSameMode = INT_ARG(12);                                         // 1-SAME,  0-VALID
-                // int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
+                int extraParam0 = INT_ARG(13);                                           // unnecessary for max case, required only for avg and pnorm cases
                 int isNCDHW = block.getIArguments()->size() > 14 ? !INT_ARG(14) : 1;       // 1-NDHWC, 0-NCDHW
 
                 REQUIRE_TRUE(input->rankOf() == 5, 0,
@@ -91,7 +91,6 @@ namespace nd4j {
 
 
                 auto poolingMode = PoolingType::AVG_POOL;
-                auto extraParam0 = 1;
 
                 mkldnn_memory_desc_t empty;
                 mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
