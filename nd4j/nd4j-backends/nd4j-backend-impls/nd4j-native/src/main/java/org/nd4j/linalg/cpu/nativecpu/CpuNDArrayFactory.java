@@ -90,6 +90,55 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             System.setProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS_NOLAPACK, "mklml");
         }
 
+        // we'll check hardware support first
+        if (!nativeOps.isMinimalRequirementsMet()) {
+            // this means cpu binary was built for some arch support, we don't have on this box
+
+            val binaryLevel = nativeOps.binaryLevel();
+            val optimalLevel = nativeOps.optimalLevel();
+
+            switch (binaryLevel) {
+                case 3: {
+                        // avx-512 binary
+                        log.error("Trying to use AVX-512 binary without actual CPU support for it");
+                    }
+                    break;
+                case 2: {
+                        // avx/avx2 binary
+                        log.error("Trying to use AVX/AVX2 binary without actual CPU support for it");
+                    }
+                    break;
+                case 1:
+                case 0:
+                default: {
+                    // do nothing
+                }
+            }
+        }
+
+        if (!nativeOps.isOptimalRequirementsMet()) {
+            val binaryLevel = nativeOps.binaryLevel();
+            val optimalLevel = nativeOps.optimalLevel();
+
+            switch (optimalLevel) {
+                case 3: {
+                    // avx-512 binary
+                    log.error("Your CPU has AVX-512 support, but you're not using it");
+                }
+                break;
+                case 2: {
+                    // avx/avx2 binary
+                    log.error("Your CPU has AVX/AVX2 support, but you're not using it");
+                }
+                break;
+                case 1:
+                case 0:
+                default: {
+                    // do nothing
+                }
+            }
+        }
+
         blas = new CpuBlas();
 
         // TODO: add batched gemm here

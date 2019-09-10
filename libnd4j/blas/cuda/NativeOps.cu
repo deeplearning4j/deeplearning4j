@@ -3582,7 +3582,7 @@ int  binaryLevel() {
     return 0;
 }
 
-bool optimalLevel() {
+int optimalLevel() {
     return 0;
 }
 

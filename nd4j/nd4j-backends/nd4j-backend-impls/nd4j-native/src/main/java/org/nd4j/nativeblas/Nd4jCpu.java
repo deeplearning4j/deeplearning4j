@@ -3120,6 +3120,13 @@ public native @Cast("Nd4jPointer") Pointer lcCopyStream(OpaqueLaunchContext lc);
 public native @Cast("Nd4jPointer") Pointer lcBlasHandle(OpaqueLaunchContext lc);
 public native @Cast("Nd4jPointer") Pointer lcSolverHandle(OpaqueLaunchContext lc);
 
+
+public native int binaryLevel();
+public native int optimalLevel();
+
+public native @Cast("bool") boolean isMinimalRequirementsMet();
+public native @Cast("bool") boolean isOptimalRequirementsMet();
+
 // #endif //NATIVEOPERATIONS_NATIVEOPS_H
 
 

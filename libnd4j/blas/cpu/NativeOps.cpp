@@ -3190,7 +3190,7 @@ int  binaryLevel() {
 #endif
 }
 
-bool optimalLevel() {
+int optimalLevel() {
 #ifdef CPU_FEATURES
     auto features = cpu_features::GetX86Info().features;
 

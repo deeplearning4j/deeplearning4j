@@ -128,9 +128,9 @@ import java.util.Scanner;
                                               "cnpy/cnpy.h"
                                    },
                                 compiler = {"cpp11", "nowarnings"}, library = "jnind4jcpu", link = "nd4jcpu",
-                                preloadresource = {"org/bytedeco/mkldnn/", "org/bytedeco/openblas/"},
+                                preloadresource = {"org/bytedeco/openblas/"},
                                 preload = {"openblas", "openblas_nolapack", "libnd4jcpu"}),
-                                @Platform(value = "linux", preload = {"gomp@.1", "iomp5", "mklml_intel", "mkldnn@.0"},
+                                @Platform(value = "linux", preload = {"gomp@.1"},
                                                 preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
                 @Platform(value = {"linux-arm", "linux-ppc"},
                                 preload = {"gomp@.1", "gcc_s@.1", "quadmath@.0", "gfortran@.5", "gfortran@.4", "gfortran@.3", "openblas@.0", "libnd4jcpu"}),
@@ -138,10 +138,10 @@ import java.util.Scanner;
                 @Platform(value = "linux-arm64", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/",
                                                                 "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
-                @Platform(value = "macosx", preload = {"gcc_s@.1", "gomp@.1", "stdc++@.6", "iomp5", "mklml", "mkldnn@.0"},
+                @Platform(value = "macosx", preload = {"gcc_s@.1", "gomp@.1", "stdc++@.6"},
                                 preloadpath = {"/usr/local/lib/gcc/8/", "/usr/local/lib/gcc/7/", "/usr/local/lib/gcc/6/", "/usr/local/lib/gcc/5/"}),
                 @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6",
-                                                        "msvcr120", "libiomp5md", "mklml", "libmkldnn", "libnd4jcpu"}),
+                                                        "msvcr120", "libnd4jcpu"}),
                 @Platform(extension = {"-avx512", "-avx2"}) })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 

@@ -1762,7 +1762,7 @@ ND4J_EXPORT Nd4jPointer lcSolverHandle(OpaqueLaunchContext* lc);
 
 
 ND4J_EXPORT int  binaryLevel();
-ND4J_EXPORT bool optimalLevel();
+ND4J_EXPORT int optimalLevel();
 
 ND4J_EXPORT bool isMinimalRequirementsMet();
 ND4J_EXPORT bool isOptimalRequirementsMet();
