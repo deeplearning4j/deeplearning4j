@@ -45,11 +45,11 @@ namespace nd4j {
 
             switch (binaryLevel) {
                 case 3: {
-                        nd4j_printf("libnd4j binary with built with AVX512 support, but current CPU doesn't have this instruction set. Exiting now...","");
+                        nd4j_printf("libnd4j binary was built with AVX512 support, but current CPU doesn't have this instruction set. Exiting now...","");
                     }
                     break;
                 case 2: {
-                        nd4j_printf("libnd4j binary with built with AVX/AVX2 support, but current CPU doesn't have this instruction set. Exiting now...","");
+                        nd4j_printf("libnd4j binary was built with AVX/AVX2 support, but current CPU doesn't have this instruction set. Exiting now...","");
                     }
                     break;
                 default:  {
