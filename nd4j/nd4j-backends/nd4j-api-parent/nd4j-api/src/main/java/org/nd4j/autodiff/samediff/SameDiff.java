@@ -3367,8 +3367,10 @@ public class SameDiff extends SDBaseOps {
      */
     public SDVariable var(@NonNull String name, @NonNull VariableType variableType, WeightInitScheme weightInitScheme,
                           org.nd4j.linalg.api.buffer.DataType dataType, long... shape) {
-        for(long l : shape){
-            Preconditions.checkArgument(l != 0, "Cannot create variable with a shape that contains zeros (empty array shape) - got shape %s", shape);
+        if(shape != null) {
+            for (long l : shape) {
+                Preconditions.checkArgument(l != 0, "Cannot create variable with a shape that contains zeros (empty array shape) - got shape %s", shape);
+            }
         }
 
         if (name == null || name.length() < 1)
