@@ -22,6 +22,7 @@
 #define DEV_TESTS_MKLDNNUTILS_H
 
 #include <NDArray.h>
+#include <mkldnn.hpp>
 #include <MKLDNNStream.h>
 #include <graph/Context.h>
 #include <ops/declarable/PlatformHelper.h>
@@ -113,6 +114,7 @@ namespace nd4j{
                                     mkldnn::memory::desc* lrn_src_md, mkldnn::memory::desc* lrn_diff_src_md, mkldnn::memory::desc* lrn_dst_md,
                                     mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md, int axis);
 
+        mkldnn::engine& getEngine(void *ptr);
     }
 }
 

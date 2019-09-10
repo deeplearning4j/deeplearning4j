@@ -24,9 +24,6 @@
 #include <NDArray.h>
 #include <graph/Context.h>
 
-#ifdef HAVE_MKLDNN
-#include <helpers/MKLDNNStream.h>
-#endif
 #include <execution/LaunchContext.h>
 
 namespace nd4j {

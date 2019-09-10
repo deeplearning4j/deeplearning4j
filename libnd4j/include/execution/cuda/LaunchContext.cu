@@ -169,4 +169,8 @@ LaunchContext::LaunchContext() {
     sd::ErrorReference* LaunchContext::errorReference() {
         return contextBuffers.errorReference();
     }
+
+    void* LaunchContext::engine() {
+        return _engine;
+    }
 }

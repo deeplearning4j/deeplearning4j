@@ -21,12 +21,11 @@
 #ifndef LIBND4J_MKLDNNSTREAM_H
 #define LIBND4J_MKLDNNSTREAM_H
 
-#ifndef __STANDALONE_BUILD__
+#if !defined(__STANDALONE_BUILD__)
 #include "config.h"
 #endif
 
-#ifdef HAVE_MKLDNN
-#include <mkldnn.hpp>
+#if defined(HAVE_MKLDNN)
 
 namespace nd4j {
     class MKLDNNStream {
@@ -38,25 +37,24 @@ namespace nd4j {
         std::vector<float> _floatArguments;
         std::vector<int> _intArguments;
 
-        mkldnn::engine _engine = mkldnn::engine(mkldnn::engine::kind::cpu, 0);
-        std::vector<mkldnn::primitive> _operations;
-
     public:
         template <typename X, typename Y>
         static bool isSupported() {
+            // FIXME: strict float support doesn't work anymore
             return typeid(X) == typeid(float) && typeid(Y) == typeid(float);
         }
 
         static bool isSupported(const std::vector<const NDArray*> &arrays) {
-            for (auto i = arrays.begin(); i != arrays.end(); i++) {
-                if (*i != nullptr && (*i)->dataType() != nd4j::DataType::FLOAT32) {
+            // FIXME: strict float support doesn't work anymore
+            for (auto v:arrays) {
+                if (v != nullptr && v->dataType() != nd4j::DataType::FLOAT32) {
                     return false;
                 }
             }
             return true;
         }
 
-        MKLDNNStream(const std::string &opName) : _opName(opName) { }
+        explicit MKLDNNStream(const std::string &opName) : _opName(opName) { }
 
         bool checkAndReset(const std::vector<const NDArray*> &inputs, const std::vector<const NDArray*> &outputs,
                 const std::vector<float> &floatArguments, const std::vector<int> &intArguments) {
@@ -65,14 +63,10 @@ namespace nd4j {
                 _outputs = outputs;
                 _floatArguments = floatArguments;
                 _intArguments = intArguments;
-                _operations.clear();
                 return true;
             }
             return false;
         }
-
-        const mkldnn::engine &getEngine() { return _engine; }
-        void setEngine(const mkldnn::engine &engine) { _engine = engine; }
     };
 }
 #endif

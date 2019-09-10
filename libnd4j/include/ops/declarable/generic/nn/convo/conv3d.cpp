@@ -29,10 +29,6 @@
 namespace nd4j {
 namespace ops  {
 
-#ifdef HAVE_MKLDNN
-using namespace mkldnn;
-#endif
-
 CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     auto input   = INPUT_VARIABLE(0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
     auto weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, iC, oC] always

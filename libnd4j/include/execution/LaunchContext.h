@@ -29,6 +29,10 @@
 #include <cuda_device_runtime_api.h>
 #endif
 
+// used for MKLDNN etc
+#if !defined(__STANDALONE_BUILD__)
+#include "config.h"
+#endif
 
 #include <dll.h>
 #include <memory>
@@ -48,6 +52,9 @@ class ND4J_EXPORT LaunchContext {
 	private:
         static std::vector<std::shared_ptr<LaunchContext>> _contexts;
         static std::mutex _mutex;
+
+        // used for MKLDNN
+        void *_engine = nullptr;
 
 #ifdef __CUDABLAS__
 
@@ -95,6 +102,8 @@ class ND4J_EXPORT LaunchContext {
     	void setWorkspace(nd4j::memory::Workspace* theWorkspace) {
     	    _workspace = theWorkspace;
     	}
+
+    	void* engine();
 
     	int getDeviceID() const {return _deviceID;}
     	void setDeviceID(int deviceID) { _deviceID = deviceID; }

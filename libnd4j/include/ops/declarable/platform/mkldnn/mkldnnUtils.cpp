@@ -395,5 +395,10 @@ namespace nd4j {
                 user_dst_md->data.format_desc.blocking.strides[3] = rank > 3 ? dst->stridesOf()[dim3] : 1;
             }
         }
+
+        mkldnn::engine& getEngine(void *ptr) {
+            auto eng = reinterpret_cast<mkldnn::engine*>(ptr);
+            return *eng;
+        }
     }
 }

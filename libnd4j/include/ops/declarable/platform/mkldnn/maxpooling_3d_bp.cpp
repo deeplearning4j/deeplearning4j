@@ -90,24 +90,16 @@ namespace nd4j {
                                                     dW);
 
 
-                std::vector<nd4j::MKLDNNStream> &streams = block.getMKLDNNStreams();
-                if (streams.empty()) {
-                    streams.emplace_back(MKLDNNStream("pooling3d_bp"));
-                }
-
                 auto poolingMode = PoolingType::MAX_POOL;
                 auto extraParam0 = 1;
 
-                if (streams[0].checkAndReset({input, gradO}, {gradI}, {},
-                                             {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode,
-                                              extraParam0})) {
-                    mkldnn_memory_desc_t empty;
-                    mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
-                    mkldnn::memory::desc user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
-                    mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
-                    mkldnn::algorithm algorithm;
+                mkldnn_memory_desc_t empty;
+                mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
+                mkldnn::memory::desc user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
+                mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
+                mkldnn::algorithm algorithm;
 
-                    mkldnnUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode,
+                mkldnnUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode,
                                                            extraParam0, true,
                                                            bS, iC, iD, iH, iW, oC, oD, oH, oW, input, gradI, gradO,
                                                            algorithm,
@@ -115,63 +107,59 @@ namespace nd4j {
                                                            &user_diff_src_md, &user_dst_md,
                                                            pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
-                    // input is sometimes null, so we can't rely on pool_src_md being valid
-                    if (input->buffer() == nullptr) {
-                        pool_src_md = pool_diff_src_md;
-                        user_src_md = user_diff_src_md;
-                    }
-                    auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm, pool_src_md, pool_dst_md,
-                                                           pool_strides, pool_kernel, pool_padding, pool_padding_r);
+                // input is sometimes null, so we can't rely on pool_src_md being valid
+                if (input->buffer() == nullptr) {
+                    pool_src_md = pool_diff_src_md;
+                    user_src_md = user_diff_src_md;
+                }
+                auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm, pool_src_md, pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
-                    auto engine = streams[0].getEngine();
-                    mkldnn::stream stream(engine);
-                    auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
+                auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
+                mkldnn::stream stream(engine);
+                auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
 
-                    auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md, pool_strides,
-                                                             pool_kernel, pool_padding, pool_padding_r);
+                auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r);
 
-                    auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, engine, pool_prim_desc);
-                    auto userB_src_memory = mkldnn::memory(user_diff_src_md, engine, gradI->buffer());
-                    auto userB_dst_memory = mkldnn::memory(user_dst_md, engine, gradO->buffer());
+                auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, engine, pool_prim_desc);
+                auto userB_src_memory = mkldnn::memory(user_diff_src_md, engine, gradI->buffer());
+                auto userB_dst_memory = mkldnn::memory(user_dst_md, engine, gradO->buffer());
 
-                    auto poolB_src_memory = userB_src_memory;
-                    if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
-                        poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_desc(), engine);
-                    }
+                auto poolB_src_memory = userB_src_memory;
+                if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
+                    poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_desc(), engine);
+                }
 
-                    auto poolB_dst_memory = userB_dst_memory;
-                    if (poolB_prim_desc.diff_dst_desc() != userB_dst_memory.get_desc()) {
-                        poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_desc(), engine);
-                        reorder(userB_dst_memory, poolB_dst_memory).execute(stream, userB_dst_memory, poolB_dst_memory);
-                    }
+                auto poolB_dst_memory = userB_dst_memory;
+                if (poolB_prim_desc.diff_dst_desc() != userB_dst_memory.get_desc()) {
+                    poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_desc(), engine);
+                    reorder(userB_dst_memory, poolB_dst_memory).execute(stream, userB_dst_memory, poolB_dst_memory);
+                }
 
 
-                    auto user_src_memory = mkldnn::memory(user_src_md, engine, input->buffer());
+                auto user_src_memory = mkldnn::memory(user_src_md, engine, input->buffer());
 
-                    auto pool_src_memory = user_src_memory;
-                    if (pool_prim_desc.src_desc() != user_src_memory.get_desc()) {
-                        pool_src_memory = mkldnn::memory(pool_prim_desc.src_desc(), engine);
-                        reorder(user_src_memory, pool_src_memory).execute(stream, user_src_memory, pool_src_memory);
-                    }
+                auto pool_src_memory = user_src_memory;
+                if (pool_prim_desc.src_desc() != user_src_memory.get_desc()) {
+                    pool_src_memory = mkldnn::memory(pool_prim_desc.src_desc(), engine);
+                    reorder(user_src_memory, pool_src_memory).execute(stream, user_src_memory, pool_src_memory);
+                }
 
-                    auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_desc(), engine);
+                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_desc(), engine);
+                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_desc(), engine);
 
-                    auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_desc(), engine);
-
-                    pooling_forward(pool_prim_desc).execute(stream, {{MKLDNN_ARG_SRC,       pool_src_memory},
+                pooling_forward(pool_prim_desc).execute(stream, {{MKLDNN_ARG_SRC,       pool_src_memory},
                                                                      {MKLDNN_ARG_DST,       pool_dst_memory},
                                                                      {MKLDNN_ARG_WORKSPACE, pool_workspace_memory}});
-                    pooling_backward(poolB_prim_desc).execute(stream, {{MKLDNN_ARG_DIFF_DST,  poolB_dst_memory},
+                pooling_backward(poolB_prim_desc).execute(stream, {{MKLDNN_ARG_DIFF_DST,  poolB_dst_memory},
                                                                        {MKLDNN_ARG_WORKSPACE, pool_workspace_memory},
                                                                        {MKLDNN_ARG_DIFF_SRC,  poolB_src_memory}});
 
 
-                    if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
-                        reorder(poolB_src_memory, userB_src_memory).execute(stream, poolB_src_memory, userB_src_memory);
-                    }
-
-                    stream.wait();
+                if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
+                    reorder(poolB_src_memory, userB_src_memory).execute(stream, poolB_src_memory, userB_src_memory);
                 }
+
+                stream.wait();
 
                 return Status::OK();
             }

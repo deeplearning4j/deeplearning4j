@@ -6585,9 +6585,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
 // #include <graph/ContextPrototype.h>
 // #include <memory/Workspace.h>
 
-// #ifdef HAVE_MKLDNN
-// #endif
-
 // CUDA-specific includes
 // #ifdef __CUDACC__
 // #endif
@@ -6654,8 +6651,6 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native int getBranch();
             public native void setBranch(int branch);
 
-// #ifdef HAVE_MKLDNN
-// #endif
             /**
              *
              * @return
@@ -23218,6 +23213,10 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #ifdef __CUDABLAS__
 // #endif
 
+// used for MKLDNN etc
+// #if !defined(__STANDALONE_BUILD__)
+// #include "config.h"
+// #endif
 
 // #include <dll.h>
 // #include <memory>
@@ -23248,6 +23247,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
     	private native void allocate();
     	public native Workspace getWorkspace();
     	public native void setWorkspace(Workspace theWorkspace);
+
+    	public native Pointer engine();
 
     	public native int getDeviceID();
     	public native void setDeviceID(int deviceID);
