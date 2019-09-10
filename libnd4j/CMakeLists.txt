@@ -134,6 +134,7 @@ if(NOT CUDA_BLAS)
 
         # building cpu_features
         if (X86_BUILD)
+            set(BUILD_PIC ON)
             configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
             execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
                     RESULT_VARIABLE result
