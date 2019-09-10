@@ -66,15 +66,17 @@ namespace nd4j {
                 mkldnn_memory_desc_t empty;
                 mkldnn::memory::desc batchnorm_src_md(empty), batchnorm_dst_md(empty), user_src_md(
                         empty), user_dst_md(empty);
+
+                auto norm_flag = normalization_flags::use_global_stats;
+                if (applyScale || applyOffset)
+                    norm_flag |= normalization_flags::use_scale_shift;
+
                 mkldnnUtils::getMKLDNNMemoryDescBatchNorm(input, nullptr, output,
                                                           &batchnorm_src_md, nullptr, &batchnorm_dst_md,
                                                           &user_src_md, nullptr, &user_dst_md, axes[0]);
-                auto batchnorm_desc = batch_normalization_forward::desc(prop_kind::forward_inference,
-                                                                        batchnorm_src_md, epsilon,
-                                                                        normalization_flags::use_global_stats |
-                                                                        (applyScale || applyOffset
-                                                                         ? normalization_flags::use_scale_shift
-                                                                         : (normalization_flags) 0));
+
+                auto batchnorm_desc = batch_normalization_forward::desc(prop_kind::forward_inference, batchnorm_src_md, epsilon, norm_flag);
+
                 auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
                 mkldnn::stream stream(engine);
                 auto batchnorm_prim_desc = batch_normalization_forward::primitive_desc(batchnorm_desc, engine);
@@ -96,8 +98,14 @@ namespace nd4j {
                     batchnorm_dst_memory = mkldnn::memory(batchnorm_prim_desc.dst_desc(), engine);
                 }
                 if (applyScale || applyOffset) {
-                    auto batchnorm_weights_memory = mkldnn::memory(batchnorm_prim_desc.weights_desc(), engine,
-                                                                   weights.buffer());
+                    if (gamma != nullptr) {
+                        weights({0, 1, 0, 0}).assign(gamma);
+                    }
+                    if (beta != nullptr) {
+                        weights({1, 2, 0, 0}).assign(beta);
+                    }
+
+                    auto batchnorm_weights_memory = mkldnn::memory(batchnorm_prim_desc.weights_desc(), engine, weights.buffer());
                     batch_normalization_forward(batchnorm_prim_desc).execute(stream,
                                                                              {{MKLDNN_ARG_SRC,      batchnorm_src_memory},
                                                                               {MKLDNN_ARG_MEAN,     batchnorm_mean_memory},
@@ -116,15 +124,6 @@ namespace nd4j {
                                                                            user_dst_memory);
                 }
                 stream.wait();
-
-                if (applyScale || applyOffset) {
-                    if (gamma != nullptr) {
-                        weights({0, 1, 0, 0}).assign(gamma);
-                    }
-                    if (beta != nullptr) {
-                        weights({1, 2, 0, 0}).assign(beta);
-                    }
-                }
 
                 return Status::OK();
             }
