@@ -131,7 +131,7 @@ else()
     endif()
 
     if (${F16C})
-        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mf16c -D__F16C__=true")
+        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mf16c -DSD_F16C=true")
     endif()
 endif()
 

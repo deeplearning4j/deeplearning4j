@@ -21,7 +21,7 @@
 #include <iosfwd>
 #include <iostream>
 #include <pointercast.h>
-#if defined(__INTEL_COMPILER) || defined(__F16C__)
+#if defined(__INTEL_COMPILER) || defined(SD_F16C)
     #include <immintrin.h>
 #endif
 
@@ -122,7 +122,7 @@ static local_def unsigned short hneg(unsigned short h) {
 }
 
 
-#if defined(__INTEL_COMPILER) || defined(__F16C__)
+#if defined(__INTEL_COMPILER) || defined(SD_F16C)
 //_Pragma("omp declare simd") inline
 local_def  float cpu_ihalf2float(ihalf h) {
     return _cvtsh_ss(h.getX());
@@ -157,7 +157,7 @@ local_def float cpu_ihalf2float(ihalf h) {
 }
 #endif
 
-#if defined(__INTEL_COMPILER) || defined(__F16C__)
+#if defined(__INTEL_COMPILER) || defined(SD_F16C)
 //_Pragma("omp declare simd") inline
 local_def ihalf cpu_float2ihalf_rn(float f) {
     ihalf ret;
