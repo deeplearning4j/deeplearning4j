@@ -182,7 +182,7 @@ In either case, we can then do the following:
 
 RNN layers in DL4J can be combined with other layer types. For example, it is possible to combine DenseLayer and LSTM layers in the same network; or combine Convolutional (CNN) layers and LSTM layers for video.
 
-Of course, the DenseLayer and Convolutional layers do not handle time series data - they expect a different  type of input. To deal with this, we need to use the layer preprocessor functionality: for example, the CnnToRnnPreProcessor and FeedForwardToRnnPreprocessor classes. See [here](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor) for all preprocessors. Fortunately, in most situations, the DL4J configuration system will automatically add these preprocessors as required. However, the preprocessors can be added manually (overriding the automatic addition of preprocessors, for each layer).
+Of course, the DenseLayer and Convolutional layers do not handle time series data - they expect a different  type of input. To deal with this, we need to use the layer preprocessor functionality: for example, the CnnToRnnPreProcessor and FeedForwardToRnnPreprocessor classes. See [here](https://github.com/eclipse/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor) for all preprocessors. Fortunately, in most situations, the DL4J configuration system will automatically add these preprocessors as required. However, the preprocessors can be added manually (overriding the automatic addition of preprocessors, for each layer).
 
 For example, to manually add a preprocessor between layers 1 and 2, add the following to your network configuration: `.inputPreProcessor(2, new RnnToFeedForwardPreProcessor())`.
 
@@ -252,13 +252,13 @@ This method also supports:
 
 Note that in all cases, each line in the data files represents one time step.
 
-(In addition to the examples below, you might find [these unit tests](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/datavec/RecordReaderDataSetiteratorTest.java) to be of some use.)
+(In addition to the examples below, you might find [these unit tests](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/datavec/RecordReaderDataSetiteratorTest.java) to be of some use.)
 
 #### Example 1: Time Series of Same Length, Input and Labels in Separate Files
 
 Suppose we have 10 time series in our training data, represented by 20 files: 10 files for the input of each time series, and 10 files for the output/labels. For now, assume these 20 files all contain the same number of time steps (i.e., same number of rows).
 
-To use the [SequenceRecordReaderDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-data/deeplearning4j-datavec-iterators/src/main/java/org/deeplearning4j/datasets/datavec/SequenceRecordReaderDataSetIterator.java) and [CSVSequenceRecordReader](https://github.com/deeplearning4j/deeplearning4j/blob/master/datavec/datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVSequenceRecordReader.java) approaches, we first create two CSVSequenceRecordReader objects, one for input and one for labels:
+To use the [SequenceRecordReaderDataSetIterator](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-data/deeplearning4j-datavec-iterators/src/main/java/org/deeplearning4j/datasets/datavec/SequenceRecordReaderDataSetIterator.java) and [CSVSequenceRecordReader](https://github.com/eclipse/deeplearning4j/blob/master/datavec/datavec-api/src/main/java/org/datavec/api/records/reader/impl/csv/CSVSequenceRecordReader.java) approaches, we first create two CSVSequenceRecordReader objects, one for input and one for labels:
 
     SequenceRecordReader featureReader = new CSVSequenceRecordReader(1, ",");
     SequenceRecordReader labelReader = new CSVSequenceRecordReader(1, ",");
@@ -266,7 +266,7 @@ To use the [SequenceRecordReaderDataSetIterator](https://github.com/deeplearning
 This particular constructor takes the number of lines to skip (1 row skipped here), and the delimiter (comma character used here).
 
 Second, we need to initialize these two readers, by telling them where to get the data from. We do this with an InputSplit object.
-Suppose that our time series are numbered, with file names "myInput_0.csv", "myInput_1.csv", ..., "myLabels_0.csv", etc. One approach is to use the [NumberedFileInputSplit](https://github.com/deeplearning4j/deeplearning4j/blob/master/datavec/datavec-api/src/main/java/org/datavec/api/split/NumberedFileInputSplit.java):
+Suppose that our time series are numbered, with file names "myInput_0.csv", "myInput_1.csv", ..., "myLabels_0.csv", etc. One approach is to use the [NumberedFileInputSplit](https://github.com/eclipse/deeplearning4j/blob/master/datavec/datavec-api/src/main/java/org/datavec/api/split/NumberedFileInputSplit.java):
 
     featureReader.initialize(new NumberedFileInputSplit("/path/to/data/myInput_%d.csv", 0, 9));
     labelReader.initialize(new NumberedFileInputSplit(/path/to/data/myLabels_%d.csv", 0, 9));

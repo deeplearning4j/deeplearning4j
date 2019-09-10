@@ -18,10 +18,9 @@ Come in to [gitter](https://gitter.im/deeplearning4j/deeplearning4j) if you are 
 
 # How to build
 
-Currently ScalNet depends on deeplearning4j and nd4j SNAPSHOTS. 
+ScalNet depends on Deeplearning4j and ND4J
 
-- [deeplearning4j/deeplearning4j](https://github.com/deeplearning4j/deeplearning4j)
-- [deeplearning4j/nd4j](https://github.com/deeplearning4j/nd4j)
+- [deeplearning4j and nd4j](https://github.com/eclipse/deeplearning4j)
 
 ### sbt
 

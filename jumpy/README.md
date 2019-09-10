@@ -2,7 +2,7 @@ Jumpy: Python interface for [nd4j](https://nd4j.org)
 ===========================================
 
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/deeplearning4j/deeplearning4j/blob/master/jumpy/LICENSE)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/eclipse/deeplearning4j/blob/master/jumpy/LICENSE)
 [![PyPI version](https://badge.fury.io/py/jumpy.svg)](https://badge.fury.io/py/jumpy)
 
 Jumpy allows you to use ND4J from Python _without any network communication_. Many other Python libraries bridging Java

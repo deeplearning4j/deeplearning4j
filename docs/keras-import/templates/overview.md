@@ -8,7 +8,7 @@ weight: 0
 
 ## Deeplearing4j: Keras model import
 
-[Keras model import](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras) 
+[Keras model import](https://github.com/eclipse/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras) 
 provides routines for importing neural network models originally configured and trained 
 using [Keras](https://keras.io/), a popular Python deep learning library. 
 
@@ -61,7 +61,7 @@ Here's how you do training in DL4J for your imported model:
 model.fit(input, output);
 ``` 
 
-The full example just shown can be found in our [DL4J examples](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/modelimport/keras/basic/SimpleSequentialMlpImport.java).
+The full example just shown can be found in our [DL4J examples](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/modelimport/keras/basic/SimpleSequentialMlpImport.java).
 
 
 ## Project setup
@@ -78,12 +78,12 @@ dependency to your pom.xml.
 ```
 
 If you need a project to get started in the first place, consider cloning 
-[DL4J examples](https://github.com/deeplearning4j/dl4j-examples) and follow
+[DL4J examples](https://github.com/eclipse/deeplearning4j-examples) and follow
 the instructions in the repository to build the project.
 
 ## Popular models and applications
 
-We support import for a growing number of applications, check [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/test/java/org/deeplearning4j/nn/modelimport/keras/e2e/KerasModelEndToEndTest.java)
+We support import for a growing number of applications, check [here](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/test/java/org/deeplearning4j/nn/modelimport/keras/e2e/KerasModelEndToEndTest.java)
 for a full list of currently covered models. These applications include
 
 - Deep convolutional and Wasserstein GANs
@@ -105,7 +105,7 @@ Once you have imported your model, we recommend our own `ModelSerializer` class 
 saving and reloading of your model.
 
 You can inquire further by visiting the [DL4J gitter channel](https://gitter.im/deeplearning4j/deeplearning4j). You might consider filing 
-a [feature request via Github](https://github.com/deeplearning4j/deeplearning4j/issues) 
+a [feature request via Github](https://github.com/eclipse/deeplearning4j/issues) 
 so that this missing functionality can be placed on the DL4J development roadmap or even 
 sending us a pull request with the necessary changes!
 

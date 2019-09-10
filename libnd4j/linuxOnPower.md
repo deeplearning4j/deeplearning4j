@@ -40,12 +40,7 @@ export CUDA_VISIBLE_DEVICES=0
 
 1. Clone necessary modules from github as follows.
 ```
-git clone https://github.com/deeplearning4j/Canova
-git clone https://github.com/deeplearning4j/nd4j.git
-git clone https://github.com/deeplearning4j/libnd4j.git
-git clone https://github.com/deeplearning4j/dl4j-0.4-examples.git
-git clone https://github.com/deeplearning4j/deeplearning4j.git
-git clone https://github.com/bytedeco/javacpp.git
+git clone https://github.com/eclipse/deeplearning4j.git
 ```
 
 2. Modify the setting file to enable GPU. (Skip this step if you do not use GPU)

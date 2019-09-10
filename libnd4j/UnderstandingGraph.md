@@ -13,7 +13,7 @@ delete graph;
 ```
 
 ### FlatBuffers schemas
-You can find scheme files [here](https://github.com/deeplearning4j/libnd4j/tree/master/include/graph/scheme).
+You can find scheme files [here](https://github.com/eclipse/deeplearning4j/tree/master/libnd4j/include/graph/scheme).
 
 At this moment libnd4j repo contains compiled definitions for C++, Python, Java, and JSON, but FlatBuffers can be compiled for PHP, C#, JavaScript, TypeScript and Go as well. Please refer to `flatc` instructions to do that.
 

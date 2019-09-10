@@ -30,7 +30,7 @@ You should use Spark when:
 2. You need more than single machine to train the network
 3. Your network is large to justify a distributed implementation
 
-For a single machine with multiple GPUs or multiple physical processors, users should consider using DL4J's Parallel-Wrapper implementation as shown in [this example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java). ParallelWrapper allows for easy data parallel training of networks on a single machine with multiple cores. Spark has higher overheads compared to ParallelWrapper for single machine training.
+For a single machine with multiple GPUs or multiple physical processors, users should consider using DL4J's Parallel-Wrapper implementation as shown in [this example](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-cuda-specific-examples/src/main/java/org/deeplearning4j/examples/multigpu/MultiGpuLenetMnistExample.java). ParallelWrapper allows for easy data parallel training of networks on a single machine with multiple cores. Spark has higher overheads compared to ParallelWrapper for single machine training.
 
 Similarly, if you don't need Spark (smaller networks and/or datasets) - it is recommended to use single machine training, which is usually simpler to set up.
 
@@ -150,4 +150,4 @@ for (int i = 0; i < numEpochs; i++) {
 * [Deeplearning4j on Spark: How To Guides](deeplearning4j-scaleout-howto)
 * [Deeplearning4j on Spark: How To Build Data Pipelines](deeplearning4j-scaleout-data-howto)
 * [Deeplearning4j on Spark: API Reference](deeplearning4j-scaleout-apiref)
-* The [Deeplearning4j examples repo](https://github.com/deeplearning4j/dl4j-examples) contains a number of Spark examples that can be used by the user as reference.
+* The [Deeplearning4j examples repo](https://github.com/eclipse/deeplearning4j-examples) contains a number of Spark examples that can be used by the user as reference.

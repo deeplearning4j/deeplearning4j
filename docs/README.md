@@ -5,7 +5,7 @@
 Run `./gen_all_docs.sh` to generate documentation from source for all supported projects. For each documentation module, files will be put into a `doc_sources` folder where they are staged for copying to the primary docs repository. Note that the autogen docs require Python 2.
 
 To deploy a new version of documentation, first make sure to set `$DL4J_DOCS_DIR` to your local copy of 
-https://github.com/deeplearning4j/deeplearning4j-docs and set `$DL4J_VERSION` to a URI-friendly version string such as `v100-RC` (note the lack of decimals). Then run `./copy-to-dl4j-docs.sh`. This puts documentation
+https://github.com/eclipse/deeplearning4j-docs and set `$DL4J_VERSION` to a URI-friendly version string such as `v100-RC` (note the lack of decimals). Then run `./copy-to-dl4j-docs.sh`. This puts documentation
 into the right folders and you can use `git` to create a PR and update the live docs.
 
 The structure of this project (template files, generating code, mkdocs YAML) is closely aligned

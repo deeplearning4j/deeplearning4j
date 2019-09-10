@@ -29,8 +29,8 @@ This page describes how to build more complicated networks, using DL4J's Computa
 
 DL4J has two types of networks comprised of multiple layers:
 
-- The [MultiLayerNetwork](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java), which is essentially a stack of neural network layers (with a single input layer and single output layer), and
-- The [ComputationGraph](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/ComputationGraph.java), which allows for greater freedom in network architectures
+- The [MultiLayerNetwork](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/multilayer/MultiLayerNetwork.java), which is essentially a stack of neural network layers (with a single input layer and single output layer), and
+- The [ComputationGraph](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/ComputationGraph.java), which allows for greater freedom in network architectures
 
 
 Specifically, the ComputationGraph allows for networks to be built with the following features:
@@ -53,7 +53,7 @@ Examples of some architectures that can be built using ComputationGraph include:
 - Recurrent neural networks with skip connections
 - [GoogLeNet](http://arxiv.org/abs/1409.4842), a complex type of convolutional netural network for image classification
 - [Image caption generation](http://arxiv.org/abs/1411.4555)
-- [Convolutional networks for sentence classification](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/sentenceclassification/CnnSentenceClassificationExample.java)
+- [Convolutional networks for sentence classification](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/sentenceclassification/CnnSentenceClassificationExample.java)
 - [Residual learning convolutional neural networks](http://arxiv.org/abs/1512.03385)
 
 
@@ -61,7 +61,7 @@ Examples of some architectures that can be built using ComputationGraph include:
 
 ### <a name="vertextypes">Types of Graph Vertices</a>
 
-The basic idea is that in the ComputationGraph, the core building block is the [GraphVertex](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/GraphVertex.java), instead of layers. Layers (or, more accurately the [LayerVertex](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/LayerVertex.java) objects), are but one type of vertex in the graph. Other types of vertices include:
+The basic idea is that in the ComputationGraph, the core building block is the [GraphVertex](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/GraphVertex.java), instead of layers. Layers (or, more accurately the [LayerVertex](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/impl/LayerVertex.java) objects), are but one type of vertex in the graph. Other types of vertices include:
 
 - Input Vertices
 - Element-wise operation vertices
@@ -72,7 +72,7 @@ The basic idea is that in the ComputationGraph, the core building block is the [
 These types of graph vertices are described briefly below.
 
 **LayerVertex**: Layer vertices (graph vertices with neural network layers) are added using the ```.addLayer(String,Layer,String...)``` method. The first argument is the label for the layer, and the last arguments are the inputs to that layer.
-If you need to manually add an [InputPreProcessor](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor) (usually this is unnecessary - see next section) you can use the ```.addLayer(String,Layer,InputPreProcessor,String...)``` method.
+If you need to manually add an [InputPreProcessor](https://github.com/eclipse/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor) (usually this is unnecessary - see next section) you can use the ```.addLayer(String,Layer,InputPreProcessor,String...)``` method.
 
 **InputVertex**: Input vertices are specified by the ```addInputs(String...)``` method in your configuration. The strings used as inputs can be arbitrary - they are user-defined labels, and can be referenced later in the configuration. The number of strings provided define the number of inputs; the order of the input also defines the order of the corresponding INDArrays in the fit methods (or the DataSet/MultiDataSet objects).
 
@@ -82,9 +82,9 @@ If you need to manually add an [InputPreProcessor](https://github.com/deeplearni
 
 **SubsetVertex**: The subset vertex allows you to get only part of the activations out of another vertex. For example, to get the first 5 activations out of another vertex with label "layer1", you can use ```.addVertex("subset1", new SubsetVertex(0,4), "layer1")```: this means that the 0th through 4th (inclusive) activations out of the "layer1" vertex will be used as output from the subset vertex.
 
-**PreProcessorVertex**: Occasionally, you might want to the functionality of an [InputPreProcessor](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor) without that preprocessor being associated with a layer. The PreProcessorVertex allows you to do this.
+**PreProcessorVertex**: Occasionally, you might want to the functionality of an [InputPreProcessor](https://github.com/eclipse/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor) without that preprocessor being associated with a layer. The PreProcessorVertex allows you to do this.
 
-Finally, it is also possible to define custom graph vertices by implementing both a [configuration](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/GraphVertex.java) and [implementation](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/GraphVertex.java) class for your custom GraphVertex.
+Finally, it is also possible to define custom graph vertices by implementing both a [configuration](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/graph/GraphVertex.java) and [implementation](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/graph/vertex/GraphVertex.java) class for your custom GraphVertex.
 
 
 ### <a name="rnnskip">Example 1: Recurrent Network with Skip Connections</a>
@@ -165,7 +165,7 @@ One feature of the ComputationGraphConfiguration is that you can specify the typ
 
 The setInputType method has two effects:
 
-1. It will automatically add any [InputPreProcessor](https://github.com/deeplearning4j/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor)s as required. InputPreProcessors are necessary to handle the interaction between for example fully connected (dense) and convolutional layers, or recurrent and fully connected layers.
+1. It will automatically add any [InputPreProcessor](https://github.com/eclipse/deeplearning4j/tree/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/preprocessor)s as required. InputPreProcessors are necessary to handle the interaction between for example fully connected (dense) and convolutional layers, or recurrent and fully connected layers.
 2. It will automatically calculate the number of inputs (.nIn(x) config) to a layer. Thus, if you are using the ```setInputTypes(InputType...)``` functionality, it is not necessary to manually specify the .nIn(x) options in your configuration. This can simplify building some architectures (such as convolutional networks with fully connected layers). If the .nIn(x) is specified for a layer, the network will not override this when using the InputType functionality.
 
 
@@ -188,8 +188,8 @@ MultiDataSet is multiple input and/or multiple output version of DataSet. It may
 
 There are currently two ways to use a MultiDataSetIterator:
 
-- By implementing the [MultiDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/MultiDataSetIterator.java) interface directly
-- By using the [RecordReaderMultiDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-data/deeplearning4j-datavec-iterators/src/main/java/org/deeplearning4j/datasets/datavec/RecordReaderMultiDataSetIterator.java) in conjuction with DataVec record readers
+- By implementing the [MultiDataSetIterator](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/dataset/api/iterator/MultiDataSetIterator.java) interface directly
+- By using the [RecordReaderMultiDataSetIterator](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-data/deeplearning4j-datavec-iterators/src/main/java/org/deeplearning4j/datasets/datavec/RecordReaderMultiDataSetIterator.java) in conjuction with DataVec record readers
 
 
 The RecordReaderMultiDataSetIterator provides a number of options for loading data. In particular, the RecordReaderMultiDataSetIterator provides the following functionality:
@@ -200,7 +200,7 @@ The RecordReaderMultiDataSetIterator provides a number of options for loading da
 - It is possible to convert single columns from a class index to a one-hot representation
 
 
-Some basic examples on how to use the RecordReaderMultiDataSetIterator follow. You might also find [these unit tests](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/datavec/RecordReaderMultiDataSetIteratorTest.java) to be useful.
+Some basic examples on how to use the RecordReaderMultiDataSetIterator follow. You might also find [these unit tests](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-core/src/test/java/org/deeplearning4j/datasets/datavec/RecordReaderMultiDataSetIteratorTest.java) to be useful.
 
 ### <a name="rrmdsi1">RecordReaderMultiDataSetIterator Example 1: Regression Data</a>
 

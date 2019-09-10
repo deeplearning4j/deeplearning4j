@@ -18,7 +18,7 @@ Unlike other machine learning or deep learning frameworks, DL4J treats the tasks
 
 Before the algorithm can start learning, you have to prepare the data, even if you already have a trained model. Preparing data means loading it and putting it in the right shape and value range (e.g. normalization, zero-mean and unit variance). Building these processes from scratch is error prone, so use DataVec wherever possible.
 
-Deeplearning4j works with a lot of different data types, such as images, CSV, plain text and, with [Apache Camel](https://camel.apache.org/) [integration](https://github.com/deeplearning4j/DataVec/tree/master/datavec-camel), pretty much any other data type you can think of.
+Deeplearning4j works with a lot of different data types, such as images, CSV, plain text and, with [Apache Camel](https://camel.apache.org/) [integration](https://github.com/eclipse/deeplearning4j/tree/master/datavec/tree/master/datavec-camel), pretty much any other data type you can think of.
 
 To use DataVec, you will need one of the implementations of the [RecordReader](/api/{{page.version}}/org/datavec/api/records/reader/RecordReader.html) interface along with the [RecordReaderDataSetIterator](/api/{{page.version}}/org/deeplearning4j/datasets/datavec/RecordReaderDataSetIterator.html).
 
@@ -95,7 +95,7 @@ Also note that DL4J does not only support training just `MultiLayerNetworks`, bu
 As you train your model, you will want to test how well it performs. For that test, you will need a dedicated data set that will not be used for training but instead will only be used for evaluating your model. This data should have the same distribution as the real-world data you want to make predictions about with your model. The reason you can't simply use your training data for evaluation is because machine learning methods are prone to overfitting (getting good at making predictions about the training set, but not performing well on larger datasets).
 
 The [Evaluation](/api/{{page.version}}/org/deeplearning4j/eval/Evaluation.html)
-class is used for evaluation. Slightly different methods apply to evaluating a normal feed forward networks or recurrent networks. For more details on using it, take a look at the corresponding [examples](https://github.com/deeplearning4j/dl4j-examples).
+class is used for evaluation. Slightly different methods apply to evaluating a normal feed forward networks or recurrent networks. For more details on using it, take a look at the corresponding [examples](https://github.com/eclipse/deeplearning4j-examples).
 
 ## Troubleshooting a Neural Net Model
 
