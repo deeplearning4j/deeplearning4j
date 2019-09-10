@@ -42,6 +42,8 @@ namespace nd4j {
                 ConvolutionUtils::getSizesAndIndexesConv2d(isNCHW, *input, *output, bS, iC, iH, iW, oC, oH, oW,
                                                            indIOioC, indIiH, indWiC, indWoC, indWkH, indOoH);
 
+                if(isSameMode)                       // SAME
+                    ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
                 mkldnn_memory_desc_t empty;
                 mkldnn::memory::desc conv_src_md(empty), conv_weights_md(empty), conv_bias_md(empty), conv_dst_md(
