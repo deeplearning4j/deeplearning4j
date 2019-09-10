@@ -3228,9 +3228,13 @@ bool isMinimalRequirementsMet() {
 
 bool isOptimalRequirementsMet() {
 #ifdef CPU_FEATURES
-    auto features = cpu_features::GetX86Info().features;
+    auto b = ::binaryLevel();
+    auto o = ::optimalLevel();
 
-    return false;
+    if (b == o)
+        return true;
+    else
+        return false;
 #else
     return true;
 #endif
