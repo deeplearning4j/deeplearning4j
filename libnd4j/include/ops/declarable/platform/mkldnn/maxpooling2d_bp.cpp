@@ -154,6 +154,12 @@ namespace nd4j {
 
                 stream.wait();
 
+                if (!isNCHW) {
+                    delete input;
+                    delete gradI;
+                    delete gradO;
+                }
+
                 return Status::OK();
             }
 
