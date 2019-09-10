@@ -3577,3 +3577,19 @@ int lastErrorCode() {
 const char* lastErrorMessage() {
     return nd4j::LaunchContext::defaultContext()->errorReference()->errorMessage();
 }
+
+int  binaryLevel() {
+    return 0;
+}
+
+bool optimalLevel() {
+    return 0;
+}
+
+bool isMinimalRequirementsMet() {
+    return true;
+}
+
+bool isOptimalRequirementsMet() {
+    return true;
+}
