@@ -16,11 +16,16 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
+import java.util.Arrays;
+import java.util.List;
+import lombok.Getter;
+import lombok.NonNull;
 import onnx.Onnx;
+import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.SRUConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.SRUWeights;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -34,13 +39,18 @@ import java.util.Map;
  */
 public class SRU extends DynamicCustomOp {
 
-    private SRUConfiguration configuration;
+    @Getter
+    private SRUWeights weights;
+
+    @Getter
+    private SDVariable mask;
 
     public SRU() { }
 
-    public SRU(SameDiff sameDiff, SRUConfiguration configuration) {
-        super(null, sameDiff, configuration.args());
-        this.configuration = configuration;
+    public SRU(@NonNull SameDiff sameDiff, @NonNull SDVariable x, @NonNull SDVariable initialC, SDVariable mask, @NonNull SRUWeights weights) {
+        super(null, sameDiff, wrapFilterNull(x, weights.getWeights(), weights.getBias(), initialC, mask));
+        this.mask = mask;
+        this.weights = weights;
     }
 
     @Override
@@ -68,6 +78,4 @@ public class SRU extends DynamicCustomOp {
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
         super.initFromOnnx(node, initWith, attributesForNode, graph);
     }
-
-
 }

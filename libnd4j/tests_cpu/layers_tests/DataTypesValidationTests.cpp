@@ -129,3 +129,33 @@ TEST_F(DataTypesValidationTests, cast_1) {
     ASSERT_TRUE(1.f == x);
     ASSERT_TRUE(y == x);
 }
+
+TEST_F(DataTypesValidationTests, test_bits_hamming_distance_1) {
+    auto x = NDArrayFactory::create<int>('c', {3}, {0b01011000, 0b01011111, 0b01111110});
+    auto y = NDArrayFactory::create<int>('c', {3}, {0b00010110, 0b01011000, 0b01011000});
+    auto z = NDArrayFactory::create<uint64_t>(0);
+
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setInputArray(1, &y);
+    ctx.setOutputArray(0, &z);
+
+    nd4j::ops::bits_hamming_distance op;
+    auto status = op.execute(&ctx);
+    ASSERT_NE(Status::OK(), status);
+}
+
+TEST_F(DataTypesValidationTests, test_bits_hamming_distance_2) {
+    auto x = NDArrayFactory::create<int>('c', {3}, {0b01011000, 0b01011111, 0b01111110});
+    auto y = NDArrayFactory::create<int>('c', {3}, {0b00010110, 0b01011000, 0b01011000});
+    auto z = NDArrayFactory::create<Nd4jLong>(0);
+
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setInputArray(1, &y);
+    ctx.setOutputArray(0, &z);
+
+    nd4j::ops::bits_hamming_distance op;
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+}

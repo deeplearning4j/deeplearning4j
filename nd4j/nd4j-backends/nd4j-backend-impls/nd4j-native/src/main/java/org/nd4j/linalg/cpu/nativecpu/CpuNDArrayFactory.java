@@ -563,7 +563,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
 
 
-        int numTads = (int)(tensor.lengthLong() / tadLength);
+        int numTads = (int)(tensor.length() / tadLength);
         INDArray[] result = new INDArray[numTads];
 
         PointerPointer targets = new PointerPointer(numTads);
@@ -742,7 +742,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         if (arrays.length == 1)
             return target.addi(arrays[0]);
 
-        long len = target.lengthLong();
+        long len = target.length();
 
         PointerPointer dataPointers = new PointerPointer(arrays.length);
 
@@ -752,7 +752,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             if (arrays[i].elementWiseStride() != 1)
                 throw new ND4JIllegalStateException("Native accumulation is applicable only to continuous INDArrays");
 
-            if (arrays[i].lengthLong() != len)
+            if (arrays[i].length() != len)
                 throw new ND4JIllegalStateException("All arrays should have equal length for accumulation");
 
             dataPointers.put(i, arrays[i].data().addressPointer());
@@ -793,7 +793,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             return target.assign(arrays[0]);
         }
 
-        long len = target != null ? target.lengthLong() : arrays[0].length();
+        long len = target != null ? target.length() : arrays[0].length();
 
         PointerPointer dataPointers = new PointerPointer(arrays.length);
         val firstType = arrays[0].dataType();
@@ -806,7 +806,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             if (arrays[i].elementWiseStride() != 1)
                 throw new ND4JIllegalStateException("Native averaging is applicable only to continuous INDArrays");
 
-            if (arrays[i].lengthLong() != len)
+            if (arrays[i].length() != len)
                 throw new ND4JIllegalStateException("All arrays should have equal length for averaging");
 
             dataPointers.put(i, arrays[i].data().addressPointer());

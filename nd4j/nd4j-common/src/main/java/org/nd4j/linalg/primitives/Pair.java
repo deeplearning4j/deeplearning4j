@@ -23,6 +23,7 @@ import lombok.NoArgsConstructor;
 
 import java.io.Serializable;
 import java.util.Arrays;
+import org.nd4j.base.Preconditions;
 
 /**
  * Simple pair implementation
@@ -85,5 +86,11 @@ public class Pair<K, V> implements Serializable {
 
     public static <T, E> Pair<T,E> pairOf(T key, E value) {
         return new Pair<T, E>(key, value);
+    }
+
+    public static <T> Pair<T, T> fromArray(T[] arr){
+        Preconditions.checkArgument(arr.length == 2,
+                "Can only create a pair from an array with two values, got %s", arr.length);
+        return new Pair<>(arr[0], arr[1]);
     }
 }

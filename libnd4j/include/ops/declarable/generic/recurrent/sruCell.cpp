@@ -34,7 +34,7 @@ CUSTOM_OP_IMPL(sruCell, 4, 2, false, 0, 0) {
     auto  xt   = INPUT_VARIABLE(0);               // input [bS x inSize], bS - batch size, inSize - number of features
     auto ct_1 = INPUT_VARIABLE(1);               // previous cell state ct  [bS x inSize], that is at previous time step t-1
     auto w    = INPUT_VARIABLE(2);               // weights [inSize x 3*inSize]
-    auto b    = INPUT_VARIABLE(3);               // biases [1 x 2*inSize]
+    auto b    = INPUT_VARIABLE(3);               // biases [2*inSize]
 
     auto ht   = OUTPUT_VARIABLE(0);              // current cell output [bS x inSize], that is at current time step t
     auto ct   = OUTPUT_VARIABLE(1);              // current cell state  [bS x inSize], that is at current time step t

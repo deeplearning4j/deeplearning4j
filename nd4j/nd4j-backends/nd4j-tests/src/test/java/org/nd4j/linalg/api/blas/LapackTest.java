@@ -92,7 +92,7 @@ public class LapackTest extends BaseNd4jTest {
 
     @Test
     public void testCholeskyU() {
-        INDArray A = Nd4j.create(new double[] {2, -1, 2, -1, 2, -1, 2, -1, 2,});
+        INDArray A = Nd4j.create(new double[] {3, -1, 2, -1, 3, -1, 2, -1, 3,});
         A = A.reshape('f', 3, 3);
         INDArray O = Nd4j.create(A.dataType(), A.shape());
         Nd4j.copy(A, O);

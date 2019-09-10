@@ -18,8 +18,11 @@ package org.deeplearning4j.arbiter.ui.data;
 
 import lombok.Getter;
 import org.deeplearning4j.arbiter.optimize.config.OptimizationConfiguration;
-import org.deeplearning4j.arbiter.ui.misc.JsonMapper;
+import org.deeplearning4j.arbiter.optimize.serde.jackson.JsonMapper;
 import org.deeplearning4j.arbiter.ui.module.ArbiterModule;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
+
+import java.io.IOException;
 
 /**
  *
@@ -64,7 +67,11 @@ public class GlobalConfigPersistable extends BaseJavaPersistable {
 
 
     public OptimizationConfiguration getOptimizationConfiguration(){
-        return JsonMapper.fromJson(optimizationConfigJson, OptimizationConfiguration.class);
+        try {
+            return JsonMapper.getMapper().readValue(optimizationConfigJson, OptimizationConfiguration.class);
+        } catch (IOException e){
+            throw new RuntimeException(e);
+        }
     }
 
     public int getCandidatesQueued(){

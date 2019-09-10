@@ -415,7 +415,7 @@ public class ShufflesTests extends BaseNd4jTest {
 
             for (int x = 0; x < newData.rows(); x++) {
                 INDArray row = newData.getRow(x);
-                for (int y = 0; y < row.lengthLong(); y++) {
+                for (int y = 0; y < row.length(); y++) {
                     if (Math.abs(row.getFloat(y) - newMap[x]) > Nd4j.EPS_THRESHOLD) {
                         System.out.print("Different data in a row");
                         return false;
@@ -442,7 +442,7 @@ public class ShufflesTests extends BaseNd4jTest {
             for (int x = 0; x < newData.rows(); x++) {
                 INDArray column = newData.getColumn(x);
                 double val = column.getDouble(0);
-                for (int y = 0; y < column.lengthLong(); y++) {
+                for (int y = 0; y < column.length(); y++) {
                     if (Math.abs(column.getFloat(y) - val) > Nd4j.EPS_THRESHOLD) {
                         System.out.print("Different data in a column: " + column.getFloat(y));
                         return false;

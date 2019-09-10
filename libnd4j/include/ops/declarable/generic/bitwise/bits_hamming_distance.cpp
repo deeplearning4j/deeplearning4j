@@ -48,8 +48,7 @@ namespace nd4j {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, {ALL_INTS})
                     ->setAllowedInputTypes(1, {ALL_INTS})
-                    ->setAllowedOutputTypes(0, {ALL_INDICES})
-                    ->setSameMode(true);
+                    ->setAllowedOutputTypes(0, {ALL_INDICES});
         }
     }
 }

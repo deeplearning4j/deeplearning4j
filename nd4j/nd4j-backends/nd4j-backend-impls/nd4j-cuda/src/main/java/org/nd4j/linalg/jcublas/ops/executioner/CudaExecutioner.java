@@ -293,9 +293,9 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         Pointer yDevTadShapeInfo = null;
 
         if (op.y() != null) {
-            if (dimension.length == 0 || (dimension.length == 1 &&  dimension[0] == Integer.MAX_VALUE )|| op.x().tensorAlongDimension(0, dimension).lengthLong() != op.y().lengthLong()) {
-                if (!op.isComplexAccumulation() && op.x().lengthLong() != op.y().lengthLong())
-                    throw new ND4JIllegalStateException("Op.X [" + op.x().lengthLong() + "] and Op.Y [" + op.y().lengthLong() + "] lengths should match");
+            if (dimension.length == 0 || (dimension.length == 1 &&  dimension[0] == Integer.MAX_VALUE )|| op.x().tensorAlongDimension(0, dimension).length() != op.y().length()) {
+                if (!op.isComplexAccumulation() && op.x().length() != op.y().length())
+                    throw new ND4JIllegalStateException("Op.X [" + op.x().length() + "] and Op.Y [" + op.y().length() + "] lengths should match");
 
                 if (!op.z().isScalar()) {
                     Pair<DataBuffer, DataBuffer> yTadBuffers = tadManager.getTADOnlyShapeInfo(op.y(), dimension);
@@ -536,7 +536,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
             } else {
                 if (op.y() != null) {
                     //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
-                    if (op.x().lengthLong() == op.y().lengthLong()) {
+                    if (op.x().length() == op.y().length()) {
                         //Pairwise
                         if (!wholeDims && op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
                             throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
@@ -548,11 +548,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                             throw new ND4JIllegalStateException("TAD vs TAD comparison requires dimension (or other comparison mode was supposed to be used?)");
 
                         //Every X TAD vs. entirety of Y
-                        val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
+                        val xTADSize = op.x().length() / op.x().tensorsAlongDimension(dimension);
 
                         if (xTADSize != op.y().length()) {
                             throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
-                                    " (x TAD size = " + xTADSize + ", y size = " + op.y().lengthLong());
+                                    " (x TAD size = " + xTADSize + ", y size = " + op.y().length());
                         }
                     }
                 }
@@ -976,7 +976,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         if (op.y() != null) {
             //2 options here: either pairwise, equal sizes - OR every X TAD vs. entirety of Y
-            if (op.x().lengthLong() == op.y().lengthLong()) {
+            if (op.x().length() == op.y().length()) {
                 //Pairwise
                 if (op.x().tensorsAlongDimension(dimension) != op.y().tensorsAlongDimension(dimension)) {
                     throw new ND4JIllegalStateException("Number of TADs along dimension don't match: (x shape = " +
@@ -985,11 +985,11 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 }
             } else {
                 //Every X TAD vs. entirety of Y
-                val xTADSize = op.x().lengthLong() / op.x().tensorsAlongDimension(dimension);
+                val xTADSize = op.x().length() / op.x().tensorsAlongDimension(dimension);
 
                 if (xTADSize != op.y().length()) {
                     throw new ND4JIllegalStateException("Size of TADs along dimension don't match for pairwise execution:" +
-                            " (x TAD size = " + xTADSize + ", y size = " + op.y().lengthLong());
+                            " (x TAD size = " + xTADSize + ", y size = " + op.y().length());
                 }
             }
         }
@@ -2031,8 +2031,8 @@ public class CudaExecutioner extends DefaultOpExecutioner {
         long compressedLength = buffer.getInt(0);
         long originalLength = buffer.getInt(1);
 
-        if (target.lengthLong() != originalLength)
-            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.lengthLong()+"]");
+        if (target.length() != originalLength)
+            throw new ND4JIllegalStateException("originalLength ["+ originalLength+"] stored in encoded array doesn't match target length ["+ target.length()+"]");
 
         DataBuffer result = target.data();
 
@@ -2056,7 +2056,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
     @Override
     public long bitmapEncode(INDArray indArray, INDArray target, double threshold) {
-        long length = indArray.lengthLong();
+        long length = indArray.length();
         long tLen = target.data().length();
 
         if (tLen != (length / 16 + 5))
@@ -2117,7 +2117,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
                 context.getBufferScalar(),
                 context.getBufferReduction());
 
-        nativeOps.decodeBitmap(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.lengthLong(), AtomicAllocator.getInstance().getPointer(target, context), (LongPointer) AtomicAllocator.getInstance().getHostPointer(target.shapeInfoDataBuffer()));
+        nativeOps.decodeBitmap(extras, AtomicAllocator.getInstance().getPointer(encoded.data(), context), target.length(), AtomicAllocator.getInstance().getPointer(target, context), (LongPointer) AtomicAllocator.getInstance().getHostPointer(target.shapeInfoDataBuffer()));
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());

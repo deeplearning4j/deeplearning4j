@@ -19,6 +19,7 @@ package org.nd4j.linalg.lossfunctions.impl;
 import lombok.EqualsAndHashCode;
 import org.nd4j.linalg.activations.IActivation;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Mean Squared Error loss function: L = 1/N sum_i (actual_i - predicted)^2
@@ -38,7 +39,7 @@ public class LossMSE extends LossL2 {
      *
      * @param weights Weights array (row vector). May be null.
      */
-    public LossMSE(INDArray weights) {
+    public LossMSE(@JsonProperty("weights") INDArray weights) {
         super(weights);
     }
 

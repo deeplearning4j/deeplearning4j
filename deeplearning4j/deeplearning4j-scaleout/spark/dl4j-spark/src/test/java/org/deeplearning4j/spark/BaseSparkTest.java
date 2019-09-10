@@ -74,7 +74,9 @@ public abstract class BaseSparkTest implements Serializable {
 
     @After
     public void after() {
-        sc.close();
+        if(sc != null) {
+            sc.close();
+        }
         sc = null;
     }
 

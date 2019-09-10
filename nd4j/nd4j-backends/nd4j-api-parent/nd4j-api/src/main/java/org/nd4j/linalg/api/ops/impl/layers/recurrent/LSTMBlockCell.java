@@ -16,12 +16,15 @@
 
 package org.nd4j.linalg.api.ops.impl.layers.recurrent;
 
+import lombok.Getter;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMBlockCellConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.config.LSTMConfiguration;
+import org.nd4j.linalg.api.ops.impl.layers.recurrent.weights.LSTMWeights;
+import org.nd4j.linalg.primitives.Pair;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
@@ -49,10 +52,12 @@ import java.util.Map;
  * 6: weights - cell peephole (t) connections to output gate, [numUnits]<br>
  * 7: biases, shape [4*numUnits]<br>
  * <br>
- * Input integer arguments: set via {@link LSTMBlockCellConfiguration}<br>
+ * Weights are set via {@link LSTMWeights}.<br>
+ * <br>
+ * Input integer arguments: set via {@link LSTMConfiguration}<br>
  * 0: if not zero, provide peephole connections<br>
  * <br>
- * Input float arguments: set via {@link LSTMBlockCellConfiguration}<br>
+ * Input float arguments: set via {@link LSTMConfiguration}<br>
  * 0: the bias added to forget gates in order to reduce the scale of forgetting in the beginning of the training<br>
  * 1: clipping value for cell state, if it is not equal to zero, then cell state is clipped<br>
  * <br>
@@ -69,15 +74,19 @@ import java.util.Map;
  */
 public class LSTMBlockCell extends DynamicCustomOp {
 
-    private LSTMBlockCellConfiguration configuration;
+    private LSTMConfiguration configuration;
+
+    @Getter
+    private LSTMWeights weights;
 
     public LSTMBlockCell() {
     }
 
-    public LSTMBlockCell(SameDiff sameDiff, LSTMBlockCellConfiguration configuration) {
-        super(null, sameDiff, configuration.args());
+    public LSTMBlockCell(SameDiff sameDiff, SDVariable x, SDVariable cLast, SDVariable yLast, LSTMWeights weights, LSTMConfiguration configuration) {
+        super(null, sameDiff, weights.argsWithInputs(x, cLast, yLast));
         this.configuration = configuration;
-        addIArgument(configuration.iArgs());
+        this.weights = weights;
+        addIArgument(configuration.iArgs(false));
         addTArgument(configuration.tArgs());
     }
 
@@ -97,12 +106,12 @@ public class LSTMBlockCell extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        configuration = LSTMBlockCellConfiguration.builder()
+        configuration = LSTMConfiguration.builder()
                 .forgetBias(attributesForNode.get("forget_bias").getF())
                 .clippingCellValue(attributesForNode.get("cell_clip").getF())
                 .peepHole(attributesForNode.get("use_peephole").getB())
                 .build();
-        addIArgument(configuration.iArgs());
+        addIArgument(configuration.iArgs(false));
         addTArgument(configuration.tArgs());
     }
 
@@ -113,7 +122,7 @@ public class LSTMBlockCell extends DynamicCustomOp {
 
     @Override
     public Map<String, Object> propertiesForFunction() {
-        return configuration.toProperties();
+        return configuration.toProperties(false);
     }
 
     @Override

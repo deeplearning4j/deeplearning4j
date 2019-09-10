@@ -75,7 +75,6 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.interval;
 @EqualsAndHashCode(callSuper = true,
         exclude = {"auc", "auprc", "probAndLabel", "exactAllocBlockSize", "rocCurve", "prCurve", "axis"})
 @Data
-@ToString(exclude = {"probAndLabel", "exactAllocBlockSize", "rocCurve", "prCurve"})
 @JsonIgnoreProperties({"probAndLabel", "exactAllocBlockSize"})
 @JsonSerialize(using = ROCSerializer.class)
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, include = JsonTypeInfo.As.PROPERTY)
@@ -822,6 +821,11 @@ public class ROC extends BaseEvaluation<ROC> {
                     .append(" steps); accuracy may reduced compared to exact mode]");
         }
         return sb.toString();
+    }
+
+    @Override
+    public String toString(){
+        return stats();
     }
 
     public double scoreForMetric(Metric metric){

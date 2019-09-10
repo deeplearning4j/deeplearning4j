@@ -158,7 +158,7 @@ LaunchContext::LaunchContext() {
     };
 
     void LaunchContext::releaseBuffers() {
-        nd4j_printf("LaunchContext::releaseBuffers() was invoked\n", "");
+        //nd4j_printf("LaunchContext::releaseBuffers() was invoked\n", "");
         contextBuffers.release();
     }
 

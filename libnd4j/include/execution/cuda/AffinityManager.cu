@@ -109,7 +109,7 @@ namespace nd4j {
 
             if (deviceId != previousDeviceId) {
                 // discard existing stuff
-                nd4j_printf("AffinityManager::setCurrentDevice() was invoked, releasing buffers\n", "");
+                //nd4j_printf("AffinityManager::setCurrentDevice() was invoked, releasing buffers\n", "");
                 LaunchContext::releaseBuffers();
             }
         }
