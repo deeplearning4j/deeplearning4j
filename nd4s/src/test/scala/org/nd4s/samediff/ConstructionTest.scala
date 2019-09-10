@@ -126,7 +126,7 @@ class ConstructionTest extends FlatSpec with Matchers {
     val seed = 7
 
     val target = Nd4j.createUninitialized(1000)
-    val rng = new CpuNativeRandom
+    val rng = new CpuNativeRandom(seed)
     val x1_label1 = Nd4j.randn(3.0, 1.0, target, rng)
     val x2_label1 = Nd4j.randn(2.0, 1.0, target, rng)
     val x1_label2 = Nd4j.randn(7.0, 1.0, target, rng)
@@ -150,18 +150,22 @@ class ConstructionTest extends FlatSpec with Matchers {
     // tf.math.sigmoid -> where can I get sigmoid ? sd.nn : Transform
     val tmp = w.get(SDIndex.point(1)) * X1
     val tmp2 = sd.math.neg(w.get(SDIndex.point(2)) * X2)
-    val y_model = sd.nn.sigmoid(tmp + tmp2 + w.get(SDIndex.point(0)))
+    val y_model = sd.nn.sigmoid((tmp) + (tmp2) + w.get(SDIndex.point(0)))
 
     // what is target for reduce_mean? What is proper replacement for np.reduce_mean?
     // 1 - SDVariable - doesn't work as is
     // lost in long formula!!!
     // java.lang.IllegalStateException: Only floating point types are supported for strict tranform ops - got INT - log
-    val tmp1 = sd.math.log(sd.constant(1.0)).minus(y_model)
-    val cost_fun = (-sd.math.log(y_model) * y).minus(tmp1 * (sd.constant(1.0).minus(y)))
-    val loss = cost_fun.mean("loss")
+    val tmp1 = sd.math.log(sd.constant(1.0).minus(y_model))
+    val cost_fun =
+      (-sd.math.log(y_model) * y).minus(sd.math.log(sd.constant(1.0).minus(y_model)) * (sd.constant(1.0) - y))
+
+    //cost = tf.reduce_mean(-tf.log(y_model) * Y -tf.log(1 - y_model) * (1 - Y))
+    //val cost = sd.math.mean((-sd.math.log(y_model) * y).minus(tmp1 * (sd.constant(1.0).minus(y))))
+    val loss = sd.mean("loss", cost_fun)
 
     val updater = new Sgd(learning_rate)
-    // mapping between values and ph
+    // mapping between values and ph.
 
     sd.setLossVariables("loss")
     val conf = new TrainingConfig.Builder()
@@ -176,7 +180,6 @@ class ConstructionTest extends FlatSpec with Matchers {
     sd.setTrainingConfig(conf)
     sd.fit(new SingletonMultiDataSetIterator(mds), 2000)
 
-    import org.nd4j.linalg.api.ndarray.INDArray
     Console.println(w.eval)
 //      [   74.9750,  450.7023, -450.7023]
   }
