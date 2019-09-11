@@ -69,17 +69,6 @@
             <classifier>${dependency.platform2}</classifier>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl-dnn</artifactId>
-            <version>${mkl-dnn.javacpp.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl-dnn</artifactId>
-            <version>${mkl-dnn.javacpp.version}</version>
-            <classifier>${dependency.platform2}</classifier>
-        </dependency>
-        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>libnd4j</artifactId>
             <version>${project.version}</version>
