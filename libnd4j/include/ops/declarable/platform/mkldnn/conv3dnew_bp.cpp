@@ -114,12 +114,12 @@ namespace nd4j {
                                                        conv_strides, conv_padding, conv_padding_r);
                 auto conv_desc = gradB != nullptr
                                  ? convolution_forward::desc(prop_kind::forward,
-                                                             algorithm::convolution_direct, conv_src_md,
+                                                             algorithm::convolution_auto, conv_src_md,
                                                              conv_weights_md, conv_bias_md,
                                                              conv_dst_md, conv_strides, conv_padding,
                                                              conv_padding_r)
                                  : convolution_forward::desc(prop_kind::forward,
-                                                             algorithm::convolution_direct, conv_src_md,
+                                                             algorithm::convolution_auto, conv_src_md,
                                                              conv_weights_md,
                                                              conv_dst_md, conv_strides, conv_padding,
                                                              conv_padding_r);
@@ -128,10 +128,10 @@ namespace nd4j {
                 if (gradW != nullptr) {
                     auto convW_desc = gradB != nullptr
                                       ? convolution_backward_weights::desc(
-                                    algorithm::convolution_direct, conv_src_md, conv_diff_weights_md, conv_bias_md,
+                                    algorithm::convolution_auto, conv_src_md, conv_diff_weights_md, conv_bias_md,
                                     conv_dst_md, conv_strides, conv_padding, conv_padding_r)
                                       : convolution_backward_weights::desc(
-                                    algorithm::convolution_direct, conv_src_md, conv_diff_weights_md,
+                                    algorithm::convolution_auto, conv_src_md, conv_diff_weights_md,
                                     conv_dst_md, conv_strides, conv_padding, conv_padding_r);
 
                     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
@@ -186,7 +186,7 @@ namespace nd4j {
                     stream.wait();
                 }
                 if (gradI != nullptr) {
-                    auto convI_desc = convolution_backward_data::desc(algorithm::convolution_direct,
+                    auto convI_desc = convolution_backward_data::desc(algorithm::convolution_auto,
                                                                       conv_diff_src_md, conv_weights_md,
                                                                       conv_dst_md, conv_strides, conv_padding,
                                                                       conv_padding_r);
