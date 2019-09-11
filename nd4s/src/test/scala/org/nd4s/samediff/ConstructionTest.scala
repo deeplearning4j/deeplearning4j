@@ -127,10 +127,14 @@ class ConstructionTest extends FlatSpec with Matchers {
 
     val target = Nd4j.createUninitialized(1000)
     val rng = new CpuNativeRandom(seed)
+
     val x1_label1 = Nd4j.randn(3.0, 1.0, target, rng)
-    val x2_label1 = Nd4j.randn(2.0, 1.0, target, rng)
-    val x1_label2 = Nd4j.randn(7.0, 1.0, target, rng)
-    val x2_label2 = Nd4j.randn(6.0, 1.0, target, rng)
+    val target1 = Nd4j.createUninitialized(1000)
+    val x2_label1 = Nd4j.randn(2.0, 1.0, target1, rng)
+    val target2 = Nd4j.createUninitialized(1000)
+    val x1_label2 = Nd4j.randn(7.0, 1.0, target2, rng)
+    val target3 = Nd4j.createUninitialized(1000)
+    val x2_label2 = Nd4j.randn(6.0, 1.0, target3, rng)
 
     // np.append, was not able to guess proper method
     val x1s = Nd4j.concat(0, x1_label1, x1_label2)
@@ -148,17 +152,23 @@ class ConstructionTest extends FlatSpec with Matchers {
     val w = sd.bind("w", DataType.DOUBLE, Array[Int](3))
 
     // tf.math.sigmoid -> where can I get sigmoid ? sd.nn : Transform
-    val tmp = w.get(SDIndex.point(1)) * X1
-    val tmp2 = sd.math.neg(w.get(SDIndex.point(2)) * X2)
-    val y_model = sd.nn.sigmoid((tmp) + (tmp2) + w.get(SDIndex.point(0)))
+    /*val y_model =
+      sd.nn.sigmoid(w.get(SDIndex.point(1)) * X1 - w.get(SDIndex.point(2)) * X2 + w.get(SDIndex.point(0)))*/
+    //val y_model =
+    //  sd.nn.sigmoid((w.get(SDIndex.point(2)) * X2) + (w.get(SDIndex.point(1)) * X1) + w.get(SDIndex.point(0)))
 
     // what is target for reduce_mean? What is proper replacement for np.reduce_mean?
     // 1 - SDVariable - doesn't work as is
-    // lost in long formula!!!
     // java.lang.IllegalStateException: Only floating point types are supported for strict tranform ops - got INT - log
-    val tmp1 = sd.math.log(sd.constant(1.0).minus(y_model))
-    val cost_fun =
-      (-sd.math.log(y_model) * y).minus(sd.math.log(sd.constant(1.0).minus(y_model)) * (sd.constant(1.0) - y))
+
+    //Sample: -tf.log(y_model * Y + (1 — y_model) * (1 — Y))
+    //val cost_fun =
+    //sd.math.neg(sd.math.log((y_model * y) + ((sd.constant(1.0) - y_model) * (sd.constant(1.0) - y))))
+    val y_model: SDVariable =
+      sd.nn.sigmoid(w.get(SDIndex.point(2)).mul(X2).add(w.get(SDIndex.point(1)).mul(X1)).add(w.get(SDIndex.point(0))))
+    val cost_fun: SDVariable = (sd.math.neg(
+      sd.math.log(y_model.mul(y).add((sd.math.log(sd.constant(1.0).minus(y_model)).mul(sd.constant(1.0).minus(y)))))
+    ))
 
     //cost = tf.reduce_mean(-tf.log(y_model) * Y -tf.log(1 - y_model) * (1 - Y))
     //val cost = sd.math.mean((-sd.math.log(y_model) * y).minus(tmp1 * (sd.constant(1.0).minus(y))))
@@ -168,6 +178,7 @@ class ConstructionTest extends FlatSpec with Matchers {
     // mapping between values and ph.
 
     sd.setLossVariables("loss")
+    sd.createGradFunction
     val conf = new TrainingConfig.Builder()
       .updater(updater)
       .minimize("loss")
@@ -178,7 +189,7 @@ class ConstructionTest extends FlatSpec with Matchers {
     val mds = new MultiDataSet(Array[INDArray](x1s, x2s, ys), new Array[INDArray](0))
 
     sd.setTrainingConfig(conf)
-    sd.fit(new SingletonMultiDataSetIterator(mds), 2000)
+    sd.fit(new SingletonMultiDataSetIterator(mds), 1)
 
     Console.println(w.eval)
 //      [   74.9750,  450.7023, -450.7023]
