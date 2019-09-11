@@ -57,7 +57,7 @@ namespace helpers {
         Nd4jPointer params[2];
         params[0] = context;
         params[1] = context->getCudaStream();
-
+        // Nth element in sorted sequence : basic algorithm sort and retrieve nth element in sorted
         if (input->isVector()) {
             sort(params, nullptr, sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), reverse);
 
@@ -71,9 +71,7 @@ namespace helpers {
             auto pTadShape = packX.specialShapeInfo();
             auto pTadShapeH = packX.primaryShapeInfo();
             auto pTadOffsets = packX.specialOffsets();
-//            auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
             sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, reverse);
-//            manager.synchronize();
             sortedVals.tickWriteDevice();
             sortedVals.syncToHost();
             auto stream = context->getCudaStream();

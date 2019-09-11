@@ -23,22 +23,31 @@
 namespace nd4j {
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // kernel to swap two NDArrays vals as linear sequences
+    // input - theSecondBuffer/Shape from input NDArray
+    // output - theFirstBuffer/Shape from input NDArray
     template <typename T>
     static __global__ void swapUnsafeKernel(void* theFirstBuffer, Nd4jLong* theFirstShape, void* theSecondBuffer, Nd4jLong* theSecondShape) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         int totalThreads = gridDim.x * blockDim.x;
-        Nd4jLong resultLength = shape::length(theFirstShape);
-        //const auto resultLength = shape::length(outputShape);
-//        if (shape::order(outputShape) == 'c') {           //  ews == 1 always here
+
+        __shared__ Nd4jLong resultLength;
+        __shared__ T* input;
+        __shared__ T* output;
+        if (0 == threadIdx.x) {
+           resultLength = shape::length(theFirstShape);
+           input = reinterpret_cast<T*>(theSecondBuffer);
+           output = reinterpret_cast<T*>(theFirstBuffer);
+        }
+        __syncthreads();
+
         for (int i = tid; i < resultLength; i += totalThreads) {
             auto xEws = shape::order(theFirstShape)  == 'c'? shape::elementWiseStride(theFirstShape) :1;
             auto yEws = shape::order(theSecondShape) == 'c'? shape::elementWiseStride(theSecondShape):1;
-            //if (shape::order(theFirstShape) ==)
+
             auto xOffset = shape::getIndexOffset(i * xEws, theFirstShape);
             auto yOffset = shape::getIndexOffset(i * yEws, theSecondShape);
-            T temp = *(reinterpret_cast<T*>(theFirstBuffer) + xOffset);
-            *(reinterpret_cast<T*>(theFirstBuffer) + xOffset) = *(reinterpret_cast<T*>(theSecondBuffer) + yOffset);
-            *(reinterpret_cast<T*>(theSecondBuffer) + yOffset) = temp;
+            nd4j::math::nd4j_swap(output[xOffset], input[yOffset]);
         }
     }
 

@@ -33,16 +33,19 @@ namespace nd4j {
         return shape::length(shapeInfo);
     }
 
-////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+//  tileKernel:
+//  input: (inputBuffer and inputShape) - NDArray buffer and shape to tile
+//  output: (outputBuffer and outputShape) - NDArray to tile input
+//  resultLength - length for output array
     template<typename T>
     static __global__ void
     tileKernel(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape,
                Nd4jLong resultLength) {
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 //        Original code to transform in cuda-based
-        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x; // copy linear sequence of elements, so one-level threading
         int totalThreads = gridDim.x * blockDim.x;
-        //const auto resultLength = shape::length(outputShape);
         if (shape::order(outputShape) == 'c') {           //  ews == 1 always here
             for (int i = tid; i < resultLength; i += totalThreads) {
                 auto yOffset = _subArrayOffset(i, outputShape, inputShape);
@@ -60,6 +63,7 @@ namespace nd4j {
 
     BUILD_SINGLE_TEMPLATE(template __global__ void tileKernel,(void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength), LIBND4J_TYPES);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template<typename T>
     void tileKernelH(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape, Nd4jLong resultLength, cudaStream_t *stream) {
         dim3 launchDims(256, 512, 8192);
@@ -68,6 +72,8 @@ namespace nd4j {
 
     BUILD_SINGLE_TEMPLATE(template void tileKernelH, (void const* inputBuffer, Nd4jLong* inputShape, void* outputBuffer, Nd4jLong* outputShape, Nd4jLong resultLength, cudaStream_t *stream), LIBND4J_TYPES);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// enhancement for tileKernel to different input and output data types: X - output type, Y - input type
     template<typename X, typename Y>
     static __global__ void
     tileKernelDouble(void const *inputBuffer, Nd4jLong *inputShape, void *outputBuffer, Nd4jLong *outputShape, Nd4jLong resultLength, Nd4jLong ews) {

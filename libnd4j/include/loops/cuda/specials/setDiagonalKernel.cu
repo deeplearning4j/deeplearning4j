@@ -23,15 +23,28 @@
 namespace nd4j {
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// set up given value to upper diagonal given
+// buffer - input buffer
+// shape - input shape
+// value - given value
+// diagonal - given upper diagonal (acceptable negative values also, 0 - the main diagonal)
+// row, cols - height and width of given matrix (MxN, rows = M, cols = N)
+//
     template <typename T>
     static __global__ void setDiagValueUpperKernel(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows,
             Nd4jLong cols) {
 
-        Nd4jLong  rank = shape::rank(shape);
-        int totalThreads = blockDim.x;
-        T* array = reinterpret_cast<T*>(buffer);
+        __shared__ Nd4jLong  rank;
+        __shared__ T* array;
+
+        if (0 == threadIdx.x) {
+            rank = shape::rank(shape);
+            array = reinterpret_cast<T *>(buffer);
+        }
+        __syncthreads();
+
         for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
-            for (int j = threadIdx.x; j < cols; j += totalThreads) {
+            for (int j = threadIdx.x; j < cols; j += blockDim.x) {
                 Nd4jLong coords[2] = {i, j};
                 Nd4jLong xOffset = shape::getOffset(shape, coords);
                 if (i + diagonal <= j)
@@ -40,6 +53,13 @@ namespace nd4j {
         }
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// set up given value to lower given diagonal
+// buffer - input buffer
+// shape - input shape
+// value - given value
+// diagonal - given lower diagonal (acceptable negative values also, 0 - the main diagonal)
+// row, cols - height and width of given matrix (MxN, rows = M, cols = N)
+//
 
     template <typename T>
     static __global__ void setDiagValueLowerKernel(void* buffer, Nd4jLong* shape, T value, int diagonal, Nd4jLong rows, Nd4jLong cols) {
@@ -95,8 +115,5 @@ namespace nd4j {
     BUILD_SINGLE_TEMPLATE(template void setDiagonalValueLower, (void* buffer, Nd4jLong* shape, NDArray const& value,
             int diagonal, Nd4jLong rows, Nd4jLong cols, cudaStream_t& stream), LIBND4J_TYPES);
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
 
 }

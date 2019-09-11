@@ -26,7 +26,22 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// matrix band kernel
+//
+// inputBuffer - buffer of input tensor
+// inputShape - shape of input tensor
+// outputBuffer - buffer of output tensor
+// outputShape - shape of output tensor
+// lowerBand - lower band of matrix
+// upperBand - upper band of matrix
+// tadOnlyInputShapeInfo - TAD shape for input
+// tadInputOffsets - TAD offsets for input
+// tadOnlyOutputShapeInfo - TAD output shape
+// tadOutputOffsets - TAD output offsets
+// numTads - number of subarrays
+// inputLength - input subarray length
+//
     template <typename T>
     static __global__ void matrixBandKernel(void* inputBuffer, Nd4jLong* inputShape,
             void* outputBuffer, Nd4jLong* outputShape, Nd4jLong lowerBand, Nd4jLong upperBand, Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong* tadInputOffsets,
@@ -42,7 +57,7 @@ namespace helpers {
                     Nd4jLong coords[2] = {i, j};
                     Nd4jLong tadOffsetOut = shape::getOffset(tadOnlyOutputShapeInfo, coords);
                     Nd4jLong tadOffsetIn = shape::getOffset(tadOnlyInputShapeInfo, coords);
-                    //shape::getIndexOffset(j, tadOnlyOutputShapeInfo)
+
                     if (i >= j) { // check lower diagonals
                         if (lowerBand > 0) {
                             if ((i - j) > lowerBand)
@@ -59,16 +74,14 @@ namespace helpers {
                                 *(reinterpret_cast<T *>(outputBuffer) + xOffset + tadOffsetOut) = *(
                                         reinterpret_cast<T const *>(inputBuffer) + yOffset + tadOffsetIn);
                     }
-//                if ((i >= j) && (i - j) <= lowerBand && (j - i) <= upperBand) // with in band
-//                    *(reinterpret_cast<T*>(outputBuffer) + xOffset + tadOffsetOut) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffsetIn);
-                    //else
-                    //    *(reinterpret_cast<T*>(outputBuffer) + xOffset + tadOffsetOut) = T(0);
                 }
             }
         }
 
     }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// matrixBandPart_ - main algorithm caller
+//
     template <typename T>
     void matrixBandPart_(nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         dim3 launchDims(256, 512, 8192);
@@ -82,17 +95,14 @@ namespace helpers {
 
         const Nd4jLong numTads = packX.numberOfTads();
 
-        if (!input->isActualOnDeviceSide())
-            input->syncToDevice();
-
-        if (!input->isActualOnDeviceSide())
-            input->syncToDevice();
-
+        NDArray::prepareSpecialUse({output}, {input});
         matrixBandKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(input->getSpecialBuffer(),
                 input->getSpecialShapeInfo(), output->getSpecialBuffer(), output->getSpecialShapeInfo(),
                 lowerBand, upperBand, packX.specialShapeInfo(), packX.specialOffsets(), packZ.specialShapeInfo(), packZ.specialOffsets(), numTads, input->lengthOf());
+        NDArray::registerSpecialUse({output}, {input});
     }
 
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void matrixBandPart(nd4j::LaunchContext * context, NDArray* input, NDArray* output, Nd4jLong lowerBand, Nd4jLong upperBand) {
         BUILD_SINGLE_SELECTOR(input->dataType(), matrixBandPart_, (context, input, output, lowerBand, upperBand), FLOAT_TYPES);
     }

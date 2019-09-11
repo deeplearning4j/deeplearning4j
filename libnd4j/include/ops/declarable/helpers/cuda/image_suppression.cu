@@ -26,7 +26,16 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// needToSuppressWithThreshold - predicate for suppression
+//      boxes - boxes tensor buffer
+//      boxesShape boxes tensor shape
+//      previousIndex - index for current pos value
+//      nextIndex - index for neighbor pos value
+//      threshold - threashold value to suppress
+//
+//      return value: true, if threshold is overcome, false otherwise
+//
     template <typename T>
     static __device__ bool needToSuppressWithThreshold(T* boxes, Nd4jLong* boxesShape, int previousIndex, int nextIndex, T threshold) {
         Nd4jLong previous0[] = {previousIndex, 0};
@@ -38,6 +47,8 @@ namespace helpers {
         Nd4jLong next2[] = {nextIndex, 2};
         Nd4jLong next3[] = {nextIndex, 3};
 
+        // we have rectangle with given max values. Compute vexes of rectangle first
+
         T minYPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
         T minXPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
         T maxYPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
@@ -47,11 +58,14 @@ namespace helpers {
         T maxYNext = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
         T maxXNext = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
 
+        // compute areas for comparation
         T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
         T areaNext = (maxYNext - minYNext) * (maxXNext - minXNext);
 
+        // of course, areas should be positive
         if (areaNext <= T(0.f) || areaPrev <= T(0.f)) return false;
 
+        // compute intersection of rectangles
         T minIntersectionY = nd4j::math::nd4j_max(minYPrev, minYNext);
         T minIntersectionX = nd4j::math::nd4j_max(minXPrev, minXNext);
         T maxIntersectionY = nd4j::math::nd4j_min(maxYPrev, maxYNext);
@@ -60,9 +74,15 @@ namespace helpers {
                 nd4j::math::nd4j_max(T(maxIntersectionY - minIntersectionY), T(0.0f)) *
                 nd4j::math::nd4j_max(T(maxIntersectionX - minIntersectionX), T(0.0f));
         T intersectionValue = intersectionArea / (areaPrev + areaNext - intersectionArea);
+        // final check
         return intersectionValue > threshold;
-    };
+    }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// shouldSelectKernel - compute status for all selected rectangles (boxes)
+//
+// we compute boolean flag as shared uint32 and return it on final only for the first thread
+//
     template <typename T, typename I>
     static __global__ void shouldSelectKernel(T* boxesBuf, Nd4jLong* boxesShape, I* indexBuf, I* selectedIndicesData, double threshold, int numSelected, int i, bool* shouldSelect) {
         auto tid = blockIdx.x * blockDim.x + threadIdx.x;
@@ -76,15 +96,20 @@ namespace helpers {
             if (shouldSelectShared) {
                 if (needToSuppressWithThreshold(boxesBuf, boxesShape, indexBuf[i],
                                                                   indexBuf[selectedIndicesData[j]], T(threshold)))
-                    atomicCAS(&shouldSelectShared, 1, 0);
+                    atomicCAS(&shouldSelectShared, 1, 0); // exchange only when need to suppress
             }
         }
         __syncthreads();
+
+        // final move: collect result
         if (threadIdx.x == 0) {
             *shouldSelect = shouldSelectShared > 0;
         }
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// indices - type depended, indicesLong - type defined (only 64bit integers)
+//
     template <typename I>
     static __global__ void copyIndices(void* indices,  void* indicesLong, Nd4jLong len) {
         I* indexBuf = reinterpret_cast<I*>(indices);
@@ -96,7 +121,9 @@ namespace helpers {
         for (auto i = tid; i < len; i += step)
             indexBuf[i] = (I)srcBuf[i];
     }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// nonMaxSuppressionV2 algorithm - given from TF NonMaxSuppressionV2 implementation
+//
     template <typename T, typename I>
     static void nonMaxSuppressionV2_(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
         auto stream = context->getCudaStream();
@@ -109,8 +136,7 @@ namespace helpers {
         Nd4jPointer extras[2] = {nullptr, stream};
 
         sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
-        // TO DO: sort indices using scales as value row
-        //std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return scales->e<T>(i) > scales->e<T>(j);});
+
         auto indexBuf = reinterpret_cast<I*>(indices->specialBuffer());
 
         NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()});
@@ -154,6 +180,7 @@ namespace helpers {
         }
 
     }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     void nonMaxSuppressionV2(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
         BUILD_DOUBLE_SELECTOR(boxes->dataType(), output->dataType(), nonMaxSuppressionV2_, (context, boxes, scales, maxSize, threshold, output), FLOAT_TYPES, INDEXING_TYPES);
