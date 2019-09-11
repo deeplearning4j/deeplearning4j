@@ -204,17 +204,6 @@
                         <version>${openblas.version}-${javacpp-presets.version}</version>
                         <classifier>${dependency.platform}</classifier>
                     </dependency>
-                    <dependency>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>mkl-dnn</artifactId>
-                        <version>${mkl-dnn.javacpp.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>mkl-dnn</artifactId>
-                        <version>${mkl-dnn.javacpp.version}</version>
-                        <classifier>${dependency.platform2}</classifier>
-                    </dependency>
                 </dependencies>
                 <configuration>
                     <properties>${javacpp.platform.properties}</properties>
