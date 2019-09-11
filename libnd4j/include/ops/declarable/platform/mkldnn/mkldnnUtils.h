@@ -21,6 +21,7 @@
 #ifndef DEV_TESTS_MKLDNNUTILS_H
 #define DEV_TESTS_MKLDNNUTILS_H
 
+#include <NativeOps.h>
 #include <NDArray.h>
 #include <mkldnn.hpp>
 #include <MKLDNNStream.h>

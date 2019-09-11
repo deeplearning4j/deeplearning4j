@@ -149,6 +149,10 @@ namespace nd4j {
             }
 
             PLATFORM_CHECK(conv3dnew) {
+                // we don't want to use mkldnn if cpu doesn't support avx/avx2
+                if (::optimalLevel() < 2)
+                    return false;
+
                 auto input = INPUT_VARIABLE(
                         0);                                    // [bS, iD, iH, iW, iC] (NDHWC) or [bS, iC, iD, iH, iW] (NCDHW)
                 auto weights = INPUT_VARIABLE(1);                                    // [kD, kH, kW, iC, oC] always
