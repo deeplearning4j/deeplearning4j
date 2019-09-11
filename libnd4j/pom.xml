@@ -74,6 +74,7 @@
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
         <libnd4j.buildthreads></libnd4j.buildthreads>
+        <libnd4j.helper></libnd4j.helper>
     </properties>
 
     <build>
@@ -175,6 +176,8 @@
                                 <argument>${libnd4j.tests}</argument>
                                 <argument>-j</argument>
                                 <argument>${libnd4j.buildthreads}</argument>
+                                <argument>-h</argument>
+                                <argument>${libnd4j.helper}</argument>
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
@@ -390,6 +393,31 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <!-- Profiles to set the default libnd4j.helper property, example: mkdnn -->
+        <profile>
+            <id>libnd4j-helper-avx2</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>avx2</value>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.helper>mkldnn</libnd4j.helper>
+            </properties>
+        </profile>
+        <profile>
+            <id>libnd4j-helper-avx512</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>avx512</value>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.helper>mkldnn</libnd4j.helper>
+            </properties>
         </profile>
     </profiles>
 </project>
