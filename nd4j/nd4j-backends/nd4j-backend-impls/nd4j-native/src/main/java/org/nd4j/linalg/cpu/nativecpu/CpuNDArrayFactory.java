@@ -104,6 +104,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             log.error("Error initializing ND4J: Attempting to use " + binLevel + " ND4J binary on a CPU with only " + optLevel + " support");
             log.error( binaryLevel + " binaries cannot be run on a CPU without these instructions");
             log.error("To fix: use nd4j-native with the appropriate classifier");
+            log.error("See deeplearning4j.org/cpu for more details");
             log.error("ND4J will now exit.");
             System.exit(1);
         }
@@ -115,9 +116,11 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             String binLevel = cpuBinaryLevelToName(binaryLevel);
             String optLevel = cpuBinaryLevelToName(optimalLevel);
 
-            log.warn("Initializing ND4J with " + binLevel + " binary on a CPU with " + optLevel + " support");
-            log.warn("Using ND4J with " + binLevel + " will improve performance");
-            log.warn("To fix: use nd4j-native with the appropriate classifier. Set environment variable " + ND4JEnvironmentVars.ND4J_IGNORE_AVX + "=true to suppress this warning");
+            log.warn("*********************************** CPU Feature Check Failed ***********************************");
+            log.warn("Warning: Initializing ND4J with " + binLevel + " binary on a CPU with " + optLevel + " support");
+            log.warn("Using ND4J with " + optLevel + " will improve performance. See deeplearning4j.org/cpu for more details");
+            log.warn("Or set environment variable " + ND4JEnvironmentVars.ND4J_IGNORE_AVX + "=true to suppress this warning");
+            log.warn("************************************************************************************************");
         }
 
         blas = new CpuBlas();
