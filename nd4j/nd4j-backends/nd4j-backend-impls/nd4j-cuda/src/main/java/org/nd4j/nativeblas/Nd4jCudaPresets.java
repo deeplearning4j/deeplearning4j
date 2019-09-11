@@ -68,6 +68,7 @@ import org.bytedeco.javacpp.tools.InfoMapper;
                         //"op_boilerplate.h",
                         "ops/InputType.h",
                         "ops/declarable/OpDescriptor.h",
+                        "ops/declarable/PlatformHelper.h",
                         "ops/declarable/BroadcastableOp.h",                        
                         "helpers/OpArgsHolder.h",
                         "ops/declarable/DeclarableOp.h",
