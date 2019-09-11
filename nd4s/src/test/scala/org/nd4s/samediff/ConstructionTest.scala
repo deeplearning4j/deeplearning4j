@@ -140,30 +140,16 @@ class ConstructionTest extends FlatSpec with Matchers {
     val x1s = Nd4j.concat(0, x1_label1, x1_label2)
     val x2s = Nd4j.concat(0, x2_label1, x2_label2)
 
-    // Must have implicit sd here for some ops, inobvious
+    // Must have implicit sd here for some ops
     implicit val sd = SameDiff.create
     val ys = (Nd4j.scalar(0.0) * x1_label1.length()) + (Nd4j.scalar(1.0) * x1_label2.length())
 
-    // shape???
+    // Empty shape can't be passed vs tf behaviour
     val X1 = sd.placeHolder("x1", DataType.DOUBLE, 2000)
     val X2 = sd.placeHolder("x2", DataType.DOUBLE, 2000)
     val y = sd.placeHolder("y", DataType.DOUBLE)
-    // There's no option to pass Trainable=True
     val w = sd.bind("w", DataType.DOUBLE, Array[Int](3))
-
-    // tf.math.sigmoid -> where can I get sigmoid ? sd.nn : Transform
-    /*val y_model =
-      sd.nn.sigmoid(w.get(SDIndex.point(1)) * X1 - w.get(SDIndex.point(2)) * X2 + w.get(SDIndex.point(0)))*/
-    //val y_model =
-    //  sd.nn.sigmoid((w.get(SDIndex.point(2)) * X2) + (w.get(SDIndex.point(1)) * X1) + w.get(SDIndex.point(0)))
-
-    // what is target for reduce_mean? What is proper replacement for np.reduce_mean?
-    // 1 - SDVariable - doesn't work as is
-    // java.lang.IllegalStateException: Only floating point types are supported for strict tranform ops - got INT - log
-
     //Sample: -tf.log(y_model * Y + (1 — y_model) * (1 — Y))
-    //val cost_fun =
-    //sd.math.neg(sd.math.log((y_model * y) + ((sd.constant(1.0) - y_model) * (sd.constant(1.0) - y))))
     val y_model: SDVariable =
       sd.nn.sigmoid(w.get(SDIndex.point(2)) * X2 + w.get(SDIndex.point(1)) * X1 + w.get(SDIndex.point(0)))
     val cost_fun: SDVariable = (sd.math.neg(
