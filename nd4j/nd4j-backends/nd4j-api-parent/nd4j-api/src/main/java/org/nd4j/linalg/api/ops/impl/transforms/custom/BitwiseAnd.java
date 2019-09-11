@@ -50,7 +50,7 @@ public class BitwiseAnd extends BaseDynamicTransformOp {
 
     @Override
     public String opName() {
-        return "bitwise_and";
+        return "BitwiseAnd";
     }
 
 

@@ -36,8 +36,8 @@ public class TensorArrayScatter extends BaseTensorOp {
     public TensorArrayScatter(){}
 
     @Override
-    public String tensorflowName() {
-        return "TensorArrayScatterV3";
+    public String[] tensorflowNames() {
+        return new String[]{"TensorArrayScatter", "TensorArrayScatterV2", "TensorArrayScatterV3"};
     }
 
     @Override

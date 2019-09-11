@@ -35,8 +35,8 @@ public class TensorArrayWrite extends BaseTensorOp {
 
    public TensorArrayWrite(){}
    @Override
-   public String tensorflowName() {
-      return "TensorArrayWriteV3";
+   public String[] tensorflowNames() {
+      return new String[]{"TensorArrayWrite", "TensorArrayWriteV2", "TensorArrayWriteV3"};
    }
 
    @Override
@@ -49,9 +49,9 @@ public class TensorArrayWrite extends BaseTensorOp {
       return Op.Type.CUSTOM;
    }
 
-    @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
-        //Dummy float variable
-        return Collections.singletonList(DataType.FLOAT);
-    }
+   @Override
+   public List<DataType> calculateOutputDataTypes(List<DataType> inputDataType){
+      //Dummy float variable
+      return Collections.singletonList(DataType.FLOAT);
+   }
 }

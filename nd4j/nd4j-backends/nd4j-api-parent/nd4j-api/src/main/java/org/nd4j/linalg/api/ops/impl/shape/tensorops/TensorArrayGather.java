@@ -37,14 +37,14 @@ public class TensorArrayGather extends BaseTensorOp {
     }
 
     public TensorArrayGather(){}
-   @Override
+    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op name found for " + opName());
     }
 
     @Override
-    public String tensorflowName() {
-        return "TensorArrayGatherV3";
+    public String[] tensorflowNames() {
+        return new String[]{"TensorArrayGather", "TensorArrayGatherV2", "TensorArrayGatherV3"};
     }
 
 
