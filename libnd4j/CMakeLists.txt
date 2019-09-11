@@ -10,7 +10,7 @@ option(BUILD_TESTS "Build tests" OFF)
 
 set(X86_BUILD false)
 
-if (NOT IOS_BUILD AND NOT ANDROID_BUILD AND NOT ${ARCH} MATCHES "power*")
+if (NOT IOS_BUILD AND NOT ANDROID_BUILD AND NOT ${ARCH} MATCHES "power*" AND NOT ${ARCH} MATCHES "arm*")
     set(X86_BUILD true)
 endif()
 
