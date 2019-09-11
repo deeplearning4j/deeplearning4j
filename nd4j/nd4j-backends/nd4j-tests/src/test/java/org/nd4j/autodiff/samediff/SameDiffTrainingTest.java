@@ -16,9 +16,16 @@
 
 package org.nd4j.autodiff.samediff;
 
+import static org.junit.Assert.assertTrue;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
 import org.junit.Test;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;
+import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -29,15 +36,13 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.learning.config.*;
+import org.nd4j.linalg.learning.config.AMSGrad;
+import org.nd4j.linalg.learning.config.AdaMax;
+import org.nd4j.linalg.learning.config.Adam;
+import org.nd4j.linalg.learning.config.IUpdater;
+import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.weightinit.impl.XavierInitScheme;
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import static org.junit.Assert.assertTrue;
 
 @Slf4j
 public class SameDiffTrainingTest extends BaseNd4jTest {
@@ -117,6 +122,110 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
         }
     }
 
+
+    @Test
+    public void irisTrainingEvalTest() {
+
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        NormalizerStandardize std = new NormalizerStandardize();
+        std.fit(iter);
+        iter.setPreProcessor(std);
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+
+        SDVariable in = sd.placeHolder("input", DataType.FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
+
+        SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), DataType.FLOAT, 4, 10);
+        SDVariable b0 = sd.zero("b0", DataType.FLOAT, 1, 10);
+
+        SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), DataType.FLOAT, 10, 3);
+        SDVariable b1 = sd.zero("b1", DataType.FLOAT, 1, 3);
+
+        SDVariable z0 = in.mmul(w0).add(b0);
+        SDVariable a0 = sd.math().tanh(z0);
+        SDVariable z1 = a0.mmul(w1).add("prediction", b1);
+        SDVariable a1 = sd.nn().softmax(z1);
+
+        SDVariable diff = sd.f().squaredDifference(a1, label);
+        SDVariable lossMse = diff.mul(diff).mean();
+
+        TrainingConfig conf = new TrainingConfig.Builder()
+                .l2(1e-4)
+                .updater(new Adam(1e-2))
+                .dataSetFeatureMapping("input")
+                .dataSetLabelMapping("label")
+                .trainEvaluation("prediction", 0, new Evaluation())
+                .build();
+
+        sd.setTrainingConfig(conf);
+
+        History hist = sd.fit().train(iter, 50).exec();
+
+        Evaluation e = hist.finalTrainingEvaluations().evaluation("prediction");
+
+        System.out.println(e.stats());
+
+        double acc = e.accuracy();
+
+        assertTrue("Accuracy bad: " + acc, acc >= 0.75);
+    }
+
+
+    @Test
+    public void irisTrainingValidationTest() {
+
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+        NormalizerStandardize std = new NormalizerStandardize();
+        std.fit(iter);
+        iter.setPreProcessor(std);
+
+        DataSetIterator valIter = new IrisDataSetIterator(30, 60);
+        NormalizerStandardize valStd = new NormalizerStandardize();
+        valStd.fit(valIter);
+        valIter.setPreProcessor(std);
+
+        Nd4j.getRandom().setSeed(12345);
+        SameDiff sd = SameDiff.create();
+
+        SDVariable in = sd.placeHolder("input", DataType.FLOAT, -1, 4);
+        SDVariable label = sd.placeHolder("label", DataType.FLOAT, -1, 3);
+
+        SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), DataType.FLOAT, 4, 10);
+        SDVariable b0 = sd.zero("b0", DataType.FLOAT, 1, 10);
+
+        SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), DataType.FLOAT, 10, 3);
+        SDVariable b1 = sd.zero("b1", DataType.FLOAT, 1, 3);
+
+        SDVariable z0 = in.mmul(w0).add(b0);
+        SDVariable a0 = sd.math().tanh(z0);
+        SDVariable z1 = a0.mmul(w1).add("prediction", b1);
+        SDVariable a1 = sd.nn().softmax(z1);
+
+        SDVariable diff = sd.f().squaredDifference(a1, label);
+        SDVariable lossMse = diff.mul(diff).mean();
+
+        TrainingConfig conf = new TrainingConfig.Builder()
+                .l2(1e-4)
+                .updater(new Adam(1e-2))
+                .dataSetFeatureMapping("input")
+                .dataSetLabelMapping("label")
+                .validationEvaluation("prediction", 0, new Evaluation())
+                .build();
+
+        sd.setTrainingConfig(conf);
+
+        History hist = sd.fit().train(iter, 50).validate(valIter, 5).exec();
+
+        Evaluation e = hist.finalValidationEvaluations().evaluation("prediction");
+
+        System.out.println(e.stats());
+
+        double acc = e.accuracy();
+
+        assertTrue("Accuracy bad: " + acc, acc >= 0.75);
+    }
 
 
     @Test
