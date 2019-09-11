@@ -52,14 +52,14 @@ void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& outp
     PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
     for (Nd4jLong i = 0; i < xLen; ++i) {
 
-        shape::index2coords(xRank, xShapeInfo + 1, i, xLen, coords.data());
+        shape::index2coords(i, xShapeInfo, coords.data());
 
-        const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xRank + 1, coords.data(), xRank);
-        const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(0, zShapeInfo + 1, zShapeInfo + xRank + 1, coords.data(), xRank);
+        const auto xOffset = shape::getOffset(xShapeInfo, coords.data());
+        const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(zShapeInfo, coords.data());
 
         // condition to be on diagonal of innermost matrix
         if(coords[xRank - 2] == coords[xRank - 1])
-            z[zOffset] = y[shape::getOffset(0, yShapeInfo + 1, yShapeInfo + xRank, coords.data(), xRank - 1)];
+            z[zOffset] = y[shape::getOffset(yShapeInfo, coords.data())];
         else
             z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
     }

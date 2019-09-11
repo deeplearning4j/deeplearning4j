@@ -92,7 +92,7 @@ namespace nd4j {
                         } else {
                             for (Nd4jLong i = threadIdx.x; i < tadLength; i += blockDim.x) {
 
-                                auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
+                                auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
                                 auto yOffset = newOffset + xOffset;
                                 xOffset += oldOffset;
 

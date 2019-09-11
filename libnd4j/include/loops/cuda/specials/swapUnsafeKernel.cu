@@ -34,8 +34,8 @@ namespace nd4j {
             auto xEws = shape::order(theFirstShape)  == 'c'? shape::elementWiseStride(theFirstShape) :1;
             auto yEws = shape::order(theSecondShape) == 'c'? shape::elementWiseStride(theSecondShape):1;
             //if (shape::order(theFirstShape) ==)
-            auto xOffset = shape::getIndexOffset(i * xEws, theFirstShape, resultLength);
-            auto yOffset = shape::getIndexOffset(i * yEws, theSecondShape, resultLength);
+            auto xOffset = shape::getIndexOffset(i * xEws, theFirstShape);
+            auto yOffset = shape::getIndexOffset(i * yEws, theSecondShape);
             T temp = *(reinterpret_cast<T*>(theFirstBuffer) + xOffset);
             *(reinterpret_cast<T*>(theFirstBuffer) + xOffset) = *(reinterpret_cast<T*>(theSecondBuffer) + yOffset);
             *(reinterpret_cast<T*>(theSecondBuffer) + yOffset) = temp;

@@ -21,8 +21,8 @@
 #include <loops/special_kernels.h>
 
 namespace nd4j {
-    static Nd4jLong __device__ __noinline__ _getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo, Nd4jLong length) {
-        return shape::getIndexOffset(index, shapeInfo, length);
+    static Nd4jLong __device__ __noinline__ _getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo) {
+        return shape::getIndexOffset(index, shapeInfo);
     }
 
     static Nd4jLong __device__ __noinline__ _subArrayOffset(Nd4jLong index, Nd4jLong *shapeInfoA, Nd4jLong *shapeInfoB) {
@@ -50,7 +50,7 @@ namespace nd4j {
             }
         } else {
             for (int i = tid; i < resultLength; i += totalThreads) {
-                auto xOffset = _getIndexOffset(i, outputShape, resultLength);
+                auto xOffset = _getIndexOffset(i, outputShape);
                 auto yOffset = _subArrayOffset(i, outputShape, inputShape);
                 *(reinterpret_cast<T *>(outputBuffer) + xOffset) = *(reinterpret_cast<T const *>(inputBuffer) + yOffset);
             }
@@ -89,7 +89,7 @@ namespace nd4j {
 
             for (int i = tid; i < resultLength; i += totalThreads) {
 
-                auto xOffset = _getIndexOffset(i, outputShape, resultLength);
+                auto xOffset = _getIndexOffset(i, outputShape);
                 auto yOffset = _subArrayOffset(i, outputShape, inputShape);
                 *(reinterpret_cast<X *>(outputBuffer) + xOffset) = static_cast<X>(*(reinterpret_cast<Y const *>(inputBuffer) + yOffset));
             }

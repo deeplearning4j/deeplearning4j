@@ -53,11 +53,11 @@ namespace helpers {
             for (int i = tid; i < actualShift; i += blockDim.x * gridDim.x) {
                 int sourceIndex = fullLength - actualShift + i;
 
-                auto xOffsetA = shape::getIndexOffset(i, xShapeInfo, fullLength);
-                auto xOffsetB = shape::getIndexOffset(sourceIndex, xShapeInfo, fullLength);
+                auto xOffsetA = shape::getIndexOffset(i, xShapeInfo);
+                auto xOffsetB = shape::getIndexOffset(sourceIndex, xShapeInfo);
 
-                auto zOffsetA = shape::getIndexOffset(i, zShapeInfo, fullLength);
-                auto zOffsetB = shape::getIndexOffset(sourceIndex, zShapeInfo, fullLength);
+                auto zOffsetA = shape::getIndexOffset(i, zShapeInfo);
+                auto zOffsetB = shape::getIndexOffset(sourceIndex, zShapeInfo);
 
                 auto eA = x[xOffsetA];
                 auto eB = x[xOffsetB];
@@ -107,11 +107,11 @@ namespace helpers {
                     int destinationIndex = fullLength - (count + 1) * actualShift + i;
                     int sourceIndex = fullLength - count * actualShift + i;
 
-                    auto xOffsetA = shape::getIndexOffset(destinationIndex, xShapeInfo, fullLength);
-                    auto xOffsetB = shape::getIndexOffset(sourceIndex, xShapeInfo, fullLength);
+                    auto xOffsetA = shape::getIndexOffset(destinationIndex, xShapeInfo);
+                    auto xOffsetB = shape::getIndexOffset(sourceIndex, xShapeInfo);
 
-                    auto zOffsetA = shape::getIndexOffset(destinationIndex, zShapeInfo, fullLength);
-                    auto zOffsetB = shape::getIndexOffset(sourceIndex, zShapeInfo, fullLength);
+                    auto zOffsetA = shape::getIndexOffset(destinationIndex, zShapeInfo);
+                    auto zOffsetB = shape::getIndexOffset(sourceIndex, zShapeInfo);
 
                     auto eA = x[xOffsetA];
                     auto eB = x[xOffsetB];
@@ -154,11 +154,11 @@ namespace helpers {
                 int remainIdx = i + actualShift;
                 int sourceIndex = remainIdx + remainShift;
 
-                auto xOffsetA = shape::getIndexOffset(remainIdx, xShapeInfo, fullLength);
-                auto xOffsetB = shape::getIndexOffset(sourceIndex, xShapeInfo, fullLength);
+                auto xOffsetA = shape::getIndexOffset(remainIdx, xShapeInfo);
+                auto xOffsetB = shape::getIndexOffset(sourceIndex, xShapeInfo);
 
-                auto zOffsetA = shape::getIndexOffset(remainIdx, zShapeInfo, fullLength);
-                auto zOffsetB = shape::getIndexOffset(sourceIndex, zShapeInfo, fullLength);
+                auto zOffsetA = shape::getIndexOffset(remainIdx, zShapeInfo);
+                auto zOffsetB = shape::getIndexOffset(sourceIndex, zShapeInfo);
 
                 auto eA = x[xOffsetA];
                 auto eB = x[xOffsetB];
@@ -190,7 +190,7 @@ namespace helpers {
             }
         } else {
             for (int e = threadIdx.x; e < tadLength; e += blockDim.x) {
-                auto zOffset = shape::getIndexOffset(e, zShapeInfo, tadLength);
+                auto zOffset = shape::getIndexOffset(e, zShapeInfo);
 
                 auto eA = x[zOffset];
                 auto eB = z[zOffset];

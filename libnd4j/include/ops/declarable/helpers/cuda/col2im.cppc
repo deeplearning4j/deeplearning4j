@@ -35,12 +35,12 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
     auto colShape  		= shape::shapeOf(colShapeBuffer);
     auto colStride 		= shape::stride(colShapeBuffer);
     auto imShape  	    = shape::shapeOf(imShapeBuffer);
-    auto imStride 	    = shape::stride(imShapeBuffer);            
+    auto imStride 	    = shape::stride(imShapeBuffer);
 
     const int bS = imShape[0];
     const int iC = imShape[1];
     const int kH = colShape[2];
-    const int kW = colShape[3];                    
+    const int kW = colShape[3];
     const int oH = colShape[4];
     const int oW = colShape[5];
     const Nd4jLong colStride0 = colStride[0];
@@ -58,31 +58,31 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
     const auto imEWS = shape::elementWiseStride(imShapeBuffer);
     if(imEWS == 1) {
         memset(imBuff, 0, shape::length(imShapeBuffer) * sizeof(T));
-    } 
+    }
     else if (imEWS > 1) {
 PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close))
         for (int i = 0; i < shape::length(imShapeBuffer) * imEWS; i += imEWS)
             imBuff[i] = static_cast<T>(0.f);
-    } 
-    else {        
+    }
+    else {
         const auto len = shape::length(imShapeBuffer);
 PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close))
-        for (int i = 0; i < len; i++)            
-            imBuff[shape::getIndexOffset(i, imShapeBuffer, len)] = static_cast<T>(0.f);
+        for (int i = 0; i < len; i++)
+            imBuff[shape::getIndexOffset(i, imShapeBuffer)] = static_cast<T>(0.f);
     }
-            
+
 	T *col, *im;
     int imRow, imCol;
 
     if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
-            
+
 PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close) private(col, im, imRow, imCol))
-    	for (int b = 0; b < bS; b++) {        
-      		for (int c = 0; c < iC; ++c) {                    
-            	for (int kRow = 0; kRow < kH; ++kRow) {                        
-                	for (int kCol = 0; kCol < kW; ++kCol) {                            
+    	for (int b = 0; b < bS; b++) {
+      		for (int c = 0; c < iC; ++c) {
+            	for (int kRow = 0; kRow < kH; ++kRow) {
+                	for (int kCol = 0; kCol < kW; ++kCol) {
                     	for (int colH = 0; colH < oH; ++colH) {
-                        	for (int colW = 0; colW < oW; ++colW) {                    
+                        	for (int colW = 0; colW < oW; ++colW) {
 
                             	imRow = (-pH + kRow * dH) + colH*sH;
                                 imCol = (-pW + kCol * dW) + colW*sW;
@@ -97,21 +97,21 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close) private(col, im, 
                     }
                 }
             }
-        }  
+        }
     }
     else {
 
 PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close) private(im, col, imRow, imCol))
-    	for (int b = 0; b < bS; b++) {        
+    	for (int b = 0; b < bS; b++) {
         	for (int colH = 0; colH < oH; ++colH) {
             	for (int colW = 0; colW < oW; ++colW) {
-                	for (int c = 0; c < iC; ++c) {                        
-                    	for (int kRow = 0; kRow < kH; ++kRow) {                        
-                        	for (int kCol = 0; kCol < kW; ++kCol) {                            
-                        
+                	for (int c = 0; c < iC; ++c) {
+                    	for (int kRow = 0; kRow < kH; ++kRow) {
+                        	for (int kCol = 0; kCol < kW; ++kCol) {
+
                             	imRow = (-pH + kRow * dH) + colH*sH;
                                 imCol = (-pW + kCol * dW) + colW*sW;
-                                        
+
                                 col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
                                 im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
 
@@ -120,9 +120,9 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(static) proc_bind(close) private(im, col, 
                             }
                         }
                     }
-                }                           
+                }
             }
-        }  
+        }
     }
 }
 

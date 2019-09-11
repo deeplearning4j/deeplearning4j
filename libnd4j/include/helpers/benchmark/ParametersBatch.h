@@ -64,7 +64,7 @@ namespace nd4j {
 
 
             for (int i = 0; i < totalIterations; i++) {
-                shape::index2coords(xRank, xShape, i, totalIterations, xCoords);
+                shape::index2coords(i, xRank, xShape, xCoords);
 
                 Parameters params;
                 for (int j = 0; j < xRank; j++) {

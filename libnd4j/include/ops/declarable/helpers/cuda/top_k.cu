@@ -50,15 +50,15 @@ __global__ static void inTopKCuda(const void* vx, const Nd4jLong* xShapeInfo,
         xTadLen = shape::length(xTadShapeInfo);
 
         xTad = reinterpret_cast<const X*>(vx) + xTadOffsets[blockIdx.x];
-        idx = y[shape::getIndexOffset(blockIdx.x, yShapeInfo, shape::length(yShapeInfo))]; // shape::length(yShapeInfo) == numTads
-        elemToCompare = xTad[shape::getIndexOffset(idx, xTadShapeInfo, xTadLen)];
+        idx = y[shape::getIndexOffset(blockIdx.x, yShapeInfo)]; // shape::length(yShapeInfo) == numTads
+        elemToCompare = xTad[shape::getIndexOffset(idx, xTadShapeInfo)];
     }
 
     __syncthreads();
 
     sharedMem[threadIdx.x] = 0;
     for (Nd4jLong i = threadIdx.x; i < xTadLen; i += blockDim.x)
-        if(elemToCompare < xTad[shape::getIndexOffset(i, xTadShapeInfo, xTadLen)])
+        if(elemToCompare < xTad[shape::getIndexOffset(i, xTadShapeInfo)])
             ++sharedMem[threadIdx.x];
 
     __syncthreads();
@@ -71,7 +71,7 @@ __global__ static void inTopKCuda(const void* vx, const Nd4jLong* xShapeInfo,
     }
 
     if (threadIdx.x == 0)
-        z[shape::getIndexOffset(blockIdx.x, zShapeInfo, shape::length(zShapeInfo))] = *sharedMem < k;
+        z[shape::getIndexOffset(blockIdx.x, zShapeInfo)] = *sharedMem < k;
 }
 
 ///////////////////////////////////////////////////////////////////
@@ -117,9 +117,9 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
             auto z = reinterpret_cast<X*>(vz) + zTadOffsets[t];
 
             for (int e = threadIdx.x; e < k; e += blockDim.x) {
-                auto idx = i[shape::getIndexOffset(e, iTadShapeInfo, k)];
+                auto idx = i[shape::getIndexOffset(e, iTadShapeInfo)];
 
-                z[shape::getIndexOffset(e, zTadShapeInfo, k)] = x[shape::getIndexOffset(idx, xTadShapeInfo, tadLength)];
+                z[shape::getIndexOffset(e, zTadShapeInfo)] = x[shape::getIndexOffset(idx, xTadShapeInfo)];
             }
         }
     }
@@ -153,7 +153,7 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
 
                 // local max values/indices
                 for (int e = threadIdx.x; e < tadLength; e++) {
-                    auto value = x[shape::getIndexOffset(e, xTadShapeInfo, tadLength)];
+                    auto value = x[shape::getIndexOffset(e, xTadShapeInfo)];
 
                     // we'll compare this value to current stored ones
                     for (int f = 0; f < scanWidth; f++) {
@@ -180,8 +180,8 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
                 // at this point we know local minimum for next iteration
                 if (threadIdx.x == 0) {
                     localMaximum = tempValues[scanWidth - 1];
-                    z[shape::getIndexOffset(p, zTadShapeInfo, k)] = tempValues[scanWidth - 1];
-                    i[shape::getIndexOffset(p, iTadShapeInfo, k)] = tempIndices[scanWidth - 1];
+                    z[shape::getIndexOffset(p, zTadShapeInfo)] = tempValues[scanWidth - 1];
+                    i[shape::getIndexOffset(p, iTadShapeInfo)] = tempIndices[scanWidth - 1];
                 }
                 __syncthreads();
             }
@@ -194,8 +194,8 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
                         for (int tid = threadIdx.x; tid < k; tid += blockDim.x) {
                             auto top = 2 * tid + 1;
                             if (top < k) {
-                                auto t0 = shape::getIndexOffset(top - 1, iTadShapeInfo, k);
-                                auto t1 = shape::getIndexOffset(top, iTadShapeInfo, k);
+                                auto t0 = shape::getIndexOffset(top - 1, iTadShapeInfo);
+                                auto t1 = shape::getIndexOffset(top, iTadShapeInfo);
 
                                 if (i[t0] > i[t1]) {
                                     // swap indices first
@@ -215,8 +215,8 @@ int inTopKFunctor(nd4j::LaunchContext * context, const NDArray* predictions, con
                         for (int tid = threadIdx.x; tid < k; tid += blockDim.x) {
                             auto top = 2 * tid + 2;
                             if (top < k) {
-                                auto t0 = shape::getIndexOffset(top - 1, iTadShapeInfo, k);
-                                auto t1 = shape::getIndexOffset(top, iTadShapeInfo, k);
+                                auto t0 = shape::getIndexOffset(top - 1, iTadShapeInfo);
+                                auto t1 = shape::getIndexOffset(top, iTadShapeInfo);
 
                                 if (i[t0] > i[t1]) {
                                     // swap indices first

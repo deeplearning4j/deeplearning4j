@@ -33,7 +33,7 @@ namespace nd4j {
         for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
             for (int j = threadIdx.x; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
-                Nd4jLong xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
+                Nd4jLong xOffset = shape::getOffset(shape, coords);
                 if (i + diagonal <= j)
                     array[xOffset] = value;
             }
@@ -48,7 +48,7 @@ namespace nd4j {
         for (Nd4jLong i = blockIdx.x; i < rows; i += gridDim.x) {
             for (int j = threadIdx.x; j < cols; j += totalThreads) {
                 Nd4jLong coords[2] = {i, j};
-                auto xOffset = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), coords, rank);
+                auto xOffset = shape::getOffset(shape, coords);
                 if (i + diagonal >= j)
                     *(reinterpret_cast<T*>(buffer) + xOffset) = value;
             }

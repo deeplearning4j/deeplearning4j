@@ -41,9 +41,9 @@ namespace helpers {
             auto xOffset = tadOutputOffsets[i];
             for (Nd4jLong j = threadIdx.x; j < inputLength; j += totalThreads) {
                 Nd4jLong coords[2] = {j, j};
-                Nd4jLong tadOffset = shape::getOffset(0, shape::shapeOf(tadOnlyInputShapeInfo), shape::stride(tadOnlyInputShapeInfo), coords, 2);
-                //shape::getIndexOffset(j, tadOnlyOutputShapeInfo, inputLength)
-                *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo, inputLength)) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);
+                Nd4jLong tadOffset = shape::getOffset(tadOnlyInputShapeInfo, coords);
+                //shape::getIndexOffset(j, tadOnlyOutputShapeInfo)
+                *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo)) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);
             }
         }
     }

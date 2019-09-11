@@ -67,7 +67,7 @@ TEST_F(ShapeTests, Test_ShapeEquality_1) {
     Nd4jLong shape[] = {4, 2, 3, 4, 5, 60, 20, 5, 1, 0, -1, 102};
     Nd4jLong shape_GOOD[] = {4, 2, 3, 4, 5, 60, 20, 5, 1, 0, 1, 99};
     Nd4jLong shape_BAD[] = {4, 3, 3, 4, 5, 60, 20, 5, 1, 0, -1, 102};
-    
+
 
     ASSERT_TRUE(shape::equalsSoft(shape, shape_GOOD));
     ASSERT_FALSE(shape::equalsSoft(shape, shape_BAD));
@@ -77,7 +77,7 @@ TEST_F(ShapeTests, Test_ShapeEquality_2) {
     Nd4jLong shape[] = {4, 2, 3, 4, 5, 60, 20, 5, 1, 0, -1, 102};
     Nd4jLong shape_GOOD[] = {4, 2, 3, 4, 5, 60, 20, 5, 1, 0, -1, 102};
     Nd4jLong shape_BAD[] = {4, 2, 3, 4, 5, 60, 20, 5, 1, 0, -1, 99};
-    
+
 
     ASSERT_TRUE(shape::equalsStrict(shape, shape_GOOD));
     ASSERT_FALSE(shape::equalsStrict(shape, shape_BAD));
@@ -86,45 +86,24 @@ TEST_F(ShapeTests, Test_ShapeEquality_2) {
 TEST_F(ShapeTests, Test_Ind2SubC_1) {
     Nd4jLong shape[] = {3, 5};
     Nd4jLong c0[2];
-    shape::index2coords(2, shape, 0, c0);
+    shape::index2coords(0, 2, shape, c0);
 
     ASSERT_EQ(0, c0[0]);
     ASSERT_EQ(0, c0[1]);
 
     Nd4jLong c1[2];
-    shape::index2coords(2, shape, 1, c1);
+    shape::index2coords(1, 2, shape, c1);
 
     ASSERT_EQ(0, c1[0]);
     ASSERT_EQ(1, c1[1]);
 
     Nd4jLong c6[2];
-    shape::index2coords(2, shape, 5, c6);
+    shape::index2coords(5, 2, shape, c6);
 
     ASSERT_EQ(1, c6[0]);
-    ASSERT_EQ(0, c6[1]);    
+    ASSERT_EQ(0, c6[1]);
 }
 
-TEST_F(ShapeTests, Test_Ind2Sub_1) {
-    Nd4jLong shape[] = {3, 5};
-    
-    Nd4jLong c0[2];
-    shape::index2coords(2, shape, 0, c0, 'f');
-
-    ASSERT_EQ(0, c0[0]);
-    ASSERT_EQ(0, c0[1]);
-
-    Nd4jLong c1[2];
-    shape::index2coords(2, shape, 1, c1, 'f');
-
-    ASSERT_EQ(1, c1[0]);
-    ASSERT_EQ(0, c1[1]);
-
-    Nd4jLong c6[2];
-    shape::index2coords(2, shape, 5, c6, 'f');
-
-    ASSERT_EQ(2, c6[0]);
-    ASSERT_EQ(1, c6[1]);    
-}
 
 TEST_F(ShapeTests, Test_ShapeDetector_1) {
     Nd4jLong shape[] = {2, 5, 3, 3, 1, 0, 1, 99};

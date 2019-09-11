@@ -30,7 +30,7 @@ namespace nd4j {
         int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
         for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x)
-            dz[shape::getIndexOffset(i, xShapeInfo, length)] = (i == idx ? (T) 1 : (T) 0);
+            dz[shape::getIndexOffset(i, xShapeInfo)] = (i == idx ? (T) 1 : (T) 0);
     }
 
 ////////////////////////////////////////////////////////////////////////

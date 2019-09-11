@@ -1770,7 +1770,7 @@ NDArray NDArray::operator()(const Nd4jLong i) const {
     } else {
         Nd4jLong idx[MAX_RANK];
         shape::ind2subC(rankOf(), shapeOf(), i, idx);
-        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+        auto xOffset = shape::getOffset(getShapeInfo(), idx);
 
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
@@ -1801,7 +1801,7 @@ NDArray& NDArray::operator()(const Nd4jLong i) {
     } else {
         Nd4jLong idx[MAX_RANK];
         shape::ind2subC(rankOf(), shapeOf(), i, idx);
-        auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+        auto xOffset = shape::getOffset(getShapeInfo(), idx);
 
         auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
         NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
@@ -1818,7 +1818,7 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j) const {
        throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
 
     Nd4jLong coords[2] = {i, j};
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     // TODO: do we really want a view here?
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
@@ -1834,7 +1834,7 @@ NDArray& NDArray::operator()(const Nd4jLong  i, const Nd4jLong j) {
        throw std::invalid_argument("NDArray::operator(i,j): one of input indexes is out of array length or rank!=2 !");
 
     Nd4jLong coords[2] = {i, j};
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
@@ -1853,7 +1853,7 @@ NDArray NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
     Nd4jLong coords[3] = {i, j, k};
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
@@ -1870,7 +1870,7 @@ NDArray& NDArray::operator()(const Nd4jLong i, const Nd4jLong j, const Nd4jLong 
        throw std::invalid_argument("NDArray::operator(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
     Nd4jLong coords[3] = {i, j, k};
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
@@ -1886,7 +1886,7 @@ NDArray NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong v
        throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
 
     Nd4jLong coords[4] = {t, u, v, w};
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
@@ -1900,7 +1900,7 @@ NDArray& NDArray::operator()(const Nd4jLong t, const Nd4jLong u, const Nd4jLong 
        throw std::invalid_argument("NDArray::operator(t,u,v,w): one of input indexes is out of array length or rank!=4 !");
 
     Nd4jLong coords[4] = {t, u, v, w};
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     // FIXME
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
@@ -1916,7 +1916,7 @@ NDArray NDArray::operator()(const Nd4jLong* idx) const {
         if (idx[i] >= sizeAt(i))
             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
 
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), idx);
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
@@ -1931,7 +1931,7 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
         if (idx[i] >= sizeAt(i))
             throw std::invalid_argument("NDArray::operator(const Nd4jLong* idx): input index is out of dimension length !");
 
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), idx, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), idx);
 
     auto cast = reinterpret_cast<int8_t *>(_buffer) + (xOffset * this->sizeOfT());
     NDArray result(cast, nd4j::ShapeBuilders::createScalarShapeInfo(this->dataType(), this->getWorkspace()));
@@ -2067,7 +2067,7 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j) {
         syncToHost();
 
     Nd4jLong coords[2] = {i, j};
-    auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto offset = shape::getOffset(getShapeInfo(), coords);
     tickWriteHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
@@ -2084,7 +2084,7 @@ T& NDArray::t(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) {
         syncToHost();
 
     Nd4jLong coords[3] = {i, j, k};
-    auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto offset = shape::getOffset(getShapeInfo(), coords);
     tickWriteHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
@@ -2118,7 +2118,7 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
         syncToHost();
 
     Nd4jLong coords[2] = {i, j};
-    auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto offset = shape::getOffset(getShapeInfo(), coords);
     tickReadHost();
     return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
 }
@@ -2135,7 +2135,7 @@ T NDArray::t(const Nd4jLong i, const Nd4jLong j) const {
             syncToHost();
 
         Nd4jLong coords[3] = {i, j, k};
-        auto offset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+        auto offset = shape::getOffset(getShapeInfo(), coords);
         tickReadHost();
         return *(reinterpret_cast<T*>(bufferWithOffset(offset)));
     }

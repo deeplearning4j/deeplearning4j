@@ -52,10 +52,9 @@ namespace helpers {
     auto step = blockDim.x * gridDim.x;
 
     for (int j = start; j < zLen; j += step) {
-        auto zIndex = shape::getIndexOffset(j, zShapeInfo, zLen);
-        auto yIndex = shape::getIndexOffset(j, yShapeInfo, yLen);
-        auto xIndex = shape::getIndexOffset(y[yIndex], xShapeInfo, xLen);
-        //printf("%lld , %lld\n", zIndex, xIndex);
+        auto zIndex = shape::getIndexOffset(j, zShapeInfo);
+        auto yIndex = shape::getIndexOffset(j, yShapeInfo);
+        auto xIndex = shape::getIndexOffset(y[yIndex], xShapeInfo);
         z[zIndex] = x[xIndex];
     }
 }
@@ -76,15 +75,14 @@ __global__ static void gatherCuda(const int numOfSubArrs,
     for (int i = blockIdx.x; i < numOfSubArrs; i += gridDim.x) {
 
         if (threadIdx.x == 0) {
-            x = reinterpret_cast<const X*>(vx) + xOffsets[y[shape::getIndexOffset(i, yShapeInfo, numOfSubArrs)]];
+            x = reinterpret_cast<const X*>(vx) + xOffsets[y[shape::getIndexOffset(i, yShapeInfo)]];
             z = reinterpret_cast<X*>(vz) + zOffsets[i];
         }
         __syncthreads();
 
         for (int j = threadIdx.x; j < len; j += blockDim.x) {
-            auto zIndex = shape::getIndexOffset(j, zShapeInfo, len);
-            auto xIndex = shape::getIndexOffset(j, xShapeInfo, len);
-            //printf("%lld , %lld\n", zIndex, xIndex);
+            auto zIndex = shape::getIndexOffset(j, zShapeInfo);
+            auto xIndex = shape::getIndexOffset(j, xShapeInfo);
             z[zIndex] = x[xIndex];
         }
         __syncthreads();

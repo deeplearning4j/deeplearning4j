@@ -196,8 +196,8 @@ namespace helpers {
                     for (Nd4jLong e = start; e < channels; e += step) {
                         Nd4jLong posX[] = {b, inY, inX, e};
                         Nd4jLong posZ[] = {b, y, x, e};
-                        auto xIndex = shape::getOffset(0, shape::shapeOf(inputShape), shape::stride(inputShape), posX, 4);
-                        auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), posZ, 4);
+                        auto xIndex = shape::getOffset(inputShape, posX);
+                        auto zIndex = shape::getOffset(outputShape, posZ);
                         output[zIndex] = input[xIndex];
                     }
                 }
@@ -284,10 +284,10 @@ namespace helpers {
             Nd4jLong y1Pos[] = {b, 0};
             Nd4jLong y2Pos[] = {b, 2};
             Nd4jLong x2Pos[] = {b, 3};
-            Z y1 = boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), y1Pos, 2)];//->t<T>(b, 0)];
-            Z x1 = boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), x1Pos, 2)];
-            Z y2 = boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), y2Pos, 2)];
-            Z x2 = boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), x2Pos, 2)];
+            Z y1 = boxes[shape::getOffset(boxesShape, y1Pos)];//->t<T>(b, 0)];
+            Z x1 = boxes[shape::getOffset(boxesShape, x1Pos)];
+            Z y2 = boxes[shape::getOffset(boxesShape, y2Pos)];
+            Z x2 = boxes[shape::getOffset(boxesShape, x2Pos)];
 
             int bIn = indices[b];
             if (bIn >= batchSize) {
@@ -308,7 +308,7 @@ namespace helpers {
                         auto step = blockDim.z * gridDim.z;
                         for (int d = start; d < depth; d += step) {
                             Nd4jLong zPos[] = {b, y, x, d};
-                            auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
+                            auto zIndex = shape::getOffset(outputShape, zPos);
                             output[zIndex] = (Z)extrapolationVal;
                             //crops->p(b, y, x, d, extrapolationVal);
                         }
@@ -329,7 +329,7 @@ namespace helpers {
                             auto step = blockDim.z * gridDim.z;
                             for (int d = start; d < depth; d += step) {
                                 Nd4jLong zPos[] = {b, y, x, d};
-                                auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
+                                auto zIndex = shape::getOffset(outputShape, zPos);
                                 output[zIndex] = (Z)extrapolationVal;
 //                                crops->p(b, y, x, d, extrapolationVal);
                             }
@@ -346,14 +346,14 @@ namespace helpers {
                             Nd4jLong topRightPos[] = {bIn, topYIndex, right_x_index, d};
                             Nd4jLong bottomLeftPos[] = {bIn, bottomYIndex, left_x_index, d};
                             Nd4jLong bottomRightPos[] = {bIn, bottomYIndex, right_x_index, d};
-                            const T topLeft(images[shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), topLeftPos, 4)]); //->e<float>(bIn, topYIndex, left_x_index, d));
-                            const T topRight(images[shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), topRightPos, 4)]); //->e<float>(bIn, topYIndex, right_x_index, d));
-                            const T bottomLeft(images[shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), bottomLeftPos, 4)]);//->e<float>(bIn, bottomYIndex, left_x_index, d));
-                            const T bottomRight(images[shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), bottomRightPos, 4)]); //->e<float>(bIn, bottomYIndex, right_x_index, d));
+                            const T topLeft(images[shape::getOffset(imagesShape, topLeftPos)]); //->e<float>(bIn, topYIndex, left_x_index, d));
+                            const T topRight(images[shape::getOffset(imagesShape, topRightPos)]); //->e<float>(bIn, topYIndex, right_x_index, d));
+                            const T bottomLeft(images[shape::getOffset(imagesShape, bottomLeftPos)]);//->e<float>(bIn, bottomYIndex, left_x_index, d));
+                            const T bottomRight(images[shape::getOffset(imagesShape, bottomRightPos)]); //->e<float>(bIn, bottomYIndex, right_x_index, d));
                             const T top = topLeft + (topRight - topLeft) * x_lerp;
                             const T bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
                             Nd4jLong zPos[] = {b, y, x, d};
-                            auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
+                            auto zIndex = shape::getOffset(outputShape, zPos);
                             output[zIndex] = Z(top + (bottom - top) * y_lerp);
 //                            crops->p(b, y, x, d, top + (bottom - top) * y_lerp);
                         }
@@ -368,7 +368,7 @@ namespace helpers {
                             auto step = blockDim.z * gridDim.z;
                             for (int d = start; d < depth; d += step) {
                                 Nd4jLong zPos[] = {b, y, x, d};
-                                auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
+                                auto zIndex = shape::getOffset(outputShape, zPos);
                                 output[zIndex] = (Z)extrapolationVal;
                             }
                             continue;
@@ -380,8 +380,8 @@ namespace helpers {
                         for (int d = start; d < depth; d += step) {
                             Nd4jLong zPos[] = {b, y, x, d};
                             Nd4jLong xPos[] = {bIn, closestYIndex, closestXIndex, d};
-                            auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
-                            auto xIndex = shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), xPos, 4);
+                            auto zIndex = shape::getOffset(outputShape, zPos);
+                            auto xIndex = shape::getOffset(imagesShape, xPos);
                             output[zIndex] = images[xIndex];
 //                            crops->p(b, y, x, d, images->e<T>(bIn, closestYIndex, closestXIndex, d));
                         }

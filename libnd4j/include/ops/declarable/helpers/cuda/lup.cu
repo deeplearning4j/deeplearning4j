@@ -47,10 +47,10 @@ namespace helpers {
             Nd4jLong pos[] = {i, i - 1};
             Nd4jLong posX[] = {i, i};
             Nd4jLong posY[] = {i - 1, i - 1};
-            auto xIndex = shape::getOffset(0, shape::shapeOf(inputShape), shape::stride(inputShape), pos, 2);
-            auto dxIndex = shape::getOffset(0, shape::shapeOf(inputShape), shape::stride(inputShape), posX, 2);
-            auto dyIndex = shape::getOffset(0, shape::shapeOf(inputShape), shape::stride(inputShape), posY, 2);
-            auto zIndex = shape::getOffset(0, shape::shapeOf(invertedShape), shape::stride(invertedShape), pos, 2);
+            auto xIndex = shape::getOffset(inputShape, pos);
+            auto dxIndex = shape::getOffset(inputShape, posX);
+            auto dyIndex = shape::getOffset(inputShape, posY);
+            auto zIndex = shape::getOffset(invertedShape, pos);
             // invert lower triangular matrix
             inverted[zIndex] = -input[xIndex] / (input[dxIndex] * input[dyIndex]);
 //            math::atomics::nd4j_atomicAdd(&inverted[zIndex], - input[xIndex] * inverted[iIndex] / input[dIndex]);
@@ -69,8 +69,8 @@ namespace helpers {
 
         for (int i = start; i < n; i += step) {
             Nd4jLong pos[] = {i, i};
-            auto xIndex = shape::getOffset(0, shape::shapeOf(inputShape), shape::stride(inputShape), pos, 2);
-            auto zIndex = shape::getOffset(0, shape::shapeOf(invertedShape), shape::stride(invertedShape), pos, 2);
+            auto xIndex = shape::getOffset(inputShape, pos);
+            auto zIndex = shape::getOffset(invertedShape, pos);
 //            math::atomics::nd4j_atomicDiv(&inverted[zIndex], input[xIndex]);
             // invert diagonal elements
             inverted[zIndex] /= input[xIndex];
@@ -85,18 +85,9 @@ namespace helpers {
 
         __shared__ T* inverted;
         __shared__ T* input;
-        __shared__ Nd4jLong* inputStride;
-        __shared__ Nd4jLong* invertedStride;
-        __shared__ Nd4jLong* invertedShapeOf;
-        __shared__ Nd4jLong* inputShapeOf;
         if (threadIdx.x == 0) {
             inverted = reinterpret_cast<T *>(invertedBuf);
             input = reinterpret_cast<T *>(inputBuf);
-            inputStride = shape::stride(inputShape);
-            invertedStride = shape::stride(invertedShape);
-            invertedShapeOf = shape::shapeOf(invertedShape);
-            inputShapeOf = shape::shapeOf(inputShape);
-
         }
         __syncthreads();
 
@@ -106,9 +97,9 @@ namespace helpers {
         for (int i = start; i < n - 1; i += step) {
             Nd4jLong pos[] = {i, i + 1};
             Nd4jLong posX[] = {i + 1, i + 1};
-            auto xIndex = shape::getOffset(0, inputShapeOf, shape::stride(inputShape), pos, 2);
-            auto iIndex = shape::getOffset(0, invertedShapeOf, invertedStride, posX, 2);
-            auto zIndex = shape::getOffset(0, invertedShapeOf, invertedStride, pos, 2);
+            auto xIndex = shape::getOffset(inputShape, pos);
+            auto iIndex = shape::getOffset(invertedShape, posX);
+            auto zIndex = shape::getOffset(invertedShape, pos);
             // invert upper matrix
             math::atomics::nd4j_atomicAdd(&inverted[zIndex], -input[xIndex] * inverted[iIndex]); // / input[yIndex]);
             //inputMatrix->t<T>(i, i + 1) * invertedMatrix->t<T>(i + 1, i + 1) / inputMatrix->t<T>(i, i)
@@ -130,12 +121,10 @@ namespace helpers {
                     Nd4jLong posX[] = {i, k};
                     Nd4jLong posD[] = {i, i};
 
-                    auto xIndex = shape::getOffset(0, shape::shapeOf(inputShape), shape::stride(inputShape), posX, 2);
-                    auto yIndex = shape::getOffset(0, shape::shapeOf(invertedShape), shape::stride(invertedShape), posY,
-                                                   2);
-                    auto dIndex = shape::getOffset(0, shape::shapeOf(inputShape), shape::stride(inputShape), posD, 2);
-                    auto zIndex = shape::getOffset(0, shape::shapeOf(invertedShape), shape::stride(invertedShape), posZ,
-                                                   2);
+                    auto xIndex = shape::getOffset(inputShape, posX);
+                    auto yIndex = shape::getOffset(invertedShape, posY);
+                    auto dIndex = shape::getOffset(inputShape, posD);
+                    auto zIndex = shape::getOffset(invertedShape, posZ);
                     // invert non-diagonal elements
                     math::atomics::nd4j_atomicAdd(&inverted[zIndex], -inverted[yIndex] * input[xIndex] / input[dIndex]);
                 }
@@ -149,18 +138,10 @@ namespace helpers {
     invertUpKernel(void *invertedBuf, Nd4jLong *invertedShape, void *inputBuf, Nd4jLong *inputShape, Nd4jLong n) {
         __shared__ T* inverted;
         __shared__ T* input;
-        __shared__ Nd4jLong* inputShapeOf;
-        __shared__ Nd4jLong* invertedShapeOf;
-        __shared__ Nd4jLong* invertedStrideOf;
-        __shared__ Nd4jLong* inputStrideOf;
 
         if (threadIdx.x == 0) {
             inverted = reinterpret_cast<T *>(invertedBuf);;
             input = reinterpret_cast<T *>(inputBuf);
-            inputShapeOf = shape::shapeOf(inputShape);
-            invertedShapeOf = shape::shapeOf(invertedShape);
-            inputStrideOf = shape::stride(inputShape);
-            invertedStrideOf = shape::stride(invertedShape);
         }
         __syncthreads();
 
@@ -171,9 +152,9 @@ namespace helpers {
                     Nd4jLong posY[] = {k, j};
                     Nd4jLong posX[] = {i, k};
                     // inversion with Joardan Gauss transformation
-                    auto xIndex = shape::getOffset(0, inputShapeOf, inputStrideOf, posX, 2);
-                    auto yIndex = shape::getOffset(0, invertedShapeOf, invertedStrideOf, posY, 2);
-                    auto zIndex = shape::getOffset(0, invertedShapeOf, invertedStrideOf, posZ, 2);
+                    auto xIndex = shape::getOffset(inputShape, posX);
+                    auto yIndex = shape::getOffset(invertedShape, posY);
+                    auto zIndex = shape::getOffset(invertedShape, posZ);
                     // invert upper non-diagonal elements
                     math::atomics::nd4j_atomicAdd(&inverted[zIndex], -inverted[yIndex] * input[xIndex]);
                 }
@@ -289,7 +270,7 @@ namespace helpers {
         auto step = blockDim.x * gridDim.x;
 
         for (int k = pos + start, j = start; j < n2; k += step, j += step) {
-            auto xIndex = shape::getIndexOffset(k, inputShape, inputLen);
+            auto xIndex = shape::getIndexOffset(k, inputShape);
             matrix[j] = (F) inputBuf[xIndex];
         }
     }
@@ -315,7 +296,7 @@ namespace helpers {
         auto step = blockDim.x * gridDim.x;
 
         for (int k = pos + start, j = start; j < n2; k += step, j += step) {
-            auto zIndex = shape::getIndexOffset(k, outputShape, outputLen);
+            auto zIndex = shape::getIndexOffset(k, outputShape);
             outputBuf[zIndex] = matrix[j];
         }
     }
@@ -331,7 +312,7 @@ namespace helpers {
         for (auto i = start; i < rowNum; i += step) {
             int val = source[i] - 1;
             Nd4jLong posF[] = {i, val};
-            auto pos = shape::getOffset(0, shape::shapeOf(shape), shape::stride(shape), posF, 2);
+            auto pos = shape::getOffset(shape, posF);
             permutation[pos] = F(1.f);
         }
     }
@@ -522,7 +503,7 @@ namespace helpers {
             lup_<T>(context, &matrix, nullptr, nullptr);
 //            else
 //                lup_<float>(context, &matrix, nullptr, nullptr);
-            auto offset = shape::getIndexOffset(e, output->shapeInfo(), output->lengthOf());
+            auto offset = shape::getIndexOffset(e, output->shapeInfo());
             auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
             auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
 //            if (matrix.dataType() == input->dataType())
@@ -570,7 +551,7 @@ namespace helpers {
                 lup_<T>(context, &matrix, nullptr, nullptr);
 //            else
 //                lup_<float>(context, &matrix, nullptr, nullptr);
-                auto offset = shape::getIndexOffset(e, output->shapeInfo(), output->lengthOf());
+                auto offset = shape::getIndexOffset(e, output->shapeInfo());
                 auto inputBuf = reinterpret_cast<T *>(matrix.specialBuffer());
                 auto outputBuf = reinterpret_cast<T *>(output->specialBuffer()) + offset;
 //            if (matrix.dataType() == input->dataType())
@@ -596,34 +577,11 @@ namespace helpers {
         fillLowerUpperKernel(void *lowerBuf, Nd4jLong *lowerShape, void *upperBuf, Nd4jLong *upperShape,
                              void *matrixBuf, Nd4jLong *matrixShape, Nd4jLong n) {
 
-            __shared__
-            Nd4jLong *xShapeOf;
-            __shared__
-            Nd4jLong *yShapeOf;
-            __shared__
-            Nd4jLong *zShapeOf;
-            __shared__
-            Nd4jLong *xStrideOf;
-            __shared__
-            Nd4jLong *yStrideOf;
-            __shared__
-            Nd4jLong *zStrideOf;
-            __shared__
-            T *lowerMatrix;
-            __shared__
-            T *upperMatrix;
-            __shared__
-            T *matrix;
+            __shared__ T *lowerMatrix;
+            __shared__ T *upperMatrix;
+            __shared__ T *matrix;
 
             if (threadIdx.x == 0) {
-                xShapeOf = shape::shapeOf(lowerShape);
-                xStrideOf = shape::stride(lowerShape);
-
-                yShapeOf = shape::shapeOf(upperShape);
-                yStrideOf = shape::stride(upperShape);
-
-                zShapeOf = shape::shapeOf(matrixShape);
-                zStrideOf = shape::stride(matrixShape);
                 lowerMatrix = reinterpret_cast<T *>(lowerBuf);
                 upperMatrix = reinterpret_cast<T *>(upperBuf);
                 matrix = reinterpret_cast<T *>(matrixBuf);
@@ -634,10 +592,10 @@ namespace helpers {
                 for (int j = threadIdx.x; j < n; j += blockDim.x) {
                     Nd4jLong posX[] = {k, j};
                     Nd4jLong posD[] = {j, j};
-                    auto xPos = shape::getOffset(0, xShapeOf, xStrideOf, posX, 2);
-                    auto yPos = shape::getOffset(0, yShapeOf, yStrideOf, posX, 2);
-                    auto iPos = shape::getOffset(0, zShapeOf, zStrideOf, posX, 2);
-                    auto dPos = shape::getOffset(0, zShapeOf, zStrideOf, posD, 2);
+                    auto xPos = shape::getOffset(lowerShape, posX);
+                    auto yPos = shape::getOffset(upperShape, posX);
+                    auto iPos = shape::getOffset(matrixShape, posX);
+                    auto dPos = shape::getOffset(matrixShape, posD);
                     if (k >= j)
                         lowerMatrix[xPos] = matrix[iPos];//(k, j);
                     else
@@ -850,18 +808,14 @@ namespace helpers {
             T *output = outputBuf;
             T *input = inputBuf;
 
-            Nd4jLong *shapeOf = shape::shapeOf(tadShape);
-            Nd4jLong *strideOf = shape::stride(tadShape);
-
             for (auto i = blockIdx.x; i < batchNum; i += gridDim.x) {
                 T *current = input + tadOffsets[i];
 
-                auto zIndex = shape::getIndexOffset(i, outputShape, batchNum);
+                auto zIndex = shape::getIndexOffset(i, outputShape);
                 for (auto e = threadIdx.x; e < n; e += blockDim.x) {
                     Nd4jLong diag[] = {e, e};
-                    auto xIndex = shape::getOffset(0, shapeOf, strideOf, diag, 2);
-                    math::atomics::nd4j_atomicAdd(&output[zIndex],
-                                                  math::nd4j_log<T, T>(current[xIndex] * current[xIndex]));
+                    auto xIndex = shape::getOffset(tadShape, diag);
+                    math::atomics::nd4j_atomicAdd(&output[zIndex],math::nd4j_log<T, T>(current[xIndex] * current[xIndex]));
                 }
             }
         }

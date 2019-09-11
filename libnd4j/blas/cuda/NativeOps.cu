@@ -3228,8 +3228,8 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
 
         for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
 
-            const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
-            const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+            const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+            const auto yOffset = shape::getIndexOffset(i, yShapeInfo);
 
             switch (opCode) {
                 case 0:

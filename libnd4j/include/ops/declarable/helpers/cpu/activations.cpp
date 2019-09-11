@@ -91,19 +91,19 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
 
 PRAGMA_OMP_SIMD_ARGS(reduction(OMP_MAXT:max))
         for (int i = 0; i < length; i++) {
-            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo);
             max = nd4j::math::nd4j_max<T>(max, inBuff[offset]);
         }
 
 PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(reduction(OMP_SUMT:sum))
         for (int i = 0; i < length; i++) {
-            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo);
             outBuff[offset] = nd4j::math::nd4j_exp<T, T>(inBuff[offset] - max);
             sum += outBuff[offset];
         }
 PRAGMA_OMP_SIMD
         for (int i = 0; i < length; i++) {
-            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo, length);
+            const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo);
             outBuff[offset] /= sum;
             outBuff[offset] *= (1.f - outBuff[offset]);     // derivative
         }

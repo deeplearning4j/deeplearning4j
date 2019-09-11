@@ -48,7 +48,7 @@ namespace nd4j {
                 auto z = reinterpret_cast<X*>(vz);
 
                 __shared__ int rank, rankMinusOne;
-                __shared__ Nd4jLong zLen, yLen, totalThreads, *coords, *xShape, *zShape, *xStride, *zStride, shift1, shift2, yStride0;
+                __shared__ Nd4jLong zLen, totalThreads, *coords, *xShape, *zShape, shift1, shift2, yStride0;
 
                 if (threadIdx.x == 0) {
                     extern __shared__ unsigned char shmem[];
@@ -56,12 +56,9 @@ namespace nd4j {
                     zLen     = shape::length(zShapeInfo);
                     xShape   = shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo));
                     zShape   = shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo));
-                    xStride  = shape::stride(const_cast<Nd4jLong*>(xShapeInfo));
-                    zStride  = shape::stride(const_cast<Nd4jLong*>(zShapeInfo));
                     yStride0 = shape::stride(const_cast<Nd4jLong*>(yShapeInfo))[0];
                     rank     = shape::rank(xShapeInfo);
                     zLen     = shape::length(zShapeInfo);
-                    yLen     = 2 * rank;
                     rankMinusOne = rank - 1;
                     totalThreads = gridDim.x * blockDim.x;
                     shift1 = mode == 1 ? 0 : 1;         // REFLECT : SYMMETRIC
@@ -78,19 +75,19 @@ namespace nd4j {
 
                     for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
 
-                        shape::index2coords(rank, zShape, i, zLen, xzCoord);
-                        const auto zOffset = shape::getOffset(0, zShape, zStride, xzCoord, rank);
+                        shape::index2coords(i, zShapeInfo, xzCoord);
+                        const auto zOffset = shape::getOffset(zShapeInfo, xzCoord);
 
                         bool within = true;
                         for(int j = rankMinusOne; j >= 0; --j) {
                             if(xShape[j] == zShape[j]) continue;
-                            const auto left = y[shape::getIndexOffset(yStride0 * j, yShapeInfo, yLen)];
+                            const auto left = y[shape::getIndexOffset(yStride0 * j, yShapeInfo)];
                             if(xzCoord[j] < left || xzCoord[j] >= left + xShape[j]) {within = false; break;}
                             else                                                    {xzCoord[j] = xzCoord[j] - left;}
                         }
 
                         if(within)
-                            z[zOffset] = x[shape::getOffset(0, xShape, xStride, xzCoord, rank)];
+                            z[zOffset] = x[shape::getOffset(xShapeInfo, xzCoord)];
                         else
                             z[zOffset] = padVal;
                     }
@@ -99,18 +96,18 @@ namespace nd4j {
 
                     for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
 
-                        shape::index2coords(rank, zShape, i, zLen, xzCoord);
-                        const auto zOffset = shape::getOffset(0, zShape, zStride, xzCoord, rank);
+                        shape::index2coords(i, zShapeInfo, xzCoord);
+                        const auto zOffset = shape::getOffset(zShapeInfo, xzCoord);
 
                         for(int j = rankMinusOne; j >= 0; --j) {
 
                             if(xShape[j] == zShape[j]) continue;
-                            xzCoord[j] = xzCoord[j] - y[shape::getIndexOffset(yStride0 * j, yShapeInfo, yLen)];    // are ready to fill middle (within input dimension range)
+                            xzCoord[j] = xzCoord[j] - y[shape::getIndexOffset(yStride0 * j, yShapeInfo)];    // are ready to fill middle (within input dimension range)
                             if(xzCoord[j] < 0)               xzCoord[j] = -xzCoord[j] - shift1;                // means fill from left
                             else if(xzCoord[j] >= xShape[j]) xzCoord[j] = 2 * xShape[j] - xzCoord[j] - shift2; // means fill from right
                         }
 
-                        const auto xOffset = shape::getOffset(0, xShape, xStride, xzCoord, rank);
+                        const auto xOffset = shape::getOffset(xShapeInfo, xzCoord);
                         z[zOffset] = x[xOffset];
                     }
                 }
@@ -164,14 +161,14 @@ namespace nd4j {
                 auto step = blockDim.x * gridDim.x;
 
                 for(int i = start; i < zLen; i+= step) {
-                    auto zIndex = shape::getIndexOffset(i, zShape, zLen);
-                    auto xIndex = shape::getIndexOffset(len - i, xShape, xLen);
+                    auto zIndex = shape::getIndexOffset(i, zShape);
+                    auto xIndex = shape::getIndexOffset(len - i, xShape);
 
                     if (i < leftSide)                                   // left side
-                        xIndex = shape::getIndexOffset(leftSideCorrected - i, xShape, xLen);
+                        xIndex = shape::getIndexOffset(leftSideCorrected - i, xShape);
 
                     else if(i >= leftSide && i < leftSide + xLen)       // middle
-                        xIndex = shape::getIndexOffset(i - leftSide, xShape, xLen);
+                        xIndex = shape::getIndexOffset(i - leftSide, xShape);
 
 //            else                                                // right side
 //                z[i] = x[len - i];
@@ -187,8 +184,6 @@ namespace nd4j {
                 __shared__ I const* pads;
                 __shared__ F* z;
                 __shared__ Nd4jLong zRank, rank;
-                __shared__ Nd4jLong* xShapeOf, *xStrideOf, *padsShapeOf, *padsStrideOf;
-                __shared__ Nd4jLong* zShapeOf, *zStrideOf;
                 __shared__ Nd4jLong* xIdx;
                 if (threadIdx.x == 0) {
                     extern __shared__ unsigned char shmem[];
@@ -198,13 +193,6 @@ namespace nd4j {
                     x = reinterpret_cast<F const*>(vx);//
                     pads = reinterpret_cast<I const*>(paddings);
                     z = reinterpret_cast<F*>(vz);
-                    xShapeOf = shape::shapeOf(xShape);
-                    xStrideOf = shape::stride(xShape);
-                    zShapeOf = shape::shapeOf(zShape);
-                    zRank = shape::rank(zShape);
-                    zStrideOf = shape::stride(zShape);
-                    padsShapeOf = shape::shapeOf(paddingShape);
-                    padsStrideOf = shape::stride(paddingShape);
                 }
                 __syncthreads();
                 auto start = threadIdx.x + blockIdx.x * blockDim.x;
@@ -214,14 +202,14 @@ namespace nd4j {
                     auto xzCoord = xIdx + threadIdx.x * rank;
                     //auto zxCoord = xIdx + (threadIdx.x + threadIdx.x % 2 + 1) * rank;
 
-                    shape::index2coords(rank, zShapeOf, i, xzCoord);
-                    auto outOffset = shape::getOffset(0, zShapeOf, zStrideOf, xzCoord, rank);
+                    shape::index2coords(i, zShape, xzCoord);
+                    auto outOffset = shape::getOffset(zShape, xzCoord);
 //                auto intStep = blockDim.y * gridDim.y;
                     for(int j = 0; j < rank; j++) {
 
                         const Nd4jLong inLen         = shape::sizeAt(xShape, j);
                         Nd4jLong coords[2] = {j, 0};
-                        auto padOffset = shape::getOffset(0, padsShapeOf, padsStrideOf, coords, 2); // padding already has rank 2
+                        auto padOffset = shape::getOffset(paddingShape, coords); // padding already has rank 2
                         const auto leftSide          = pads[padOffset];
                         const auto leftSideCorrected = leftSide - reflBorder;
                         const Nd4jLong len           = 2 * (inLen - 1) + leftSide + reflBorder;
@@ -238,7 +226,7 @@ namespace nd4j {
                             xzCoord[j] = xzCoord[j] - len;
                     }
 
-                    auto inOffset  = shape::getOffset(0, xShapeOf, xStrideOf,  xzCoord,  rank);
+                    auto inOffset  = shape::getOffset(xShape, xzCoord);
                     z[outOffset] = x[inOffset];
                 }
             }

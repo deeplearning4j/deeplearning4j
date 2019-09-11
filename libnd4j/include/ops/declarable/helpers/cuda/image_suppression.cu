@@ -37,16 +37,15 @@ namespace helpers {
         Nd4jLong next1[] = {nextIndex, 1};
         Nd4jLong next2[] = {nextIndex, 2};
         Nd4jLong next3[] = {nextIndex, 3};
-        Nd4jLong* shapeOf = shape::shapeOf(boxesShape);
-        Nd4jLong* strideOf = shape::stride(boxesShape);
-        T minYPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shapeOf, strideOf, previous0, 2)], boxes[shape::getOffset(0, shapeOf, strideOf, previous2, 2)]);
-        T minXPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shapeOf, strideOf, previous1, 2)], boxes[shape::getOffset(0, shapeOf, strideOf, previous3, 2)]);
-        T maxYPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shapeOf, strideOf, previous0, 2)], boxes[shape::getOffset(0, shapeOf, strideOf, previous2, 2)]);
-        T maxXPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shapeOf, strideOf, previous1, 2)], boxes[shape::getOffset(0, shapeOf, strideOf, previous3, 2)]);
-        T minYNext = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shapeOf, strideOf, next0, 2)],     boxes[shape::getOffset(0, shapeOf, strideOf, next2, 2)]);
-        T minXNext = nd4j::math::nd4j_min(boxes[shape::getOffset(0, shapeOf, strideOf, next1, 2)],     boxes[shape::getOffset(0, shapeOf, strideOf, next3, 2)]);
-        T maxYNext = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shapeOf, strideOf, next0, 2)],     boxes[shape::getOffset(0, shapeOf, strideOf, next2, 2)]);
-        T maxXNext = nd4j::math::nd4j_max(boxes[shape::getOffset(0, shapeOf, strideOf, next1, 2)],     boxes[shape::getOffset(0, shapeOf, strideOf, next3, 2)]);
+
+        T minYPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+        T minXPrev = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+        T maxYPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous0)], boxes[shape::getOffset(boxesShape, previous2)]);
+        T maxXPrev = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, previous1)], boxes[shape::getOffset(boxesShape, previous3)]);
+        T minYNext = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
+        T minXNext = nd4j::math::nd4j_min(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
+        T maxYNext = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, next0)],     boxes[shape::getOffset(boxesShape, next2)]);
+        T maxXNext = nd4j::math::nd4j_max(boxes[shape::getOffset(boxesShape, next1)],     boxes[shape::getOffset(boxesShape, next3)]);
 
         T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
         T areaNext = (maxYNext - minYNext) * (maxXNext - minXNext);

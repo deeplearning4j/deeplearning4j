@@ -92,7 +92,7 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
             auto ulen = info.getItersPerThread(threadNum);
 
             for (Nd4jLong i = 0; i < ulen; i++) {
-                auto offset = shape::indexOffset(threadOffset + i, xShapeInfo, xShapeInfoCast, len, canCastX);
+                auto offset = shape::indexOffset(threadOffset + i, xShapeInfo, xShapeInfoCast, canCastX);
                 IndexValue<X> curr(x[offset], threadOffset + i);
                 local = OpType::update(local, curr, extraParams);
             }

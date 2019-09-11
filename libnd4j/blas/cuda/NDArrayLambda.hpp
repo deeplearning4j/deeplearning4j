@@ -23,8 +23,8 @@
 #include <cuda.h>
 #include <cuda_runtime.h>
 
-static Nd4jLong __device__ __noinline__ __getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo, Nd4jLong length) {
-    return shape::getIndexOffset(index, shapeInfo, length);
+static Nd4jLong __device__ __noinline__ __getIndexOffset(Nd4jLong index, Nd4jLong *shapeInfo) {
+    return shape::getIndexOffset(index, shapeInfo);
 }
 
 static Nd4jLong __device__ __noinline__ __length(Nd4jLong *shapeInfo) {
@@ -103,8 +103,8 @@ static _CUDA_G void lambdaKernel(void* vx, Nd4jLong *xShapeInfo, void *vz, Nd4jL
             z[e * zEws] = lambda(x[e * xEws]);
     } else {
         for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-            auto xOffset = __getIndexOffset(e, xShapeInfo, zLength);
-            auto zOffset = __getIndexOffset(e, zShapeInfo, zLength);
+            auto xOffset = __getIndexOffset(e, xShapeInfo);
+            auto zOffset = __getIndexOffset(e, zShapeInfo);
 
             z[zOffset] = lambda(x[xOffset]);
         }
@@ -132,8 +132,8 @@ static _CUDA_G void lambdaIndexedKernel(void* vx, Nd4jLong *xShapeInfo, void *vz
             z[e * zEws] = lambda(e, x[e * xEws]);
     } else {
         for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-            auto xOffset = __getIndexOffset(e, xShapeInfo, zLength);
-            auto zOffset = __getIndexOffset(e, zShapeInfo, zLength);
+            auto xOffset = __getIndexOffset(e, xShapeInfo);
+            auto zOffset = __getIndexOffset(e, zShapeInfo);
 
             z[zOffset] = lambda(e, x[xOffset]);
         }
@@ -164,9 +164,9 @@ static _CUDA_G void lambdaIndexedPairwiseKernel(void* vx, Nd4jLong *xShapeInfo, 
             z[e * zEws] = lambda(e, x[e * xEws], y[e * yEws]);
     } else {
         for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-            auto xOffset = __getIndexOffset(e, xShapeInfo, zLength);
-            auto yOffset = __getIndexOffset(e, yShapeInfo, zLength);
-            auto zOffset = __getIndexOffset(e, zShapeInfo, zLength);
+            auto xOffset = __getIndexOffset(e, xShapeInfo);
+            auto yOffset = __getIndexOffset(e, yShapeInfo);
+            auto zOffset = __getIndexOffset(e, zShapeInfo);
 
             z[zOffset] = lambda(e, x[xOffset], y[yOffset]);
         }
@@ -197,9 +197,9 @@ static _CUDA_G void lambdaPairwiseKernel(void* vx, Nd4jLong *xShapeInfo, void* v
             z[e * zEws] = lambda(x[e * xEws], y[e * yEws]);
     } else {
         for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-            auto xOffset = __getIndexOffset(e, xShapeInfo, zLength);
-            auto yOffset = __getIndexOffset(e, yShapeInfo, zLength);
-            auto zOffset = __getIndexOffset(e, zShapeInfo, zLength);
+            auto xOffset = __getIndexOffset(e, xShapeInfo);
+            auto yOffset = __getIndexOffset(e, yShapeInfo);
+            auto zOffset = __getIndexOffset(e, zShapeInfo);
 
             z[zOffset] = lambda(x[xOffset], y[yOffset]);
         }
@@ -233,10 +233,10 @@ static _CUDA_G void lambdaTriplewiseKernel(void* vw, Nd4jLong *wShapeInfo, void*
             z[e * zEws] = lambda(w[e * wEws], x[e * xEws], y[e * yEws]);
     } else {
         for (uint e = tid; e < zLength; e += blockDim.x * gridDim.x) {
-            auto wOffset = __getIndexOffset(e, wShapeInfo, zLength);
-            auto xOffset = __getIndexOffset(e, xShapeInfo, zLength);
-            auto yOffset = __getIndexOffset(e, yShapeInfo, zLength);
-            auto zOffset = __getIndexOffset(e, zShapeInfo, zLength);
+            auto wOffset = __getIndexOffset(e, wShapeInfo);
+            auto xOffset = __getIndexOffset(e, xShapeInfo);
+            auto yOffset = __getIndexOffset(e, yShapeInfo);
+            auto zOffset = __getIndexOffset(e, zShapeInfo);
 
             z[zOffset] = lambda(w[wOffset], x[xOffset], y[yOffset]);
         }

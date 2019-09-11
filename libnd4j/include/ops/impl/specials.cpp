@@ -231,12 +231,12 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
     Nd4jLong SpecialMethods<T>::getPosition(Nd4jLong *xShapeInfo, Nd4jLong index) {
         auto xEWS = shape::elementWiseStride(xShapeInfo);
 
-        if (xEWS == 1) 
-            return index;        
+        if (xEWS == 1)
+            return index;
         else if (xEWS > 1)
             return index * xEWS;
-        else 
-            return shape::getIndexOffset(index, xShapeInfo, shape::length(xShapeInfo));
+        else
+            return shape::getIndexOffset(index, xShapeInfo);
     }
 
     template<typename T>
@@ -457,10 +457,9 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVa
 
     template <typename X, typename Y>
     void quickSort_parallel_internal_key(X* key, Nd4jLong *xShapeInfo, Y* values, Nd4jLong *yShapeInfo, int left, int right, int cutoff, bool descending) {
-        auto length = shape::length(xShapeInfo);
         int i = left, j = right;
         X ktmp;
-        X pivot = key[shape::getIndexOffset((left + right) / 2, xShapeInfo, length)];
+        X pivot = key[shape::getIndexOffset((left + right) / 2, xShapeInfo)];
 
         Y vtmp;
 
@@ -468,35 +467,35 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVa
             /* PARTITION PART */
             while (i <= j) {
                 if (descending) {
-                    while (key[shape::getIndexOffset(i, xShapeInfo, length)] > pivot)
+                    while (key[shape::getIndexOffset(i, xShapeInfo)] > pivot)
                         i++;
-                    while (key[shape::getIndexOffset(j, xShapeInfo, length)] < pivot)
+                    while (key[shape::getIndexOffset(j, xShapeInfo)] < pivot)
                         j--;
                     if (i <= j) {
-                        ktmp = key[shape::getIndexOffset(i, xShapeInfo, length)];
-                        key[shape::getIndexOffset(i, xShapeInfo, length)] = key[shape::getIndexOffset(j, xShapeInfo, length)];
-                        key[shape::getIndexOffset(j, xShapeInfo, length)] = ktmp;
+                        ktmp = key[shape::getIndexOffset(i, xShapeInfo)];
+                        key[shape::getIndexOffset(i, xShapeInfo)] = key[shape::getIndexOffset(j, xShapeInfo)];
+                        key[shape::getIndexOffset(j, xShapeInfo)] = ktmp;
 
-                        vtmp = values[shape::getIndexOffset(i, yShapeInfo, length)];
-                        values[shape::getIndexOffset(i, yShapeInfo, length)] = values[shape::getIndexOffset(j, yShapeInfo, length)];
-                        values[shape::getIndexOffset(j, yShapeInfo, length)] = vtmp;
+                        vtmp = values[shape::getIndexOffset(i, yShapeInfo)];
+                        values[shape::getIndexOffset(i, yShapeInfo)] = values[shape::getIndexOffset(j, yShapeInfo)];
+                        values[shape::getIndexOffset(j, yShapeInfo)] = vtmp;
 
                         i++;
                         j--;
                     }
                 } else {
-                    while (key[shape::getIndexOffset(i, xShapeInfo, length)] < pivot)
+                    while (key[shape::getIndexOffset(i, xShapeInfo)] < pivot)
                         i++;
-                    while (key[shape::getIndexOffset(j, xShapeInfo, length)] > pivot)
+                    while (key[shape::getIndexOffset(j, xShapeInfo)] > pivot)
                         j--;
                     if (i <= j) {
-                        ktmp = key[shape::getIndexOffset(i, xShapeInfo, length)];
-                        key[shape::getIndexOffset(i, xShapeInfo, length)] = key[shape::getIndexOffset(j, xShapeInfo, length)];
-                        key[shape::getIndexOffset(j, xShapeInfo, length)] = ktmp;
+                        ktmp = key[shape::getIndexOffset(i, xShapeInfo)];
+                        key[shape::getIndexOffset(i, xShapeInfo)] = key[shape::getIndexOffset(j, xShapeInfo)];
+                        key[shape::getIndexOffset(j, xShapeInfo)] = ktmp;
 
-                        vtmp = values[shape::getIndexOffset(i, yShapeInfo, length)];
-                        values[shape::getIndexOffset(i, yShapeInfo, length)] = values[shape::getIndexOffset(j, yShapeInfo, length)];
-                        values[shape::getIndexOffset(j, yShapeInfo, length)] = vtmp;
+                        vtmp = values[shape::getIndexOffset(i, yShapeInfo)];
+                        values[shape::getIndexOffset(i, yShapeInfo)] = values[shape::getIndexOffset(j, yShapeInfo)];
+                        values[shape::getIndexOffset(j, yShapeInfo)] = vtmp;
 
                         i++;
                         j--;
@@ -523,10 +522,9 @@ PRAGMA_OMP_TASK
 
     template <typename X, typename Y>
     void quickSort_parallel_internal_value(X* key, Nd4jLong *xShapeInfo, Y* value, Nd4jLong *yShapeInfo, int left, int right, int cutoff, bool descending) {
-        auto length = shape::length(xShapeInfo);
         int i = left, j = right;
         X ktmp;
-        Y pivot = value[shape::getIndexOffset((left + right) / 2, yShapeInfo, length)];
+        Y pivot = value[shape::getIndexOffset((left + right) / 2, yShapeInfo)];
 
         Y vtmp;
 
@@ -534,35 +532,35 @@ PRAGMA_OMP_TASK
             /* PARTITION PART */
             while (i <= j) {
                 if (descending) {
-                    while (value[shape::getIndexOffset(i, yShapeInfo, length)] > pivot)
+                    while (value[shape::getIndexOffset(i, yShapeInfo)] > pivot)
                         i++;
-                    while (value[shape::getIndexOffset(j, yShapeInfo, length)] < pivot)
+                    while (value[shape::getIndexOffset(j, yShapeInfo)] < pivot)
                         j--;
                     if (i <= j) {
-                        ktmp = key[shape::getIndexOffset(i, xShapeInfo, length)];
-                        key[shape::getIndexOffset(i, xShapeInfo, length)] = key[shape::getIndexOffset(j, xShapeInfo, length)];
-                        key[shape::getIndexOffset(j, xShapeInfo, length)] = ktmp;
+                        ktmp = key[shape::getIndexOffset(i, xShapeInfo)];
+                        key[shape::getIndexOffset(i, xShapeInfo)] = key[shape::getIndexOffset(j, xShapeInfo)];
+                        key[shape::getIndexOffset(j, xShapeInfo)] = ktmp;
 
-                        vtmp = value[shape::getIndexOffset(i, yShapeInfo, length)];
-                        value[shape::getIndexOffset(i, yShapeInfo, length)] = value[shape::getIndexOffset(j, yShapeInfo, length)];
-                        value[shape::getIndexOffset(j, yShapeInfo, length)] = vtmp;
+                        vtmp = value[shape::getIndexOffset(i, yShapeInfo)];
+                        value[shape::getIndexOffset(i, yShapeInfo)] = value[shape::getIndexOffset(j, yShapeInfo)];
+                        value[shape::getIndexOffset(j, yShapeInfo)] = vtmp;
 
                         i++;
                         j--;
                     }
                 } else {
-                    while (value[shape::getIndexOffset(i, yShapeInfo, length)] < pivot)
+                    while (value[shape::getIndexOffset(i, yShapeInfo)] < pivot)
                         i++;
-                    while (value[shape::getIndexOffset(j, yShapeInfo, length)] > pivot)
+                    while (value[shape::getIndexOffset(j, yShapeInfo)] > pivot)
                         j--;
                     if (i <= j) {
-                        ktmp = key[shape::getIndexOffset(i, xShapeInfo, length)];
-                        key[shape::getIndexOffset(i, xShapeInfo, length)] = key[shape::getIndexOffset(j, xShapeInfo, length)];
-                        key[shape::getIndexOffset(j, xShapeInfo, length)] = ktmp;
+                        ktmp = key[shape::getIndexOffset(i, xShapeInfo)];
+                        key[shape::getIndexOffset(i, xShapeInfo)] = key[shape::getIndexOffset(j, xShapeInfo)];
+                        key[shape::getIndexOffset(j, xShapeInfo)] = ktmp;
 
-                        vtmp = value[shape::getIndexOffset(i, yShapeInfo, length)];
-                        value[shape::getIndexOffset(i, yShapeInfo, length)] = value[shape::getIndexOffset(j, yShapeInfo, length)];
-                        value[shape::getIndexOffset(j, yShapeInfo, length)] = vtmp;
+                        vtmp = value[shape::getIndexOffset(i, yShapeInfo)];
+                        value[shape::getIndexOffset(i, yShapeInfo)] = value[shape::getIndexOffset(j, yShapeInfo)];
+                        value[shape::getIndexOffset(j, yShapeInfo)] = vtmp;
 
                         i++;
                         j--;

@@ -40,11 +40,9 @@ namespace helpers {
             for (Nd4jLong i = blockIdx.y; i < rows; i += gridDim.y) {
                 for (Nd4jLong j = threadIdx.x; j < cols; j += totalThreads) {
                     Nd4jLong coords[2] = {i, j};
-                    Nd4jLong tadOffsetOut = shape::getOffset(0, shape::shapeOf(tadOnlyOutputShapeInfo),
-                                                             shape::stride(tadOnlyOutputShapeInfo), coords, 2);
-                    Nd4jLong tadOffsetIn = shape::getOffset(0, shape::shapeOf(tadOnlyInputShapeInfo),
-                                                            shape::stride(tadOnlyInputShapeInfo), coords, 2);
-                    //shape::getIndexOffset(j, tadOnlyOutputShapeInfo, inputLength)
+                    Nd4jLong tadOffsetOut = shape::getOffset(tadOnlyOutputShapeInfo, coords);
+                    Nd4jLong tadOffsetIn = shape::getOffset(tadOnlyInputShapeInfo, coords);
+                    //shape::getIndexOffset(j, tadOnlyOutputShapeInfo)
                     if (i >= j) { // check lower diagonals
                         if (lowerBand > 0) {
                             if ((i - j) > lowerBand)

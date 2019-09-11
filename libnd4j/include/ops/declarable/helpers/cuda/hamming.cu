@@ -43,8 +43,8 @@ namespace nd4j {
 
                 auto tid = threadIdx.x + blockIdx.x * blockDim.x;
                 for (Nd4jLong e = tid; e < length; e += blockDim.x * gridDim.x) {
-                    auto _x = static_cast<unsigned long long>(x[shape::getIndexOffset(e, xShapeInfo, length)]);
-                    auto _y = static_cast<unsigned long long>(y[shape::getIndexOffset(e, yShapeInfo, length)]);
+                    auto _x = static_cast<unsigned long long>(x[shape::getIndexOffset(e, xShapeInfo)]);
+                    auto _y = static_cast<unsigned long long>(y[shape::getIndexOffset(e, yShapeInfo)]);
 
                     // we save intermediate result into shared memory
                     shared[threadIdx.x] += __popcll(_x ^ _y);

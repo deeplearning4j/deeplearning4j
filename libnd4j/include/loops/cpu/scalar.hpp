@@ -33,14 +33,14 @@ namespace scalar    {
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template<typename OpType>
-void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo, 
-                                                void *vextraParams, 
-                                                void *vz, Nd4jLong *zShapeInfo, 
-                                                void *vscalars, 
-                                                int *dimension, int dimensionLength, 
+void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
+                                                void *vextraParams,
+                                                void *vz, Nd4jLong *zShapeInfo,
+                                                void *vscalars,
+                                                int *dimension, int dimensionLength,
                                                 Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
                                                 Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
-        
+
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
     auto scalars = reinterpret_cast<Y *>(vscalars);
@@ -159,37 +159,37 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 
             PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
             {
-                auto threadNum = omp_get_thread_num();                    
+                auto threadNum = omp_get_thread_num();
                 auto threadOffset = info.getThreadOffset(threadNum);
                 auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                 PRAGMA_OMP_SIMD
                 for (unsigned int i = 0; i < ulen; i++) {
-                    auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);                    
+                    auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
                     z[offset] = OpType::op(x[offset], scalar, extraParams);
                 }
             }
         }
         else {
-            
+
             uint zShapeInfoCast[MAX_RANK];
             const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, zShapeInfoCast);
 
             PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
             {
-                auto threadNum = omp_get_thread_num();                    
+                auto threadNum = omp_get_thread_num();
                 auto threadOffset = info.getThreadOffset(threadNum);
                 auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
 
                 PRAGMA_OMP_SIMD
                 for (unsigned int i = 0; i < ulen; i++) {
-                    auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
-                    auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
+                    auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
+                    auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, canCastZ);
                     z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
                 }
             }
-        }  
-    }                        
+        }
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -200,7 +200,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
                                         void *vscalar,
                                         void *vextraParams,
                                         const Nd4jLong len, bool allowParallelism) {
-               
+
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
     auto scalar = reinterpret_cast<Y *>(vscalar)[0];

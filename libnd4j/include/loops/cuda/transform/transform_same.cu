@@ -95,14 +95,14 @@ namespace functions {
 		        else {
 					if(vx == vz) {
 						for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);
+							auto xOffset = shape::getIndexOffset(i, xShapeInfo);
 	    			    	z[xOffset] = OpType::op(x[xOffset], params);
 		    	    	}
 					}
 					else {
 		    	    	for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);
-							auto zOffset = shape::getIndexOffset(i, zShapeInfo, length);
+							auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+							auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 	    			    	z[zOffset] = OpType::op(x[xOffset], params);
 		    	    	}
 		    		}

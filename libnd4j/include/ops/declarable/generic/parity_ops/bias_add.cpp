@@ -15,107 +15,111 @@
  ******************************************************************************/
 
 //
-//  @author raver119@gmail.com
+// @author raver119@gmail.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_biasadd)
 
 #include <ops/declarable/CustomOperations.h>
+#include<ops/declarable/helpers/addBias.h>
 
 namespace nd4j {
-    namespace ops {
-        DECLARE_TYPES(biasadd) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
+namespace ops {
 
-        CUSTOM_OP_IMPL(biasadd, 2, 1, true, 0, 0) {
-            //REQUIRE_OK(this->validateInput2D(block));
-            auto input = INPUT_VARIABLE(0);
-            auto bias = INPUT_VARIABLE(1);
+////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(biasadd, 2, 1, true, 0, 0) {
 
-            REQUIRE_TRUE(bias->isRowVector(), 0, "Bias array should be a vector");
+    auto input = INPUT_VARIABLE(0);
+    auto bias = INPUT_VARIABLE(1);
 
-            auto z = OUTPUT_VARIABLE(0);
+    auto output = OUTPUT_VARIABLE(0);
 
-            if (input->isMatrix())
-                input->addRowVector(bias, z);
-            else {
-                // TODO: we might want to use NDArray::applyTrueBroadcast here, like AddOp does
-                std::vector<Nd4jLong> shape({-1, bias->lengthOf()});
-                //nd4j_debug("Reshaping to: [%i, %i]\n", -1, (int) bias->lengthOf());
-                auto tArr = input->reshape(input->ordering(), shape);
-                auto zArr = z->reshape(z->ordering(), shape);
-                tArr.addRowVector(bias, &zArr);
-            }
+    const bool isNCHW = !block.getBArguments()->empty() ? B_ARG(0) : false;
+    const int channelDim = isNCHW ? 1 : input->rankOf() - 1;      // second or last
 
-            STORE_RESULT(*z);
+    REQUIRE_TRUE(bias->rankOf() == 1, 0, "BIASADD CUSTOM_OP: bias array should have rank = 1, but got %i instead !", bias->rankOf());
 
-            return Status::OK();
-        }
-        DECLARE_SYN(bias_add, biasadd);
+    REQUIRE_TRUE(bias->sizeAt(0) == input->sizeAt(channelDim), 0, "BIASADD CUSTOM_OP: shapes of bias %s and input %s arrays are not suitable for broadcast operation along channel dimension %i !", ShapeUtils::shapeAsString(bias).c_str(), ShapeUtils::shapeAsString(input).c_str(), channelDim);
 
-        DECLARE_SHAPE_FN(biasadd) {
-            auto xShape = inputShape->at(0);
-            auto yShape = inputShape->at(1);
+    REQUIRE_TRUE(output->isSameShape(input), 0, "BIASADD CUSTOM_OP: wrong shape of output array, expected is %s but got %s instead !", ShapeUtils::shapeAsString(input).c_str(), ShapeUtils::shapeAsString(output).c_str());
 
-            auto dtype = ArrayOptions::dataType(yShape);
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(xShape, dtype)));
-        }
+    helpers::addBias(block, *input, *bias, *output, isNCHW);
+    // input->applyBroadcast(nd4j::broadcast::Add, {channelDim}, bias, output);
 
-        DECLARE_TYPES(biasadd_bp) {
-            getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
-        }
+    return Status::OK();
+}
+DECLARE_SYN(bias_add, biasadd);
 
-        CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
-            auto input = INPUT_VARIABLE(0);
-            auto bias = INPUT_VARIABLE(1);
-            auto epsilonNext = INPUT_VARIABLE(2);
+////////////////////////////////////////////////////////////////////
+DECLARE_SHAPE_FN(biasadd) {
+    auto xShape = inputShape->at(0);
+    auto yShape = inputShape->at(1);
 
-            auto epsilon = OUTPUT_VARIABLE(0);
-            auto gradB = OUTPUT_VARIABLE(1);
+    auto dtype = ArrayOptions::dataType(yShape);
+    return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(xShape, dtype)));
+}
 
-            epsilon->assign(epsilonNext);
+DECLARE_TYPES(biasadd) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedOutputTypes({ALL_FLOATS});
+}
 
-            // cnn case
-            if (input->rankOf() == 4) {
-                auto epsilonNext2d = epsilonNext->permute({1, 0, 2, 3});
-                epsilonNext2d.reshapei('c', {(int) bias->lengthOf(), -1});
+////////////////////////////////////////////////////////////////////
+CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
+    auto input = INPUT_VARIABLE(0);
+    auto bias = INPUT_VARIABLE(1);
+    auto epsilonNext = INPUT_VARIABLE(2);
 
-                auto sum = epsilonNext2d.reduceAlongDimension(reduce::Sum, {1});
-                gradB->assign(sum);
+    auto epsilon = OUTPUT_VARIABLE(0);
+    auto gradB = OUTPUT_VARIABLE(1);
 
-                delete sum;
-            } else if (input->rankOf() == 2) {
-                // regular fully-connected case
-                auto sum = epsilonNext->reduceAlongDimension(reduce::Sum, {0});
-                gradB->assign(sum);
-                
-                delete sum;
-            }
+    epsilon->assign(epsilonNext);
 
-            return ND4J_STATUS_OK;
-        }
-        DECLARE_SYN(BiasAddGrad, biasadd_bp);
+    // cnn case
+    if (input->rankOf() == 4) {
+        auto epsilonNext2d = epsilonNext->permute({1, 0, 2, 3});
+        epsilonNext2d.reshapei('c', {(int) bias->lengthOf(), -1});
 
-        DECLARE_SHAPE_FN(biasadd_bp) {
-            auto input = inputShape->at(0);
-            auto bias = inputShape->at(1);
+        auto sum = epsilonNext2d.reduceAlongDimension(reduce::Sum, {1});
+        gradB->assign(sum);
 
-            Nd4jLong* epsShape;
-            Nd4jLong* gradShape;
+        delete sum;
+    } else if (input->rankOf() == 2) {
+        // regular fully-connected case
+        auto sum = epsilonNext->reduceAlongDimension(reduce::Sum, {0});
+        gradB->assign(sum);
 
-            COPY_SHAPE(input, epsShape);
-            COPY_SHAPE(bias, gradShape);
-
-            return SHAPELIST(CONSTANT(epsShape), CONSTANT(gradShape));
-
-        }
+        delete sum;
     }
+
+    return ND4J_STATUS_OK;
+}
+DECLARE_SYN(BiasAddGrad, biasadd_bp);
+
+DECLARE_SHAPE_FN(biasadd_bp) {
+    auto input = inputShape->at(0);
+    auto bias = inputShape->at(1);
+
+    Nd4jLong* epsShape;
+    Nd4jLong* gradShape;
+
+    COPY_SHAPE(input, epsShape);
+    COPY_SHAPE(bias, gradShape);
+
+    return SHAPELIST(CONSTANT(epsShape), CONSTANT(gradShape));
+}
+
+DECLARE_TYPES(biasadd_bp) {
+    getOpDescriptor()
+            ->setAllowedInputTypes(nd4j::DataType::ANY)
+            ->setAllowedOutputTypes({ALL_FLOATS});
+}
+
+
+}
 }
 
 #endif

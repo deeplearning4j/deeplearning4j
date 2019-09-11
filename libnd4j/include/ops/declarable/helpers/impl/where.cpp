@@ -31,9 +31,9 @@ namespace nd4j {
 
                 Nd4jLong idx[MAX_RANK];
                 for (int e = 0; e < condition.lengthOf(); e++) {
-                    shape::index2coords(condition.rankOf(), condition.shapeOf(), e, idx);
+                    shape::index2coords(e, condition.getShapeInfo(), idx);
 
-                    auto offset = shape::getOffset(0, condition.shapeOf(), condition.stridesOf(), idx, condition.rankOf());
+                    auto offset = shape::getOffset(condition.getShapeInfo(), idx);
                     if (condition.e<bool>(offset)) {
                         auto array = NDArrayFactory::create_('c', {1, condition.rankOf()}, output.dataType(), output.getContext());
                         for (int f = 0; f < condition.rankOf(); f++)

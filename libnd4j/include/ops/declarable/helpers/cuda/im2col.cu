@@ -64,9 +64,9 @@ __global__ static void im2colCuda(const void *image, void *columns,
 
     auto coords = sharedMem + threadIdx.x * colRank;
 
-    shape::index2coords(colRank, colShapeInfo + 1, colInd, colLen, coords);
+    shape::index2coords(colInd, colShapeInfo, coords);
 
-    const auto colOffset = shape::getOffset(0, colShapeInfo + 1, colShapeInfo + colRank + 1, coords, colRank);
+    const auto colOffset = shape::getOffset(colShapeInfo, coords);
 
     coords[2] = (-pH + coords[2] * dH) + coords[4] * sH;   // imH
     coords[3] = (-pW + coords[3] * dW) + coords[5] * sW;   // imW
@@ -74,7 +74,7 @@ __global__ static void im2colCuda(const void *image, void *columns,
     if (static_cast<unsigned>(coords[2]) >= static_cast<unsigned>(iH) || static_cast<unsigned>(coords[3]) >= static_cast<unsigned>(iW))
         col[colOffset] = zeroPadVal;
     else
-        col[colOffset] = im[shape::getOffset(0, imShapeInfo + 1, imShapeInfo + imRank + 1, coords, imRank)];
+        col[colOffset] = im[shape::getOffset(imShapeInfo, coords)];
 }
 
 

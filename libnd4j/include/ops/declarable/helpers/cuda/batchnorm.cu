@@ -64,25 +64,25 @@ __global__ static void batchnormCuda(const void* vx, const Nd4jLong* xShapeInfo,
 
     for (uint i = tid; i < minLen; i += totalThreads) {
 
-		const auto meanOffset     = shape::getIndexOffset(i, meanShapeInfo, minLen);
-    	const auto varianceOffset = shape::getIndexOffset(i, varianceShapeInfo, minLen);
+		const auto meanOffset     = shape::getIndexOffset(i, meanShapeInfo);
+    	const auto varianceOffset = shape::getIndexOffset(i, varianceShapeInfo);
 
     	T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(variance[varianceOffset] + epsilon);
 
     	if(gamma != nullptr)
-    		sigmaInvGam *= gamma[shape::getIndexOffset(i, gammaShapeInfo, minLen)];
+    		sigmaInvGam *= gamma[shape::getIndexOffset(i, gammaShapeInfo)];
 
 		auto betaOffset = 0;
     	if(beta != nullptr)
-    		betaOffset = shape::getIndexOffset(i, betaShapeInfo, minLen);
+    		betaOffset = shape::getIndexOffset(i, betaShapeInfo);
 
     	const auto xTad = x + xTadOffsets[i];
     		  auto zTad = z + zTadOffsets[i];
 
     	for (uint j = 0; j < tadLen; ++j) {
 
-    		const auto xTadOffset = shape::getIndexOffset(j, xTadShapeInfo, tadLen);
-    		const auto zTadOffset = shape::getIndexOffset(j, zTadShapeInfo, tadLen);
+    		const auto xTadOffset = shape::getIndexOffset(j, xTadShapeInfo);
+    		const auto zTadOffset = shape::getIndexOffset(j, zTadShapeInfo);
 
     		zTad[zTadOffset] = (xTad[xTadOffset] - mean[meanOffset]) * sigmaInvGam;
 
@@ -130,10 +130,10 @@ __global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo
 
     for (uint i = tid; i < xLen; i += totalThreads) {
 
-        shape::index2coords(xRank, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), i, xLen, coords);
+        shape::index2coords(i, xShapeInfo, coords);
 
-        const auto xOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, xRank);
-        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coords, xRank);
+        const auto xOffset = shape::getOffset(xShapeInfo, coords);
+        const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
         if(minRank == xRank) {
             for (uint i = 0, j = 0; i < xRank; ++i) {
@@ -146,20 +146,20 @@ __global__ static void batchnormCuda2(const void* vx, const Nd4jLong* xShapeInfo
         else    // minRank = numDims = 1 in this case
             coords[0] = coords[dims[0]];
 
-        const auto meanOffset     = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(meanShapeInfo)), shape::stride(const_cast<Nd4jLong*>(meanShapeInfo)), coords, minRank);
-        const auto varianceOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(varianceShapeInfo)), shape::stride(const_cast<Nd4jLong*>(varianceShapeInfo)), coords, minRank);
+        const auto meanOffset     = shape::getOffset(meanShapeInfo, coords);
+        const auto varianceOffset = shape::getOffset(varianceShapeInfo, coords);
 
         T sigmaInvGam = 1. / nd4j::math::nd4j_sqrt<T, T>(variance[varianceOffset] + epsilon);
 
         if(gamma != nullptr) {
-            const auto gammaOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(gammaShapeInfo)), shape::stride(const_cast<Nd4jLong*>(gammaShapeInfo)), coords, minRank);
+            const auto gammaOffset = shape::getOffset(gammaShapeInfo, coords);
             sigmaInvGam *= gamma[gammaOffset];
         }
 
         z[zOffset] = (x[xOffset] - mean[meanOffset]) * sigmaInvGam;
 
         if(beta != nullptr) {
-            const auto betaOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(betaShapeInfo)), shape::stride(const_cast<Nd4jLong*>(betaShapeInfo)), coords, minRank);
+            const auto betaOffset = shape::getOffset(betaShapeInfo, coords);
             z[zOffset] += beta[betaOffset];
         }
     }

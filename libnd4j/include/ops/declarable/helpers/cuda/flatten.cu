@@ -35,17 +35,11 @@ namespace nd4j {
 
                     auto xBuffer = reinterpret_cast<T*>(xBuffers[e]);
                     auto xShapeInfo = xShapeInfos[e];
-                    auto xShape = shape::shapeOf(xShapeInfo);
-                    auto xStride = shape::stride(xShapeInfo);
-                    auto xRank = shape::rank(xShapeInfo);
                     auto xLength = shape::length(xShapeInfo);
 
                     // each element of this input array has own place within common output array
-                    for (uint i = threadIdx.x; i < xLength; i += blockDim.x) {
-                        shape::index2coords(xRank, xShape, i, xLength, xCoord, order);
-                        auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                        z[i] = xBuffer[xOffset];
-                    }
+                    for (uint i = threadIdx.x; i < xLength; i += blockDim.x)
+                        z[i] = xBuffer[getIndexOffsetOrdered(i, xShapeInfo, order)];
                 }
             }
 

@@ -226,7 +226,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                     indexValue = OpType::update(indexValue, comp, extraParams);
                 }
 
-                auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
+                auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
                 z[zOffset] = (Z) indexValue.index;
             }
         }
@@ -243,7 +243,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 auto indexValue = OpType::startingIndexValue(tad);
 
                 for (uint j = 0; j < tadLen; j++) {
-                    auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
+                    auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
                     functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
                     indexValue = OpType::update(indexValue, comp, extraParams);
                 }
@@ -266,12 +266,12 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 auto indexValue = OpType::startingIndexValue(tad);
 
                 for (uint j = 0; j < tadLen; j++) {
-                    auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
+                    auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
                     functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
                     indexValue = OpType::update(indexValue, comp, extraParams);
                 }
 
-                auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
+                auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
                 z[zOffset] = (Z) indexValue.index;
             }
         }

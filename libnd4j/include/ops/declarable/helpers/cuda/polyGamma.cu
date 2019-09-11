@@ -34,31 +34,31 @@ __global__ static void polyGammaCuda(const void *vn, const Nd4jLong *nShapeInfo,
 
     const auto n = reinterpret_cast<const T*>(vn);
     const auto x = reinterpret_cast<const T*>(vx);
-          auto z = reinterpret_cast<T*>(vz);    
+          auto z = reinterpret_cast<T*>(vz);
 
     __shared__ Nd4jLong len;
-    
-    if (threadIdx.x == 0)         
-        len = shape::length(nShapeInfo);    
+
+    if (threadIdx.x == 0)
+        len = shape::length(nShapeInfo);
     __syncthreads();
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
     const auto totalThreads = gridDim.x * blockDim.x;
 
     for (int i = tid; i < len; i += totalThreads) {
-        
-        const auto nOffset = shape::getIndexOffset(i, nShapeInfo, len);    
-        const auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);        
-        const auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
 
-        const T nVal = n[nOffset]; 
-        
+        const auto nOffset = shape::getIndexOffset(i, nShapeInfo);
+        const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+        const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
+
+        const T nVal = n[nOffset];
+
         int sign = (static_cast<int>(nVal) + 1) % 2  ?  -1 : 1;
 
         T factorial = 1;
         if(nVal != 0 && nVal != 1)
         	for(int i = 2; i <= nVal; ++i)
-				factorial *= i;	
+				factorial *= i;
 
         z[zOffset] = sign * factorial * zetaScalar<T>(nVal + 1, x[xOffset]);
     }
@@ -75,10 +75,10 @@ static void polyGammaCudaLauncher(const int blocksPerGrid, const int threadsPerB
 void polyGamma(nd4j::LaunchContext * context, const NDArray& n, const NDArray& x, NDArray& z) {
 
     NDArray::prepareSpecialUse({&z}, {&n, &x});
-        
+
     int threadsPerBlock = MAX_NUM_THREADS;
     int blocksPerGrid = (z.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    
+
     BUILD_SINGLE_SELECTOR(n.dataType(), polyGammaCudaLauncher, (blocksPerGrid, threadsPerBlock, context->getCudaStream(), n.getSpecialBuffer(), n.getSpecialShapeInfo(), x.getSpecialBuffer(), x.getSpecialShapeInfo(), z.getSpecialBuffer(), z.getSpecialShapeInfo()), FLOAT_TYPES);
 
     NDArray::registerSpecialUse({&z}, {&n, &x});

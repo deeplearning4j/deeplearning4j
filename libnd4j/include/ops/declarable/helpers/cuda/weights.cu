@@ -29,7 +29,7 @@ namespace helpers {
     template <typename T>
     static __device__ void adjustWeightsKernelD(void* inputBuffer,   Nd4jLong* inputShape,
                                                void* weightsBuffer, Nd4jLong* weightsShape,
-                                               void* outputBuffer,  Nd4jLong inputLength, Nd4jLong weightsLength,
+                                               void* outputBuffer,  Nd4jLong inputLength,
                                                Nd4jLong outputLength, int val) {
     //    typedef Nd4jLong T;
         auto tid = threadIdx.x;
@@ -39,13 +39,13 @@ namespace helpers {
         //for (int e = 0; e < inputLength; e++) {
         for (Nd4jLong e = tid; e < inputLength; e += blockDim.x) {
 
-            Nd4jLong xOffset = shape::getIndexOffset(e, inputShape, inputLength);
+            Nd4jLong xOffset = shape::getIndexOffset(e, inputShape);
             int current = *(reinterpret_cast<int*>(inputBuffer) + xOffset);
             if (current == val) {
                 //printf("%lld\n", xOffset);
-                //Nd4jLong zOffset = shape::getIndexOffset(val, outputShape, outputLength);
+                //Nd4jLong zOffset = shape::getIndexOffset(val, outputShape);
                 if (weightsBuffer != nullptr) {
-                    Nd4jLong yOffset = shape::getIndexOffset(e, weightsShape, weightsLength);
+                    Nd4jLong yOffset = shape::getIndexOffset(e, weightsShape);
                     //atomicAdd();
                     //*reinterpret_cast<int *>(outputBuffer) +=  reinterpret_cast<int *>(weightsBuffer)[yOffset];
                     nd4j::math::atomics::nd4j_atomicAdd(reinterpret_cast<T *>(outputBuffer), reinterpret_cast<T *>(weightsBuffer)[yOffset]); //output->p(val, output->e<T>(val) + 1);
@@ -74,22 +74,19 @@ namespace helpers {
         //auto tid = blockIdx.x * blockDim.x + threadIdx.x; // * blockDim.x; // + threadIdx.x;
         int threadCount = gridDim.x * blockDim.x;
         Nd4jLong inputLength = shape::length(inputShape);
-        Nd4jLong weightsLength = 0;
-        if (weightsBuffer != nullptr)
-            weightsLength = shape::length(weightsShape);
 
         Nd4jLong outputLength = shape::length(outputShape);
-        Nd4jLong borderLen = 1;//outputLength / gridDim.x + outputLength % gridDim.x;
+        Nd4jLong borderLen = 1;
 
         for (Nd4jLong e = blockIdx.x; e < outputLength; e += threadCount) {
         //if (blockIdx.x < outputLength) {
             //if (e + threadCount < outputLength) {
-            Nd4jLong zOffset = shape::getIndexOffset(e, outputShape, outputLength);
+            Nd4jLong zOffset = shape::getIndexOffset(e, outputShape);
             //printf("%d %d %d\n", blockIdx.x, blockDim.x, threadIdx.x);
             //Nd4jLong borderLen = 1;
             T* outputBufferZ = reinterpret_cast<T*>(outputBuffer) + zOffset;
             adjustWeightsKernelD<T>(inputBuffer, inputShape, weightsBuffer, weightsShape, (void*)outputBufferZ,
-                                 inputLength, weightsLength, outputLength, (int)zOffset);
+                                 inputLength, outputLength, (int)zOffset);
 
         }
     }

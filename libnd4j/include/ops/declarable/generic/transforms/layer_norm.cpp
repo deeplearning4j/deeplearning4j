@@ -23,7 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/reverse.h>
-
+#include <ops/declarable/helpers/addBias.h>
 
 namespace nd4j {
 namespace ops  {
@@ -59,7 +59,8 @@ namespace ops  {
         output->applyBroadcast(nd4j::broadcast::Multiply, {dimC}, gain);
         if(bias != nullptr) {
             // output->applyTrueBroadcast(nd4j::BroadcastOpsTuple::Add(), bias, output);
-            output->applyBroadcast(nd4j::broadcast::Add, {dimC}, bias);
+            // output->applyBroadcast(nd4j::broadcast::Add, {dimC}, bias);
+            helpers::addBias(block, *output, *bias, *output, isNCHW);
         }
 
         return Status::OK();

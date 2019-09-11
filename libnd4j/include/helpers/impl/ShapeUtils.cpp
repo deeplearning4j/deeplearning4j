@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// @author Yurii Shyrma
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include <algorithm>
@@ -931,7 +931,7 @@ void ShapeUtils::evalIdxRangesForSubArr(const Nd4jLong subArrIdx,  const Nd4jLon
     for(int i = 0; i < subArrRank; ++i)
         shapeOfSubArr[i] = shapeInfo[dimsToExclude[i] + 1];
 
-    shape::index2coords(subArrRank, shapeOfSubArr.data(), subArrIdx, indexes.data());
+    shape::index2coords(subArrIdx, subArrRank, shapeOfSubArr.data(), indexes.data());
 
     memset(idxRanges, 0, 2 * rank * sizeof(Nd4jLong));
 

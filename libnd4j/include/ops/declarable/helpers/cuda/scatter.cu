@@ -57,8 +57,8 @@ namespace helpers {
 
             //             for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
 
-            //                 const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
-            //                 const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+            //                 const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+            //                 const auto yOffset = shape::getIndexOffset(i, yShapeInfo);
 
             //                 switch (opCode) {
             //                     case pairwise::Add:
@@ -99,8 +99,8 @@ namespace helpers {
             //             __syncthreads();
 
             //             for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
-            //                 const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
-            //                 const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+            //                 const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+            //                 const auto yOffset = shape::getIndexOffset(i, yShapeInfo);
 
             //                 switch (opCode) {
             //                     case pairwise::Add:
@@ -188,7 +188,7 @@ __global__ static void scatterLockCuda(const int opCode,
 
     for (int e = 0; e < xLen; e++) {
 
-        const Nd4jLong zIndex = x[shape::getIndexOffset(e, xShapeInfo, xLen)];
+        const Nd4jLong zIndex = x[shape::getIndexOffset(e, xShapeInfo)];
         const bool isOwner = zIndex < gridDim.x ? blockIdx.x == zIndex : blockIdx.x == zIndex % gridDim.x;
 
         if (!isOwner)
@@ -199,8 +199,8 @@ __global__ static void scatterLockCuda(const int opCode,
             if(threadIdx.x != 0)
                 continue;
 
-            const auto yOffset = shape::getIndexOffset(e,      yTadShapeInfo, yTadLen);
-            const auto zOffset = shape::getIndexOffset(zIndex, zTadShapeInfo, zTadLen);
+            const auto yOffset = shape::getIndexOffset(e,      yTadShapeInfo);
+            const auto zOffset = shape::getIndexOffset(zIndex, zTadShapeInfo);
 
             switch (opCode) {
                 case pairwise::Add:
@@ -241,8 +241,8 @@ __global__ static void scatterLockCuda(const int opCode,
 
             for (Nd4jLong i = threadIdx.x; i < zTadLen; i += blockDim.x) {
 
-                const auto yOffset = shape::getIndexOffset(i, yTadShapeInfo, zTadLen);
-                const auto zOffset = shape::getIndexOffset(i, zTadShapeInfo, zTadLen);
+                const auto yOffset = shape::getIndexOffset(i, yTadShapeInfo);
+                const auto zOffset = shape::getIndexOffset(i, zTadShapeInfo);
 
                 switch (opCode) {
                     case pairwise::Add:
@@ -326,19 +326,19 @@ __global__ static void scatterCuda(const int opCode,
 
     for (Nd4jLong i = tid; i < yLen; i += totalThreads) {
 
-        shape::index2coords(yRank, shape::shapeOf(const_cast<Nd4jLong*>(yShapeInfo)), i, yLen, yCoord);
+        shape::index2coords(i, yShapeInfo, yCoord);
 
         for (uint j = 0; j < xRank; ++j)
             xCoord[j] = yCoord[j];
 
-        const auto xOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), xCoord, xRank);
+        const auto xOffset = shape::getOffset(xShapeInfo, xCoord);
         zCoord[0] = x[xOffset];
 
         for (uint j = 0; j < yRank - xRank; ++j)
             zCoord[j + 1] = yCoord[xRank + j];
 
-        const auto yOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(yShapeInfo)), shape::stride(const_cast<Nd4jLong*>(yShapeInfo)), yCoord, yRank);
-        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), zCoord, zRank);
+        const auto yOffset = shape::getOffset(yShapeInfo, yCoord);
+        const auto zOffset = shape::getOffset(zShapeInfo, zCoord);
 
         switch (opCode) {
             case pairwise::Add:
@@ -471,9 +471,9 @@ __global__ static void scatterNDLockCuda(const int opCode,
         const X* xTad = x + xOffsets[i];
 
         for (uint k = 0; k < xLastDim; ++k)
-            zTadCoordsPerThread[k] = xTad[shape::getIndexOffset(k, xTadShapeInfo, xLastDim)];
+            zTadCoordsPerThread[k] = xTad[shape::getIndexOffset(k, xTadShapeInfo)];
 
-        const auto zTadIndex = shape::coords2index(xLastDim, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), zTadCoordsPerThread);
+        const auto zTadIndex = shape::coords2index(xLastDim, zShapeInfo + 1, zTadCoordsPerThread);
 
         const bool isOwner = zTadIndex < gridDim.x ? blockIdx.x == zTadIndex : blockIdx.x == zTadIndex % gridDim.x;
 
@@ -485,8 +485,8 @@ __global__ static void scatterNDLockCuda(const int opCode,
             if(threadIdx.x != 0)
                 continue;
 
-            const auto yOffset = shape::getIndexOffset(i,         yTadShapeInfo, yTadLen);
-            const auto zOffset = shape::getIndexOffset(zTadIndex, zTadShapeInfo, yTadLen);
+            const auto yOffset = shape::getIndexOffset(i,         yTadShapeInfo);
+            const auto zOffset = shape::getIndexOffset(zTadIndex, zTadShapeInfo);
 
             switch (opCode) {
                 case pairwise::Add:
@@ -526,8 +526,8 @@ __global__ static void scatterNDLockCuda(const int opCode,
 
             for (Nd4jLong j = threadIdx.x; j < yTadLen; j += blockDim.x) {
 
-                const auto yOffset = shape::getIndexOffset(j, yTadShapeInfo, yTadLen);
-                const auto zOffset = shape::getIndexOffset(j, zTadShapeInfo, yTadLen);
+                const auto yOffset = shape::getIndexOffset(j, yTadShapeInfo);
+                const auto zOffset = shape::getIndexOffset(j, zTadShapeInfo);
 
                 switch (opCode) {
                     case pairwise::Add:
@@ -618,22 +618,22 @@ __global__ static void scatterNDCuda(const int opCode,
 
     for (Nd4jLong i = tid; i < yLen; i += totalThreads) {
 
-        shape::index2coords(yRank, shape::shapeOf(const_cast<Nd4jLong*>(yShapeInfo)), i, yLen, yCoord);
+        shape::index2coords(i, yShapeInfo, yCoord);
 
         for (uint j = 0; j < xRank - 1; ++j)
             xCoord[j] = yCoord[j];
 
         for (uint j = 0; j < xLastDim; ++j) {
             xCoord[xRank - 1] = j;
-            const auto xOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), xCoord, xRank);
+            const auto xOffset = shape::getOffset(xShapeInfo, xCoord);
             zCoord[j] = x[xOffset];
         }
 
         for (uint j = xLastDim; j < zRank; ++j)
             zCoord[j] = yCoord[yRank - zRank + j];
 
-        const auto yOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(yShapeInfo)), shape::stride(const_cast<Nd4jLong*>(yShapeInfo)), yCoord, yRank);
-        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), zCoord, zRank);
+        const auto yOffset = shape::getOffset(yShapeInfo, yCoord);
+        const auto zOffset = shape::getOffset(zShapeInfo, zCoord);
 
         switch (opCode) {
             case pairwise::Add:
@@ -760,18 +760,18 @@ __global__ void scatterForLossCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
     auto coords = sharedMem + threadIdx.x * (xRank + 1);
 
-    shape::index2coords(xRank, xShapeInfo + 1, xInd, xLen, coords);
+    shape::index2coords(xInd, xShapeInfo, coords);
 
     // y last coordinate
-    coords[xRank] = x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xRank + 1, coords, xRank)];
+    coords[xRank] = x[shape::getOffset(xShapeInfo, coords)];
 
-    const auto yOffset = shape::getOffset(0, yShapeInfo + 1, yShapeInfo + xRank + 2, coords, xRank + 1);
+    const auto yOffset = shape::getOffset(yShapeInfo, coords);
 
     if(z == nullptr) { // gradient calculation
         y[yOffset] -= 1.f;
     }
     else {
-        z[shape::getOffset(0, zShapeInfo + 1, zShapeInfo + xRank + 1, coords, xRank)] = y[yOffset];
+        z[shape::getOffset(zShapeInfo, coords)] = y[yOffset];
     }
 }
 

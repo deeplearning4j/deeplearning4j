@@ -114,15 +114,15 @@ namespace simdOps {
 					tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
 					numTads = shape::length(xShapeInfo) / tadLength;
 				}
-				__syncthreads();				
+				__syncthreads();
 
 				for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
 					auto tadOffsetForBlock = tadOffsets[r];
 
 					sPartials[threadIdx.x] = startingValue(dx + tadOffsetForBlock);
 
-					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {						
-						auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
+					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
+						auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo);
 						sPartials[threadIdx.x] = update(sPartials[threadIdx.x], op(dx[xOffset], result[r]), extraParams);
 					}
 					__syncthreads();
@@ -198,8 +198,8 @@ namespace simdOps {
                     auto offset = tadOffsets[i];
                     T start = startingValue(x + offset);
 
-                    for (int j = 0; j < tadLength; j++) {                        
-                        auto xOffset = offset + shape::getIndexOffset(j, tadOnlyShapeInfo, tadLength);
+                    for (int j = 0; j < tadLength; j++) {
+                        auto xOffset = offset + shape::getIndexOffset(j, tadOnlyShapeInfo);
                         start = update(start, op(x[xOffset], result[i]), extraParams);
                     }
 

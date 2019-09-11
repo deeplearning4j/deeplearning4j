@@ -66,8 +66,8 @@ namespace helpers {
 //                            for (auto pixel = 0; pixel < lastDim; pixel++) {
 //                                Nd4jLong zPos[] = {i, j, pos};
 //                                Nd4jLong xPos[] = {row, col, pixel};
-//                                auto zIndex = shape::getOffset(0, shape::shapeOf(outTadShape), shape::stride(outTadShape), zPos, 3);
-//                                auto xIndex = shape::getOffset(0, shape::shapeOf(patchShape), shape::stride(patchShape), xPos, 3);
+//                                auto zIndex = shape::getOffset(outTadShape, zPos);
+//                                auto xIndex = shape::getOffset(patchShape, xPos);
 //                                if (theSame) { // SAME case
 //                                    if (row >= 0 && col >= 0 && row < rowDim && col < colDim)
 //                                        matrix[zIndex] = patch[xIndex]; //outMatrix->p<T>(i, j, pos, patch->e<T>(row, col, pixel));
@@ -86,18 +86,6 @@ namespace helpers {
 
     template <typename T>
     static __global__ void globalExtractPatchesKernel(bool theSame, int batchCount, int sizeRow, int sizeCol, int rowDim, int colDim, int outRowDim, int outColDim, int strideRow, int strideCol, int rateRow, int rateCol, int rowCast, int colCast, int lastDim, T* input, Nd4jLong* patchShape, Nd4jLong* inputOffsets, T* output, Nd4jLong* outTadShape, Nd4jLong* outputOffsets) {
-        __shared__ Nd4jLong* xShapeOf;
-        __shared__ Nd4jLong* xStrideOf;
-        __shared__ Nd4jLong* zShapeOf;
-        __shared__ Nd4jLong* zStrideOf;
-
-        if (0 == threadIdx.x) {
-            xShapeOf = shape::shapeOf(patchShape);
-            xStrideOf = shape::stride(patchShape);
-            zShapeOf = shape::shapeOf(outTadShape);
-            zStrideOf = shape::stride(outTadShape);
-        }
-        __syncthreads();
 
         auto start = threadIdx.x + blockIdx.x * blockDim.x;
 
@@ -128,7 +116,7 @@ namespace helpers {
                                 bool setUp = (theSame && row >= 0 && col >= 0 && row < rowDim && col < colDim) || (!theSame);
 
                                 if (setUp) { // VALID or SAME cases
-                                    outMatrix[shape::getOffset(0, zShapeOf, zStrideOf, zPos, 3)] = patch[shape::getOffset(0, xShapeOf, xStrideOf, xPos, 3)];
+                                    outMatrix[shape::getOffset(outTadShape, zPos)] = patch[shape::getOffset(patchShape, xPos)];
                                 }
                                 pos++;
                             }
