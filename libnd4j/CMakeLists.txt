@@ -84,6 +84,33 @@ if(NOT CUDA_BLAS)
         set(OPENBLAS_LIBRARIES openblas)
     endif()
 
+    # building cpu_features
+    if (X86_BUILD)
+        add_definitions(-DCPU_FEATURES=true)
+        set(BUILD_PIC ON)
+        configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
+        execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+                RESULT_VARIABLE result
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
+
+        if(result)
+            message(FATAL_ERROR "CMake step for cpu_features failed: ${result}")
+        endif()
+        execute_process(COMMAND ${CMAKE_COMMAND} --build .
+                RESULT_VARIABLE result
+                WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
+        if(result)
+            message(FATAL_ERROR "Build step for cpu_features failed: ${result}")
+        endif()
+
+        add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src
+                ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-build
+                EXCLUDE_FROM_ALL)
+        set(CPUF_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src)
+        include_directories(${CPUF_SOURCE_DIR}/include)
+        set(CPU_FEATURES cpu_features)
+    endif()
+
     # new mkl-dnn entry
     if (${HELPERS_mkldnn})
         message("Going to pull & build mkldnn")
@@ -113,35 +140,6 @@ if(NOT CUDA_BLAS)
         set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
         include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_SOURCE_DIR})
         set(MKLDNN mkldnn)
-
-
-
-        # building cpu_features
-        if (X86_BUILD)
-            add_definitions(-DCPU_FEATURES=true)
-            set(BUILD_PIC ON)
-            configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
-            execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
-                    RESULT_VARIABLE result
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
-
-            if(result)
-                message(FATAL_ERROR "CMake step for cpu_features failed: ${result}")
-            endif()
-            execute_process(COMMAND ${CMAKE_COMMAND} --build .
-                    RESULT_VARIABLE result
-                    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
-            if(result)
-                message(FATAL_ERROR "Build step for cpu_features failed: ${result}")
-            endif()
-
-            add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src
-                    ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-build
-                    EXCLUDE_FROM_ALL)
-            set(CPUF_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src)
-            include_directories(${CPUF_SOURCE_DIR}/include)
-            set(CPU_FEATURES cpu_features)
-        endif()
     endif()
 endif()
 
