@@ -50,38 +50,42 @@ if(NOT CUDA_BLAS)
     # we need this definition to avoid global memory use within mkldnn
     add_definitions(-DMKLDNN_ENABLE_CONCURRENT_EXEC=true)
 
+    # there's a chance, we have no BLAS provided externally
+    if ("${OPENBLAS_PATH}" STREQUAL "")
+        #we don't want static OpenBLAS on Apple
+        set(BLA_STATIC ON)
+        if (NOT APPLE)
+            set(BLA_VENDOR "OpenBLAS")
+        endif()
+
+        # look around for system blas instead
+        find_package(BLAS REQUIRED)
+        if (BLAS_FOUND)
+            message("Original library: ${BLAS_LIBRARIES}")
+            # workaround for for cmake being unable to find static blas library
+            SET(_TMP_B "")
+            if (APPLE)
+                string(REGEX REPLACE "\\.dylib$" ".lib" _TMP_B "${BLAS_LIBRARIES}")
+            elseif (WIN32)
+                string(REGEX REPLACE "\\.dll" ".lib" _TMP_B "${BLAS_LIBRARIES}")
+            else()
+                string(REGEX REPLACE "\\.so$" ".a" _TMP_B "${BLAS_LIBRARIES}")
+            endif()
+            set(BLAS_LIBRARIES "${_TMP_B}")
+
+            message("Found external BLAS implementation: ${BLAS_LIBRARIES} ")
+            add_definitions(-D__EXTERNAL_BLAS__=true)
+        endif()
+    else()
+        # if we have externally provided OPENBLAS_PATH - let's use it
+        set(HAVE_OPENBLAS 1)
+        include_directories(${OPENBLAS_PATH}/include/)
+        link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
+        set(OPENBLAS_LIBRARIES openblas)
+    endif()
 
     # new mkl-dnn entry
     if (${HELPERS_mkldnn})
-        # there's a chance, we have no BLAS provided externally
-        if ("${OPENBLAS_PATH}" STREQUAL "")
-            #we don't want static OpenBLAS on Apple
-            set(BLA_STATIC ON)
-            if (NOT APPLE)
-                set(BLA_VENDOR "OpenBLAS")
-            endif()
-
-            # look around for system blas instead
-            find_package(BLAS REQUIRED)
-            if (BLAS_FOUND)
-                message("Original library: ${BLAS_LIBRARIES}")
-                # workaround for for cmake being unable to find static blas library
-                SET(_TMP_B "")
-                if (APPLE)
-                    string(REGEX REPLACE "\\.dylib$" ".lib" _TMP_B "${BLAS_LIBRARIES}")
-                elseif (WIN32)
-                    string(REGEX REPLACE "\\.dll" ".lib" _TMP_B "${BLAS_LIBRARIES}")
-                else()
-                    string(REGEX REPLACE "\\.so$" ".a" _TMP_B "${BLAS_LIBRARIES}")
-                endif()
-                set(BLAS_LIBRARIES "${_TMP_B}")
-
-                message("Found external BLAS implementation: ${BLAS_LIBRARIES} ")
-                add_definitions(-D__EXTERNAL_BLAS__=true)
-            endif()
-        endif()
-
-
         message("Going to pull & build mkldnn")
         set(HAVE_MKLDNN 1)
         set(MKLDNN_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
