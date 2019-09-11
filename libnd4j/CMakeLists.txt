@@ -87,8 +87,9 @@ if(NOT CUDA_BLAS)
     # building cpu_features
     if (X86_BUILD)
         add_definitions(-DCPU_FEATURES=true)
-        set(BUILD_PIC ON)
+        set(BUILD_PIC "ON" CACHE STRING "Hack to enforce fPIC mode" FORCE)
         configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
+        message("CMAKE_COMMAND: ${CMAKE_COMMAND}")
         execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON -G "${CMAKE_GENERATOR}" .
                 RESULT_VARIABLE result
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
@@ -96,7 +97,7 @@ if(NOT CUDA_BLAS)
         if(result)
             message(FATAL_ERROR "CMake step for cpu_features failed: ${result}")
         endif()
-        execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON --build .
+        execute_process(COMMAND ${CMAKE_COMMAND} --build .
                 RESULT_VARIABLE result
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
         if(result)
