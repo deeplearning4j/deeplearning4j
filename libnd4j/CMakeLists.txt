@@ -89,14 +89,14 @@ if(NOT CUDA_BLAS)
         add_definitions(-DCPU_FEATURES=true)
         set(BUILD_PIC ON)
         configure_file(./CMakeLists.txt.cpu_features.in cpu_features-download/CMakeLists.txt)
-        execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+        execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON -G "${CMAKE_GENERATOR}" .
                 RESULT_VARIABLE result
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
 
         if(result)
             message(FATAL_ERROR "CMake step for cpu_features failed: ${result}")
         endif()
-        execute_process(COMMAND ${CMAKE_COMMAND} --build .
+        execute_process(COMMAND ${CMAKE_COMMAND} -DBUILD_PIC=ON --build .
                 RESULT_VARIABLE result
                 WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/cpu_features-download )
         if(result)
