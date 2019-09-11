@@ -108,7 +108,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             System.exit(1);
         }
 
-        if (!nativeOps.isOptimalRequirementsMet() && Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_IGNORE_AVX))) {
+        if (!nativeOps.isOptimalRequirementsMet() && !Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_IGNORE_AVX))) {
             val binaryLevel = nativeOps.binaryLevel();
             val optimalLevel = nativeOps.optimalLevel();
 
