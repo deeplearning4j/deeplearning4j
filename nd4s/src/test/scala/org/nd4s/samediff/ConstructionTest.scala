@@ -165,17 +165,13 @@ class ConstructionTest extends FlatSpec with Matchers {
     //val cost_fun =
     //sd.math.neg(sd.math.log((y_model * y) + ((sd.constant(1.0) - y_model) * (sd.constant(1.0) - y))))
     val y_model: SDVariable =
-      sd.nn.sigmoid(w.get(SDIndex.point(2)).mul(X2).add(w.get(SDIndex.point(1)).mul(X1)).add(w.get(SDIndex.point(0))))
+      sd.nn.sigmoid(w.get(SDIndex.point(2)) * X2 + w.get(SDIndex.point(1)) * X1 + w.get(SDIndex.point(0)))
     val cost_fun: SDVariable = (sd.math.neg(
-      sd.math.log(y_model.mul(y).add((sd.math.log(sd.constant(1.0).minus(y_model)).mul(sd.constant(1.0).minus(y)))))
+      sd.math.log(y_model * y + (sd.math.log(sd.constant(1.0) - y_model) * (sd.constant(1.0) - y)))
     ))
-
-    //cost = tf.reduce_mean(-tf.log(y_model) * Y -tf.log(1 - y_model) * (1 - Y))
-    //val cost = sd.math.mean((-sd.math.log(y_model) * y).minus(tmp1 * (sd.constant(1.0).minus(y))))
     val loss = sd.mean("loss", cost_fun)
 
     val updater = new Sgd(learning_rate)
-    // mapping between values and ph.
 
     sd.setLossVariables("loss")
     sd.createGradFunction
@@ -191,7 +187,9 @@ class ConstructionTest extends FlatSpec with Matchers {
     sd.setTrainingConfig(conf)
     sd.fit(new SingletonMultiDataSetIterator(mds), 1)
 
-    Console.println(w.eval)
-//      [   74.9750,  450.7023, -450.7023]
+    w.eval.toDoubleVector.head shouldBe (0.0629 +- 0.0001)
+    w.eval.toDoubleVector.tail.head shouldBe (0.3128 +- 0.0001)
+    w.eval.toDoubleVector.tail.tail.head shouldBe (0.2503 +- 0.0001)
+    //Console.println(w.eval)
   }
 }
