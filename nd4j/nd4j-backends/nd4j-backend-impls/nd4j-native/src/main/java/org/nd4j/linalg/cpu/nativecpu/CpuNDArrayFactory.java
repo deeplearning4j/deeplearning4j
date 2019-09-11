@@ -20,6 +20,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.base.Preconditions;
+import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ops.custom.Flatten;
@@ -90,6 +91,38 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             System.setProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS_NOLAPACK, "mklml");
         }
 
+        // we'll check hardware support first
+        if (!nativeOps.isMinimalRequirementsMet()) {
+            // this means cpu binary was built for some arch support, we don't have on this box
+
+            val binaryLevel = nativeOps.binaryLevel();
+            val optimalLevel = nativeOps.optimalLevel();
+
+            String binLevel = cpuBinaryLevelToName(binaryLevel);
+            String optLevel = cpuBinaryLevelToName(optimalLevel);
+
+            log.warn("*********************************** CPU Feature Check Failed ***********************************");
+            log.error("Error initializing ND4J: Attempting to use " + binLevel + " ND4J binary on a CPU with only " + optLevel + " support");
+            log.error( binLevel + " binaries cannot be run on a CPU without these instructions. See deeplearning4j.org/cpu for more details");
+            log.error("ND4J will now exit.");
+            log.warn("************************************************************************************************");
+            System.exit(1);
+        }
+
+        if (!nativeOps.isOptimalRequirementsMet() && !Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_IGNORE_AVX))) {
+            val binaryLevel = nativeOps.binaryLevel();
+            val optimalLevel = nativeOps.optimalLevel();
+
+            String binLevel = cpuBinaryLevelToName(binaryLevel);
+            String optLevel = cpuBinaryLevelToName(optimalLevel);
+
+            log.warn("*********************************** CPU Feature Check Warning ***********************************");
+            log.warn("Warning: Initializing ND4J with " + binLevel + " binary on a CPU with " + optLevel + " support");
+            log.warn("Using ND4J with " + optLevel + " will improve performance. See deeplearning4j.org/cpu for more details");
+            log.warn("Or set environment variable " + ND4JEnvironmentVars.ND4J_IGNORE_AVX + "=true to suppress this warning");
+            log.warn("************************************************************************************************");
+        }
+
         blas = new CpuBlas();
 
         // TODO: add batched gemm here
@@ -109,6 +142,19 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
+    }
+
+    private static String cpuBinaryLevelToName(int level){
+        switch (level){
+            case 3:
+                return "AVX512";
+            case 2:
+                return "AVX/AVX2";
+            case 1:
+            case 0:
+            default:
+                return "Generic x86";
+        }
     }
 
     @Override

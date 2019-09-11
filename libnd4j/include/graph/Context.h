@@ -28,10 +28,6 @@
 #include <graph/ContextPrototype.h>
 #include <memory/Workspace.h>
 
-#ifdef HAVE_MKLDNN
-#include <MKLDNNStream.h>
-#endif
-
 // CUDA-specific includes
 #ifdef __CUDACC__
 
@@ -61,11 +57,6 @@ namespace nd4j {
             LaunchContext* _context = nullptr;
 
             std::vector<nd4j::DataType> _dataTypes;
-#ifdef HAVE_MKLDNN
-            std::vector<nd4j::MKLDNNStream> _mkldnnStreams;
-#else
-            std::vector<Nd4jLong> _mkldnnStreams;
-#endif
 
             std::vector<NDArray*> _fastpath_in;
             std::vector<NDArray*> _fastpath_out;
@@ -122,9 +113,6 @@ namespace nd4j {
             int getBranch();
             void setBranch(int branch);
 
-#ifdef HAVE_MKLDNN
-            std::vector<nd4j::MKLDNNStream>& getMKLDNNStreams() { return _mkldnnStreams; }
-#endif
             /**
              *
              * @return

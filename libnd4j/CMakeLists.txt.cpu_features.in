@@ -1,0 +1,16 @@
+cmake_minimum_required(VERSION 2.8.2)
+
+project(mkldnn-download NONE)
+
+include(ExternalProject)
+ExternalProject_Add(mkldnn
+  GIT_REPOSITORY     https://github.com/google/cpu_features.git
+  GIT_TAG           v0.4.1
+  SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src"
+  BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/cpu_features-build"
+  CONFIGURE_COMMAND ""
+  CMAKE_ARGS        "-DBUILD_PIC=ON"
+  BUILD_COMMAND     ""
+  INSTALL_COMMAND   ""
+  TEST_COMMAND      ""
+)

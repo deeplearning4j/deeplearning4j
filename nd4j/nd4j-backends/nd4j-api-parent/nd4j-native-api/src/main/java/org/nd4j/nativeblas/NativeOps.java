@@ -1153,4 +1153,10 @@ public interface NativeOps {
     String lastErrorMessage();
 
     boolean isBlasVersionMatches(int major, int minor, int build);
+
+    int  binaryLevel();
+    int optimalLevel();
+
+    boolean isMinimalRequirementsMet();
+    boolean isOptimalRequirementsMet();
 }

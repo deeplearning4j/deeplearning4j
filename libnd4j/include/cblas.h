@@ -31,9 +31,10 @@
 #endif
 
 #ifdef HAVE_MKLDNN
+// FIXME: latest mkldnn doesn't ship mklml anymore?
 // include CBLAS from MKL-DNN
-#include <mkl_cblas.h>
-#define CBLAS_H
+//#include <mkl_cblas.h>
+//#define CBLAS_H
 #endif
 
 #ifdef HAVE_OPENBLAS

@@ -32,6 +32,10 @@
 #include <ops/declarable/helpers/col2im.h>
 #include <PointersManager.h>
 
+#ifdef HAVE_MKLDNN
+#include <ops/declarable/platform/mkldnn/mkldnnUtils.h>
+#endif
+
 using namespace nd4j;
 using namespace nd4j::graph;
 

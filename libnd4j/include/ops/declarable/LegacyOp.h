@@ -41,13 +41,13 @@ namespace nd4j {
             int _numInputs = 0;
 
             // All Op classes provide own specific implementation for this method
-            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
+            Nd4jStatus validateAndExecute(Context& block) override = 0;
         public:
             LegacyOp(int numInputs);
             LegacyOp(int numInputs, int opNum);
 
             // All Op classes provide own specific implementation for this method
-            virtual ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) = 0;
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override = 0;
             virtual LegacyOp* clone() = 0;
         };
     }

@@ -30,15 +30,15 @@ namespace nd4j {
         */
         class ND4J_EXPORT LegacyScalarBoolOp : public LegacyOp {
         protected:
-            Nd4jStatus validateAndExecute(Context& block);
+            Nd4jStatus validateAndExecute(Context& block) override;
 
         public:
             LegacyScalarBoolOp();
             LegacyScalarBoolOp(int opNum);
             LegacyScalarBoolOp(int opNum, NDArray &scalar);
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block);
-            virtual LegacyOp* clone();
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override;
+            LegacyOp* clone() override;
         };
     }
 }

@@ -69,17 +69,6 @@
             <classifier>${dependency.platform2}</classifier>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl-dnn</artifactId>
-            <version>${mkl-dnn.javacpp.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl-dnn</artifactId>
-            <version>${mkl-dnn.javacpp.version}</version>
-            <classifier>${dependency.platform2}</classifier>
-        </dependency>
-        <dependency>
             <groupId>org.nd4j</groupId>
             <artifactId>libnd4j</artifactId>
             <version>${project.version}</version>
@@ -204,17 +193,6 @@
                         <version>${openblas.version}-${javacpp-presets.version}</version>
                         <classifier>${dependency.platform}</classifier>
                     </dependency>
-                    <dependency>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>mkl-dnn</artifactId>
-                        <version>${mkl-dnn.javacpp.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.bytedeco</groupId>
-                        <artifactId>mkl-dnn</artifactId>
-                        <version>${mkl-dnn.javacpp.version}</version>
-                        <classifier>${dependency.platform2}</classifier>
-                    </dependency>
                 </dependencies>
                 <configuration>
                     <properties>${javacpp.platform.properties}</properties>
@@ -257,19 +235,15 @@
                     <linkPath>${libnd4jhome}/blasbuild/cpu/blas</linkPath>
                     <buildResources>
                         <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                        <buildResource>/org/bytedeco/mkldnn/${javacpp.platform}/</buildResource>
                         <buildResource>/org/bytedeco/openblas/${javacpp.platform}/</buildResource>
                     </buildResources>
                     <includeResources>
                         <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                        <includeResource>/org/bytedeco/mkldnn/${javacpp.platform}/include/</includeResource>
                         <includeResource>/org/bytedeco/openblas/${javacpp.platform}/include/</includeResource>
                     </includeResources>
                     <linkResources>
                         <linkResource>/${javacpp.platform.library.path}/</linkResource>
                         <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                        <linkResource>/org/bytedeco/mkldnn/${javacpp.platform}/</linkResource>
-                        <linkResource>/org/bytedeco/mkldnn/${javacpp.platform}/</linkResource>
                         <linkResource>/org/bytedeco/openblas/${javacpp.platform}/</linkResource>
                         <linkResource>/org/bytedeco/openblas/${javacpp.platform}/lib/</linkResource>
                     </linkResources>

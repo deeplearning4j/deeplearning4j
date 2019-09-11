@@ -98,9 +98,6 @@ namespace nd4j {
             this->_inputs.clear();
             this->_fastpath_in.clear();
             this->_fastpath_out.clear();
-#ifdef HAVE_MKLDNN
-            this->_mkldnnStreams.clear();
-#endif
 
             for (auto v:_handles)
                 delete v;
