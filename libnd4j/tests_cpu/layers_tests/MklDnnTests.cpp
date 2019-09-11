@@ -36,7 +36,7 @@ public:
 static void printer(std::initializer_list<nd4j::ops::platforms::PlatformHelper*> helpers) {
 
     for (auto v:helpers) {
-        nd4j_printf("Initialized [%s]%i\n", v->name().c_str());
+        nd4j_printf("Initialized [%s]\n", v->name().c_str());
     }
 }
 
