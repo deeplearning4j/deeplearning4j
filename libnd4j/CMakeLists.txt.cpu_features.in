@@ -9,7 +9,7 @@ ExternalProject_Add(mkldnn
   SOURCE_DIR        "${CMAKE_CURRENT_BINARY_DIR}/cpu_features-src"
   BINARY_DIR        "${CMAKE_CURRENT_BINARY_DIR}/cpu_features-build"
   CONFIGURE_COMMAND ""
-  CMAKE_ARGS        ""
+  CMAKE_ARGS        "-DBUILD_PIC=ON"
   BUILD_COMMAND     ""
   INSTALL_COMMAND   ""
   TEST_COMMAND      ""
