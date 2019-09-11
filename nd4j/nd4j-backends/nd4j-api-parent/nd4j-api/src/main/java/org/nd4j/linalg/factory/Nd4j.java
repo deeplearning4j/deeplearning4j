@@ -3197,6 +3197,11 @@ public class Nd4j {
         return getExecutioner().exec(new GaussianDistribution(target, mean, stddev), rng);
     }
 
+    public static INDArray randn(double mean, double stddev, int[] shape, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        INDArray target = Nd4j.createUninitialized(shape);
+        return getExecutioner().exec(new GaussianDistribution(target, mean, stddev), rng);
+    }
+
     /**
      * Fill the given ndarray with random numbers drawn from a uniform distribution
      *

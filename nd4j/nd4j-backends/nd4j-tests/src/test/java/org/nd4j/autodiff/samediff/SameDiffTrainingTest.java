@@ -17,14 +17,20 @@
 package org.nd4j.autodiff.samediff;
 
 import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.Test;
 import org.nd4j.autodiff.listeners.impl.ScoreListener;
+import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.rng.CpuNativeRandom;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.IrisDataSetIterator;
+import org.nd4j.linalg.dataset.MultiDataSet;
+import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.factory.Nd4j;
@@ -179,6 +185,52 @@ public class SameDiffTrainingTest extends BaseNd4jTest {
             }
         }
 
+    }
+
+    @Test
+    public void simpleClassification() {
+        double learning_rate = 0.1;
+        int seed = 7;
+        org.nd4j.linalg.api.rng.Random rng = new CpuNativeRandom(seed);
+        INDArray x1_label1 = Nd4j.randn(3.0, 1.0, new int[]{1000}, rng);
+        INDArray x2_label1 = Nd4j.randn(2.0, 1.0, new int[]{1000}, rng);
+        INDArray x1_label2 = Nd4j.randn(7.0, 1.0, new int[]{1000}, rng);
+        INDArray x2_label2 = Nd4j.randn(6.0, 1.0, new int[]{1000}, rng);
+
+        INDArray x1s = Nd4j.concat(0, x1_label1, x1_label2);
+        INDArray x2s = Nd4j.concat(0, x2_label1, x2_label2);
+
+        SameDiff sd = SameDiff.create();
+        INDArray ys = Nd4j.scalar(0.0).mul(x1_label1.length()).add(Nd4j.scalar(1.0).mul(x1_label2.length()));
+
+        SDVariable X1 = sd.placeHolder("x1", DataType.DOUBLE, 2000);
+        SDVariable X2 = sd.placeHolder("x2", DataType.DOUBLE, 2000);
+        SDVariable y = sd.placeHolder("y", DataType.DOUBLE);
+        // There's no option to pass Trainable=True
+        SDVariable w = sd.var("w", DataType.DOUBLE, 3);
+        SDVariable y_model =
+                sd.nn.sigmoid(w.get(SDIndex.point(1)).mul(X1).minus(w.get(SDIndex.point(2)).mul(X2)).add(w.get(SDIndex.point(0))));
+        SDVariable cost_fun =
+                sd.math.neg(sd.math.log(y_model).mul(y)).minus(sd.math.neg(sd.math.log(sd.constant(1.0).minus(y_model)).mul(sd.constant(1.0).minus(y))));
+        SDVariable loss = sd.mean("loss", cost_fun);
+
+        val updater = new Sgd(learning_rate);
+
+        sd.setLossVariables("loss");
+        sd.createGradFunction();
+        val conf = new TrainingConfig.Builder()
+                .updater(updater)
+                .minimize("loss")
+                .dataSetFeatureMapping("x1", "x2", "y")
+                .markLabelsUnused()
+                .build();
+
+        val mds = new MultiDataSet(new INDArray[]{x1s, x2s, ys},null);
+
+        sd.setTrainingConfig(conf);
+        History history = sd.fit(new SingletonMultiDataSetIterator(mds), 2);
+
+        System.out.println(w.eval());
     }
 
     @Override
