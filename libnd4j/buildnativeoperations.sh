@@ -466,26 +466,17 @@ if [ "$CHIP" == "cuda" ] && [ -n "$CHIP_VERSION" ]; then
     esac
 fi
 
-[[ -z ${MKLDNN_PATH:-} ]] && MKLDNN_PATH=""
 [[ -z ${OPENBLAS_PATH:-} ]] && OPENBLAS_PATH=""
 
 if [[ -n "${BUILD_PATH:-}" ]]; then
     PREVIFS="$IFS"
     IFS="$BUILD_PATH_SEPARATOR"
     for P in $BUILD_PATH; do
-        if [[ -f "$P/include/mkldnn.h" ]]; then
-            MKLDNN_PATH="$P"
-        fi
         if [[ -f "$P/include/openblas_config.h" ]]; then
             OPENBLAS_PATH="$P"
         fi
     done
     IFS="$PREVIFS"
-fi
-
-if [[ ! -f "$MKLDNN_PATH/include/mkldnn.h" ]]; then
-    echo "Could not find MKL-DNN, please make sure to run the build with Maven or set the MKLDNN_PATH variable"
-    MKLDNN_PATH=""
 fi
 
 if [[ ! -f "$OPENBLAS_PATH/include/openblas_config.h" ]]; then
@@ -494,7 +485,6 @@ if [[ ! -f "$OPENBLAS_PATH/include/openblas_config.h" ]]; then
 fi
 
 # replace any backslash with a slash
-MKLDNN_PATH="${MKLDNN_PATH//\\//}"
 OPENBLAS_PATH="${OPENBLAS_PATH//\\//}"
 
 mkbuilddir() {
@@ -535,12 +525,11 @@ echo OPERATIONS = "${OPERATIONS_ARG}"
 echo MINIFIER = "${MINIFIER_ARG}"
 echo TESTS = "${TESTS_ARG}"
 echo NAME = "${NAME_ARG}"
-echo MKLDNN_PATH = "$MKLDNN_PATH"
 echo OPENBLAS_PATH = "$OPENBLAS_PATH"
 echo HELPERS = "$HELPER"
 mkbuilddir
 pwd
-eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DHELPERS_"$HELPER"=true "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DMKLDNN_PATH="$MKLDNN_PATH" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
+eval $CMAKE_COMMAND  "$BLAS_ARG" "$ARCH_ARG" "$NAME_ARG" -DHELPERS_"$HELPER"=true "$SHARED_LIBS_ARG" "$MINIFIER_ARG" "$OPERATIONS_ARG" "$BUILD_TYPE" "$PACKAGING_ARG" "$EXPERIMENTAL_ARG" "$TESTS_ARG" "$CUDA_COMPUTE" -DOPENBLAS_PATH="$OPENBLAS_PATH" -DDEV=FALSE -DCMAKE_NEED_RESPONSE=YES -DMKL_MULTI_THREADED=TRUE ../..
 if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
 fi

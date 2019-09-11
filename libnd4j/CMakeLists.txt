@@ -50,25 +50,6 @@ if(NOT CUDA_BLAS)
     # we need this definition to avoid global memory use within mkldnn
     add_definitions(-DMKLDNN_ENABLE_CONCURRENT_EXEC=true)
 
-    # old mkl-dnn entry
-    if (NOT "${MKLDNN_PATH}" STREQUAL "")
-        message("We have manually provided MKLDNN: ${MKLDNN_PATH}")
-        set(HAVE_MKLDNN 1)
-        include_directories(${MKLDNN_PATH}/include/)
-        link_directories(${MKLDNN_PATH} ${MKLDNN_PATH}/lib/)
-        IF(${CMAKE_SYSTEM_NAME} MATCHES "Linux")
-            set(MKLDNN_LIBRARIES mkldnn mklml_intel)
-        else()
-            set(MKLDNN_LIBRARIES mkldnn mklml)
-        endif()
-    elseif (NOT "${OPENBLAS_PATH}" STREQUAL "")
-        message("We have manually provided BLAS: ${OPENBLAS_PATH}")
-        set(HAVE_OPENBLAS 1)
-        include_directories(${OPENBLAS_PATH}/include/)
-        link_directories(${OPENBLAS_PATH} ${OPENBLAS_PATH}/lib/)
-        set(OPENBLAS_LIBRARIES openblas)
-    endif()
-
 
     # new mkl-dnn entry
     if (${HELPERS_mkldnn})
@@ -101,35 +82,34 @@ if(NOT CUDA_BLAS)
         endif()
 
 
-        if ("${MKLDNN_PATH}" STREQUAL "")
-            message("Going to pull & build mkldnn")
-            set(HAVE_MKLDNN 1)
-            set(MKLDNN_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
+        message("Going to pull & build mkldnn")
+        set(HAVE_MKLDNN 1)
+        set(MKLDNN_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
-            configure_file(./CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
-            execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
+        configure_file(./CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
+        execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
                     RESULT_VARIABLE result
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
-            if(result)
-                message(FATAL_ERROR "CMake step for mkldnn failed: ${result}")
-            endif()
-            execute_process(COMMAND ${CMAKE_COMMAND} --build .
+        if(result)
+            message(FATAL_ERROR "CMake step for mkldnn failed: ${result}")
+        endif()
+        execute_process(COMMAND ${CMAKE_COMMAND} --build .
                     RESULT_VARIABLE result
                     WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
-            if(result)
-                message(FATAL_ERROR "Build step for mkldnn failed: ${result}")
-            endif()
+        if(result)
+            message(FATAL_ERROR "Build step for mkldnn failed: ${result}")
+        endif()
 
-            add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src
+        add_subdirectory(${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src
                     ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build
                     EXCLUDE_FROM_ALL)
 
-            set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build)
-            set(mkldnn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
-            set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
-            include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_SOURCE_DIR})
-            set(MKLDNN mkldnn)
-        endif()
+        set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-build)
+        set(mkldnn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
+        set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
+        include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_SOURCE_DIR})
+        set(MKLDNN mkldnn)
+
 
 
         # building cpu_features
