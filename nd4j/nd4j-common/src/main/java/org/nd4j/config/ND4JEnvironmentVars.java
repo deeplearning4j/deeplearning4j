@@ -131,6 +131,12 @@ public class ND4JEnvironmentVars {
 
     public static final String ND4J_RESOURCES_CACHE_DIR = "ND4J_RESOURCES_CACHE_DIR";
 
+    /**
+     * Applicability: nd4j-native<br>
+     * Description: Set to true to avoid logging AVX warnings (i.e., running generic x86 binaries on an AVX2 system)
+     */
+    public static final String ND4J_IGNORE_AVX = "ND4J_IGNORE_AVX";
+
     private ND4JEnvironmentVars() {
     }
 }

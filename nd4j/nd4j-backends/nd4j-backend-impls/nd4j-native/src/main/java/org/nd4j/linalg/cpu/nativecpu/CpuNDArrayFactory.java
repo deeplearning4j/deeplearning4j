@@ -20,6 +20,7 @@ package org.nd4j.linalg.cpu.nativecpu;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.base.Preconditions;
+import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.linalg.api.buffer.*;
 import org.nd4j.linalg.api.ops.custom.Flatten;
@@ -97,46 +98,26 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             val binaryLevel = nativeOps.binaryLevel();
             val optimalLevel = nativeOps.optimalLevel();
 
-            switch (binaryLevel) {
-                case 3: {
-                        // avx-512 binary
-                        log.error("Trying to use AVX-512 binary without actual CPU support for it");
-                    }
-                    break;
-                case 2: {
-                        // avx/avx2 binary
-                        log.error("Trying to use AVX/AVX2 binary without actual CPU support for it");
-                    }
-                    break;
-                case 1:
-                case 0:
-                default: {
-                    // do nothing
-                }
-            }
+            String binLevel = cpuBinaryLevelToName(binaryLevel);
+            String optLevel = cpuBinaryLevelToName(optimalLevel);
+
+            log.error("Error initializing ND4J: Attempting to use " + binLevel + " ND4J binary on a CPU with only " + optLevel + " support");
+            log.error( binaryLevel + " binaries cannot be run on a CPU without these instructions");
+            log.error("To fix: use nd4j-native with the appropriate classifier");
+            log.error("ND4J will now exit.");
+            System.exit(1);
         }
 
-        if (!nativeOps.isOptimalRequirementsMet()) {
+        if (!nativeOps.isOptimalRequirementsMet() && Boolean.parseBoolean(System.getenv(ND4JEnvironmentVars.ND4J_IGNORE_AVX))) {
             val binaryLevel = nativeOps.binaryLevel();
             val optimalLevel = nativeOps.optimalLevel();
 
-            switch (optimalLevel) {
-                case 3: {
-                    // avx-512 binary
-                    log.error("Your CPU has AVX-512 support, but you're not using it");
-                }
-                break;
-                case 2: {
-                    // avx/avx2 binary
-                    log.error("Your CPU has AVX/AVX2 support, but you're not using it");
-                }
-                break;
-                case 1:
-                case 0:
-                default: {
-                    // do nothing
-                }
-            }
+            String binLevel = cpuBinaryLevelToName(binaryLevel);
+            String optLevel = cpuBinaryLevelToName(optimalLevel);
+
+            log.warn("Initializing ND4J with " + binLevel + " binary on a CPU with " + optLevel + " support");
+            log.warn("Using ND4J with " + binLevel + " will improve performance");
+            log.warn("To fix: use nd4j-native with the appropriate classifier. Set environment variable " + ND4JEnvironmentVars.ND4J_IGNORE_AVX + "=true to suppress this warning");
         }
 
         blas = new CpuBlas();
@@ -158,6 +139,19 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
         if (nativeOps.lastErrorCode() != 0)
             throw new RuntimeException(nativeOps.lastErrorMessage());
+    }
+
+    private static String cpuBinaryLevelToName(int level){
+        switch (level){
+            case 3:
+                return "AVX512";
+            case 2:
+                return "AVX/AVX2";
+            case 1:
+            case 0:
+            default:
+                return "Generic x86";
+        }
     }
 
     @Override
