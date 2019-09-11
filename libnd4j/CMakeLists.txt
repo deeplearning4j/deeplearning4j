@@ -56,8 +56,8 @@ if(NOT CUDA_BLAS)
         # there's a chance, we have no BLAS provided externally
         if ("${OPENBLAS_PATH}" STREQUAL "")
             #we don't want static OpenBLAS on Apple
+            set(BLA_STATIC ON)
             if (NOT APPLE)
-                set(BLA_STATIC ON)
                 set(BLA_VENDOR "OpenBLAS")
             endif()
 
