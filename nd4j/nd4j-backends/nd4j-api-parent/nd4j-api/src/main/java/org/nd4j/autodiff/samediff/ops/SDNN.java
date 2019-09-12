@@ -499,17 +499,18 @@ public class SDNN extends SDOps {
     }
 
     /**
-     * PReLU (Parameterized Rectified Linear Unit) operation.  ReLU with a learnable, per-element* cutoff:<br>
-     * out[i] = in[i] if in[i] >= alpha[i]<br>
-     * out[i] = 0 otherwise<br>
+     * PReLU (Parameterized Rectified Linear Unit) operation.  Like LeakyReLU with a learnable alpha:<br>
+     * out[i] = in[i] if in[i] >= 0<br>
+     * out[i] = in[i] * alpha[i] otherwise<br>
      *
-     * *sharedAxes allows you to share learnable parameters along axes.
+     * sharedAxes allows you to share learnable parameters along axes.
      * For example, if the input has shape [batchSize, channels, height, width]
-     * and you want each channel to have its own cutoff, use sharedAxes = [2, 3].
+     * and you want each channel to have its own cutoff, use sharedAxes = [2, 3] and an
+     * alpha with shape [channels].
      *
      * @param name    Name of the output variable
      * @param input   Input data
-     * @param alpha   The cutoff variable.
+     * @param alpha   The cutoff variable.  Note that the batch dimension (the 0th, whether it is batch or not) should not be part of alpha.
      * @param sharedAxes Which axes to share cutoff parameters along.
      * @return Output variable
      */

@@ -21,9 +21,11 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -39,6 +41,7 @@ import org.tensorflow.framework.NodeDef;
 /**
  * Parameterized ReLU op
  */
+@NoArgsConstructor
 public class PRelu extends DynamicCustomOp {
 
     @Getter
@@ -48,10 +51,6 @@ public class PRelu extends DynamicCustomOp {
         super(sameDiff, new SDVariable[]{x, alpha});
         this.sharedAxes = sharedAxes;
         addIArgument(sharedAxes);
-    }
-
-    public PRelu() {
-        //
     }
 
     public PRelu(@NonNull INDArray x, INDArray z, @NonNull INDArray alpha, @NonNull int... sharedAxes) {
@@ -72,6 +71,15 @@ public class PRelu extends DynamicCustomOp {
     @Override
     public String tensorflowName() {
         throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
+    }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes) {
+        Preconditions
+                .checkArgument(dataTypes != null && dataTypes.size() == 2, "Expected exactly 2 input datatypes, got %s", dataTypes);
+        Preconditions.checkArgument(dataTypes.get(0).isFPType() && dataTypes.get(1).isFPType(), "Input datatypes must be floating point, got %s", dataTypes);
+
+        return Collections.singletonList(dataTypes.get(0));
     }
 
     @Override

@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -31,12 +32,11 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 /**
  * PRelu backpropagation op - dL/dIn from in and dL/dOut
  */
+@NoArgsConstructor
 public class PReluBp extends DynamicCustomOp {
 
     @Getter
     protected int[] sharedAxes;
-
-    public PReluBp(){ }
 
     public PReluBp(SameDiff sd, SDVariable input, SDVariable alpha, SDVariable gradient, int... sharedAxes){
         super(sd, new SDVariable[]{input, alpha, gradient});

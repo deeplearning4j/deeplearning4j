@@ -3585,4 +3585,28 @@ public class SameDiffTests extends BaseNd4jTest {
             assertTrue(m, m.contains("variable") && m.contains("empty") && m.contains("0"));
         }
     }
+
+    @Test
+    public void testPReLU(){
+        SameDiff sd = SameDiff.create();
+
+        SDVariable input = sd.constant(Nd4j.createFromArray(
+                new int[][][]{{
+                        {-10, 10, 10, -10},
+                        {10, 10, -10, -10}
+                }}
+        ).castTo(DataType.DOUBLE));
+
+        SDVariable alpha = sd.var(Nd4j.createFromArray(0.01, 0.1).castTo(DataType.DOUBLE));
+
+        SDVariable out = sd.nn.prelu("out", input, alpha, 0, 2);
+
+        TestCase tc = new TestCase(sd).expected("out", Nd4j.createFromArray(new double[][][]{{
+                        {-0.1, 10, 10, -0.1},
+                        {10, 10, -1, -1}
+        }}).castTo(DataType.DOUBLE)).gradientCheck(true);
+
+        String err = OpValidation.validate(tc);
+        assertNull(err);
+    }
 }

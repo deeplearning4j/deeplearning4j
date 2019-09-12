@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.image;
 
+import lombok.NoArgsConstructor;
 import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -38,6 +39,7 @@ import java.util.Map;
  * ResizeBilinear op wrapper
  * @author raver119@gmail.com
  */
+@NoArgsConstructor
 public class ResizeBilinear extends DynamicCustomOp {
     protected boolean alignCorners = false;
     protected Integer height = null;
