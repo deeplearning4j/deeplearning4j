@@ -297,8 +297,6 @@
 
         <openblas.version>0.3.6</openblas.version>
         <mkl.version>2019.4</mkl.version>
-        <mkl-dnn.version>0.20</mkl-dnn.version>
-        <mkl-dnn.javacpp.version>${mkl-dnn.version}-${javacpp-presets.version}</mkl-dnn.javacpp.version>
         <opencv.version>4.1.0</opencv.version>
         <ffmpeg.version>4.1.3</ffmpeg.version>
         <leptonica.version>1.78.0</leptonica.version>
