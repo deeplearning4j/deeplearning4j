@@ -30,7 +30,7 @@ namespace helpers {
 
 template <typename X, typename Z>
 static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>& dimensions) {
-                        
+
     if (input->isVector()) {
         int dimensionsLength = dimensions.size();
         int length = input->lengthOf();
@@ -169,7 +169,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         for (int i = 0; i < tadLength; i++) {
                             rZ[i] = maxIdx == i ? (Z) 1 : (Z) 0;
                         }
-                    } 
+                    }
                     else if (tadEWS > 1 && zEWS > 1) {
                         for (int i = 0; i < tadLength; i++) {
                             if (rX[i * tadEWS] > maxValue) {
@@ -184,7 +184,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         }
                     } else {
                         for (int i = 0; i < tadLength; i++) {
-                            auto xOffset = shape::getIndexOffset(i, tadShapeShapeInfo, tadLength);
+                            auto xOffset = shape::getIndexOffset(i, tadShapeShapeInfo);
                             if (rX[xOffset] > maxValue) {
                                 maxIdx = i;
                                 maxValue = rX[xOffset];
@@ -193,7 +193,7 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
 
                         PRAGMA_OMP_SIMD
                         for (int i = 0; i < tadLength; i++) {
-                            auto zOffset = shape::getIndexOffset(i, tadPackZ.primaryShapeInfo(), tadLength);
+                            auto zOffset = shape::getIndexOffset(i, tadPackZ.primaryShapeInfo());
                             rZ[zOffset] = maxIdx == i ? (Z) 1 : (Z) 0;
                         }
                     }

@@ -808,7 +808,7 @@ void NDArray::templatedSet(void *buffer, const Nd4jLong *indices, const void *va
     auto t = reinterpret_cast<T *>(buffer);
     const auto y = *(reinterpret_cast<const Y *>(value));
 
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), indices, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), indices);
     t[xOffset] = static_cast<T>(y);
 }
 BUILD_DOUBLE_TEMPLATE(template void NDArray::templatedSet, (void *buffer, const Nd4jLong *indices, const void *value), LIBND4J_TYPES, LIBND4J_TYPES);
@@ -2462,14 +2462,13 @@ double NDArray::getTrace() const {
 
     int  rank    = rankOf();
     auto shape   = shapeOf();
-    auto strides = stridesOf();
     int  minDim  = 100000000;
 
     Nd4jLong indices[MAX_RANK];
     for(int j = 0; j < rank; ++j)
         indices[j] = 1;
 
-    auto offset = shape::getOffset(0, shape, strides, indices, rank);
+    auto offset = shape::getOffset(getShapeInfo(), indices);
 
     for(int i = 0; i < rank; ++i)
         if(minDim > shape[i])
@@ -3472,7 +3471,7 @@ T NDArray::e(const Nd4jLong i, const Nd4jLong j) const {
         throw std::invalid_argument("NDArray::e(i,j): one of input indexes is out of array length or rank!=2 !");
 
     const Nd4jLong coords[2] = {i, j};
-    const auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    const auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     NDArray::preparePrimaryUse({}, {this});
     NDArray::registerPrimaryUse({}, {this});
@@ -3492,7 +3491,7 @@ T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k) const {
         throw std::invalid_argument("NDArray::e(i,j,k): one of input indexes is out of array length or rank!=3 !");
 
     const Nd4jLong coords[3] = {i, j, k};
-    const auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    const auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     NDArray::preparePrimaryUse({}, {this});
     NDArray::registerPrimaryUse({}, {this});
@@ -3512,7 +3511,7 @@ T NDArray::e(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLon
         throw std::invalid_argument("NDArray::e(i,j,k,l): one of input indexes is out of array length or rank!=4 !");
 
     const Nd4jLong coords[4] = {i, j, k, l};
-    const auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    const auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     NDArray::preparePrimaryUse({}, {this});
     NDArray::registerPrimaryUse({}, {this});
@@ -4095,7 +4094,7 @@ void NDArray::p(const Nd4jLong i, const Nd4jLong j, const T value) {
 
     void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
     Nd4jLong coords[2] = {i, j};
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     NDArray::preparePrimaryUse({this}, {}, true);
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->getBuffer(), xOffset, p), LIBND4J_TYPES);
@@ -4127,7 +4126,7 @@ void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const T va
 
     void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
     Nd4jLong coords[3] = {i, j, k};
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), coords);
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->getBuffer(), xOffset, p), LIBND4J_TYPES);
     NDArray::registerPrimaryUse({this}, {});
 }
@@ -4154,7 +4153,7 @@ void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4j
 
     void *p = reinterpret_cast<void *>(const_cast<T *>(&value));
     Nd4jLong coords[4] = {i, j, k, l};
-    auto xOffset = shape::getOffset(0, shapeOf(), stridesOf(), coords, rankOf());
+    auto xOffset = shape::getOffset(getShapeInfo(), coords);
 
     NDArray::preparePrimaryUse({this}, {}, true);
     BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->getBuffer(), xOffset, p), LIBND4J_TYPES);
@@ -4409,7 +4408,7 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     if (i >= lengthOf())
         throw std::invalid_argument("NDArray::getOffset: input index is out of array length !");
 
-    return shape::getIndexOffset(i, _shapeInfo, lengthOf());
+    return shape::getIndexOffset(i, _shapeInfo);
 }
 
 NDArray NDArray::like() {
@@ -4455,7 +4454,7 @@ NDArray* NDArray::diagonal(const char type) const {
             indices[i] = 1;
         }
 
-        auto step = shape::getOffset(0, shapeOf(), stridesOf(), indices, rank);
+        auto step = shape::getOffset(getShapeInfo(), indices);
 
         if(type == 'c') {
             outShapeInfo[1] = diagSize;

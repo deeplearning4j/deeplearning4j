@@ -231,7 +231,7 @@ while(iter.hasNext()){
 Note that for the purposes of Spark, the exact file names don't matter.
 The process for saving MultiDataSets is almost identical.
 
-As an aside: you can read these saved DataSet objects on a single machine (for non-Spark training) using [FileDataSetIterator](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-data/deeplearning4j-utility-iterators/src/main/java/org/deeplearning4j/datasets/iterator/file/FileDataSetIterator.java)).
+As an aside: you can read these saved DataSet objects on a single machine (for non-Spark training) using [FileDataSetIterator](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-data/deeplearning4j-utility-iterators/src/main/java/org/deeplearning4j/datasets/iterator/file/FileDataSetIterator.java)).
 
 An alternative approach is to save directly to the cluster using output streams, to (for example) HDFS. This can only be done if the machine running the code is properly configured with the required libraries and access rights. For example, to save the DataSets directly to HDFS you could use:
 
@@ -370,10 +370,10 @@ JavaRDD<DataSet> dataSetRdd = sequencesRdd.map(new DataVecSequenceDataSetFunctio
 
 This guide shows how to create an ```RDD<DataSet>``` for image classification, starting from images stored either locally, or on a network file system such as HDFS.
 
-The approach here used (added in 1.0.0-beta3) is to first preprocess the images into batches of files - [FileBatch](https://github.com/deeplearning4j/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/api/loader/FileBatch.java) objects.
+The approach here used (added in 1.0.0-beta3) is to first preprocess the images into batches of files - [FileBatch](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/api/loader/FileBatch.java) objects.
 The motivation for this approach is simple: the original image files typically use efficient compresion (JPEG for example) which is much more space (and network) efficient than a bitmap (int8 or 32-bit floating point) representation. However, on a cluster we want to minimize disk reads due to latency issues with remote storage - one file read/transfer is going to be faster than ```minibatchSize``` remote file reads.
 
-The [TinyImageNet example](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/tinyimagenet) also shows how this can be done.
+The [TinyImageNet example](https://github.com/eclipse/deeplearning4j-examples/tree/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/tinyimagenet) also shows how this can be done.
 
 Note that one limitation of the implementation is that the set of classes (i.e., the class/category labels when doing classification) needs to be known, provided or collected manually. This differs from using ImageRecordReader for classification on a single machine, which can automatically infer the set of class labels.
 
@@ -415,7 +415,7 @@ SparkDataUtils.createFileBatchesSpark(sourceDirectory, destinationDirectory, bat
 ```
 
 **Step 2: Training**
-The data pipeline for image classification can be constructed as follows. This code is taken from the [TinyImageNet example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/tinyimagenet/TrainSpark.java):
+The data pipeline for image classification can be constructed as follows. This code is taken from the [TinyImageNet example](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/tinyimagenet/TrainSpark.java):
 ```
 //Create data loader
 int imageHeightWidth = 64;      //64x64 pixel input to network
@@ -458,10 +458,10 @@ When files represent a single record/example (instead of a minibatch) in a custo
 
 The interfaces of note are:
 
-* [DataSetLoader](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-core/src/main/java/org/deeplearning4j/api/loader/DataSetLoader.java)
-* [MultiDataSetLoader](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-core/src/main/java/org/deeplearning4j/api/loader/MultiDataSetLoader.java)
+* [DataSetLoader](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-core/src/main/java/org/deeplearning4j/api/loader/DataSetLoader.java)
+* [MultiDataSetLoader](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-core/src/main/java/org/deeplearning4j/api/loader/MultiDataSetLoader.java)
 
-Both of which extend the single-method [Loader](https://github.com/deeplearning4j/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/api/loader/Loader.java) interface.
+Both of which extend the single-method [Loader](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/api/loader/Loader.java) interface.
 
 Suppose a HDFS directory contains a number of files, each being a minibatch in some custom format.
 These can be loaded using the following process:

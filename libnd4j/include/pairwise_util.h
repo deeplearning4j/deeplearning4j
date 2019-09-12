@@ -50,7 +50,7 @@ namespace shape {
     Nd4jLong elementWiseStride(const Nd4jLong *shapeInfo);
     char order(const Nd4jLong *shapeInfo);
     bool isStrideSimple(const Nd4jLong* shapeInfo);
-    Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
+    Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo);
 }
 
  */
@@ -269,13 +269,13 @@ public:
     Nd4jLong chunks;
     Nd4jLong modulo;
     Nd4jLong remainder;
-    
+
     BlockInformation(Nd4jLong length, int threshold) {
 
     threads = length / threshold;
     threads = nd4j::math::nd4j_max<int>(1, threads);
     threads = nd4j::math::nd4j_min<int>(threads, omp_get_max_threads());
-    
+
     items = length / threads;
     remainder = length % threads;
     if(items < 1)

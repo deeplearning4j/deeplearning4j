@@ -116,15 +116,15 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
 
     for (Nd4jLong i = 0; i < zLen; ++i) {
 
-        shape::index2coords(rank, output.shapeOf(), i, zLen, coords.data());
+        shape::index2coords(i, output.getShapeInfo(), coords.data());
 
-        const auto zOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), coords.data(), rank);
+        const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
 
         // evaluate spatial coordinates for x
         for(uint j = 1; j <= numOfSpatialDims; ++j)
             coords[j] += crop.e<uint>(j - 1, 0);       // add crop left
 
-        z[zOffset] = x[shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank)];
+        z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords.data())];
     }
 }
 
@@ -298,9 +298,9 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
     PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
     for (Nd4jLong i = 0; i < zLen; ++i) {
 
-        shape::index2coords(rank, output.shapeOf(), i, zLen, coords.data());
+        shape::index2coords(i, output.getShapeInfo(), coords.data());
 
-        const auto zOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), coords.data(), rank);
+        const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
 
         bool within = true;
 
@@ -318,7 +318,7 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
         }
 
         if(within)
-            z[zOffset] = x[shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank)];
+            z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords.data())];
         else
             z[zOffset] = 0.f;
     }

@@ -26,6 +26,7 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
     linkage void cubeDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
@@ -35,10 +36,12 @@ namespace helpers {
         input->applyPairwiseLambda(epsilon, functor, output);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void cubeDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), cubeDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //return (x >= X(0.f) ? y: -y);
     template <typename T>
     linkage void reduceNorm1_(NDArray* input, NDArray* epsilon, NDArray* output) {
@@ -49,10 +52,12 @@ namespace helpers {
         input->applyPairwiseLambda(epsilon, functor, output);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void reduceNorm1(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), reduceNorm1_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
     linkage void sigmCrossEntropy_(NDArray* logits, NDArray* labels, NDArray* output) {
@@ -63,10 +68,12 @@ namespace helpers {
         logits->applyPairwiseLambda(labels, functor, output);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void sigmCrossEntropy(nd4j::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
         BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropy_, (logits, labels, output), FLOAT_TYPES);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     ////////////////////////////////////////////////////////////////////////
     template <typename T>
     linkage void sigmCrossEntropyGrad_(NDArray* logits, NDArray* labels, NDArray* output) {
@@ -80,14 +87,15 @@ namespace helpers {
 
         logits->applyPairwiseLambda(labels, functor, output);
     }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void sigmCrossEntropyGrad(nd4j::LaunchContext * context, NDArray* logits, NDArray* labels, NDArray* output) {
         BUILD_SINGLE_SELECTOR(logits->dataType(), sigmCrossEntropyGrad_, (logits, labels, output), FLOAT_TYPES);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     //            X f = (X) 1.0f + nd4j::math::nd4j_abs<X>(d1);
     //            return (X) d2 * ((X) 1.0f / (f * f));
-
+    //
     template <typename T>
     linkage void softSignDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
@@ -98,10 +106,12 @@ namespace helpers {
         input->applyPairwiseLambda(epsilon, functor, output);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void softSignDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), softSignDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
     linkage void softPlusDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
@@ -115,10 +125,11 @@ namespace helpers {
     void softPlusDerivative(nd4j::LaunchContext * context, NDArray* theFirst, NDArray* theSecond, NDArray* theOutput) {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), softPlusDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 ///
-/// \param theFirst
-/// \param theSecond
-/// \param theOutput
+/// \param input
+/// \param epsilon
+/// \param output
     template <typename T>
     linkage void sigmoidDerivative_(NDArray* input, NDArray* epsilon, NDArray* output) {
         auto functor = LAMBDA_TT(x, y){
@@ -146,6 +157,7 @@ namespace helpers {
         BUILD_SINGLE_SELECTOR(theFirst->dataType(), hardSigmoidDerivative_, (theFirst, theSecond, theOutput), FLOAT_TYPES);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
     linkage void logSumExp_(NDArray* input, NDArray* axis, NDArray* output) {
         // reduce along axis with
@@ -178,15 +190,17 @@ namespace helpers {
         output->applyTransform(transform::Log, nullptr, nullptr);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void logSumExp(nd4j::LaunchContext * context, NDArray* input, NDArray* axis, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, axis, output), FLOAT_TYPES);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void logSumExp(nd4j::LaunchContext * context, NDArray* input, NDArray* subtrah, NDArray* axis, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), logSumExp_, (input, subtrah, axis, output), FLOAT_TYPES);
     }
 
-//////////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
     void weightedCrossEntropyWithLogitsFunctor_(NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
 
@@ -220,15 +234,14 @@ namespace helpers {
             const_cast<NDArray*>(input)->applyTriplewiseLambda(const_cast<NDArray*>(targets), targetTensor.get(), mainRoutineT2, output);
         }
     }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
+        NDArray::prepareSpecialUse({output}, {targets, input, weights});
 
-void weightedCrossEntropyWithLogitsFunctor(nd4j::LaunchContext * context, NDArray const* targets, NDArray const* input, NDArray const* weights, NDArray* output) {
-    NDArray::prepareSpecialUse({output}, {targets, input, weights});
+        BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output), FLOAT_TYPES);
 
-    BUILD_SINGLE_SELECTOR(targets->dataType(), weightedCrossEntropyWithLogitsFunctor_, (targets, input, weights, output), FLOAT_TYPES);
-
-    NDArray::registerSpecialUse({output}, {targets, input, weights});
-}
-
+        NDArray::registerSpecialUse({output}, {targets, input, weights});
+    }
 
 }
 }

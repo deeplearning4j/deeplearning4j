@@ -53,8 +53,8 @@ namespace nd4j {
                 T *rZ = z + zTadOffsets[idx];
 
                 for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-                    auto xOffset = shape::getIndexOffset(i, tadShapeInfo, tadLength);
-                    auto zOffset = shape::getIndexOffset(i, zTadShapeInfo, tadLength);
+                    auto xOffset = shape::getIndexOffset(i, tadShapeInfo);
+                    auto zOffset = shape::getIndexOffset(i, zTadShapeInfo);
                     rZ[zOffset] = rX[xOffset];
                 }
             }

@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// @author iuriish@yahoo.com
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #ifndef LIBND4J_SHAPEUTILS_H

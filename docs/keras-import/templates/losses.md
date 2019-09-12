@@ -25,4 +25,4 @@ DL4J supports all available [Keras losses](https://keras.io/losses) (except for 
 * <i class="fa fa-check-square-o"></i> poisson
 * <i class="fa fa-check-square-o"></i> cosine_proximity
 
-The mapping of Keras loss functions can be found in [KerasLossUtils](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasLossUtils.java).
+The mapping of Keras loss functions can be found in [KerasLossUtils](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasLossUtils.java).

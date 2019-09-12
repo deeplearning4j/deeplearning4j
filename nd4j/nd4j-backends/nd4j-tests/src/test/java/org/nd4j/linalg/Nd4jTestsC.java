@@ -8122,6 +8122,19 @@ public class Nd4jTestsC extends BaseNd4jTest {
         return ret;
     }
 
+
+    @Test
+    public void testVStackHStack1d() {
+        INDArray rowVector1 = Nd4j.create(new double[]{1,2,3});
+        INDArray rowVector2 = Nd4j.create(new double[]{4,5,6});
+
+        INDArray vStack = Nd4j.vstack(rowVector1, rowVector2);      //Vertical stack:   [3]+[3] to [2,3]
+        INDArray hStack = Nd4j.hstack(rowVector1, rowVector2);      //Horizontal stack: [3]+[3] to [6]
+
+        assertEquals(Nd4j.createFromArray(1.0,2,3,4,5,6).reshape('c', 2, 3), vStack);
+        assertEquals(Nd4j.createFromArray(1.0,2,3,4,5,6), hStack);
+    }
+
     @Override
     public char ordering() {
         return 'c';

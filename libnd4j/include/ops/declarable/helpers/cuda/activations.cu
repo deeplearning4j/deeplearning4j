@@ -60,9 +60,9 @@ __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
 	for (int i = tid; i < xzLen; i += totalThreads) {
 
-    	shape::index2coords(xzRank, xShapeInfo + 1, i, xzLen, coords);
+    	shape::index2coords(i, xShapeInfo, coords);
 
-		const auto xzOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xzRank + 1, coords, xzRank);
+		const auto xzOffset = shape::getOffset(xShapeInfo, coords);
 
 		const auto xVal = x[xzOffset];
 
@@ -72,7 +72,7 @@ __global__ void preluCuda(const void *vx, const Nd4jLong *xShapeInfo,
 				if(yShapeInfo[j + 1] == 1)
 					coords[j + 1] = 0;
 
-			z[xzOffset] = xVal * y[shape::getOffset(0, yShapeInfo + 1, yShapeInfo + yRank + 1, coords + 1, yRank)];
+			z[xzOffset] = xVal * y[shape::getOffset(yShapeInfo, coords + 1)];
 		}
 		else
 			z[xzOffset] = xVal;
@@ -139,11 +139,11 @@ __global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeI
 
 	for (int i = tid; i < inLen; i += totalThreads) {
 
-    	shape::index2coords(inRank, inShapeInfo + 1, i, inLen, coords);
+    	shape::index2coords(i, inShapeInfo, coords);
 
-		const auto inOffset   = shape::getOffset(0, inShapeInfo   + 1, inShapeInfo   + inRank + 1, coords, inRank);
-		const auto dLdOOffset = shape::getOffset(0, dLdOShapeInfo + 1, dLdOShapeInfo + inRank + 1, coords, inRank);
-		const auto dLdIOffset = shape::getOffset(0, dLdIShapeInfo + 1, dLdIShapeInfo + inRank + 1, coords, inRank);
+		const auto inOffset   = shape::getOffset(inShapeInfo, coords);
+		const auto dLdOOffset = shape::getOffset(dLdOShapeInfo, coords);
+		const auto dLdIOffset = shape::getOffset(dLdIShapeInfo, coords);
 
 		const auto xVal = in[inOffset];
 		const auto grO  = dLdO[dLdOOffset];
@@ -154,8 +154,8 @@ __global__ linkage void preluBPCuda(const void *vIn,    const Nd4jLong *inShapeI
 				if(alphaShapeInfo[j + 1] == 1)
 					coords[j + 1] = 0;
 
-			const auto alphaOffset = shape::getOffset(0, alphaShapeInfo + 1, alphaShapeInfo + alphaRank + 1, coords + 1, alphaRank);
-			const auto dLdAOffset  = shape::getOffset(0, dLdAShapeInfo  + 1, dLdAShapeInfo  + alphaRank + 1, coords + 1, alphaRank);
+			const auto alphaOffset = shape::getOffset(alphaShapeInfo, coords + 1);
+			const auto dLdAOffset  = shape::getOffset(dLdAShapeInfo, coords + 1);
 
 			dLdI[dLdIOffset] =  grO * alpha[alphaOffset];
 
@@ -223,7 +223,7 @@ __device__ void softMaxForVectorCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
-			const Nd4jLong xOffset = shape::getIndexOffset(elemIdx, xShapeInfo, len);
+			const Nd4jLong xOffset = shape::getIndexOffset(elemIdx, xShapeInfo);
 			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[xOffset] : nd4j::math::nd4j_max<T>(x[xOffset], temp);	// take into account max element evaluated on previous iteration and stored in temp
 		}
 		else
@@ -249,8 +249,8 @@ __device__ void softMaxForVectorCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
-			const Nd4jLong xOffset = shape::getIndexOffset(elemIdx, xShapeInfo, len);
-			const Nd4jLong zOffset = shape::getIndexOffset(elemIdx, zShapeInfo, len);
+			const Nd4jLong xOffset = shape::getIndexOffset(elemIdx, xShapeInfo);
+			const Nd4jLong zOffset = shape::getIndexOffset(elemIdx, zShapeInfo);
 			z[zOffset] = nd4j::math::nd4j_exp<T, T>(x[xOffset] - max);
 			shmem[threadIdx.x] = (threadIdx.x != 0) ? z[zOffset] : (z[zOffset] + temp); // take into account sum element evaluated on previous iteration and stored in temp
 		}
@@ -272,7 +272,7 @@ __device__ void softMaxForVectorCuda(const void *vx, const Nd4jLong *xShapeInfo,
 	for (int i = 0; i < numOfIters; ++i) {
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx >= len) continue;
-		const Nd4jLong zOffset = shape::getIndexOffset(elemIdx, zShapeInfo, len);
+		const Nd4jLong zOffset = shape::getIndexOffset(elemIdx, zShapeInfo);
 		z[zOffset] /= shmem[0];
 	}
 }
@@ -386,7 +386,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
-			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo, len);
+			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
 			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : nd4j::math::nd4j_max<T>(x[offset], temp);	// take into account max element evaluated on previous iteration and stored in temp
 		}
 		else
@@ -412,7 +412,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
-			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo, len);
+			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
 			z[offset] = nd4j::math::nd4j_exp<T, T>(x[offset] - max);
 			shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp); // take into account sum element evaluated on previous iteration and stored in temp
 		}
@@ -434,7 +434,7 @@ __global__  void logSoftMaxForVectorCuda(const void *vx, const Nd4jLong *xzShape
 	for (int i = 0; i < numOfIters; ++i) {
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx >= len) continue;
-		const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo, len);
+		const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
 		z[offset] = nd4j::math::nd4j_log<T,T>(z[offset] / shmem[0]);
 	}
 }
@@ -505,7 +505,7 @@ __global__ linkage void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong
 
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
-			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo, len);
+			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
 			shmem[threadIdx.x] = (threadIdx.x != 0) ? x[offset] : nd4j::math::nd4j_max<T>(x[offset], temp);	// take into account max element evaluated on previous iteration and stored in temp
 		}
 		else
@@ -531,7 +531,7 @@ __global__ linkage void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong
 
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx < len) {
-			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo, len);
+			const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
 			z[offset] = nd4j::math::nd4j_exp<T, T>(x[offset] - max);
 			shmem[threadIdx.x] = (threadIdx.x != 0) ? z[offset] : (z[offset] + temp); // take into account sum element evaluated on previous iteration and stored in temp
 		}
@@ -553,7 +553,7 @@ __global__ linkage void softMaxDerivForVectorCuda(const void *vx, const Nd4jLong
 	for (int i = 0; i < numOfIters; ++i) {
 		const Nd4jLong elemIdx = i * blockDim.x + threadIdx.x;
 		if(elemIdx >= len) continue;
-		const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo, len);
+		const Nd4jLong offset = shape::getIndexOffset(elemIdx, xzShapeInfo);
 		z[offset] /= shmem[0];
 		z[offset] *= (1.f - z[offset]);		// derivative
 	}

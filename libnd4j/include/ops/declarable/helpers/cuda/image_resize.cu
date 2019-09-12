@@ -32,7 +32,13 @@ namespace helpers {
         // https://en.wikipedia.org/wiki/Bilinear_interpolation)
         double interpolarValue;
     };
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// computeInterpolationWeights kernel
+//      outSize - output length
+//      inSize - input size
+//      scale - input scale
+//      interporationData - result
+//
     static __global__ void computeInterpolationWeights(Nd4jLong outSize,
                                               Nd4jLong inSize,
                                               double scale,
@@ -54,21 +60,26 @@ namespace helpers {
             }
         }
     }
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// resize image with bilinear interpolation algorithm
+//
     static void resizeImage(nd4j::LaunchContext* context, NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
                      Nd4jLong outWidth, Nd4jLong channels,
                      BilinearInterpolationData* xs_,
                      BilinearInterpolationData* ys_,
                      NDArray* output);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// resize image with bilinear interpolation algorithm kernel
+//
     template <typename T>
     static __global__ void resizeImageKernel(T const* input, Nd4jLong const* inputShape, T* outputYptr, Nd4jLong* outputShape, Nd4jLong batchSize,
                                              Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, Nd4jLong inRowSize, Nd4jLong outRowSize, Nd4jLong inBatchNumValues,
                                              BilinearInterpolationData* xs_, BilinearInterpolationData* ys_) {
 
-        if (blockIdx.x < batchSize) {
+        if (blockIdx.x < batchSize) { // blockIdx.x as batch index
             auto pX = input + blockIdx.x * inBatchNumValues;
-            //auto pZ = output_y_ptr;
+
             auto channelStart = blockIdx.z * blockDim.z + threadIdx.z;
             auto step = blockDim.z * gridDim.z;
             for (Nd4jLong y = threadIdx.x; y < outHeight; y += blockDim.x) {
@@ -80,6 +91,7 @@ namespace helpers {
                     auto xsBottom = xs_[x].bottomIndex;
                     auto xsTop = xs_[x].topIndex;
                     auto xVal = xs_[x].interpolarValue;
+                    // process interpolation for all channels
                     for (int c = channelStart; c < channels; c += step) {
                         double topLeft(ys_input_lower_ptr[xsBottom + c]);
                         double topRight(ys_input_lower_ptr[xsTop + c]);
@@ -87,13 +99,15 @@ namespace helpers {
                         double bottomRight(ys_input_upper_ptr[xsTop + c]);
                         double top = topLeft + (topRight - topLeft) * xVal;
                         double bottom = bottomLeft + (bottomRight - bottomLeft) * xVal;
-                        pZ[x * channels + c] = top + (bottom - top) * yVal;
+                        pZ[x * channels + c] = T(top + (bottom - top) * yVal);
                     }
                 }
             }
         }
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// resize image with
     template <typename T>
     static void resizeImage_(nd4j::LaunchContext* context, NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
                      Nd4jLong outWidth, Nd4jLong channels,
@@ -111,7 +125,8 @@ namespace helpers {
                 outWidth, outHeight, channels, inRowSize, outRowSize, inBatchNumValues, xs_, ys_);
     }
 
-    template <typename T>
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+        template <typename T>
     static int resizeBilinearFunctor_(nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
         const Nd4jLong inHeight = images->sizeAt(1);
@@ -174,6 +189,10 @@ namespace helpers {
 
         return Status::OK();
     }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// resize by interpolation nearest neighbor algorithm kernel
+//
     template <typename T>
     static __global__ void resizeNeighborKernel(T const* input, Nd4jLong* inputShape, T* output, Nd4jLong* outputShape,
             Nd4jLong batchSize, Nd4jLong inWidth, Nd4jLong inHeight, Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, double widthScale, double heightScale, bool center) {
@@ -196,8 +215,8 @@ namespace helpers {
                     for (Nd4jLong e = start; e < channels; e += step) {
                         Nd4jLong posX[] = {b, inY, inX, e};
                         Nd4jLong posZ[] = {b, y, x, e};
-                        auto xIndex = shape::getOffset(0, shape::shapeOf(inputShape), shape::stride(inputShape), posX, 4);
-                        auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), posZ, 4);
+                        auto xIndex = shape::getOffset(inputShape, posX);
+                        auto zIndex = shape::getOffset(outputShape, posZ);
                         output[zIndex] = input[xIndex];
                     }
                 }
@@ -206,6 +225,9 @@ namespace helpers {
 
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// resizeNeighborFunctor - main algorithm by nearest neighbor
+//
     template <typename T>
     int resizeNeighborFunctor_(nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
         const Nd4jLong batchSize = images->sizeAt(0);
@@ -243,10 +265,11 @@ namespace helpers {
                 batchSize, inWidth, inHeight, outWidth, outHeight, channels, widthScale, heightScale, center);
         NDArray::registerSpecialUse({output}, {images});
 
-        return ND4J_STATUS_OK;
-
         return Status::OK();
     }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// resizeImage - resize bilinear algorithm caller
+//
     void resizeImage(nd4j::LaunchContext* context, NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight,
             Nd4jLong inWidth, Nd4jLong outHeight, Nd4jLong outWidth, Nd4jLong channels, BilinearInterpolationData* xs_,
             BilinearInterpolationData* ys_, NDArray* output) {
@@ -257,21 +280,25 @@ namespace helpers {
             Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight, Nd4jLong outWidth,
             Nd4jLong channels, BilinearInterpolationData* xs_, BilinearInterpolationData* ys_, NDArray* output), LIBND4J_TYPES);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     int resizeBilinearFunctor(nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeBilinearFunctor_, (context, images, width, height, center, output), LIBND4J_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template int resizeBilinearFunctor_, (nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     int resizeNeighborFunctor(nd4j::LaunchContext* context, NDArray const* images, int width, int height, bool center, NDArray* output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_, (context, images, width, height, center, output), LIBND4J_TYPES);
     }
     BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_, (nd4j::LaunchContext* context, NDArray const* images,
             int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // --------------------------------------------------------------------------------------------------------------- //
     // Crop and Resize helper implementation
     // --------------------------------------------------------------------------------------------------------------- //
-    ///////
+    // cropAndResize kernel
+    //
     template <typename T, typename Z, typename I>
     static __global__ void cropAndResizeKernel(T const *images, Nd4jLong* imagesShape, Z const* boxes, Nd4jLong* boxesShape,
             I const* indices, Nd4jLong* indexShape, I const* cropSize, Nd4jLong* cropShape, int method,
@@ -284,10 +311,10 @@ namespace helpers {
             Nd4jLong y1Pos[] = {b, 0};
             Nd4jLong y2Pos[] = {b, 2};
             Nd4jLong x2Pos[] = {b, 3};
-            Z y1 = boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), y1Pos, 2)];//->t<T>(b, 0)];
-            Z x1 = boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), x1Pos, 2)];
-            Z y2 = boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), y2Pos, 2)];
-            Z x2 = boxes[shape::getOffset(0, shape::shapeOf(boxesShape), shape::stride(boxesShape), x2Pos, 2)];
+            Z y1 = boxes[shape::getOffset(boxesShape, y1Pos)];//->t<T>(b, 0)];
+            Z x1 = boxes[shape::getOffset(boxesShape, x1Pos)];
+            Z y2 = boxes[shape::getOffset(boxesShape, y2Pos)];
+            Z x2 = boxes[shape::getOffset(boxesShape, x2Pos)];
 
             int bIn = indices[b];
             if (bIn >= batchSize) {
@@ -297,7 +324,6 @@ namespace helpers {
             Z heightScale = (cropHeight > 1) ? (y2 - y1) * (imageHeight - 1) / Z(cropHeight - 1) : Z(0);
             Z widthScale = (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / Z(cropWidth - 1) : Z(0);
 
-//            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (int y = threadIdx.x; y < cropHeight; y += blockDim.x) {
                 const float inY = (cropHeight > 1)
                                   ? y1 * (imageHeight - 1) + y * heightScale
@@ -308,13 +334,14 @@ namespace helpers {
                         auto step = blockDim.z * gridDim.z;
                         for (int d = start; d < depth; d += step) {
                             Nd4jLong zPos[] = {b, y, x, d};
-                            auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
+                            auto zIndex = shape::getOffset(outputShape, zPos);
                             output[zIndex] = (Z)extrapolationVal;
                             //crops->p(b, y, x, d, extrapolationVal);
                         }
                     }
                     continue;
                 }
+
                 if (method == 0 /* bilinear */) {
                     const int topYIndex = nd4j::math::p_floor(inY);
                     const int bottomYIndex = nd4j::math::p_ceil(inY);
@@ -329,7 +356,7 @@ namespace helpers {
                             auto step = blockDim.z * gridDim.z;
                             for (int d = start; d < depth; d += step) {
                                 Nd4jLong zPos[] = {b, y, x, d};
-                                auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
+                                auto zIndex = shape::getOffset(outputShape, zPos);
                                 output[zIndex] = (Z)extrapolationVal;
 //                                crops->p(b, y, x, d, extrapolationVal);
                             }
@@ -346,16 +373,15 @@ namespace helpers {
                             Nd4jLong topRightPos[] = {bIn, topYIndex, right_x_index, d};
                             Nd4jLong bottomLeftPos[] = {bIn, bottomYIndex, left_x_index, d};
                             Nd4jLong bottomRightPos[] = {bIn, bottomYIndex, right_x_index, d};
-                            const T topLeft(images[shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), topLeftPos, 4)]); //->e<float>(bIn, topYIndex, left_x_index, d));
-                            const T topRight(images[shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), topRightPos, 4)]); //->e<float>(bIn, topYIndex, right_x_index, d));
-                            const T bottomLeft(images[shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), bottomLeftPos, 4)]);//->e<float>(bIn, bottomYIndex, left_x_index, d));
-                            const T bottomRight(images[shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), bottomRightPos, 4)]); //->e<float>(bIn, bottomYIndex, right_x_index, d));
+                            const T topLeft(images[shape::getOffset(imagesShape, topLeftPos)]); //->e<float>(bIn, topYIndex, left_x_index, d));
+                            const T topRight(images[shape::getOffset(imagesShape, topRightPos)]); //->e<float>(bIn, topYIndex, right_x_index, d));
+                            const T bottomLeft(images[shape::getOffset(imagesShape, bottomLeftPos)]);//->e<float>(bIn, bottomYIndex, left_x_index, d));
+                            const T bottomRight(images[shape::getOffset(imagesShape, bottomRightPos)]); //->e<float>(bIn, bottomYIndex, right_x_index, d));
                             const T top = topLeft + (topRight - topLeft) * x_lerp;
                             const T bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
                             Nd4jLong zPos[] = {b, y, x, d};
-                            auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
+                            auto zIndex = shape::getOffset(outputShape, zPos);
                             output[zIndex] = Z(top + (bottom - top) * y_lerp);
-//                            crops->p(b, y, x, d, top + (bottom - top) * y_lerp);
                         }
                     }
                 } else {  // method is "nearest neighbor"
@@ -368,7 +394,7 @@ namespace helpers {
                             auto step = blockDim.z * gridDim.z;
                             for (int d = start; d < depth; d += step) {
                                 Nd4jLong zPos[] = {b, y, x, d};
-                                auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
+                                auto zIndex = shape::getOffset(outputShape, zPos);
                                 output[zIndex] = (Z)extrapolationVal;
                             }
                             continue;
@@ -380,10 +406,9 @@ namespace helpers {
                         for (int d = start; d < depth; d += step) {
                             Nd4jLong zPos[] = {b, y, x, d};
                             Nd4jLong xPos[] = {bIn, closestYIndex, closestXIndex, d};
-                            auto zIndex = shape::getOffset(0, shape::shapeOf(outputShape), shape::stride(outputShape), zPos, 4);
-                            auto xIndex = shape::getOffset(0, shape::shapeOf(imagesShape), shape::stride(imagesShape), xPos, 4);
+                            auto zIndex = shape::getOffset(outputShape, zPos);
+                            auto xIndex = shape::getOffset(imagesShape, xPos);
                             output[zIndex] = images[xIndex];
-//                            crops->p(b, y, x, d, images->e<T>(bIn, closestYIndex, closestXIndex, d));
                         }
                     }
                 }
@@ -392,6 +417,17 @@ namespace helpers {
 
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// cropAndResizeFunctor main algorithm
+//      context - launch context
+//      images - batch of images (4D tensor - [batch, width, height, pixels])
+//      boxes - 2D tensor with boxes for crop
+//      indices - 2D int tensor with indices of boxes to crop
+//      cropSize - 2D int tensor with crop box sizes
+//      method - (one of 0 - bilinear, 1 - nearest)
+//      extrapolationVal - double value of extrapolation
+//      crops - output (4D tensor - [batch, outWidth, outHeight, pixels])
+//
     template <typename T, typename Z, typename I>
     static void cropAndResizeFunctor_(nd4j::LaunchContext* context, NDArray const *images, NDArray const *boxes, NDArray const *indices,
                                       NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
@@ -416,6 +452,7 @@ namespace helpers {
         NDArray::registerSpecialUse({crops}, {images, boxes, indices, cropSize});
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     void cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize, int method, double extrapolationVal, NDArray *crops) {
         BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                               (context, images, boxes, indices, cropSize, method, extrapolationVal, crops), NUMERIC_TYPES, FLOAT_TYPES, INTEGER_TYPES);

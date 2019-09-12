@@ -23,6 +23,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
+#include <ops/declarable/helpers/addBias.h>
 #include <MmulHelper.h>
 
 namespace nd4j {
@@ -79,7 +80,8 @@ CUSTOM_OP_IMPL(deconv3d, 2, 1, false, 0, 13) {
 
     //----- add biases if required -----//
     if(bias)
-        output->applyBroadcast(broadcast::Add,{1}, bias);
+        // output->applyBroadcast(broadcast::Add,{1}, bias);
+        helpers::addBias(block, *output, *bias, *output, true);
 
     if(!isNCDHW)
         delete output;

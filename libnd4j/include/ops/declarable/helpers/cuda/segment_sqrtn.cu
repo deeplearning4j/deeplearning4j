@@ -51,11 +51,11 @@ namespace helpers {
             zLen = shape::length(outputShape);
 
 //            if (segment < numOfClasses) {
-            zIndex = shape::getIndexOffset(segment, outputShape, zLen);
+            zIndex = shape::getIndexOffset(segment, outputShape);
             //start = starts[segment];
             //finish = start + lengths[segment];
             if (lengths[segment] > 0)
-                z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape, xLen)] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]);
+                z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape)] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]);
             else
                 z[zIndex] = 0; //DataTypeUtils::max<T>();
 //                val[segment] = z[zIndex];
@@ -65,8 +65,8 @@ namespace helpers {
         __syncthreads();
         if (lengths[segment] > 0)
             for (auto e = threadIdx.x + 1; e < xLen; e += blockDim.x) {
-                auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-                auto yIndex = shape::getIndexOffset(e, indicesShape, xLen);
+                auto xIndex = shape::getIndexOffset(e, inputShape);
+                auto yIndex = shape::getIndexOffset(e, indicesShape);
                 if (y[yIndex] == segment && e != starts[segment]) {
                     nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]));
                 }
@@ -97,15 +97,15 @@ namespace helpers {
             auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
             if (blockIdx.x == start) {
                 for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
-                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    auto xIndex = shape::getIndexOffset(e, inputTads);
+                    auto zIndex = shape::getIndexOffset(e, outputTads);
                     z[zIndex] = x[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]);
                 }
             }
             else {
                 for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
-                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    auto xIndex = shape::getIndexOffset(e, inputTads);
+                    auto zIndex = shape::getIndexOffset(e, outputTads);
                     nd4j::math::atomics::nd4j_atomicAdd(&z[zIndex], x[xIndex] / nd4j::math::nd4j_sqrt<int, T>(lengths[segment]));
                 }
             }
@@ -177,11 +177,11 @@ namespace helpers {
 
         for (auto e = start; e < xLen; e += step) {
 
-            auto zOffset = shape::getIndexOffset(e, outputShape, xLen);
-            auto xOffset = shape::getIndexOffset(e, inputShape, xLen);
-            auto yOffset = shape::getIndexOffset(e, indicesShape, xLen);
+            auto zOffset = shape::getIndexOffset(e, outputShape);
+            auto xOffset = shape::getIndexOffset(e, inputShape);
+            auto yOffset = shape::getIndexOffset(e, indicesShape);
             auto classIndex = y[yOffset];
-            auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape, gradLen);
+            auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
             z[zOffset] = T(gradOut[gradOffsetO] / math::nd4j_sqrt<int, float>(lengths[classIndex]));
         }
@@ -211,14 +211,14 @@ namespace helpers {
         __syncthreads();
 
         for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
-//            auto yIndex = shape::getIndexOffset(i, indicesShape, yLen);
+//            auto yIndex = shape::getIndexOffset(i, indicesShape);
             auto segment = y[i]; //yIndex];
             T* currentOut = z + outOffsets[i];
             T* outGrad = gradOut + gradOutOffsets[segment];
 
             for (auto e = threadIdx.x; e < currentLen; e += blockDim.x) {
-                auto zIndex = shape::getIndexOffset(e, outTad, currentLen);
-                auto gradIndex = shape::getIndexOffset(e, gradOutTad, gradLen);
+                auto zIndex = shape::getIndexOffset(e, outTad);
+                auto gradIndex = shape::getIndexOffset(e, gradOutTad);
                 if (lengths[segment] > 0)
                     currentOut[zIndex] = T(outGrad[gradIndex] / math::nd4j_sqrt<int, float>(lengths[segment]));
             }

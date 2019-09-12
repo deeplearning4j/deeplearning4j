@@ -53,11 +53,11 @@ namespace helpers {
             zLen = shape::length(outputShape);
 
             if (segment < numOfClasses) {
-                zIndex = shape::getIndexOffset(segment, outputShape, zLen);
+                zIndex = shape::getIndexOffset(segment, outputShape);
                 start = starts[segment];
                 finish = start + lengths[segment];
                 //val[segment] = ;
-                z[zIndex] = x[shape::getIndexOffset(start, inputShape, xLen)];
+                z[zIndex] = x[shape::getIndexOffset(start, inputShape)];
                 val[segment] = z[zIndex];
             }
 
@@ -67,7 +67,7 @@ namespace helpers {
 //         auto step = blockDim.x * gridDim.x;
 
         for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
-            auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
+            auto xIndex = shape::getIndexOffset(e, inputShape);
             nd4j::math::atomics::nd4j_atomicMul(&val[segment], x[xIndex]);
         }
         __syncthreads();
@@ -98,11 +98,11 @@ namespace helpers {
             zLen = shape::length(outputShape);
 
 //            if (segment < numOfClasses) {
-            zIndex = shape::getIndexOffset(segment, outputShape, zLen);
+            zIndex = shape::getIndexOffset(segment, outputShape);
             //start = starts[segment];
             //finish = start + lengths[segment];
             if (lengths[segment] > 0)
-                z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape, xLen)];
+                z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape)];
             else
                 z[zIndex] = 0; //DataTypeUtils::max<T>();
 //                val[segment] = z[zIndex];
@@ -112,8 +112,8 @@ namespace helpers {
         __syncthreads();
         if (lengths[segment] > 0)
             for (auto e = threadIdx.x; e < xLen; e += blockDim.x) {
-                auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-                auto yIndex = shape::getIndexOffset(e, indicesShape, xLen);
+                auto xIndex = shape::getIndexOffset(e, inputShape);
+                auto yIndex = shape::getIndexOffset(e, indicesShape);
                 if (y[yIndex] == segment && e != starts[segment]) {
                     nd4j::math::atomics::nd4j_atomicMul(&z[zIndex], x[xIndex]);
                 }
@@ -144,15 +144,15 @@ namespace helpers {
             auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
             if (blockIdx.x == start) {
                 for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
-                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    auto xIndex = shape::getIndexOffset(e, inputTads);
+                    auto zIndex = shape::getIndexOffset(e, outputTads);
                     nd4j::math::atomics::nd4j_atomicMul(&z[zIndex], x[xIndex]);
                 }
             }
             else {
                 for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                    auto xIndex = shape::getIndexOffset(e, inputTads, len);
-                    auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                    auto xIndex = shape::getIndexOffset(e, inputTads);
+                    auto zIndex = shape::getIndexOffset(e, outputTads);
                     if (lengths[segment] > 0)
                         nd4j::math::atomics::nd4j_atomicMul(&z[zIndex], x[xIndex]);
                 }
@@ -268,12 +268,12 @@ namespace helpers {
 
         for (auto e = start; e < xLen; e += step) {
 
-            auto zOffset = shape::getIndexOffset(e, outputShape, xLen);
-            auto xOffset = shape::getIndexOffset(e, inputShape, xLen);
-            auto yOffset = shape::getIndexOffset(e, indicesShape, xLen);
+            auto zOffset = shape::getIndexOffset(e, outputShape);
+            auto xOffset = shape::getIndexOffset(e, inputShape);
+            auto yOffset = shape::getIndexOffset(e, indicesShape);
             auto classIndex = y[yOffset];
-            auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape, gradLen);
-            auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape, gradLen);
+            auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape);
+            auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
             z[zOffset] = gradOut[gradOffsetO]  * gradIn[gradOffsetI] / x[xOffset];
         }
@@ -307,7 +307,7 @@ namespace helpers {
         __syncthreads();
 
         for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
-            auto yIndex = shape::getIndexOffset(i, indicesShape, yLen);
+            auto yIndex = shape::getIndexOffset(i, indicesShape);
             auto segment = y[yIndex];
             T* current = x + inputOffsets[i];
             T* currentOut = z + outOffsets[i];

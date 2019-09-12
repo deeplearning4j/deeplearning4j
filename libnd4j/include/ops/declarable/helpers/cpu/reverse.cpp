@@ -60,7 +60,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
 //                        inArr[e] = inArr[idx];
 //                        inArr[idx] = tmp;
                     }
-                } 
+                }
                 else if (inEWS > 1) {
                     PRAGMA_OMP_PARALLEL_FOR
                     for (Nd4jLong e = 0; e < numOfElemsToReverse / 2; e++) {
@@ -71,19 +71,19 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
 //                        inArr[idx1] = tmp;
                         swap(inArr, idx1, idx2);
                     }
-                } 
+                }
                 else {
 
                     PRAGMA_OMP_PARALLEL_FOR
                     for (Nd4jLong e = 0; e < numOfElemsToReverse / 2; e++) {
-                   
-                        auto inOffset  = shape::getIndexOffset(e, inShapeBuffer, inLength);
-                        auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer, inLength);
+
+                        auto inOffset  = shape::getIndexOffset(e, inShapeBuffer);
+                        auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer);
                         //outArr[outOffset] = inArr[inOffset];
                         swap(outArr, inOffset, outOffset);
                     }
                 }
-            } 
+            }
             else {
                 // single step phase here
                 auto outEWS = shape::elementWiseStride(outShapeBuffer);
@@ -92,15 +92,15 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                 if (inEWS == 1 && outEWS == 1 && inOrder == outOrder) {
 
                     PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < numOfElemsToReverse; e++) 
-                        outArr[sLength - e] = inArr[e];                    
+                    for (Nd4jLong e = 0; e < numOfElemsToReverse; e++)
+                        outArr[sLength - e] = inArr[e];
 
                     if(inLength != numOfElemsToReverse) {
                         PRAGMA_OMP_PARALLEL_FOR
                         for (Nd4jLong e = numOfElemsToReverse; e < inLength; e++)
                             outArr[e] = inArr[e];
                     }
-                } 
+                }
                 else if (inEWS >= 1 && outEWS >= 1 && inOrder == outOrder) {
 
                     PRAGMA_OMP_PARALLEL_FOR
@@ -112,14 +112,14 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                         for (Nd4jLong e = numOfElemsToReverse; e < inLength; e++)
                             outArr[e * outEWS] = inArr[e * inEWS];
                     }
-                } 
+                }
                 else {
 
                     PRAGMA_OMP_PARALLEL_FOR
                     for (Nd4jLong e = 0; e < numOfElemsToReverse; e++) {
 
-                        auto inOffset = shape::getIndexOffset(e, inShapeBuffer, inLength);
-                        auto outOffset = shape::getIndexOffset(sLength - e, outShapeBuffer, outLength);
+                        auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
+                        auto outOffset = shape::getIndexOffset(sLength - e, outShapeBuffer);
                         outArr[outOffset] = inArr[inOffset];
                     }
 
@@ -128,9 +128,9 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                         PRAGMA_OMP_PARALLEL_FOR
                         for (Nd4jLong e = numOfElemsToReverse; e < inLength; e++) {
 
-                            auto inOffset  = shape::getIndexOffset(e, inShapeBuffer, inLength);
-                            auto outOffset = shape::getIndexOffset(e, outShapeBuffer, outLength);
-                            outArr[outOffset] = inArr[inOffset];        
+                            auto inOffset  = shape::getIndexOffset(e, inShapeBuffer);
+                            auto outOffset = shape::getIndexOffset(e, outShapeBuffer);
+                            outArr[outOffset] = inArr[inOffset];
                         }
                     }
                 }
@@ -151,7 +151,7 @@ static void _reverseSequence(nd4j::LaunchContext * context, const NDArray* input
             helpers::reverseArray<T>(context, const_cast<NDArray*>(input)->getBuffer(), const_cast<NDArray*>(input)->getShapeInfo(), output->getBuffer(), output->getShapeInfo(), seqLengths->e<int>(0));
     }
     else {
-            
+
         if(seqDim > batchDim)
             --seqDim;
 
@@ -163,7 +163,7 @@ static void _reverseSequence(nd4j::LaunchContext * context, const NDArray* input
         for(int i = 0; i < inSubArrsSet->size(); ++i) {
 
             Nd4jLong numOfElemsToReverse = seqLengths->e<Nd4jLong>(i);
-        
+
             if(numOfElemsToReverse == 0 || numOfElemsToReverse == 1) {
                 outSubArrsSet->at(i)->assign(inSubArrsSet->at(i));
             }
@@ -172,7 +172,7 @@ static void _reverseSequence(nd4j::LaunchContext * context, const NDArray* input
                 auto outInnerSet = outSubArrsSet->at(i)->allTensorsAlongDimension({seqDim});
                 for(int j = 0; j < inInnerSet->size(); ++j)
                     helpers::reverseArray<T>(context, inInnerSet->at(j)->getBuffer(), inInnerSet->at(j)->getShapeInfo(), outInnerSet->at(j)->getBuffer(), outInnerSet->at(j)->getShapeInfo(), numOfElemsToReverse);
-            
+
                 delete inInnerSet;
                 delete outInnerSet;
             }
@@ -195,12 +195,12 @@ void reverse(nd4j::LaunchContext * context, const NDArray* input, NDArray* outpu
 
     auto listOut = output->allTensorsAlongDimension(dimensions);
     auto listIn  = input->allTensorsAlongDimension(dimensions);
-       
+
     NDArray *subArrIn, *subArrOut;
 
     for(int i = 0; i < listIn->size(); ++i) {               // listIn->size() = listOut->size()
         subArrIn   = listIn->at(i);
-        subArrOut  = listOut->at(i);        
+        subArrOut  = listOut->at(i);
         BUILD_SINGLE_SELECTOR(input->dataType(), helpers::reverseArray, (context, subArrIn->getBuffer(), subArrIn->getShapeInfo(), subArrOut->getBuffer(), subArrOut->getShapeInfo()), LIBND4J_TYPES);
     }
 

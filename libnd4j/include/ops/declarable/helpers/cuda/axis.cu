@@ -27,11 +27,11 @@ namespace helpers {
 
     void adjustAxis(Nd4jLong rank, NDArray* axisVector, std::vector<int>& output) {
         output.resize(axisVector->lengthOf());
-        axisVector->tickReadDevice();
-        axisVector->syncToHost();
+        axisVector->tickReadDevice(); // mark input as read on device
+        axisVector->syncToHost(); // sync to host
         for (int e = 0; e < axisVector->lengthOf(); e++) {
                 auto ca = axisVector->e<int>(e);
-                if (ca < 0)
+                if (ca < 0) // shift values on rank for negative vals
                     ca += rank;
 
                 output[e] = ca;
@@ -41,7 +41,7 @@ namespace helpers {
     void adjustAxis(Nd4jLong rank, std::vector<int> &axisVector) {
         for (int e = 0; e < axisVector.size(); e++) {
             auto a = axisVector[e];
-            if (a < 0)
+            if (a < 0) // shift vals on rank for negative vals
                 axisVector[e] = a + rank;
         }
     }

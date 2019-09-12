@@ -27,7 +27,7 @@
 #include <declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
-
+#include <ops/declarable/helpers/addBias.h>
 
 namespace nd4j {
 namespace ops  {
@@ -80,7 +80,8 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
 
     //----- add biases if required -----//
     if(bias)
-        output->applyBroadcast(broadcast::Add, {1}, bias);
+        // output->applyBroadcast(broadcast::Add, {1}, bias);
+        helpers::addBias(block, *output, *bias, *output, true);
 
      if(!isNCHW)
         delete output;

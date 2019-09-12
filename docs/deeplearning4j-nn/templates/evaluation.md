@@ -22,7 +22,7 @@ DataSetIterator myTestData = ...
 Evaluation eval = model.evaluate(myTestData);
 ```
 
-However, evaluation can be performed on individual minibatches also. Here is an example taken from our dataexamples/CSVExample in the [Examples](https://github.com/deeplearning4j/dl4j-examples) project.
+However, evaluation can be performed on individual minibatches also. Here is an example taken from our dataexamples/CSVExample in the [Examples](https://github.com/eclipse/deeplearning4j-examples) project.
 
 The CSV example has CSV data for 3 classes of flowers and builds a simple feed forward neural network to classify the flowers based on 4 measurements. 
 

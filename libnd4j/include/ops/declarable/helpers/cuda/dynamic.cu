@@ -57,7 +57,7 @@ namespace nd4j {
                     for (Nd4jLong e = threadIdx.x; e < iLimit; e += blockDim.x) {
                         // load set of indices into shared memory
                         if (e < iLength)
-                            rawIndices[threadIdx.x] = i[shape::getIndexOffset(e, iShapeInfo, iLength)];
+                            rawIndices[threadIdx.x] = i[shape::getIndexOffset(e, iShapeInfo)];
                         __syncthreads();
 
                         // now we need to find out where our actual updates will be mapped
@@ -76,7 +76,7 @@ namespace nd4j {
                         // doing actual update
                         if (e < iLength)
                             if (trueIndices[threadIdx.x] >= 0) {
-                                z[trueIndices[threadIdx.x]] = x[shape::getIndexOffset(e, xShapeInfo, xLength)];
+                                z[trueIndices[threadIdx.x]] = x[shape::getIndexOffset(e, xShapeInfo)];
                             }
 
                         __syncthreads();
@@ -97,12 +97,12 @@ namespace nd4j {
                     int outCnt = 0;
 
                     for (Nd4jLong e = 0; e < iLength; e++) {
-                        if (indices[shape::getIndexOffset(e, iShapeInfo, iLength)] == i) {
+                        if (indices[shape::getIndexOffset(e, iShapeInfo)] == i) {
                             auto dx = x + xTadOffsets[e];
                             auto dz = z + zTadOffsets[i][outCnt++];
 
                             for (int f = threadIdx.x; f < xLength; f += blockDim.x) {
-                                dz[shape::getIndexOffset(f, zTadShapeInfos[i], xLength)] = dx[shape::getIndexOffset(f, xTadShapeInfo, xLength)];
+                                dz[shape::getIndexOffset(f, zTadShapeInfos[i])] = dx[shape::getIndexOffset(f, xTadShapeInfo)];
                             }
                         }
                     }
@@ -190,9 +190,9 @@ namespace nd4j {
                     auto iLength = shape::length(iShapeInfo);
 
                     for (int i = threadIdx.x; i < iLength; i += blockDim.x) {
-                        auto idx = indices[shape::getIndexOffset(i, iShapeInfo, iLength)];
+                        auto idx = indices[shape::getIndexOffset(i, iShapeInfo)];
                         if (idx >= 0 && idx < zLength)
-                            z[shape::getIndexOffset(idx, zShapeInfo, zLength)] = x[shape::getIndexOffset(i, xShapeInfo, iLength)];
+                            z[shape::getIndexOffset(idx, zShapeInfo)] = x[shape::getIndexOffset(i, xShapeInfo)];
                     }
                 }
             }
@@ -215,13 +215,13 @@ namespace nd4j {
                     auto xLength = shape::length(xShapeInfo);
 
                     for (int i = 0; i < iLength; i++) {
-                        auto idx = indices[shape::getIndexOffset(i, iShapeInfo, iLength)];
+                        auto idx = indices[shape::getIndexOffset(i, iShapeInfo)];
 
                         auto z = bz + zTadOffsets[idx];
                         auto x = reinterpret_cast<X*>(vx[e]) + xTadOffsets[e][i];
 
                         for (int f = threadIdx.x; f < zLength; f += blockDim.x) {
-                            z[shape::getIndexOffset(f, zTadShapeInfo, zLength)] = x[shape::getIndexOffset(f, xShapeInfo, xLength)];
+                            z[shape::getIndexOffset(f, zTadShapeInfo)] = x[shape::getIndexOffset(f, xShapeInfo)];
                         }
 
                         __syncthreads();

@@ -81,8 +81,8 @@ namespace simdOps {
 		static inline __device__ void execSpecialCuda(
 			             T *dx, Nd4jLong *xShapeBuffer,
 			             Z *result, Nd4jLong *zShapeBuffer,
-			             Z *extraParams, 
-                         int *allocationPointer, Z *reductionPointer, 
+			             Z *extraParams,
+                         int *allocationPointer, Z *reductionPointer,
                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 			__shared__ int kH;
@@ -119,7 +119,7 @@ namespace simdOps {
             __shared__ int kHEff;
             __shared__ int kWEff;
 			__shared__ bool fOrder;
-		
+
 
 			if (threadIdx.x == 0) {
 				kH = (int)extraParams[0];
@@ -266,7 +266,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
     const Nd4jLong sH = (int)extraParams[2];
     const Nd4jLong sW = (int)extraParams[3];
     const Nd4jLong pH = (int)extraParams[4];
-    const Nd4jLong pW = (int)extraParams[5];    
+    const Nd4jLong pW = (int)extraParams[5];
     const Nd4jLong dH = (int)extraParams[6];
     const Nd4jLong dW = (int)extraParams[7];
     Nd4jLong poolingMode = (int)extraParams[9];
@@ -285,7 +285,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
     const int iH = shape::sizeAt(inShapeBuffer, 2);
     const int iW = shape::sizeAt(inShapeBuffer, 3);
     const int oH = shape::sizeAt(outShapeBuffer, 2);
-    const int oW = shape::sizeAt(outShapeBuffer, 3);            
+    const int oW = shape::sizeAt(outShapeBuffer, 3);
     const Nd4jLong iStride0 = shape::stride(inShapeBuffer)[0];
     const Nd4jLong iStride1 = shape::stride(inShapeBuffer)[1];
     const Nd4jLong iStride2 = shape::stride(inShapeBuffer)[2];
@@ -296,28 +296,28 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
     const Nd4jLong oStride3 = shape::stride(outShapeBuffer)[3];
 
     const Nd4jLong iStep2 = dH*iStride2;
-    const Nd4jLong iStep3 = dW*iStride3;        
+    const Nd4jLong iStep3 = dW*iStride3;
     const int kProd  = kH*kW;
-    const T iStep2Inv = 1./iStep2; 
+    const T iStep2Inv = 1./iStep2;
     const T iStep3Inv = 1./iStep3;
 
     Nd4jLong hstart, wstart, hend, wend;
     T sum, *pIn;
 
-    if(poolingMode == 0) {        // max 
+    if(poolingMode == 0) {        // max
         PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
-            for(int c = 0; c < iC; ++c) {                                                            
+            for(int c = 0; c < iC; ++c) {
                 for(int oh = 0; oh < oH; ++oh) {
                     for(int ow = 0; ow < oW; ++ow) {
-                        
+
                         pIn  = in  + b * iStride0 + c * iStride1;
-                        
+
                         hstart = oh * sH - pH;
-                        wstart = ow * sW - pW;                        
+                        wstart = ow * sW - pW;
                         hend = hstart + kHEff;
                         wend = wstart + kWEff;
-                        
+
                         if(hstart < 0)
                             hstart += dH * (Nd4jLong)nd4j::math::nd4j_ceil<T,Nd4jLong>(static_cast<T>(-hstart) / static_cast<T>(dH));
                         if(wstart < 0)
@@ -333,8 +333,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         wend   *= iStride3;
 
                         sum = -nd4j::DataTypeUtils::max<Z>();
-                                                                    
-                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
                                 T val = pIn[kh + kw];
                                     if (val > sum)
@@ -344,16 +344,16 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                     }
                 }
             }
-        }    
+        }
     }
-/*************************************************************************/    
+/*************************************************************************/
     else if(poolingMode == 1) {      // avg
         PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
-            for(int c = 0; c < iC; ++c) {                                                            
+            for(int c = 0; c < iC; ++c) {
                 for(int oh = 0; oh < oH; ++oh) {
                     for(int ow = 0; ow < oW; ++ow) {
-                        
+
                         pIn  = in  + b * iStride0 + c * iStride1;
 
                         hstart = oh * sH - pH;
@@ -376,30 +376,30 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         wend   *= iStride3;
 
                         sum = static_cast<Z>(0.);
-                                            
-                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += pIn[kh + kw];
-                                
+
                         if ((int) extraParam0 == 0)         //Exclude padding
                             sum /= static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(iStep3)));   //Accounts for dilation
                         else if ((int) extraParam0 == 1)    //Include padding
                             sum /= kProd;
-                    
+
                         out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                     }
                 }
             }
         }
-    }    
-/*************************************************************************/    
+    }
+/*************************************************************************/
     else if(poolingMode == 2) {  // pnorm
         PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, hstart, wstart, hend, wend) collapse(2))
         for(int b = 0; b < bS; ++b) {
-            for(int c = 0; c < iC; ++c) {                                                            
+            for(int c = 0; c < iC; ++c) {
                 for(int oh = 0; oh < oH; ++oh) {
                     for(int ow = 0; ow < oW; ++ow) {
-                        
+
                         pIn  = in  + b * iStride0 + c * iStride1;
 
                         hstart = oh * sH - pH;
@@ -422,13 +422,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         wend   *= iStride3;
 
                         sum = static_cast<T>(0.);
-                                                                    
-                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2) 
+
+                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
                             for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
                                 sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
-                                
+
                         sum = nd4j::math::nd4j_pow<T,T,T>(sum, (T) 1. / extraParam0);
-                                                          
+
                         out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                     }
                 }
@@ -482,7 +482,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
     }
 
 	template<typename T>
-	class 
+	class
 	Im2col {
 	public:
 		static const bool requiresSpecial = true;
@@ -502,8 +502,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		static inline __device__ void execSpecialCuda(
 			                             T *dx, Nd4jLong *xShapeBuffer,
 			                             T *result, Nd4jLong *zShapeBuffer,
-			                             T *extraParams, 
-                                         int *allocationPointer, T *reductionPointer, 
+			                             T *extraParams,
+                                         int *allocationPointer, T *reductionPointer,
                                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
@@ -606,7 +606,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			T *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 			/*kernel[0], kernel[1], stride[0], stride[1], padding[0], padding[1], 0, false*/
 
-			// [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]        
+			// [bS, iC, iH, iW] is convoluted to [bS, iC, kH, kW, oH, oW]
 
 			int kH = (int)extraParams[0];
 			int kW = (int)extraParams[1];
@@ -615,7 +615,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			int pH = (int)extraParams[4];
 			int pW = (int)extraParams[5];
 			int dH = (int)extraParams[6];			//Dilation, height/y dimension
-			int dW = (int)extraParams[7];			//Dilation, width/x dimension            
+			int dW = (int)extraParams[7];			//Dilation, width/x dimension
             T zeroPadVal = extraParams[9];
 
             auto colShape  = shape::shapeOf(colShapeBuffer);
@@ -642,33 +642,33 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
             T *col, *im;
             int imRow, imCol;
-            
+
             if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
                 PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, im, imRow, imCol) collapse(2))
                 for (int b = 0; b < bS; b++) {
-                    for (int c = 0; c < iC; ++c) {        
-                        for (int kRow = 0; kRow < kH; ++kRow) {                        
-                            for (int kCol = 0; kCol < kW; ++kCol) {                            
+                    for (int c = 0; c < iC; ++c) {
+                        for (int kRow = 0; kRow < kH; ++kRow) {
+                            for (int kCol = 0; kCol < kW; ++kCol) {
                                 for (int colH = 0; colH < oH; ++colH) {
-                                    for (int colW = 0; colW < oW; ++colW) {                    
-                                
+                                    for (int colW = 0; colW < oW; ++colW) {
+
                                         imRow = (-pH + kRow * dH) + colH*sH;
                                         imCol = (-pW + kCol * dW) + colW*sW;
-                                        
+
                                         col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
-                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3; 
-                                                    
+                                        im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
+
                                         if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
                                             *col = zeroPadVal;
-                                        else 
+                                        else
                                             *col = *im;
                                     }
                                 }
                             }
                         }
                     }
-                }  
+                }
             }
             else {
 
@@ -677,18 +677,18 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                     for (int colH = 0; colH < oH; ++colH) {
                         for (int colW = 0; colW < oW; ++colW) {
                             for (int c = 0; c < iC; ++c) {
-                                for (int kRow = 0; kRow < kH; ++kRow) {                        
-                                    for (int kCol = 0; kCol < kW; ++kCol) {                            
-                        
+                                for (int kRow = 0; kRow < kH; ++kRow) {
+                                    for (int kCol = 0; kCol < kW; ++kCol) {
+
                                         imRow = (-pH + kRow * dH) + colH*sH;
                                         imCol = (-pW + kCol * dW) + colW*sW;
-                                        
+
                                         col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
                                         im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
-                                                    
+
                                         if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
                                             *col = zeroPadVal;
-                                        else 
+                                        else
                                             *col = *im;
                                     }
                                 }
@@ -743,8 +743,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		static inline __device__ void execSpecialCuda(
 			                 T *dx, Nd4jLong *xShapeBuffer,
 			                 Z *result, Nd4jLong *zShapeBuffer,
-			                 Z *extraParams, 
-                             int *allocationPointer, Z *reductionPointer, 
+			                 Z *extraParams,
+                             int *allocationPointer, Z *reductionPointer,
                              Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 
@@ -782,8 +782,8 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		static inline __device__ void execSpecialCuda(
 			X *dx, Nd4jLong *xShapeBuffer,
 			X *result, Nd4jLong *zShapeBuffer,
-			X *extraParams, int *allocationPointer, 
-            X *reductionPointer, 
+			X *extraParams, int *allocationPointer,
+            X *reductionPointer,
             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 		    __shared__ int strideex, stridech, stridekrow, stridekcol, striderow, stridecol, kernelHeight, kernelWidth, strideY, strideX, padHeight, padWidth, imgHeight, imgWidth, dY, dX, samples, depth, imgH, imgW, height_col, width_col, n, kEffectiveW, kEffectiveH;
@@ -856,7 +856,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					for (int w_col = w_col_start; w_col < w_col_end; w_col += 1) {
 						int h_k = (h_im - h_col * strideY);
 						int w_k = (w_im - w_col * strideX);
-						
+
 						if(h_k % dY == 0 && w_k % dX == 0){
 							h_k /= dY;
 							w_k /= dX;
@@ -892,7 +892,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             auto colShape  = shape::shapeOf(colShapeBuffer);
             auto colStride = shape::stride(colShapeBuffer);
             auto imShape = shape::shapeOf(imShapeBuffer);
-            auto imStride = shape::stride(imShapeBuffer);            
+            auto imStride = shape::stride(imShapeBuffer);
 
             const int sH = (int)extraParams[0];
             const int sW = (int)extraParams[1];
@@ -900,13 +900,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             const int pW = (int)extraParams[3];
             const int iH = (int)extraParams[4];
             const int iW = (int)extraParams[5];
-            const int dH = (int)extraParams[6];     
-            const int dW = (int)extraParams[7];     
+            const int dH = (int)extraParams[6];
+            const int dW = (int)extraParams[7];
 
             const int bS = imShape[0];
             const int iC = imShape[1];
             const int kH = colShape[2];
-            const int kW = colShape[3];                    
+            const int kW = colShape[3];
             const int oH = colShape[4];
             const int oW = colShape[5];
             const Nd4jLong colStride0 = colStride[0];
@@ -932,12 +932,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             if (shape::order(colShapeBuffer) == 'c' &&  shape::order(imShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(colShapeBuffer) && shape::strideDescendingCAscendingF(imShapeBuffer)) {
 
                 PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, im, imRow, imCol) collapse(2))
-                for (int b = 0; b < bS; b++) {        
-                    for (int c = 0; c < iC; ++c) {                    
-                        for (int kRow = 0; kRow < kH; ++kRow) {                        
-                            for (int kCol = 0; kCol < kW; ++kCol) {                            
+                for (int b = 0; b < bS; b++) {
+                    for (int c = 0; c < iC; ++c) {
+                        for (int kRow = 0; kRow < kH; ++kRow) {
+                            for (int kCol = 0; kCol < kW; ++kCol) {
                                 for (int colH = 0; colH < oH; ++colH) {
-                                    for (int colW = 0; colW < oW; ++colW) {                    
+                                    for (int colW = 0; colW < oW; ++colW) {
 
                                         imRow = (-pH + kRow * dH) + colH*sH;
                                         imCol = (-pW + kCol * dW) + colW*sW;
@@ -952,21 +952,21 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                             }
                         }
                     }
-                }  
+                }
             }
             else {
 
                 PRAGMA_OMP_PARALLEL_FOR_ARGS(private(im, col, imRow, imCol))
-                for (int b = 0; b < bS; b++) {        
+                for (int b = 0; b < bS; b++) {
                     for (int colH = 0; colH < oH; ++colH) {
                         for (int colW = 0; colW < oW; ++colW) {
-                            for (int c = 0; c < iC; ++c) {                        
-                                for (int kRow = 0; kRow < kH; ++kRow) {                        
-                                    for (int kCol = 0; kCol < kW; ++kCol) {                            
-                        
+                            for (int c = 0; c < iC; ++c) {
+                                for (int kRow = 0; kRow < kH; ++kRow) {
+                                    for (int kCol = 0; kCol < kW; ++kCol) {
+
                                         imRow = (-pH + kRow * dH) + colH*sH;
                                         imCol = (-pW + kCol * dW) + colW*sW;
-                                        
+
                                         col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
                                         im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
 
@@ -975,9 +975,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                                     }
                                 }
                             }
-                        }                           
+                        }
                     }
-                }  
+                }
             }
         }
 
@@ -1021,10 +1021,10 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 		static const bool requiresSpecial = true;
 
 #ifdef __CUDACC__
-		static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer, 
-                                                    X *result, Nd4jLong *zShapeBuffer, 
-                                                    X *extraParams, int *allocationPointer, 
-                                                    X *reductionPointer, 
+		static inline __device__ void execSpecialCuda(X *dx, Nd4jLong *xShapeBuffer,
+                                                    X *result, Nd4jLong *zShapeBuffer,
+                                                    X *extraParams, int *allocationPointer,
+                                                    X *reductionPointer,
                                                     Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             __shared__ Nd4jLong xLength;
@@ -1064,12 +1064,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         dx[idx2] = dx[idx1];
                         dx[idx1] = tmp;
                     }
-                } 
-                else {                    
+                }
+                else {
 
 					for (int e = tid; e < xLength / 2; e += blockDim.x * gridDim.x) {
-                        auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
-                        auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer, xLength);
+                        auto xOffset = shape::getIndexOffset(e, xShapeBuffer);
+                        auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer);
                         result[zOffset] = dx[xOffset];
 					}
                 }
@@ -1094,12 +1094,12 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                     for (int e = tid; e < xLength; e += blockDim.x * gridDim.x) {
                         result[(sLength - e) * zEWS] = dx[e * xEWS];
                     }
-                } 
-                else {                  
+                }
+                else {
 
                     for (int e = tid; e < xLength; e += blockDim.x * gridDim.x) {
-                        auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
-                        auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer, xLength);
+                        auto xOffset = shape::getIndexOffset(e, xShapeBuffer);
+                        auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer);
                         result[zOffset] = dx[xOffset];
                     }
                 }
@@ -1134,13 +1134,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         dx[idx2] = dx[idx1];
                         dx[idx1] = tmp;
                     }
-				} 
+				}
                 else {
 
                     PRAGMA_OMP_PARALLEL_FOR_SIMD
-                    for (Nd4jLong e = 0; e < xLength / 2; e++) {                        
-                        auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
-                        auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer, xLength);
+                    for (Nd4jLong e = 0; e < xLength / 2; e++) {
+                        auto xOffset = shape::getIndexOffset(e, xShapeBuffer);
+                        auto zOffset = shape::getIndexOffset(sLength - e, xShapeBuffer);
 
                         result[zOffset] = dx[xOffset];
                     }
@@ -1160,13 +1160,13 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					for (Nd4jLong e = 0; e < xLength; e++) {
 						result[(sLength - e) * zEWS] = dx[e * xEWS];
 					}
-				} 
+				}
                 else {
 
                     PRAGMA_OMP_PARALLEL_FOR_SIMD
 					for (Nd4jLong e = 0; e < xLength; e++) {
-						auto xOffset = shape::getIndexOffset(e, xShapeBuffer, xLength);
-                        auto zOffset = shape::getIndexOffset(sLength - e, zShapeBuffer, xLength);
+						auto xOffset = shape::getIndexOffset(e, xShapeBuffer);
+                        auto zOffset = shape::getIndexOffset(sLength - e, zShapeBuffer);
 						result[zOffset] = dx[xOffset];
 					}
 				}
@@ -1192,7 +1192,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			void *vx, Nd4jLong *xShapeBuffer,
 			void *vresult, Nd4jLong *zShapeBuffer,
 			void *vextraParams,
-			int *allocationPointer, void *reductionPointer, 
+			int *allocationPointer, void *reductionPointer,
             Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dx = reinterpret_cast<X *>(vx);
@@ -1263,10 +1263,10 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         tadShapeInfo = tadPack.primaryShapeInfo();
                         tadOffsets = tadPack.primaryOffsets();
                     }
-                    
+
                     const uint tadLen    = shape::length(tadShapeInfo);
                     const uint numOfTads = shape::length(xShapeInfo) / tadLen;
-        
+
                     if(shape::elementWiseStride(tadShapeInfo) == 1) {
 
                         PRAGMA_OMP_PARALLEL_FOR_SIMD
@@ -1277,18 +1277,18 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
                             X max = -nd4j::DataTypeUtils::max<X>();
                             X sum = 0;
-                        
+
                             for(uint j = 0; j < tadLen; ++j)
-                                max = nd4j::math::nd4j_max<X>(max, inBuff[j]);            
-            
+                                max = nd4j::math::nd4j_max<X>(max, inBuff[j]);
+
                             for (uint j = 0; j < tadLen; ++j) {
                                 X temp = nd4j::math::nd4j_exp<X,X>(inBuff[j] - max);
                                 outBuff[j] = temp;
                                 sum += temp;
                             }
-            
+
                             for (uint j = 0; j < tadLen; ++j)
-                            outBuff[j] /= sum;            
+                            outBuff[j] /= sum;
                         }
                     }
                     else {
@@ -1300,17 +1300,17 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
                         shape::calcOffsets(tadShapeInfo, offsets);
 
                         PRAGMA_OMP_PARALLEL_FOR_SIMD
-                        for (uint i = 0; i < numOfTads; ++i) {                        
+                        for (uint i = 0; i < numOfTads; ++i) {
 
                             X* inBuff  = x  + tadOffsets[i];
                             X* outBuff = z + tadOffsets[i];
 
                             X max = -nd4j::DataTypeUtils::max<X>();
-                            X sum = 0.f;                                
+                            X sum = 0.f;
 
-                            for(uint j = 0; j < tadLen; ++j)                                 
-                                max = nd4j::math::nd4j_max<X>(max, inBuff[offsets[j]]);                            
-            
+                            for(uint j = 0; j < tadLen; ++j)
+                                max = nd4j::math::nd4j_max<X>(max, inBuff[offsets[j]]);
+
                             for (uint j = 0; j < tadLen; ++j) {
                                 X temp = nd4j::math::nd4j_exp<X,X>(inBuff[offsets[j]] - max);
                                 outBuff[offsets[j]] = temp;
@@ -1351,7 +1351,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 
                     delete[] maxResultShapeBuffer;
                     delete[] maxResult;
-                }                
+                }
             }
             else if (shape::isVector(xShapeInfo)) {
                 auto max = -nd4j::DataTypeUtils::max<X>();
@@ -1416,7 +1416,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             			void *vx, Nd4jLong *xShapeBuffer,
             			void *vresult, Nd4jLong *zShapeBuffer,
             			void *vextraParams,
-            			int *allocationPointer, void *reductionPointer, 
+            			int *allocationPointer, void *reductionPointer,
                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 			auto shape = shape::shapeOf(xShapeBuffer);
@@ -1578,7 +1578,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 			                 void *vx, Nd4jLong *xShapeBuffer,
 			                 void *vresult, Nd4jLong *zShapeBuffer,
 			                 void *vextraParams,
-			                 int *allocationPointer, void *reductionPointer, 
+			                 int *allocationPointer, void *reductionPointer,
                              Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dx = reinterpret_cast<X *>(vx);
@@ -1650,7 +1650,7 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
             auto dx = reinterpret_cast<X *>(vx);
             auto result = reinterpret_cast<X *>(vresult);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
-            
+
 			if (shape::isMatrix(xShapeBuffer, 2)) {
 				auto shape = shape::shapeOf(xShapeBuffer);
 
@@ -1700,9 +1700,9 @@ static void execSpecial(T *in, Nd4jLong *inShapeBuffer, Z *out, Nd4jLong *outSha
 					}
 				}
 				else {
-                    
-                    for (int i = 0; i < len; i++) {                        
-                        Nd4jLong zOffset = shape::getIndexOffset(i, zShapeBuffer, len);
+
+                    for (int i = 0; i < len; i++) {
+                        Nd4jLong zOffset = shape::getIndexOffset(i, zShapeBuffer);
                         result[zOffset] = result[zOffset] * ((X) 1.0f - result[zOffset]);
                     }
                 }
@@ -2013,8 +2013,8 @@ PRAGMA_OMP_CRITICAL
 		static inline __device__ void execSpecialCuda(
 			             void *vx, Nd4jLong *xShapeBuffer,
 			             void *vresult, Nd4jLong *zShapeBuffer,
-			             void *vextraParams, int *allocationPointer, 
-                         void *reductionPointer, 
+			             void *vextraParams, int *allocationPointer,
+                         void *reductionPointer,
                          Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dx = reinterpret_cast<X *>(vx);
@@ -2162,7 +2162,7 @@ PRAGMA_OMP_CRITICAL
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
                 //to the back.
-                //permuted version of the x shape info for setting up the tad problem				
+                //permuted version of the x shape info for setting up the tad problem
 				auto tadShapeShapeInfo = tadShapeInfo;
 				if(tadShapeInfo==nullptr) {
                     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(xShapeBuffer, dimension, dimensionLength);
@@ -2170,7 +2170,7 @@ PRAGMA_OMP_CRITICAL
 					tadShapeShapeInfo = tadPack.primaryShapeInfo();
 					tadOffsets = tadPack.primaryOffsets();
                     tadShapeInfo = tadShapeShapeInfo;
-				}						                                				
+				}
 
                 auto tadLength = shape::length(tadShapeInfo);//shape::tadLength(xShapeBuffer, dimension, dimensionLength);
                 auto tads = shape::length(xShapeBuffer) / tadLength;

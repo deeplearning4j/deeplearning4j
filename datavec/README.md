@@ -32,7 +32,7 @@ static data and for sequences (time series). Such operations can be executed on 
 
 Apart from obviously providing readers for classic data formats, DataVec also provides an interface. So if you wanted to
 ingest specific custom data, you wouldn't have to build the whole pipeline. You would just have to write the very first step. For example, if you describe through the API how your data fits into a common format that complies with the interface, DataVec
-would return a list of Writables for each record. You'll find more detail on the API in the corresponding [module](https://github.com/deeplearning4j/DataVec/tree/master/datavec-api).
+would return a list of Writables for each record. You'll find more detail on the API in the corresponding [module](https://github.com/eclipse/deeplearning4j/tree/master/datavec/datavec-api).
 
 Another thing you can do with DataVec is data cleaning. Instead of having clean, ready-to-go data, let's say you start with data in different forms or from different sources. You might need to do sampling, filtering, or several incredibly messy ETL tasks needed to prepare data in the real world. DataVec offers filters and transformations that help with curating, preparing and massaging your data. It leverages Apache Spark to do this at scale.
 
@@ -51,7 +51,7 @@ to be locked into a single tool, and using [Apache Flink](https://flink.apache.o
 ## Examples
 
 Examples for using DataVec are available
-here: [https://github.com/deeplearning4j/dl4j-examples](https://github.com/deeplearning4j/dl4j-examples)
+here: [https://github.com/eclipse/deeplearning4j-examples](https://github.com/eclipse/deeplearning4j-examples)
 
 
 ---
@@ -91,7 +91,7 @@ It's useful to know which maintainers to contact to get information on a particu
 1. Check for open issues, or open a new issue to start a discussion around a feature idea or a bug.
 2. If you feel uncomfortable or uncertain about an issue or your changes, feel free to contact us on Gitter using the
    link above.
-3. Fork [the repository](https://github.com/deeplearning4j/datavec.git) on GitHub to start making your changes.
+3. Fork [the repository](https://github.com/eclipse/deeplearning4j.git) on GitHub to start making your changes.
 4. Write a test, which shows that the bug was fixed or that the feature works as expected.
 5. Note the repository follows the [Google Java style](https://google.github.io/styleguide/javaguide.html) with two
    modifications: 120-char column wrap and 4-spaces indentation. You can format your code to this format by typing `mvn

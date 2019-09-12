@@ -61,8 +61,8 @@ namespace nd4j {
             } else {
 
                 for (Nd4jLong j = threadIdx.x; j < tadLength; j += blockDim.x) {
-                    auto xOffset = shape::getIndexOffset(j, tadShapeInfo, tadLength);
-                    auto zOffset = shape::getIndexOffset(j, zShapeInfo, tadLength);
+                    auto xOffset = shape::getIndexOffset(j, tadShapeInfo);
+                    auto zOffset = shape::getIndexOffset(j, zShapeInfo);
 
                     z[zOffset] = s[xOffset];
                 }

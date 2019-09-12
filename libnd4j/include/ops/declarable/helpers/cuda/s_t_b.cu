@@ -62,14 +62,14 @@ __global__ static void batchToSpaceCuda(const void* vx, const Nd4jLong* xShapeIn
     if(i >= zLen)
         return;
 
-    shape::index2coords(rank, zShapeInfo + 1, i, zLen, coords);
+    shape::index2coords(i, zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     coords[1] += cropBottom;
     coords[2] += cropLeft;
 
-    const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
+    const auto xOffset = shape::getOffset(xShapeInfo, coords);
 
     z[zOffset] = x[xOffset];
 
@@ -156,9 +156,9 @@ __global__ static void batchToSpaceNDCuda(const void* vx, const Nd4jLong* xShape
 
     for (int i = blockIdx.x * blockDim.x + threadIdx.x; i < zLen; i += gridDim.x * blockDim.x) {
 
-        shape::index2coords(rank, zShapeInfo + 1, i, zLen, coords);
+        shape::index2coords(i, zShapeInfo, coords);
 
-        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+        const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
         // evaluate spatial coordinates for x
         for(uint j = 1; j <= numOfSpatialDims; ++j) {
@@ -166,7 +166,7 @@ __global__ static void batchToSpaceNDCuda(const void* vx, const Nd4jLong* xShape
             coords[j] += y[yOffset];                        // add crop left
         }
 
-        const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
+        const auto xOffset = shape::getOffset(xShapeInfo, coords);
 
         z[zOffset] = x[xOffset];
     }
@@ -283,16 +283,16 @@ __global__ static void spaceToBatchCuda(const void* vx, const Nd4jLong* xShapeIn
     if(i >= zLen)
         return;
 
-    shape::index2coords(rank, zShapeInfo + 1, i, zLen, coords);
+    shape::index2coords(i, zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     if(coords[1] >= padBottom && coords[1] < zShapeInfo[2] - padTop && coords[2] >= padLeft && coords[2] < zShapeInfo[3] - padRight) {
 
         coords[1] -= padBottom;
         coords[2] -= padLeft;
 
-        const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
+        const auto xOffset = shape::getOffset(xShapeInfo, coords);
 
         z[zOffset] = x[xOffset];
     }
@@ -383,9 +383,9 @@ __global__ static void spaceToBatchNDCuda(const void* vx, const Nd4jLong* xShape
 
     for (int i = blockDim.x * blockIdx.x + threadIdx.x; i < zLen; i += totalThreads) {
 
-        shape::index2coords(rank, zShapeInfo + 1, i, zLen, coords);
+        shape::index2coords(i, zShapeInfo, coords);
 
-        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+        const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
         bool within = true;
 
@@ -405,7 +405,7 @@ __global__ static void spaceToBatchNDCuda(const void* vx, const Nd4jLong* xShape
         }
 
         if(within)
-            z[zOffset] = x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+            z[zOffset] = x[shape::getOffset(xShapeInfo, coords)];
         else
             z[zOffset] = 0.f;
     }

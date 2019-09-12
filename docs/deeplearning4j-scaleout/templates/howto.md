@@ -101,7 +101,7 @@ When using Spark submit, you will need an uber-jar to submit to start and run yo
 
 We recommend that you use the maven shade plugin for building an uber-jar. There are alternative tools/plugins for this purpose, but these do not always include all relevant files from the source jars, such as those required for Java's ServiceLoader mechanism to function correctly. (The ServiceLoader mechanism is used by ND4J and a lot of other software libraries).
 
-A Maven shade configuration suitable for this purpose is provided in the example standalone sample project [pom.xml file](https://github.com/deeplearning4j/dl4j-examples/blob/master/standalone-sample-project/pom.xml):
+A Maven shade configuration suitable for this purpose is provided in the example standalone sample project [pom.xml file](https://github.com/eclipse/deeplearning4j-examples/blob/master/standalone-sample-project/pom.xml):
 ```
 <build>
     <plugins>
@@ -191,7 +191,7 @@ If resources (i.e., the number of available GPU machines) are not constrained, i
 
 Assuming the master/driver is executing on a CPU machine, and the workers are executing on GPU machines, you can simply include both backends (i.e., both the ```nd4j-cuda-x.x``` and ```nd4j-native``` dependencies as described in the [uber-jar section](#uberjar)).
 
-When multiple backends are present on the classpath, by default the CUDA backend will be tried first. If this cannot be loaded, the CPU (nd4j-native) backend will be loaded second. Thus, if the driver does not have a GPU, it should fall back to using a CPU. However, this default behaviour can be changed by setting the ```BACKEND_PRIORITY_CPU``` or ```BACKEND_PRIORITY_GPU``` environment variables on the master/driver, as described [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/config/ND4JEnvironmentVars.java).
+When multiple backends are present on the classpath, by default the CUDA backend will be tried first. If this cannot be loaded, the CPU (nd4j-native) backend will be loaded second. Thus, if the driver does not have a GPU, it should fall back to using a CPU. However, this default behaviour can be changed by setting the ```BACKEND_PRIORITY_CPU``` or ```BACKEND_PRIORITY_GPU``` environment variables on the master/driver, as described [here](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/config/ND4JEnvironmentVars.java).
 The exact process for setting environment variables may depend on the cluster manager - Spark standalone vs. YARN vs. Mesos. Please consult the documentation for each on how to set the environment variables for Spark jobs for the driver/master.
 
 <br><br>
@@ -324,9 +324,9 @@ Both too large thresholds and too small thresholds can result in sub-optimal per
 * Large thresholds mean infrequent communication - too infrequent and convergence can suffer
 * Small thresholds mean more frequent communication - but smaller changes are communicated at each step
 
-The encoding threshold to be used is controlled by the [ThresholdAlgorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/ThresholdAlgorithm.java). The specific implementation of the ThresholdAlgorithm determines what threshold should be used.
+The encoding threshold to be used is controlled by the [ThresholdAlgorithm](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/ThresholdAlgorithm.java). The specific implementation of the ThresholdAlgorithm determines what threshold should be used.
 
-The default behaviour for DL4J is to use [AdaptiveThresholdAlgorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold/AdaptiveThresholdAlgorithm.java) which tries to keep the sparsity ratio in a certain range.
+The default behaviour for DL4J is to use [AdaptiveThresholdAlgorithm](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold/AdaptiveThresholdAlgorithm.java) which tries to keep the sparsity ratio in a certain range.
 * The sparsity ratio is defined as numValues(encodedUpdate)/numParameters - 1.0 means fully dense (all values communicated), 0.0 means fully sparse (no values communicated)
 * Larger thresholds mean more sparse values (less network communication), and a smaller threshold means less sparse values (more network communication)
 * The AdaptiveThresholdAlgorithm tries to keep the sparsity ratio between 0.01 and 0.0001 by default. If the sparsity of the updates falls outside of this range, the threshold is either increased or decreased until it is within this range.
@@ -336,10 +336,10 @@ In practice, we have seen that this adaptive threshold process to work well.
 The built-in implementations for threshold algorithms include:
 
 * AdaptiveThresholdAlgorithm
-* [FixedThresholdAlgorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold/FixedThresholdAlgorithm.java): a fixed, non-adaptive threshold using the specified encoding threshold.
-* [TargetSparsityThresholdAlgorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold/TargetSparsityThresholdAlgorithm.java): an adaptive threshold algorithm that targets a specific sparsity, and increases or decreases the threshold to try to match the target.
+* [FixedThresholdAlgorithm](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold/FixedThresholdAlgorithm.java): a fixed, non-adaptive threshold using the specified encoding threshold.
+* [TargetSparsityThresholdAlgorithm](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/threshold/TargetSparsityThresholdAlgorithm.java): an adaptive threshold algorithm that targets a specific sparsity, and increases or decreases the threshold to try to match the target.
 
-In addition, DL4J has a [ResidualPostProcessor](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/ResidualPostProcessor.java) interface, with the default implementation being [ResidualClippingPostProcessor](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/residual/ResidualClippingPostProcessor.java) which clips the residual vector to a maximum of 5x the current threshold, every 5 steps.
+In addition, DL4J has a [ResidualPostProcessor](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/ResidualPostProcessor.java) interface, with the default implementation being [ResidualClippingPostProcessor](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/optimize/solvers/accumulation/encoding/residual/ResidualClippingPostProcessor.java) which clips the residual vector to a maximum of 5x the current threshold, every 5 steps.
 The motivation for this is that the "left over" parts of the updates (i.e., those parts not communicated) are store in the residual vector. If the updates are much larger than the threshold, we can have a phenomenon we have termed "residual explosion" - that is, the residual values can continue to grow to many times the threshold (hence would take many steps to communicate the gradient). The residual post processor is used to avoid this phenomenon.
 
 The threshold algorithm (and initial threshold) and the residual post processor can be set as follows:

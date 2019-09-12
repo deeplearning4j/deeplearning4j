@@ -37,14 +37,14 @@ public class TensorArrayConcat extends BaseTensorOp {
     }
 
     public TensorArrayConcat(){}
-   @Override
+    @Override
     public String onnxName() {
         throw new NoOpNameFoundException("No onnx op name found for " + opName());
     }
 
     @Override
-    public String tensorflowName() {
-        return "TensorArrayConcatV3";
+    public String[] tensorflowNames() {
+        return new String[]{"TensorArrayConcat", "TensorArrayConcatV2", "TensorArrayConcatV3"};
     }
 
 

@@ -54,8 +54,8 @@ __global__ void execOesTadKernelKey(void *vx, Nd4jLong *xShapeInfo,
                 for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
                     auto top = 2 * tid + 1;
                     if (top < xTadLength) {
-                        auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo, xTadLength);
-                        auto t1 = shape::getIndexOffset(top, tadShapeInfo, xTadLength);
+                        auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo);
+                        auto t1 = shape::getIndexOffset(top, tadShapeInfo);
 
                         if (!descending == (dx[t0] > dx[t1])) {
                             X dt0 = dx[t0];
@@ -72,8 +72,8 @@ __global__ void execOesTadKernelKey(void *vx, Nd4jLong *xShapeInfo,
                 for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
                     auto top = 2 * tid + 2;
                     if (top < xTadLength) {
-                        auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo, xTadLength);
-                        auto t1 = shape::getIndexOffset(top, tadShapeInfo, xTadLength);
+                        auto t0 = shape::getIndexOffset(top - 1, tadShapeInfo);
+                        auto t1 = shape::getIndexOffset(top, tadShapeInfo);
 
                         if (!descending == (dx[t0] > dx[t1])) {
                             X dt0 = dx[t0];
@@ -126,7 +126,7 @@ __global__ void execOesTadKernel(void *vx, Nd4jLong *xShapeInfo,
         int iterations = xTadLength;
         if (cached) {
             for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-                auto t0 = shape::getIndexOffset(tid, tadShapeInfo, xTadLength);
+                auto t0 = shape::getIndexOffset(tid, tadShapeInfo);
                 shmem[tid] = dx[t0];
             }
 
@@ -140,8 +140,8 @@ __global__ void execOesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                 for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
                     auto top = 2 * tid + 1;
                     if (top < xTadLength) {
-                        auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo, xTadLength);
-                        auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo, xTadLength);
+                        auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo);
+                        auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo);
 
                         if (!descending == (dx[t0] > dx[t1])) {
                             T dt0 = dx[t0];
@@ -154,8 +154,8 @@ __global__ void execOesTadKernel(void *vx, Nd4jLong *xShapeInfo,
                 for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
                     auto top = 2 * tid + 2;
                     if (top < xTadLength) {
-                        auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo, xTadLength);
-                        auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo, xTadLength);
+                        auto t0 = cached ? top - 1 : shape::getIndexOffset(top - 1, tadShapeInfo);
+                        auto t1 = cached ? top : shape::getIndexOffset(top, tadShapeInfo);
 
                         if (!descending == (dx[t0] > dx[t1])) {
                             T dt0 = dx[t0];
@@ -172,7 +172,7 @@ __global__ void execOesTadKernel(void *vx, Nd4jLong *xShapeInfo,
         if (cached) {
             dx = x + tadOffsets[r];
             for (int tid = threadIdx.x; tid < xTadLength; tid += blockDim.x) {
-                auto t0 = shape::getIndexOffset(tid, tadShapeInfo, xTadLength);
+                auto t0 = shape::getIndexOffset(tid, tadShapeInfo);
                 dx[t0] = shmem[tid];
             }
         }

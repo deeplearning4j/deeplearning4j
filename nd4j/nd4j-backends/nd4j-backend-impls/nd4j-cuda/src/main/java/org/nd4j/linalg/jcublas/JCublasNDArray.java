@@ -544,13 +544,6 @@ public class JCublasNDArray extends BaseNDArray {
         return LongShapeDescriptor.fromShape(shape(), stride(), elementWiseStride(), ordering(), dataType(), isEmpty());
     }
 
-    /**
-     * This method does direct array copy. Impossible to use on views or mixed orders.
-     *
-     * PLEASE NOTE: YOU SHOULD NEVER USE THIS METHOD, UNLESS YOU 100% CLEAR ABOUT IT
-     *
-     * @return
-     */
     @Override
     public INDArray unsafeDuplication() {
         return unsafeDuplication(true);
@@ -717,14 +710,6 @@ public class JCublasNDArray extends BaseNDArray {
         return copy;
     }
 
-
-    /**
-     * This method pulls this INDArray into current Workspace.
-     *
-     * PLEASE NOTE: If there's no current Workspace - INDArray returned as is
-     *
-     * @return
-     */
     @Override
     public INDArray migrate() {
         WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");

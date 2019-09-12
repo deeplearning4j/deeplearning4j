@@ -24,6 +24,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/convolutions.h>
+#include <ops/declarable/helpers/addBias.h>
 #include <MmulHelper.h>
 
 namespace nd4j {
@@ -80,7 +81,8 @@ CUSTOM_OP_IMPL(conv3dnew, 2, 1, false, 0, 13) {
     MmulHelper::tensorDot(&columns, weights, output, {1,2,3,4}, {3,0,1,2}, permutForOutput);
 
     if(bias)
-        output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        helpers::addBias(block, *output, *bias, *output, isNCDHW);
 
      if(!isNCDHW)
         delete input;

@@ -1259,7 +1259,7 @@ TEST_F(NDArrayTest2, reduce_1) {
             for (int x = 0; x < 4; x++) {
                 for (int y = 0; y < 4; y++) {
                     Nd4jLong indices[] = {0, 0, x, y, i, j};
-                    Nd4jLong offset = shape::getOffset(0, arr6.shapeOf(), arr6.stridesOf(), indices, arr6.rankOf());
+                    Nd4jLong offset = shape::getOffset(arr6.getShapeInfo(), indices);
                     sum += ((double*)arr6.getBuffer())[offset];
                 }
             }

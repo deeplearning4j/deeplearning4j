@@ -58,7 +58,7 @@ Some concepts you should be familiar with:
 
 In terms of indexing there are a few things to know. First, rows are dimension 0, and columns are dimension 1: thus `INDArray.size(0)` is the number of rows, and `INDArray.size(1)` is the number of columns. Like normal arrays in most programming languages, indexing is zero-based: thus rows have indexes `0` to `INDArray.size(0)-1`, and so on for the other dimensions.
 
-Throughout this document, we'll use the term `NDArray` to refer to the general concept of an n-dimensional array; the term `INDArray` refers specifically to the [Java interface](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ndarray/INDArray.java) that ND4J defines. In practice, these two terms can be used interchangeably.
+Throughout this document, we'll use the term `NDArray` to refer to the general concept of an n-dimensional array; the term `INDArray` refers specifically to the [Java interface](https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ndarray/INDArray.java) that ND4J defines. In practice, these two terms can be used interchangeably.
 
 ### <a name="inmemory">NDArrays: How Are They Stored in Memory?</a>
 
@@ -470,7 +470,7 @@ Note that with the `x.add(y)` operation, the original array `x` is not modified.
 
 ### <a name="opsscalar">Scalar Ops</a>
 
-[Scalar ops](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/scalar) are element-wise operations that also take a scalar (i.e., a number). Examples of scalar ops are  add, max, multiply, set and divide operations (see the previous link for a full list).
+[Scalar ops](https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/scalar) are element-wise operations that also take a scalar (i.e., a number). Examples of scalar ops are  add, max, multiply, set and divide operations (see the previous link for a full list).
 
 A number of the methods such as `INDArray.addi(Number)` and `INDArray.divi(Number)` actually execute scalar ops behind the scenes, so when available, it is more convenient to use these methods.
 
@@ -491,7 +491,7 @@ To execute an element-wise tanh operation directly (on the full NDArray) you can
 `INDArray tanh = Nd4j.getExecutioner().execAndReturn(new Tanh(myArr))`
 As with scalar ops mentioned above, transform operations using the above method are *in-place* operations: that is, the NDArray myArr is modified, and the returned array `tanh` is actually the same object as the input `myArr`. Again, you can use `myArr.dup()` if you want a copy.
 
-The [Transforms class](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/ops/transforms/Transforms.java) also defines some convenience methods, such as: `INDArray tanh = Transforms.tanh(INDArray in,boolean copy);` This is equivalent to the method using `Nd4j.getExecutioner()` above.
+The [Transforms class](https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/ops/transforms/Transforms.java) also defines some convenience methods, such as: `INDArray tanh = Transforms.tanh(INDArray in,boolean copy);` This is equivalent to the method using `Nd4j.getExecutioner()` above.
 
 ### <a name="opsaccum">Accumulation (Reduction) Ops</a>
 
@@ -524,7 +524,7 @@ Accumulations along dimensions also generalize to NDArrays with 3 or more dimens
 
 ### <a name="opsindexaccum">Index Accumulation Ops</a>
 
-[Index accumulation ops](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/indexaccum) are very similar to accumulation ops. The difference is that they return an integer index, instead of a double values.
+[Index accumulation ops](https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl/indexaccum) are very similar to accumulation ops. The difference is that they return an integer index, instead of a double values.
 
 Examples of index accumulation ops are IMax (argmax), IMin (argmin) and IAMax (argmax of absolute values).
 
@@ -561,7 +561,7 @@ As with other ops, there are inplace and copy versions. There are also column co
 
 [This section: Forthcoming.]
 
-[Link: Boolean Indexing Unit Tests](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-tests/src/test/java/org/nd4j/linalg/indexing/BooleanIndexingTest.java)
+[Link: Boolean Indexing Unit Tests](https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-tests/src/test/java/org/nd4j/linalg/indexing/BooleanIndexingTest.java)
 
 
 ## <a name="workspaces">Workspaces</a>
@@ -571,7 +571,7 @@ Workspaces are a feature of ND4J used to improve performance, by means of more e
 For more details on workspaces, see the following links:
 
 * <a href="https://deeplearning4j.org/workspaces">Deeplearning4j Guide to Workspaces</a>
-* <a href="https://github.com/deeplearning4j/dl4j-examples/blob/master/nd4j-examples/src/main/java/org/nd4j/examples/Nd4jEx15_Workspaces.java">Workspaces Examples</a>
+* <a href="https://github.com/eclipse/deeplearning4j-examples/blob/master/nd4j-examples/src/main/java/org/nd4j/examples/Nd4jEx15_Workspaces.java">Workspaces Examples</a>
 
 ### <a name="workspaces-panic">Workspaces: Scope Panic</a>
 
@@ -722,7 +722,7 @@ arrRead = Nd4j.readTxt("tmp.txt");
 arrRead =Nd4j.readNumpy("tmp.csv", ", ");
 ```
 
-The [nd4j-serde](https://github.com/deeplearning4j/nd4j/tree/master/nd4j-serde) directory provides packages for Aeron, base64, camel-routes, gsom, jackson and kryo.  
+The [nd4j-serde](https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-serde) directory provides packages for Aeron, base64, camel-routes, gsom, jackson and kryo.  
 
 
 ## <a name="quickref">Quick Reference: A Summary Overview of ND4J Methods</a>
@@ -804,7 +804,7 @@ Note: all of these methods return
 
 **Element-Wise Transforms (Tanh, Sigmoid, Sin, Log etc)**:
 
-* Using [Transforms](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/ops/transforms/Transforms.java): `Transforms.sin(INDArray)`, `Transforms.log(INDArray)`, `Transforms.sigmoid(INDArray)` etc
+* Using [Transforms](https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/ops/transforms/Transforms.java): `Transforms.sin(INDArray)`, `Transforms.log(INDArray)`, `Transforms.sigmoid(INDArray)` etc
 * Directly (method 1): `Nd4j.getExecutioner().execAndReturn(new Tanh(INDArray))`
 * Directly (method 2) `Nd4j.getExecutioner().execAndReturn(Nd4j.getOpFactory().createTransform("tanh",INDArray))`
 

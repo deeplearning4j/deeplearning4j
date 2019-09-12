@@ -9,7 +9,7 @@ weight: 10
 
 For the complete nd4j-api index, please consult the [Javadoc](../doc).
 
-There are three types of operations used in ND4J: scalars, transforms and accumulations. We’ll use the word op synonymously with operation. You can see the lists of those three kinds of [ND4J ops under the directories here]( https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl
+There are three types of operations used in ND4J: scalars, transforms and accumulations. We’ll use the word op synonymously with operation. You can see the lists of those three kinds of [ND4J ops under the directories here]( https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/api/ops/impl
 ). Each Java file in each list is an op.
 
 Most of the ops just take [enums](https://docs.oracle.com/javase/tutorial/java/javaOO/enum.html), or a list of discrete values that you can autocomplete. Activation functions are the exception, because they take strings such as `"relu"` or `"tanh"`.
@@ -49,7 +49,7 @@ As you can see, there are three possible argument types with ND4J ops: inputs, o
 |Transforms.tanh(myArray)|Hyperbolic tangent: a sigmoidal function. This applies elementwise tanh inplace.|
 |Nd4j.getExecutioner().exec(Nd4j.getOpFactory() .createTransform("tanh", myArray))|equivalent to the above|
 
-For other transforms, [please see this page](https://github.com/deeplearning4j/nd4j/blob/master/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/ops/transforms/Transforms.java).
+For other transforms, [please see this page](https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/linalg/ops/transforms/Transforms.java).
 
 Here are two examples of performing `z = tanh(x)`, in which the original array `x` is unmodified.
 ```java

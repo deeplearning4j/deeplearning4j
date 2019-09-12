@@ -109,7 +109,7 @@ This can be fixed by running:
 1. Use the command line to enter the following:
 
 ```shell
-$ git clone https://github.com/deeplearning4j/dl4j-examples.git
+$ git clone https://github.com/eclipse/deeplearning4j-examples.git
 $ cd dl4j-examples/
 $ mvn clean install
 ```
@@ -135,9 +135,9 @@ To run DL4J in your own projects, we highly recommend using Maven for Java users
 - `nd4j-native-platform`, the CPU version of the ND4J library that powers DL4J
 - `datavec-api` - Datavec is our library vectorizing and loading data
 
-Every Maven project has a POM file. Here is [how the POM file should appear](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml) when you run your examples.
+Every Maven project has a POM file. Here is [how the POM file should appear](https://github.com/eclipse/deeplearning4j-examples/blob/master/pom.xml) when you run your examples.
 
-Within IntelliJ, you will need to choose the first Deeplearning4j example you're going to run. We suggest `MLPClassifierLinear`, as you will almost immediately see the network classify two groups of data in our UI. The file on [Github can be found here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java).
+Within IntelliJ, you will need to choose the first Deeplearning4j example you're going to run. We suggest `MLPClassifierLinear`, as you will almost immediately see the network classify two groups of data in our UI. The file on [Github can be found here](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/classification/MLPClassifierLinear.java).
 
 To run the example, right click on it and select the green button in the drop-down menu. You will see, in IntelliJ's bottom window, a series of scores. The rightmost number is the error score for the network's classifications. If your network is learning, then that number will decrease over time with each batch it processes. At the end, this window will tell you how accurate your neural-network model has become:
 
@@ -225,11 +225,11 @@ Deeplearning4j is a framework that lets you pick and choose with everything avai
 
 If you'd like to deploy models to production, you might like our [model import from Keras](./keras-import-get-started).
 
-Deeplearning4j has several submodules. These range from a visualization UI to distributed training on Spark. For an overview of these modules, please look at the [**Deeplearning4j examples on Github**](https://github.com/deeplearning4j/dl4j-examples).
+Deeplearning4j has several submodules. These range from a visualization UI to distributed training on Spark. For an overview of these modules, please look at the [**Deeplearning4j examples on Github**](https://github.com/eclipse/deeplearning4j-examples).
 
-To get started with a simple desktop app, you need two things: An [nd4j backend](http://nd4j.org/backend.html) and `deeplearning4j-core`. For more code, see the [simpler examples submodule](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/pom.xml#L64).
+To get started with a simple desktop app, you need two things: An [nd4j backend](http://nd4j.org/backend.html) and `deeplearning4j-core`. For more code, see the [simpler examples submodule](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/pom.xml#L64).
 
-If you want a flexible deep-learning API, there are two ways to go.  You can use nd4j standalone See our [nd4j examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/nd4j-examples) or the [computation graph API](http://deeplearning4j.org/compgraph).
+If you want a flexible deep-learning API, there are two ways to go.  You can use nd4j standalone See our [nd4j examples](https://github.com/eclipse/deeplearning4j-examples/tree/master/nd4j-examples) or the [computation graph API](http://deeplearning4j.org/compgraph).
 
 If you want distributed training on Spark, you can see our [Spark page](http://deeplearning4j.org/spark)
 Keep in mind that we cannot setup Spark for you. If you want to set up distributed Spark and GPUs, that is largely up to you. Deeplearning4j simply deploys as a JAR file on an existing Spark cluster.
@@ -239,13 +239,13 @@ If you want Spark with GPUs, we recommend [Spark with Mesos](https://spark.apach
 If you want to deploy on mobile, you can see our [Android page](./deeplearning4j-android).
 
 We deploy optimized code for various hardware architectures natively. We use C++ based for loops just like everybody else.
-For that, please see our [C++ framework libnd4j](https://github.com/deeplearning4j/libnd4j).
+For that, please see our [C++ framework libnd4j](https://github.com/eclipse/deeplearning4j/tree/master/libnd4j).
 
 Deeplearning4j has two other notable components:
 
 * [Arbiter: hyperparameter optimization and model evaluation](./arbiter-overview)
 * [DataVec: built-in ETL for machine-learning data pipelines](./datavec-overview)
 
-Deeplearning4j is meant to be an end-to-end platform for building real applications, not just a tensor library with automatic differentiation. If you want a tensor library with autodiff, please see ND4J and [samediff](https://github.com/deeplearning4j/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff). Samediff is still in alpha, but if you want to contribute, please join our [live chat on Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
+Deeplearning4j is meant to be an end-to-end platform for building real applications, not just a tensor library with automatic differentiation. If you want a tensor library with autodiff, please see ND4J and [samediff](https://github.com/eclipse/deeplearning4j/tree/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/autodiff). Samediff is still in alpha, but if you want to contribute, please join our [live chat on Gitter](https://gitter.im/deeplearning4j/deeplearning4j).
 
 Lastly, if you are benchmarking Deeplearnin4j, please consider coming in to our live chat and asking for tips. Deeplearning4j has [all the knobs](./deeplearning4j-config-gpu-cpu), but some may not work exactly like the Python frameworks to do. You have to build Deeplearning4j from source for some applications.

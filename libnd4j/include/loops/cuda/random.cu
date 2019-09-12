@@ -116,7 +116,7 @@ namespace functions {
                 auto y = reinterpret_cast<T*>(vy);
                 auto z = reinterpret_cast<T*>(vz);
                 auto extraArguments = reinterpret_cast<T*>(vextraArguments);
-                
+
                 if (OpClass::requiresSpecial) {
                     OpClass::specialOpCuda(state, x, xShapeBuffer, y, yShapeBuffer, z, zShapeBuffer, extraArguments);
                     return;
@@ -166,10 +166,10 @@ namespace functions {
                     }
                 } else {
                     for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {
-                        
-                        auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer, length);
-                        auto yOffset2 = shape::getIndexOffset(i, yShapeBuffer, length);
-                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);                        
+
+                        auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer);
+                        auto yOffset2 = shape::getIndexOffset(i, yShapeBuffer);
+                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
 
                             z[zOffset2] = OpClass::op(x[xOffset2], y[yOffset2], i, length, buffer, extraArguments);
                         }
@@ -224,11 +224,11 @@ namespace functions {
                         z[e * zEWS] = OpClass::op(x[e * xEWS], e, length, buffer, extraArguments);
                     }
                 } else {
-                    
+
                     for (Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x; i < length; i += blockDim.x * gridDim.x) {
-                        
-                        auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer, length);
-                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);
+
+                        auto xOffset2 = shape::getIndexOffset(i, xShapeBuffer);
+                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
 
                         z[zOffset2] = OpClass::op(x[xOffset2], i, length, buffer, extraArguments);
                     }
@@ -274,9 +274,9 @@ namespace functions {
                         z[i * ews] = OpClass::op(i, length, buffer, extraArguments);
                     }
                 } else {
-                    
-                    for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {                        
-                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, length);
+
+                    for (Nd4jLong i = tid; i < length; i += blockDim.x * gridDim.x) {
+                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
                         z[zOffset2] = OpClass::op(i, length, buffer, extraArguments);
                     }
                 }
@@ -296,7 +296,7 @@ namespace functions {
 
         template <>
         _CUDA_H void RandomFunction<float16>::executeCudaSingle(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
-            
+
             auto z = reinterpret_cast<float16*>(vz);
             auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
 
@@ -320,7 +320,7 @@ namespace functions {
 
         template <>
         _CUDA_H void RandomFunction<double>::executeCudaSingle(dim3& launchDims, cudaStream_t *stream, int opNum, Nd4jPointer stateHost, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
-            
+
             auto z = reinterpret_cast<double*>(vz);
             auto extraArguments = reinterpret_cast<double*>(vextraArguments);
 
@@ -332,7 +332,7 @@ namespace functions {
 
         template <>
         _CUDA_H void RandomFunction<float>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
-            
+
             auto x = reinterpret_cast<float*>(vx);
             auto z = reinterpret_cast<float*>(vz);
             auto extraArguments = reinterpret_cast<float*>(vextraArguments);
@@ -346,7 +346,7 @@ namespace functions {
 
         template <>
         _CUDA_H void RandomFunction<float16>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
-            
+
             auto x = reinterpret_cast<float16*>(vx);
             auto z = reinterpret_cast<float16*>(vz);
             auto extraArguments = reinterpret_cast<float16*>(vextraArguments);
@@ -372,7 +372,7 @@ namespace functions {
 
         template <>
         _CUDA_H void RandomFunction<double>::executeCudaDouble(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
-            
+
             auto x = reinterpret_cast<double*>(vx);
             auto z = reinterpret_cast<double*>(vz);
             auto extraArguments = reinterpret_cast<double*>(vextraArguments);
@@ -385,7 +385,7 @@ namespace functions {
 
         template <>
         _CUDA_H void RandomFunction<float>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
-            
+
 
             auto x = reinterpret_cast<float*>(vx);
             auto y = reinterpret_cast<float*>(vy);
@@ -400,7 +400,7 @@ namespace functions {
 
         template <>
         _CUDA_H void RandomFunction<float16>::executeCudaTriple(dim3& launchDims, cudaStream_t* stream, int opNum, Nd4jPointer stateHost, void *vx, Nd4jLong *xShapeBuffer, void *vy, Nd4jLong *yShapeBuffer, void *vz, Nd4jLong *zShapeBuffer, void *vextraArguments) {
-            
+
             auto x = reinterpret_cast<float16*>(vx);
             auto y = reinterpret_cast<float16*>(vy);
             auto z = reinterpret_cast<float16*>(vz);

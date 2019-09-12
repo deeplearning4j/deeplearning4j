@@ -24,7 +24,14 @@
 namespace nd4j {
 namespace ops {
 namespace helpers {
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// diag functor cuda kernel
+// outputBuffer - output tensor buffer
+// outputShape - output tensor shape
+// inputBuffer - input tensor buffer - this tensor should be placed on diagonal position of output
+// inputShape - input tensor shape
+// inputLength - length for input tensor
+//
 template <typename T>
 static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputShape, void const* inputBuffer, Nd4jLong* inputShape, Nd4jLong inputLength) {
     __shared__ T *z;
@@ -41,12 +48,22 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
 
     const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
     const auto step = gridDim.x * blockDim.x;
-    for (int t = tid; t < inputLength; t += step) {
-        z[shape::getIndexOffset(t * (inputLength + 1), outputShape, outputLength)] = x[shape::getIndexOffset(t, inputShape, inputLength)]; //tX];
+
+    for (int t = tid; t < inputLength; t += step) { // for all vals in input, put all on diagonal position to output
+        z[shape::getIndexOffset(t * (inputLength + 1), outputShape)] = x[shape::getIndexOffset(t, inputShape)]; //tX];
     }
 
 }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// diag part functor cuda kernel
+// outputBuffer - output tensor buffer - linear sequence of diagonal values
+// outputShape - output tensor shape
+// inputBuffer - input tensor buffer - this tensor should be placed on diagonal position of output
+// inputShape - input tensor shape
+// outputLength - given length of output
+// inputLength - given length for input tensor
+//
     template <typename T>
     static __global__ void diagPartFunctorKernel(void* outputBuffer, Nd4jLong* outputShape, void const* inputBuffer, Nd4jLong* inputShape, Nd4jLong outputLength, Nd4jLong inputLength) {
         __shared__ T *z;
@@ -61,10 +78,11 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
 
         const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
-        Nd4jLong i = threadIdx.x * (outputLength + 1);
-        for (int t = tid; t < outputLength && i < inputLength; t += step) {
-            z[shape::getIndexOffset(t, outputShape, outputLength)] = x[shape::getIndexOffset(i, inputShape, inputLength)]; //tX];
-            i += outputLength + 1;
+        Nd4jLong i = threadIdx.x * (outputLength + 1); // pos to diagonal value
+        for (int t = tid; t < outputLength && i < inputLength; t += step) { // loop by output, but input matrix may not be square
+            // put diagonal val from input onto output
+            z[shape::getIndexOffset(t, outputShape)] = x[shape::getIndexOffset(i, inputShape)]; 
+            i += outputLength + 1; // shift to next diagonal value
         }
     }
 
@@ -81,6 +99,8 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
         diagFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), inputLength);
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// diagFunctor - caller for diag functor processor
     void diagFunctor(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
         auto xType = input->dataType();
 
@@ -89,6 +109,8 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
 
     BUILD_SINGLE_TEMPLATE(template void _diagFunctor, (nd4j::LaunchContext * context, const NDArray* input, NDArray* output);, LIBND4J_TYPES);
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// diagPartFunctor - caller for diag part functor kernel
     template <typename T>
     void _diagPartFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output) {
         const int outLen = output->lengthOf();
@@ -102,7 +124,8 @@ static __global__ void diagFunctorKernel(void* outputBuffer, Nd4jLong* outputSha
         diagPartFunctorKernel<T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(output->specialBuffer(), output->specialShapeInfo(), input->getSpecialBuffer(), input->getSpecialShapeInfo(), outLen, inLen);
     }
 
-
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// diagPartFunctor - caller for diag part functor processor
     void diagPartFunctor(nd4j::LaunchContext * context, NDArray const* input, NDArray* output) {
         auto zType = output->dataType();
         BUILD_SINGLE_SELECTOR(zType, _diagPartFunctor, (context, input, output), NUMERIC_TYPES);

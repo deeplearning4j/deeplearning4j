@@ -111,7 +111,7 @@ __device__ void transformSimpleGeneric(
 		manager->init(sizeof(UnifiedSharedMemory), 0, sizeof(functions::transform::Transform<T>), sizeof(shape::TAD), xRank);
 	}
 	__syncthreads();
-	
+
     functions::transform::Transform<T>::template transformCuda<OpClass>(
 	    dy,
 	    xShapeInfo,
@@ -161,7 +161,7 @@ namespace functions {
 
         template <>
         _CUDA_H void Transform<float>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, Nd4jLong *xShape, int xRank, float *extraParams, float *z, Nd4jLong *zShape, int zRank, int *allocationPointer, float *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-            
+
             DISPATCH_SIMPLE(transformShaped, float, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 
 
@@ -170,16 +170,16 @@ namespace functions {
 
         template <>
         _CUDA_H void Transform<float16>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, Nd4jLong *xShape, int xRank, float16 *extraParams, float16 *z, Nd4jLong *zShape, int zRank, int *allocationPointer, float16 *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-            
+
             DISPATCH_SIMPLE(transformShaped, float16, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
-            
+
             if (nd4j::Environment::getInstance()->isDebug())
 		        checkCudaErrors(cudaStreamSynchronize(*stream));
         }
 
         template <>
         _CUDA_H void Transform<double>::executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, Nd4jLong *xShape, int xRank, double *extraParams, double *z, Nd4jLong *zShape, int zRank, int *allocationPointer, double *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-            
+
             DISPATCH_SIMPLE(transformShaped, double, PARAMS(x, xShape, xRank, extraParams, z, zShape, zRank, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets), OPS_A(TRANSFORM_OPS))
 
             DEBUG_KERNEL(stream, opNum);
@@ -226,13 +226,13 @@ namespace functions {
 		        }
 		        else {
 			        Nd4jLong xCoord[MAX_RANK];
-			
+
 		    	    for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
 						shape::ind2sub(xRank,shape::shapeOf(shapeInfo),i, length, xCoord);
-						
-				        auto xOffset2 = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-						auto resultOffset2 = shape::getOffset(0,xShape,shape::stride(resultShapeInfo),xCoord,xRank);
-						
+
+				        auto xOffset2 = shape::getOffset(shapeInfo, xCoord);
+						auto resultOffset2 = shape::getOffset(resultShapeInfo, xCoord);
+
 	    			    result[resultOffset2] = OpType::op(dy[xOffset2], params);
 		    	    }
 		        }
@@ -249,7 +249,7 @@ namespace functions {
 			T *result,
 			Nd4jLong resultStride,
 			int *allocationPointer, T *reductionPointer, UnifiedSharedMemory *manager) {
-		
+
             int totalThreads = gridDim.x * blockDim.x;
 		    Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x;
 

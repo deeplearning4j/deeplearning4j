@@ -27,12 +27,12 @@ namespace ops {
 namespace helpers {
 
     template <typename Z>
-    static _CUDA_G void indicesFiller(void *vz, Nd4jLong *zShapeInfo, Nd4jLong zLength, Nd4jLong part, Nd4jLong bSize) {
+    static _CUDA_G void indicesFiller(void *vz, Nd4jLong *zShapeInfo, Nd4jLong part, Nd4jLong bSize) {
         auto z = reinterpret_cast<Z*>(vz);
 
         for (int b = blockIdx.x; b < bSize; b += gridDim.x) {
             for (Nd4jLong e = threadIdx.x; e < part; e += blockDim.x) {
-                z[shape::getIndexOffset(e + b * part, zShapeInfo, zLength)] = static_cast<Z>(e);
+                z[shape::getIndexOffset(e + b * part, zShapeInfo)] = static_cast<Z>(e);
             }
         }
     }
@@ -74,7 +74,7 @@ namespace helpers {
             auto total = input->lengthOf();
             auto part = total / bSize;
 
-            indicesFiller<Y><<<256, 256, 1024, *block.launchContext()->getCudaStream()>>>(indices->specialBuffer(), indices->specialShapeInfo(), indices->lengthOf(), part, bSize);
+            indicesFiller<Y><<<256, 256, 1024, *block.launchContext()->getCudaStream()>>>(indices->specialBuffer(), indices->specialShapeInfo(), part, bSize);
 
             /*
             for (int k = 0; k < total; )

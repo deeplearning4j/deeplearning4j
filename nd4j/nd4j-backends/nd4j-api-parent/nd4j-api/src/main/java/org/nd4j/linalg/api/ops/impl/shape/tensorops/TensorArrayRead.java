@@ -42,9 +42,10 @@ public class TensorArrayRead extends BaseTensorOp {
     }
 
     public TensorArrayRead(){}
+
     @Override
-    public String tensorflowName() {
-        return "TensorArrayReadV3";
+    public String[] tensorflowNames() {
+        return new String[]{"TensorArrayRead", "TensorArrayReadV2", "TensorArrayReadV3"};
     }
 
 

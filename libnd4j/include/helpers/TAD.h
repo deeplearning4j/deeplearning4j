@@ -526,7 +526,7 @@ namespace shape {
         /* int *sub = new int[leftOverIndexLen];
          shape::ind2subOrder(tadShape,index,len,sub);
         */
-        shape::index2coords(leftOverIndexLen,tadShape, index,len, sub);
+        shape::index2coords(index, leftOverIndexLen,tadShape, sub);
 
 
         for(int i = 0; i < leftOverIndexLen; i++) {
@@ -609,7 +609,7 @@ namespace shape {
         if(dimensionLength > 1) {
             Nd4jLong *tad2Sub = this->tad2Sub(index, ptrManager);
 
-            Nd4jLong ret = shape::getOffset(0,shape::shapeOf(shapeInfo),shape::stride(shapeInfo),tad2Sub,shape::rank(shapeInfo));
+            Nd4jLong ret = shape::getOffset(shapeInfo, tad2Sub);
 
             if(ret < 0) {
                 if (ptrManager == nullptr)
@@ -625,7 +625,7 @@ namespace shape {
         else {
             Nd4jLong *tad2Sub = this->tad2Sub(index, ptrManager);
 
-            Nd4jLong ret = shape::getOffset(0,shape::shapeOf(shapeInfo),shape::stride(shapeInfo),tad2Sub,shape::rank(shapeInfo));
+            Nd4jLong ret = shape::getOffset(shapeInfo, tad2Sub);
 
             if (ptrManager == nullptr)
                 delete[] tad2Sub;
@@ -703,7 +703,7 @@ namespace shape {
         /* int *sub = new int[leftOverIndexLen];
          shape::ind2subOrder(tadShape,index,len,sub);
         */
-        shape::index2coords(leftOverIndexLen,tadShape,index,len, sub);
+        shape::index2coords(index, leftOverIndexLen,tadShape, sub);
 
         for(int i = 0; i < leftOverIndexLen; i++) {
             ret[leftOverIndexes[i]] = sub[i];
@@ -732,7 +732,7 @@ namespace shape {
         //    return shape::createScalarShapeInfo();
 
         //ensure tad shapes get setup right for vectors
-        if(dimensionLength > 1 && shape::isVector(shapeInfo)) 
+        if(dimensionLength > 1 && shape::isVector(shapeInfo))
             return shape::copyOf(shape::shapeInfoLength(shape::rank(shapeInfo)),shapeInfo);
 
         // case when tad coincides with whole array

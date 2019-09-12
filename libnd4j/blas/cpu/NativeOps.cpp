@@ -1389,8 +1389,8 @@ void pullRowsGeneric(void *vx,
         }
         else {
             for (int i = 0; i < tadLength; i++) {
-                auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo, tadLength);
-                auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo, tadLength);
+                auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
+                auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
                 hZ[zOffset] = hX[xOffset];
             }
         }
@@ -1454,7 +1454,7 @@ void tearGeneric(void *vx,
         else {
 
             for (Nd4jLong j = 0; j < tadLength; j++)
-                hZ[shape::getIndexOffset(j, hZShapeInfo, tadLength)] = s[shape::getIndexOffset(j, tadShapeInfo, tadLength)];
+                hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
         }
     }
 }
@@ -1601,7 +1601,7 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
                     }
                 } else {
                     for (Nd4jLong i = 0; i < tadLength; i++) {
-                        auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
+                        auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
                         nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
                     }
                 }

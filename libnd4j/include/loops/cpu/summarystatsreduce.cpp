@@ -92,7 +92,7 @@ namespace functions {
 
             for (Nd4jLong i = 0; i < length; i++) {
 
-                auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCast);
+                auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCast);
 
                 SummaryStatsData<X> curr;
                 curr.initWithValue(x[xOffset]);
@@ -175,7 +175,7 @@ namespace functions {
                 }
                 else {
                     for (int i = 1; i < tadLength; i ++) {
-                        auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, tadLength, canCast);
+                        auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, canCast);
 
                         SummaryStatsData <X> indexVal2;
                         indexVal2.initWithValue(tx[xOffset]);

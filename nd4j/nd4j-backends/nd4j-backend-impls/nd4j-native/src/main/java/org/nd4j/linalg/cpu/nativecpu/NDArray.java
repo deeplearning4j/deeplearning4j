@@ -459,13 +459,6 @@ public class NDArray extends BaseNDArray {
         return new BaseNDArrayProxy(this);
     }
 
-    /**
-     * This method does direct array copy. Impossible to use on views or mixed orders.
-     *
-     * PLEASE NOTE: YOU SHOULD NEVER USE THIS METHOD, UNLESS YOU 100% CLEAR ABOUT IT
-     *
-     * @return
-     */
     @Override
     public INDArray unsafeDuplication() {
         WorkspaceUtils.assertValidArray(this, "Cannot duplicate array");

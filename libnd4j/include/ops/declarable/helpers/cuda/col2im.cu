@@ -61,9 +61,9 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
 
     auto coords = sharedMem + threadIdx.x * colRank;
 
-    shape::index2coords(imRank, imShapeInfo + 1, imInd, imLen, coords);
+    shape::index2coords(imInd, imShapeInfo, coords);
 
-    const auto imOffset = shape::getOffset(0, imShapeInfo + 1, imShapeInfo + imRank + 1, coords, imRank);
+    const auto imOffset = shape::getOffset(imShapeInfo, coords);
 
     const int imH = coords[2] + pH;
     const int imW = coords[3] + pW;
@@ -86,7 +86,7 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
                 coords[2] /= dH;
                 coords[3] /= dW;
 
-                val += col[shape::getOffset(0, colShapeInfo + 1, colShapeInfo + colRank + 1, coords, colRank)];
+                val += col[shape::getOffset(colShapeInfo, coords)];
             }
         }
     }

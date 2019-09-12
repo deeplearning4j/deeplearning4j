@@ -103,8 +103,8 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, const char
     PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
     for (Nd4jLong i = 0; i < zLen; ++i) {
 
-        shape::index2coords(zRank, target->shapeOf(), i, zLen, coords.data());
-        const auto zOffset = shape::getOffset(0, target->shapeOf(), target->stridesOf(), coords.data(), zRank);
+        shape::index2coords(i, target->getShapeInfo(), coords.data());
+        const auto zOffset = shape::getOffset(target->getShapeInfo(), coords.data());
 
         // if( (row + upper < col) || (row + lower > col) )
         if((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
@@ -112,7 +112,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, const char
         else if(this != target) {      // when this and target are different arrays
             if(xRank != zRank)
                 coords[0] = coords[1];
-            const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(0, shapeOf(), stridesOf(), coords.data(), xRank);
+            const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(getShapeInfo(), coords.data());
             z[zOffset] = x[xOffset];
         }
     }
@@ -128,13 +128,12 @@ void NDArray::setIdentity() {
 
     int  rank    = rankOf();
     auto shape   = shapeOf();
-    auto strides = stridesOf();
     int  minDim  = MAX_INT;
     Nd4jLong indices[MAX_RANK];
     for(int j = 0; j < rank; ++j)
         indices[j] = 1;
 
-    Nd4jLong offset = shape::getOffset(0, shape, strides, indices, rank);
+    Nd4jLong offset = shape::getOffset(getShapeInfo(), indices);
 
     for(int i = 0; i < rank; ++i)
         if(minDim > shape[i])
@@ -380,9 +379,9 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
     PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
     for (Nd4jLong i = 0; i < zLen; ++i) {
 
-        shape::index2coords(rank, output.shapeOf(), i, zLen, coords.data());
+        shape::index2coords(i, output.getShapeInfo(), coords.data());
 
-        const auto zOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), coords.data(), rank);
+        const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
 
         if(repSize > 1) {
             for (uint j = 0; j < repSize; ++j) {
@@ -396,7 +395,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
         else
             coords[axis] /= repeats[0];
 
-        z[zOffset] = x[shape::getOffset(0, input.shapeOf(), input.stridesOf(), coords.data(), rank)];
+        z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords.data())];
     }
 }
 

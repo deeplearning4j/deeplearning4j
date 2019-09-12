@@ -1610,21 +1610,8 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, MatrixInverse_010) {
 
-    auto x = NDArrayFactory::create<float>('c', {1, 5, 5}, {
-            1.,  0.,  0.,  0.,  0.,
-            2.,  1.,  0.,  0.,  0.,
-            30.,  2.,  1.,  0.,  0.,
-            4.,  3.,  2.,  1.,  0.,
-            5.,  4.,  3.,  2.,  1.,
-    });
-
-    auto exp = NDArrayFactory::create<float>('c', {1, 5, 5}, {
-            1.0,  0.0,  0.0,  0.0, 0.,
-            -2.0,  1.0,   0.,   0., 0.,
-            -26.0, -2.0,    1,    0, 0.,
-            54.0,  1.0, -2.0,    1, 0.,
-            -27.0,  0.0,  1.0, -2.0, 1.
-    });
+    auto x = NDArrayFactory::create<float>('c', {1, 5, 5}, {1.,  0.,  0.,  0.,  0.,2.,  1.,  0.,  0.,  0.,30.,  2.,  1.,  0.,  0.,4.,  3.,  2.,  1.,  0.,5.,  4.,  3.,  2.,  1.,});
+    auto exp = NDArrayFactory::create<float>('c', {1, 5, 5}, {1.0,  0.0,  0.0,  0.0, 0.,-2.0,  1.0,   0.,   0., 0.,-26.0, -2.0,    1,    0, 0.,54.0,  1.0, -2.0,    1, 0.,-27.0,  0.0,  1.0, -2.0, 1.});
 
     nd4j::ops::matrix_inverse op;
     auto result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
@@ -1632,8 +1619,6 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_010) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-//    z->printIndexedBuffer("010 Output ");
-//    exp.printIndexedBuffer("010 Expected ");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -1644,24 +1629,9 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_010) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, MatrixInverse_01) {
 
-    auto x = NDArrayFactory::create<float>('c', {1, 5, 5}, {
-            2.,  4., 60.,  8., 10.,
-            0.,  1.,  2.,  3.,  4.,
-            0.,  0.,  2.,  4.,  6.,
-            0.,  0.,  0.,  1.,  2.,
-            0.,  0.,  0.,  0.,  4.
+    auto x = NDArrayFactory::create<float>('c', {1, 5, 5}, {2.,  4., 60.,  8., 10., 0.,  1.,  2.,  3.,  4., 0.,  0.,  2.,  4.,  6., 0.,  0.,  0.,  1.,  2., 0.,  0.,  0.,  0.,  4. });
 
-    });
-
-    auto exp = NDArrayFactory::create<float>('c', {1, 5, 5}, {
-            0.5, -2.0, -13.0, 54.0, -6.75,
-            0.0,  1.0,  -1.0,  1.0,   0.0,
-            0,    0,   0.5, -2.0,  0.25,
-            0,    0,     0,  1.0,  -0.5,
-            0,    0,     0,    0,  0.25
-
-    });
-
+    auto exp = NDArrayFactory::create<float>('c', {1, 5, 5}, {0.5, -2.0, -13.0, 54.0, -6.75, 0.0,  1.0,  -1.0,  1.0,   0.0, 0,    0,   0.5, -2.0,  0.25, 0,    0,     0,  1.0,  -0.5, 0,    0,     0,    0,  0.25 });
     nd4j::ops::matrix_inverse op;
     auto result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::FLOAT32);
 
@@ -1680,21 +1650,8 @@ TEST_F(DeclarableOpsTests6, MatrixInverse_01) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests6, MatrixInverse_02) {
 
-    auto x = NDArrayFactory::create<float>('c', {1, 5, 5}, {
-            1.,  0.,  0.,  0.,  0.,
-            2.,  1.,  0.,  0.,  0.,
-            30.,  2.,  1.,  0.,  0.,
-            4.,  3.,  2.,  1.,  0.,
-            5.,  4.,  3.,  2.,  1.
-    });
-
-    auto exp = NDArrayFactory::create<float>('c', {1, 5, 5}, {
-            1.0,  0.0,  0.0,  0.0, 0.,
-            -2.0,  1.0,   0.,   0., 0.,
-            -26.0, -2.0,    1,    0, 0.,
-            54.0,  1.0, -2.0,    1, 0.,
-            -27.0,  0.0,  1.0, -2.0, 1.
-    });
+    auto x = NDArrayFactory::create<float>('c', {1, 5, 5}, {1.,  0.,  0.,  0.,  0., 2.,  1.,  0.,  0.,  0., 30.,  2.,  1.,  0.,  0., 4.,  3.,  2.,  1.,  0., 5.,  4.,  3.,  2.,  1. });
+    auto exp = NDArrayFactory::create<float>('c', {1, 5, 5}, {1.0,  0.0,  0.0,  0.0, 0., -2.0,  1.0,   0.,   0., 0., -26.0, -2.0,    1,    0, 0., 54.0,  1.0, -2.0,    1, 0., -27.0,  0.0,  1.0, -2.0, 1. });
 
     nd4j::ops::matrix_inverse op;
     auto result = op.execute({&x}, {}, {}, {}, false, nd4j::DataType::FLOAT32);

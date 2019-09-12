@@ -67,17 +67,17 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 	}
 	else if (vx == vz) {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
-			auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
-				
+			auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+			auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+
 			z[xOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}
 	}
 	else {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
-			auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
-			auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
+			auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+			auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+			auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 
 			z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}
@@ -105,7 +105,7 @@ void _CUDA_H PairWiseBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cu
 template<typename X, typename Y>
 void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *vextraParams) {
     auto xType = nd4j::DataTypeUtils::fromT<X>();
-    auto yType = nd4j::DataTypeUtils::fromT<Y>();    
+    auto yType = nd4j::DataTypeUtils::fromT<Y>();
 
 	DISPATCH_BY_OPNUM_TT(intermediateShaped, PARAMS(launchDims, stream, vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo, vextraParams), PAIRWISE_BOOL_OPS);
 }
@@ -166,7 +166,7 @@ void PairWiseBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_
     }
 
 
-      
+
     BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT PairWiseBoolTransform, , LIBND4J_TYPES, BOOL_TYPES);
 }
 }

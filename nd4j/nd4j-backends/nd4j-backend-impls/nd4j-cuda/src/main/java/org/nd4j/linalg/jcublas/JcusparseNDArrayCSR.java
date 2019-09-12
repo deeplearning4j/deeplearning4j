@@ -114,11 +114,6 @@ public class JcusparseNDArrayCSR extends BaseSparseNDArrayCSR {
         throw new UnsupportedOperationException();
     }
 
-    /**
-     * This method returns true if this INDArray is special case: no-value INDArray
-     *
-     * @return
-     */
     @Override
     public boolean isEmpty() {
         throw new UnsupportedOperationException();

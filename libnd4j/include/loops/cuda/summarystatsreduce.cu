@@ -40,7 +40,7 @@ namespace functions {
 
 template <typename X, typename Z>
 void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRank, void *extraParams, void *z, Nd4jLong *zShapeInfo, int zRank, int *dimension, int dimensionLength, int postProcessOrNot,bool biasCorrected,int *allocationBuffer, void *reductionBuffer, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
-            
+
     functions::summarystats::SummaryStatsReduce<X,Z>::transform(op,dx,xShapeInfo,extraParams,z,zShapeInfo,dimension,dimensionLength,biasCorrected,allocationBuffer,reductionBuffer,tadOnlyShapeInfo,tadOffsets);
 }
 
@@ -103,12 +103,12 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 			 */
         template<typename X, typename Z>
         template<typename OpType>
-        _CUDA_D void SummaryStatsReduce<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo, 
-                                                        void *vextraParams, 
-                                                        void *vz, Nd4jLong *zShapeInfo, 
-                                                        int *dimension, int dimensionLength, 
-                                                        int postProcessOrNot, 
-                                                        int *allocationBuffer, void *vreductionBuffer, 
+        _CUDA_D void SummaryStatsReduce<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
+                                                        void *vextraParams,
+                                                        void *vz, Nd4jLong *zShapeInfo,
+                                                        int *dimension, int dimensionLength,
+                                                        int postProcessOrNot,
+                                                        int *allocationBuffer, void *vreductionBuffer,
                                                         Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets) {
 
             auto dx = static_cast<X*>(vx);
@@ -204,7 +204,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                         sPartials[threadIdx.x] = val;
 
                         for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-                            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
+                            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo);
                             SummaryStatsData<X> indexVal2;
                             indexVal2.initWithValue(dx[xOffset]);
 
@@ -264,8 +264,8 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
                 else {
 
                     for (Nd4jLong i = tid; i < n; i += blockDim.x * gridDim.x) {
-                        
-                        auto offset = shape::getIndexOffset(i, xShapeInfo, n);                        
+
+                        auto offset = shape::getIndexOffset(i, xShapeInfo);
                         SummaryStatsData<X> indexVal2;
                         indexVal2.initWithValue(dx[offset]);
                         reduction = update(reduction, indexVal2, extraParams);
@@ -279,7 +279,7 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
                 if (gridDim.x > 1) {
                     __shared__ bool amLast;
-                    unsigned int *tc = (unsigned int *)reductionBuffer;                    
+                    unsigned int *tc = (unsigned int *)reductionBuffer;
                     tid = threadIdx.x;
                     if (threadIdx.x == 0) {
                         SummaryStatsData<X> *pBuffer = (SummaryStatsData<X>*) reductionBuffer;
@@ -338,9 +338,9 @@ void _CUDA_G summaryStatsReduceT(int op, void *dx, Nd4jLong *xShapeInfo, int xRa
 
         template <typename X, typename Z>
         _CUDA_H void SummaryStatsReduce<X,Z>::execSummaryStatsReduceScalar(dim3& launchDims, cudaStream_t *stream, int opNum, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vextraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool biasCorrected, void *reductionBuffer) {
-            
+
             auto x = static_cast<X*>(vx);
-            auto extraParams = static_cast<Z*>(vextraParams);                                        
+            auto extraParams = static_cast<Z*>(vextraParams);
             auto z = reinterpret_cast<Z*>(vz);
             auto reductionPointerA = reinterpret_cast<Z*>(reductionBuffer);
 

@@ -43,14 +43,15 @@ DECLARE_SHAPE_FN(matrix_diag) {
     auto in = inputShape->at(0);
     int inRank = shape::rank(in);
 
+    //  if for example diagonal array has shape [A,B,C] then output array has shape [A,B,C,C]
+
     int outRank = inRank + 1;
-    auto lastDimension = shape::sizeAt(in, -1);
 
     ALLOCATE(outShapeInfo, block.getWorkspace(), shape::shapeInfoLength(outRank), Nd4jLong);
     outShapeInfo[0] = outRank;
     for(int i = 0; i < inRank; ++i)
         outShapeInfo[i + 1] = shape::sizeAt(in, i);
-    outShapeInfo[outRank] = lastDimension;
+    outShapeInfo[outRank] = shape::sizeAt(in, -1);
 
     ShapeUtils::updateStridesAndType(outShapeInfo, in, shape::order(in));
 

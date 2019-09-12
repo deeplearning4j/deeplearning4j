@@ -47,7 +47,7 @@ TEST_F(DeclarableOpsTests11, test_mixed_biasadd_1) {
     auto exp = NDArrayFactory::create<float>('c', {2, 3}, {1.f, 2.f, 3.f, 1.f, 2.f, 3.f});
 
     nd4j::ops::biasadd op;
-    auto status = op.execute({&x, &y}, {&z}, {}, {}, {});
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {true});
     ASSERT_EQ(Status::OK(), status);
 
     ASSERT_EQ(exp, z);
@@ -66,11 +66,11 @@ TEST_F(DeclarableOpsTests11, test_listdiff_1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test1) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-12.49997,-13.04346, -13.63635, -14.28571,-14.99999,-15.78947, -16.66666, -17.64705,-18.75   ,-20.     , -21.42857, -23.07692,
                                    -24.99999,-27.27272, -29.99999, -33.33332,-37.49999,-42.85713, -49.99998, -59.99998,-74.99995,-99.99992,-149.99986,-299.99911});
     NDArray dLdwExp('c', {2,3,4}, {3.21887,  4.96807,  6.10512,  6.80726,  7.15461,  7.19051,  6.93973,  6.41584,  5.62456,  4.56548,  3.2326 ,  1.61444,
@@ -80,14 +80,14 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test1) {
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {0}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -103,16 +103,16 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test2) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,1,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdwExp('c', {2,1,4}, {15.99805, 16.72406, 16.27746,  14.83754,-44.97147,-59.99582,-79.28771,-107.35497});
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {0});
@@ -120,7 +120,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
@@ -129,11 +129,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test3) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights(nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-12.49997,-13.04346, -13.63635, -14.28571,-14.99999,-15.78947, -16.66666, -17.64705,-18.75   ,-20.     , -21.42857, -23.07692,
                                    -24.99999,-27.27272, -29.99999, -33.33332,-37.49999,-42.85713, -49.99998, -59.99998,-74.99995,-99.99992,-149.99986,-299.99911});
     NDArray dLdwExp('c', {}, {-227.77286});
@@ -142,14 +142,14 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test3) {
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -165,22 +165,22 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test4) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdwExp('c', {1,3,1}, {4.8876 , -46.29156, -186.36887});
-  
+
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
+
     auto *dLdw = results->at(1);
     // dLdw->printIndexedBuffer();
     // dLdw->printShapeInfo();
@@ -193,11 +193,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test5) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-1.04166,-1.08696, -1.13636, -1.19048,-1.25   ,-1.31579, -1.38889, -1.47059,-1.5625 ,-1.66667, -1.78571, -1.92308,
                                    -2.08333,-2.27273, -2.5    , -2.77778,-3.125  ,-3.57143, -4.16667, -5.     ,-6.25   ,-8.33333,-12.49999,-24.99993});
     NDArray dLdwExp('c', {2,3,4}, {1.05912, 1.20488, 1.29964, 1.35815, 1.3871 , 1.39009, 1.36919, 1.32553, 1.25959, 1.17133, 1.06026, 0.92541,
@@ -207,14 +207,14 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test5) {
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -230,16 +230,16 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test6) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
-        
+
     NDArray dLdwExp('c', {1,3,1}, {6.73432, 2.46939,-9.20372});
-    
+
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
@@ -247,7 +247,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test6) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
@@ -256,16 +256,16 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test7) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights(nd4j::DataType::DOUBLE);
-        
+
     NDArray dLdwExp('c', {}, {0.});
-    
+
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {2});
@@ -273,20 +273,20 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test7) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
 }
- 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test8) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0.     , 0.     ,  0.     ,  0.     ,-1.5    ,-1.57895, -1.66667, -1.76471,-1.875  ,-2.     , -2.14286, -2.30769,
                                   -2.5    ,-2.72727, -3.     , -3.33333,-3.75   ,-4.28571, -5.     , -6.     ,-7.49999,-9.99999,-14.99999,-29.99991});
     NDArray dLdwExp('c', {2,3,4}, {1.56625, 1.74117, 1.85487, 1.92509, 1.95982, 1.96341, 1.93833, 1.88594, 1.80682, 1.70091, 1.56762, 1.4058 ,
@@ -307,7 +307,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test8) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -323,11 +323,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test9) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.52083,-0.54348,-0.56818, -0.59524,-0.625  ,-0.65789,-0.69444, -0.73529,-0.78125,-0.83333,-0.89286, -0.96154,
                                    -1.04167,-1.13636,-1.25   , -1.38889,-1.5625 ,-1.78571,-2.08333, -2.5    ,-3.125  ,-4.16666,-6.24999,-12.49996});
     NDArray dLdwExp('c', {2,3,4}, {0.13412, 0.207  , 0.25438, 0.28364, 0.29811, 0.2996 , 0.28916, 0.26733, 0.23436, 0.19023, 0.13469, 0.06727,
@@ -338,13 +338,13 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test9) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    
+
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -357,10 +357,10 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test9) {
 
     delete results;
 }
- 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test10) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,1}, nd4j::DataType::DOUBLE);
@@ -375,8 +375,8 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test10) {
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
-    auto *dLdw = results->at(1);    
+
+    auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
@@ -386,7 +386,7 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test11) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
@@ -401,8 +401,8 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test11) {
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
-    auto *dLdw = results->at(1);    
+
+    auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
@@ -412,11 +412,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test12) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, { 0.      , 0.      , 0.      ,  0.      ,-0.75    ,-0.789473,-0.833333, -0.882353,-0.9375  ,-1.      ,-1.071428, -1.153846,
                                 -1.25    ,-1.363636,-1.5     , -1.666666,-1.875   ,-2.142857,-2.499999, -2.999999,-3.749997,-4.999997,-7.499993,-14.999956});
     NDArray dLdwExp('c', {2,3,4}, {0.16094, 0.2484 , 0.30526, 0.34036, 0.35773, 0.35953, 0.34699, 0.32079, 0.28123, 0.22827, 0.16163, 0.08072,
@@ -433,15 +433,15 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test12) {
     weights.t<double>(2) = 0.;
     weights.t<double>(3) = 0.;
 
-    
+
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -455,11 +455,11 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, log_loss_grad_test13) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0.     , 0.     ,  0.     ,  0.     , 0.     , 0.     ,  0.     ,  0.     , 0.     , 0.     ,  0.     ,  0.     ,
                                   -2.08333,-2.27273, -2.5    , -2.77778,-3.125  ,-3.57143, -4.16667, -5.     ,-6.25   ,-8.33333,-12.49999,-24.99993});
     NDArray dLdwExp('c', {2,3,1}, {1.75828,  2.30839,  1.25309, -1.35098, -6.16602,-16.78383});
@@ -471,16 +471,16 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test13) {
     weights.assign(0.5);
     weights.t<double>(0) = 0.;
     weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;    
-    
+    weights.t<double>(2) = 0.;
+
     nd4j::ops::log_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {1e-7}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -494,10 +494,10 @@ TEST_F(DeclarableOpsTests11, log_loss_grad_test13) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, summaryStatsData_test1) {
-    
+
     functions::summarystats::SummaryStatsData<double> var1;
     functions::summarystats::SummaryStatsData<double> var2;
-    var2.n = var2.mean = var2.M2 = var2.M3 = var2.M4 = var2.bias = 5; 
+    var2.n = var2.mean = var2.M2 = var2.M3 = var2.M4 = var2.bias = 5;
 
     functions::summarystats::SummaryStatsData<double>* arr = new functions::summarystats::SummaryStatsData<double>[2];
     arr[0] = var1;
@@ -515,11 +515,11 @@ TEST_F(DeclarableOpsTests11, summaryStatsData_test1) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.96, -1.92, -2.88, -3.84, -4.8 , -5.76, -6.72, -7.68, -8.64, -9.6 ,-10.56,-11.52,
                                    -12.48,-13.44,-14.4 ,-15.36,-16.32,-17.28,-18.24,-19.2 ,-20.16,-21.12,-22.08,-23.04});
     NDArray dLdwExp('c', {2,3,4}, {0.9216 ,  3.6864 ,  8.2944 , 14.7456 , 23.04   , 33.1776 , 45.1584 , 58.9824 , 74.6496 , 92.16   ,111.51361,132.7104 ,
@@ -527,14 +527,14 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto dLdp = results->at(0);       
+    auto dLdp = results->at(0);
     auto dLdw = results->at(1);
     auto dLdl = results->at(2);
 
@@ -547,19 +547,19 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test1) {
 
     delete results;
 }
- 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test2) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,1,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdwExp('c', {2,1,4}, {98.61121,129.024  , 164.9664 , 206.4384 , 828.51837,925.28644,1027.58398,1135.41113});
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
@@ -567,7 +567,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
@@ -576,25 +576,25 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test3) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights(nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.96, -1.92, -2.88, -3.84, -4.8 , -5.76, -6.72, -7.68, -8.64, -9.6 ,-10.56,-11.52,
                                    -12.48,-13.44,-14.4 ,-15.36,-16.32,-17.28,-18.24,-19.2 ,-20.16,-21.12,-22.08,-23.04});
     NDArray dLdwExp('c', {}, {4515.84});
-    
+
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -610,22 +610,22 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test4) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdwExp('c', {1,3,1}, {807.32153, 1426.63684, 2281.88159});
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
+
     auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
@@ -636,11 +636,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test5) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.08,-0.16,-0.24,-0.32,-0.4 ,-0.48,-0.56,-0.64,-0.72,-0.8 ,-0.88,-0.96,
                                    -1.04,-1.12,-1.2 ,-1.28,-1.36,-1.44,-1.52,-1.6 ,-1.68,-1.76,-1.84,-1.92});
     NDArray dLdwExp('c', {2,3,4}, {-15.6032,-15.3728,-14.9888,-14.4512,-13.76  ,-12.9152,-11.9168,-10.7648, -9.4592, -8.    , -6.3872, -4.6208,
@@ -648,14 +648,14 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test5) {
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -671,16 +671,16 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test6) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
-        
+
     NDArray dLdwExp('c', {1,3,1}, {-58.16319, -6.5536 , 64.71682});
-    
+
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -688,7 +688,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test6) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
@@ -697,16 +697,16 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test7) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights(nd4j::DataType::DOUBLE);
-        
+
     NDArray dLdwExp('c', {}, {0.});
-    
+
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -714,20 +714,20 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test7) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
 }
- 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test8) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0. ,0. ,0. ,0. ,-0.48 ,-0.576,-0.672,-0.768,-0.864,-0.96 ,-1.056,-1.152,
                                  -1.248,-1.344,-1.44 ,-1.536,-1.632,-1.728,-1.824,-1.92 ,-2.016,-2.112,-2.208,-2.304});
     NDArray dLdwExp('c', {2,3,4}, {-22.3488 ,-22.07232,-21.61152,-20.9664 ,-20.13696,-19.1232 ,-17.92512,-16.54272,-14.976  ,-13.22496,-11.2896 , -9.16992,
@@ -746,7 +746,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test8) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -762,11 +762,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test9) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.04,-0.08,-0.12,-0.16,-0.2 ,-0.24,-0.28,-0.32,-0.36,-0.4 ,-0.44,-0.48,
                                    -0.52,-0.56,-0.6 ,-0.64,-0.68,-0.72,-0.76,-0.8 ,-0.84,-0.88,-0.92,-0.96});
     NDArray dLdwExp('c', {2,3,4}, {0.0384, 0.1536, 0.3456, 0.6144, 0.96  , 1.3824, 1.8816, 2.4576, 3.1104, 3.84  , 4.6464, 5.5296,
@@ -775,13 +775,13 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test9) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    
+
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -797,7 +797,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test9) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test10) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,1}, nd4j::DataType::DOUBLE);
@@ -812,8 +812,8 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test10) {
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
-    auto *dLdw = results->at(1);    
+
+    auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
@@ -823,7 +823,7 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test11) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
@@ -838,8 +838,8 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test11) {
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
-    auto *dLdw = results->at(1);    
+
+    auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
@@ -849,11 +849,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test12) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0.,0.,0.,0., -0.24 ,-0.288,-0.336,-0.384,-0.432,-0.48 ,-0.528,-0.576,
                                   -0.624,-0.672,-0.72 ,-0.768,-0.816,-0.864,-0.912,-0.96 ,-1.008,-1.056,-1.104,-1.152});
     NDArray dLdwExp('c', {2,3,4}, {0.04608, 0.18432, 0.41472, 0.73728, 1.152  , 1.65888, 2.25792, 2.94912, 3.73248, 4.608  , 5.57568, 6.63552,
@@ -866,15 +866,15 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test12) {
     weights.t<double>(1) = 0.;
     weights.t<double>(2) = 0.;
     weights.t<double>(3) = 0.;
-    
+
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -888,11 +888,11 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test13) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
                                   -1.04,-1.12,-1.2 ,-1.28,-1.36,-1.44,-1.52,-1.6 ,-1.68,-1.76,-1.84,-1.92});
     NDArray dLdwExp('c', {2,3,1}, {2.304  , 13.3632 , 34.2528 , 64.97279,105.5232 ,155.90401});
@@ -902,16 +902,16 @@ TEST_F(DeclarableOpsTests11, mean_sqerr_loss_grad_test13) {
     weights.assign(0.5);
     weights.t<double>(0) = 0.;
     weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;    
-    
+    weights.t<double>(2) = 0.;
+
     nd4j::ops::mean_sqerr_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -963,11 +963,11 @@ TEST_F(DeclarableOpsTests11, SquaredSubtractTest_Test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test1) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,
                                    -0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5});
     NDArray dLdwExp('c', {2,3,4}, {0.96, 1.92, 2.88, 3.84, 4.8 , 5.76, 6.72, 7.68, 8.64, 9.6 ,10.56,11.52,
@@ -975,14 +975,14 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test1) {
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto dLdp = results->at(0);       
+    auto dLdp = results->at(0);
     auto dLdw = results->at(1);
     auto dLdl = results->at(2);
 
@@ -995,19 +995,19 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test1) {
 
     delete results;
 }
- 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test2) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,1,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdwExp('c', {2,1,4}, {14.4 , 17.28, 20.16, 23.04, 48.96, 51.84, 54.72, 57.6});
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {0});
@@ -1015,7 +1015,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
@@ -1024,25 +1024,25 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test3) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights(nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,
                                    -0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5,-0.5});
     NDArray dLdwExp('c', {}, {288.});
-    
+
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1058,22 +1058,22 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test4) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdwExp('c', {1,3,1}, {65.28, 96., 126.72001});
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
+
     auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
@@ -1084,11 +1084,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test5) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,
                                    -0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167,-0.04167});
     NDArray dLdwExp('c', {2,3,4}, {-0.92,-0.84,-0.76,-0.68,-0.6 ,-0.52,-0.44,-0.36,-0.28,-0.2 ,-0.12,-0.04,
@@ -1096,14 +1096,14 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test5) {
 
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1119,16 +1119,16 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test6) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
-        
+
     NDArray dLdwExp('c', {1,3,1}, {-2.56, 0., 2.56});
-    
+
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -1136,7 +1136,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test6) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
@@ -1145,16 +1145,16 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test7) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights(nd4j::DataType::DOUBLE);
-        
+
     NDArray dLdwExp('c', {}, {0.});
-    
+
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {2});
@@ -1162,20 +1162,20 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test7) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
 }
- 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test8) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.  ,-0.  ,-0.  ,-0.  ,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05,
                                    -0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05,-0.05});
     NDArray dLdwExp('c', {2,3,4}, {-1.296,-1.2  ,-1.104,-1.008,-0.912,-0.816,-0.72 ,-0.624,-0.528,-0.432,-0.336,-0.24 ,
@@ -1194,7 +1194,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test8) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1210,11 +1210,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test9) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.02083, -0.02083, -0.02083, -0.02083,-0.02083, -0.02083, -0.02083, -0.02083,-0.02083, -0.02083, -0.02083, -0.02083,
                                    -0.02083, -0.02083, -0.02083, -0.02083,-0.02083, -0.02083, -0.02083, -0.02083,-0.02083, -0.02083, -0.02083, -0.02083});
     NDArray dLdwExp('c', {2,3,4}, {0.04, 0.08, 0.12, 0.16, 0.2 , 0.24, 0.28, 0.32,0.36, 0.4 , 0.44, 0.48,
@@ -1223,13 +1223,13 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test9) {
     predictions.linspace(0.04, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    
+
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1245,7 +1245,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test9) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test10) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,1}, nd4j::DataType::DOUBLE);
@@ -1260,8 +1260,8 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test10) {
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
-    auto *dLdw = results->at(1);    
+
+    auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
@@ -1271,7 +1271,7 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test11) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
@@ -1286,8 +1286,8 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test11) {
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
-    auto *dLdw = results->at(1);    
+
+    auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
@@ -1297,11 +1297,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test12) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0., 0., 0., 0., -0.025, -0.025, -0.025, -0.025,-0.025, -0.025, -0.025, -0.025,
                                    -0.025, -0.025, -0.025, -0.025,-0.025, -0.025, -0.025, -0.025,-0.025, -0.025, -0.025, -0.025});
     NDArray dLdwExp('c', {2,3,4}, {0.048, 0.096, 0.144, 0.192,0.24 , 0.288, 0.336, 0.384,0.432, 0.48 , 0.528, 0.576,
@@ -1314,15 +1314,15 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test12) {
     weights.t<double>(1) = 0.;
     weights.t<double>(2) = 0.;
     weights.t<double>(3) = 0.;
-    
+
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -1336,11 +1336,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test13) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray predictions('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0., 0., 0., 0., 0., 0., 0., 0.,0., 0., 0., 0.,
                                   -0.04167, -0.04167, -0.04167, -0.04167,-0.04167, -0.04167, -0.04167, -0.04167,-0.04167, -0.04167, -0.04167, -0.04167});
     NDArray dLdwExp('c', {2,3,1}, {0.8 ,2.08,3.36,4.64,5.92,7.2 });
@@ -1350,16 +1350,16 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test13) {
     weights.assign(0.5);
     weights.t<double>(0) = 0.;
     weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;    
-    
+    weights.t<double>(2) = 0.;
+
     nd4j::ops::absolute_difference_loss_grad op;
     auto results = op.execute({&predictions, &weights, &labels}, {}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -1373,11 +1373,11 @@ TEST_F(DeclarableOpsTests11, absolute_difference_loss_grad_test13) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, BFloat16_Test_1) {
-    
+
     NDArray x = NDArrayFactory::create<bfloat16>('c', {2,3,4});
     NDArray y = NDArrayFactory::create<bfloat16>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
     NDArray exp = NDArrayFactory::create<bfloat16>('c', {2,3,4});//('c', {2,3,4}, nd4j::DataType::BFLOAT16);
-    
+
     x.linspace(1);
     y.linspace(1);
     exp.linspace(2,2);
@@ -1385,7 +1385,7 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_1) {
     auto results = op.execute({&x, &y}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
+
     auto res = results->at(0);
     res->printIndexedBuffer("BFloat16 sum:");
     ASSERT_TRUE(res->equalsTo(exp));
@@ -1439,11 +1439,11 @@ TEST_F(DeclarableOpsTests11, BFloat16_Test_3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test1) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.25999, -0.755  , -1.25   , -1.745  , -2.24001, -2.73502, -3.23004, -3.72508, -4.22014, -4.71523, -5.21034, -5.70548,
                                    -6.20066, -6.69587, -7.19113, -7.68643, -8.18177, -8.67717, -9.17262, -9.66813,-10.1637 ,-10.65932,-11.15501,-11.65077});
     NDArray dLdwExp('c', {2,3,4}, {0.73395,  0.75335,  0.69315,  0.55335,  0.33395,  0.03495, -0.34366, -0.80186, -1.33967, -1.95708, -2.65411, -3.43074,
@@ -1453,14 +1453,14 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test1) {
 
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1473,14 +1473,14 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test1) {
 
     delete results;
 }
- 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test2) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,1,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.18499,-0.53   ,-0.875  ,-1.22   ,-1.56501,-1.91002,-2.25504,-2.60008,-2.94514,-3.29023,-3.63534,-3.98048,
                                    -4.32566,-4.67087,-5.01613,-5.36143,-5.70677,-6.05217,-6.39762,-6.74313,-7.0887 ,-7.43432,-7.78001,-8.12577});
     NDArray dLdwExp('c', {2,1,4}, {0.43622, -0.19079, -0.98462, -1.94525,-18.09855,-20.72768,-23.52373,-26.48669});
@@ -1489,14 +1489,14 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test2) {
 
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {0});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1512,11 +1512,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test2) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test3) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights(nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.18499,-0.53   ,-0.875  ,-1.22   ,-1.56501,-1.91002,-2.25504,-2.60008,-2.94514,-3.29023,-3.63534,-3.98048,
                                    -4.32566,-4.67087,-5.01613,-5.36143,-5.70677,-6.05217,-6.39762,-6.74313,-7.0887 ,-7.43432,-7.78001,-8.12577});
     NDArray dLdwExp('c', {}, {-91.52109});
@@ -1525,14 +1525,14 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test3) {
 
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1548,22 +1548,22 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test3) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test4) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdwExp('c', {1,3,1}, {-12.54779,-28.13393,-50.83936});
-  
+
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
+
     auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
@@ -1574,11 +1574,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test4) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test5) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.01542,-0.04417,-0.07292,-0.10167,-0.13042,-0.15917,-0.18792,-0.21667,-0.24543,-0.27419,-0.30294,-0.33171,
                                    -0.36047,-0.38924,-0.41801,-0.44679,-0.47556,-0.50435,-0.53314,-0.56193,-0.59072,-0.61953,-0.64833,-0.67715});
     NDArray dLdwExp('c', {2,3,4}, {0.37794, 0.37906, 0.37554, 0.36739, 0.35461, 0.33719, 0.31514, 0.28846, 0.25714, 0.22119, 0.18061, 0.13539,
@@ -1588,14 +1588,14 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test5) {
 
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1611,16 +1611,16 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test5) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test6) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
-        
+
     NDArray dLdwExp('c', {1,3,1}, {1.4966 , 0.19776,-1.69436});
 
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {2});
@@ -1628,7 +1628,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test6) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
@@ -1637,16 +1637,16 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test6) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test7) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights(nd4j::DataType::DOUBLE);
-        
+
     NDArray dLdwExp('c', {}, {0.});
-    
+
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {2});
@@ -1654,20 +1654,20 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test7) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *dLdw = results->at(1);
-    
+
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
 }
- 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test8) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, { 0.     , 0.     , 0.     , 0.     ,-0.1565 ,-0.191  ,-0.2255 ,-0.26001,-0.29451,-0.32902,-0.36353,-0.39805,
                                    -0.43257,-0.46709,-0.50161,-0.53614,-0.57068,-0.60522,-0.63976,-0.67431,-0.70887,-0.74343,-0.778  ,-0.81258});
     NDArray dLdwExp('c', {2,3,4}, {0.54353, 0.54487, 0.54065, 0.53087, 0.51553, 0.49463, 0.46817, 0.43615, 0.39857, 0.35543, 0.30672, 0.25246,
@@ -1687,7 +1687,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test8) {
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1703,11 +1703,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test8) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test9) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.00771, -0.02208, -0.03646, -0.05083,-0.06521, -0.07958, -0.09396, -0.10834,-0.12271, -0.13709, -0.15147, -0.16585,
                                    -0.18024, -0.19462, -0.20901, -0.22339,-0.23778, -0.25217, -0.26657, -0.28096,-0.29536, -0.30976, -0.32417, -0.33857});
     NDArray dLdwExp('c', {2,3,4}, {0.03008,  0.03064,  0.02888,  0.02481, 0.01841,  0.00971, -0.00132, -0.01466,-0.03032, -0.0483 , -0.06859, -0.0912 ,
@@ -1717,13 +1717,13 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test9) {
     logits.linspace(-0.08, 0.04);
     labels.linspace(1);
     weights.assign(0.5);
-    
+
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
@@ -1736,10 +1736,10 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test9) {
 
     delete results;
 }
- 
+
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test10) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,1}, nd4j::DataType::DOUBLE);
@@ -1754,8 +1754,8 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test10) {
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
-    auto *dLdw = results->at(1);    
+
+    auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
@@ -1765,7 +1765,7 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test10) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test11) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3,1}, nd4j::DataType::DOUBLE);
@@ -1780,8 +1780,8 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test11) {
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
-        
-    auto *dLdw = results->at(1);    
+
+    auto *dLdw = results->at(1);
 
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
     ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
@@ -1791,11 +1791,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test11) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test12) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0.     ,  0.     ,  0.     ,  0.     ,-0.07825, -0.0955 , -0.11275, -0.13   ,-0.14726, -0.16451, -0.18177, -0.19902,
                                    -0.21628, -0.23354, -0.25081, -0.26807,-0.28534, -0.30261, -0.31988, -0.33716,-0.35443, -0.37172, -0.389  , -0.40629});
     NDArray dLdwExp('c', {2,3,4}, {0.0361 ,  0.03677,  0.03466,  0.02977, 0.0221 ,  0.01165, -0.00158, -0.01759,-0.03638, -0.05795, -0.08231, -0.10944,
@@ -1810,15 +1810,15 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test12) {
     weights.t<double>(2) = 0.;
     weights.t<double>(3) = 0.;
 
-    
+
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -1832,11 +1832,11 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test12) {
 
 ///////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test13) {
-    
+
     NDArray labels('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2,3,1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {0.     ,  0.     ,  0.     ,  0.     , 0.     ,  0.     ,  0.     ,  0.     , 0.     ,  0.     ,  0.     ,  0.     ,
                                    -0.36047, -0.38924, -0.41801, -0.44679,-0.47556, -0.50435, -0.53314, -0.56193,-0.59072, -0.61953, -0.64833, -0.67715});
     NDArray dLdwExp('c', {2,3,1}, {0.22882, 0.02428,-0.4768 ,-1.27447,-2.36878,-3.75981,});
@@ -1847,16 +1847,16 @@ TEST_F(DeclarableOpsTests11, sigm_cross_entropy_loss_grad_test13) {
     weights.assign(0.5);
     weights.t<double>(0) = 0.;
     weights.t<double>(1) = 0.;
-    weights.t<double>(2) = 0.;    
-    
+    weights.t<double>(2) = 0.;
+
     nd4j::ops::sigm_cross_entropy_loss_grad op;
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -1940,61 +1940,61 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test1) {
     NDArray labels('c', {2,4}, {0,0,1,0, 0,1,0,0}, nd4j::DataType::INT32);
     NDArray logits('c', {2,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,4}, {0.1176,  0.1224, -0.3726,  0.1326, 0.1176, -0.3776,  0.1274,  0.1326});
     NDArray dLdwExp('c', {2}, {1.36729, 1.40729});
 
     logits.linspace(-0.08, 0.04);
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
-    auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});    
-    
+    auto results = op.execute({&logits, &weights, &labels}, {0.}, {0});
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
-    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));    
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
 }
- 
+
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test2) {
 
     NDArray labels('c', {4}, {0,0,1,0}, nd4j::DataType::INT32);
     NDArray logits('c', {4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {4}, {0.125,  0.125, -0.375,  0.125});
     NDArray dLdwExp('c', {1}, {1.38629});
 
     logits = 2.;
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {1});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
-    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));    
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
-}   
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test3) {
@@ -2002,30 +2002,30 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test3) {
     NDArray labels('c', {4}, {0,0,1,0}, nd4j::DataType::INT32);
     NDArray logits('c', {4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {}, {0}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {4}, {0.125,  0.125, -0.375,  0.125});
     NDArray dLdwExp('c', {}, {1.38629});
 
     logits = 2.;
-    weights.assign(0.5);    
+    weights.assign(0.5);
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {1});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
-    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));    
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
-}   
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test4) {
@@ -2033,30 +2033,30 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test4) {
     NDArray labels('c', {4}, {0,0,1,0}, nd4j::DataType::INT32);
     NDArray logits('c', {4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {}, {0}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {4}, {0.23521,  0.2448 , -0.7452 ,  0.26519});
     NDArray dLdwExp('c', {}, {0.});
 
     logits.linspace(-0.08, 0.04);
-    weights = 0.5;    
+    weights = 0.5;
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {2});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
-    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));    
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
-}   
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test5) {
@@ -2064,30 +2064,30 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test5) {
     NDArray labels('c', {4}, {0,0,1,0}, nd4j::DataType::INT32);
     NDArray logits('c', {4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {4}, {0.1176,  0.1224, -0.3726,  0.1326});
     NDArray dLdwExp('c', {1}, {1.36729});
 
     logits.linspace(-0.08, 0.04);
-    weights = 0.5;    
+    weights = 0.5;
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {3});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
-    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));    
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
-}   
+}
 
 /////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test6) {
@@ -2095,7 +2095,7 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test6) {
     NDArray labels('c', {2,4}, {0,0,1,0, 0,1,0,0}, nd4j::DataType::INT32);
     NDArray logits('c', {2,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {2}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,4}, {0.0801,  0.0849, -0.2601,  0.0951, 0.0801, -0.2651,  0.0899,  0.0951});
     NDArray dLdwExp('c', {2}, {-0.014000, 0.014000});
 
@@ -2105,12 +2105,12 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test6) {
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
     auto results = op.execute({&logits, &weights, &labels}, {0.3}, {2});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
+    auto *dLdl = results->at(2);
 
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
@@ -2126,27 +2126,27 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test7) {
     NDArray labels('c', {2,3,4}, {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1, 1,0,0,0, 0,1,0,0}, nd4j::DataType::INT32);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,3}, {0.5, 0., 1.5});
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.0956 , 0.0306 , 0.03185, 0.03315, 0.,-0., 0., 0., 0.0882 , 0.0918 ,-0.27945, 0.09945,
                                    0.0294 , 0.0306 , 0.03185,-0.09185,-0., 0., 0., 0., 0.0882 ,-0.2832 , 0.09555, 0.09945});
     NDArray dLdwExp('c', {1,3}, {0.69365, 0.71365, 0.69365});
 
-    logits.linspace(-0.08, 0.04);    
+    logits.linspace(-0.08, 0.04);
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {3});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
-    auto *dLdl = results->at(2);    
-    
+    auto *dLdl = results->at(2);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
-    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));    
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
 }
@@ -2157,40 +2157,40 @@ TEST_F(DeclarableOpsTests11, softmax_cross_entropy_loss_grad_test8) {
     NDArray labels('c', {2,3,4,5}, {1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,
                                     0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,
                                     0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,1,0,0,0,0,0,1,0,0,0,0,0,1,0,0,0,0,0,1,0}, nd4j::DataType::INT32);
-                                    
+
     NDArray logits('c', {2,3,4,5}, nd4j::DataType::DOUBLE);
     NDArray weights('c', {1,1,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4,5}, {-0.03399, 0.00799, 0.00832, 0.00866, 0.00901, 0.00768,-0.03367, 0.00832, 0.00866, 0.00901, 0.00768, 0.00799,-0.03335,
-                                    0.00866, 0.00901, 0.00768, 0.00799, 0.00832,-0.03301, 0.00901, 0.00768, 0.00799, 0.00832, 0.00866,-0.03265,-0.03399, 
-                                    0.00799, 0.00832, 0.00866, 0.00901, 0.00768,-0.03367, 0.00832, 0.00866, 0.00901, 0.00768, 0.00799,-0.03335, 0.00866, 
-                                    0.00901, 0.00768, 0.00799, 0.00832,-0.03301, 0.00901, 0.00768, 0.00799, 0.00832, 0.00866,-0.03265,-0.03399, 0.00799, 
-                                    0.00832, 0.00866, 0.00901, 0.00768,-0.03367, 0.00832, 0.00866, 0.00901, 0.00768, 0.00799,-0.03335, 0.00866, 0.00901, 
-                                    0.00768, 0.00799, 0.00832,-0.03301, 0.00901, 0.00768, 0.00799, 0.00832, 0.00866,-0.03265,-0.03399, 0.00799, 0.00832, 
-                                    0.00866, 0.00901, 0.00768,-0.03367, 0.00832, 0.00866, 0.00901, 0.00768, 0.00799,-0.03335, 0.00866, 0.00901, 0.00768, 
-                                    0.00799, 0.00832,-0.03301, 0.00901, 0.00768, 0.00799, 0.00832, 0.00866,-0.03265,-0.03399, 0.00799, 0.00832, 0.00866, 
+                                    0.00866, 0.00901, 0.00768, 0.00799, 0.00832,-0.03301, 0.00901, 0.00768, 0.00799, 0.00832, 0.00866,-0.03265,-0.03399,
+                                    0.00799, 0.00832, 0.00866, 0.00901, 0.00768,-0.03367, 0.00832, 0.00866, 0.00901, 0.00768, 0.00799,-0.03335, 0.00866,
+                                    0.00901, 0.00768, 0.00799, 0.00832,-0.03301, 0.00901, 0.00768, 0.00799, 0.00832, 0.00866,-0.03265,-0.03399, 0.00799,
+                                    0.00832, 0.00866, 0.00901, 0.00768,-0.03367, 0.00832, 0.00866, 0.00901, 0.00768, 0.00799,-0.03335, 0.00866, 0.00901,
+                                    0.00768, 0.00799, 0.00832,-0.03301, 0.00901, 0.00768, 0.00799, 0.00832, 0.00866,-0.03265,-0.03399, 0.00799, 0.00832,
+                                    0.00866, 0.00901, 0.00768,-0.03367, 0.00832, 0.00866, 0.00901, 0.00768, 0.00799,-0.03335, 0.00866, 0.00901, 0.00768,
+                                    0.00799, 0.00832,-0.03301, 0.00901, 0.00768, 0.00799, 0.00832, 0.00866,-0.03265,-0.03399, 0.00799, 0.00832, 0.00866,
                                     0.00901, 0.00768,-0.03367, 0.00832, 0.00866, 0.00901, 0.00768, 0.00799,-0.03335, 0.00866, 0.00901, 0.00768, 0.00799, 0.00832,-0.03301, 0.00901});
 
     NDArray dLdwExp('c', {1,1,4}, {0.005,  0.00167, -0.00167, -0.005});
-    logits.linspace(-0.08, 0.04);    
-    weights.assign(0.5);    
+    logits.linspace(-0.08, 0.04);
+    weights.assign(0.5);
 
     nd4j::ops::softmax_cross_entropy_loss_grad op;
 
     auto results = op.execute({&logits, &weights, &labels}, {0.}, {2});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);       
+    auto *dLdp = results->at(0);
     auto *dLdw = results->at(1);
     auto *dLdl = results->at(2);
 
-    // dLdp->printIndexedBuffer(); 
+    // dLdp->printIndexedBuffer();
 
     // ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     // ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
     ASSERT_TRUE(dLdwExp.isSameShape(dLdw));
-    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));    
+    ASSERT_TRUE(dLdwExp.equalsTo(dLdw));
 
     delete results;
 }
@@ -2212,19 +2212,19 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test1) {
 
     NDArray labels('c', {2,3,4}, {1,0,0,0, 0,1,0,0, 0,0,1,0, 0,0,0,1, 1,0,0,0, 0,1,0,0});
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.76479, 0.2448, 0.2548, 0.26519, 0.23521,-0.7552, 0.2548, 0.26519, 0.23521, 0.2448,-0.7452, 0.26519,
                                    0.23521, 0.2448, 0.2548,-0.73481,-0.76479, 0.2448, 0.2548, 0.26519, 0.23521,-0.7552, 0.2548, 0.26519});
-    logits.linspace(-0.08, 0.04);    
+    logits.linspace(-0.08, 0.04);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&logits, &labels}, {}, {});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);    
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2236,19 +2236,19 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test2) {
 
     NDArray labels('c', {2,3,4}, {1,0,0,0, 0,1,0,1, 0,0,1,0, 0,0,0,1, 1,0,1,0, 0,1,0,0});
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.71836,  0.28164,  0.28164,  0.28164, 0.33051, -0.66949,  0.33051, -0.66949, 0.38785,  0.38785, -0.61215,  0.38785,
                                     0.28164,  0.28164,  0.28164, -0.71836,-0.66949,  0.33051, -0.66949,  0.33051, 0.38785, -0.61215,  0.38785,  0.38785});
-    logits.linspace(-0.08, 0.04);    
+    logits.linspace(-0.08, 0.04);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&logits, &labels}, {}, {1});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);        
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2260,18 +2260,18 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test3) {
 
     NDArray labels('c', {2,3}, {1,0,0, 0,1,1});
     NDArray logits('c', {2,3}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3}, {-0.52996,  0.47004,  0.47004, 0.52996, -0.47004, -0.47004});
-    logits.linspace(-0.08, 0.04);    
+    logits.linspace(-0.08, 0.04);
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&logits, &labels}, {}, {0});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);        
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2283,17 +2283,17 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test4) {
 
     NDArray labels('c', {2,1}, {1,1});
     NDArray logits('c', {2,1}, {-0.04, 0.04});
-    
-    NDArray dLdpExp('c', {2,1}, {0., 0.});    
+
+    NDArray dLdpExp('c', {2,1}, {0., 0.});
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&logits, &labels}, {}, {1});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);        
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2305,17 +2305,17 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test5) {
 
     NDArray labels('c', {2,1}, {1,0});
     NDArray logits('c', {2,1}, {-0.04, 0.04});
-    
-    NDArray dLdpExp('c', {2,1}, {-0.51999, 0.51999});    
+
+    NDArray dLdpExp('c', {2,1}, {-0.51999, 0.51999});
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&logits, &labels}, {}, {0});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);        
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2327,17 +2327,17 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test6) {
 
     NDArray labels('c', {1,2}, {1,1});
     NDArray logits('c', {1,2}, {-0.04, 0.04});
-    
-    NDArray dLdpExp('c', {1,2}, {0, 0});    
+
+    NDArray dLdpExp('c', {1,2}, {0, 0});
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&logits, &labels}, {}, {0});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);        
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2349,17 +2349,17 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test7) {
 
     NDArray labels('c', {2}, {0,1});
     NDArray logits('c', {2}, {-0.04, 0.04});
-    
+
     NDArray dLdpExp('c', {2}, {0.48001, -0.48001});
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&logits, &labels}, {}, {0});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);        
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2371,17 +2371,17 @@ TEST_F(DeclarableOpsTests11, softmaxCrossEntropyWithLogits_grad_test8) {
 
     NDArray labels('c', {1}, {1});
     NDArray logits('c', {1}, {0.04});
-    
+
     NDArray dLdpExp('c', {1}, {0});
 
     nd4j::ops::softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&logits, &labels}, {}, {0});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);        
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2420,19 +2420,19 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test1) {
 
     NDArray labels('c', {2}, {2,1}, nd4j::DataType::INT64);
     NDArray logits('c', {2,3}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3}, {0.30061,  0.33222, -0.63283, 0.30061, -0.66778,  0.36717});
-    
-    logits.linspace(0.1, 0.1);     
+
+    logits.linspace(0.1, 0.1);
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&labels, &logits}, {}, {});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);    
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2444,19 +2444,19 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test2) {
 
     NDArray labels('c', {2}, {0,1}, nd4j::DataType::INT64);
     NDArray logits('c', {2,3}, nd4j::DataType::DOUBLE);
-    
-    NDArray dLdpExp('c', {2,3}, {-0.69939,  0.33222,  0.36717, 0.30061, -0.66778,  0.36717});    
-    
+
+    NDArray dLdpExp('c', {2,3}, {-0.69939,  0.33222,  0.36717, 0.30061, -0.66778,  0.36717});
+
     logits.linspace(-0.1, 0.1);
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&labels, &logits}, {}, {});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);    
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2468,17 +2468,17 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test3) {
 
     NDArray labels('c', {}, {1}, nd4j::DataType::INT64);
     NDArray logits('c', {2}, {-0.2, 0.3});
-    
+
     NDArray dLdpExp('c', {2}, {0.37754, -0.37754});
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&labels, &logits}, {}, {});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);    
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2490,7 +2490,7 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test4) {
 
     NDArray labels('c', {2,3}, {0,1,1, 3,3,2}, nd4j::DataType::INT64);
     NDArray logits('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    
+
     NDArray dLdpExp('c', {2,3,4}, {-0.78616,  0.23633,  0.26118,  0.28865, 0.21384, -0.76367,  0.26118,  0.28865, 0.21384, -0.76367,  0.26118,  0.28865,
                                   0.21384,  0.23633,  0.26118, -0.71135, 0.21384,  0.23633,  0.26118, -0.71135, 0.21384,  0.23633, -0.73882,  0.28865});
     logits.linspace(-0.5, 0.1);
@@ -2498,11 +2498,11 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test4) {
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&labels, &logits}, {}, {});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);    
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 
@@ -2514,17 +2514,17 @@ TEST_F(DeclarableOpsTests11, sparseSoftmaxCrossEntropyWithLogits_grad_test5) {
 
     NDArray labels('c', {1,1}, {0}, nd4j::DataType::INT64);
     NDArray logits('c', {1,1,2}, {-0.3,0.2});
-    
-    NDArray dLdpExp('c', {1,1,2}, {-0.62246,  0.62246});    
+
+    NDArray dLdpExp('c', {1,1,2}, {-0.62246,  0.62246});
 
     nd4j::ops::sparse_softmax_cross_entropy_loss_with_logits_grad op;
 
     auto results = op.execute({&labels, &logits}, {}, {});
-    
+
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
-    auto *dLdp = results->at(0);    
-    
+    auto *dLdp = results->at(0);
+
     ASSERT_TRUE(dLdpExp.isSameShape(dLdp));
     ASSERT_TRUE(dLdpExp.equalsTo(dLdp));
 

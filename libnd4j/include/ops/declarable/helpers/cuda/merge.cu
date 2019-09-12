@@ -47,7 +47,7 @@ namespace nd4j {
                     for (int i = 0; i < numArrays; i++) {
                         auto x = reinterpret_cast<T*>(inArrs[i]);
                         auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
-                        auto val = x[shape::getIndexOffset(e, xShape, length)];;
+                        auto val = x[shape::getIndexOffset(e, xShape)];;
                         if (mVal < val) {
                             mIdx = static_cast<Z>(i);
                             mVal = val;
@@ -55,7 +55,7 @@ namespace nd4j {
                     }
                     __syncthreads();
 
-                    output[shape::getIndexOffset(e, outputShape, length)] = mIdx;
+                    output[shape::getIndexOffset(e, outputShape)] = mIdx;
                 }
             }
 
@@ -105,13 +105,13 @@ namespace nd4j {
                     for (int i = 0; i < numArrays; i++) {
                         auto x = reinterpret_cast<T*>(inArrs[i]);
                         auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
-                        auto val = x[shape::getIndexOffset(e, xShape, length)];;
+                        auto val = x[shape::getIndexOffset(e, xShape)];;
                         if (mVal < val)
                             mVal = val;
                     }
                     __syncthreads();
 
-                    output[shape::getIndexOffset(e, outputShape, length)] = mVal;
+                    output[shape::getIndexOffset(e, outputShape)] = mVal;
                 }
             }
 
@@ -160,10 +160,10 @@ namespace nd4j {
                         auto x = reinterpret_cast<T*>(inArrs[i]);
                         auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
 
-                        sum += x[shape::getIndexOffset(e, xShape, length)];
+                        sum += x[shape::getIndexOffset(e, xShape)];
                     }
 
-                    output[shape::getIndexOffset(e, outputShape, length)] = sum / numArrays;
+                    output[shape::getIndexOffset(e, outputShape)] = sum / numArrays;
                 }
             }
 
@@ -213,10 +213,10 @@ namespace nd4j {
                         auto x = reinterpret_cast<T*>(inArrs[i]);
                         auto xShape = reinterpret_cast<Nd4jLong *>(inShapes[i]);
 
-                        sum += x[shape::getIndexOffset(e, xShape, length)];
+                        sum += x[shape::getIndexOffset(e, xShape)];
                     }
 
-                    output[shape::getIndexOffset(e, outputShape, length)] = sum;
+                    output[shape::getIndexOffset(e, outputShape)] = sum;
                 }
             }
 

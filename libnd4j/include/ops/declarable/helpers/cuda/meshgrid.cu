@@ -55,8 +55,8 @@ namespace helpers {
             }
         } else {
             for (int i = threadIdx.x; i < length; i += blockDim.x) {
-                auto xOffset = shape::getIndexOffset(i, xShapeInfo, length);
-                auto zOffset = shape::getIndexOffset(i, zShapeInfo, length);
+                auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+                auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 
                 z[zOffset] = x[xOffset];
             }

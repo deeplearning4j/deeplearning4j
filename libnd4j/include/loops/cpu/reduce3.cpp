@@ -95,7 +95,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
         PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
         for(unsigned int i = 0; i < length; i++) {
             const auto threadNum = omp_get_thread_num();
-            auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
+            auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
             intermediate[threadNum] = OpType::update(intermediate[threadNum], OpType::op(x[offset], y[offset], extraParamsLocal + 3 * threadNum), extraParamsLocal + 3 * threadNum);
         }
     } else {
@@ -105,8 +105,8 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
         PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(t._numThreads)
         for(unsigned int i = 0; i < length; i++) {
             const auto threadNum = omp_get_thread_num();
-            auto xOffset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, length, canCastX);
-            auto yOffset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, length, canCastY);
+            auto xOffset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+            auto yOffset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
             intermediate[threadNum] = OpType::update(intermediate[threadNum], OpType::op(x[xOffset], y[yOffset], extraParamsLocal + 3 * threadNum), extraParamsLocal + 3 * threadNum);
         }
     }

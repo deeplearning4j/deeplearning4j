@@ -36,8 +36,8 @@ public class TensorArraySplit extends BaseTensorOp {
     public TensorArraySplit(){}
 
     @Override
-    public String tensorflowName() {
-        return "TensorArraySplitV3";
+    public String[] tensorflowNames() {
+        return new String[]{"TensorArraySplit", "TensorArraySplitV2", "TensorArraySplitV3"};
     }
 
     @Override

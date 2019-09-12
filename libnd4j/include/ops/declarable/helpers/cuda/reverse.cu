@@ -34,14 +34,12 @@ namespace helpers {
     static __global__ void reverseArrayKernel(void* input, Nd4jLong *inputShape, void* output, Nd4jLong *outputShape, Nd4jLong numOfElemsToReverse) {
         const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
-        __shared__ Nd4jLong length;
         __shared__ int linearStatus;
         __shared__ T* inputArr;
         __shared__ T* outputArr;
         __shared__ char inputOrder, outputOrder;
 
         if (threadIdx.x == 0) {
-            length = shape::length(inputShape);
             linearStatus = (shape::elementWiseStride(inputShape) == shape::elementWiseStride(outputShape)) && (inputOrder == outputOrder)? shape::elementWiseStride(inputShape):0;
 
             char inputOrder = shape::order(inputShape);
@@ -56,31 +54,28 @@ namespace helpers {
 
         for (Nd4jLong e = tid; e < limit; e += step) {
             // we're calculating offsets within input array
-            auto fOffset = shape::getIndexOffset(e, inputShape, length);
-            auto lOffset = shape::getIndexOffset(numOfElemsToReverse - e - 1, inputShape, length);
+            auto fOffset = shape::getIndexOffset(e, inputShape);
+            auto lOffset = shape::getIndexOffset(numOfElemsToReverse - e - 1, inputShape);
 
             // now we're storing input values
             auto v1 = inputArr[fOffset];
             auto v2 = inputArr[lOffset];
 
             // now we're calculating offsets within output array
-            auto zfOffset = shape::getIndexOffset(e, outputShape, length);
-            auto zlOffset = shape::getIndexOffset(numOfElemsToReverse - e - 1, outputShape, length);
+            auto zfOffset = shape::getIndexOffset(e, outputShape);
+            auto zlOffset = shape::getIndexOffset(numOfElemsToReverse - e - 1, outputShape);
 
             // and saving values to output arrays
             outputArr[zfOffset] = v2;
             outputArr[zlOffset] = v1;
-
-            //printf("TID: %i; E: %lld; z[%lld], z[%lld] = x[%lld], x[%lld];\n", tid, e, zfOffset, zlOffset, lOffset, fOffset);
         }
 
         // in case of odd array we'll have to move middle value
         if (odd && tid == 0) {
-            auto xOffset = shape::getIndexOffset(limit, inputShape, length);
-            auto zOffset = shape::getIndexOffset(limit, outputShape, length);
+            auto xOffset = shape::getIndexOffset(limit, inputShape);
+            auto zOffset = shape::getIndexOffset(limit, outputShape);
 
             outputArr[zOffset] = inputArr[xOffset];
-            //printf("TID: %i; E: %lld; z[%lld] = x[%lld];\n", tid, limit, zOffset, xOffset);
         }
     }
 

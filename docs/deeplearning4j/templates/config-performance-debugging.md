@@ -260,7 +260,7 @@ For inference, avoid using minibatch size of 1, as throughput will suffer. Unles
 
 For training, you should never use a minibatch size of 1 as overall performance and hardware utilization will be reduced. Network convergence may also suffer. Start with a minibatch size of 32-128, if memory will allow this to be used.
 
-For serving predictions in multi-threaded applications (such as a web server), [ParallelInference](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-scaleout/deeplearning4j-scaleout-parallelwrapper/src/main/java/org/deeplearning4j/parallelism/ParallelInference.java) should be used.
+For serving predictions in multi-threaded applications (such as a web server), [ParallelInference](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-scaleout/deeplearning4j-scaleout-parallelwrapper/src/main/java/org/deeplearning4j/parallelism/ParallelInference.java) should be used.
 
 
 ## Step 6: Ensure you are not using a single MultiLayerNetwork/ComputationGraph for inference from multiple threads
@@ -270,7 +270,7 @@ That said, most operations such as fit, output, etc use synchronized blocks. The
 In summary, using the one network from multiple threads should be avoided as it is not thread safe and can be a performance bottleneck.
 
 
-For inference from multiple threads, you should use one model per thread (as this avoids locks) or for serving predictions in multi-threaded applications (such as a web server), use [ParallelInference](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-scaleout/deeplearning4j-scaleout-parallelwrapper/src/main/java/org/deeplearning4j/parallelism/ParallelInference.java).
+For inference from multiple threads, you should use one model per thread (as this avoids locks) or for serving predictions in multi-threaded applications (such as a web server), use [ParallelInference](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-scaleout/deeplearning4j-scaleout-parallelwrapper/src/main/java/org/deeplearning4j/parallelism/ParallelInference.java).
 
 ## Step 7: Check Data Types
 
@@ -386,7 +386,7 @@ In summary, in ND4J we use OpenMP pallelism at the c++ level to increase operati
 
 This also applies if the CPU resources are shared with other computationally demanding processes.
 
-In either case, you may see better overall throughput by reducing the number of OpenMP threads by setting the OMP_NUM_THREADS environment variable - see [ND4JEnvironmentVars](https://github.com/deeplearning4j/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/config/ND4JEnvironmentVars.java) for details.
+In either case, you may see better overall throughput by reducing the number of OpenMP threads by setting the OMP_NUM_THREADS environment variable - see [ND4JEnvironmentVars](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-common/src/main/java/org/nd4j/config/ND4JEnvironmentVars.java) for details.
 
 One reason for reducing OMP_NUM_THREADS improving overall performance is due to reduced [cache thrashing](https://en.wikipedia.org/wiki/Thrashing_(computer_science)).
 

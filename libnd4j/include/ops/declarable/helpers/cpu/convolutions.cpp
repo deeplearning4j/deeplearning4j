@@ -288,7 +288,7 @@ namespace nd4j {
             //----- add biases if required -----//
             if(bias)
                 // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
-                helpers::addBias(*output, *bias, isNCHW);
+                helpers::addBias(block, *output, *bias, *output, isNCHW);
 
             if(!isNCHW)
                 delete input;
@@ -370,7 +370,7 @@ namespace nd4j {
 
 //////////////////////////////////////////////////////////////////////////
         template <typename X, typename Y>
-        static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+        static void depthwiseConv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
             // input     [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
             // weights   [kH, kW, iC, mC] always
@@ -417,7 +417,8 @@ namespace nd4j {
             MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 
             if(bias)
-                output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+                // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+                helpers::addBias(block, *output, *bias, *output, isNCHW);
 
             if(!isNCHW)
                 delete input;
@@ -1661,7 +1662,7 @@ namespace nd4j {
             BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2dBP_, (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::depthwiseConv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-            BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::depthwiseConv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
             BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);

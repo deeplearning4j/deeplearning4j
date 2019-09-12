@@ -28,70 +28,116 @@ namespace helpers {
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void addBias_(NDArray& input, const NDArray& bias, const bool isNCHW) {
+static void addBias_(const NDArray& input, const NDArray& bias, NDArray &output, const bool isNCHW) {
 
-    // input  [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
-    // bias   [oC]
+    // bias [oC]
 
-          X* inBuff   = input.bufferAsT<X>();
-    const Y* biasBuff = bias.bufferAsT<Y>();    
+    // if(input_rank == 4)
+        // input and output have same shapes: [bS, oH, oW, oC] (NHWC) or [bS, oC, oH, oW] (NCHW)
+    // if(input_rank == 5)
+        // input and output have same shapes: [bS, oD, oH, oW, oC] (NHWC) or [bS, oD, oC, oH, oW] (NCHW)
+    // else
+        // apply applyBroadCast
 
-    int bS, iC, iH, iW, oC, oH, oW;                             // batch size, input channels, input height/width, output channels, output height/width;
-    bS = input.sizeAt(0);    
-    const Nd4jLong stride0 = input.stridesOf()[0];
-    const Nd4jLong stride1 = input.stridesOf()[1];
-    const Nd4jLong stride2 = input.stridesOf()[2];
 
-    uint biasShapeInfoCast[MAX_RANK];    
-    bool canCastBias = nd4j::DataTypeUtils::castShapeInfo(bias.getShapeInfo(), biasShapeInfoCast);
-    
-    if(isNCHW) {
-        
-        oC = input.sizeAt(1);
-        oH = input.sizeAt(2);
-        oW = input.sizeAt(3);
+    const X* x = input.bufferAsT<X>();
+    const Y* y = bias.bufferAsT<Y>();
+          X* z = output.bufferAsT<X>();
 
-        const int oHoW = oH*oW;
+    const bool inOutAreSame = x == z;
 
-        PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
-        for (int i = 0; i < bS; ++i) {
-            for (int c = 0; c < oC; ++c) {
-                
-                auto biasOffset = shape::indexOffset(c, bias.getShapeInfo(), biasShapeInfoCast, oC, canCastBias);
-                auto inOffset = i * stride0 + c * stride1;
+    const uint bS           = output.sizeAt(0);              // batch size
+    const Nd4jLong yStrideC = bias.stridesOf()[0];
+    const Nd4jLong zStrideB = output.stridesOf()[0];
 
-                PRAGMA_OMP_SIMD
-                for (uint k = 0; k < oHoW; ++k)
-                    inBuff[inOffset + k] += static_cast<X>(biasBuff[biasOffset]);
-            }
+    if(output.rankOf() == 4) {
+
+        const uint C  = isNCHW ? output.sizeAt(1) : output.sizeAt(3);     // channels
+        const uint oH = isNCHW ? output.sizeAt(2) : output.sizeAt(1);     // height
+        const uint oW = isNCHW ? output.sizeAt(3) : output.sizeAt(2);     // width
+
+        const Nd4jLong zStrideC = isNCHW ? output.stridesOf()[1] : output.stridesOf()[3];
+        const Nd4jLong zStrideH = isNCHW ? output.stridesOf()[2] : output.stridesOf()[1];
+        const Nd4jLong zStrideW = isNCHW ? output.stridesOf()[3] : output.stridesOf()[2];
+
+        if(inOutAreSame) {
+
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(4))
+            for(uint b = 0; b < bS; ++b)
+                for(uint c = 0; c < C; ++c)
+                    for(uint h = 0; h < oH ; ++h)
+                        for(uint w = 0; w < oW ; ++w)
+                            z[b*zStrideB + c*zStrideC + h*zStrideH + w*zStrideW] += static_cast<X>(y[c*yStrideC]);
+        }
+        else {
+
+            const Nd4jLong xStrideB = input.stridesOf()[0];
+            const Nd4jLong xStrideC = isNCHW ? input.stridesOf()[1] : input.stridesOf()[3];
+            const Nd4jLong xStrideH = isNCHW ? input.stridesOf()[2] : input.stridesOf()[1];
+            const Nd4jLong xStrideW = isNCHW ? input.stridesOf()[3] : input.stridesOf()[2];
+
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(4))
+            for(uint b = 0; b < bS; ++b)
+                for(uint c = 0; c < C; ++c)
+                    for(uint h = 0; h < oH ; ++h)
+                        for(uint w = 0; w < oW ; ++w)
+                            z[b*zStrideB + c*zStrideC + h*zStrideH + w*zStrideW] = x[b*xStrideB + c*xStrideC + h*xStrideH + w*xStrideW] +  static_cast<X>(y[c*yStrideC]);
+        }
+    }
+    else if(output.rankOf() == 5) {
+
+        const uint C  = isNCHW ? output.sizeAt(1) : output.sizeAt(4);     // channels
+        const uint oD = isNCHW ? output.sizeAt(2) : output.sizeAt(1);     // depth
+        const uint oH = isNCHW ? output.sizeAt(3) : output.sizeAt(2);     // height
+        const uint oW = isNCHW ? output.sizeAt(4) : output.sizeAt(3);     // width
+
+        const Nd4jLong zStrideC = isNCHW ? output.stridesOf()[1] : output.stridesOf()[4];
+        const Nd4jLong zStrideD = isNCHW ? output.stridesOf()[2] : output.stridesOf()[1];
+        const Nd4jLong zStrideH = isNCHW ? output.stridesOf()[3] : output.stridesOf()[2];
+        const Nd4jLong zStrideW = isNCHW ? output.stridesOf()[4] : output.stridesOf()[3];
+
+        if(inOutAreSame) {
+
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(5))
+            for(uint b = 0; b < bS; ++b)
+                for(uint c = 0; c < C; ++c)
+                    for(uint d = 0; d < oD ; ++d)
+                        for(uint h = 0; h < oH ; ++h)
+                            for(uint w = 0; w < oW ; ++w)
+                                z[b*zStrideB + c*zStrideC + d*zStrideD + h*zStrideH + w*zStrideW] += static_cast<X>(y[c*yStrideC]);
+        }
+        else {
+
+            const Nd4jLong xStrideB = input.stridesOf()[0];
+            const Nd4jLong xStrideC = isNCHW ? input.stridesOf()[1] : input.stridesOf()[4];
+            const Nd4jLong xStrideD = isNCHW ? input.stridesOf()[2] : input.stridesOf()[1];
+            const Nd4jLong xStrideH = isNCHW ? input.stridesOf()[3] : input.stridesOf()[2];
+            const Nd4jLong xStrideW = isNCHW ? input.stridesOf()[4] : input.stridesOf()[3];
+
+            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(5))
+            for(uint b = 0; b < bS; ++b)
+                for(uint c = 0; c < C; ++c)
+                    for(uint d = 0; d < oD ; ++d)
+                        for(uint h = 0; h < oH ; ++h)
+                            for(uint w = 0; w < oW ; ++w)
+                                z[b*zStrideB + c*zStrideC + d*zStrideD + h*zStrideH + w*zStrideW] = x[b*xStrideB + c*xStrideC + d*xStrideD + h*xStrideH + w*xStrideW] + static_cast<X>(y[c*yStrideC]);
         }
     }
     else {
-        
-        oC = input.sizeAt(3);
-        oH = input.sizeAt(1);
-        oW = input.sizeAt(2);
-
-        PRAGMA_OMP_PARALLEL_FOR
-        for (int i = 0; i < bS*oH*oW; ++i) {
-
-            PRAGMA_OMP_SIMD
-            for (int c = 0; c < oC; ++c) {
-                auto biasOffset = shape::indexOffset(c, bias.getShapeInfo(), biasShapeInfoCast, oC, canCastBias);
-                inBuff[i * oC + c] += static_cast<X>(biasBuff[biasOffset]);
-            }                            
-        }
-    }        
+         const int channelDim = isNCHW ? 1 : input.rankOf() - 1;      // second or last
+         const_cast<NDArray&>(input).applyBroadcast(nd4j::broadcast::Add, {channelDim}, &bias, &output);
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
-void addBias(NDArray& input, const NDArray& bias, const bool isNCHW) {
+void addBias(nd4j::graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW) {
 
-    BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias_, (input, bias, isNCHW), FLOAT_TYPES, FLOAT_TYPES);
+    // bias.rankOf() == 1 ? bias : bias.reshape(bias.ordering(), {bias.lengthOf()})
+    BUILD_DOUBLE_SELECTOR(input.dataType(), bias.dataType(), addBias_, (input, bias, output, isNCHW), FLOAT_TYPES, FLOAT_TYPES);
 }
 
 
-BUILD_DOUBLE_TEMPLATE(template void addBias_, (NDArray& input, const NDArray& bias, const bool isNCHW), FLOAT_TYPES, FLOAT_TYPES);
+BUILD_DOUBLE_TEMPLATE(template void addBias_, (const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW), FLOAT_TYPES, FLOAT_TYPES);
 
 }
 }

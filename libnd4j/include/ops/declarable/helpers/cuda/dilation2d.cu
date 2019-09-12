@@ -72,7 +72,7 @@ __global__ static void dilation2dCuda(const void* vx, const Nd4jLong* xShapeInfo
     auto xzCoords = sharedMem + threadIdx.x * (xzRank + yRank);
     auto yCoords  = xzCoords + xzRank;
 
-    shape::index2coords(xzRank, zShapeInfo + 1, zInd, zLen, xzCoords);
+    shape::index2coords(zInd, zShapeInfo, xzCoords);
 
     const auto zOffset = shape::getOffset(zShapeInfo, xzCoords);
 

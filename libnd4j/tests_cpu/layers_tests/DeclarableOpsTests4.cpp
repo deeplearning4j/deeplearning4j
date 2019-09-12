@@ -245,7 +245,7 @@ TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_12) {
 
 TEST_F(DeclarableOpsTests4, Test_BiasAdd_NHWC_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 3, 3, 2});
-    auto bias = NDArrayFactory::create<double>('c', {1, 2}, {1, 2});
+    auto bias = NDArrayFactory::create<double>('c', {2}, {1, 2});
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 3, 2}, {1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f, 1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f});
 
     nd4j::ops::biasadd op;
@@ -263,11 +263,11 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_NHWC_1) {
 
 TEST_F(DeclarableOpsTests4, Test_BiasAdd_NCHW_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 2, 3, 3});
-    auto bias = NDArrayFactory::create<double>('c', {1, 2}, {1, 2});
-    auto exp = NDArrayFactory::create<double>('c', {2, 2, 3, 3}, {1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f, 1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f});
+    auto bias = NDArrayFactory::create<double>('c', {2}, {1, 2});
+    auto exp = NDArrayFactory::create<double>('c', {2, 2, 3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2});
 
     nd4j::ops::biasadd op;
-    auto result = op.execute({&x, &bias}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x, &bias}, {}, {}, {true}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
@@ -354,6 +354,43 @@ TEST_F(DeclarableOpsTests4, Test_FlattenTests_2) {
     auto z = result->at(0);
 //    z->printIndexedBuffer("Flatten2");
 //    z->printShapeInfo("Flatten2 shape");
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, Test_FlattenTests_3) {
+    NDArray x('c', {2,2}, {1, 2, 3, 4}, nd4j::DataType::INT32);
+    NDArray y('f', {2,2}, nd4j::DataType::INT32);
+    NDArray exp('c', {8}, {1, 2, 3, 4, 1, 2, 3, 4}, nd4j::DataType::INT32);
+
+    y.assign(x);
+
+    nd4j::ops::flatten op;
+    auto result = op.execute({&x, &y}, {}, {'c'});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, Test_FlattenTests_4) {
+    NDArray x('c', {2,2}, {1, 2, 3, 4}, nd4j::DataType::INT32);
+    NDArray y('f', {2,2}, nd4j::DataType::INT32);
+    NDArray exp('c', {8}, {1, 3, 2, 4, 1, 3, 2, 4}, nd4j::DataType::INT32);
+
+    y.assign(x);
+
+    nd4j::ops::flatten op;
+    auto result = op.execute({&x, &y}, {}, {'f'});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -608,7 +645,7 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_1) {
     auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 1, 2, 3});
 
     nd4j::ops::biasadd op;
-    auto result = op.execute({&x, &row}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
+    auto result = op.execute({&x, &row}, {}, {}, {true}, false, nd4j::DataType::DOUBLE);
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 

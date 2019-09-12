@@ -43,8 +43,8 @@ namespace helpers {
                         for (int tid = threadIdx.x; tid < tadLength; tid += blockDim.x) {
                             auto top = 2 * tid + 1;
                             if (top < tadLength) {
-                                auto t0 = shape::getIndexOffset(top - 1, xTadShapeInfo, tadLength);
-                                auto t1 = shape::getIndexOffset(top, xTadShapeInfo, tadLength);
+                                auto t0 = shape::getIndexOffset(top - 1, xTadShapeInfo);
+                                auto t1 = shape::getIndexOffset(top, xTadShapeInfo);
 
                                 if (x[t0] > x[t1]) {
                                     //swap values
@@ -58,8 +58,8 @@ namespace helpers {
                         for (int tid = threadIdx.x; tid < tadLength; tid += blockDim.x) {
                             auto top = 2 * tid + 2;
                             if (top < tadLength) {
-                                auto t0 = shape::getIndexOffset(top - 1, xTadShapeInfo, tadLength);
-                                auto t1 = shape::getIndexOffset(top, xTadShapeInfo, tadLength);
+                                auto t0 = shape::getIndexOffset(top - 1, xTadShapeInfo);
+                                auto t1 = shape::getIndexOffset(top, xTadShapeInfo);
 
                                 if (x[t0] > x[t1]) {
                                     //swap values
@@ -76,7 +76,7 @@ namespace helpers {
 
             // saving final value
             if (threadIdx.x == 0)
-                z[shape::getIndexOffset(t, zShapeInfo, zLength)] = x[shape::getIndexOffset(position, xTadShapeInfo, tadLength)];
+                z[shape::getIndexOffset(t, zShapeInfo)] = x[shape::getIndexOffset(position, xTadShapeInfo)];
             __syncthreads();
         }
     }

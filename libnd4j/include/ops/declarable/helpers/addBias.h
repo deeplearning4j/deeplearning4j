@@ -22,14 +22,15 @@
 #define LIBND4J_ADDBIAS_H
 
 #include <ops/declarable/helpers/helpers.h>
+#include <graph/Context.h>
 
 namespace nd4j    {
 namespace ops     {
 namespace helpers {
 
 
-	void addBias(NDArray& input, const NDArray& bias, const bool isNCHW);
-    
+	void addBias(graph::Context& block, const NDArray& input, const NDArray& bias, NDArray& output, const bool isNCHW);
+
 
 }
 }

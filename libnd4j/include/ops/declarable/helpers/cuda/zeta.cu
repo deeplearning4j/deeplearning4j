@@ -46,9 +46,9 @@ __global__ static void zetaCuda(const void *vx, const Nd4jLong *xShapeInfo,
 
     for (int i = tid; i < len; i += totalThreads) {
 
-        const auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
-        const auto qOffset = shape::getIndexOffset(i, qShapeInfo, len);
-        const auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
+        const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+        const auto qOffset = shape::getIndexOffset(i, qShapeInfo);
+        const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 
         z[zOffset] = zetaScalar<T>(x[xOffset], q[qOffset]);
     }

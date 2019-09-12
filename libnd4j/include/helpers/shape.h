@@ -887,7 +887,7 @@ namespace shape {
 * @param indices the indices to iterate over
 * @return the double at the specified index
 */
-    ND4J_EXPORT _CUDA_HD Nd4jLong getOffset(Nd4jLong baseOffset, const Nd4jLong *shape, const Nd4jLong *stride,  const Nd4jLong *indices, const int rank);
+
     ND4J_EXPORT _CUDA_HD Nd4jLong getOffset(const Nd4jLong *shapeInfo, const Nd4jLong *indices, Nd4jLong baseOffset = 0);
     ND4J_EXPORT Nd4jLong getOffset(const Nd4jLong *shapeInfo, const std::vector<uint>& indices);
 
@@ -897,20 +897,19 @@ namespace shape {
 
     /**
     * Convert a linear index to the corresponding coordinates
-    * for example if shape is {2, 4}, then index 5 corresponds to following coordinates
-    * -> [1, 1] in case of c order
-    * -> [1, 2] in case of f order
+    * for example if shape is {2, 4}, then index 5 corresponds to coordinates [1, 1]
     */
-    ND4J_EXPORT _CUDA_HD void index2coords(const int rank, const Nd4jLong *shape, Nd4jLong index, Nd4jLong arrLen, Nd4jLong *coords, const char order = 'c');
-    ND4J_EXPORT _CUDA_HD void index2coords(const int rank, const Nd4jLong *shape, Nd4jLong index, Nd4jLong *coords, const char order = 'c');
+    ND4J_EXPORT _CUDA_HD void index2coords(Nd4jLong index, const Nd4jLong *shapeInfo,  Nd4jLong *coords);
+    ND4J_EXPORT _CUDA_HD void index2coords(Nd4jLong index, const int rank, const Nd4jLong *shape, Nd4jLong *coords);
+
+
 
     /**
     * Convert coordinates to the corresponding linear index (sequence number in other words)
-    * for example if shape is {2, 4}, then:
-    * in case of c order and coordinates [1, 1] index 5 is returned
-    * in case of f order and coordinates [1, 2] index 5 is returned
+    * for example if shape is {2, 4} and coordinates [1, 1] then index 5 is returned
     */
-    ND4J_EXPORT _CUDA_HD Nd4jLong coords2index(const int rank, const Nd4jLong *shape, const Nd4jLong *coords, const char order = 'c');
+    ND4J_EXPORT _CUDA_HD Nd4jLong coords2index(const Nd4jLong *shapeInfo, const Nd4jLong *coords);
+    ND4J_EXPORT _CUDA_HD Nd4jLong coords2index(const int rank, const Nd4jLong *shape, const Nd4jLong *coords);
 
    /**
    * increment n-dimensional array by one iteration by changing coord appropriately
@@ -921,24 +920,10 @@ namespace shape {
    */
 
    /* calculates an array buffer offset for given "index" using following formula: offset = coord_0*stride_0 + coord_1*stride_1 + ... + coord_{rank-1}*stride_{rank-1}
-    * arrLen - array length
    */
-    ND4J_EXPORT _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo, uint arrLen);
-    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen);
-    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order);
-    ND4J_EXPORT _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeInfo, const uint* uShapeInfo, Nd4jLong arrLen, const bool useUnsigned);
-
-    /**
-   * Compute the real linear indices for the given shape and stride
-   */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *computeIndices(int rank,  Nd4jLong *shape,  Nd4jLong *stride);
-
-    /**
-   * Compute the real linear indices for the
-     * given shape buffer. Shape,stride and rank are derived
-     * from the buffer
-   */
-    ND4J_EXPORT _CUDA_HD Nd4jLong *computeIndices( Nd4jLong *shapeBuffer);
+    ND4J_EXPORT _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo);
+    ND4J_EXPORT _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo);
+    ND4J_EXPORT _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeInfo, const uint* uShapeInfo, const bool useUnsigned);
 
     ND4J_EXPORT _CUDA_HD void printShapeInfo(Nd4jLong *shapeInfo);
 
@@ -1749,56 +1734,33 @@ __device__ INLINEDEF Nd4jLong *cuMalloc(Nd4jLong *buffer, long size) {
         return output;
     }
 
-/**
- * Compute the real linear indices for the given shape and stride
- */
-    INLINEDEF _CUDA_HD Nd4jLong *computeIndices(int rank, Nd4jLong *shape,  Nd4jLong *stride) {
-        Nd4jLong length = shape::prodLong(shape,rank);
+//////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD Nd4jLong coords2index(const Nd4jLong *shapeInfo, const Nd4jLong *indices) {
 
-        traceNew(13);
+    Nd4jLong index, shift = 1;;
 
-        Nd4jLong *ret = new Nd4jLong[length];
-        for(int i = 0; i < length; i++) {
-            Nd4jLong *idx = new Nd4jLong[rank];
-            shape::index2coords(rank, shape, i, idx, 'f');
-            ret[i] = shape::getOffset(0, shape, stride, idx, rank);
-            delete[] idx;
-        }
-
-        return ret;
+    index = indices[shapeInfo[0] - 1];
+    for(uint i = shapeInfo[0]; i > 1; --i) {
+        shift *= shapeInfo[i];
+        index += shift * indices[i - 2];
     }
 
-/**
-* Compute the real linear indices for the given shape and stride
-*/
-    INLINEDEF _CUDA_HD Nd4jLong *computeIndices(Nd4jLong *shapeBuffer) {
-        return computeIndices(shape::rank(shapeBuffer),shape::shapeOf(shapeBuffer),shape::stride(shapeBuffer));
-    }
-
+    return index;
+}
 
 //////////////////////////////////////////////////////////////////////
-    INLINEDEF _CUDA_HD Nd4jLong coords2index(const int rank, const Nd4jLong *shape, const Nd4jLong *indices, const char order) {
+INLINEDEF _CUDA_HD Nd4jLong coords2index(const int rank, const Nd4jLong *shape, const Nd4jLong *indices) {
 
-        Nd4jLong index, shift = 1;;
+    Nd4jLong index, shift = 1;;
 
-        if(order == 'c') {
-
-            index = indices[rank - 1];
-            for(int i = rank - 2; i >= 0; --i) {
-                shift *= shape[i + 1];
-                index += shift * indices[i];
-            }
-        }
-        else {
-            index = indices[0];
-            for(int i = 1; i < rank; ++i) {
-                shift *= shape[i - 1];
-                index += shift * indices[i];
-            }
-        }
-
-        return index;
+    index = indices[rank - 1];
+    for(uint i = rank - 1; i >= 1; --i) {
+        shift *= shape[i];
+        index += shift * indices[i - 1];
     }
+
+    return index;
+}
 
 template <typename T>
  INLINEDEF _CUDA_HD void fill(T* buffer, T value, Nd4jLong length) {
@@ -1809,84 +1771,109 @@ template <typename T>
  }
 
 
-//////////////////////////////////////////////////////////////////////
-    INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen) {
+// //////////////////////////////////////////////////////////////////////
+//     INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen) {
 
-        const Nd4jLong ews = shapeInfo[shapeInfo[0] + shapeInfo[0] + 2];
+//         const Nd4jLong ews = shapeInfo[shapeInfo[0] + shapeInfo[0] + 2];
 
-        if(ews > 0 && order(shapeInfo) == 'c')
-           if (ews == 1)
-               return index;
-           else
-               return ews * index;
+//         if(ews > 0 && order(shapeInfo) == 'c')
+//            if (ews == 1)
+//                return index;
+//            else
+//                return ews * index;
 
-        Nd4jLong offset = 0;
-        Nd4jLong rank = shapeInfo[0];
-        for(int i = 1; i <= shapeInfo[0]; ++i) {
-            arrLen /= shapeInfo[i];
-            if(arrLen > 0 && shapeInfo[i] > 1) {
-                offset += (index / arrLen) * shapeInfo[i + rank];
-                index %= arrLen;
-            }
-        }
-        return offset;
-    }
+//         Nd4jLong offset = 0;
+//         Nd4jLong rank = shapeInfo[0];
+//         for(int i = 1; i <= shapeInfo[0]; ++i) {
+//             arrLen /= shapeInfo[i];
+//             if(arrLen > 0 && shapeInfo[i] > 1) {
+//                 offset += (index / arrLen) * shapeInfo[i + rank];
+//                 index %= arrLen;
+//             }
+//         }
+//         return offset;
+//     }
 
-    INLINEDEF _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo, uint arrLen) {
+//     INLINEDEF _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo, uint arrLen) {
 
-        const uint rank = shapeInfo[0];
-        const uint ews = shapeInfo[rank + rank + 2];
+//         const uint rank = shapeInfo[0];
+//         const uint ews = shapeInfo[rank + rank + 2];
 
-        if(ews > 0 && shapeInfo[rank + rank + 3] == 99)
-           if (ews == 1)
-               return index;
-           else
-               return ews * index;
+//         if(ews > 0 && shapeInfo[rank + rank + 3] == 99)
+//            if (ews == 1)
+//                return index;
+//            else
+//                return ews * index;
 
-        uint offset = 0;
+//         uint offset = 0;
 
-        for(uint i = 1; i <= rank; ++i) {
-            arrLen /= shapeInfo[i];
-            if(arrLen > 0 && shapeInfo[i] > 1) {
-                offset += (index / arrLen) * shapeInfo[i + rank];
-                index %= arrLen;
-            }
-        }
-        return offset;
-    }
-
-    INLINEDEF _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeInfo, const uint* uShapeInfo, Nd4jLong arrLen, const bool useUnsigned) {
-
-        if(useUnsigned)
-            return getIndexOffset(static_cast<uint>(index), uShapeInfo, static_cast<uint>(arrLen));
-
-        return getIndexOffset(index, lShapeInfo, arrLen);
-    }
+//         for(uint i = 1; i <= rank; ++i) {
+//             arrLen /= shapeInfo[i];
+//             if(arrLen > 0 && shapeInfo[i] > 1) {
+//                 offset += (index / arrLen) * shapeInfo[i + rank];
+//                 index %= arrLen;
+//             }
+//         }
+//         return offset;
+//     }
 
 //////////////////////////////////////////////////////////////////////
-    INLINEDEF _CUDA_HD Nd4jLong getIndexOrderOffset(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong arrLen, const char order) {
+INLINEDEF _CUDA_HD Nd4jLong getIndexOffset(Nd4jLong index, const Nd4jLong *shapeInfo) {
 
-        Nd4jLong offset = 0;
-        if(order == 'c') {
-            for(int i = 1; i <= *shapeInfo; ++i) {
-                arrLen /= shapeInfo[i];
-                if(arrLen > 0 && shapeInfo[i] > 1) {
-                    offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
-                    index %= arrLen;
-                }
-            }
-        }
-        else {
-            for(int i = *shapeInfo; i >= 1 ; --i) {
-                arrLen /= shapeInfo[i];
-                if(arrLen > 0 && shapeInfo[i] > 1) {
-                    offset += (index / arrLen) * shapeInfo[i + *shapeInfo];
-                    index %= arrLen;
-                }
-            }
-        }
-        return offset;
+    if (shapeInfo[2 * shapeInfo[0] + 3] == 99) {
+
+        const Nd4jLong ews = shapeInfo[2 * shapeInfo[0] + 2];
+        if (ews == 1)
+            return index;
+        else if(ews > 1)
+            return ews * index;
     }
+
+    Nd4jLong offset = 0;
+
+    for(uint i = shapeInfo[0]; i > 1; --i) {
+        offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
+        index /= shapeInfo[i];
+    }
+
+    offset += index * shapeInfo[1 + shapeInfo[0]];  // last iteration
+
+    return offset;
+}
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD uint getIndexOffset(uint index, const uint *shapeInfo) {
+
+    if (shapeInfo[2 * shapeInfo[0] + 3] == 99) {
+
+        const Nd4jLong ews = shapeInfo[2 * shapeInfo[0] + 2];
+        if (ews == 1)
+            return index;
+        else if(ews > 1)
+            return ews * index;
+    }
+
+    uint offset = 0;
+
+    for(uint i = shapeInfo[0]; i > 1; --i) {
+        offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
+        index /= shapeInfo[i];
+    }
+
+    offset += index * shapeInfo[1 + shapeInfo[0]];  // last iteration
+
+    return offset;
+}
+
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD Nd4jLong indexOffset(Nd4jLong index, const Nd4jLong* lShapeInfo, const uint* uShapeInfo, const bool useUnsigned) {
+
+    if(useUnsigned)
+        return getIndexOffset(static_cast<uint>(index), uShapeInfo);
+
+    return getIndexOffset(index, lShapeInfo);
+}
 
 /**
  *
@@ -2394,7 +2381,7 @@ template <typename T>
         auto indices = new Nd4jLong[rank];
         memset((void *) indices,0,rank * sizeof(Nd4jLong));
         indices[0] = sliceIdx;
-        Nd4jLong offset = shape::getOffset(0,newShape,newStride,indices,rank);
+        Nd4jLong offset = shape::getOffset(newShapeBuffer, indices);
         newShapeBuffer[shape::shapeInfoLength(newRank) - 3] = offset;
 
         // set current order and ews
@@ -3201,30 +3188,30 @@ INLINEDEF _CUDA_HD bool haveSameShapeAndStrides(const Nd4jLong *shapeInfo1, cons
 * @param indices the indices to iterate over
 * @return the double at the specified index
 */
-    INLINEDEF _CUDA_HD Nd4jLong getOffset(Nd4jLong baseOffset, const Nd4jLong *shape,  const Nd4jLong *stride,  const Nd4jLong *indices, const int rank) {
-        Nd4jLong offset = baseOffset;
-        for(int i = 0; i < rank; i++) {
-            if(shape[i] != 1)
-                offset += indices[i] * stride[i];
-        }
 
-        return offset;
-    }
+//////////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD Nd4jLong getOffset(const Nd4jLong *shapeInfo, const Nd4jLong *indices, Nd4jLong baseOffset) {
 
-    INLINEDEF _CUDA_HD Nd4jLong getOffset(const Nd4jLong *shapeInfo, const Nd4jLong *indices, Nd4jLong baseOffset) {
-        return shape::getOffset(baseOffset, shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo)), shape::stride(const_cast<Nd4jLong*>(shapeInfo)), indices, shapeInfo[0]);
-    }
+    Nd4jLong offset = baseOffset;
 
-    INLINEDEF Nd4jLong getOffset(const Nd4jLong *shapeInfo, const std::vector<uint>& indices) {
+    for(uint i = 1; i <= shapeInfo[0]; ++i)
+        if(shapeInfo[i] != 1)
+            offset += indices[i - 1] * shapeInfo[shapeInfo[0] + i];
 
-        Nd4jLong offset = 0;
+    return offset;
+}
 
-        for(uint i = 0; i < shapeInfo[0]; ++i)
-            if(shapeInfo[i + 1] != 1)
-                offset += indices[i] * shapeInfo[shapeInfo[0] + i + 1];
+//////////////////////////////////////////////////////////////////////////
+INLINEDEF Nd4jLong getOffset(const Nd4jLong *shapeInfo, const std::vector<uint>& indices) {
 
-        return offset;
-    }
+    Nd4jLong offset = 0;
+
+    for(uint i = 1; i <= shapeInfo[0]; ++i)
+        if(shapeInfo[i] != 1)
+            offset += indices[i - 1] * shapeInfo[shapeInfo[0] + i];
+
+    return offset;
+}
 
 
 
@@ -4209,24 +4196,24 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
     INLINEDEF _CUDA_HD Nd4jLong subArrayIndex(const Nd4jLong maxIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude, const int dimsLen) {
 
         Nd4jLong maxIdxs[MAX_RANK];
-        shape::index2coords(shape::rank(maxShapeInfo), const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<Nd4jLong&>(maxIdx), maxIdxs, shape::order(maxShapeInfo));
+        shape::index2coords(const_cast<Nd4jLong&>(maxIdx), maxShapeInfo, maxIdxs);
 
         Nd4jLong minIdxs[MAX_RANK];
         maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
 
-        return coords2index(shape::rank(minShapeInfo), minShapeInfo + 1, minIdxs);
+        return shape::coords2index(minShapeInfo, minIdxs);
     }
 
     //////////////////////////////////////////////////////////////////////
     INLINEDEF _CUDA_HD Nd4jLong subArrayOffset(const Nd4jLong maxIdx, const Nd4jLong* maxShapeInfo, const Nd4jLong* minShapeInfo, const int* dimsToExclude, const int dimsLen) {
 
         Nd4jLong maxIdxs[MAX_RANK];
-        shape::index2coords(shape::rank(maxShapeInfo), const_cast<Nd4jLong *>(maxShapeInfo)+1, const_cast<Nd4jLong&>(maxIdx), maxIdxs, shape::order(maxShapeInfo));
+        shape::index2coords(const_cast<Nd4jLong&>(maxIdx), maxShapeInfo, maxIdxs);
 
         Nd4jLong minIdxs[MAX_RANK];
         maxIndToMinInd(maxIdxs, minIdxs, maxShapeInfo, minShapeInfo, dimsToExclude, dimsLen);
 
-        return getOffset(0, minShapeInfo + 1,  minShapeInfo + shape::rank(minShapeInfo) + 1, minIdxs, shape::rank(minShapeInfo));
+        return getOffset(minShapeInfo, minIdxs);
     }
 
     //////////////////////////////////////////////////////////////////////
@@ -4246,7 +4233,7 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
         int N, minI, maxI;
 
         // calculate min per-dim-indices which corresponds to absolute minIdx index
-        shape::index2coords(rankMin, minShapeInfo + 1, minIdx, indices, order(minShapeInfo));
+        shape::index2coords(minIdx, minShapeInfo, indices);
 
         // transform storage indices to contain per-dim max indices, purpose - memory saving
         // fill increment array as well
@@ -4277,7 +4264,7 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
         maxI = rankMax-1;
         N = 0;
         int step;
-        maxOffsets[N++] = shape::getOffset(0, maxShapeInfo + 1,  maxShapeInfo + rankMax + 1, indices, rankMax);
+        maxOffsets[N++] = shape::getOffset(maxShapeInfo, indices);
 
         // nested loops - producing of absolute indices for max array
         while(maxI >= 0) {
@@ -4290,7 +4277,7 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
                     step = -1;
                 }
                 else {
-                    maxOffsets[N++] = shape::getOffset(0, maxShapeInfo + 1,  maxShapeInfo + rankMax + 1, indices, rankMax);
+                    maxOffsets[N++] = shape::getOffset(maxShapeInfo, indices);
                     step =  rankMax - 1 - maxI;
                 }
             }
@@ -4322,7 +4309,7 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
         int N, minI, maxI;
 
         // calculate min per-dim-indices which corresponds to absolute minIdx index
-        shape::index2coords(rankMin, minShapeInfo + 1, minIdx, indices, order(minShapeInfo));
+        shape::index2coords(minIdx, minShapeInfo, indices);
 
         // transform storage indices to contain per-dim max indices, purpose - memory saving
         // fill increment array as well
@@ -4353,7 +4340,7 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
         maxI = rankMax-1;
         N = 0;
         int step;
-        maxIdxs[N++] = coords2index(rankMax, maxShapeInfo + 1, indices);
+        maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
 
         // nested loops - producing of absolute indices for max array
         while(maxI >= 0) {
@@ -4366,7 +4353,7 @@ INLINEDEF _CUDA_HD void maxIndToMinInd(Nd4jLong* maxIdxs, Nd4jLong* minIdxs, con
                     step = -1;
                 }
                 else {
-                    maxIdxs[N++] = coords2index(rankMax, maxShapeInfo + 1, indices);
+                    maxIdxs[N++] = shape::coords2index(maxShapeInfo, indices);
                     step =  rankMax - 1 - maxI;
                 }
             }
@@ -4699,37 +4686,23 @@ INLINEDEF _CUDA_HD void calcSubArrShapeAndOffsets(const Nd4jLong* wholeShapeInfo
 }
 
 //////////////////////////////////////////////////////////////////////
-INLINEDEF void _CUDA_HD index2coords(const int rank, const Nd4jLong *shape, Nd4jLong index, Nd4jLong *coords, const char order) {
-    Nd4jLong arrLen = shape::prodLong(shape, rank);
-    shape::index2coords(rank, shape, index, arrLen, coords, order);
+INLINEDEF void _CUDA_HD index2coords(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong *coords) {
+
+    for(uint i = shapeInfo[0]; i > 1; --i) {
+        coords[i - 1] = index % shapeInfo[i];
+        index /= shapeInfo[i];
+    }
+    coords[0] = index;      // last iteration
 }
 
-INLINEDEF void _CUDA_HD index2coords(const int rank, const Nd4jLong *shape, Nd4jLong index, Nd4jLong arrLen, Nd4jLong *coords, const char order) {
+//////////////////////////////////////////////////////////////////////
+INLINEDEF void _CUDA_HD index2coords(Nd4jLong index, const int rank, const Nd4jLong *shape, Nd4jLong *coords) {
 
-    if(order == 'c') {
-
-        for(int i = 0; i < rank; i++) {
-            arrLen /= shape[i];
-            if(arrLen > 0 && shape[i] > 1) {
-                coords[i] = index / arrLen;
-                index %= arrLen;
-            }
-            else
-                coords[i] = 0;
-        }
+    for(uint i = rank - 1; i > 0; --i) {
+        coords[i] = index % shape[i];
+        index /= shape[i];
     }
-    else {
-
-        for(int i = rank - 1; i >= 0; i--) {
-            arrLen /= shape[i];
-            if(arrLen > 0 && shape[i] > 1) {
-                coords[i] = index / arrLen;
-                index %= arrLen;
-            }
-            else
-                coords[i] = 0;
-        }
-    }
+    coords[0] = index;      // last iteration
 }
 
 //////////////////////////////////////////////////////////////////////

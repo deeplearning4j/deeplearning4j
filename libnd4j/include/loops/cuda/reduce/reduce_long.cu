@@ -150,7 +150,7 @@ __device__ void ReduceLongFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
         sPartials[threadIdx.x] = OpType::startingValue(x + tadOffsetForBlock);
 
         for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
-            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
+            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo);
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[xOffset], extraParams), extraParams);
         }
         __syncthreads();
@@ -160,7 +160,7 @@ __device__ void ReduceLongFunction<X,Z>::transformCudaXD( void *vx, Nd4jLong *xS
         __syncthreads();
 
         if (threadIdx.x == 0)
-            z[isPlainOutput ? r : shape::getIndexOffset(r, zShapeInfo, numTads)] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
+            z[isPlainOutput ? r : shape::getIndexOffset(r, zShapeInfo)] = OpType::postProcess(sPartials[threadIdx.x], tadLength, extraParams);
     }
 }
 
@@ -200,7 +200,7 @@ __device__ void ReduceLongFunction<X,Z>::execScalarCuda(void *vx, Nd4jLong *xSha
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[i * xEws], extraParams), extraParams);
     else
         for (int i = tid; i < len; i += blockDim.x * gridDim.x)
-            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo, len)], extraParams), extraParams);
+            sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], extraParams), extraParams);
 
     __syncthreads();
     aggregatePartials<OpType>(sPartials, threadIdx.x, nd4j::math::nd4j_min<int>(blockDim.x, len), extraParams);

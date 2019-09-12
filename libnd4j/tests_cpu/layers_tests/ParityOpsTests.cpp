@@ -683,14 +683,13 @@ TEST_F(ParityOpsTests, Test_Reshape_TF_1) {
 TEST_F(ParityOpsTests, Test_Bias_Add_1) {
     auto x = NDArrayFactory::create<float>('c', {10, 5});
     x.assign(0.0);
-    auto bias = NDArrayFactory::create<float>('c', {1, 5}, {1, 2, 3, 4, 5});
+    auto bias = NDArrayFactory::create<float>('c', {5}, {1, 2, 3, 4, 5});
     nd4j::ops::biasadd op;
 
     auto result = op.execute({&x, &bias}, {}, {});
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-
 
     auto tads = z->allTensorsAlongDimension({1});
     for (int e = 0; e < tads->size(); e++) {

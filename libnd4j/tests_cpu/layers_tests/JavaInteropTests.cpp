@@ -169,7 +169,7 @@ TEST_F(JavaInteropTests, TestSconv2d_1) {
     auto input = NDArrayFactory::create<float>('c', {3, 3, 8, 8});
     auto weightsD = NDArrayFactory::create<float>('c', {1, 3, 1, 1});
     auto weightsP = NDArrayFactory::create<float>('c', {2, 3, 1, 1});
-    auto bias = NDArrayFactory::create<float>('c', {1, 2});
+    auto bias = NDArrayFactory::create<float>('c', {2});
     auto output = NDArrayFactory::create<float>('c', {3, 2, 8, 8});
     output.assign(0.0);
 

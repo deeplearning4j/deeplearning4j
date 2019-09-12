@@ -32,7 +32,7 @@ Why? Because words are simply discrete states like the other data mentioned abov
 
 The purpose and usefulness of Word2vec is to group the vectors of similar words together in vectorspace. That is, it detects similarities mathematically. Word2vec creates vectors that are distributed numerical representations of word features, features such as the context of individual words. It does so without human intervention.
 
-Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words (e.g. "man" is to "boy" what "woman" is to "girl"), or cluster documents and classify them by topic. Those clusters can form the basis of search, [sentiment analysis](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java) and recommendations in such diverse fields as scientific research, legal discovery, e-commerce and customer relationship management. 
+Given enough data, usage and contexts, Word2vec can make highly accurate guesses about a word’s meaning based on past appearances. Those guesses can be used to establish a word's association with other words (e.g. "man" is to "boy" what "woman" is to "girl"), or cluster documents and classify them by topic. Those clusters can form the basis of search, [sentiment analysis](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java) and recommendations in such diverse fields as scientific research, legal discovery, e-commerce and customer relationship management. 
 
 The output of the Word2vec neural net is a vocabulary in which each item has a vector attached to it, which can be fed into a deep-learning net or simply queried to detect relationships between words. 
 
@@ -216,7 +216,7 @@ This configuration accepts a number of hyperparameters. A few require some expla
 * *tokenizer* feeds it the words from the current batch. 
 * *vec.fit()* tells the configured net to begin training. 
 
-An example for [uptraining your previously trained word vectors is here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecUptrainingExample.java).
+An example for [uptraining your previously trained word vectors is here](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecUptrainingExample.java).
 
 ### <a name="eval">Evaluating the Model, Using Word2vec</a> 
 
@@ -253,7 +253,7 @@ With `vec.wordsNearest("word1", numWordsNearest)`, the words printed to the scre
 
 ### Visualizing the Model
 
-We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionality of word feature vectors and project words into a two or three-dimensional space. The full [DL4J/ND4J example for TSNE is here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/tsne/TSNEStandardExample.java).
+We rely on [TSNE](https://lvdmaaten.github.io/tsne/) to reduce the dimensionality of word feature vectors and project words into a two or three-dimensional space. The full [DL4J/ND4J example for TSNE is here](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/tsne/TSNEStandardExample.java).
 
 ``` java
         Nd4j.setDataType(DataBuffer.Type.DOUBLE);
@@ -363,11 +363,11 @@ This n-gram is then fed into a neural network to learn the significance of a giv
 
 ### <a name="code">A Working Example</a>
 
-**Please note** : The code below may be outdated. For updated examples, please see our [dl4j-examples repository on Github](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp).
+**Please note** : The code below may be outdated. For updated examples, please see our [dl4j-examples repository on Github](https://github.com/eclipse/deeplearning4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp).
 
-Now that you have a basic idea of how to set up Word2Vec, here's [one example](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java) of how it can be used with DL4J's API:
+Now that you have a basic idea of how to set up Word2Vec, here's [one example](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java) of how it can be used with DL4J's API:
 
-<script src="https://gist-it.appspot.com/https://github.com/deeplearning4j/dl4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
+<script src="https://gist-it.appspot.com/https://github.com/eclipse/deeplearning4j-examples/blob/master/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java?slice=22:64"></script>
 
 After following the instructions in the [Quickstart](./deeplearning4j-quickstart), you can open this example in IntelliJ and hit run to see it work. If you query the Word2vec model with a word isn't contained in the training corpus, it will return null. 
 
@@ -463,7 +463,7 @@ Loading and saving GloVe models to word2vec can be done like so:
 
 ### <a name="sequence">Sequence Vectors</a>
 
-Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp/src/main/java/org/deeplearning4j/models/sequencevectors/SequenceVectors.java), which is one level of abstraction above word vectors, and which allows you to extract features from any sequence, including social media profiles, transactions, proteins, etc. If data can be described as sequence, it can be learned via skip-gram and hierarchic softmax with the AbstractVectors class. This is compatible with the [DeepWalk algorithm](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-graph/src/main/java/org/deeplearning4j/graph/models/deepwalk/DeepWalk.java), also implemented in Deeplearning4j. 
+Deeplearning4j has a class called [SequenceVectors](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nlp-parent/deeplearning4j-nlp/src/main/java/org/deeplearning4j/models/sequencevectors/SequenceVectors.java), which is one level of abstraction above word vectors, and which allows you to extract features from any sequence, including social media profiles, transactions, proteins, etc. If data can be described as sequence, it can be learned via skip-gram and hierarchic softmax with the AbstractVectors class. This is compatible with the [DeepWalk algorithm](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-graph/src/main/java/org/deeplearning4j/graph/models/deepwalk/DeepWalk.java), also implemented in Deeplearning4j. 
 
 ### <a name="features">Word2Vec Features on Deeplearning4j</a>
 
@@ -477,8 +477,8 @@ Deeplearning4j has a class called [SequenceVectors](https://github.com/deeplearn
 
 ### Doc2vec & Other NLP Resources
 
-* [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
-* [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
+* [DL4J Example of Text Classification With Word2vec & RNNs](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/word2vecsentiment/Word2VecSentimentRNN.java)
+* [DL4J Example of Text Classification With Paragraph Vectors](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
 * [Doc2vec, or Paragraph Vectors, With Deeplearning4j](./deeplearning4j-nlp-doc2vec)
 * [Thought Vectors, Natural Language Processing & the Future of AI](https://skymind.ai/wiki/thought-vectors)
 * [Quora: How Does Word2vec Work?](http://www.quora.com/How-does-word2vec-work)

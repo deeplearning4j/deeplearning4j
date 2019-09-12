@@ -83,9 +83,9 @@ namespace nd4j {
 
                 for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
 
-                    shape::index2coords(zRank, zShapeInfo + 1, i, zLen, zCoordStart);
+                    shape::index2coords(i, zShapeInfo, zCoordStart);
 
-                    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + zRank + 1, zCoordStart, zRank);
+                    const auto zOffset = shape::getOffset(zShapeInfo, zCoordStart);
 
                     // last y coordinate
                     int coordToRestore;
@@ -93,7 +93,7 @@ namespace nd4j {
                         coordToRestore = static_cast<int>(zCoordStart[yRank - 1]);
 
                     zCoordStart[yRank - 1] = 0; // last y coordinate
-                    const auto yOffset = shape::getOffset(0, yShapeInfo + 1, yShapeInfo + yRank + 1, zCoordStart, yRank);
+                    const auto yOffset = shape::getOffset(yShapeInfo, zCoordStart);
 
                     //restore z coordinate
                     if(yLastDim != xRank)
@@ -103,7 +103,7 @@ namespace nd4j {
                     for(uint j = 0; j < yLastDim; ++j)
                         xCoordStart[j] = y[yOffset + j * yShapeInfo[2 * yRank]];   // last stride
 
-                    const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xRank + 1, xCoordStart, xRank);
+                    const auto xOffset = shape::getOffset(xShapeInfo, xCoordStart);
 
                     z[zOffset] = x[xOffset];
                     printf("z[%lld] = x[%lld] = %f\n", zOffset, xOffset, (float) z[zOffset]);

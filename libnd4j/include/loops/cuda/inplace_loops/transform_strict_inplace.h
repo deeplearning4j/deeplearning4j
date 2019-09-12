@@ -72,8 +72,8 @@ namespace functions {
 
 
             for (Nd4jLong i = tid; i < length; i+= gridDim.x * blockDim.x) {
-                auto xOffset2 = shape::getIndexOffset(i, shapeInfo,  length);
-                auto zOffset2 = shape::getIndexOffset(i, zShapeInfo, length);
+                auto xOffset2 = shape::getIndexOffset(i, shapeInfo);
+                auto zOffset2 = shape::getIndexOffset(i, zShapeInfo);
                 result[zOffset2] = OpType::op(dy[xOffset2], params);
             }
         }

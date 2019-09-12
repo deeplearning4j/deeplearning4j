@@ -8,14 +8,14 @@ weight: 10
 
 ## Prerequisites
 
-Before contributing, make sure you know the structure of all of the Eclipse Deeplearning4j libraries. As of early 2018, all libraries now live in the Deeplearning4j [monorepo](https://github.com/deeplearning4j/deeplearning4j). These include:
+Before contributing, make sure you know the structure of all of the Eclipse Deeplearning4j libraries. As of early 2018, all libraries now live in the Deeplearning4j [monorepo](https://github.com/eclipse/deeplearning4j). These include:
 
 - DeepLearning4J: Contains all of the code for learning neural networks, both on a single machine and distributed.
 - ND4J: “N-Dimensional Arrays for Java”. ND4J is the mathematical backend upon which DL4J is built. All of DL4J’s neural networks are built using the operations (matrix multiplications, vector operations, etc) in ND4J. ND4J is how DL4J supports both CPU and GPU training of networks, without any changes to the networks themselves. Without ND4J, there would be no DL4J.
 - DataVec: DataVec handles the data import and conversion side of the pipeline. If you want to import images, video, audio or simply CSV data into DL4J: you probably want to use DataVec to do this.
 - Arbiter: Arbiter is a package for (amongst other things) hyperparameter optimization of neural networks. Hyperparameter optimization refers to the process of automating the selection of network hyperparameters (learning rate, number of layers, etc) in order to obtain good performance.
 
-We also have an extensive examples repository at [dl4j-examples](https://github.com/deeplearning4j/dl4j-examples).
+We also have an extensive examples repository at [dl4j-examples](https://github.com/eclipse/deeplearning4j-examples).
 
 
 ## Ways to contribute
@@ -34,8 +34,8 @@ There are numerous ways to contribute to DeepLearning4J (and related projects), 
 There are a number of different ways to find things to work on. These include:
 
 - Looking at the issue trackers:
-https://github.com/deeplearning4j/deeplearning4j/issues
-https://github.com/deeplearning4j/dl4j-examples/issues
+https://github.com/eclipse/deeplearning4j/issues
+https://github.com/eclipse/deeplearning4j-examples/issues
 - Reviewing our Roadmap
 - Talking to the developers on Gitter, especially our early adopters channel
 - Reviewing recent papers and blog posts on training features, network architectures and applications

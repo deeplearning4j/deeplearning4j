@@ -16,7 +16,7 @@ Please follow following instructions to build nd4j for raspberry PI:
 
     ```
     $ cd $HOME
-    $ git clone https://github.com/deeplearning4j/deeplearning4j.git
+    $ git clone https://github.com/eclipse/deeplearning4j.git
     ```
 
 3. build libnd4j:

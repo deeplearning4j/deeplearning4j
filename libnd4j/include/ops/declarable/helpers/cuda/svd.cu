@@ -65,12 +65,12 @@ __global__ static void inverseColumnSignCuda(void* vu, const Nd4jLong* uShapeInf
     // u
     for (Nd4jLong i = ind; i < uLen; i += gridDim.x * blockDim.x) {
 
-        shape::index2coords(rank, uShapeInfo + 1, i, uLen, coords);
+        shape::index2coords(i, uShapeInfo, coords);
 
         if(coords[rank - 1] == 0 || coords[rank - 1] == uLastButOneColumn)   // do not change sign in first and last but one columns
             continue;
 
-        const auto uOffset = shape::getOffset(0, uShapeInfo + 1, uShapeInfo + rank + 1, coords, rank);
+        const auto uOffset = shape::getOffset(uShapeInfo, coords);
 
         u[uOffset] = -u[uOffset];
     }
@@ -78,12 +78,12 @@ __global__ static void inverseColumnSignCuda(void* vu, const Nd4jLong* uShapeInf
     // v
     for (Nd4jLong i = ind; i < vLen; i += gridDim.x * blockDim.x) {
 
-        shape::index2coords(rank, vShapeInfo + 1, i, vLen, coords);
+        shape::index2coords(i, vShapeInfo, coords);
 
         if(coords[rank - 2] == 0 || coords[rank - 2] == vLastButOneColumn)   // do not change sign in first and last but one columns
             continue;
 
-        const auto vOffset = shape::getOffset(0, vShapeInfo + 1, vShapeInfo + rank + 1, coords, rank);
+        const auto vOffset = shape::getOffset(vShapeInfo, coords);
 
         v[vOffset] = -v[vOffset];
     }

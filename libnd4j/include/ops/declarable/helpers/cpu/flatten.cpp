@@ -37,24 +37,16 @@ namespace nd4j {
                     cOffset += inputs[e]->lengthOf();
                 }
 
-                Nd4jLong xCoord[MAX_RANK];
-
                 // actually transferring data
                 for (int e = 0; e < numArrays; e++) {
                     auto z = reinterpret_cast<T *>(output->bufferWithOffset(offsets[e]));
 
                     auto xBuffer = inputs[e]->bufferAsT<T>();
                     auto xShapeInfo = inputs[e]->shapeInfo();
-                    auto xShape = shape::shapeOf(xShapeInfo);
-                    auto xStride = shape::stride(xShapeInfo);
-                    auto xRank = shape::rank(xShapeInfo);
                     auto xLength = inputs[e]->lengthOf();
-                    
-                    for (uint i = 0; i < xLength; i++) {
-                        shape::index2coords(xRank, xShape, i, xLength, xCoord, order);
-                        auto xOffset = shape::getOffset(0, xShape, xStride, xCoord, xRank);
-                        z[i] = xBuffer[xOffset];
-                    }                    
+
+                    for (uint i = 0; i < xLength; i++)
+                        z[i] = xBuffer[getIndexOffsetOrdered(i, xShapeInfo, order)];
                 }
             }
 

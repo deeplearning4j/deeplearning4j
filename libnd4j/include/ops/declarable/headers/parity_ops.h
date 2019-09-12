@@ -79,36 +79,44 @@ namespace nd4j {
         * Inserts elements provided by diagonal array into the main diagonal of innermost matrices of input array
         *
         * Input arrays:
-        *    input:    input array, considered as batch of matrices
-        *    diagonal: array containing elements to be inserted into input array,
-        *              following rank condition should be satisfied: diagonal_rank = input_rank - 1,
-        *              the shapes of diagonal and input arrays must be equal except last dimension of input array,
-        *              for example if input_shape = [A,B,C,D] then diagonal_shape = [A,B,C],
-        *              also last dimension of diagonal array should be equal to smaller of last and last but one input dimensions
-        *              that is: diagonal_shape[-1] = min(input_shape[-1], input_shape[-2])
+        *  0: input array, considered as batch of matrices
+        *  1: diagonal array containing elements to be inserted into input array,
+        *     following rank condition should be satisfied: diagonal_rank = input_rank - 1,
+        *     the shapes of diagonal and input arrays must be equal except last dimension of input array,
+        *     for example if input_shape = [A,B,C,D] then diagonal_shape = [A,B,C],
+        *     also last dimension of diagonal array should be equal to smaller of last and last but one input dimensions
+        *     that is: diagonal_shape[-1] = min(input_shape[-1], input_shape[-2])
         *
         * Output array:
-        *    has the same shape as input, corresponding diagonal elements are substituted
+        *  0: has the same shape as input, corresponding diagonal elements are substituted
         */
         #if NOT_EXCLUDED(OP_matrix_set_diag)
         DECLARE_CONFIGURABLE_OP(matrix_set_diag, 2, 1, false, 0, 0);
         #endif
 
         /**
-         * Returns a batched matrix tensor with diagonal values given (as TF.matrix_diag).
-         */
+        * Inserts elements provided by diagonal array into the main diagonal of innermost matrices of output array,
+        * rest output elements are set to zeros
+        *
+        * Input array:
+        *    diagonal: array containing elements to be inserted into output array,
+        *              following rank condition is present: diagonal_rank = ouput_rank - 1
+        *
+        * Output array:
+        *   0: is considered as batch of matrices, if for example diagonal array has shape [A,B,C] then output array has shape [A,B,C,C]
+        */
         DECLARE_CUSTOM_OP(matrix_diag, 1, 1, false, 0, 0);
 
         /**
         * This op calculates regularized incomplete beta integral Ix(a, b).
         * Implementation is based on two algorithms depending on input values of a and b:
-        * - when a and b are both >  maxValue (3000.), then apply Gauss-Legendre quadrature method
-        * - when a and b are both <= maxValue (3000.), then apply modified Lentz’s algorithm for continued fractions
+        * - when a and b are both >  maxValue (3000.), then Gauss-Legendre quadrature method is applied
+        * - when a and b are both <= maxValue (3000.), then modified Lentz’s algorithm for continued fractions is applied
         *
         * Input arrays:
-        *    a: define power t^{a-1}, must be > 0, type float.
-        *    b: define power (1-t)^{b-1}, must be > 0, type float.
-        *    x: define upper limit of integration, must be within (0 <= x <= 1) range, type float.
+        *    a: defines power t^{a-1}, must be > 0, type float.
+        *    b: defines power (1-t)^{b-1}, must be > 0, type float.
+        *    x: defines upper limit of integration, must be within (0 <= x <= 1) range, type float.
         *
         * Output array:
         *    0: values of  regularized incomplete beta integral that corresponds to variable upper limit x, type float

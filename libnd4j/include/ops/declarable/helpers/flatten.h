@@ -24,12 +24,45 @@
 #include <vector>
 #include <NDArray.h>
 
-namespace nd4j {
-    namespace ops {
-        namespace helpers {
-            void flatten(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order);
+namespace nd4j    {
+namespace ops     {
+namespace helpers {
+
+
+//////////////////////////////////////////////////////////////////////
+void flatten(nd4j::LaunchContext *context, std::vector<NDArray*> &inputs, NDArray *output, char order);
+
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF _CUDA_HD Nd4jLong getIndexOffsetOrdered(Nd4jLong index, const Nd4jLong *shapeInfo, const char order) {
+
+    Nd4jLong offset = 0;
+
+    if (order == 'c') {
+
+        for(uint i = shapeInfo[0]; i > 1; --i) {
+            offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
+            index /= shapeInfo[i];
         }
+
+        offset += index * shapeInfo[1 + shapeInfo[0]];  // last iteration
     }
+    else {
+
+        for(uint i = 1; i < shapeInfo[0]; ++i) {
+            offset += (index % shapeInfo[i]) * shapeInfo[i + shapeInfo[0]];
+            index /= shapeInfo[i];
+        }
+
+        offset += index * shapeInfo[2 * shapeInfo[0]];  // last iteration
+    }
+
+    return offset;
+}
+
+
+}
+}
 }
 
 #endif //DEV_TESTS_FLATTEN_H

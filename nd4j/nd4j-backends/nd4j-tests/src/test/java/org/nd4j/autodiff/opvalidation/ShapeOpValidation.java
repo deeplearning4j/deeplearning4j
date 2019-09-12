@@ -2472,4 +2472,28 @@ public class ShapeOpValidation extends BaseOpValidation {
                 .build();
     }
 
+    @Test
+    public void testBroadcastInt1() {
+
+        INDArray out = Nd4j.create(DataType.INT, 1);
+        DynamicCustomOp op = DynamicCustomOp.builder("broadcast_dynamic_shape")
+                .addInputs(Nd4j.createFromArray(1), Nd4j.createFromArray(4))
+                .addOutputs(out)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+        assertEquals(Nd4j.createFromArray(4), out);
+
+    }
+
+    @Test
+    public void testBroadcastInt2(){
+        INDArray out = Nd4j.create(DataType.INT, 2);
+        DynamicCustomOp op = DynamicCustomOp.builder("broadcast_dynamic_shape")
+                .addInputs(Nd4j.createFromArray(2, 2), Nd4j.createFromArray(1))
+                .addOutputs(out)
+                .build();
+        Nd4j.getExecutioner().exec(op);
+
+        assertEquals(Nd4j.createFromArray(2, 2), out);
+    }
 }

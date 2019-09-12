@@ -80,8 +80,8 @@ __global__ void bitonicArbitraryStepKernelKey(void *vx, Nd4jLong *xShapeInfo, vo
             int it = (reverse) ? i + j + half : i + window - j - 1;
             int ij = i+j;
             if (it < length && ij < length ) {
-                int posIT = shape::getIndexOffset(it, xShapeInfo, xLength);
-                int posIJ = shape::getIndexOffset(ij, xShapeInfo, xLength);
+                int posIT = shape::getIndexOffset(it, xShapeInfo);
+                int posIJ = shape::getIndexOffset(ij, xShapeInfo);
 
                 X v0 = x[posIJ];
                 X v1 = x[posIT];
@@ -160,8 +160,8 @@ __global__ void execBitonicArbitraryStepKernel(void *vx, Nd4jLong *xShapeInfo, i
             int it = (reverse) ? i + j + half : i + window - j - 1;
             int ij = i+j;
             if (it < length && ij < length ) {
-                int posIT = shape::getIndexOffset(it, xShapeInfo, xLength);
-                int posIJ = shape::getIndexOffset(ij, xShapeInfo, xLength);
+                int posIT = shape::getIndexOffset(it, xShapeInfo);
+                int posIJ = shape::getIndexOffset(ij, xShapeInfo);
 
                 shmem[threadIdx.x] = x[posIJ];
                 shmem[threadIdx.x + blockDim.x] = x[posIT];

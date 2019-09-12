@@ -31,6 +31,9 @@ import org.nd4j.autodiff.util.TrainingUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.adapter.MultiDataSetIteratorAdapter;
+import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
 
@@ -92,6 +95,20 @@ public class OutputConfig {
     public OutputConfig data(@NonNull DataSetIterator data) {
         this.data = new MultiDataSetIteratorAdapter(data);
         return this;
+    }
+
+    /**
+     * Set the data to use as input.
+     */
+    public OutputConfig data(@NonNull DataSet data){
+        return data(new SingletonMultiDataSetIterator(data.toMultiDataSet()));
+    }
+
+    /**
+     * Set the data to use as input.
+     */
+    public OutputConfig data(@NonNull MultiDataSet data){
+        return data(new SingletonMultiDataSetIterator(data));
     }
 
     /**
