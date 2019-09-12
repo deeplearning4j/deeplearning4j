@@ -15,7 +15,7 @@
   ******************************************************************************/
 package org.nd4s.samediff
 
-import org.nd4j.autodiff.samediff.{ SDVariable, SameDiff }
+import org.nd4j.autodiff.samediff.{ SDIndex, SDVariable, SameDiff }
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
@@ -199,5 +199,15 @@ class MathTest extends FlatSpec with Matchers {
 
     val w3 = w1 >> two
     w3.eval.toIntVector.head shouldBe 4
+  }
+
+  "SDVariable " should "be indexable" in {
+    implicit val sd = SameDiff.create
+
+    val arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L)
+    val x = sd.`var`(arr)
+    val y = new SDVariableWrapper(x)
+
+    x.get(SDIndex.point(0)).getArr shouldBe y(0).getArr
   }
 }

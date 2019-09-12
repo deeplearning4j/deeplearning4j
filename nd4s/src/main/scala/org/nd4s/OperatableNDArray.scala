@@ -16,7 +16,6 @@
 package org.nd4s
 
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.linalg.indexing.INDArrayIndex
 
 /**
   * Scala DSL for arrays
@@ -121,7 +120,7 @@ trait OperatableNDArray[A <: INDArray] {
     ev.get(underlying, i, j)
 
   def get[B](indices: Int*)(implicit ev: NDArrayEvidence[A, B]): B =
-    ev.get(underlying, indices: _*)
+    ev.get(underlying, indices.map(_.toLong): _*)
 
   def apply[B](i: Int)(implicit ev: NDArrayEvidence[A, B]): B = get(i)
 
@@ -129,10 +128,10 @@ trait OperatableNDArray[A <: INDArray] {
     get(i, j)
 
   def apply[B](indices: Int*)(implicit ev: NDArrayEvidence[A, B]): B =
-    get(indices: _*)
+    ev.get(underlying, indices.map(_.toLong): _*)
 
   def get[B](indices: Array[Int])(implicit ev: NDArrayEvidence[A, B]): B =
-    ev.get(underlying, indices: _*)
+    ev.get(underlying, indices.map(_.toLong): _*)
 
   def unary_-(): INDArray = underlying.neg()
 

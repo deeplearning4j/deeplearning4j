@@ -2836,13 +2836,13 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int rows, int columns) {
+    /*public static INDArray rand(int rows, int columns) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
         INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
         return rand(ret);
-    }
+    }*/
 
     /**
      * Create a random ndarray with the given shape and output order
@@ -2853,13 +2853,13 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(char order, int rows, int columns) {
+    /*public static INDArray rand(char order, int rows, int columns) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
         INDArray ret = createUninitialized(new int[] {rows, columns}, order);//INSTANCE.rand(order, rows, columns);
         return rand(ret);
-    }
+    }*/
 
     /**
      * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
@@ -2892,10 +2892,10 @@ public class Nd4j {
      * @param seed    the  seed to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int rows, int columns, long seed) {
+    /*public static INDArray rand(int rows, int columns, long seed) {
         INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
         return rand(ret, seed);
-    }
+    }*/
 
     /**
      * @deprecated use {@link Nd4j#rand(org.nd4j.linalg.api.rng.Random, long...)}
@@ -2999,10 +2999,10 @@ public class Nd4j {
      * @param rng     the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    public static INDArray rand(int rows, int columns, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+    /*public static INDArray rand(int rows, int columns, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         INDArray ret = createUninitialized(rows, columns);
         return rand(ret, min, max, rng);
-    }
+    }*/
 
     /**
      * Fill the given ndarray with random numbers drawn from a normal distribution
@@ -3020,7 +3020,7 @@ public class Nd4j {
      * @param shape the shape of the array
      * @return new array with random values
      */
-    public static INDArray randn(@NonNull int... shape) {
+    public static INDArray randn(@NonNull int[] shape) {
         return randn(ArrayUtil.toLongArray(shape));
     }
 
@@ -3031,7 +3031,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return new array with random values
      */
-    public static INDArray randn(@NonNull DataType dataType, @NonNull int... shape) {
+    public static INDArray randn(@NonNull DataType dataType, @NonNull int[] shape) {
         return randn(dataType, ArrayUtil.toLongArray(shape));
     }
 
@@ -3135,10 +3135,10 @@ public class Nd4j {
      * @param rows    the number of rows in the matrix
      * @param columns the number of columns in the matrix
      */
-    public static INDArray randn(char order, long rows, long columns) {
+    /*public static INDArray randn(char order, long rows, long columns) {
         INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order);
         return randn(ret);
-    }
+    }*/
 
     /**
      * Random normal using the specified seed
@@ -3147,10 +3147,10 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      * @return new array with random values
      */
-    public static INDArray randn(long rows, long columns, long seed) {
+    /*public static INDArray randn(long rows, long columns, long seed) {
         INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
         return randn(ret, seed);
-    }
+    }*/
 
     /**
      * Random normal using the given rng
@@ -3160,10 +3160,10 @@ public class Nd4j {
      * @param r       the random generator to use
      * @return new array with random values
      */
-    public static INDArray randn(long rows, long columns, @NonNull org.nd4j.linalg.api.rng.Random r) {
+    /*public static INDArray randn(long rows, long columns, @NonNull org.nd4j.linalg.api.rng.Random r) {
         INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
         return randn(ret, r);
-    }
+    }*/
 
     /**
      * @deprecated use {@link Nd4j#randn(org.nd4j.linalg.api.rng.Random, long...)}
@@ -3193,6 +3193,14 @@ public class Nd4j {
         return randn(ret, r);
     }
 
+    public static INDArray randn(double mean, double stddev, INDArray target, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        return getExecutioner().exec(new GaussianDistribution(target, mean, stddev), rng);
+    }
+
+    public static INDArray randn(double mean, double stddev, long[] shape, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        INDArray target = Nd4j.createUninitialized(shape);
+        return getExecutioner().exec(new GaussianDistribution(target, mean, stddev), rng);
+    }
     /**
      * Fill the given ndarray with random numbers drawn from a uniform distribution
      *
@@ -3361,9 +3369,9 @@ public class Nd4j {
      * @param columns columns
      * @return uninitialized 2D array of rows x columns
      */
-    public static INDArray createUninitialized(long rows, long columns) {
+    /*public static INDArray createUninitialized(long rows, long columns) {
         return createUninitialized(new long[] {rows, columns});
-    }
+    }*/
 
     /**
      * Creates a row vector with the data
@@ -3740,7 +3748,7 @@ public class Nd4j {
      * @param shape the shape of the array
      * @return the created ndarray
      */
-    public static INDArray create(float[] data, int... shape) {
+    public static INDArray create(float[] data, int[] shape) {
         if (shape.length == 0 && data.length == 1) {
             return scalar(data[0]);
         }
@@ -3782,7 +3790,7 @@ public class Nd4j {
      * @param shape the shape of the array
      * @return the created ndarray
      */
-    public static INDArray create(double[] data, int... shape) {
+    public static INDArray create(double[] data, int[] shape) {
         commonCheckCreate(data.length, LongUtils.toLongs(shape));
         val lshape = ArrayUtil.toLongArray(shape);
         return INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, Nd4j.order()), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
