@@ -36,8 +36,6 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <datavec.spark.version>1.0.0-SNAPSHOT</datavec.spark.version>
-
 
         <scala.macros.version>2.1.0</scala.macros.version>
         <!-- Default scala versions, may be overwritten by build profiles -->

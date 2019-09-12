@@ -43,7 +43,7 @@
         <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-spark_2.11</artifactId>
-            <version>${datavec.spark.version}</version>
+            <version>${datavec.version}</version>
         </dependency>
 
         <dependency>

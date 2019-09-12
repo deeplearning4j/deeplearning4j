@@ -58,7 +58,7 @@ Here's the template for the only required dependency:
 <dependency>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j-spark-parameterserver_${scala.binary.version}</artifactId>
-    <version>${dl4j.spark.version}</version>
+    <version>${dl4j.version}</version>
 </dependency>
 ```
 
@@ -68,7 +68,7 @@ For example:
 <dependency>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j-spark-parameterserver_2.11</artifactId>
-    <version>0.9.1_spark_2</version>
+    <version>${dl4j.version}</version>
 </dependency>
 ```
 
