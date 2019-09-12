@@ -16,8 +16,7 @@
 package org.nd4s.samediff
 
 import org.nd4j.linalg.api.ndarray.INDArray
-import org.nd4j.autodiff.samediff.SDVariable
-import org.nd4j.autodiff.samediff.SameDiff
+import org.nd4j.autodiff.samediff.{ SDIndex, SDVariable, SameDiff }
 import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.factory.Nd4j
 
@@ -49,7 +48,7 @@ class SameDiffWrapper {
     sd.`var`(name, dataType, shape: _*)
 
   def placeHolder(name: String, dataType: DataType, shape: Long*): SDVariable =
-    sd.placeHolder("ph1", DataType.FLOAT, 3, 4)
+    sd.placeHolder(name, dataType, shape: _*)
 }
 
 class SDVariableWrapper {
@@ -61,6 +60,10 @@ class SDVariableWrapper {
     this
     thisVariable = variable
   }
+
+  def apply(index: Long): SDVariable = thisVariable.get(SDIndex.point(index))
+
+  def add(other: Double): Unit = thisVariable.add(other)
 
   def *(other: SDVariable): SDVariable =
     thisVariable.mul(other)

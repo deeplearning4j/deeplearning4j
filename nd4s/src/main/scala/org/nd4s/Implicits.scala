@@ -50,7 +50,7 @@ object Implicits {
       Nd4j.create(underlying, shape, ord.value)
 
     def asNDArray(shape: Int*): INDArray =
-      Nd4j.create(underlying.toArray, shape.toArray: _*)
+      Nd4j.create(underlying.toArray, shape.toArray)
 
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
@@ -66,7 +66,7 @@ object Implicits {
       Nd4j.create(underlying, shape, offset, ord.value)
 
     def asNDArray(shape: Int*): INDArray =
-      Nd4j.create(underlying.toArray, shape.toArray: _*)
+      Nd4j.create(underlying.toArray, shape.toArray)
 
     def toNDArray: INDArray = Nd4j.create(underlying)
   }
