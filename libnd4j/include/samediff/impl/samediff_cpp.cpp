@@ -25,21 +25,6 @@ namespace samediff {
         return SameDiff();
     }
 
-    void execute(SameDiff &sd) {
-        //
-    }
-
-    void executeWithDictionary(SameDiff &sd, const std::unordered_map<const char*, nd4j::NDArray> &args) {
-        //
-    }
-
-    void save(SameDiff &sd, const char *filename) {
-        //
-    }
-
-    SameDiff load(const char *filename) {
-        return {};
-    }
 
     namespace arithmetic {
         SDVariable add(SameDiff &sd, SDVariable &x, SDVariable &y, const char *name) {

@@ -15,42 +15,26 @@
  ******************************************************************************/
 
 //
-// @author raver119@gmail.com
+//  @author raver119@gmail.com
 //
 
-#ifndef SAMEDIFF_SAMEDIFF_CPP_H
-#define SAMEDIFF_SAMEDIFF_CPP_H
-
+#include "testlayers.h"
+#include <chrono>
 #include <NDArray.h>
-#include <samediff/SameDiff.h>
-#include <samediff/SDVariable.h>
-#include <unordered_map>
+#include <helpers/RandomLauncher.h>
+#include <ops/declarable/LegacyRandomOp.h>
+#include <ops/declarable/CustomOperations.h>
+#include <samediff/samediff_cpp.h>
 
+class SameDiffCTests : public testing::Test {
+public:
 
+};
 
-namespace samediff {
+TEST_F(SameDiffCTests, basic_cpp_create_test_1) {
 
-    // general graph management functions
-    SameDiff create();
-
-
-    // basic arithmetic operations
-    namespace arithmetic {
-        SDVariable add(SameDiff &sd, SDVariable &x, SDVariable &y, const char *name = nullptr);
-        SDVariable neg(SameDiff &sd, SDVariable &x, const char *name = nullptr);
-    }
-
-    // math functions
-    namespace math {
-        //void cos();
-        //void sin();
-    }
-
-    // nn-related functions
-    namespace nn {
-        //void convolution2d();
-        //void avgpooling2d();
-    }
 }
 
-#endif //SAMEDIFF_SAMEDIFF_CPP_H
+TEST_F(SameDiffCTests, basic_cpp_create_test_2) {
+
+}

@@ -28,4 +28,24 @@ namespace samediff {
     SDVariable SameDiff::placeholder(const char *name, const nd4j::DataType dataType, const std::vector<Nd4jLong> shape) {
         return SDVariable();
     }
+
+    void SameDiff::execute() {
+        //
+    }
+
+    void SameDiff::train() {
+        //
+    }
+
+    void SameDiff::executeWithDictionary(const std::unordered_map<const char*, nd4j::NDArray> &args) {
+        //
+    }
+
+    void SameDiff::save(const char *filename) {
+        //
+    }
+
+    SameDiff SameDiff::load(const char *filename) {
+        return {};
+    }
 }

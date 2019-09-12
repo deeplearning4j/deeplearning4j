@@ -23,6 +23,7 @@
 
 #include <NDArray.h>
 #include "SDVariable.h"
+#include <unordered_map>
 
 using namespace nd4j;
 
@@ -36,6 +37,19 @@ namespace samediff {
 
         SDVariable variable(const char *name, const nd4j::NDArray &array);
         SDVariable placeholder(const char *name, const nd4j::DataType dataType = nd4j::DataType::FLOAT32, const std::vector<Nd4jLong> shape = {-1});
+
+
+
+        // execution functions
+        void execute();
+        void executeWithDictionary(const std::unordered_map<const char*, nd4j::NDArray> &args);
+
+        // TODO: we need to pass data in some cross-platform format. i.e. Queue. or Iterator.
+        void train();
+
+        // file operations with graphs
+        void save(const char *filename);
+        static SameDiff load(const char *filename);
     };
 }
 

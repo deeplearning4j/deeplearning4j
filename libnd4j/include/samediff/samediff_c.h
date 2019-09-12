@@ -18,39 +18,16 @@
 // @author raver119@gmail.com
 //
 
-#ifndef SAMEDIFF_SAMEDIFF_CPP_H
-#define SAMEDIFF_SAMEDIFF_CPP_H
 
-#include <NDArray.h>
-#include <samediff/SameDiff.h>
-#include <samediff/SDVariable.h>
-#include <unordered_map>
+#ifndef SAMEDIFF_SAMEDIFF_C_H
+#define SAMEDIFF_SAMEDIFF_C_H
 
+#include <dll.h>
 
+extern "C" {
+    void* SD_createGraph();
 
-namespace samediff {
+    void SD_destroyGraph(void *sd);
+};
 
-    // general graph management functions
-    SameDiff create();
-
-
-    // basic arithmetic operations
-    namespace arithmetic {
-        SDVariable add(SameDiff &sd, SDVariable &x, SDVariable &y, const char *name = nullptr);
-        SDVariable neg(SameDiff &sd, SDVariable &x, const char *name = nullptr);
-    }
-
-    // math functions
-    namespace math {
-        //void cos();
-        //void sin();
-    }
-
-    // nn-related functions
-    namespace nn {
-        //void convolution2d();
-        //void avgpooling2d();
-    }
-}
-
-#endif //SAMEDIFF_SAMEDIFF_CPP_H
+#endif //SAMEDIFF_SAMEDIFF_C_H

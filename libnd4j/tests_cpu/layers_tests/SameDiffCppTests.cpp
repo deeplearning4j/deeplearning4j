@@ -26,12 +26,12 @@
 #include <ops/declarable/CustomOperations.h>
 #include <samediff/samediff_cpp.h>
 
-class SameDiffTests : public testing::Test {
+class SameDiffCppTests : public testing::Test {
 public:
 
 };
 
-TEST_F(SameDiffTests, basic_cpp_create_test_1) {
+TEST_F(SameDiffCppTests, basic_cpp_create_test_1) {
     auto e = NDArrayFactory::create<float>('c', {4}, {2.f, 3.f, 4.f, 5.f});
 
     auto sd = samediff::create();
@@ -41,14 +41,14 @@ TEST_F(SameDiffTests, basic_cpp_create_test_1) {
 
     auto z = samediff::arithmetic::add(sd, x, y);
 
-    samediff::execute(sd);
+    sd.execute();
 
     auto result = z.array();
 
     ASSERT_EQ(e, result);
 }
 
-TEST_F(SameDiffTests, basic_cpp_create_test_2) {
+TEST_F(SameDiffCppTests, basic_cpp_create_test_2) {
     auto e = NDArrayFactory::create<float>('c', {4}, {-2.f, -3.f, -4.f, -5.f});
 
     auto sd = samediff::create();
@@ -59,7 +59,7 @@ TEST_F(SameDiffTests, basic_cpp_create_test_2) {
     auto sum = samediff::arithmetic::add(sd, x, y);
     auto z = samediff::arithmetic::neg(sd, sum);
 
-    samediff::execute(sd);
+    sd.execute();
 
     auto result = z.array();
 
