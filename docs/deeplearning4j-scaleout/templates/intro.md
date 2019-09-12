@@ -47,7 +47,7 @@ To use the gradient sharing implementation include the following dependency:
 <dependency>
     <groupId>org.deeplearning4j</groupId>
     <artifactId>dl4j-spark-parameterserver_${scala.binary.version}</artifactId>
-    <version>${dl4j.spark.version}</version>
+    <version>${dl4j.version}</version>
 </dependency>
 ```
 
@@ -57,7 +57,7 @@ If using the parameter averaging implementation (again, the gradient sharing imp
 <dependency>
         <groupId>org.deeplearning4j</groupId>
         <artifactId>dl4j-spark_${scala.binary.version}</artifactId>
-        <version>${dl4j.spark.version}</version>
+        <version>${dl4j.version}</version>
 </dependency>
 ```
 Note that ${scala.binary.version} is a Maven property with the value 2.10 or 2.11 and should match the version of Spark you are using.

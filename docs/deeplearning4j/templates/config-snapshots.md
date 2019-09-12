@@ -59,15 +59,6 @@ To version:
 <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
 ```
 
-For Spark dependencies, change as follows:
-```
-<dl4j.spark.version>1.0.0-beta2_spark_2</dl4j.spark.version>
-```
-to
-```
-<dl4j.spark.version>1.0.0_spark_2-SNAPSHOT</dl4j.spark.version>
-```
-
 **Sample pom.xml using Snapshots**
 
 A sample pom.xml is provided here: [sample pom.xml using snapshots](https://gist.github.com/AlexDBlack/28b0c9a72bce562c8782be326a6e2aaa)
