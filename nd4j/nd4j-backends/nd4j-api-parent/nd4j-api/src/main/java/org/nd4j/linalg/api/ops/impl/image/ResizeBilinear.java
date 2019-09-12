@@ -16,11 +16,13 @@
 
 package org.nd4j.linalg.api.ops.impl.image;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.factory.Nd4j;
 import org.tensorflow.framework.AttrValue;
@@ -38,6 +40,24 @@ import java.util.Map;
  */
 public class ResizeBilinear extends DynamicCustomOp {
     protected boolean alignCorners = false;
+    protected Integer height = null;
+    protected Integer width = null;
+
+    public ResizeBilinear(@NonNull SameDiff sd, @NonNull SDVariable input, int height, int width, boolean alignCorners){
+        super(sd, input);
+        this.alignCorners = alignCorners;
+        this.height = height;
+        this.width = width;
+        addArgs();
+    }
+
+    public ResizeBilinear(@NonNull INDArray x, INDArray z, int height, int width, boolean alignCorners){
+        super(new INDArray[]{x}, new INDArray[]{z});
+        this.alignCorners = alignCorners;
+        this.height = height;
+        this.width = width;
+        addArgs();
+    }
 
     @Override
     public String opName() {
@@ -60,13 +80,20 @@ public class ResizeBilinear extends DynamicCustomOp {
     protected void addArgs() {
         // to be implemented
         iArguments.clear();
+        if(height != null && width != null){
+            iArguments.add(Long.valueOf(height));
+            iArguments.add(Long.valueOf(width));
+        }
         iArguments.add(alignCorners ? 1L : 0L);
+
     }
 
     @Override
     public Map<String, Object> propertiesForFunction() {
         Map<String,Object> ret = new LinkedHashMap<>();
         ret.put("alignCorners", alignCorners);
+        ret.put("height", height);
+        ret.put("width", width);
         return ret;
     }
 

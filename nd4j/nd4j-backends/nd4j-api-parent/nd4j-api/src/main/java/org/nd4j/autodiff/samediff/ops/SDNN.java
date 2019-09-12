@@ -492,6 +492,33 @@ public class SDNN extends SDOps {
     }
 
     /**
+     * See {@link #prelu(String, SDVariable, SDVariable, int...)}.
+     */
+    public SDVariable prelu(@NonNull SDVariable input, @NonNull SDVariable alpha, @NonNull int... sharedAxes){
+        return f().prelu(input, alpha, sharedAxes);
+    }
+
+    /**
+     * PReLU (Parameterized Rectified Linear Unit) operation.  ReLU with a learnable, per-element* cutoff:<br>
+     * out[i] = in[i] if in[i] >= alpha[i]<br>
+     * out[i] = 0 otherwise<br>
+     *
+     * *sharedAxes allows you to share learnable parameters along axes.
+     * For example, if the input has shape [batchSize, channels, height, width]
+     * and you want each channel to have its own cutoff, use sharedAxes = [2, 3].
+     *
+     * @param name    Name of the output variable
+     * @param input   Input data
+     * @param alpha   The cutoff variable.
+     * @param sharedAxes Which axes to share cutoff parameters along.
+     * @return Output variable
+     */
+    public SDVariable prelu(String name, @NonNull SDVariable input, @NonNull SDVariable alpha, @NonNull int... sharedAxes){
+        SDVariable res = f().prelu(input, alpha, sharedAxes);
+        return updateVariableNameAndReference(res, name);
+    }
+
+    /**
      * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>
      * <br>
      * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
