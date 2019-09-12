@@ -21,6 +21,7 @@
 
 #include "testlayers.h"
 #include <initializer_list>
+#include <ops/declarable/PlatformHelper.h>
 
 #ifdef HAVE_MKLDNN
 
