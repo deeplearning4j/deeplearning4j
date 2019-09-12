@@ -3184,6 +3184,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * See {@link #one(String, DataType, int...)}.
+     * Creates a VARIABLE type SDVariable.
      * Uses the DataType of the Nd4j default floating point type ({@link Nd4j#defaultFloatingPointType()}).
      */
     public SDVariable one(String name, int... shape) {
@@ -3192,6 +3193,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * See {@link #one(String, DataType, long...)}.
+     * Creates a VARIABLE type SDVariable.
      * Uses the DataType of the Nd4j default floating point type ({@link Nd4j#defaultFloatingPointType()}).
      */
     public SDVariable one(String name, long... shape) {
@@ -3200,7 +3202,8 @@ public class SameDiff extends SDBaseOps {
 
 
     /**
-     * Create a new variable with the specified shape, with all values initialized to 1.0
+     * Create a new variable with the specified shape, with all values initialized to 1.0.
+     * Creates a VARIABLE type SDVariable.
      *
      * @param name  the name of the variable to create
      * @param shape the shape of the array to be created
@@ -3211,7 +3214,8 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create a new variable with the specified shape, with all values initialized to 1.0
+     * Create a new variable with the specified shape, with all values initialized to 1.0.
+     * Creates a VARIABLE type SDVariable.
      *
      * @param name  the name of the variable to create
      * @param shape the shape of the array to be created
@@ -3223,6 +3227,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * See {@link #zero(String, DataType, long...)}.
+     * Creates a VARIABLE type SDVariable.
      * Uses the DataType of the Nd4j default floating point type ({@link Nd4j#defaultFloatingPointType()}).
      */
     public SDVariable zero(String name, long... shape) {
@@ -3231,6 +3236,7 @@ public class SameDiff extends SDBaseOps {
 
     /**
      * See {@link #zero(String, DataType, int...)}.
+     * Creates a VARIABLE type SDVariable.
      * Uses the DataType of the Nd4j default floating point type ({@link Nd4j#defaultFloatingPointType()}).
      */
     public SDVariable zero(String name, int... shape) {
@@ -3238,7 +3244,8 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create a new variable with the specified shape, with all values initialized to 0
+     * Create a new variable with the specified shape, with all values initialized to 0.
+     * Creates a VARIABLE type SDVariable.
      *
      * @param name  the name of the variable to create
      * @param shape the shape of the array to be created
@@ -3249,7 +3256,8 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Create a new variable with the specified shape, with all values initialized to 0
+     * Create a new variable with the specified shape, with all values initialized to 0.
+     * Creates a VARIABLE type SDVariable.
      *
      * @param name  the name of the variable to create
      * @param shape the shape of the array to be created
@@ -3468,6 +3476,19 @@ public class SameDiff extends SDBaseOps {
      */
     public SDVariable var(String name, long... shape) {
         return var(name, Nd4j.defaultFloatingPointType(), shape);
+    }
+
+    /**
+     * Variable initialization with a specified {@link WeightInitScheme}. Data type will be given by {@link Nd4j#defaultFloatingPointType()}<br>
+     * This method creates VARIABLE type SDVariable - i.e., must be floating point, and is a trainable parameter. See {@link VariableType} for more details.
+     *
+     * @param name             the name of the variable
+     * @param shape            the shape of the array to be created
+     * @param weightInitScheme the weight initialization scheme
+     * @return the created variable
+     */
+    public SDVariable var(@NonNull String name, @NonNull WeightInitScheme weightInitScheme, @NonNull long... shape) {
+        return var(name, weightInitScheme, Nd4j.defaultFloatingPointType(), shape);
     }
 
     /**
@@ -5171,7 +5192,7 @@ public class SameDiff extends SDBaseOps {
      * @param variableName the vertex id for the original shape
      * @param shape        the shape of the place holder
      */
-    public void setOriginalPlaceHolderShape(String variableName, long[] shape) {
+    public void setOriginalPlaceHolderShape(String variableName, @NonNull long... shape) {
         if (!isPlaceHolder(variableName)) {
             throw new ND4JIllegalStateException("Vertex id " + variableName + " does not appear to be a place holder. Did you forget to call addPlaceHolder?");
         }

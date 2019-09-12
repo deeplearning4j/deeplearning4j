@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.samediff.ops;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
@@ -568,7 +569,7 @@ public class SDNN extends SDOps {
     }
 
     /**
-     * Softmax activation
+     * Softmax activation on dimension 1.
      *
      * @param x Input variable
      * @return Output variable
@@ -578,7 +579,7 @@ public class SDNN extends SDOps {
     }
 
     /**
-     * Softmax activation
+     * Softmax activation on dimension 1.
      *
      * @param x Input variable
      * @return Output variable

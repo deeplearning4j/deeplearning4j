@@ -73,6 +73,8 @@ public class SDVariable implements Serializable {
     @Getter
     @Setter
     protected WeightInitScheme weightInitScheme;
+
+    @Setter(AccessLevel.NONE)
     protected long[] shape;
 
     @Getter (AccessLevel.NONE)
@@ -235,6 +237,10 @@ public class SDVariable implements Serializable {
         }
 
         return initialShape;
+    }
+
+    public void setShape(long... shape){
+        this.shape = shape;
     }
 
     public long[] placeholderShape(){
