@@ -16,8 +16,8 @@
 
 package org.nd4j.linalg.api.ops.impl.image;
 
-import lombok.NoArgsConstructor;
 import lombok.NonNull;
+import lombok.NoArgsConstructor;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
