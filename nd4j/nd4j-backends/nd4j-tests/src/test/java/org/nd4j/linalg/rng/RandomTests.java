@@ -906,8 +906,8 @@ public class RandomTests extends BaseNd4jTest {
     public void testSignatures1() {
 
         for (int x = 0; x < 100; x++) {
-            INDArray z1 = Nd4j.randn(new int[]{128, 1}, 5325235);
-            INDArray z2 = Nd4j.randn(new int[]{128, 1}, 5325235);
+            INDArray z1 = Nd4j.randn(5325235, new long[]{128, 1});
+            INDArray z2 = Nd4j.randn(5325235, new long[]{128, 1});
 
             assertEquals(z1, z2);
         }

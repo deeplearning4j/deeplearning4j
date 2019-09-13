@@ -3098,10 +3098,10 @@ public class Nd4j {
     }
 
     /**
-     * @deprecated use {@link Nd4j#randn(long, long...)}
+     * @deprecated use {@link Nd4j#randn(long, long[])}
      */
     @Deprecated
-    public static INDArray randn(int[] shape, long seed) {
+    public static INDArray randn(long seed, int[] shape) {
         return randn(seed, ArrayUtil.toLongArray(shape));
     }
 
@@ -3111,59 +3111,10 @@ public class Nd4j {
      * @param shape the shape of the array
      * @return new array with random values
      */
-    public static INDArray randn(long seed, @NonNull long... shape) {
+    public static INDArray randn(long seed, @NonNull long[] shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order());
         return randn(ret, seed);
     }
-
-    /**
-     * Random normal N(0, 1)
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return new array with random values
-     */
-    public static INDArray randn(long rows, long columns) {
-        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
-        return randn(ret);
-    }
-
-    /**
-     * Random normal N(0,1) with the specified shape and array order
-     *
-     * @param order   the order of the output array
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     */
-    /*public static INDArray randn(char order, long rows, long columns) {
-        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order);
-        return randn(ret);
-    }*/
-
-    /**
-     * Random normal using the specified seed
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return new array with random values
-     */
-    /*public static INDArray randn(long rows, long columns, long seed) {
-        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
-        return randn(ret, seed);
-    }*/
-
-    /**
-     * Random normal using the given rng
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @param r       the random generator to use
-     * @return new array with random values
-     */
-    /*public static INDArray randn(long rows, long columns, @NonNull org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
-        return randn(ret, r);
-    }*/
 
     /**
      * @deprecated use {@link Nd4j#randn(org.nd4j.linalg.api.rng.Random, long...)}

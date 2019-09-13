@@ -191,7 +191,7 @@ public class NormalizerStandardizeLabelsTest extends BaseNd4jTest {
             // transform ndarray as X = aA + bB * X
             INDArray randomFeatures = Nd4j.zeros(nSamples, nFeatures);
             while (i < nFeatures) {
-                INDArray randomSlice = Nd4j.randn(new int[]{nSamples, 1}, randSeed);
+                INDArray randomSlice = Nd4j.randn(randSeed, new long[]{nSamples, 1});
                 randomSlice.muli(aA.getScalar(0, i));
                 randomSlice.addi(bB.getScalar(0, i));
                 randomFeatures.putColumn(i, randomSlice);

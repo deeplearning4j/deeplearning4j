@@ -309,7 +309,7 @@ public class NormalizerStandardizeTest extends BaseNd4jTest {
             INDArray randomFeatures = Nd4j.zeros(nSamples, nFeatures);
             INDArray randomFeaturesTransform = Nd4j.zeros(nSamples, nFeatures);
             while (i < nFeatures) {
-                INDArray randomSlice = Nd4j.randn(new int[]{nSamples, 1}, randSeed);
+                INDArray randomSlice = Nd4j.randn(randSeed, new long[]{nSamples, 1});
                 randomFeaturesTransform.putColumn(i, randomSlice);
                 randomSlice.muli(aA.getScalar(0, i));
                 randomSlice.addi(bB.getScalar(0, i));
