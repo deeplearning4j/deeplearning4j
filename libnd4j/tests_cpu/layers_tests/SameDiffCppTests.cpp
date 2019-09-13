@@ -41,7 +41,7 @@ TEST_F(SameDiffCppTests, basic_cpp_create_test_1) {
     auto x = sd.variable("x", NDArrayFactory::create<float>('c', {4}, {1.f, 2.f, 3.f, 4.f}));
     auto y = sd.variable("y", NDArrayFactory::create<float>('c', {4}, {1.f, 1.f, 1.f, 1.f}));
 
-    auto z = samediff::arithmetic::add(sd, x, y);
+    auto z = samediff::arithmetic::Add(sd, x, y);
 
     sd.execute();
 
@@ -58,8 +58,8 @@ TEST_F(SameDiffCppTests, basic_cpp_create_test_2) {
     auto x = sd.variable("x", NDArrayFactory::create<float>('c', {4}, {1.f, 2.f, 3.f, 4.f}));
     auto y = sd.variable("y", NDArrayFactory::create<float>('c', {4}, {1.f, 1.f, 1.f, 1.f}));
 
-    auto sum = samediff::arithmetic::add(sd, x, y);
-    auto z = samediff::arithmetic::neg(sd, sum);
+    auto sum = samediff::arithmetic::Add(sd, x, y);
+    auto z = samediff::arithmetic::Neg(sd, sum);
 
     sd.execute();
 

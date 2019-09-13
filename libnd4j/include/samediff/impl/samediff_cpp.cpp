@@ -27,11 +27,11 @@ namespace samediff {
 
 
     namespace arithmetic {
-        SDVariable add(SameDiff &sd, SDVariable &x, SDVariable &y, const char *name) {
+        SDVariable Add(SameDiff &sd, SDVariable &x, SDVariable &y, const char *name) {
             return {};
         }
 
-        SDVariable neg(SameDiff &sd, SDVariable &x, const char *name) {
+        SDVariable Neg(SameDiff &sd, SDVariable &x, const char *name) {
             return {};
         }
     }
