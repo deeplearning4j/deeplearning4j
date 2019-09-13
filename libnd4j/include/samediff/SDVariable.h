@@ -22,11 +22,12 @@
 #define SAMEDIFF_SDVARIABLE_H
 
 #include <NDArray.h>
+#include <graph/Node.h>
 
 namespace samediff {
     class SDVariable {
     protected:
-
+        nd4j::graph::Node* _node = nullptr;
     public:
         SDVariable() = default;
         ~SDVariable() = default;

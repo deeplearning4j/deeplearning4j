@@ -19,13 +19,25 @@
 //
 
 #include "../SameDiff.h"
+#include <graph/Variable.h>
 
 namespace samediff {
+    SameDiff::SameDiff() {
+        _graph = new Graph();
+    }
+
+    SameDiff::~SameDiff() {
+        if (_graph != nullptr)
+            delete _graph;
+    }
+
     SDVariable SameDiff::variable(const char *name, const nd4j::NDArray &array) {
+        auto variable = new Variable(array.dup(), name);
         return SDVariable();
     }
 
     SDVariable SameDiff::placeholder(const char *name, const nd4j::DataType dataType, const std::vector<Nd4jLong> shape) {
+        auto variable = new Variable(nullptr, name);
         return SDVariable();
     }
 

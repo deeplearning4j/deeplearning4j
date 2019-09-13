@@ -23,21 +23,21 @@
 
 #include <NDArray.h>
 #include "SDVariable.h"
+#include <graph/Graph.h>
 #include <unordered_map>
-
-using namespace nd4j;
 
 namespace samediff {
 
     class SameDiff {
+    protected:
+        nd4j::graph::Graph *_graph = nullptr;
     public:
-        SameDiff() = default;
-        ~SameDiff() = default;
+        SameDiff();
+        ~SameDiff();
 
 
         SDVariable variable(const char *name, const nd4j::NDArray &array);
         SDVariable placeholder(const char *name, const nd4j::DataType dataType = nd4j::DataType::FLOAT32, const std::vector<Nd4jLong> shape = {-1});
-
 
 
         // execution functions

@@ -26,6 +26,8 @@
 #include <ops/declarable/CustomOperations.h>
 #include <samediff/samediff_cpp.h>
 
+using namespace nd4j;
+
 class SameDiffCppTests : public testing::Test {
 public:
 
