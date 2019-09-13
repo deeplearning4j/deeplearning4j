@@ -108,7 +108,7 @@ public class Tsne {
 
         int n = X.rows();
         // FIXME: this is wrong, another distribution required here
-        Y = randn(X.rows(), targetDimensions, Nd4j.getRandom());
+        Y = Nd4j.randn(X.dataType(), X.rows(), targetDimensions);
         INDArray dY = Nd4j.zeros(n, targetDimensions);
         INDArray iY = Nd4j.zeros(n, targetDimensions);
         INDArray gains = Nd4j.ones(n, targetDimensions);
