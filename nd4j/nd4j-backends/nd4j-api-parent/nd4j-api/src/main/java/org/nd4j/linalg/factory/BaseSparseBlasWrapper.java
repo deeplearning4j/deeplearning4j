@@ -137,16 +137,6 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper {
     }
 
     @Override
-    public INDArray gemm(double alpha, INDArray a, INDArray b, double beta, INDArray c) {
-        return null;
-    }
-
-    @Override
-    public INDArray gemm(float alpha, INDArray a, INDArray b, float beta, INDArray c) {
-        return null;
-    }
-
-    @Override
     public INDArray gesv(INDArray a, int[] ipiv, INDArray b) {
         return null;
     }

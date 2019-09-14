@@ -153,22 +153,7 @@ public interface BlasWrapper {
      * Compute A <- alpha * x * y^T + A (general rank-1 update)
      */
     INDArray ger(float alpha, INDArray x, INDArray y, INDArray a);
-
-    /**
-     * ************************************************************************
-     * BLAS Level 3
-     */
-    @Deprecated
-    INDArray gemm(double alpha, INDArray a, INDArray b, double beta, INDArray c);
-
-    /**
-     * Compute c <- a*b + beta * c (general matrix matrix
-     * multiplication)
-     */
-    @Deprecated
-    INDArray gemm(float alpha, INDArray a, INDArray b, float beta, INDArray c);
-
-
+    
     /**
      * ************************************************************************
      * LAPACK
