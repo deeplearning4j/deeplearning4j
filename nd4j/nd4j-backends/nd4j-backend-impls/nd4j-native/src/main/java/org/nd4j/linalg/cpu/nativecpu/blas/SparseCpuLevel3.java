@@ -26,6 +26,5 @@ import static org.bytedeco.mkl.global.mkl_rt.*;
  * @author Audrey Loeffel
  */
 public class SparseCpuLevel3 extends SparseBaseLevel3 {
-    private SparseNd4jBlas sparseNd4jBlas = (SparseNd4jBlas) Nd4j.sparseFactory().blas();
     // TODO Mappings with Sparse Blas methods
 }

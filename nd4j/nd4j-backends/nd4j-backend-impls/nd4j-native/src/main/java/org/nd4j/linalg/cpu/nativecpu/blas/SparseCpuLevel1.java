@@ -32,8 +32,6 @@ public class SparseCpuLevel1 extends SparseBaseLevel1 {
 
     // FIXME: int cast !!!
 
-    private SparseNd4jBlas sparseNd4jBlas = (SparseNd4jBlas) Nd4j.sparseFactory().blas();
-
     /**
      * Computes the dot product of a compressed sparse double vector by a full-storage real vector.
      * @param N The number of elements in x and indx

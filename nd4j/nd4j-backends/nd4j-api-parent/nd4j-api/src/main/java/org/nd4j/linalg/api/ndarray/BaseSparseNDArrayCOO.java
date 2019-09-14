@@ -285,7 +285,7 @@ public class BaseSparseNDArrayCOO extends BaseSparseNDArray {
      * */
     public void sort() {
         if (!isSorted) {
-            Nd4j.sparseFactory().sortCooIndices(this);
+            //Nd4j.sparseFactory().sortCooIndices(this);
             isSorted = true;
         }
     }

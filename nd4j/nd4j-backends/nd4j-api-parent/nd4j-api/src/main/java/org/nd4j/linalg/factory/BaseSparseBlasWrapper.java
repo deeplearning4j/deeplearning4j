@@ -30,23 +30,23 @@ public abstract class BaseSparseBlasWrapper implements BlasWrapper {
 
     @Override
     public Lapack lapack() {
-        return Nd4j.sparseFactory().lapack();
+        return null; //Nd4j.sparseFactory().lapack();
     }
 
     @Override
     public Level1 level1() {
-        return Nd4j.sparseFactory().level1();
+        return null; //Nd4j.sparseFactory().level1();
     }
 
     @Override
     public Level2 level2() {
-        return Nd4j.sparseFactory().level2();
+        return null; //Nd4j.sparseFactory().level2();
 
     }
 
     @Override
     public Level3 level3() {
-        return Nd4j.sparseFactory().level3();
+        return null; //Nd4j.sparseFactory().level3();
 
     }
 
