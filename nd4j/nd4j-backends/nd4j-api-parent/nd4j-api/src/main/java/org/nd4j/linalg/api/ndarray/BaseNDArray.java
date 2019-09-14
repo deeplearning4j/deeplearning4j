@@ -5467,11 +5467,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     @Override
-    public DataBuffer sparseInfoDataBuffer() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
     public int[] flags() {
         throw new UnsupportedOperationException("Not a sparse ndarray");
     }

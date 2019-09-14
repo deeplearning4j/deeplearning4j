@@ -306,11 +306,6 @@ public abstract class BaseSparseNDArray implements ISparseNDArray {
     }
 
     @Override
-    public DataBuffer sparseInfoDataBuffer() {
-        return sparseInformation;
-    }
-
-    @Override
     public LongBuffer shapeInfo() {
         return null;
     }

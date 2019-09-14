@@ -48,14 +48,7 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @return Shape info
      */
     DataBuffer shapeInfoDataBuffer();
-
-    // TODO: Unused untested method.
-    /**
-     * Sparse info
-     * @return Sparse info.
-     */
-    DataBuffer sparseInfoDataBuffer();
-
+    
     /**
      * Shape info
      * @return Shape info
