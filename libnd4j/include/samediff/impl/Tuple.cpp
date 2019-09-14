@@ -18,39 +18,18 @@
 // @author raver119@gmail.com
 //
 
-#ifndef SAMEDIFF_SAMEDIFF_CPP_H
-#define SAMEDIFF_SAMEDIFF_CPP_H
-
-#include <NDArray.h>
-#include <samediff/SameDiff.h>
-#include <samediff/Variable.h>
-#include <unordered_map>
-
-
+#include "../Tuple.h"
 
 namespace samediff {
-
-    // general graph management functions
-    SameDiff create();
-
-
-    // basic arithmetic operations
-    namespace arithmetic {
-        Variable Add(const Variable &x, const Variable &y, const char *name = nullptr);
-        Variable Neg(const Variable &x, const char *name = nullptr);
+    uint32_t Tuple::size() const {
+        return 0;
     }
 
-    // math functions
-    namespace math {
-        //void cos();
-        //void sin();
+    Variable Tuple::at(uint32_t index) const {
+        return {};
     }
 
-    // nn-related functions
-    namespace nn {
-        //void convolution2d();
-        //void avgpooling2d();
+    Variable Tuple::operator[](const uint32_t index) const {
+        return this->at(index);
     }
 }
-
-#endif //SAMEDIFF_SAMEDIFF_CPP_H

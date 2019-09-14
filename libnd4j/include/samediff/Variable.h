@@ -18,39 +18,39 @@
 // @author raver119@gmail.com
 //
 
-#ifndef SAMEDIFF_SAMEDIFF_CPP_H
-#define SAMEDIFF_SAMEDIFF_CPP_H
+#ifndef SAMEDIFF_SDVARIABLE_H
+#define SAMEDIFF_SDVARIABLE_H
 
 #include <NDArray.h>
-#include <samediff/SameDiff.h>
-#include <samediff/Variable.h>
-#include <unordered_map>
-
-
+#include <graph/Node.h>
+#include <graph/Variable.h>
 
 namespace samediff {
+    class SameDiff;
 
-    // general graph management functions
-    SameDiff create();
+    class Variable {
+    protected:
+        // TODO: use shared_ptr here
+        nd4j::graph::Node* _node = nullptr;
+        SameDiff* _sd;
+    public:
+        Variable() = default;
+        ~Variable() = default;
 
+        Variable(SameDiff &sd, nd4j::graph::Node *node);
 
-    // basic arithmetic operations
-    namespace arithmetic {
-        Variable Add(const Variable &x, const Variable &y, const char *name = nullptr);
-        Variable Neg(const Variable &x, const char *name = nullptr);
-    }
+        SameDiff* sd() const;
+        int nodeId() const;
 
-    // math functions
-    namespace math {
-        //void cos();
-        //void sin();
-    }
+        // basic arithmetic operators
+        Variable operator+(const Variable& other) const;
 
-    // nn-related functions
-    namespace nn {
-        //void convolution2d();
-        //void avgpooling2d();
-    }
+        //
+        nd4j::NDArray array();
+    };
 }
 
-#endif //SAMEDIFF_SAMEDIFF_CPP_H
+ND4J_EXPORT samediff::Variable operator+(const float&, const samediff::Variable&);
+ND4J_EXPORT samediff::Variable operator+(const samediff::Variable&, const float&);
+
+#endif //SAMEDIFF_SDVARIABLE_H

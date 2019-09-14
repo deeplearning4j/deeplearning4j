@@ -32,14 +32,14 @@ namespace samediff {
             delete _graph;
     }
 
-    SDVariable SameDiff::variable(const nd4j::NDArray &array, bool trainable, const std::string &name) {
-        auto variable = new Variable(array.dup(), name.c_str());
-        return SDVariable(*this, _graph->addVariableNode(variable));
+    Variable SameDiff::variable(const nd4j::NDArray &array, bool trainable, const std::string &name) {
+        auto variable = new nd4j::graph::Variable(array.dup(), name.c_str());
+        return Variable(*this, _graph->addVariableNode(variable));
     }
 
-    SDVariable SameDiff::placeholder(const std::string &name, const nd4j::DataType dataType, const std::vector<Nd4jLong> shape) {
-        auto variable = new Variable(name, dataType, shape);
-        return SDVariable(*this, _graph->addPlaceholderNode(variable));
+    Variable SameDiff::placeholder(const std::string &name, const nd4j::DataType dataType, const std::vector<Nd4jLong> shape) {
+        auto variable = new nd4j::graph::Variable(name, dataType, shape);
+        return Variable(*this, _graph->addPlaceholderNode(variable));
     }
 
     nd4j::graph::Graph* SameDiff::graph() {

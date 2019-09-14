@@ -22,7 +22,7 @@
 #define SAMEDIFF_SAMEDIFF_H
 
 #include <NDArray.h>
-#include "SDVariable.h"
+#include "Variable.h"
 #include <graph/Graph.h>
 #include <unordered_map>
 
@@ -37,8 +37,8 @@ namespace samediff {
         ~SameDiff();
 
 
-        SDVariable variable(const nd4j::NDArray &array, bool trainable = true, const std::string &name = {});
-        SDVariable placeholder(const std::string &name, const nd4j::DataType dataType = nd4j::DataType::FLOAT32, const std::vector<Nd4jLong> shape = {-1});
+        Variable variable(const nd4j::NDArray &array, bool trainable = true, const std::string &name = {});
+        Variable placeholder(const std::string &name, const nd4j::DataType dataType = nd4j::DataType::FLOAT32, const std::vector<Nd4jLong> shape = {-1});
 
 
         nd4j::graph::Graph* graph();

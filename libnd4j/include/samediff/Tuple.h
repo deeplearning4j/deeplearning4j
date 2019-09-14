@@ -18,38 +18,31 @@
 // @author raver119@gmail.com
 //
 
-#ifndef SAMEDIFF_SDVARIABLE_H
-#define SAMEDIFF_SDVARIABLE_H
+#ifndef SAMEDIFF_TUPLE_H
+#define SAMEDIFF_TUPLE_H
 
-#include <NDArray.h>
 #include <graph/Node.h>
-#include <graph/Variable.h>
+#include <samediff/Variable.h>
 
 namespace samediff {
     class SameDiff;
 
-    class SDVariable {
-    protected:
-        // TODO: use shared_ptr here
-        nd4j::graph::Node* _node = nullptr;
-        SameDiff* _sd;
+    class Tuple {
+    private:
+        nd4j::graph::Node *_node;
+        SameDiff *_sd;
+
     public:
-        ~SDVariable() = default;
+        Tuple() = default;
+        ~Tuple() = default;
 
-        SDVariable(SameDiff &sd, nd4j::graph::Node *node);
+        uint32_t size() const;
 
-        SameDiff* sd() const;
-        int nodeId() const;
+        Variable at(uint32_t index) const;
 
-        // basic arithmetic operators
-        SDVariable operator+(const SDVariable& other) const;
-
-        //
-        nd4j::NDArray array();
+        Variable operator[](const uint32_t index) const;
     };
 }
 
-ND4J_EXPORT samediff::SDVariable operator+(const float&, const samediff::SDVariable&);
-ND4J_EXPORT samediff::SDVariable operator+(const samediff::SDVariable&, const float&);
 
-#endif //SAMEDIFF_SDVARIABLE_H
+#endif //SAMEDIFF_TUPLE_H

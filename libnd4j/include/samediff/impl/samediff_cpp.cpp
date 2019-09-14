@@ -30,7 +30,7 @@ namespace samediff {
 
 
     namespace arithmetic {
-        SDVariable Add(const SDVariable &x, const SDVariable &y, const char *name) {
+        Variable Add(const Variable &x, const Variable &y, const char *name) {
             samediff::precondition_exception::check(x.sd() == y.sd(), "Add: both variables must belong to the same SameDiff instance");
 
             auto sd = x.sd();
@@ -40,10 +40,10 @@ namespace samediff {
                 node->setName(name);
 
             sd->graph()->addNode(node);
-            return SDVariable(*sd, node);
+            return Variable(*sd, node);
         }
 
-        SDVariable Neg(const SDVariable &x, const char *name) {
+        Variable Neg(const Variable &x, const char *name) {
             auto sd = x.sd();
             auto op = new nd4j::ops::LegacyTransformSameOp(nd4j::transform::SameOps::Neg);
             auto node = new nd4j::graph::Node(op, sd->graph()->nextNodeId(), {x.nodeId()});
@@ -53,7 +53,7 @@ namespace samediff {
                 node->setName(name);
 
             sd->graph()->addNode(node);
-            return SDVariable(*sd, node);
+            return Variable(*sd, node);
         }
     }
 }
