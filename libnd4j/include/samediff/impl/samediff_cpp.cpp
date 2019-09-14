@@ -18,6 +18,8 @@
 // @author raver119@gmail.com
 //
 
+#include <ops/declarable/OpRegistrator.h>
+#include <ops/declarable/LegacyTransformSameOp.h>
 #include "../samediff_cpp.h"
 
 namespace samediff {
@@ -27,12 +29,26 @@ namespace samediff {
 
 
     namespace arithmetic {
-        SDVariable Add(SameDiff &sd, SDVariable &x, SDVariable &y, const char *name) {
-            return {};
+        SDVariable Add(SameDiff &sd, const SDVariable &x, const SDVariable &y, const char *name) {
+            auto node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("add"), sd.graph()->nextNodeId(), {x.nodeId(), y.nodeId()});
+
+            if (name != nullptr)
+                node->setName(name);
+
+            sd.graph()->addNode(node);
+            return SDVariable(sd, node);
         }
 
-        SDVariable Neg(SameDiff &sd, SDVariable &x, const char *name) {
-            return {};
+        SDVariable Neg(SameDiff &sd, const SDVariable &x, const char *name) {
+            auto op = new nd4j::ops::LegacyTransformSameOp(nd4j::transform::SameOps::Neg);
+            auto node = new nd4j::graph::Node(op, sd.graph()->nextNodeId(), {x.nodeId()});
+            node->setDeductable(true);
+
+            if (name != nullptr)
+                node->setName(name);
+
+            sd.graph()->addNode(node);
+            return SDVariable(sd, node);
         }
     }
 }

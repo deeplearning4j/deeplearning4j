@@ -45,6 +45,10 @@ namespace nd4j {
             // stash is NOT cloned
             nd4j::graph::Stash _stash;
 
+            // symbolic <-> int dicts
+            std::map<int, std::string> _idToSymbolDict;
+            std::map<std::string, int> _symbolToIdDict;
+
             std::map<std::pair<int, int>, Variable*> _paired;
             std::map<std::string, Variable*> _symbolic;
             std::map<int, Variable*> _variables;
@@ -55,7 +59,7 @@ namespace nd4j {
 
             std::vector<nd4j::graph::Variable*> _placeholders;
 
-            void silentPutVariable(std::pair<int,int>& pair, Variable *variable);
+            void silentPutVariable(const std::pair<int,int>& pair, Variable *variable);
 
             int _auto_counter = -1;
 
@@ -80,23 +84,24 @@ namespace nd4j {
             virtual LaunchContext* launchContext();
 
             virtual bool hasExternalVariable(int it);
-            virtual bool hasExternalVariable(std::pair<int,int>& pair);
-            virtual bool hasExternalVariable(std::string *symbol);
+            virtual bool hasExternalVariable(const std::pair<int,int>& pair);
+            virtual bool hasExternalVariable(const std::string &symbol);
 
             virtual bool hasVariable(int id);
             virtual bool hasVariable(int id, int idx);
-            virtual bool hasVariable(std::pair<int,int>& pair);
-            virtual bool hasVariable(std::string *symbol);
+            virtual bool hasVariable(const std::pair<int,int>& pair);
+            virtual bool hasVariable(const std::string &symbol);
 
             virtual nd4j::graph::Variable* getVariable(int id);
             virtual nd4j::graph::Variable* getVariable(int id, int idx);
-            virtual nd4j::graph::Variable* getVariable(std::pair<int,int>& pair);
-            virtual nd4j::graph::Variable* getVariable(std::string *symbol);
+            virtual nd4j::graph::Variable* getVariable(const std::pair<int,int>& pair);
+            virtual nd4j::graph::Variable* getVariable(const std::string &symbol);
 
             virtual std::vector<Variable*> getVariables();
 
-            virtual void putVariable(std::pair<int,int>& pair, NDArray *array);
-            virtual void putVariable(std::pair<int,int>& pair, Variable *variable);
+            virtual void putVariable(const std::pair<int,int>& pair, NDArray *array);
+            virtual void putVariable(const std::pair<int,int>& pair, Variable *variable);
+            virtual void putVariable(const std::string &, Variable *variable);
             virtual void putVariable(int id, Variable *variable);
             virtual void putVariable(int id, NDArray *array);
             virtual void putVariable(int id, int idx, NDArray *array);
@@ -126,7 +131,7 @@ namespace nd4j {
 
 
             nd4j::graph::VariableSpace* asT();
-            void injectVariable(std::pair<int, int> &pair, Variable* variable);
+            void injectVariable(const std::pair<int, int> &pair, Variable* variable);
 
             virtual nd4j::graph::Stash* getStash();
 

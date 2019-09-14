@@ -35,6 +35,7 @@
 #include <graph/generated/config_generated.h>
 #include <graph/ExecutorConfiguration.h>
 #include <ops/declarable/OpDescriptor.h>
+#include <atomic>
 
 namespace nd4j {
     namespace graph {
@@ -61,6 +62,8 @@ namespace nd4j {
 
             std::vector<int> _output;
             std::vector<int> _autos;
+
+            uint32_t _nodeCounter = 0;
 
 
             std::map<int, Scope*> _mappedScopes;
@@ -102,6 +105,9 @@ namespace nd4j {
             // this method returns total number of nodes in this graph
             int totalNodes();
 
+            // this method returns id suitable for next node. Method is used in SameDiff only.
+            int nextNodeId();
+
             int numberOfPlaceholders();
 
             std::vector<nd4j::graph::Variable*>* getPlaceholders();
@@ -118,6 +124,18 @@ namespace nd4j {
              * @param node
              */
             void addNode(nd4j::graph::Node *node);
+
+            /**
+             * This method adds given variable as node to the graph
+             * @param variable
+             */
+            nd4j::graph::Node* addVariableNode(nd4j::graph::Variable *variable);
+
+            /**
+             * This methods add given variable as placeholder node to the graph
+             * @param variable
+             */
+            nd4j::graph::Node* addPlaceholderNode(nd4j::graph::Variable *variable);
 
             /**
              * This method returns layered representation of the graph

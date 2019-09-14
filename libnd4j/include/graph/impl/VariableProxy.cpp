@@ -20,6 +20,7 @@
 
 #include <dll.h>
 #include <graph/VariableProxy.h>
+#include <stdexcept>
 
 namespace nd4j {
     namespace graph {
@@ -52,12 +53,12 @@ namespace nd4j {
         }
 
         
-        bool VariableProxy::hasExternalVariable(std::pair<int,int>& pair) {
+        bool VariableProxy::hasExternalVariable(const std::pair<int,int>& pair) {
             return _backed->hasExternalVariable(pair);
         }
 
         
-        bool VariableProxy::hasExternalVariable(std::string *symbol) {
+        bool VariableProxy::hasExternalVariable(const std::string &symbol) {
             return _backed->hasExternalVariable(symbol);
         }
 
@@ -72,7 +73,7 @@ namespace nd4j {
         }
         
         
-        bool VariableProxy::hasVariable(std::pair<int,int>& pair) {
+        bool VariableProxy::hasVariable(const std::pair<int,int>& pair) {
             return _current->hasVariable(pair) || _backed->hasVariable(pair);
         }
 
@@ -105,7 +106,7 @@ namespace nd4j {
         }
 
         
-        bool VariableProxy::hasVariable(std::string *symbol) {
+        bool VariableProxy::hasVariable(const std::string &symbol) {
             return _current->hasVariable(symbol) || _backed->hasVariable(symbol);
         }
 
@@ -134,7 +135,7 @@ namespace nd4j {
         }
 
         
-        nd4j::graph::Variable *VariableProxy::getVariable(std::pair<int,int>& pair) {
+        nd4j::graph::Variable *VariableProxy::getVariable(const std::pair<int,int>& pair) {
             if (_current->hasVariable(pair))
                 return _current->getVariable(pair);
             
@@ -146,14 +147,14 @@ namespace nd4j {
         }
 
         
-        nd4j::graph::Variable *VariableProxy::getVariable(std::string *symbol) {
+        nd4j::graph::Variable *VariableProxy::getVariable(const std::string &symbol) {
             if (_current->hasVariable(symbol))
                 return _current->getVariable(symbol);
             
             if (_backed->hasVariable(symbol))
                 return _backed->getVariable(symbol);
 
-            nd4j_printf("Unable to get Variable to proxy: [%s]\n", symbol->c_str());
+            nd4j_printf("Unable to get Variable to proxy: [%s]\n", symbol.c_str());
             throw std::runtime_error("Bad arguments");
         }
 
@@ -161,8 +162,8 @@ namespace nd4j {
         void VariableProxy::replaceVariable(Variable *variable) {
             if (variable->getName() != nullptr && !variable->getName()->empty()) {
                 // if variable has name defined - we should resolve it via backing var space
-                if (_backed->hasVariable(variable->getName())) {
-                    auto origVar = _backed->getVariable(variable->getName());
+                if (_backed->hasVariable(*variable->getName())) {
+                    auto origVar = _backed->getVariable(*variable->getName());
                     variable->setId(origVar->id(), origVar->index());
                     _current->replaceVariable(variable);
                 } else
@@ -172,12 +173,12 @@ namespace nd4j {
         }
 
         
-        void VariableProxy::putVariable(std::pair<int,int>& pair, NDArray *array) {
+        void VariableProxy::putVariable(const std::pair<int,int>& pair, NDArray *array) {
             _current->putVariable(pair, array);
         }
 
         
-        void VariableProxy::putVariable(std::pair<int,int>& pair, Variable *variable) {
+        void VariableProxy::putVariable(const std::pair<int,int>& pair, Variable *variable) {
             _current->putVariable(pair, variable);
         }
 
@@ -273,11 +274,16 @@ namespace nd4j {
             nd4j_printf("VariableProxy = not implemented\n","");
 
             return *this;
-        }  
+        }
 
         
         nd4j::memory::Workspace * nd4j::graph::VariableProxy::workspace() {
             return _workspace;
+        }
+
+
+        void VariableProxy::putVariable(const std::string &name, Variable *variable) {
+            throw std::runtime_error("This method is not supported for VariableProxy");
         }
     }
 }

@@ -47,6 +47,9 @@ namespace nd4j {
             std::vector<std::pair<int, int>> _output;
             std::vector<int> _dimensions;
 
+            // this is pointer to the Graph which holds this onde
+            nd4j::graph::Graph * _parentGraph= nullptr;
+
             std::vector<int> _referencedBy;
 
             int * _dim = nullptr;
@@ -77,7 +80,7 @@ namespace nd4j {
             OpClass _opClass;
 
             // these fields are used to store embedded CustomOps and Graph in case of Graph-in-Graph scenario
-            nd4j::graph::Graph * _graph= nullptr;
+            nd4j::graph::Graph * _embeddedGraph= nullptr;
             nd4j::ops::DeclarableOp *_customOp = nullptr;
 
             // each node can be active or inactive, if used with divergents, like IF statements
@@ -93,8 +96,14 @@ namespace nd4j {
             Nd4jLong _frameId = -1;
 
         public:
+            // These are op node constructors
             Node(nd4j::ops::DeclarableOp *customOp, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
             Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
+
+            // This constructor is for variable/constant/placeholder nodes
+            Node(Variable *variable);
+
+            // This constructor is used during deserialization
             Node(const nd4j::graph::FlatNode *node);
             ~Node();
 
@@ -169,8 +178,10 @@ namespace nd4j {
             nd4j::ops::DeclarableOp* getCustomOp();
             bool hasCustomOp();
 
-            void setGraph(nd4j::graph::Graph* graph = nullptr);
-            nd4j::graph::Graph* getGraph();
+            void setEmbeddedGraph(nd4j::graph::Graph* graph = nullptr);
+            void setParentGraph(nd4j::graph::Graph* graph = nullptr);
+            nd4j::graph::Graph* embeddedGraph();
+            nd4j::graph::Graph* parentGraph();
             bool hasGraphEmbedded();
 
             bool isInplace();

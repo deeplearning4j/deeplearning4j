@@ -28,6 +28,10 @@
 
 namespace nd4j {
     namespace graph {
+        Variable::Variable(bool isPlaceholder){
+            _placeholder = isPlaceholder;
+        }
+
 
         template <typename N>
         Variable* Variable::asT() {
@@ -271,8 +275,11 @@ namespace nd4j {
             return _shape;
         }
 
-        nd4j::graph::Variable::Variable(bool placeholder) {
-            _placeholder = placeholder;
+        nd4j::graph::Variable::Variable(const std::string &name, nd4j::DataType dataType, const std::vector<Nd4jLong> &desiredShape) {
+            _placeholder = true;
+            _name = name;
+            _placeholderShape = desiredShape;
+            _desiredDtype = dataType;
         }
 
 

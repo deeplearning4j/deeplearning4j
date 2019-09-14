@@ -20,6 +20,7 @@
 
 #include "../SameDiff.h"
 #include <graph/Variable.h>
+#include <GraphExecutioner.h>
 
 namespace samediff {
     SameDiff::SameDiff() {
@@ -31,18 +32,22 @@ namespace samediff {
             delete _graph;
     }
 
-    SDVariable SameDiff::variable(const char *name, const nd4j::NDArray &array) {
-        auto variable = new Variable(array.dup(), name);
-        return SDVariable();
+    SDVariable SameDiff::variable(const nd4j::NDArray &array, bool trainable, const std::string &name) {
+        auto variable = new Variable(array.dup(), name.c_str());
+        return SDVariable(*this, _graph->addVariableNode(variable));
     }
 
-    SDVariable SameDiff::placeholder(const char *name, const nd4j::DataType dataType, const std::vector<Nd4jLong> shape) {
-        auto variable = new Variable(nullptr, name);
-        return SDVariable();
+    SDVariable SameDiff::placeholder(const std::string &name, const nd4j::DataType dataType, const std::vector<Nd4jLong> shape) {
+        auto variable = new Variable(name, dataType, shape);
+        return SDVariable(*this, _graph->addPlaceholderNode(variable));
+    }
+
+    nd4j::graph::Graph* SameDiff::graph() {
+        return _graph;
     }
 
     void SameDiff::execute() {
-        //
+        nd4j::graph::GraphExecutioner::execute(graph(), graph()->getVariableSpace());
     }
 
     void SameDiff::train() {

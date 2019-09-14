@@ -44,6 +44,41 @@ public:
     }
 };
 
+TEST_F(GraphTests, test_variable_node_1) {
+    Graph graph;
+    auto array = NDArrayFactory::create_<float>('c', {5});
+    auto variable = new Variable(array, "varr");
+
+    auto node = graph.addVariableNode(variable);
+    ASSERT_NE(nullptr, node);
+
+    auto varSpace = graph.getVariableSpace();
+    ASSERT_TRUE(varSpace->hasVariable("varr"));
+
+    auto varr = varSpace->getVariable("varr");
+    ASSERT_TRUE(variable == varr);
+    ASSERT_LT(variable->id(), 0);
+
+    ASSERT_TRUE(graph.hasNode(variable->id()));
+}
+
+TEST_F(GraphTests, test_placeholder_node_1) {
+    Graph graph;
+    auto variable = new Variable("placeholder_1",  nd4j::DataType::FLOAT32, {});
+
+    auto node = graph.addPlaceholderNode(variable);
+    ASSERT_NE(nullptr, node);
+
+    auto varSpace = graph.getVariableSpace();
+    ASSERT_TRUE(varSpace->hasVariable("placeholder_1"));
+
+    auto vplace = varSpace->getVariable("placeholder_1");
+    ASSERT_TRUE(variable == vplace);
+    ASSERT_LT(variable->id(), 0);
+
+    ASSERT_TRUE(graph.hasNode(variable->id()));
+}
+
 TEST_F(GraphTests, SingleInput1) {
     auto graph = new Graph();
 
@@ -615,14 +650,14 @@ TEST_F(GraphTests, SymbolicLookupTest1) {
     graph->addNode(nodeB);
 
 
-    auto rX = graph->getVariableSpace()->getVariable(&a);
-    auto rZ = graph->getVariableSpace()->getVariable(&o);
+    auto rX = graph->getVariableSpace()->getVariable(a);
+    auto rZ = graph->getVariableSpace()->getVariable(o);
 
     std::string om("omicron");
 
     ASSERT_TRUE(rX->getNDArray() == vX->getNDArray());
     ASSERT_TRUE(rZ->getNDArray() == vZ->getNDArray());
-    ASSERT_FALSE(graph->getVariableSpace()->hasVariable(&om));
+    ASSERT_FALSE(graph->getVariableSpace()->hasVariable(om));
 
 
     ASSERT_TRUE(graph->getVariableSpace()->hasVariable(1));
@@ -630,8 +665,8 @@ TEST_F(GraphTests, SymbolicLookupTest1) {
 
     GraphExecutioner::execute(graph);
 
-    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(&p));
-    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(&t));
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(p));
+    ASSERT_TRUE(graph->getVariableSpace()->hasVariable(t));
 
     ASSERT_NEAR(1.4142135, z->reduceNumber(reduce::Mean).e<float>(0), 1e-5);
 
@@ -1117,7 +1152,7 @@ TEST_F(GraphTests, TestGraphInGraph_1) {
     // 1 - 12 = -11
     auto nodeA3 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 4, {3}, {});
 
-    nodeA2->setGraph(&graphB);
+    nodeA2->setEmbeddedGraph(&graphB);
 
     graphA.addNode(nodeA0);
     graphA.addNode(nodeA1);
@@ -1188,7 +1223,7 @@ TEST_F(GraphTests, TestGraphInGraph_2) {
     // 1 - 12 = -11
     auto nodeA3 = new Node(OpType_TRANSFORM_SAME, transform::OneMinus, 4, {3}, {});
 
-    nodeA2->setGraph(&graphB);
+    nodeA2->setEmbeddedGraph(&graphB);
 
     graphA.addNode(nodeA0);
     graphA.addNode(nodeA1);

@@ -40,6 +40,9 @@ namespace nd4j {
 
             std::vector<Nd4jLong> _shape;
 
+            std::vector<Nd4jLong> _placeholderShape;
+            nd4j::DataType _desiredDtype;
+
             bool _external = false;
             bool _readOnly = false;
             bool _placeholder = false;
@@ -55,8 +58,13 @@ namespace nd4j {
             VariableType _variableType = VariableType::NDARRAY;
             
         public:
-            Variable(bool placeHolder);
-            Variable(nd4j::NDArray *arrayw, const char *name, int id, int idx = 0);
+            // constructor for manual copy
+            Variable(bool isPlaceholder);
+
+            // placeholder constructor
+            Variable(const std::string &name, nd4j::DataType dataType = nd4j::DataType::ANY, const std::vector<Nd4jLong> &desiredShape = {});
+
+            Variable(nd4j::NDArray *array, const char *name, int id, int idx = 0);
             Variable(nd4j::NDArray *array = nullptr, const char *name = nullptr);
             Variable(const nd4j::graph::FlatVariable *flatVariable);
             ~Variable();

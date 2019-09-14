@@ -97,11 +97,11 @@ TEST_F(VariableSpaceTest, EqualityTest1) {
 
     ASSERT_TRUE(space.hasVariable(1));
     ASSERT_TRUE(space.hasVariable(pair));
-    ASSERT_TRUE(space.hasVariable(&name));
+    ASSERT_TRUE(space.hasVariable(name));
 
     auto rV1 = space.getVariable(1);
     auto rV2 = space.getVariable(pair);
-    auto rV3 = space.getVariable(&name);
+    auto rV3 = space.getVariable(name);
 
     ASSERT_TRUE(rV1 == rV2);
     ASSERT_TRUE(rV2 == rV3);
@@ -164,7 +164,7 @@ TEST_F(VariableSpaceTest, CloneTests_2) {
 
     spaceA.putVariable(pair, variableA);
 
-    ASSERT_TRUE(spaceA.hasVariable(&str));
+    ASSERT_TRUE(spaceA.hasVariable(str));
     ASSERT_TRUE(spaceA.hasVariable(pair));
 
     auto spaceB = spaceA.clone();
@@ -172,7 +172,7 @@ TEST_F(VariableSpaceTest, CloneTests_2) {
     ASSERT_FALSE(spaceB->hasVariable(1));
     ASSERT_FALSE(spaceB->hasVariable(2));
     ASSERT_TRUE(spaceB->hasVariable(pair));
-    ASSERT_TRUE(spaceB->hasVariable(&str));
+    ASSERT_TRUE(spaceB->hasVariable(str));
 
     auto arrayB = spaceB->getVariable(pair)->getNDArray();
 
@@ -184,7 +184,7 @@ TEST_F(VariableSpaceTest, CloneTests_2) {
 
     delete spaceB;
 
-    ASSERT_TRUE(spaceA.hasVariable(&str));
+    ASSERT_TRUE(spaceA.hasVariable(str));
     ASSERT_TRUE(spaceA.hasVariable(pair));
 }
 

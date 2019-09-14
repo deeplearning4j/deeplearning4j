@@ -20,6 +20,7 @@
 
 #include <graph/VariableSpace.h>
 #include <NativeOps.h>
+#include <exceptions/precondition_exception.h>
 
 namespace nd4j {
     namespace graph {
@@ -65,7 +66,7 @@ namespace nd4j {
         }
 
         
-        void nd4j::graph::VariableSpace::injectVariable(std::pair<int, int> &pair, Variable* variable) {
+        void nd4j::graph::VariableSpace::injectVariable(const std::pair<int, int> &pair, Variable* variable) {
             if (pair.second == 0) {
                 if (pair.first < 0)
                     this->_variables[pair.first] = variable;
@@ -89,12 +90,13 @@ namespace nd4j {
             return _placeholders.size();
         }
 
-        bool nd4j::graph::VariableSpace::hasVariable(std::string *symbol) {
-            return _symbolic.count(*symbol) == 1;
+        bool nd4j::graph::VariableSpace::hasVariable(const std::string &symbol) {
+            return _symbolic.count(symbol) == 1;
         }
 
-        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(std::string *symbol) {
-            return _symbolic.at(*symbol);
+        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(const std::string &symbol) {
+            samediff::precondition_exception::check(hasVariable(symbol), "VariableSpace: tried to get non-existent variable" + symbol);
+            return _symbolic.at(symbol);
         }
 
         bool nd4j::graph::VariableSpace::hasVariable(int id, int index) {
@@ -110,7 +112,7 @@ namespace nd4j {
             return var->isExternal();
         }
 
-        bool VariableSpace::hasExternalVariable(std::pair<int,int>& pair) {
+        bool VariableSpace::hasExternalVariable(const std::pair<int,int>& pair) {
             if (!hasVariable(pair))
                 return false;
 
@@ -118,7 +120,7 @@ namespace nd4j {
             return var->isExternal();
         }
 
-        bool VariableSpace::hasExternalVariable(std::string *symbol) {
+        bool VariableSpace::hasExternalVariable(const std::string &symbol) {
             if (!hasVariable(symbol))
                 return false;
 
@@ -131,7 +133,7 @@ namespace nd4j {
             return getVariable(pair);
         }
 
-        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(std::pair<int, int>& pair) {
+        nd4j::graph::Variable * nd4j::graph::VariableSpace::getVariable(const std::pair<int, int>& pair) {
 //            if (pair.first == 0)
 //                throw "0 requested";
 
@@ -155,7 +157,7 @@ namespace nd4j {
             return _variables.count(id) == 1 || _temporary.count(id) == 1;
         }
 
-        bool nd4j::graph::VariableSpace::hasVariable(std::pair<int,int>& id) {
+        bool nd4j::graph::VariableSpace::hasVariable(const std::pair<int,int>& id) {
             return _paired.count(id) > 0;
         }
 
@@ -210,7 +212,7 @@ namespace nd4j {
             return externalMemory() + internalMemory();
         }
 
-        void nd4j::graph::VariableSpace::putVariable(std::pair<int,int>& pair, NDArray *array) {
+        void nd4j::graph::VariableSpace::putVariable(const std::pair<int,int>& pair, NDArray *array) {
             auto variable = new Variable(array, nullptr, pair.first, pair.second);
             this->putVariable(pair, variable);
         }
@@ -225,7 +227,7 @@ namespace nd4j {
             this->putVariable(pair, variable);
         }
 
-        void nd4j::graph::VariableSpace::silentPutVariable(std::pair<int,int>& pair, Variable *variable) {
+        void nd4j::graph::VariableSpace::silentPutVariable(const std::pair<int,int>& pair, Variable *variable) {
             _varmap.lock();
 
             //std::pair<std::pair<int, int>, nd4j::graph::Variable *> p(pair, variable);
@@ -234,7 +236,7 @@ namespace nd4j {
             _varmap.unlock();
         }
 
-        void nd4j::graph::VariableSpace::putVariable(std::pair<int,int>& pair, Variable *variable) {
+        void nd4j::graph::VariableSpace::putVariable(const std::pair<int,int>& pair, Variable *variable) {
             silentPutVariable(pair, variable);
 
             if (variable->isPlaceholder())
@@ -396,9 +398,9 @@ namespace nd4j {
             // trying name first
             if (variable->getName() != nullptr && !variable->getName()->empty()) {
                 nd4j_printf("Trying to replace variable by name: [%s]\n", variable->getName()->c_str());
-                if (hasVariable(variable->getName())) {
+                if (hasVariable(*variable->getName())) {
                     nd4j_printf("Replacing by name: [%s]\n", variable->getName()->c_str());
-                    auto vs = getVariable(variable->getName());
+                    auto vs = getVariable(*variable->getName());
                     dropVariable(vs->id(), vs->index());
                     putVariable(vs->id(), vs->index(), variable);
                     //delete vs;
@@ -441,6 +443,19 @@ namespace nd4j {
 
         VariableSpace::VariableSpace() {
             _handles = new std::vector<Variable *>;
+        }
+
+        void VariableSpace::putVariable(const std::string &name, Variable *variable) {
+            auto id = variable->id() < 0 ? variable -> id() : _auto_counter--;
+
+            // FIXME: bad, mutating variable
+            variable->setId(id, 0);
+
+            _idToSymbolDict.insert({id, *variable->getName()});
+            _symbolToIdDict.insert({*variable->getName(), id});
+
+
+            putVariable(id, variable);
         }
     }
 }

@@ -23,17 +23,33 @@
 
 #include <NDArray.h>
 #include <graph/Node.h>
+#include <graph/Variable.h>
 
 namespace samediff {
+    class SameDiff;
+
     class SDVariable {
     protected:
+        // TODO: use shared_ptr here
         nd4j::graph::Node* _node = nullptr;
+        SameDiff* _sd;
     public:
-        SDVariable() = default;
         ~SDVariable() = default;
 
+        SDVariable(SameDiff &sd, nd4j::graph::Node *node);
+
+        SameDiff* sd() const;
+        int nodeId() const;
+
+        // basic arithmetic operators
+        SDVariable operator+(const SDVariable& other) const;
+
+        //
         nd4j::NDArray array();
     };
 }
+
+ND4J_EXPORT samediff::SDVariable operator+(const float&, const samediff::SDVariable&);
+ND4J_EXPORT samediff::SDVariable operator+(const samediff::SDVariable&, const float&);
 
 #endif //SAMEDIFF_SDVARIABLE_H

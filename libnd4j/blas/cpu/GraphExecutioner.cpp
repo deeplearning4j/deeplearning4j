@@ -106,7 +106,7 @@ namespace graph {
 
     // if true - this is special case: Graph-in-Graph. 
     if (node->hasGraphEmbedded()) {
-        auto embedded = node->getGraph();
+        auto embedded = node->embeddedGraph();
 
         /**
          * basically, we should do following things here:
@@ -130,9 +130,9 @@ namespace graph {
             if (v->getName() != nullptr && v->getName()->size() > 0) {
                 
                 // trying symbolic lookup first
-                if (variableSpace->hasVariable(v->getName())) {
+                if (variableSpace->hasVariable(*v->getName())) {
                     // symbolic feeder
-                    auto array = variableSpace->getVariable(v->getName())->getNDArray();
+                    auto array = variableSpace->getVariable(*v->getName())->getNDArray();
                     auto vr = array->dup();
 //                    deletables.push_back(vr);
                     v->setNDArray(vr);
@@ -258,6 +258,10 @@ Nd4jStatus GraphExecutioner::execute(Graph *graph, VariableSpace* variableSpace)
             }
 
             Node* node = graph->getOnion()->at(l)->at(n);
+
+            // we're skipping variable/placeholder nodes
+            if (node->id() < 0)
+                continue;
 
             if (Environment::getInstance()->isProfiling())
                 flowPath->profile()->nodeById(node->id(), node->name()->c_str());

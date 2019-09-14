@@ -41,6 +41,7 @@
 #include <ops/declarable/LegacyTransformBoolOp.h>
 #include <graph/FlatUtils.h>
 #include <NDArrayFactory.h>
+#include <exceptions/precondition_exception.h>
 
 namespace nd4j {
     namespace graph {
@@ -54,16 +55,24 @@ namespace nd4j {
 //                _block->setInnerTime(time);
         }
 
-        void nd4j::graph::Node::setGraph(nd4j::graph::Graph* graph) {
-            _graph = graph;
+        void nd4j::graph::Node::setEmbeddedGraph(nd4j::graph::Graph* graph) {
+            _embeddedGraph = graph;
         }
 
-        nd4j::graph::Graph* nd4j::graph::Node::getGraph() {
-            return _graph;
+        void nd4j::graph::Node::setParentGraph(nd4j::graph::Graph* graph) {
+            _parentGraph = graph;
+        }
+
+        nd4j::graph::Graph* nd4j::graph::Node::embeddedGraph() {
+            return _embeddedGraph;
+        }
+
+        nd4j::graph::Graph* nd4j::graph::Node::parentGraph() {
+            return _parentGraph;
         }
 
         bool nd4j::graph::Node::hasGraphEmbedded() {
-            return _graph != nullptr;
+            return _embeddedGraph != nullptr;
         }
 
         void nd4j::graph::Node::markInplace(bool reallyInplace) {
@@ -783,6 +792,17 @@ namespace nd4j {
 
             return clone;
             }
+        }
+
+
+        Node::Node(Variable *variable) {
+            samediff::precondition_exception::check(variable != nullptr, "Node: variable is null");
+            samediff::precondition_exception::check(variable->id() < 0, "Node: variable id must be negative");
+            samediff::precondition_exception::check(variable->getName() != nullptr, "Node: variable must have symbolic name");
+
+            _opType = OpType_VARIABLE;
+            _id = variable->id();
+            _name = *variable->getName();
         }
     }
 }

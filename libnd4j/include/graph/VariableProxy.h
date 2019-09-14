@@ -30,59 +30,60 @@ namespace nd4j {
             explicit VariableProxy(VariableSpace* reference);
             ~VariableProxy();
 
-            virtual VariableSpace& operator=(const VariableSpace& other);
+            VariableSpace& operator=(const VariableSpace& other) override;
 
-            virtual int numberOfPlaceholders();
-            virtual std::vector<Variable*>* getPlaceholders();
+            int numberOfPlaceholders() override;
+            std::vector<Variable*>* getPlaceholders() override;
 
             virtual nd4j::memory::Workspace *workspace();
 
-            virtual bool hasExternalVariable(int it);
-            virtual bool hasExternalVariable(std::pair<int,int>& pair);
-            virtual bool hasExternalVariable(std::string *symbol);
+            bool hasExternalVariable(int it) override;
+            bool hasExternalVariable(const std::pair<int,int>& pair) override;
+            bool hasExternalVariable(const std::string &symbol) override;
 
-            virtual bool hasVariable(int id);
-            virtual bool hasVariable(int id, int idx);
-            virtual bool hasVariable(std::pair<int,int>& pair);
-            virtual bool hasVariable(std::string *symbol);
+            bool hasVariable(int id) override;
+            bool hasVariable(int id, int idx) override;
+            bool hasVariable(const std::pair<int,int>& pair) override;
+            bool hasVariable(const std::string &symbol) override;
 
-            virtual nd4j::graph::Variable *getVariable(int id);
-            virtual nd4j::graph::Variable *getVariable(int id, int idx);
-            virtual nd4j::graph::Variable *getVariable(std::pair<int,int>& pair);
-            virtual nd4j::graph::Variable *getVariable(std::string *symbol);
+            nd4j::graph::Variable *getVariable(int id) override;
+            nd4j::graph::Variable *getVariable(int id, int idx) override;
+            nd4j::graph::Variable *getVariable(const std::pair<int,int>& pair) override;
+            nd4j::graph::Variable *getVariable(const std::string &symbol) override;
 
-            virtual std::vector<Variable*> getVariables();
+            std::vector<Variable*> getVariables() override;
 
-            virtual void putVariable(std::pair<int,int>& pair, NDArray *array);
-            virtual void putVariable(std::pair<int,int>& pair, Variable *variable);
-            virtual void putVariable(int id, Variable *variable);
-            virtual void putVariable(int id, NDArray *array);
-            virtual void putVariable(int id, int idx, NDArray *array);
-            virtual void putVariable(int id, int idx, Variable *array);
+            void putVariable(const std::pair<int,int>& pair, NDArray *array) override;
+            void putVariable(const std::pair<int,int>& pair, Variable *variable) override;
+            void putVariable(const std::string &name, Variable *variable) override;
+            void putVariable(int id, Variable *variable) override;
+            void putVariable(int id, NDArray *array) override;
+            void putVariable(int id, int idx, NDArray *array) override;
+            void putVariable(int id, int idx, Variable *array) override;
 
-            virtual void replaceVariable(Variable *variable);
+            void replaceVariable(Variable *variable) override;
 
-            virtual void dropVariable(std::pair<int,int> &pair);
-            virtual void dropVariable(int id, int idx);
+            void dropVariable(std::pair<int,int> &pair) override;
+            void dropVariable(int id, int idx) override;
 
-            virtual void putOutputVariable(Variable *variable);
+            void putOutputVariable(Variable *variable) override;
 
-            virtual void trackList(nd4j::NDArrayList *list);
+            void trackList(nd4j::NDArrayList *list) override;
 
             // memory-related statistics
-            virtual Nd4jLong externalMemory();
-            virtual Nd4jLong internalMemory();
-            virtual Nd4jLong totalMemory();
+            Nd4jLong externalMemory() override;
+            Nd4jLong internalMemory() override;
+            Nd4jLong totalMemory() override;
 
-            virtual int externalEntries();
-            virtual int internalEntries();
-            virtual int totalEntries();
+            int externalEntries() override;
+            int internalEntries() override;
+            int totalEntries() override;
 
-            virtual nd4j::graph::VariableSpace *clone();
+            nd4j::graph::VariableSpace *clone() override;
 
-            virtual nd4j::graph::Stash* getStash();
-            virtual void setFlowPath(FlowPath* timers);
-            virtual FlowPath* flowPath();
+            nd4j::graph::Stash* getStash() override;
+            void setFlowPath(FlowPath* timers) override;
+            FlowPath* flowPath() override;
         };
     }
 }

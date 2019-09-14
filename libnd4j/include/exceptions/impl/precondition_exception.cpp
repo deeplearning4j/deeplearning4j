@@ -18,39 +18,15 @@
 // @author raver119@gmail.com
 //
 
-#ifndef SAMEDIFF_SAMEDIFF_CPP_H
-#define SAMEDIFF_SAMEDIFF_CPP_H
-
-#include <NDArray.h>
-#include <samediff/SameDiff.h>
-#include <samediff/SDVariable.h>
-#include <unordered_map>
-
-
+#include "../precondition_exception.h"
 
 namespace samediff {
-
-    // general graph management functions
-    SameDiff create();
-
-
-    // basic arithmetic operations
-    namespace arithmetic {
-        SDVariable Add(SameDiff &sd, const SDVariable &x, const SDVariable &y, const char *name = nullptr);
-        SDVariable Neg(SameDiff &sd, const SDVariable &x, const char *name = nullptr);
+    precondition_exception::precondition_exception(const std::string &message) : std::runtime_error(message) {
+        //
     }
 
-    // math functions
-    namespace math {
-        //void cos();
-        //void sin();
-    }
-
-    // nn-related functions
-    namespace nn {
-        //void convolution2d();
-        //void avgpooling2d();
+    void precondition_exception::check(bool condition, const std::string &message) {
+        if (!condition)
+            throw precondition_exception(message);
     }
 }
-
-#endif //SAMEDIFF_SAMEDIFF_CPP_H

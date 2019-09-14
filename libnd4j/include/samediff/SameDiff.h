@@ -28,17 +28,20 @@
 
 namespace samediff {
 
-    class SameDiff {
+    class ND4J_EXPORT SameDiff {
     protected:
+        // TODO: use shared_ptr here
         nd4j::graph::Graph *_graph = nullptr;
     public:
         SameDiff();
         ~SameDiff();
 
 
-        SDVariable variable(const char *name, const nd4j::NDArray &array);
-        SDVariable placeholder(const char *name, const nd4j::DataType dataType = nd4j::DataType::FLOAT32, const std::vector<Nd4jLong> shape = {-1});
+        SDVariable variable(const nd4j::NDArray &array, bool trainable = true, const std::string &name = {});
+        SDVariable placeholder(const std::string &name, const nd4j::DataType dataType = nd4j::DataType::FLOAT32, const std::vector<Nd4jLong> shape = {-1});
 
+
+        nd4j::graph::Graph* graph();
 
         // execution functions
         void execute();
@@ -51,6 +54,7 @@ namespace samediff {
         void save(const char *filename);
         static SameDiff load(const char *filename);
     };
+
 }
 
 #endif //SAMEDIFF_SAMEDIFF_H

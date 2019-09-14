@@ -29,6 +29,7 @@
 #include <exceptions/graph_exception.h>
 #include <exceptions/unresolved_input_exception.h>
 #include <exceptions/unresolved_output_exception.h>
+#include <exceptions/precondition_exception.h>
 
 namespace nd4j {
     namespace graph {
@@ -305,8 +306,14 @@ namespace nd4j {
             delete _configuration;
         }
 
+        int Graph::nextNodeId() {
+            return ++_nodeCounter;
+        }
+
         void Graph::addNode(Node *node) {
             _built.store(false);
+
+            node->setParentGraph(this);
 
             if (node->opType() == OpType_LOGIC) {
                 // nd4j_debug("Adding LogicOp [%i]\n", node->opNum());
@@ -1436,6 +1443,29 @@ namespace nd4j {
             nd4j_debug("Graph hash: %lld\n", hash);
 
             return hash;
+        }
+
+        nd4j::graph::Node* Graph::addVariableNode(nd4j::graph::Variable *variable) {
+            samediff::precondition_exception::check(variable != nullptr, "Graph::addVariableNode: Variable is null");
+            samediff::precondition_exception::check(variable->getName() != nullptr, "Graph::addVariableNode: Variable has no symbolic name");
+            _variableSpace->putVariable(*variable->getName(), variable);
+
+            auto node = new nd4j::graph::Node(variable);
+            this->addNode(node);
+
+            return node;
+        }
+
+        nd4j::graph::Node* Graph::addPlaceholderNode(nd4j::graph::Variable *variable) {
+            samediff::precondition_exception::check(variable != nullptr, "Graph::addPlaceholderNode: Variable is null");
+            samediff::precondition_exception::check(variable->isPlaceholder(), "Graph::addPlaceholderNode: Variable isn't a placeholder");
+            samediff::precondition_exception::check(variable->getName() != nullptr, "Graph::addPlaceholderNode: Variable has no symbolic name");
+            _variableSpace->putVariable(*variable->getName(), variable);
+
+            auto node = new nd4j::graph::Node(variable);
+            this->addNode(node);
+
+            return node;
         }
     }
 }
