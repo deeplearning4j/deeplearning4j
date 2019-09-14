@@ -801,14 +801,6 @@ public class Nd4j {
     }
 
     /**
-     * The factory used for creating sparse arrays.
-     * @return the factory used for creating sparse arrays.
-     */
-    public static NDArrayFactory sparseFactory() {
-        return SPARSE_INSTANCE;
-    }
-
-    /**
      * See {@link org.nd4j.linalg.api.ndarray.INDArray#cumsum(int)} with Integer.MAX_VALUE for full array reduction.
      *
      * @return scalar ndarray.
