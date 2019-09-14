@@ -36,8 +36,8 @@ namespace samediff {
 
     // basic arithmetic operations
     namespace arithmetic {
-        SDVariable Add(SameDiff &sd, const SDVariable &x, const SDVariable &y, const char *name = nullptr);
-        SDVariable Neg(SameDiff &sd, const SDVariable &x, const char *name = nullptr);
+        SDVariable Add(const SDVariable &x, const SDVariable &y, const char *name = nullptr);
+        SDVariable Neg(const SDVariable &x, const char *name = nullptr);
     }
 
     // math functions

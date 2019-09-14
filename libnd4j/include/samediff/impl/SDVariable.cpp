@@ -46,18 +46,18 @@ namespace samediff {
     }
 
     SDVariable SDVariable::operator+(const SDVariable& other) const {
-        return samediff::arithmetic::Add(*this->_sd, *this, other);
+        return samediff::arithmetic::Add(*this, other);
     }
 }
 
 samediff::SDVariable operator+(const float &scalar, const samediff::SDVariable &var) {
     auto sd = var.sd();
     auto x = sd->variable(nd4j::NDArrayFactory::create<float>(scalar));
-    return samediff::arithmetic::Add(*sd, x, var);
+    return samediff::arithmetic::Add(x, var);
 }
 
 samediff::SDVariable operator+(const samediff::SDVariable &var, const float &scalar) {
     auto sd = var.sd();
     auto y = sd->variable(nd4j::NDArrayFactory::create<float>(scalar));
-    return samediff::arithmetic::Add(*sd, var, y);
+    return samediff::arithmetic::Add(var, y);
 }
