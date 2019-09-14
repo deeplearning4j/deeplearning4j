@@ -3599,7 +3599,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SDVariable alpha = sd.var(Nd4j.createFromArray(0.01, 0.1).castTo(DataType.DOUBLE));
 
-        SDVariable out = sd.nn.prelu("out", input, alpha, 0, 2);
+        SDVariable out = sd.nn.prelu("out", input, alpha, 2);
 
         TestCase tc = new TestCase(sd).expected("out", Nd4j.createFromArray(new double[][][]{{
                         {-0.1, 10, 10, -0.1},
