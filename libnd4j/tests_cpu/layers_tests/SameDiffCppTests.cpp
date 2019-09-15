@@ -101,3 +101,20 @@ TEST_F(SameDiffCppTests, basic_cpp_primitives_test_1) {
 
     ASSERT_EQ(e, result);
 }
+
+TEST_F(SameDiffCppTests, basic_cpp_tuple_test_1) {
+    auto e = NDArrayFactory::create<float>('c', {2}, {3.f, 3.f});
+
+    auto sd = samediff::create();
+
+    auto x = sd.variable(NDArrayFactory::create<float>('c', {3, 2}, {1.f, 1.f, 1.f, 1.f, 1.f, 1.f}));
+    auto row = samediff::transform::Tear(x, {1});
+    auto z = row[1] + 2.0f;
+
+    sd.execute();
+
+    auto result = z.array();
+
+    ASSERT_EQ(e, result);
+}
+

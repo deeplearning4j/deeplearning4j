@@ -25,15 +25,16 @@
 #include <exceptions/precondition_exception.h>
 
 namespace samediff {
-    Variable::Variable(SameDiff &sd, nd4j::graph::Node *node) {
+    Variable::Variable(SameDiff &sd, nd4j::graph::Node *node, int index) {
         precondition_exception::check(node != nullptr, "Variable: Node passed in is null");
         precondition_exception::check(node->parentGraph() != nullptr, "Variable: Node passed in has no Graph defined");
         _node = node;
         _sd = &sd;
+        _index = index;
     }
 
     nd4j::NDArray Variable::array() {
-        auto var = _node->parentGraph()->getVariableSpace()->getVariable(_node->id(), 0);
+        auto var = _node->parentGraph()->getVariableSpace()->getVariable(_node->id(), _index);
         return *var->getNDArray();
     }
 

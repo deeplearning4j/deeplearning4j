@@ -18,15 +18,23 @@
 // @author raver119@gmail.com
 //
 
+#include <exceptions/precondition_exception.h>
 #include "../Tuple.h"
 
 namespace samediff {
+    Tuple::Tuple(SameDiff &sd, nd4j::graph::Node *node) {
+        precondition_exception::check(node != nullptr, "Tuple: Node passed in is null");
+        precondition_exception::check(node->parentGraph() != nullptr, "Tuple: Node passed in has no Graph defined");
+        _node = node;
+        _sd = &sd;
+    }
+
     uint32_t Tuple::size() const {
         return 0;
     }
 
     Variable Tuple::at(uint32_t index) const {
-        return {};
+        return Variable(*_sd, _node, index);
     }
 
     Variable Tuple::operator[](const uint32_t index) const {

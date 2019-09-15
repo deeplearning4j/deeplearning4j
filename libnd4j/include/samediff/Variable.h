@@ -33,11 +33,14 @@ namespace samediff {
         // TODO: use shared_ptr here
         nd4j::graph::Node* _node = nullptr;
         SameDiff* _sd;
+
+        // output index within node
+        int _index = 0;
     public:
         Variable() = default;
         ~Variable() = default;
 
-        Variable(SameDiff &sd, nd4j::graph::Node *node);
+        Variable(SameDiff &sd, nd4j::graph::Node *node, int index = 0);
 
         SameDiff* sd() const;
         int nodeId() const;

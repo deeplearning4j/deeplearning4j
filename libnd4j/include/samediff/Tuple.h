@@ -29,10 +29,12 @@ namespace samediff {
 
     class Tuple {
     private:
+        // TODO: use shared_ptr here
         nd4j::graph::Node *_node;
         SameDiff *_sd;
 
     public:
+        Tuple(SameDiff &sd, nd4j::graph::Node *node);
         Tuple() = default;
         ~Tuple() = default;
 

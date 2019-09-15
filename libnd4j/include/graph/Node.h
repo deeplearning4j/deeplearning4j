@@ -97,8 +97,8 @@ namespace nd4j {
 
         public:
             // These are op node constructors
-            Node(nd4j::ops::DeclarableOp *customOp, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
-            Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, std::initializer_list<int> input = {}, std::initializer_list<int> output = {},  std::initializer_list<int> dimensions = {}, float scalar = 0.0f, std::initializer_list<double> tArgs = {}, std::initializer_list<int> iArgs = {});
+            Node(nd4j::ops::DeclarableOp *customOp, int id = 0, const std::vector<int> &input = {}, const std::vector<int> &output = {},  const std::vector<int> &dimensions = {}, float scalar = 0.0f, const std::vector<double> &tArgs = {}, const std::vector<int> &iArgs = {}, const std::vector<bool> &bArgs = {});
+            Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, const std::vector<int> &input = {}, const std::vector<int> &output = {},  const std::vector<int> &dimensions = {}, float scalar = 0.0f, const std::vector<double> &tArgs = {}, const std::vector<int> &iArgs = {}, const std::vector<bool> &bArgs = {});
 
             // This constructor is for variable/constant/placeholder nodes
             Node(Variable *variable);

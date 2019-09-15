@@ -322,7 +322,7 @@ namespace nd4j {
         }
         BUILD_SINGLE_TEMPLATE(template Node* Node::asT, (), LIBND4J_TYPES);
 
-        nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, std::initializer_list<int> input, std::initializer_list<int> output,  std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+        nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, const std::vector<int> &input, const std::vector<int> &output,  const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<int> &iArgs, const std::vector<bool> &bArgs) {
             this->_opType = OpType_CUSTOM;
             this->_id = id;
             this->_opNum = customOp->getOpHash();
@@ -355,14 +355,11 @@ namespace nd4j {
 
             auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
 
-            for (auto v: dimensions)
-                block->getAxis()->emplace_back(v);
 
-            for (auto v: iArgs)
-                block->getIArguments()->emplace_back(v);
-
-            for (auto v: tArgs)
-                block->getTArguments()->emplace_back(v);
+            *block->getAxis() = dimensions;
+            *block->getIArguments() = iArgs;
+            *block->getTArguments() = tArgs;
+            *block->getBArguments() = bArgs;
 
             this->setContextPrototype(block);
         }
@@ -371,7 +368,7 @@ namespace nd4j {
             this->_opType = opType;
         }
 
-        nd4j::graph::Node::Node(OpType opType, int opNum, int id, std::initializer_list<int> input, std::initializer_list<int> output, std::initializer_list<int> dimensions, float scalar, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs) {
+        nd4j::graph::Node::Node(OpType opType, int opNum, int id, const std::vector<int> &input, const std::vector<int> &output, const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<int> &iArgs, const std::vector<bool> &bArgs) {
             this->_opType = opType;
             this->_id = id;
             this->_opNum = opNum;
@@ -434,14 +431,10 @@ namespace nd4j {
 
                 auto block = new ContextPrototype(nullptr, this->id(), false);
 
-                for (auto v: dimensions)
-                    block->getAxis()->emplace_back(v);
-
-                for (auto v: iArgs)
-                    block->getIArguments()->emplace_back(v);
-
-                for (auto v: tArgs)
-                    block->getTArguments()->emplace_back(v);
+                *block->getAxis() = dimensions;
+                *block->getIArguments() = iArgs;
+                *block->getTArguments() = tArgs;
+                *block->getBArguments() = bArgs;
 
                 this->setContextPrototype(block);
                 this->setCustomOp(Node::buildOpByType(opType, (int) input.size(), (int) block->getIArguments()->size(), (int) block->getTArguments()->size(), opNum, &_scalar));
@@ -450,14 +443,10 @@ namespace nd4j {
                 if (this->getCustomOp()) {
                     auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
 
-                    for (auto v: dimensions)
-                        block->getAxis()->emplace_back(v);
-
-                    for (auto v: iArgs)
-                        block->getIArguments()->emplace_back(v);
-
-                    for (auto v: tArgs)
-                        block->getTArguments()->emplace_back(v);
+                    *block->getAxis() = dimensions;
+                    *block->getIArguments() = iArgs;
+                    *block->getTArguments() = tArgs;
+                    *block->getBArguments() = bArgs;
 
                     this->setContextPrototype(block);
                 } else throw std::runtime_error("wrong custom operation given");

@@ -30,30 +30,45 @@ namespace samediff {
 
 
     namespace arithmetic {
-        Variable Add(const Variable &x, const Variable &y, const char *name) {
+        Variable Add(const Variable &x, const Variable &y, const std::string &name) {
             samediff::precondition_exception::check(x.sd() == y.sd(), "Add: both variables must belong to the same SameDiff instance");
 
             auto sd = x.sd();
             auto node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("add"), sd->graph()->nextNodeId(), {x.nodeId(), y.nodeId()});
 
-            if (name != nullptr)
+            if (!name.empty())
                 node->setName(name);
 
             sd->graph()->addNode(node);
             return Variable(*sd, node);
         }
 
-        Variable Neg(const Variable &x, const char *name) {
+        Variable Neg(const Variable &x, const std::string &name) {
             auto sd = x.sd();
             auto op = new nd4j::ops::LegacyTransformSameOp(nd4j::transform::SameOps::Neg);
             auto node = new nd4j::graph::Node(op, sd->graph()->nextNodeId(), {x.nodeId()});
             node->setDeductable(true);
 
-            if (name != nullptr)
+            if (!name.empty())
                 node->setName(name);
 
             sd->graph()->addNode(node);
             return Variable(*sd, node);
+        }
+    }
+
+
+    namespace transform {
+        Tuple Tear(const Variable &x, const std::vector<int> &axis, const std::string &name) {
+            auto sd = x.sd();
+
+            auto node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("tear"), sd->graph()->nextNodeId(), {x.nodeId()}, {}, {}, {}, {}, axis);
+
+            if (!name.empty())
+                node->setName(name);
+
+            sd->graph()->addNode(node);
+            return Tuple(*sd, node);
         }
     }
 }

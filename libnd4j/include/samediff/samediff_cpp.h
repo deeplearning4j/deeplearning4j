@@ -24,8 +24,11 @@
 #include <NDArray.h>
 #include <samediff/SameDiff.h>
 #include <samediff/Variable.h>
-#include <unordered_map>
+#include <samediff/Tuple.h>
 
+#include <vector>
+#include <string>
+#include <unordered_map>
 
 
 namespace samediff {
@@ -36,8 +39,12 @@ namespace samediff {
 
     // basic arithmetic operations
     namespace arithmetic {
-        Variable Add(const Variable &x, const Variable &y, const char *name = nullptr);
-        Variable Neg(const Variable &x, const char *name = nullptr);
+        Variable Add(const Variable &x, const Variable &y, const std::string &name = {});
+        Variable Neg(const Variable &x, const std::string &name = {});
+    }
+
+    namespace transform {
+        Tuple Tear(const Variable &x, const std::vector<int> &axis, const std::string &name = {});
     }
 
     // math functions
