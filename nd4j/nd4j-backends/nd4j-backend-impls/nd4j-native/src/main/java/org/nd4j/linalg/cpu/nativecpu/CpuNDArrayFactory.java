@@ -1054,23 +1054,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
         convertDataEx(typeSrc, source.addressPointer(), typeDst, target.addressPointer(), target.length());
     }
 
-
-
-    @Override
-    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
     @Override
     public INDArray createSparseCOO(double[] values, int[][] indices, long[] shape) {
         throw new UnsupportedOperationException();

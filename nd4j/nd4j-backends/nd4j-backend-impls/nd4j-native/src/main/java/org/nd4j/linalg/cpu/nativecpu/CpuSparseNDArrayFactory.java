@@ -47,19 +47,6 @@ public class CpuSparseNDArrayFactory extends BaseSparseNDArrayFactory {
     public CpuSparseNDArrayFactory(){}
 
     @Override
-    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape){
-        return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
-    }
-    @Override
-    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape){
-        return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
-    }
-    @Override
-    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape){
-        return new SparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
-    }
-
-    @Override
     public INDArray createSparseCOO(double[] values, int[][] indices, long[] shape){
         return new SparseNDArrayCOO(values, indices, shape);
     }

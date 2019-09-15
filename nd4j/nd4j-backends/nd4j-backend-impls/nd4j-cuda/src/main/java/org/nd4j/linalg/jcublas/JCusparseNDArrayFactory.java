@@ -517,21 +517,6 @@ public class JCusparseNDArrayFactory extends BaseSparseNDArrayFactory{
     }
 
     @Override
-    public ISparseNDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        return new JcusparseNDArrayCSR(data, columns, pointerB, pointerE, shape);
-    }
-
-    @Override
-    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
         return new JCusparseNDArrayCOO(values, indices, shape);
     }

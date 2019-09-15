@@ -123,7 +123,6 @@ public class Nd4j {
     public final static String NATIVE_OPS = "native.ops";
     private final static String ORDER_KEY = "ndarray.order";
     private final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
-    private final static String SPARSE_NDARRAY_FACTORY_CLASS = "sparsendarrayfactory.class";
     private final static String OP_EXECUTIONER = "opexec";
 
     public final static String DISTRIBUTION = "dist";
@@ -158,7 +157,6 @@ public class Nd4j {
     private static BlasWrapper BLAS_WRAPPER_INSTANCE;
     private static BlasWrapper SPARSE_BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
-    private static NDArrayFactory SPARSE_INSTANCE;
     private static ConvolutionInstance CONVOLUTION_INSTANCE;
     private static OpExecutioner OP_EXECUTIONER_INSTANCE;
     private static DistributionFactory DISTRIBUTION_FACTORY;
@@ -5151,8 +5149,6 @@ public class Nd4j {
             affinityManager = affinityManagerClazz.newInstance();
             Class<? extends NDArrayFactory> ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
                     pp.toString(NDARRAY_FACTORY_CLASS));
-            Class<? extends NDArrayFactory> sparseNDArrayClazz = (Class<? extends NDArrayFactory>) Class.forName(
-                    pp.toString(SPARSE_NDARRAY_FACTORY_CLASS));
             Class<? extends ConvolutionInstance> convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class
                     .forName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
             String defaultName = pp.toString(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
@@ -5197,7 +5193,6 @@ public class Nd4j {
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
-            SPARSE_INSTANCE = sparseNDArrayClazz.newInstance();
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
             SPARSE_BLAS_WRAPPER_INSTANCE = sparseBlasWrapperClazz.newInstance();
