@@ -56,11 +56,6 @@ public abstract class BaseLevel2 extends BaseLevel implements Level2 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, X, Y);
 
-        if (A.isSparse() && !X.isSparse()) {
-            Nd4j.getSparseBlasWrapper().level2().gemv(order, transA, alpha, A, X, beta, Y);
-            return;
-        }
-
         GemvParameters parameters = new GemvParameters(A, X, Y);
         if (A.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, parameters.getA(), parameters.getX(),

@@ -119,7 +119,6 @@ public class Nd4j {
     @Deprecated
     public final static String DTYPE = ND4JSystemProperties.DTYPE;
     private final static String BLAS_OPS = "blas.ops";
-    private final static String SPARSE_BLAS_OPS = "sparseblas.ops";
     public final static String NATIVE_OPS = "native.ops";
     private final static String ORDER_KEY = "ndarray.order";
     private final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
@@ -155,7 +154,6 @@ public class Nd4j {
 
     private static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     private static BlasWrapper BLAS_WRAPPER_INSTANCE;
-    private static BlasWrapper SPARSE_BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
     private static ConvolutionInstance CONVOLUTION_INSTANCE;
     private static OpExecutioner OP_EXECUTIONER_INSTANCE;
@@ -1688,14 +1686,6 @@ public class Nd4j {
      */
     public static BlasWrapper getBlasWrapper() {
         return BLAS_WRAPPER_INSTANCE;
-    }
-
-    /**
-     * Retreive the sparse BLAS wrapper.
-     * @return the sparse BLAS wrapper.
-     */
-    public static BlasWrapper getSparseBlasWrapper() {
-        return SPARSE_BLAS_WRAPPER_INSTANCE;
     }
 
     /**
@@ -5175,8 +5165,6 @@ public class Nd4j {
 
             Class<? extends BlasWrapper> blasWrapperClazz = (Class<? extends BlasWrapper>) Class
                     .forName(pp.toString(BLAS_OPS));
-            Class<? extends BlasWrapper> sparseBlasWrapperClazz = (Class<? extends BlasWrapper>) Class
-                    .forName(pp.toString(SPARSE_BLAS_OPS));
             String clazzName = pp.toString(DISTRIBUTION, DefaultDistributionFactory.class.getName());
             Class<? extends DistributionFactory> distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
@@ -5195,7 +5183,6 @@ public class Nd4j {
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
-            SPARSE_BLAS_WRAPPER_INSTANCE = sparseBlasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
 
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
