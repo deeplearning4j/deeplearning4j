@@ -18,16 +18,13 @@
 // @author raver119@gmail.com
 //
 
+#include <samediff/samediff_c.h>
+#include <samediff/SameDiff.h>
 
-#ifndef SAMEDIFF_SAMEDIFF_C_H
-#define SAMEDIFF_SAMEDIFF_C_H
+void* SD_createGraph() {
+    return new samediff::SameDiff();
+}
 
-#include <dll.h>
-
-extern "C" {
-    ND4J_EXPORT void* SD_createGraph();
-
-    ND4J_EXPORT void SD_destroyGraph(void *sd);
-};
-
-#endif //SAMEDIFF_SAMEDIFF_C_H
+void SD_destroyGraph(void *sd) {
+    delete reinterpret_cast<samediff::SameDiff*>(sd);
+}

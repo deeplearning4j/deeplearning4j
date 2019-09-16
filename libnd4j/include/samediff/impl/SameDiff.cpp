@@ -24,6 +24,7 @@
 
 namespace samediff {
     SameDiff::SameDiff() {
+        nd4j_printf("SameDiff constructor executed\n","");
         _graph = new Graph();
     }
 
