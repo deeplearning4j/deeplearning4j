@@ -24,11 +24,12 @@
 
 namespace samediff {
     SameDiff::SameDiff() {
-        nd4j_printf("SameDiff constructor executed\n","");
+        nd4j_printf("SameDiff constructor invoked\n","");
         _graph = new Graph();
     }
 
     SameDiff::~SameDiff() {
+        nd4j_printf("SameDiff destructor invoked\n","");
         if (_graph != nullptr)
             delete _graph;
     }

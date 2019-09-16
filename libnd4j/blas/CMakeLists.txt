@@ -301,6 +301,7 @@ elseif(CPU_BLAS)
         set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D__ND4J_EXPERIMENTAL__=true")
     endif()
 
+    file(GLOB_RECURSE SD_SOURCES false ../include/samediff/impl/*.cpp ../include/samediff/*.h)
     file(GLOB_RECURSE PERF_SOURCES false ../include/performance/*.cpp ../include/performance/*.h)
     file(GLOB_RECURSE EXCEPTIONS_SOURCES false ../include/exceptions/*.cpp ../include/exceptions/*.h)
     file(GLOB_RECURSE EXEC_SOURCES false ../include/execution/*.cpp ../include/execution/*.h)
@@ -334,7 +335,7 @@ elseif(CPU_BLAS)
             ../include/cnpy/cnpy.cpp  ../include/nd4jmemset.h ../include/nd4jmalloc.h
             Environment.cpp Environment.h ${LOOPS_SOURCES} ${HELPERS_SOURCES} ${EXEC_SOURCES} ${ARRAY_SOURCES} ${TYPES_SOURCES}
             ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_PLATFORM_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
-            ${OPS_SOURCES} ${PERF_SOURCES})
+            ${OPS_SOURCES} ${PERF_SOURCES} ${SD_SOURCES})
     if(IOS)
         add_library(${LIBND4J_NAME}       STATIC $<TARGET_OBJECTS:nd4jobj>)
     else()

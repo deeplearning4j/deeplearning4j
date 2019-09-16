@@ -25,6 +25,7 @@
 #include <ops/declarable/LegacyRandomOp.h>
 #include <ops/declarable/CustomOperations.h>
 #include <samediff/samediff_cpp.h>
+#include <samediff/samediff_c.h>
 
 using namespace nd4j;
 
@@ -34,6 +35,9 @@ public:
 };
 
 TEST_F(SameDiffCppTests, basic_cpp_create_test_1) {
+    auto p = SD_createGraph();
+    SD_destroyGraph(p);
+
     auto e = NDArrayFactory::create<float>('c', {4}, {2.f, 3.f, 4.f, 5.f});
 
     auto sd = samediff::create();

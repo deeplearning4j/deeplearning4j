@@ -22,12 +22,32 @@
 #ifndef SAMEDIFF_SAMEDIFF_C_H
 #define SAMEDIFF_SAMEDIFF_C_H
 
+#include <pointercast.h>
 #include <dll.h>
 
 extern "C" {
+    // graph entity: CRUD
     ND4J_EXPORT void* SD_createGraph();
+    ND4J_EXPORT void  SD_destroyGraph(void *sd);
+    ND4J_EXPORT void  SD_execute(void *sd);
+    ND4J_EXPORT void  SD_executePartially(void *sd, const char *nodeName);
 
-    ND4J_EXPORT void SD_destroyGraph(void *sd);
+    // args entity: CRUD
+    ND4J_EXPORT void* SD_createArgs();
+    ND4J_EXPORT void  SD_destroyArgs(void* args);
+    ND4J_EXPORT void  SD_addInputArg(void *args, int position, void *variable);
+    ND4J_EXPORT void  SD_addIArg(void *args, int position, Nd4jLong arg);
+    ND4J_EXPORT void  SD_addDArg(void *args, int position, double arg);
+    ND4J_EXPORT void  SD_addBArg(void *args, int position, bool arg);
+
+    // node entity: CRUD
+    ND4J_EXPORT void* SD_createNode(void* sd, const char* opName, void *arg, const char* nodeName);
+
+    // variable entity: CRUD
+    ND4J_EXPORT void* SD_createVariable(void* sd);
+
+    // tuple entity: CRUD
+    ND4J_EXPORT void* SD_createTuple();
 };
 
 #endif //SAMEDIFF_SAMEDIFF_C_H
