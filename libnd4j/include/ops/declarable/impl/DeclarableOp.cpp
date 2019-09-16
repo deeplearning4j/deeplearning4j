@@ -484,6 +484,9 @@ namespace nd4j {
             if (Environment::getInstance()->isProfiling())
                 timeEnter = std::chrono::system_clock::now();
 
+            // first of all we resolve all greedy inputs
+            block->resolveGreedyInputs();
+
             // basic validation: ensure inputs are set
             REQUIRE_OK(this->validateNonEmptyInput(*block));
 

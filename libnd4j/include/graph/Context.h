@@ -61,6 +61,8 @@ namespace nd4j {
             std::vector<NDArray*> _fastpath_in;
             std::vector<NDArray*> _fastpath_out;
             std::vector<NDArray*> _handles;
+
+
         public:
             Context(ContextPrototype* prototype, VariableSpace* variableSpace);
 
@@ -188,6 +190,9 @@ namespace nd4j {
             void setBArguments(bool *arguments, int numberOfArguments);
 
             void setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer);
+
+            // inputs like {x, -1} should be resolved to {x, 0}, {x, 1}, {x, 2} etc
+            void resolveGreedyInputs();
         };
     }
 }

@@ -32,7 +32,7 @@ namespace samediff {
     protected:
         // TODO: use shared_ptr here
         nd4j::graph::Node* _node = nullptr;
-        SameDiff* _sd;
+        SameDiff* _sd = nullptr;
 
         // output index within node
         int _index = 0;
@@ -44,6 +44,8 @@ namespace samediff {
 
         SameDiff* sd() const;
         int nodeId() const;
+        std::pair<int, int> index() const;
+
 
         // basic arithmetic operators
         Variable operator+(const Variable& other) const;

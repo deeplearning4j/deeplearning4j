@@ -54,7 +54,8 @@ TEST_F(NodeTests, Test_Dtype_Conversion_2) {
     nd4j::ops::add opA;
 
     //auto nodeA = new Node(OpType_CUSTOM, 0, 1, {-1}, {2});
-    auto nodeA = new Node(&opA, 1, {-1}, {2});
+    std::vector<int> inp({-1});
+    auto nodeA = new Node(&opA, 1, inp, {2});
     //nodeA->setCustomOp(&op);
 
     auto nd = nodeA->asT<double>();

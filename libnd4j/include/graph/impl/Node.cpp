@@ -322,7 +322,7 @@ namespace nd4j {
         }
         BUILD_SINGLE_TEMPLATE(template Node* Node::asT, (), LIBND4J_TYPES);
 
-        nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, const std::vector<int> &input, const std::vector<int> &output,  const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<int> &iArgs, const std::vector<bool> &bArgs) {
+        Node::Node(nd4j::ops::DeclarableOp *customOp, int id, const std::vector<std::pair<int, int>> &input, const std::vector<int> &output,  const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<int> &iArgs, const std::vector<bool> &bArgs) {
             this->_opType = OpType_CUSTOM;
             this->_id = id;
             this->_opNum = customOp->getOpHash();
@@ -344,7 +344,7 @@ namespace nd4j {
             for (auto o: output)
                 pickOutput(o);
 
-            if (dimensions.size() > 0) {
+            if (!dimensions.empty()) {
                 _dim = new int[dimensions.size()];
                 int cnt = 0;
                 for (auto d: dimensions) {
@@ -355,13 +355,24 @@ namespace nd4j {
 
             auto block = new ContextPrototype(this->getCustomOp()->getOpDescriptor(), this->id(), false);
 
-
             *block->getAxis() = dimensions;
             *block->getIArguments() = iArgs;
             *block->getTArguments() = tArgs;
             *block->getBArguments() = bArgs;
 
             this->setContextPrototype(block);
+        }
+
+        static std::vector<std::pair<int,int>> masterInputs(const std::vector<int> &inputs) {
+            std::vector<std::pair<int, int>> result(inputs.size());
+            for (unsigned int e = 0; e < inputs.size(); e++)
+                result[e] = {inputs[e], 0};
+
+            return result;
+        }
+
+        nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, const std::vector<int> &input, const std::vector<int> &output,  const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<int> &iArgs, const std::vector<bool> &bArgs) : Node(customOp, id, masterInputs(input), output, dimensions, scalar, tArgs, iArgs, bArgs) {
+            //
         }
 
         void nd4j::graph::Node::setOpType(OpType opType) {
@@ -762,7 +773,8 @@ namespace nd4j {
 
         Node* Node::clone() {
             if (this->_customOp && this->_opType == nd4j::graph::OpType_CUSTOM) {
-                auto clone = new Node(this->_customOp, _id);
+                std::vector<std::pair<int,int>> in;
+                auto clone = new Node(this->_customOp, _id, in);
                 clone->pullValues(this);
                 return clone;
             }

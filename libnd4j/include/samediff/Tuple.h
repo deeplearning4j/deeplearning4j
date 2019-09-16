@@ -23,6 +23,7 @@
 
 #include <graph/Node.h>
 #include <samediff/Variable.h>
+#include <vector>
 
 namespace samediff {
     class SameDiff;
@@ -30,15 +31,24 @@ namespace samediff {
     class Tuple {
     private:
         // TODO: use shared_ptr here
-        nd4j::graph::Node *_node;
-        SameDiff *_sd;
+        nd4j::graph::Node *_node = nullptr;
+        SameDiff *_sd = nullptr;
 
+        // only used for Tuple-as-input scenario
+        std::vector<Variable> _variables;
+        std::vector<std::pair<int, int>> _indices;
     public:
+        Tuple(std::initializer_list<Variable> variables);
+        Tuple(const std::vector<Variable> &variables = {});
         Tuple(SameDiff &sd, nd4j::graph::Node *node);
-        Tuple() = default;
         ~Tuple() = default;
 
+        SameDiff* sd() const;
         uint32_t size() const;
+
+        int nodeId() const;
+
+        std::vector<std::pair<int, int>> indices() const;
 
         Variable at(uint32_t index) const;
 

@@ -70,7 +70,8 @@ namespace graph {
         
         // creating new Node
 //        auto node = new Node(OpType_CUSTOM, 0, nodeId);
-        auto node = new Node(op, nodeId);
+        std::vector<std::pair<int,int>> in;
+        auto node = new Node(op, nodeId, in);
 //        node->setCustomOp(op);
         node->setScopeInfo(scopeId);
 

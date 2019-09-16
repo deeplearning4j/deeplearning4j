@@ -381,6 +381,29 @@ namespace nd4j {
                 return _inputs.size();
         }
 
+        void Context::resolveGreedyInputs() {
+            if (isFastPath())
+                return;
+
+            std::vector<std::pair<int,int>> resolved;
+
+            for (auto &v: _inputs) {
+                if (v.second >=0) {
+                    resolved.emplace_back(std::pair<int, int>({v.first, v.second}));
+                } else {
+                    // in this case we're going to loop through
+                    for (int e = 0; e < MAX_INT; e++) {
+                        if (_variableSpace->hasVariable(v.first, e)) {
+                            resolved.emplace_back(std::pair<int, int>({v.first, e}));
+                        } else
+                            break;
+                    }
+                }
+            }
+
+            _inputs = resolved;
+        }
+
         void Context::setInputArray(int index, NDArray *array, bool removable) {
             if (_fastpath_in.size() < index + 1)
                 _fastpath_in.resize(index+1);

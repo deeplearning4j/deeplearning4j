@@ -46,7 +46,7 @@ namespace samediff {
         Variable Neg(const Variable &x, const std::string &name) {
             auto sd = x.sd();
             auto op = new nd4j::ops::LegacyTransformSameOp(nd4j::transform::SameOps::Neg);
-            auto node = new nd4j::graph::Node(op, sd->graph()->nextNodeId(), {x.nodeId()});
+            auto node = new nd4j::graph::Node(op, sd->graph()->nextNodeId(), std::vector<int>({x.nodeId()}));
             node->setDeductable(true);
 
             if (!name.empty())
@@ -62,13 +62,33 @@ namespace samediff {
         Tuple Tear(const Variable &x, const std::vector<int> &axis, const std::string &name) {
             auto sd = x.sd();
 
-            auto node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("tear"), sd->graph()->nextNodeId(), {x.nodeId()}, {}, {}, {}, {}, axis);
+            auto node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("tear"), sd->graph()->nextNodeId(), std::vector<int>({x.nodeId()}), {}, {}, {}, {}, axis);
 
             if (!name.empty())
                 node->setName(name);
 
             sd->graph()->addNode(node);
             return Tuple(*sd, node);
+        }
+
+        Variable Stack(const Tuple &variables, const std::vector<int> &axis, const std::string &name) {
+            auto sd = variables.sd();
+
+            nd4j::graph::Node *node = nullptr;
+            auto indices = variables.indices();
+
+            // if indices defined - we're using explicit way of inputs definition
+            if (indices.size() > 0)
+                node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("stack"), sd->graph()->nextNodeId(), indices, {}, {}, {}, {}, axis);
+            else {
+                // we' go for greedy definition otherwise
+                node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("stack"), sd->graph()->nextNodeId(), std::vector<std::pair<int,int>>({{variables.nodeId(), -1}}), {}, {}, {}, {}, axis);
+            }
+            if (!name.empty())
+                node->setName(name);
+
+            sd->graph()->addNode(node);
+            return Variable(*sd, node);
         }
     }
 }

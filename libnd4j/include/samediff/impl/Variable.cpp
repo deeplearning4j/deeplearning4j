@@ -49,6 +49,10 @@ namespace samediff {
     Variable Variable::operator+(const Variable& other) const {
         return samediff::arithmetic::Add(*this, other);
     }
+
+    std::pair<int, int> Variable::index() const {
+        return {nodeId(), _index};
+    }
 }
 
 samediff::Variable operator+(const float &scalar, const samediff::Variable &var) {

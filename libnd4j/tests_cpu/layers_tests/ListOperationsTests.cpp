@@ -440,7 +440,8 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_1) {
 
     // creating list
     nd4j::ops::create_list opB;
-    auto nodeB = new Node(&opB, 2, {1},{},{}, 0.0f, {}, {0, 1});
+    std::vector<int> in({1});
+    auto nodeB = new Node(&opB, 2, in,{},{}, 0.0f, {}, {0, 1});
     //nodeB->setCustomOp(&opB);
 
     // filling list with matrix
@@ -574,7 +575,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
 
     // creating list
     nd4j::ops::create_list opB;
-    auto nodeB = new Node(&opB, 2, {1},{},{}, 0.0f, {}, {0, 1});
+    auto nodeB = new Node(&opB, 2, std::vector<int>({1}),{},{}, 0.0f, {}, {0, 1});
 //    nodeB->setCustomOp(&opB);
 
     // filling list with matrix
@@ -584,9 +585,9 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
     //nodeC->setCustomOp(&opC);
 
     nd4j::ops::read_list opD;
-    auto nodeD0 = new Node(&opD, 5, {2, 3}, {},{}, 0.0f, {}, {0});
-    auto nodeD1 = new Node(&opD, 6, {2, 3, 15}, {},{}, 0.0f, {}, {1});
-    auto nodeD2 = new Node(&opD, 7, {2, 3, 16}, {},{}, 0.0f, {}, {2});
+    auto nodeD0 = new Node(&opD, 5, std::vector<int>({2, 3}), {},{}, 0.0f, {}, {0});
+    auto nodeD1 = new Node(&opD, 6, std::vector<int>({2, 3, 15}), {},{}, 0.0f, {}, {1});
+    auto nodeD2 = new Node(&opD, 7, std::vector<int>({2, 3, 16}), {},{}, 0.0f, {}, {2});
 
 //    nodeD0->setCustomOp(&opD);
 //    nodeD1->setCustomOp(&opD);
@@ -600,9 +601,9 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
 
     // writing chunks back to the List
     nd4j::ops::write_list opF;
-    auto nodeF0 = new Node(&opF, 15, {2, 10}, {},{}, 0.0f, {}, {0});
-    auto nodeF1 = new Node(&opF, 16, {2, 11}, {},{}, 0.0f, {}, {1});
-    auto nodeF2 = new Node(&opF, 17, {2, 12}, {},{}, 0.0f, {}, {2});
+    auto nodeF0 = new Node(&opF, 15, std::vector<int>({2, 10}), {},{}, 0.0f, {}, {0});
+    auto nodeF1 = new Node(&opF, 16, std::vector<int>({2, 11}), {},{}, 0.0f, {}, {1});
+    auto nodeF2 = new Node(&opF, 17, std::vector<int>({2, 12}), {},{}, 0.0f, {}, {2});
 
 //    nodeF0->setCustomOp(&opF);
 //    nodeF1->setCustomOp(&opF);
@@ -610,7 +611,7 @@ TEST_F(ListOperationsTests, GraphTests_Sequential_2) {
 
     // now we're gathering chunks back to matrix state 
     nd4j::ops::pick_list opG;
-    auto nodeG = new Node(&opG, 20, {2, -2, 15, 16, 17});
+    auto nodeG = new Node(&opG, 20, std::vector<int>({2, -2, 15, 16, 17}));
     //auto nodeG = new Node<float>(OpType_CUSTOM, 0, 20, {2});
 
     //nodeG->setCustomOp(&opG);

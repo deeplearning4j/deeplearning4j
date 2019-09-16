@@ -45,6 +45,7 @@ namespace samediff {
 
     namespace transform {
         Tuple Tear(const Variable &x, const std::vector<int> &axis, const std::string &name = {});
+        Variable Stack(const Tuple &variables, const std::vector<int> &axis, const std::string &name = {});
     }
 
     // math functions

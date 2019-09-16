@@ -987,7 +987,8 @@ TEST_F(GraphTests, TestMultiOutput1) {
 
 TEST_F(GraphTests, TestDivergentNode1) {
     auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation("Switch");
-    auto nodeY = new Node(op, 1);
+    std::vector<int> in;
+    auto nodeY = new Node(op, 1, in);
 
     ASSERT_TRUE(nodeY->isDivergencePoint());
     ASSERT_TRUE(nodeY->isActive());
@@ -1104,7 +1105,8 @@ TEST_F(GraphTests, MemoryEstimationTest5) {
 
     auto nodeA0 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 1, {-1}, {2});
     auto nodeA1 = new Node(OpType_TRANSFORM_SAME, transform::Abs, 2, {1}, {3});
-    auto nodeA2 = new Node(&op, 3, {2}, {}, {});
+    std::vector<int> inp({2});
+    auto nodeA2 = new Node(&op, 3, inp, {}, {});
     nodeA1->markInplace(false);
 
 

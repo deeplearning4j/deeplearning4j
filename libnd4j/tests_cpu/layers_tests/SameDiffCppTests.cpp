@@ -118,3 +118,38 @@ TEST_F(SameDiffCppTests, basic_cpp_tuple_test_1) {
     ASSERT_EQ(e, result);
 }
 
+TEST_F(SameDiffCppTests, basic_cpp_tuple_test_2) {
+    auto e = NDArrayFactory::create<float>('c', {3, 2}, {1.f, 1.f, 2.f, 2.f, 3.f, 3.f});
+
+    auto sd = samediff::create();
+
+    auto t = sd.variable(NDArrayFactory::create<float>('c', {2}, {1.f, 1.f}));
+    auto u = sd.variable(NDArrayFactory::create<float>('c', {2}, {2.f, 2.f}));
+    auto v = sd.variable(NDArrayFactory::create<float>('c', {2}, {3.f, 3.f}));
+
+    auto z = samediff::transform::Stack({t, u, v}, {0});
+
+    sd.execute();
+
+    auto result = z.array();
+
+    ASSERT_EQ(e, result);
+}
+
+TEST_F(SameDiffCppTests, basic_cpp_tuple_test_3) {
+    auto e = NDArrayFactory::create<float>('c', {3, 2}, {1.f, 1.f, 2.f, 2.f, 3.f, 3.f});
+
+    auto sd = samediff::create();
+
+    auto x = sd.variable(NDArrayFactory::create<float>('c', {3, 2}, {1.f, 1.f, 2.f, 2.f, 3.f, 3.f}));
+    auto rows = samediff::transform::Tear(x, {1});
+    auto z = samediff::transform::Stack(rows, {0});
+
+    sd.execute();
+
+    auto result = z.array();
+
+    ASSERT_EQ(e, result);
+}
+
+
