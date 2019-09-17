@@ -57,8 +57,7 @@ CUSTOM_OP_IMPL(random_crop, 2, 1, false, 0, 0) {
     rngX.setSeed(seed);
     NDArray inputCopy('c', {(int)limit.size()}, DataType::FLOAT32);
     NDArray offset(*shape);
-    RandomLauncher::fillUniform(block.launchContext(), rngX, &inputCopy, 0., (double)DataTypeUtils::max<int>());
-    inputCopy.printBuffer("Random offset");
+    RandomLauncher::fillUniform(block.launchContext(), rngX, &inputCopy, 0., (double)(DataTypeUtils::max<int>() - 1));
     for (auto i = 0; i < limit.size(); i++) {
         offset.p(i, inputCopy.e<int>(i) % limit[i]);
     }
