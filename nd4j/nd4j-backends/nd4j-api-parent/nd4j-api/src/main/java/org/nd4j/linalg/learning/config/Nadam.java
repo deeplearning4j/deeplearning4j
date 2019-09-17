@@ -101,7 +101,7 @@ public class Nadam implements IUpdater {
 
     @Override
     public Nadam clone() {
-        return new Nadam(learningRate, beta1, beta2, epsilon);
+        return new Nadam(learningRate, learningRateSchedule, beta1, beta2, epsilon);
     }
 
     @Override
