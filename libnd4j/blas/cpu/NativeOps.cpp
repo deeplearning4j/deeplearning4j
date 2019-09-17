@@ -3240,6 +3240,33 @@ bool isOptimalRequirementsMet() {
 #endif
 }
 
+void* ND_createEmpty(char order, int rank, int dataType, Nd4jLong *shape) {
+    std::vector<Nd4jLong> s(shape, shape + rank);
+    auto array = NDArrayFactory::create_(order, s, (nd4j::DataType) dataType);
+
+    return array;
+}
+
+void  ND_destroy(void *handle) {
+    delete reinterpret_cast<nd4j::NDArray*>(handle);
+}
+
+int   ND_strlen(void *handle) {
+    auto array = reinterpret_cast<nd4j::NDArray*>(handle);
+    auto str = array->asIndexedString();
+    return (int) str.length();
+}
+
+ND4J_EXPORT char* ND_printIndexed(void *handle) {
+    auto array = reinterpret_cast<nd4j::NDArray*>(handle);
+    auto str = array->asIndexedString();
+    auto arr = new char[str.length() + 1];
+    memset(arr, 0, str.length() + 1);
+    memcpy(arr, str.c_str(), str.length());
+    //d4j_printf("C content:\n%s", str.c_str());
+    return arr;
+}
+
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric, (void *, Nd4jLong*, void*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void tearGeneric, (void *, Nd4jLong*, Nd4jPointer*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);
 BUILD_SINGLE_TEMPLATE(template void shuffleGeneric, (void**, Nd4jLong**, void**, Nd4jLong**, int, int*, Nd4jLong**, Nd4jLong**), LIBND4J_TYPES);

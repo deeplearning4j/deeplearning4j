@@ -1767,6 +1767,10 @@ ND4J_EXPORT int optimalLevel();
 ND4J_EXPORT bool isMinimalRequirementsMet();
 ND4J_EXPORT bool isOptimalRequirementsMet();
 
+ND4J_EXPORT void* ND_createEmpty(char order, int rank, int dataType, Nd4jLong *shape);
+ND4J_EXPORT void  ND_destroy(void *handle);
+ND4J_EXPORT int   ND_strlen(void *handle);
+ND4J_EXPORT char* ND_printIndexed(void *handle);
 }
 
 #endif //NATIVEOPERATIONS_NATIVEOPS_H

@@ -150,11 +150,11 @@ namespace nd4j {
          */
         int _deviceId = AffinityManager::currentDeviceId();
 
-        template<typename T>
-        std::string toStringValue(T value);
-
     public:
         NDArray() = default;
+
+        template<typename T>
+        static std::string toStringValue(T value);
 
         /**
         *  do not allocate memory, memory for array is passed from outside
@@ -505,8 +505,8 @@ namespace nd4j {
         */
         void printIndexedBuffer(const char* msg = nullptr, Nd4jLong limit = -1) const;
 
-        std::string asIndexedString(Nd4jLong limit = -1);
-        std::string asString(Nd4jLong limit = -1);
+        std::string asIndexedString(Nd4jLong limit = -1) const;
+        std::string asString(Nd4jLong limit = -1) const;
 
         /**
         *  this method assigns values of given array to this one

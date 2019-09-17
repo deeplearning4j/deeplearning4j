@@ -33,6 +33,80 @@ utf8string NDArray::e(const Nd4jLong i) const;
 template <>
 std::string NDArray::e(const Nd4jLong i) const;
 
+
+//////////////////////////////////////////////////////////////////////////
+static std::string printFormatted(NDArray const* arr, int depth, int limit) {
+        std::string result;
+        if (arr->rankOf() == 1) {
+            printf("[ ");
+            for (Nd4jLong i = 0; i < arr->lengthOf(); ++i) {
+                if (arr->isR())
+                    result += NDArray::toStringValue(arr->e<float>(i)) + ", ";
+                else if (arr->isZ())
+                    result += NDArray::toStringValue(arr->e<Nd4jLong>(i)) + ", ";
+                else if (arr->isB())
+                    result +=  arr->e<bool>(i)? "true, " : "false, ";
+                else if (arr->isS())
+                    result += arr->e<std::string>(i) + ", ";
+            }
+            result += "]\n";
+        }
+        else if (arr->rankOf() == 2) {
+            Nd4jLong rows = arr->rows();
+            Nd4jLong cols = arr->columns();
+            char* padding = new char[depth + 1];
+            memset(padding, ' ', depth);
+            padding[depth] = 0;
+            result += "[";
+            for (Nd4jLong row = 0; row < rows; ++row) {
+                if (row && depth > 0)
+                    result += padding;
+
+                result += "[";
+                Nd4jLong colLimit = cols > limit?cols:limit;
+                for (Nd4jLong col = 0; col < colLimit; ++col) {
+                    if (col)
+                        result += ", ";
+                    if (arr->isR())
+                        result += NDArray::toStringValue(arr->e<float>(row, col));
+                    else if (arr->isZ())
+                        result += NDArray::toStringValue(arr->e<Nd4jLong>(row, col));
+                    else if (arr->isB())
+                        result += arr->e<bool>(row, col) ? "true" : "false";
+                    else if (arr->isS())
+                        result += "\"" + arr->e<std::string>(row * cols + col) + "\"";
+                }
+                if (row < rows - 1)
+                    result += "]\n";
+                else
+                    result +="]";
+            }
+            result += "]";
+            if (padding)
+                delete [] padding;
+        }
+        else {
+            //std::unique_ptr<ResultSet> arrs(arr->allTensorsAlongDimension({0}));
+            size_t restCount = 2;
+            result += "[" ;
+            restCount = ShapeUtils::getNumOfSubArrs(arr->getShapeInfo(), {0});
+            for (size_t arrIndex = 0; arrIndex < restCount; ++arrIndex) {
+                NDArray subArr = (*arr)(arrIndex, {0});
+                printFormatted(&subArr, depth + 1, limit);
+                if (arrIndex < restCount - 1) {
+                    for (Nd4jLong i = 1; i < arr->rankOf(); ++i)
+                        result += "\n";
+                    for (Nd4jLong i = 0; i < depth - 2; ++i)
+                        result += " ";
+                }
+            }
+            result += "]";
+        }
+
+        return result;
+    }
+
+
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 NDArray* NDArray::asT() const{
@@ -389,7 +463,35 @@ std::string NDArray::toStringValue(bfloat16 value) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::string NDArray::asIndexedString(Nd4jLong limit) {
+std::string NDArray::asIndexedString(Nd4jLong limit) const {
+        syncToHost();
+
+        std::string result;
+        Nd4jLong rank = this->rankOf();
+
+        bool rowFlag = (rank < 2) || (rank == 2 && this->sizeAt(0) == 1);
+
+        if (this->isEmpty()) {
+            return std::string("Empty\n");
+        }
+        else if (this->rankOf() == 0) {
+            if (this->isZ())
+                result = toStringValue(this->e<Nd4jLong>(0));
+            else if (this->isR())
+                result = toStringValue(this->e<float>(0));
+            else if (this->isB())
+                result = this->e<bool>(0) ? "true" : "false";
+            else if (this->isS())
+                result = this->e<std::string>(0);
+        }
+        else if (rowFlag && ews()==1)
+            result = asString(limit);
+        else {
+            result = printFormatted(this, 1, limit);
+        }
+
+        return result;
+    /*
     std::ostringstream os;
     os << "[";
     if (limit < 1 || limit > this->lengthOf())
@@ -401,10 +503,11 @@ std::string NDArray::asIndexedString(Nd4jLong limit) {
     }
     os << "]";
     return os.str();
+     */
 }
 
 //////////////////////////////////////////////////////////////////////////
-std::string NDArray::asString(Nd4jLong limit) {
+std::string NDArray::asString(Nd4jLong limit) const {
     std::ostringstream os;
     os << "[";
     if (limit < 1 || limit > this->lengthOf())
@@ -1187,110 +1290,14 @@ void NDArray::printLinearBuffer() const {
     printf("]\n");
     fflush(stdout);
 }
-//////////////////////////////////////////////////////////////////////////
-static void printFormatted(NDArray const* arr, int depth, int limit) {
-
-    if (arr->rankOf() == 1) {
-        printf("[ ");
-        for (Nd4jLong i = 0; i < arr->lengthOf(); ++i) {
-            if (arr->isR())
-                printf("%f, ", arr->e<float>(i));
-            else if (arr->isZ())
-                printf("%lld, ", arr->e<Nd4jLong>(i));
-            else if (arr->isB())
-                printf("%s, ", arr->e<bool>(i)?"true":"false");
-            else if (arr->isS())
-                printf("\"%s\", ", arr->e<std::string>(i).c_str());
-        }
-        printf("]\n");
-    }
-    else if (arr->rankOf() == 2) {
-        Nd4jLong rows = arr->rows();
-        Nd4jLong cols = arr->columns();
-        char* padding = new char[depth + 1];
-        memset(padding, ' ', depth);
-        padding[depth] = 0;
-        printf("[");
-        for (Nd4jLong row = 0; row < rows; ++row) {
-            if (row && depth > 0)
-                printf("%s", padding);
-            printf("[");
-            Nd4jLong colLimit = cols > limit?cols:limit;
-            for (Nd4jLong col = 0; col < colLimit; ++col) {
-                if (col)
-                    printf(", ");
-                if (arr->isR())
-                    printf("%f", arr->e<float>(row, col));
-                else if (arr->isZ())
-                    printf("%lld", arr->e<Nd4jLong>(row, col));
-                else if (arr->isB())
-                    printf("%s", arr->e<bool>(row, col)?"true":"false");
-                else if (arr->isS())
-                    printf("\"%s\"", arr->e<std::string>(row * cols + col).c_str());
-            }
-            if (row < rows - 1)
-                printf("]\n");
-            else
-                printf("]");
-        }
-        printf("]");
-        if (padding)
-            delete [] padding;
-    }
-    else {
-        //std::unique_ptr<ResultSet> arrs(arr->allTensorsAlongDimension({0}));
-        size_t restCount = 2;
-        printf("[");
-        restCount = ShapeUtils::getNumOfSubArrs(arr->getShapeInfo(), {0});
-        for (size_t arrIndex = 0; arrIndex < restCount; ++arrIndex) {
-            NDArray subArr = (*arr)(arrIndex, {0});
-            printFormatted(&subArr, depth + 1, limit);
-            if (arrIndex < restCount - 1) {
-                for (Nd4jLong i = 1; i < arr->rankOf(); ++i)
-                    printf("\n");
-                for (Nd4jLong i = 0; i < depth - 2; ++i)
-                    printf(" ");
-            }
-        }
-        printf("]");
-    }
-}
 
 //////////////////////////////////////////////////////////////////////////
 void NDArray::printIndexedBuffer(const char* msg, Nd4jLong limit) const {
-
-    syncToHost();
-
-    Nd4jLong rank = this->rankOf();
-
-    bool rowFlag = (rank < 2) || (rank == 2 && this->sizeAt(0) == 1);
-
     if (msg)
         printf("%s: ", msg);
 
-    if (this->isEmpty()) {
-        printf("Empty\n");
-    }
-    else if (this->rankOf() == 0) {
-        if (this->isZ())
-            printf("%lld\n", this->e<Nd4jLong>(0));
-        else if (this->isR())
-            printf("%f\n", this->e<float>(0));
-        else if (this->isB()) {
-            printf("%s\n", this->e<bool>(0)?"true":"false");
-        }
-        else if (this->isS()) {
-            printf("\"%s\"\n", this->e<std::string>(0).c_str());
-        }
-    }
-    else if (rowFlag && ews()==1)
-        printBuffer(nullptr, limit);
-    else {
-        if (msg)
-            printf("\n");
-        printFormatted(this, 1, limit);
-        printf("\n");
-    }
+    auto str = asIndexedString(limit);
+    printf("%s", str.c_str());
     fflush(stdout);
 }
 
