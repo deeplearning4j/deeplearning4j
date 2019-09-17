@@ -2685,47 +2685,6 @@ public interface INDArray extends Serializable, AutoCloseable {
      */
     INDArray percentile(Number percentile, int... dimension);
 
-    /*
-     * ------------ Sparse methods ------------
-     */
-
-    /**
-     * Return a array of non-major pointers
-     * i.e. return the column indexes in case of row-major ndarray
-     * @return a DataBuffer of indexes
-     */
-    DataBuffer getVectorCoordinates();
-
-    /**
-     * Return a dense representation of the sparse ndarray
-     * */
-    INDArray toDense();
-
-    /**
-     * Return the number of non-null element
-     * @return nnz
-     */
-    int nnz();
-
-    /**
-     * Return the sparse format (i.e COO, CSR, ...)
-     * @return format
-     * @see SparseFormat
-     * */
-    SparseFormat getFormat();
-
-    //TODO: Undocumented but often used method.
-    int[] flags();
-
-    //TODO: Undocumented but often used method.
-    int[] hiddenDimensions();
-
-    //TODO: Undocumented but often used method.
-    int[] sparseOffsets();
-
-    //TODO: Undocumented but often used method.
-    int underlyingRank();
-
     /**
      * Add an {@link INDArray}
      * to flatbuffers builder
