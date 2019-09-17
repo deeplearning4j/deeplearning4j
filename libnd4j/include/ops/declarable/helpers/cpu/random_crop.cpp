@@ -46,13 +46,14 @@ namespace helpers {
         Nd4jLong pos = 0;
         Nd4jLong width = startPos + shape->e<Nd4jLong>(last);
         if (width >= lastDim) {
-            startPos -= (width - lastDim);
+            startPos = 0; //-= (width - lastDim);
             width = lastDim;
         }
-
+        auto outLastDim = output->sizeAt(-1);
         for (int i = 0; i < input->lengthOf(); i += lastDim) {
             for (Nd4jLong k = startPos; k < width && pos < output->lengthOf(); k++) {
                 output->p(pos++, input->e<T>(i + k));
+               // if (pos % outLastDim) break;
             }
         }
         return ND4J_STATUS_OK;
