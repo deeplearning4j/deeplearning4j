@@ -38,7 +38,6 @@ namespace helpers {
 
         rngX.setSeed(seed);
         //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
-        RandomLauncher::fillUniform(context.launchContext(), rngX, output, 0., shape->e<double>(last));
 //        for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
 //            output->p(e, rngX.relativeT<T>(e, 0, shape->e<Nd4jLong>(last)));
 //        }

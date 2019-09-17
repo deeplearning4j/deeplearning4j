@@ -21,6 +21,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <ops/declarable/helpers/random_crop.h>
+#include <RandomLauncher.h>
 
 namespace nd4j {
 namespace ops {
@@ -47,8 +48,24 @@ CUSTOM_OP_IMPL(random_crop, 2, 1, false, 0, 0) {
     for (int e = 0; e < shape->lengthOf(); ++e) {
         REQUIRE_TRUE((*shape).e<Nd4jLong>(e) <= input->sizeAt(e), 0, "random_crop: Shape tensor should be less than proper input dimension (dim %i, %i > %i).", e, (*shape).e<Nd4jLong>(e), input->sizeAt(e));
     }
-
-    return helpers::randomCropFunctor(block, input, shape, output, seed);
+    auto limit = input->getShapeAsVector();
+    for (auto i = 0; i < limit.size(); i++) {
+        limit[i] -= shape->e<Nd4jLong>(i) - 1LL;
+        nd4j_printf("%llu: %lld\n", i, limit[i]);
+    }
+    RandomGenerator rngX = block.getRng();
+    rngX.setSeed(seed);
+    NDArray inputCopy('c', {(int)limit.size()}, DataType::FLOAT32);
+    NDArray offset(*shape);
+    RandomLauncher::fillUniform(block.launchContext(), rngX, &inputCopy, 0., (double)DataTypeUtils::max<int>());
+    inputCopy.printBuffer("Random offset");
+    for (auto i = 0; i < limit.size(); i++) {
+        offset.p(i, inputCopy.e<int>(i) % limit[i]);
+    }
+    offset.printIndexedBuffer("Offset is ");
+    slice resOp;
+    return resOp.execute({input, &offset, shape}, {output}, {}, {}, {}, false);
+    //return helpers::randomCropFunctor(block, input, shape, output, seed);
 }
 
 DECLARE_SHAPE_FN(random_crop) {
