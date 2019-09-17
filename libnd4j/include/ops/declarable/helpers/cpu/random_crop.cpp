@@ -50,7 +50,7 @@ namespace helpers {
         Nd4jLong pos = 0;
         Nd4jLong width = startPos + shape->e<Nd4jLong>(last);
         if (width >= lastDim) {
-            startPos = pos; //-= (width - lastDim);
+            startPos -= (width - lastDim) + 1;
             width = lastDim;
         }
 
