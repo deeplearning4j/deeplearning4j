@@ -4309,10 +4309,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (n == this)
             return true;
 
-        if (n.isSparse()) {
-            return n.equals(this);
-        }
-
         if (this.rank() != n.rank())
             return false;
 

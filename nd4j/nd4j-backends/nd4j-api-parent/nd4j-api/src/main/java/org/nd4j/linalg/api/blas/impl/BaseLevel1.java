@@ -48,11 +48,6 @@ public abstract class BaseLevel1 extends BaseLevel implements Level1 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, X, Y);
 
-        if (X.isSparse() && Y.isSparse()) {
-            // TODO - MKL doesn't contain such routines
-            return 0;
-        }
-
         if (X.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, X, Y);
             return ddot(n, X, BlasBufferUtil.getBlasStride(X), Y, BlasBufferUtil.getBlasStride(Y));
