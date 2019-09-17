@@ -173,7 +173,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     }
 
-
     protected Pair<INDArray, INDArray> setTarget(ArrayList<Transition<Integer>> transitions) {
         if (transitions.size() == 0)
             throw new IllegalArgumentException("too few transitions");
@@ -181,7 +180,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         int size = transitions.size();
 
         int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
-                        : getHistoryProcessor().getConf().getShape();
+                : getHistoryProcessor().getConf().getShape();
         int[] nshape = makeShape(size, shape);
         INDArray obs = Nd4j.create(nshape);
         INDArray nextObs = Nd4j.create(nshape);
@@ -216,17 +215,18 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             nextObs.muli(1.0 / getHistoryProcessor().getScale());
         }
 
-        INDArray targetDqnOutput = targetDqnOutput(obs);
+        INDArray dqnOutputAr = dqnOutput(obs);
 
         INDArray dqnOutputNext = dqnOutput(nextObs);
-        INDArray targetDqnOutputNext = targetDqnOutput(nextObs);
+        INDArray targetDqnOutputNext = null;
 
         INDArray tempQ = null;
         INDArray getMaxAction = null;
         if (getConfiguration().isDoubleDQN()) {
+            targetDqnOutputNext = targetDqnOutput(nextObs);
             getMaxAction = Nd4j.argMax(dqnOutputNext, 1);
         } else {
-            tempQ = Nd4j.max(targetDqnOutputNext, 1);
+            tempQ = Nd4j.max(dqnOutputNext, 1);
         }
 
 
@@ -245,15 +245,15 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
 
 
-            double previousV = targetDqnOutput.getDouble(i, actions[i]);
+            double previousV = dqnOutputAr.getDouble(i, actions[i]);
             double lowB = previousV - getConfiguration().getErrorClamp();
             double highB = previousV + getConfiguration().getErrorClamp();
             double clamped = Math.min(highB, Math.max(yTar, lowB));
 
-            targetDqnOutput.putScalar(i, actions[i], clamped);
+            dqnOutputAr.putScalar(i, actions[i], clamped);
         }
 
-        return new Pair(obs, targetDqnOutput);
+        return new Pair(obs, dqnOutputAr);
     }
 
 }
