@@ -4309,10 +4309,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if (n == this)
             return true;
 
-        if (n.isSparse()) {
-            return n.equals(this);
-        }
-
         if (this.rank() != n.rank())
             return false;
 
@@ -5440,56 +5436,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         int array = FlatArray.createFlatArray(builder, shape, buffer, type, ByteOrder.BE);
 
         return array;
-    }
-
-    /*
-     * ------- Sparse methods -------
-     */
-
-    @Override
-    public DataBuffer getVectorCoordinates() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public INDArray toDense() {
-        return this;
-    }
-
-    @Override
-    public int nnz() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public SparseFormat getFormat() {
-        return SparseFormat.NONE;
-    }
-
-    @Override
-    public DataBuffer sparseInfoDataBuffer() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public int[] flags() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public int[] hiddenDimensions() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public int[] sparseOffsets() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public int underlyingRank() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-
     }
 
     protected static DataTypeEx convertType(DataType type) {

@@ -119,16 +119,13 @@ public class Nd4j {
     @Deprecated
     public final static String DTYPE = ND4JSystemProperties.DTYPE;
     private final static String BLAS_OPS = "blas.ops";
-    private final static String SPARSE_BLAS_OPS = "sparseblas.ops";
     public final static String NATIVE_OPS = "native.ops";
     private final static String ORDER_KEY = "ndarray.order";
     private final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
-    private final static String SPARSE_NDARRAY_FACTORY_CLASS = "sparsendarrayfactory.class";
     private final static String OP_EXECUTIONER = "opexec";
 
     public final static String DISTRIBUTION = "dist";
     private final static String SHAPEINFO_PROVIDER = "shapeinfoprovider";
-    private final static String SPARSEINFO_PROVIDER = "sparseinfoprovider";
     private final static String CONSTANT_PROVIDER = "constantsprovider";
     private final static String AFFINITY_MANAGER = "affinitymanager";
     //disable toString() on compressed arrays for debugging. Should be off by default.
@@ -156,14 +153,11 @@ public class Nd4j {
 
     private static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     private static BlasWrapper BLAS_WRAPPER_INSTANCE;
-    private static BlasWrapper SPARSE_BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
-    private static NDArrayFactory SPARSE_INSTANCE;
     private static ConvolutionInstance CONVOLUTION_INSTANCE;
     private static OpExecutioner OP_EXECUTIONER_INSTANCE;
     private static DistributionFactory DISTRIBUTION_FACTORY;
     private static ShapeInfoProvider shapeInfoProvider;
-    private static SparseInfoProvider sparseInfoProvider;
     private static ConstantHandler constantHandler;
     private static AffinityManager affinityManager;
     private static MemoryManager memoryManager;
@@ -798,14 +792,6 @@ public class Nd4j {
      */
     public static NDArrayFactory factory() {
         return INSTANCE;
-    }
-
-    /**
-     * The factory used for creating sparse arrays.
-     * @return the factory used for creating sparse arrays.
-     */
-    public static NDArrayFactory sparseFactory() {
-        return SPARSE_INSTANCE;
     }
 
     /**
@@ -1698,14 +1684,6 @@ public class Nd4j {
      */
     public static BlasWrapper getBlasWrapper() {
         return BLAS_WRAPPER_INSTANCE;
-    }
-
-    /**
-     * Retreive the sparse BLAS wrapper.
-     * @return the sparse BLAS wrapper.
-     */
-    public static BlasWrapper getSparseBlasWrapper() {
-        return SPARSE_BLAS_WRAPPER_INSTANCE;
     }
 
     /**
@@ -5159,8 +5137,6 @@ public class Nd4j {
             affinityManager = affinityManagerClazz.newInstance();
             Class<? extends NDArrayFactory> ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
                     pp.toString(NDARRAY_FACTORY_CLASS));
-            Class<? extends NDArrayFactory> sparseNDArrayClazz = (Class<? extends NDArrayFactory>) Class.forName(
-                    pp.toString(SPARSE_NDARRAY_FACTORY_CLASS));
             Class<? extends ConvolutionInstance> convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class
                     .forName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
             String defaultName = pp.toString(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
@@ -5168,8 +5144,6 @@ public class Nd4j {
                     .forName(pp.toString(DATA_BUFFER_OPS, defaultName));
             Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class
                     .forName(pp.toString(SHAPEINFO_PROVIDER));
-            Class<? extends BaseSparseInfoProvider> sparseInfoProviderClazz = (Class<? extends BaseSparseInfoProvider>) Class.forName(
-                    pp.toString(SPARSEINFO_PROVIDER));
 
             Class<? extends BasicConstantHandler> constantProviderClazz = (Class<? extends BasicConstantHandler>) Class
                     .forName(pp.toString(CONSTANT_PROVIDER));
@@ -5187,8 +5161,6 @@ public class Nd4j {
 
             Class<? extends BlasWrapper> blasWrapperClazz = (Class<? extends BlasWrapper>) Class
                     .forName(pp.toString(BLAS_OPS));
-            Class<? extends BlasWrapper> sparseBlasWrapperClazz = (Class<? extends BlasWrapper>) Class
-                    .forName(pp.toString(SPARSE_BLAS_OPS));
             String clazzName = pp.toString(DISTRIBUTION, DefaultDistributionFactory.class.getName());
             Class<? extends DistributionFactory> distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
@@ -5196,7 +5168,6 @@ public class Nd4j {
             memoryManager = memoryManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
-            sparseInfoProvider = sparseInfoProviderClazz.newInstance();
             workspaceManager = workspaceManagerClazz.newInstance();
 
             Class<? extends OpExecutioner> opExecutionerClazz = (Class<? extends OpExecutioner>) Class
@@ -5205,10 +5176,8 @@ public class Nd4j {
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
-            SPARSE_INSTANCE = sparseNDArrayClazz.newInstance();
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
-            SPARSE_BLAS_WRAPPER_INSTANCE = sparseBlasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
 
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
@@ -5304,14 +5273,6 @@ public class Nd4j {
      */
     public static ShapeInfoProvider getShapeInfoProvider() {
         return shapeInfoProvider;
-    }
-
-    /**
-     *
-     * @return Sparse shape info provider
-     */
-    public static SparseInfoProvider getSparseInfoProvider() {
-        return sparseInfoProvider;
     }
 
     /**
