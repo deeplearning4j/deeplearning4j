@@ -1733,6 +1733,8 @@ ND4J_EXPORT void markGraphContextInplace(OpaqueContext* ptr, bool reallyInplace)
 ND4J_EXPORT void setGraphContextCudaContext(OpaqueContext* ptr, void *stream, void *reductionPointer, void *allocationPointer);
 ND4J_EXPORT void setGraphContextInputArray(OpaqueContext* ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
 ND4J_EXPORT void setGraphContextOutputArray(OpaqueContext* ptr, int index, void *buffer, void *shapeInfo, void *specialBuffer, void *specialShapeInfo);
+ND4J_EXPORT void setBlindContextInputArray(void* ptr, int index, void *array);
+ND4J_EXPORT void setBlindContextOutputArray(void* ptr, int index, void *array);
 ND4J_EXPORT void setGraphContextTArguments(OpaqueContext* ptr, double *arguments, int numberOfArguments);
 ND4J_EXPORT void setGraphContextIArguments(OpaqueContext* ptr, Nd4jLong *arguments, int numberOfArguments);
 ND4J_EXPORT void setGraphContextBArguments(OpaqueContext* ptr, bool *arguments, int numberOfArguments);
@@ -1767,6 +1769,10 @@ ND4J_EXPORT int optimalLevel();
 ND4J_EXPORT bool isMinimalRequirementsMet();
 ND4J_EXPORT bool isOptimalRequirementsMet();
 
+ND4J_EXPORT Nd4jLong opHash(const char *opName);
+
+ND4J_EXPORT void* ND_fromNumpy(int rank, char *typestr,  Nd4jLong *shape, void *numpy_array);
+ND4J_EXPORT void* ND_createValues(char order, int rank, int dataType, bool isInteger, void *data, Nd4jLong *shape);
 ND4J_EXPORT void* ND_createEmpty(char order, int rank, int dataType, Nd4jLong *shape);
 ND4J_EXPORT void  ND_destroy(void *handle);
 ND4J_EXPORT int   ND_strlen(void *handle);

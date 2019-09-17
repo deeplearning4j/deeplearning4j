@@ -2946,6 +2946,18 @@ void deleteGraphContext(nd4j::graph::Context* ptr) {
     delete ptr;
 }
 
+void setBlindContextInputArray(void* ptr, int index, void *array) {
+    auto ctx = reinterpret_cast<OpaqueContext*>(ptr);
+    auto arr = reinterpret_cast<nd4j::NDArray*>(array);
+    ctx->setInputArray(index, arr, false);
+}
+
+void setBlindContextOutputArray(void* ptr, int index, void *array) {
+    auto ctx = reinterpret_cast<OpaqueContext*>(ptr);
+    auto arr = reinterpret_cast<nd4j::NDArray*>(array);
+    ctx->setOutputArray(index, arr, false);
+}
+
 
 nd4j::graph::RandomGenerator* createRandomGenerator(Nd4jLong rootSeed, Nd4jLong nodeSeed) {
     return new nd4j::graph::RandomGenerator(rootSeed, nodeSeed);
@@ -3240,11 +3252,59 @@ bool isOptimalRequirementsMet() {
 #endif
 }
 
+Nd4jLong opHash(const char *opName) {
+    auto op = nd4j::ops::OpRegistrator::getInstance()->getOperation(opName);
+    //nd4j_printf("Hash: %lld\n", op->getOpHash());
+    return op->getOpHash();
+}
+
+template <typename T>
+static void convertFromLongs(void *vsrc, void *vdst, Nd4jLong length) {
+    auto src = reinterpret_cast<Nd4jLong *>(vsrc);
+    auto dst = reinterpret_cast<T *>(vdst);
+
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
+    for (Nd4jLong e = 0; e < length; e++)
+        dst[e] = static_cast<T>(src[e]);
+}
+
+template <typename T>
+static void convertFromDoubles(void *vsrc, void *vdst, Nd4jLong length) {
+    auto src = reinterpret_cast<double *>(vsrc);
+    auto dst = reinterpret_cast<T *>(vdst);
+
+    PRAGMA_OMP_PARALLEL_FOR_SIMD
+    for (Nd4jLong e = 0; e < length; e++)
+        dst[e] = static_cast<T>(src[e]);
+}
+
+void* ND_createValues(char order, int rank, int dataType, bool isInteger, void *data, Nd4jLong *shape) {
+    auto type = (nd4j::DataType) dataType;
+    std::vector<Nd4jLong> s(shape, shape + rank);
+    auto array = NDArrayFactory::create_(order, s, type);
+
+    array->printShapeInfo("values shapeInfo");
+
+    if (isInteger) {
+        BUILD_SINGLE_SELECTOR(type, convertFromLongs, (data, array->buffer(), array->lengthOf()), LIBND4J_TYPES);
+    } else {
+        BUILD_SINGLE_SELECTOR(type, convertFromDoubles, (data, array->buffer(), array->lengthOf()), LIBND4J_TYPES);
+    }
+
+    return array;
+}
+
 void* ND_createEmpty(char order, int rank, int dataType, Nd4jLong *shape) {
     std::vector<Nd4jLong> s(shape, shape + rank);
     auto array = NDArrayFactory::create_(order, s, (nd4j::DataType) dataType);
-
     return array;
+}
+
+void* ND_fromNumpy(int rank, char *typestr,  Nd4jLong *shape, void *numpy_array) {
+    auto dtype = (nd4j::DataType) cnpy::dataTypeFromTypestr(typestr);
+    auto shapeInfo = nd4j::ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', rank, shape);
+
+    return new nd4j::NDArray(numpy_array, reinterpret_cast<Nd4jLong *>(shapeInfo));
 }
 
 void  ND_destroy(void *handle) {

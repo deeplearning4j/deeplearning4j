@@ -104,19 +104,10 @@ char cnpy::mapType() {
     else return '?';
 }
 
-nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
-
-    // indices for type & data size
-    const int st = 10;
-    const int ti = 22;
-    const int si = 23;
-
-    // read first char to make sure it looks like a header
-    if (data == nullptr || data[st] != '{')
-        throw std::runtime_error("cnpy::dataTypeFromHeader() - provided pointer doesn't look like a pointer to numpy header");
-
-    const auto t = data[ti];
-    const auto s = data[si];
+nd4j::DataType cnpy::dataTypeFromTypestr(char *data) {
+    // data[0] is for endianess
+    const auto t = data[1];
+    const auto s = data[2];
 
     switch (t) {
         case 'b':
@@ -153,6 +144,19 @@ nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
         default:
             throw std::runtime_error("Unknown type marker");
     }
+}
+
+nd4j::DataType cnpy::dataTypeFromHeader(char *data) {
+
+    // indices for type & data size
+    const int st = 10;
+    const int ti = 21;
+
+    // read first char to make sure it looks like a header
+    if (data == nullptr || data[st] != '{')
+        throw std::runtime_error("cnpy::dataTypeFromHeader() - provided pointer doesn't look like a pointer to numpy header");
+
+    return dataTypeFromTypestr(data + ti);
 }
 
 template <typename T>

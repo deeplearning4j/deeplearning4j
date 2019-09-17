@@ -238,6 +238,7 @@ namespace cnpy {
 
     ND4J_EXPORT npz_t npzLoad(std::string fname);
 
+    ND4J_EXPORT nd4j::DataType dataTypeFromTypestr(char *data);
     ND4J_EXPORT nd4j::DataType dataTypeFromHeader(char *data);
 /**
 * Parse the numpy header from
