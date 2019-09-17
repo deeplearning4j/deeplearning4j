@@ -401,6 +401,21 @@ TEST_F(DeclarableOpsTests7, TestRandomCrop_2) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests7, TestRandomCrop_3) {
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4, 5});
+    auto shape = NDArrayFactory::create<Nd4jLong>({1, 2, 3, 4});
+    auto exp = NDArrayFactory::create<double>('c', {1,2,3,4}, {22,23,24,25,27,28,29,30, 32,33,34,35, 42,43,44,45, 47,48,49,50, 52, 53,54,55});
+    nd4j::ops::random_crop op;
+    x.linspace(1.);
+    auto result = op.execute({&x, &shape}, {}, {119});
+    ASSERT_EQ(result->status(), Status::OK());
+    result->at(0)->printIndexedBuffer("random crop Output 3");
+    ASSERT_TRUE(exp.equalsTo(result->at(0)));
+
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests7, Test_Dynamic_Stitch_119) {
     auto indices0 = NDArrayFactory::create<int>('c', {2}, {1, 10});
     auto indices1 = NDArrayFactory::create<int>('c', {2, 3}, {0, 7, 9, 5, 8, 3});
