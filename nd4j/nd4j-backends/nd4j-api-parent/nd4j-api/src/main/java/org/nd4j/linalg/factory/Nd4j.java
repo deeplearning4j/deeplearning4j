@@ -126,7 +126,6 @@ public class Nd4j {
 
     public final static String DISTRIBUTION = "dist";
     private final static String SHAPEINFO_PROVIDER = "shapeinfoprovider";
-    private final static String SPARSEINFO_PROVIDER = "sparseinfoprovider";
     private final static String CONSTANT_PROVIDER = "constantsprovider";
     private final static String AFFINITY_MANAGER = "affinitymanager";
     //disable toString() on compressed arrays for debugging. Should be off by default.
@@ -159,7 +158,6 @@ public class Nd4j {
     private static OpExecutioner OP_EXECUTIONER_INSTANCE;
     private static DistributionFactory DISTRIBUTION_FACTORY;
     private static ShapeInfoProvider shapeInfoProvider;
-    private static SparseInfoProvider sparseInfoProvider;
     private static ConstantHandler constantHandler;
     private static AffinityManager affinityManager;
     private static MemoryManager memoryManager;
@@ -5146,8 +5144,6 @@ public class Nd4j {
                     .forName(pp.toString(DATA_BUFFER_OPS, defaultName));
             Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class
                     .forName(pp.toString(SHAPEINFO_PROVIDER));
-            Class<? extends BaseSparseInfoProvider> sparseInfoProviderClazz = (Class<? extends BaseSparseInfoProvider>) Class.forName(
-                    pp.toString(SPARSEINFO_PROVIDER));
 
             Class<? extends BasicConstantHandler> constantProviderClazz = (Class<? extends BasicConstantHandler>) Class
                     .forName(pp.toString(CONSTANT_PROVIDER));
@@ -5172,7 +5168,6 @@ public class Nd4j {
             memoryManager = memoryManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
-            sparseInfoProvider = sparseInfoProviderClazz.newInstance();
             workspaceManager = workspaceManagerClazz.newInstance();
 
             Class<? extends OpExecutioner> opExecutionerClazz = (Class<? extends OpExecutioner>) Class
@@ -5278,14 +5273,6 @@ public class Nd4j {
      */
     public static ShapeInfoProvider getShapeInfoProvider() {
         return shapeInfoProvider;
-    }
-
-    /**
-     *
-     * @return Sparse shape info provider
-     */
-    public static SparseInfoProvider getSparseInfoProvider() {
-        return sparseInfoProvider;
     }
 
     /**
