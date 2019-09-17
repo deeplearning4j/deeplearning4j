@@ -23,6 +23,8 @@
 #include <vector>
 #include <memory>
 #include <graph/Context.h>
+#include <RandomLauncher.h>
+
 namespace nd4j {
 namespace ops {
 namespace helpers {
@@ -36,24 +38,26 @@ namespace helpers {
 
         rngX.setSeed(seed);
         //functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(rng, output->getBuffer(), output->getShapeInfo(), std::vector<T>({T(0.), shape->getScalar(last)}).data());
-        for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
-            output->p(e, rngX.relativeT<T>(e, 0, shape->e<Nd4jLong>(last)));
-        }
+        RandomLauncher::fillUniform(context.launchContext(), rngX, output, 0., shape->e<double>(last));
+//        for (Nd4jLong e = 0; e < output->lengthOf(); ++e) {
+//            output->p(e, rngX.relativeT<T>(e, 0, shape->e<Nd4jLong>(last)));
+//        }
         Nd4jLong maxIndex = output->argMax();
-        Nd4jLong startPos = output->e<Nd4jLong>(maxIndex);
+        Nd4jLong startPos = (Nd4jLong)(output->t<T>(maxIndex));
         Nd4jLong lastDim = input->sizeAt(-1);
+        auto outLastDim = output->sizeAt(-1);
         // nd4j_printf("Before processing: %i %i. Output length %i\n", maxIndex, startPos, output->lengthOf());
         Nd4jLong pos = 0;
         Nd4jLong width = startPos + shape->e<Nd4jLong>(last);
         if (width >= lastDim) {
-            startPos = 0; //-= (width - lastDim);
+            startPos = pos; //-= (width - lastDim);
             width = lastDim;
         }
-        auto outLastDim = output->sizeAt(-1);
+
         for (int i = 0; i < input->lengthOf(); i += lastDim) {
             for (Nd4jLong k = startPos; k < width && pos < output->lengthOf(); k++) {
-                output->p(pos++, input->e<T>(i + k));
-               // if (pos % outLastDim) break;
+                output->t<T>(pos++) = input->t<T>(i + k);
+                if (pos % outLastDim == 0) break;
             }
         }
         return ND4J_STATUS_OK;
