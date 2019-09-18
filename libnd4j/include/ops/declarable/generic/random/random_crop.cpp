@@ -51,17 +51,17 @@ CUSTOM_OP_IMPL(random_crop, 2, 1, false, 0, 0) {
     auto limit = input->getShapeAsVector();
     for (auto i = 0; i < limit.size(); i++) {
         limit[i] -= shape->e<Nd4jLong>(i) - 1LL;
-        nd4j_printf("%llu: %lld\n", i, limit[i]);
+//        nd4j_printf("%llu: %lld\n", i, limit[i]);
     }
     RandomGenerator rngX = block.getRng();
     rngX.setSeed(seed);
-    NDArray inputCopy('c', {(int)limit.size()}, DataType::FLOAT32);
+    //NDArray inputCopy('c', {(int)limit.size()}, DataType::FLOAT32);
     NDArray offset(*shape);
-    RandomLauncher::fillUniform(block.launchContext(), rngX, &inputCopy, 0., (double)(DataTypeUtils::max<int>() - 1));
+    //RandomLauncher::fillUniform(block.launchContext(), rngX, &inputCopy, 0., (double)(DataTypeUtils::max<int>() - 1));
     for (auto i = 0; i < limit.size(); i++) {
-        offset.p(i, inputCopy.e<int>(i) % limit[i]);
+        offset.p(i, rngX.relativeLong(i) % limit[i]);
     }
-    offset.printIndexedBuffer("Offset is ");
+//    offset.printIndexedBuffer("Offset is ");
     slice resOp;
     return resOp.execute({input, &offset, shape}, {output}, {}, {}, {}, false);
     //return helpers::randomCropFunctor(block, input, shape, output, seed);
