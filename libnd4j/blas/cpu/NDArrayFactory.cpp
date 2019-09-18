@@ -182,6 +182,12 @@ template void NDArrayFactory::memcpyFromVector(void *ptr, const std::vector<int8
 
 #endif
 
+    NDArray* NDArrayFactory::create_(nd4j::DataType dataType, nd4j::LaunchContext * context) {
+        auto arr = new NDArray();
+        *arr = NDArrayFactory::create(dataType, context);
+        return arr;
+    }
+
 ////////////////////////////////////////////////////////////////////////
     template <typename T>
     NDArray* NDArrayFactory::create_(const T scalar, nd4j::LaunchContext * context) {

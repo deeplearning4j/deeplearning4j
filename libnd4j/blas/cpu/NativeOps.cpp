@@ -3278,10 +3278,19 @@ static void convertFromDoubles(void *vsrc, void *vdst, Nd4jLong length) {
         dst[e] = static_cast<T>(src[e]);
 }
 
-void* ND_createValues(char order, int rank, int dataType, bool isInteger, void *data, Nd4jLong *shape) {
+void* ND_createValues(char order, int rank, int dataType, bool isEmpty, bool isInteger, void *data, Nd4jLong *shape) {
     auto type = (nd4j::DataType) dataType;
     std::vector<Nd4jLong> s(shape, shape + rank);
-    auto array = NDArrayFactory::create_(order, s, type);
+    nd4j::NDArray* array = nullptr;
+
+    if (rank > 0)
+        array = NDArrayFactory::create_(order, s, type);
+    else {
+        if (isEmpty)
+            array = NDArrayFactory::empty_(type);
+        else
+            array = NDArrayFactory::create_(type);
+    }
 
     array->printShapeInfo("values shapeInfo");
 

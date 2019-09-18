@@ -63,6 +63,7 @@ namespace nd4j {
         template <typename T>
         static NDArray create(const T value, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
         static NDArray create(nd4j::DataType dtype, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
+        static NDArray* create_(nd4j::DataType dtype, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
         template <typename T>
         static NDArray create(DataType type, const T scalar, nd4j::LaunchContext * context = nd4j::LaunchContext ::defaultContext());
 

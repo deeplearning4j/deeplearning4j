@@ -1772,7 +1772,7 @@ ND4J_EXPORT bool isOptimalRequirementsMet();
 ND4J_EXPORT Nd4jLong opHash(const char *opName);
 
 ND4J_EXPORT void* ND_fromNumpy(int rank, char *typestr,  Nd4jLong *shape, void *numpy_array);
-ND4J_EXPORT void* ND_createValues(char order, int rank, int dataType, bool isInteger, void *data, Nd4jLong *shape);
+ND4J_EXPORT void* ND_createValues(char order, int rank, int dataType, bool isEmpty, bool isInteger, void *data, Nd4jLong *shape);
 ND4J_EXPORT void* ND_createEmpty(char order, int rank, int dataType, Nd4jLong *shape);
 ND4J_EXPORT void  ND_destroy(void *handle);
 ND4J_EXPORT int   ND_strlen(void *handle);
