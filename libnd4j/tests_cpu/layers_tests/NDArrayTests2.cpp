@@ -654,7 +654,7 @@ TEST_F(NDArrayTest2, Test_toIndexedString_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 2}, {1.5f, 2.5f, 3.f, 4.5f});
 
     auto str = x.asIndexedString();
-    std::string exp = "[1.5, 2.5, 3, 4.5]";
+    std::string exp = "[[1.5, 2.5]\n [3, 4.5]]";
 
     ASSERT_EQ(exp, str);
 }
