@@ -894,6 +894,7 @@ public class OpValidation {
                 RationalTanhDerivative.class,
                 RectifiedTanhDerivative.class,
                 Relu6Derivative.class,
+                PReluBp.class,
                 SELUDerivative.class,
                 SigmoidDerivative.class,
                 org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative.class,

@@ -215,6 +215,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.gradient.HardTanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.LogSoftMaxDerivative;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.PReluBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhBp;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.RectifiedTanhBp;
@@ -1628,6 +1629,13 @@ public class DifferentialFunctionFactory {
         return new LeakyReLUDerivative(sameDiff(), iX, false, cutoff).outputVariable();
     }
 
+    public SDVariable prelu(SDVariable x, SDVariable alpha, int... sharedAxes){
+        return new PRelu(sameDiff(), x, alpha, sharedAxes).outputVariable();
+    }
+
+    public SDVariable[] preluBp(SDVariable in, SDVariable alpha, SDVariable epsilon, int... sharedAxes){
+        return new PReluBp(sameDiff(), in, alpha, epsilon, sharedAxes).outputVariables();
+    }
 
     public SDVariable reshape(SDVariable iX, int[] shape) {
         return new Reshape(sameDiff(), iX, ArrayUtil.toLongArray(shape)).outputVariable();
