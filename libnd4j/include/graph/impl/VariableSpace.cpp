@@ -148,7 +148,7 @@ namespace nd4j {
                     return getVariable(pair.first);
             }
 
-            nd4j_printf("Unknown variable requested: [%i,%i]\n", pair.first, pair.second);
+            nd4j_printf("Unknown variable requested: [%i:%i]\n", pair.first, pair.second);
 
             return nullptr;
         }

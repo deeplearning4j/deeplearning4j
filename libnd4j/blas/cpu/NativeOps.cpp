@@ -3292,8 +3292,6 @@ void* ND_createValues(char order, int rank, int dataType, bool isEmpty, bool isI
             array = NDArrayFactory::create_(type);
     }
 
-    array->printShapeInfo("values shapeInfo");
-
     if (isInteger) {
         BUILD_SINGLE_SELECTOR(type, convertFromLongs, (data, array->buffer(), array->lengthOf()), LIBND4J_TYPES);
     } else {

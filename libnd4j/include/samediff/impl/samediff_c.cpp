@@ -31,8 +31,16 @@ void  SD_destroyGraph(void *sd) {
     delete reinterpret_cast<samediff::SameDiff*>(sd);
 }
 
-void  SD_execute(void *sd) {
+void* SD_addVariableNode(void *vsd, void* varray, const char *name) {
+    auto array = reinterpret_cast<nd4j::NDArray*>(varray);
+    auto sd = reinterpret_cast<samediff::SameDiff*>(vsd);
+    auto var = new nd4j::graph::Variable(array, name);
+    return sd->graph()->addVariableNode(var);
+}
 
+void  SD_execute(void *vsd) {
+    auto sd = reinterpret_cast<samediff::SameDiff*>(vsd);
+    sd->execute();
 }
 
 void  SD_executePartially(void *sd, const char *nodeName) {
@@ -68,7 +76,13 @@ void  SD_addBArg(void *args, int position, bool arg) {
 void* SD_createNode(void* vsd, const char* opName, void *varg, const char* nodeName) {
     auto sd = reinterpret_cast<samediff::SameDiff*>(vsd);
     auto args = reinterpret_cast<samediff::NodeArgs*>(varg);
-    return new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation(opName), sd->graph()->nextNodeId(), args->inputs(), {}, {}, 0.0f, args->targs(), args->iargs(), args->bargs());
+    auto node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation(opName), sd->graph()->nextNodeId(), args->inputs(), {}, {}, 0.0f, args->targs(), args->iargs(), args->bargs());
+
+    if (nodeName != nullptr)
+        node->setName(std::string(nodeName));
+
+    sd->graph()->addNode(node);
+    return node;
 }
 
 int   SD_nodeId(void *node) {
@@ -87,6 +101,12 @@ int   SD_variableId(void *variable) {
 int   SD_variableIndex(void *variable) {
     return reinterpret_cast<samediff::Variable*>(variable)->index().second;
 }
+
+void* SD_variableById(void *vsd, int nodeId, int index) {
+    auto sd = reinterpret_cast<samediff::SameDiff*>(vsd);
+    return sd->graph()->getVariableSpace()->getVariable(nodeId, index)->getNDArray()->dup();
+}
+
 
 // tuple entity: CRUD
 void* SD_createTuple() {

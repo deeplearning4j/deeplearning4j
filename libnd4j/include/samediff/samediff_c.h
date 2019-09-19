@@ -31,6 +31,7 @@ extern "C" {
     ND4J_EXPORT void  SD_destroyGraph(void *sd);
     ND4J_EXPORT void  SD_execute(void *sd);
     ND4J_EXPORT void  SD_executePartially(void *sd, const char *nodeName);
+    ND4J_EXPORT void* SD_addVariableNode(void *sd, void* array, const char *name);
 
     // args entity: CRUD
     ND4J_EXPORT void* SD_createArgs();
@@ -49,6 +50,7 @@ extern "C" {
     ND4J_EXPORT void* SD_createVariable(void* sd);
     ND4J_EXPORT int   SD_variableId(void *variable);
     ND4J_EXPORT int   SD_variableIndex(void *variable);
+    ND4J_EXPORT void* SD_variableById(void *sd, int nodeId, int index);
 
     // tuple entity: CRUD
     ND4J_EXPORT void* SD_createTuple();
