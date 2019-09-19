@@ -44,7 +44,7 @@ public class MockDataManager implements IDataManager {
     }
 
     @Override
-    public void save(Learning learning) throws IOException {
+    public void save(ILearning learning) throws IOException {
         ++saveCallCount;
     }
 }

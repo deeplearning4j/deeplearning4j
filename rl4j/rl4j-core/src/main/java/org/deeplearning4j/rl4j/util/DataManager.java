@@ -22,6 +22,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
+import org.deeplearning4j.rl4j.learning.NeuralNetFetchable;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.rl4j.learning.ILearning;
 import org.deeplearning4j.rl4j.learning.Learning;
@@ -72,13 +73,13 @@ public class DataManager implements IDataManager {
         }
     }
 
-    public static void save(String path, Learning learning) throws IOException {
+    public static void save(String path, ILearning learning) throws IOException {
         try (BufferedOutputStream os = new BufferedOutputStream(new FileOutputStream(path))) {
             save(os, learning);
         }
     }
 
-    public static void save(OutputStream os, Learning learning) throws IOException {
+    public static void save(OutputStream os, ILearning learning) throws IOException {
 
         try (ZipOutputStream zipfile = new ZipOutputStream(os)) {
 
@@ -91,7 +92,9 @@ public class DataManager implements IDataManager {
             zipfile.putNextEntry(dqn);
 
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            learning.getNeuralNet().save(bos);
+            if(learning instanceof NeuralNetFetchable) {
+                ((NeuralNetFetchable)learning).getNeuralNet().save(bos);
+            }
             bos.flush();
             bos.close();
 
@@ -104,7 +107,9 @@ public class DataManager implements IDataManager {
                 zipfile.putNextEntry(hpconf);
 
                 ByteArrayOutputStream bos2 = new ByteArrayOutputStream();
-                learning.getNeuralNet().save(bos2);
+                if(learning instanceof NeuralNetFetchable) {
+                    ((NeuralNetFetchable)learning).getNeuralNet().save(bos2);
+                }
                 bos2.flush();
                 bos2.close();
 
@@ -256,13 +261,15 @@ public class DataManager implements IDataManager {
         return exists;
     }
 
-    public void save(Learning learning) throws IOException {
+    public void save(ILearning learning) throws IOException {
 
         if (!saveData)
             return;
 
         save(getModelDir() + "/" + learning.getStepCounter() + ".training", learning);
-        learning.getNeuralNet().save(getModelDir() + "/" + learning.getStepCounter() + ".model");
+        if(learning instanceof  NeuralNetFetchable) {
+            ((NeuralNetFetchable)learning).getNeuralNet().save(getModelDir() + "/" + learning.getStepCounter() + ".model");
+        }
 
     }
 

@@ -2,12 +2,10 @@ package org.deeplearning4j.rl4j.learning.sync;
 
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.learning.sync.support.MockStatEntry;
-import org.deeplearning4j.rl4j.learning.sync.support.MockSyncTrainingListener;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.policy.Policy;
-import org.deeplearning4j.rl4j.support.MockDataManager;
-import org.deeplearning4j.rl4j.util.DataManagerSyncTrainingListener;
+import org.deeplearning4j.rl4j.policy.IPolicy;
+import org.deeplearning4j.rl4j.support.MockTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
 
@@ -19,7 +17,7 @@ public class SyncLearningTest {
     public void when_training_expect_listenersToBeCalled() {
         // Arrange
         QLearning.QLConfiguration lconfig = QLearning.QLConfiguration.builder().maxStep(10).build();
-        MockSyncTrainingListener listener = new MockSyncTrainingListener();
+        MockTrainingListener listener = new MockTrainingListener();
         MockSyncLearning sut = new MockSyncLearning(lconfig);
         sut.addListener(listener);
 
@@ -27,8 +25,8 @@ public class SyncLearningTest {
         sut.train();
 
         assertEquals(1, listener.onTrainingStartCallCount);
-        assertEquals(10, listener.onEpochStartCallCount);
-        assertEquals(10, listener.onEpochEndStartCallCount);
+        assertEquals(10, listener.onNewEpochCallCount);
+        assertEquals(10, listener.onEpochTrainingResultCallCount);
         assertEquals(1, listener.onTrainingEndCallCount);
     }
 
@@ -36,65 +34,59 @@ public class SyncLearningTest {
     public void when_trainingStartCanContinueFalse_expect_trainingStopped() {
         // Arrange
         QLearning.QLConfiguration lconfig = QLearning.QLConfiguration.builder().maxStep(10).build();
-        MockSyncTrainingListener listener = new MockSyncTrainingListener();
+        MockTrainingListener listener = new MockTrainingListener();
         MockSyncLearning sut = new MockSyncLearning(lconfig);
         sut.addListener(listener);
-        listener.trainingStartCanContinue = false;
+        listener.setRemainingTrainingStartCallCount(0);
 
         // Act
         sut.train();
 
         assertEquals(1, listener.onTrainingStartCallCount);
-        assertEquals(0, listener.onEpochStartCallCount);
-        assertEquals(0, listener.onEpochEndStartCallCount);
+        assertEquals(0, listener.onNewEpochCallCount);
+        assertEquals(0, listener.onEpochTrainingResultCallCount);
         assertEquals(1, listener.onTrainingEndCallCount);
     }
 
     @Test
-    public void when_epochStartCanContinueFalse_expect_trainingStopped() {
+    public void when_newEpochCanContinueFalse_expect_trainingStopped() {
         // Arrange
         QLearning.QLConfiguration lconfig = QLearning.QLConfiguration.builder().maxStep(10).build();
-        MockSyncTrainingListener listener = new MockSyncTrainingListener();
+        MockTrainingListener listener = new MockTrainingListener();
         MockSyncLearning sut = new MockSyncLearning(lconfig);
         sut.addListener(listener);
-        listener.nbStepsEpochStartCanContinue = 3;
+        listener.setRemainingOnNewEpochCallCount(2);
 
         // Act
         sut.train();
 
         assertEquals(1, listener.onTrainingStartCallCount);
-        assertEquals(3, listener.onEpochStartCallCount);
-        assertEquals(2, listener.onEpochEndStartCallCount);
+        assertEquals(3, listener.onNewEpochCallCount);
+        assertEquals(2, listener.onEpochTrainingResultCallCount);
         assertEquals(1, listener.onTrainingEndCallCount);
     }
 
     @Test
-    public void when_epochEndCanContinueFalse_expect_trainingStopped() {
+    public void when_epochTrainingResultCanContinueFalse_expect_trainingStopped() {
         // Arrange
         QLearning.QLConfiguration lconfig = QLearning.QLConfiguration.builder().maxStep(10).build();
-        MockSyncTrainingListener listener = new MockSyncTrainingListener();
+        MockTrainingListener listener = new MockTrainingListener();
         MockSyncLearning sut = new MockSyncLearning(lconfig);
         sut.addListener(listener);
-        listener.nbStepsEpochEndCanContinue = 3;
+        listener.setRemainingOnEpochTrainingResult(2);
 
         // Act
         sut.train();
 
         assertEquals(1, listener.onTrainingStartCallCount);
-        assertEquals(3, listener.onEpochStartCallCount);
-        assertEquals(3, listener.onEpochEndStartCallCount);
+        assertEquals(3, listener.onNewEpochCallCount);
+        assertEquals(3, listener.onEpochTrainingResultCallCount);
         assertEquals(1, listener.onTrainingEndCallCount);
     }
 
     public static class MockSyncLearning extends SyncLearning {
 
-        private LConfiguration conf;
-
-        public MockSyncLearning(LConfiguration conf, IDataManager dataManager) {
-            super(conf);
-            addListener(DataManagerSyncTrainingListener.builder(dataManager).build());
-            this.conf = conf;
-        }
+        private final LConfiguration conf;
 
         public MockSyncLearning(LConfiguration conf) {
             super(conf);
@@ -119,7 +111,7 @@ public class SyncLearningTest {
         }
 
         @Override
-        public Policy getPolicy() {
+        public IPolicy getPolicy() {
             return null;
         }
 

@@ -28,8 +28,6 @@ import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.DataManagerSyncTrainingListener;
-import org.deeplearning4j.rl4j.util.IDataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -64,19 +62,8 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     @Setter
     private IDQN targetDQN;
     private int lastAction;
-    private INDArray history[] = null;
+    private INDArray[] history = null;
     private double accuReward = 0;
-
-    /**
-     * @deprecated
-     * Use QLearningDiscrete(MDP, IDQN, QLConfiguration, int) and add the required listeners with addListener() instead.
-     */
-    @Deprecated
-    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
-                    IDataManager dataManager, int epsilonNbStep) {
-        this(mdp, dqn, conf, epsilonNbStep);
-        addListener(DataManagerSyncTrainingListener.builder(dataManager).build());
-    }
 
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
                              int epsilonNbStep) {
@@ -186,7 +173,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     }
 
-
     protected Pair<INDArray, INDArray> setTarget(ArrayList<Transition<Integer>> transitions) {
         if (transitions.size() == 0)
             throw new IllegalArgumentException("too few transitions");
@@ -194,7 +180,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         int size = transitions.size();
 
         int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
-                        : getHistoryProcessor().getConf().getShape();
+                : getHistoryProcessor().getConf().getShape();
         int[] nshape = makeShape(size, shape);
         INDArray obs = Nd4j.create(nshape);
         INDArray nextObs = Nd4j.create(nshape);

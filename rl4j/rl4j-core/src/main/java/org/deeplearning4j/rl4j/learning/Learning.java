@@ -26,7 +26,6 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.IDataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 

@@ -23,9 +23,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public interface IAsyncGlobal<NN extends NeuralNet> {
     boolean isRunning();
-    void setRunning(boolean value);
     boolean isTrainingComplete();
     void start();
+
+    /**
+     * Force the immediate termination of the AsyncGlobal instance. Queued work items will be discarded.
+     */
+    void terminate();
+
     AtomicInteger getT();
     NN getCurrent();
     NN getTarget();

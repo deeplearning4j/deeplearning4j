@@ -35,7 +35,7 @@ import org.nd4j.linalg.util.ArrayUtil;
  *
  * A Policy responsability is to choose the next action given a state
  */
-public abstract class Policy<O extends Encodable, A> {
+public abstract class Policy<O extends Encodable, A> implements IPolicy<O, A> {
 
     public abstract NeuralNet getNeuralNet();
 
@@ -49,6 +49,7 @@ public abstract class Policy<O extends Encodable, A> {
         return play(mdp, new HistoryProcessor(conf));
     }
 
+    @Override
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
         getNeuralNet().reset();
         Learning.InitMdp<O> initMdp = Learning.initMdp(mdp, hp);

@@ -8,6 +8,7 @@ import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.support.*;
+import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -29,12 +30,11 @@ public class QLearningDiscreteTest {
         QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 0, 0, 5, 1, 0,
                 0, 1.0, 0, 0, 0, 0, true);
         MockDataManager dataManager = new MockDataManager(false);
-        TestQLearningDiscrete sut = new TestQLearningDiscrete(mdp, dqn, conf, dataManager, 10);
+        MockExpReplay expReplay = new MockExpReplay();
+        TestQLearningDiscrete sut = new TestQLearningDiscrete(mdp, dqn, conf, dataManager, expReplay, 10);
         IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);
         MockHistoryProcessor hp = new MockHistoryProcessor(hpConf);
         sut.setHistoryProcessor(hp);
-        MockExpReplay expReplay = new MockExpReplay();
-        sut.setExpReplay(expReplay);
         MockEncodable obs = new MockEncodable(1);
         List<QLearning.QLStepReturn<MockEncodable>> results = new ArrayList<>();
 
@@ -131,8 +131,11 @@ public class QLearningDiscreteTest {
 
     public static class TestQLearningDiscrete extends QLearningDiscrete<MockEncodable> {
         public TestQLearningDiscrete(MDP<MockEncodable, Integer, DiscreteSpace> mdp,IDQN dqn,
-                                     QLConfiguration conf, IDataManager dataManager, int epsilonNbStep) {
-            super(mdp, dqn, conf, dataManager, epsilonNbStep);
+                                     QLConfiguration conf, IDataManager dataManager, MockExpReplay expReplay,
+                                     int epsilonNbStep) {
+            super(mdp, dqn, conf, epsilonNbStep);
+            addListener(new DataManagerTrainingListener(dataManager));
+            setExpReplay(expReplay);
         }
 
         @Override
