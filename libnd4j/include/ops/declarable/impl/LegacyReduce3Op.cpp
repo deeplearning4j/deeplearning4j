@@ -22,6 +22,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <helpers/ArrayUtils.h>
 
 namespace nd4j {
     namespace ops {
@@ -110,8 +111,8 @@ namespace nd4j {
                 zShape[7] = 99;
             } else {
                 auto array = new NDArray(nullptr, xShape, block.launchContext());
-
-                xShape = ShapeUtils::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
+                auto dim = ArrayUtils::toIntVector(*block.getIArguments());
+                xShape = ShapeUtils::evalReduceShapeInfo('c', dim, *array, false, true);
 
                 delete array;
             }

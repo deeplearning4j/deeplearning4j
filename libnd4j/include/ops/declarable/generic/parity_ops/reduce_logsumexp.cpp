@@ -33,7 +33,7 @@ namespace ops {
             helpers::adjustAxis(input->rankOf(), axisVector, axes );
         }
         else if (block.getIArguments()->size() > 0) {
-            axes = *block.getIArguments();
+            axes = ArrayUtils::toIntVector(*block.getIArguments());
         }
 
         for(const auto& item : axes)
@@ -67,7 +67,7 @@ namespace ops {
             helpers::adjustAxis(input->rankOf(), axisVector, axes );
         }
         else if (block.getIArguments()->size() > 0) {
-            axes = *block.getIArguments();
+            axes = ArrayUtils::toIntVector(*block.getIArguments());
         }
 
         Nd4jLong* outShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShape->at(0)), axes, inputShape->at(0), keepDims, false, block.getWorkspace());

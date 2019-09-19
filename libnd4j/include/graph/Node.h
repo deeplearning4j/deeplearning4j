@@ -97,9 +97,9 @@ namespace nd4j {
 
         public:
             // These are op node constructors
-            explicit Node(nd4j::ops::DeclarableOp *customOp, int id = 0, const std::vector<std::pair<int, int>> &input = {}, const std::vector<int> &output = {},  const std::vector<int> &dimensions = {}, float scalar = 0.0f, const std::vector<double> &tArgs = {}, const std::vector<int> &iArgs = {}, const std::vector<bool> &bArgs = {});
-            explicit Node(nd4j::ops::DeclarableOp *customOp, int id = 0, const std::vector<int> &input = {}, const std::vector<int> &output = {},  const std::vector<int> &dimensions = {}, float scalar = 0.0f, const std::vector<double> &tArgs = {}, const std::vector<int> &iArgs = {}, const std::vector<bool> &bArgs = {});
-            explicit Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, const std::vector<int> &input = {}, const std::vector<int> &output = {},  const std::vector<int> &dimensions = {}, float scalar = 0.0f, const std::vector<double> &tArgs = {}, const std::vector<int> &iArgs = {}, const std::vector<bool> &bArgs = {});
+            explicit Node(nd4j::ops::DeclarableOp *customOp, int id = 0, const std::vector<std::pair<int, int>> &input = {}, const std::vector<int> &output = {},  const std::vector<int> &dimensions = {}, float scalar = 0.0f, const std::vector<double> &tArgs = {}, const std::vector<Nd4jLong> &iArgs = {}, const std::vector<bool> &bArgs = {});
+            explicit Node(nd4j::ops::DeclarableOp *customOp, int id = 0, const std::vector<int> &input = {}, const std::vector<int> &output = {},  const std::vector<int> &dimensions = {}, float scalar = 0.0f, const std::vector<double> &tArgs = {}, const std::vector<Nd4jLong> &iArgs = {}, const std::vector<bool> &bArgs = {});
+            explicit Node(OpType opType = OpType_TRANSFORM_SAME, int opNum = 0, int id = 0, const std::vector<int> &input = {}, const std::vector<int> &output = {},  const std::vector<int> &dimensions = {}, float scalar = 0.0f, const std::vector<double> &tArgs = {}, const std::vector<Nd4jLong> &iArgs = {}, const std::vector<bool> &bArgs = {});
 
             // This constructor is for variable/constant/placeholder nodes
             explicit Node(Variable *variable);

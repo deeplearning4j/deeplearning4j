@@ -53,7 +53,7 @@ namespace nd4j {
             int batchSize = x->sizeAt(0);
             int numColumns = x->sizeAt(1);
 
-            std::vector<int> indices(*block.getIArguments());
+            auto indices = ArrayUtils::toIntVector(*block.getIArguments());
             std::map<int, int> sparse2dense;
 
 

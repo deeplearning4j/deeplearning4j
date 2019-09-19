@@ -35,7 +35,7 @@ namespace nd4j {
 
         CUSTOM_OP_IMPL(argmin, 1, 1, false, 0, -2) {
             auto input = INPUT_VARIABLE(0);
-            auto axis = *block.getIArguments();
+            auto axis = ArrayUtils::toIntVector(*block.getIArguments());
 
             auto output = OUTPUT_VARIABLE(0);
 
@@ -60,7 +60,7 @@ namespace nd4j {
             std::vector<int> dims;
             auto in = inputShape->at(0);
             if (block.width() == 1) {
-                dims = *block.getIArguments();
+                dims = ArrayUtils::toIntVector(*block.getIArguments());
             } else {
                 auto y = INPUT_VARIABLE(1);
                 dims = y->template asVectorT<int>();

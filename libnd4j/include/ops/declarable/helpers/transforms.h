@@ -48,7 +48,7 @@ namespace helpers {
 
 	void eye(nd4j::LaunchContext * context, NDArray& output);
 
-	void scatterUpdate(nd4j::LaunchContext * context, NDArray& operand, NDArray& updates, const std::vector<int>* intArgs);
+	void scatterUpdate(nd4j::LaunchContext * context, NDArray& operand, NDArray& updates, const std::vector<int>& intArgs);
 
 	void scatterSimple(nd4j::LaunchContext * context, const int opId, NDArray& input, const NDArray& updates, const NDArray& indices, const std::vector<int>& dimensions);
 

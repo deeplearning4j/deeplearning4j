@@ -23,6 +23,7 @@
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
 #include <Status.h>
+#include <helpers/ArrayUtils.h>
 
 
 namespace nd4j {
@@ -33,7 +34,7 @@ namespace nd4j {
 
             auto z = OUTPUT_VARIABLE(0);
 
-            std::vector<int> dims(*block.getIArguments());
+            auto dims = ArrayUtils::toIntVector(*block.getIArguments());
             if (dims.size() > 0)
                 std::sort(dims.begin(), dims.end());
 

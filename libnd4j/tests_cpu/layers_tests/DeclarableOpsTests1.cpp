@@ -1623,7 +1623,7 @@ TEST_F(DeclarableOpsTests1, Reshape1) {
 
     auto block = new Context(1, variableSpace, true);
     block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();
+    auto arguments = block->getIArguments();
     arguments->push_back(-y->ordering());
     arguments->push_back(3);
     arguments->push_back(5);
@@ -1654,7 +1654,7 @@ TEST_F(DeclarableOpsTests1, Reshape2) {
 
     auto block = new Context(1, variableSpace, false);
     block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();
+    auto arguments = block->getIArguments();
     arguments->push_back(-y->ordering());
     arguments->push_back(3);
     arguments->push_back(5);
@@ -1813,7 +1813,7 @@ TEST_F(DeclarableOpsTests1, Permute1) {
 
     Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
     Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
-    const std::vector<int> perm = {2, 0, 1};
+    const std::vector<Nd4jLong> perm = {2, 0, 1};
     ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);
     ArrayOptions::setDataType(shapeExp, nd4j::DataType::FLOAT32);
 
@@ -1825,7 +1825,7 @@ TEST_F(DeclarableOpsTests1, Permute1) {
 
     auto block = new Context(1, variableSpace, true);  // in-place
     block->fillInputs({-1});
-    std::vector<int>* arguments = block->getIArguments();
+    auto arguments = block->getIArguments();
     *arguments = perm;      // set dimensions to be permuted
 
     nd4j::ops::permute permute;
@@ -1845,7 +1845,7 @@ TEST_F(DeclarableOpsTests1, Permute2) {
 
     Nd4jLong shapeX[]   = {3, 5, 10, 15, 150, 15, 1, 0, 1, 99};
     Nd4jLong shapeExp[] = {3, 15, 5, 10, 1, 150, 15, 0, 0, 99};
-    const std::vector<int> perm = {2, 0, 1};
+    const std::vector<Nd4jLong> perm = {2, 0, 1};
 
     ArrayOptions::setDataType(shapeX, nd4j::DataType::FLOAT32);
     ArrayOptions::setDataType(shapeExp, nd4j::DataType::FLOAT32);
@@ -2050,7 +2050,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test1) {
 
     auto block = new Context(1, variableSpace, false);
     block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
+    auto argI = block->getIArguments();
     *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
     nd4j::ops::avgpool2d pooling;
@@ -2093,7 +2093,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test2) {
 
     auto block = new Context(1, variableSpace, false);
     block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
+    auto argI = block->getIArguments();
     *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 0, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
     nd4j::ops::avgpool2d pooling;
@@ -2136,7 +2136,7 @@ TEST_F(DeclarableOpsTests1, Avgpool2d_test3) {
 
     auto block = new Context(1, variableSpace, false);
     block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
+    auto argI = block->getIArguments();
     *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 1, 0, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
 
     nd4j::ops::avgpool2d pooling;
@@ -2165,7 +2165,7 @@ TEST_F(DeclarableOpsTests1, Pnormpool2d1) {
 
     auto block = new Context(1, variableSpace, false);
     block->fillInputs({-1});
-    std::vector<int>* argI = block->getIArguments();
+    auto argI = block->getIArguments();
     *argI = {kH,kW, sH,sW, pH,pW, dW,dH, 0, 1, 0};  // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode; 9 - extraParam0 for pnorm case;
 
     nd4j::ops::pnormpool2d pooling;

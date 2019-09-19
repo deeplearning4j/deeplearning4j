@@ -18,27 +18,38 @@
 // @author raver119@gmail.com
 //
 
-#ifndef LIBND4J_ARRAYUTILS_H
-#define LIBND4J_ARRAYUTILS_H
+#ifndef SAMEDIFF_NODEARGS_H
+#define SAMEDIFF_NODEARGS_H
 
-#include <initializer_list>
-#include <vector>
-#include <cstring>
+#include <dll.h>
 #include <pointercast.h>
+#include <vector>
 
-namespace nd4j {
-    namespace ArrayUtils {
-        void toIntPtr(std::initializer_list<int> list, int* target);
-        void toIntPtr(std::vector<int>& list, int* target);
+namespace samediff {
+    class ND4J_EXPORT NodeArgs {
+    private:
+        std::vector<Nd4jLong> _iArgs;
+        std::vector<double> _tArgs;
+        std::vector<bool> _bArgs;
 
-        void toLongPtr(std::initializer_list<Nd4jLong> list, Nd4jLong* target);
-        void toLongPtr(std::vector<Nd4jLong>& list, Nd4jLong* target);
+        std::vector<std::pair<int, int>> _inputs;
+    public:
+        NodeArgs() = default;
+        ~NodeArgs() = default;
+
+        void addInput(int position, int nodeId, int index);
+
+        void addIArg(int position, Nd4jLong value);
+        void addTArg(int position, double value);
+        void addBArg(int position, bool value);
 
 
-        std::vector<Nd4jLong> toLongVector(const std::vector<int> &vec);
-        std::vector<int> toIntVector(const std::vector<Nd4jLong> &vec);
-
-    }
+        std::vector<std::pair<int, int>>& inputs();
+        std::vector<Nd4jLong>& iargs();
+        std::vector<double>& targs();
+        std::vector<bool>& bargs();
+    };
 }
 
-#endif //LIBND4J_ARRAYUTILS_H
+
+#endif //SAMEDIFF_NODEARGS_H

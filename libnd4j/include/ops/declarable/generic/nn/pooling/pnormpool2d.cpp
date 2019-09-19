@@ -36,14 +36,14 @@ namespace nd4j {
 
             REQUIRE_TRUE(input->rankOf() == 4, 0, "PNORMPOOL2D op: input should have rank of 4, but got %i instead", input->rankOf());
 
-            auto kY = INT_ARG(0);
-            auto kX = INT_ARG(1);
-            auto sY = INT_ARG(2);
-            auto sX = INT_ARG(3);
-            auto pY = INT_ARG(4);
-            auto pX = INT_ARG(5);
-            auto dY = INT_ARG(6);
-            auto dX = INT_ARG(7);
+            int kY = INT_ARG(0);
+            int kX = INT_ARG(1);
+            int sY = INT_ARG(2);
+            int sX = INT_ARG(3);
+            int pY = INT_ARG(4);
+            int pX = INT_ARG(5);
+            int dY = INT_ARG(6);
+            int dX = INT_ARG(7);
             bool isSameMode = static_cast<bool>(INT_ARG(8));
             auto extraParam0 = INT_ARG(9);
 
@@ -93,7 +93,7 @@ namespace nd4j {
             auto shapeOf = shape::shapeOf(inShape);
 
             // 0,1 - kernel Height/Width; 2,3 - stride Height/Width; 4,5 - pad Height/Width; 6,7 - dilation Height/Width; 8 - same mode;
-            std::vector<int> argI = *(block.getIArguments());
+            auto argI = *(block.getIArguments());
             int kH = INT_ARG(0);
             int kW = INT_ARG(1);
             int sH = INT_ARG(2);

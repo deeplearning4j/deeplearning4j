@@ -198,12 +198,7 @@ namespace nd4j {
             return false;
     }
 
-    NDArray* NDArrayList::pick(std::initializer_list<int> indices) {
-        std::vector<int> idcs(indices);
-        return pick(idcs);
-    }
-
-    NDArray* NDArrayList::pick(std::vector<int> &indices) {
+    NDArray* NDArrayList::pick(const std::vector<Nd4jLong> &indices) {
         std::vector<Nd4jLong> shape(_shape);
 
         //shape.insert(shape.begin() + _axis, indices.size());

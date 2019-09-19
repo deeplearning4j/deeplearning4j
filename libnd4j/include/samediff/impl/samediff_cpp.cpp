@@ -21,6 +21,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include <ops/declarable/LegacyTransformSameOp.h>
 #include <exceptions/precondition_exception.h>
+#include <helpers/ArrayUtils.h>
 #include "../samediff_cpp.h"
 
 namespace samediff {
@@ -62,7 +63,7 @@ namespace samediff {
         Tuple Tear(const Variable &x, const std::vector<int> &axis, const std::string &name) {
             auto sd = x.sd();
 
-            auto node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("tear"), sd->graph()->nextNodeId(), std::vector<int>({x.nodeId()}), {}, {}, {}, {}, axis);
+            auto node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("tear"), sd->graph()->nextNodeId(), std::vector<int>({x.nodeId()}), {}, {}, {}, {}, nd4j::ArrayUtils::toLongVector(axis));
 
             if (!name.empty())
                 node->setName(name);
@@ -79,10 +80,10 @@ namespace samediff {
 
             // if indices defined - we're using explicit way of inputs definition
             if (indices.size() > 0)
-                node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("stack"), sd->graph()->nextNodeId(), indices, {}, {}, {}, {}, axis);
+                node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("stack"), sd->graph()->nextNodeId(), indices, {}, {}, {}, {}, nd4j::ArrayUtils::toLongVector(axis));
             else {
                 // we' go for greedy definition otherwise
-                node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("stack"), sd->graph()->nextNodeId(), std::vector<std::pair<int,int>>({{variables.nodeId(), -1}}), {}, {}, {}, {}, axis);
+                node = new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation("stack"), sd->graph()->nextNodeId(), std::vector<std::pair<int,int>>({{variables.nodeId(), -1}}), {}, {}, {}, {}, nd4j::ArrayUtils::toLongVector(axis));
             }
             if (!name.empty())
                 node->setName(name);

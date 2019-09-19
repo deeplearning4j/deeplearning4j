@@ -46,7 +46,7 @@ namespace ops {
 
         // output shape always equals to arguments        
 
-        auto conv = ArrayUtils::toLongVector(*block.getIArguments());
+        auto conv = *block.getIArguments();
 
         auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), shape::order(in), conv);
 

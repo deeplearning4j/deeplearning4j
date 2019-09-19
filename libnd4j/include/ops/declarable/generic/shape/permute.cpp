@@ -34,7 +34,7 @@ namespace nd4j {
 
             bool replace = false;
 
-            auto origArgs = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
+            auto origArgs = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : ArrayUtils::toIntVector(*block.getIArguments());
             std::vector<int> arguments({});
             if(origArgs.size() > 0){
                 for (int e = 0; e < origArgs.size(); e++) {
@@ -83,7 +83,7 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(permute) {
             auto shapeList = SHAPELIST();
-            auto arguments = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : *block.getIArguments();
+            auto arguments = block.width() > 1 ? INPUT_VARIABLE(1)->asVectorT<int>() : ArrayUtils::toIntVector(*block.getIArguments());
 
             if (shape::rank(inputShape->at(0)) == 0) {
                 shapeList->push_back(ConstantShapeHelper::getInstance()->scalarShapeInfo(ArrayOptions::dataType(inputShape->at(0))));

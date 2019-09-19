@@ -56,7 +56,7 @@ namespace nd4j {
         // evaluate shapeInfo of transposed array
         static Nd4jLong* evalTranspShapeInfo(const NDArray& arr, nd4j::memory::Workspace* workspace);
 
-        static bool copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset);
+        static bool copyVectorPart(std::vector<int>& target, const std::vector<int>& source, int rank, int offset);
 
         // return new (shorter) sorted dimensions array without dimensions that are present in input vector
         static std::vector<int> evalDimsToExclude(const int rank, const int dimsLen, const int* dimensions);

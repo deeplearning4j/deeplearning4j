@@ -24,6 +24,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/ConstantTadHelper.h>
 #include <Status.h>
+#include <helpers/ArrayUtils.h>
 
 namespace nd4j {
     namespace ops {
@@ -35,7 +36,7 @@ namespace nd4j {
 
             NDArray::prepareSpecialUse({z}, {x, y});
 
-            std::vector<int> dims(*block.getAxis());
+            auto dims = *block.getAxis();
             if (dims.size() == 0 && block.width() > 2) {
                 auto axis = INPUT_VARIABLE(2);
                 helpers::adjustAxis(x->rankOf(), axis, dims);

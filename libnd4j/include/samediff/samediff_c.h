@@ -35,16 +35,20 @@ extern "C" {
     // args entity: CRUD
     ND4J_EXPORT void* SD_createArgs();
     ND4J_EXPORT void  SD_destroyArgs(void* args);
-    ND4J_EXPORT void  SD_addInputArg(void *args, int position, void *variable);
+    ND4J_EXPORT void  SD_addInputArg(void *args, int position, int nodeId, int index);
     ND4J_EXPORT void  SD_addIArg(void *args, int position, Nd4jLong arg);
     ND4J_EXPORT void  SD_addDArg(void *args, int position, double arg);
     ND4J_EXPORT void  SD_addBArg(void *args, int position, bool arg);
 
     // node entity: CRUD
     ND4J_EXPORT void* SD_createNode(void* sd, const char* opName, void *arg, const char* nodeName);
+    ND4J_EXPORT int   SD_nodeId(void *node);
+
 
     // variable entity: CRUD
     ND4J_EXPORT void* SD_createVariable(void* sd);
+    ND4J_EXPORT int   SD_variableId(void *variable);
+    ND4J_EXPORT int   SD_variableIndex(void *variable);
 
     // tuple entity: CRUD
     ND4J_EXPORT void* SD_createTuple();

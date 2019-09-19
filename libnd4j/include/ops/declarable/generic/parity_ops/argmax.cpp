@@ -37,7 +37,7 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            auto axis = *block.getIArguments();
+            auto axis = ArrayUtils::toIntVector(*block.getIArguments());
 
             // axis might be dynamic (i.e. tf mode)
             if (block.width() > 1 && axis.size() == 0) {
@@ -60,7 +60,7 @@ namespace nd4j {
             std::vector<int> dims;
 
             if (block.width() == 1) {
-                dims = *block.getIArguments();
+                dims = ArrayUtils::toIntVector(*block.getIArguments());
             } else {
                 auto y = INPUT_VARIABLE(1);
                 dims = y->template asVectorT<int>();

@@ -701,23 +701,23 @@ void eye(nd4j::LaunchContext * context, NDArray& output) {
 }
 
 //////////////////////////////////////////////////////////////////////////
-void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updates, const std::vector<int>* intArgs) {
+void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updates, const std::vector<int>& intArgs) {
 
-    int opCode = (*intArgs)[0];
-    int dimSize = (*intArgs)[1];
+    int opCode = (intArgs)[0];
+    int dimSize = (intArgs)[1];
     Nd4jLong e;
     Nd4jLong limg = 2 + dimSize;
     std::vector<int> tadDimensions(dimSize);
     for (e = 2; e < limg; e++)
-        tadDimensions[e-2] = (*intArgs)[e];
+        tadDimensions[e-2] = (intArgs)[e];
 
     std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(input.rankOf(), tadDimensions);
 
     // increasing counter to skip numIndices
     e++;
     std::vector<int> indices;
-    for (; e < intArgs->size(); e++)
-        indices.push_back((*intArgs)[e]);
+    for (; e < intArgs.size(); e++)
+        indices.push_back((intArgs)[e]);
 
     PRAGMA_OMP_PARALLEL_FOR
     for (Nd4jLong i = 0; i < indices.size(); ++i) {

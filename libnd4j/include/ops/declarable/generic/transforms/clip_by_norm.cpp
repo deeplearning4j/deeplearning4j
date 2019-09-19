@@ -34,7 +34,7 @@ namespace ops  {
         const auto clipNorm = NDArrayFactory::create(input->dataType(), T_ARG(0), block.launchContext());
         const bool isInplace = block.isInplace();
 
-        helpers::clipByNorm(block.launchContext(), *input, *output, *block.getIArguments(), clipNorm, isInplace);
+        helpers::clipByNorm(block.launchContext(), *input, *output, ArrayUtils::toIntVector(*block.getIArguments()), clipNorm, isInplace);
 
         return Status::OK();
     }
@@ -47,7 +47,7 @@ namespace ops  {
         auto gradI = OUTPUT_VARIABLE(0);
         const auto clipNorm = NDArrayFactory::create(T_ARG(0));
 
-        helpers::clipByNormBP(block.launchContext(), *input, *gradO, *gradI, *block.getIArguments(), clipNorm);
+        helpers::clipByNormBP(block.launchContext(), *input, *gradO, *gradI, ArrayUtils::toIntVector(*block.getIArguments()), clipNorm);
 
         return Status::OK();
     }

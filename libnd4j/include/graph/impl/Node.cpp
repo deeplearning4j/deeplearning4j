@@ -322,7 +322,7 @@ namespace nd4j {
         }
         BUILD_SINGLE_TEMPLATE(template Node* Node::asT, (), LIBND4J_TYPES);
 
-        Node::Node(nd4j::ops::DeclarableOp *customOp, int id, const std::vector<std::pair<int, int>> &input, const std::vector<int> &output,  const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<int> &iArgs, const std::vector<bool> &bArgs) {
+        Node::Node(nd4j::ops::DeclarableOp *customOp, int id, const std::vector<std::pair<int, int>> &input, const std::vector<int> &output,  const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs) {
             this->_opType = OpType_CUSTOM;
             this->_id = id;
             this->_opNum = customOp->getOpHash();
@@ -371,7 +371,7 @@ namespace nd4j {
             return result;
         }
 
-        nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, const std::vector<int> &input, const std::vector<int> &output,  const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<int> &iArgs, const std::vector<bool> &bArgs) : Node(customOp, id, masterInputs(input), output, dimensions, scalar, tArgs, iArgs, bArgs) {
+        nd4j::graph::Node::Node(nd4j::ops::DeclarableOp *customOp, int id, const std::vector<int> &input, const std::vector<int> &output,  const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs) : Node(customOp, id, masterInputs(input), output, dimensions, scalar, tArgs, iArgs, bArgs) {
             //
         }
 
@@ -379,7 +379,7 @@ namespace nd4j {
             this->_opType = opType;
         }
 
-        nd4j::graph::Node::Node(OpType opType, int opNum, int id, const std::vector<int> &input, const std::vector<int> &output, const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<int> &iArgs, const std::vector<bool> &bArgs) {
+        nd4j::graph::Node::Node(OpType opType, int opNum, int id, const std::vector<int> &input, const std::vector<int> &output, const std::vector<int> &dimensions, float scalar, const std::vector<double> &tArgs, const std::vector<Nd4jLong> &iArgs, const std::vector<bool> &bArgs) {
             this->_opType = opType;
             this->_id = id;
             this->_opNum = opNum;

@@ -348,7 +348,7 @@ std::vector<Nd4jLong> ShapeUtils::evalRepeatShape(int axis, const std::vector<in
     }
 
 //////////////////////////////////////////////////////////////////////////
-    bool ShapeUtils::copyVectorPart(std::vector<int>& target, std::vector<int>& source, int rank, int offset) {
+    bool ShapeUtils::copyVectorPart(std::vector<int>& target, const std::vector<int>& source, int rank, int offset) {
         if (source.size() < offset + rank)
             return false;
 
@@ -1004,7 +1004,6 @@ std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const
         // since we return number of bytes...
         return base * sizeof(Nd4jLong);
     }
-
 }
 
 

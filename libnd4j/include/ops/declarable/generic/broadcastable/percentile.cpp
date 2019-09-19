@@ -49,7 +49,7 @@ CUSTOM_OP_IMPL(percentile, 1, 1, false, 1, -2) {
         REQUIRE_TRUE(dim < inputArrRank, 0, "PERCENTILE OP: element (dimension) of axis array at position %i is >= rank of input array (%i >= %i), which is unacceptable !", i, dim, inputArrRank);
     }
 
-    std::vector<int> axises = *block.getIArguments();
+    auto axises = ArrayUtils::toIntVector(*block.getIArguments());
     helpers::percentile(block.launchContext(), *input, *output, axises, q, interpolation);
 
     return Status::OK();
@@ -79,7 +79,7 @@ DECLARE_SHAPE_FN(percentile) {
         REQUIRE_TRUE(dim < inputArrRank, 0, "PERCENTILE OP: element (dimension) of axis array at position %i is >= rank of input array (%i >= %i), which is unacceptable !", i, dim, inputArrRank);
     }
 
-    std::vector<int> axises = *block.getIArguments();
+    auto axises = ArrayUtils::toIntVector(*block.getIArguments());
     Nd4jLong* outputShapeInfo = ShapeUtils::evalReduceShapeInfo(shape::order(inputShapeInfo), axises, inputShapeInfo, keepDims, false, block.getWorkspace());
 
     return SHAPELIST(outputShapeInfo);

@@ -71,7 +71,7 @@ namespace nd4j {
             return &(this->_tArgs);
         }
 
-        std::vector<int>* ContextPrototype::getIArguments() {
+        std::vector<Nd4jLong>* ContextPrototype::getIArguments() {
             return &(this->_iArgs);
         }
 

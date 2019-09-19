@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm, 1, 1, false, 0, 0) {
 
     bool keepDims = false;
 
-    auto dimensions = *block.getIArguments();
+    auto dimensions = ArrayUtils::toIntVector(*block.getIArguments());
 
     if (block.width() > 1) {
         auto axesVector = INPUT_VARIABLE(1);
@@ -57,7 +57,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm, 1, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(reduce_sqnorm) {
 
-    auto dimensions = *block.getIArguments();
+    auto dimensions = ArrayUtils::toIntVector(*block.getIArguments());
     bool keepDims = false;
 
     if (block.width() > 1) {
@@ -103,7 +103,7 @@ CUSTOM_OP_IMPL(reduce_sqnorm_bp, 2, 1, false, 0, 0) {
     else {
 
         bool keepDims = false;
-        auto dimensions = *block.getIArguments();
+        auto dimensions = ArrayUtils::toIntVector(*block.getIArguments());
 
         if (block.width() > 2) {
             auto axesVector = INPUT_VARIABLE(2);
@@ -135,7 +135,7 @@ DECLARE_SHAPE_FN(reduce_sqnorm_bp) {
 
     if(shape::length(inputShape->at(1)) > 1) {
 
-        auto dimensions = *block.getIArguments();
+        auto dimensions = ArrayUtils::toIntVector(*block.getIArguments());
         if (block.width() > 2) {
             auto axesVector = INPUT_VARIABLE(2);
             helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);

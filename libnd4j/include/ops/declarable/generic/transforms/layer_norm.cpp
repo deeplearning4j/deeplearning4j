@@ -33,7 +33,7 @@ namespace ops  {
         auto gain = INPUT_VARIABLE(1);
         auto output = OUTPUT_VARIABLE(0);
 
-        std::vector<int> axis = *block.getIArguments();
+        auto axis = ArrayUtils::toIntVector(*block.getIArguments());
 
         const bool isNCHW = block.getBArguments()->size() > 0 ? B_ARG(0) : true;       // INT_ARG(9): 0-NCHW,  1-NHWC
         const int dimC = isNCHW ? 1 : input->rankOf() - 1;
@@ -87,7 +87,7 @@ namespace ops  {
 
         REQUIRE_TRUE(gain->rankOf() == 1 && gain->sizeAt(0) == input->sizeAt(dimC), 0, "LAYER_NORM_BP OP: wrong shape of gain array, expected is {%i}, but got %s instead !", input->sizeAt(dimC), ShapeUtils::shapeAsString(gain).c_str());
 
-        std::vector<int> axis = *block.getIArguments();
+        auto axis = ArrayUtils::toIntVector(*block.getIArguments());
 
         std::vector<Nd4jLong> longAxis = ArrayUtils::toLongVector(axis);
 

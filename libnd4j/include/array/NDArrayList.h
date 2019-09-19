@@ -71,8 +71,7 @@ namespace nd4j {
         NDArray* readRaw(int idx);
         Nd4jStatus write(int idx, NDArray* array);
 
-        NDArray* pick(std::initializer_list<int> indices);
-        NDArray* pick(std::vector<int>& indices);
+        NDArray* pick(const std::vector<Nd4jLong>& indices);
         bool isWritten(int index);
 
         std::vector<Nd4jLong>& shape();

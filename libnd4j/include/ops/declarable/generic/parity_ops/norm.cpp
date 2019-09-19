@@ -31,7 +31,7 @@ namespace nd4j {
             NDArray *output = OUTPUT_VARIABLE(0);
 
             auto mode = (int) T_ARG(0);
-            std::vector<int> dims = *block.getIArguments();
+            auto dims = ArrayUtils::toIntVector(*block.getIArguments());
             bool overwrite = false;
 
             if (block.width() == 1) {

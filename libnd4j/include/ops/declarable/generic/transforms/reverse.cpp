@@ -43,7 +43,7 @@ namespace ops  {
         if (block.width() > 1)
             axis = INPUT_VARIABLE(1)->template asVectorT<int>();
         else if (block.numI() > 0)
-            axis = *block.getIArguments();
+            axis = ArrayUtils::toIntVector(*block.getIArguments());
 
         if(axis.empty()) {      // do not perform reversion
             output->assign(input);
@@ -75,7 +75,7 @@ namespace ops  {
         if (block.width() == 3)
             axis = INPUT_VARIABLE(1)->template asVectorT<int>();
         else if (block.numI() > 0)
-            axis = *block.getIArguments();
+            axis = ArrayUtils::toIntVector(*block.getIArguments());
 
         if(axis.empty()) {      // reversion is not performed in this case
             output->assign(eps);

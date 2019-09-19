@@ -20,6 +20,8 @@
 
 #include <samediff/samediff_c.h>
 #include <samediff/SameDiff.h>
+#include <samediff/NodeArgs.h>
+#include <ops/declarable/OpRegistrator.h>
 
 void*  SD_createGraph() {
     return new samediff::SameDiff();
@@ -39,37 +41,51 @@ void  SD_executePartially(void *sd, const char *nodeName) {
 
 // args entity: CRUD
 void* SD_createArgs() {
-    return nullptr;
+    return new samediff::NodeArgs();
 }
 
 void  SD_destroyArgs(void* args) {
-
+    delete reinterpret_cast<samediff::NodeArgs*>(args);
 }
 
-void  SD_addInputArg(void *args, int position, void *variable) {
-
+void  SD_addInputArg(void *args, int position, int nodeId, int index) {
+    reinterpret_cast<samediff::NodeArgs*>(args)->addInput(position, nodeId, index);
 }
 
 void  SD_addIArg(void *args, int position, Nd4jLong arg) {
-
+    reinterpret_cast<samediff::NodeArgs*>(args)->addIArg(position, arg);
 }
 
 void  SD_addDArg(void *args, int position, double arg) {
-
+    reinterpret_cast<samediff::NodeArgs*>(args)->addTArg(position, arg);
 }
 
 void  SD_addBArg(void *args, int position, bool arg) {
-
+    reinterpret_cast<samediff::NodeArgs*>(args)->addBArg(position, arg);
 }
 
 // node entity: CRUD
-void* SD_createNode(void* sd, const char* opName, void *arg, const char* nodeName) {
-    return nullptr;
+void* SD_createNode(void* vsd, const char* opName, void *varg, const char* nodeName) {
+    auto sd = reinterpret_cast<samediff::SameDiff*>(vsd);
+    auto args = reinterpret_cast<samediff::NodeArgs*>(varg);
+    return new nd4j::graph::Node(nd4j::ops::OpRegistrator::getInstance()->getOperation(opName), sd->graph()->nextNodeId(), args->inputs(), {}, {}, 0.0f, args->targs(), args->iargs(), args->bargs());
+}
+
+int   SD_nodeId(void *node) {
+    return reinterpret_cast<nd4j::graph::Node*>(node)->id();
 }
 
 // variable entity: CRUD
 void* SD_createVariable(void* sd) {
     return nullptr;
+}
+
+int   SD_variableId(void *variable) {
+    return reinterpret_cast<samediff::Variable*>(variable)->nodeId();
+}
+
+int   SD_variableIndex(void *variable) {
+    return reinterpret_cast<samediff::Variable*>(variable)->index().second;
 }
 
 // tuple entity: CRUD

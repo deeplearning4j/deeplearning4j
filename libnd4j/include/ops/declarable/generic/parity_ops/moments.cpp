@@ -31,7 +31,7 @@ namespace nd4j {
             auto means = OUTPUT_VARIABLE(0);
             auto variances = OUTPUT_VARIABLE(1);
 
-            std::vector<int> axis = *block.getIArguments();
+            auto axis = ArrayUtils::toIntVector(*block.getIArguments());
             const bool keepDims = block.getTArguments()->size() > 0 ? (bool)T_ARG(0) : false;
 
             // axis might be dynamic (i.e. tf mode)
@@ -56,7 +56,7 @@ namespace nd4j {
         }
 
         DECLARE_SHAPE_FN(moments) {
-            auto axis = *block.getIArguments();
+            auto axis = ArrayUtils::toIntVector(*block.getIArguments());
             auto input = INPUT_VARIABLE(0);
 
             // axis might be dynamic (i.e. tf mode)

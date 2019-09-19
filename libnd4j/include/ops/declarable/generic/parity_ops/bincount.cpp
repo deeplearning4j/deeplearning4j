@@ -41,13 +41,13 @@ namespace nd4j {
 
             int maxLength = -1;
             int minLength = 0;
-            int maxIndex = values->argMax();
+            auto maxIndex = values->argMax();
             maxLength = values->e<int>(maxIndex)  + 1;
 
             if (block.numI() > 0) {
-                minLength = nd4j::math::nd4j_max(INT_ARG(0), 0);
+                minLength = nd4j::math::nd4j_max<Nd4jLong>(INT_ARG(0), 0);
                 if (block.numI() == 2)
-                    maxLength = nd4j::math::nd4j_min(maxLength, INT_ARG(1));
+                    maxLength = nd4j::math::nd4j_min<Nd4jLong>(maxLength, INT_ARG(1));
             }
 
             if (block.width() == 2) { // the second argument is weights
@@ -89,9 +89,9 @@ namespace nd4j {
             else if (block.numI() > 2)
                 dtype = (nd4j::DataType)INT_ARG(2);
 
-            int maxIndex = in->argMax();
-            int maxLength = in->e<int>(maxIndex)  + 1;
-            int outLength = maxLength;
+            auto maxIndex = in->argMax();
+            auto maxLength = in->e<Nd4jLong>(maxIndex)  + 1;
+            auto outLength = maxLength;
             if (block.numI() > 0)
                 outLength = nd4j::math::nd4j_max(maxLength, INT_ARG(0));
 
@@ -99,16 +99,16 @@ namespace nd4j {
                 outLength = nd4j::math::nd4j_min(outLength, INT_ARG(1));
 
             if (block.width() == 3) { // the second argument is min and the third is max
-                auto min= INPUT_VARIABLE(1)->e<int>(0);
-                auto max = INPUT_VARIABLE(2)->e<int>(0);
+                auto min= INPUT_VARIABLE(1)->e<Nd4jLong>(0);
+                auto max = INPUT_VARIABLE(2)->e<Nd4jLong>(0);
                 outLength = nd4j::math::nd4j_max(maxLength, min);
                 outLength = nd4j::math::nd4j_min(outLength, max);
             }
             else if (block.width() > 3) {
                 auto min= INPUT_VARIABLE(2);
                 auto max = INPUT_VARIABLE(3);
-                outLength = nd4j::math::nd4j_max(maxLength, min->e<int>(0));
-                outLength = nd4j::math::nd4j_min(outLength, max->e<int>(0));
+                outLength = nd4j::math::nd4j_max(maxLength, min->e<Nd4jLong>(0));
+                outLength = nd4j::math::nd4j_min(outLength, max->e<Nd4jLong>(0));
             }
 
             auto newshape = ConstantShapeHelper::getInstance()->vectorShapeInfo(outLength, dtype);

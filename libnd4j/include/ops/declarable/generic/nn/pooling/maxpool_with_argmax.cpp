@@ -35,7 +35,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(x->rankOf() == 4, 0, "max_pool_with_argmax: Input should have rank of 4, but got %i instead", x->rankOf());
 
-            auto argI = *(block.getIArguments());
+            auto argI = ArrayUtils::toIntVector(*(block.getIArguments()));
 
             helpers::maxPoolingFunctor(block.launchContext(), block, x, z, argI, indeces);
 

@@ -124,7 +124,7 @@ namespace nd4j {
 
         std::string extra() override {
             if(_context != nullptr){
-                std::vector<int>* iargs = _context->getIArguments();
+                std::vector<Nd4jLong>* iargs = _context->getIArguments();
                 std::vector<double>* targs = _context->getTArguments();
                 std::vector<bool>* bargs = _context->getBArguments();
                 std::string e;

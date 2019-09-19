@@ -48,7 +48,7 @@ CUSTOM_OP_IMPL(reduce_dot_bp, 3, 2, false, 0, 0) {
     else {
 
         bool keepDims = false;
-        auto dimensions = *block.getIArguments();
+        auto dimensions = ArrayUtils::toIntVector(*block.getIArguments());
 
         if (block.width() > 3) {
             auto axesVector = INPUT_VARIABLE(3);
@@ -87,7 +87,7 @@ DECLARE_SHAPE_FN(reduce_dot_bp) {
     if(shape::length(inputShape->at(2)) > 1) {
 
         bool keepDims = false;
-        auto dimensions = *block.getIArguments();
+        auto dimensions = ArrayUtils::toIntVector(*block.getIArguments());
 
         if (block.width() > 3) {
             auto axesVector = INPUT_VARIABLE(3);

@@ -36,7 +36,7 @@ CONFIGURABLE_OP_IMPL(prelu, 2, 1, true, 0, 0) {
     auto alpha  = INPUT_VARIABLE(1);
     auto output = OUTPUT_VARIABLE(0);
 
-    std::vector<int> sharedAxes = *block.getIArguments();
+    auto sharedAxes = *block.getIArguments();
 
     const int inputRank     = input->rankOf();
     const int numSharedAxes = sharedAxes.size();            // can be zero as well
@@ -87,7 +87,7 @@ CONFIGURABLE_OP_IMPL(prelu_bp, 3, 2, true, 0, 0) {
     auto dLdI = OUTPUT_VARIABLE(0);
     auto dLdA = OUTPUT_VARIABLE(1);
 
-    std::vector<int> sharedAxes = *block.getIArguments();
+    auto sharedAxes = *block.getIArguments();
 
     const int inputRank     = input->rankOf();
     const int numSharedAxes = sharedAxes.size();            // can be zero as well

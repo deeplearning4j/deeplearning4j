@@ -22,6 +22,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <helpers/ArrayUtils.h>
 
 
 namespace nd4j {
@@ -50,7 +51,7 @@ namespace nd4j {
             } else {
                 // dimensions for TAD
                 // we should skip first argument here, because it's addressing bias correction
-                std::vector<int> dims(*block.getIArguments());
+                auto dims = ArrayUtils::toIntVector(*block.getIArguments());
                 for (int e = 0; e < dims.size(); e++)
                     if (dims[e] < 0)
                         dims[e] += x->rankOf();
@@ -107,7 +108,8 @@ namespace nd4j {
                 // in this case we're building proper shape for reduction
                 auto array = new NDArray(nullptr, inShape, block.launchContext());
 
-                newShape = ShapeUtils::evalReduceShapeInfo('c', *block.getIArguments(), *array, false, true);
+                auto dims = ArrayUtils::toIntVector(*block.getIArguments());
+                newShape = ShapeUtils::evalReduceShapeInfo('c', dims, *array, false, true);
 
                 delete array;
             }

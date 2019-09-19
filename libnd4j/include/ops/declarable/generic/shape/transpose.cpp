@@ -43,7 +43,7 @@ namespace ops {
         } else {
             // this is tf-mode transpose, that's nd4j permute
             bool replace = false;
-            std::vector<int> arguments(*block.getIArguments());
+            auto arguments = ArrayUtils::toIntVector(*block.getIArguments());
 
             auto w = block.width();
             auto a = arguments.size();
@@ -111,7 +111,7 @@ namespace ops {
                 ArrayOptions::copyDataType(newshape, inputShape->at(0));
                 shapeList->push_back(newshape);
             } else if (arguments->size() > 0 || inputShape->size() > 1) {
-                auto axis = arguments->size() > 0 ? *arguments : (INPUT_VARIABLE(1))->template asVectorT<int>();
+                auto axis = arguments->size() > 0 ? ArrayUtils::toIntVector(*arguments) : (INPUT_VARIABLE(1))->template asVectorT<int>();
                 auto outputShapeInfo = ShapeUtils::evalPermShapeInfo(axis.data(), axis.size(), *INPUT_VARIABLE(0), block.workspace());
                 shapeList->push_back(outputShapeInfo);
             } else if (inputShape->size() == 2) {

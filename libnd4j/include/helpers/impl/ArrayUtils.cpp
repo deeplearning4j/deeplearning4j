@@ -19,6 +19,7 @@
 //
 
 #include <helpers/ArrayUtils.h>
+#include <op_boilerplate.h>
 
 namespace nd4j {
     namespace ArrayUtils {
@@ -40,18 +41,26 @@ namespace nd4j {
             memcpy(target, list.data(), list.size() * sizeof(Nd4jLong));
         }
 
-        std::vector<Nd4jLong> toLongVector(std::vector<int> vec) {
+        std::vector<Nd4jLong> toLongVector(const std::vector<int> &vec) {
             std::vector<Nd4jLong> result(vec.size());
             Nd4jLong vecSize = vec.size();
 
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
             for (Nd4jLong e = 0; e < vecSize; e++)
                 result[e] = vec[e];
 
             return result;
         }
 
-        std::vector<Nd4jLong> toLongVector(std::vector<Nd4jLong> vec) {
-            return vec;
+        std::vector<int> toIntVector(const std::vector<Nd4jLong> &vec) {
+            std::vector<int> result(vec.size());
+            Nd4jLong vecSize = vec.size();
+
+            PRAGMA_OMP_PARALLEL_FOR_SIMD
+            for (Nd4jLong e = 0; e < vecSize; e++)
+                result[e] = vec[e];
+
+            return result;
         }
     }
 }

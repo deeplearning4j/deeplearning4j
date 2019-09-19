@@ -164,7 +164,7 @@ namespace nd4j {
 
             // we can launch op using Int arguments
             if (inputShape->size() == 1) {
-                std::vector<int> *arguments = block.getIArguments();
+                auto arguments = block.getIArguments();
 
                 int e = 1;
                 char order = (char) -(*arguments)[0];

@@ -39,7 +39,7 @@ CUSTOM_OP_IMPL(reduce_norm_max, 1, 1, false, 0, 0) {
         helpers::adjustAxis(input->rankOf(), axesVector, dimensions);
     }
     else if (block.getIArguments()->size())
-        dimensions = *block.getIArguments();
+        dimensions = ArrayUtils::toIntVector(*block.getIArguments());
 
     REQUIRE_TRUE(dimensions.size() <= input->rankOf(), 0, "REDUCE_NORM_MAX OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
@@ -72,7 +72,7 @@ DECLARE_SHAPE_FN(reduce_norm_max) {
         helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);
     }
     else if (block.getIArguments()->size())
-        dimensions = *block.getIArguments();
+        dimensions = ArrayUtils::toIntVector(*block.getIArguments());
 
     REQUIRE_TRUE(dimensions.size() <= inputShape->at(0)[0], 0, "REDUCE_NORM_MAX OP: the number of dimensions to reduce along must be <= input array rank, but got %i instead" , dimensions.size());
 
@@ -98,7 +98,7 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, 2, 1, false, 0, 0) {
     auto gradO = INPUT_VARIABLE(1);
     auto gradI = OUTPUT_VARIABLE(0);
 
-    std::vector<int> dimensions = *block.getIArguments();
+    auto dimensions = ArrayUtils::toIntVector(*block.getIArguments());
 
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
@@ -134,7 +134,7 @@ CUSTOM_OP_IMPL(reduce_norm_max_bp, 2, 1, false, 0, 0) {
 
 DECLARE_SHAPE_FN(reduce_norm_max_bp) {
 
-    auto dimensions = *block.getIArguments();
+    auto dimensions = ArrayUtils::toIntVector(*block.getIArguments());
     if (block.width() > 2) {
         auto axesVector = INPUT_VARIABLE(2);
         helpers::adjustAxis(INPUT_VARIABLE(0)->rankOf(), axesVector, dimensions);

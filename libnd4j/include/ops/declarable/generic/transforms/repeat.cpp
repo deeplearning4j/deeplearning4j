@@ -33,7 +33,7 @@ CUSTOM_OP_IMPL(repeat, 1, 1, true, 0, -1) {
 	auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    std::vector<int> repeats = *block.getIArguments();
+    auto repeats = ArrayUtils::toIntVector(*block.getIArguments());
 
     const int axis = repeats.back() < 0 ? repeats.back() + input->rankOf() : repeats.back();
 
@@ -58,7 +58,7 @@ DECLARE_SHAPE_FN(repeat) {
 
     auto input = INPUT_VARIABLE(0);
 
-    std::vector<int> repeats = *block.getIArguments();
+    auto repeats = ArrayUtils::toIntVector(*block.getIArguments());
 
     const int axis = repeats.back() < 0 ? repeats.back() + input->rankOf() : repeats.back();
 

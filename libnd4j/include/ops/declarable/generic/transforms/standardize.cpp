@@ -38,7 +38,7 @@ namespace ops  {
         if (block.width() > 1)            
             axis = INPUT_VARIABLE(1)->template asVectorT<int>();
         else if (block.numI() > 0) 
-            axis = *block.getIArguments();        
+            axis = ArrayUtils::toIntVector(*block.getIArguments());
 
         REQUIRE_TRUE(!axis.empty(), 0, "STANDARDIZE OP: axis has to be non-empty")
 
@@ -72,7 +72,7 @@ namespace ops  {
         if (block.width() == 3)             
             axis = INPUT_VARIABLE(1)->template asVectorT<int>();
         else if (block.numI() > 0) 
-            axis = *block.getIArguments();
+            axis = ArrayUtils::toIntVector(*block.getIArguments());
 
         REQUIRE_TRUE(!axis.empty(), 0, "STANDARDIZE OP: axis has to be non-empty")
 

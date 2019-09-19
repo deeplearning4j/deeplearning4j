@@ -36,7 +36,7 @@ CONFIGURABLE_OP_IMPL(ismax, 1, 1, true, 0, -2) {
     if (x->isScalar())
         z->assign(1);
     else
-        helpers::ismax(block.launchContext(), x, z, dimensions);
+        helpers::ismax(block.launchContext(), x, z, ArrayUtils::toIntVector(dimensions));
 
     return Status::OK();
 }
