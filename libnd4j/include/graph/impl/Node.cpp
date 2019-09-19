@@ -178,7 +178,12 @@ namespace nd4j {
         };
 
         void nd4j::graph::Node::pickInput(std::pair<int,int>& pair) {
-            _input.push_back(pair);
+            _input.emplace_back(pair);
+
+            if (pair.first < 0)
+                _hasExternalInputs = true;
+            else
+                _hasInternalInputs = true;
         }
 
         void nd4j::graph::Node::pickInput(int inputId, int outputId) {
@@ -188,11 +193,6 @@ namespace nd4j {
 
         void nd4j::graph::Node::pickInput(int inputId) {
             pickInput(inputId, 0);
-
-            if (inputId < 0)
-                _hasExternalInputs = true;
-            else
-                _hasInternalInputs = true;
         }
 
         void nd4j::graph::Node::pickExternalOutput(int outputId) {
