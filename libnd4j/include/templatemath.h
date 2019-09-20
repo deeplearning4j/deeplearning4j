@@ -999,6 +999,7 @@ inline __device__ Nd4jLong nd4j_atomicMax<Nd4jLong>(Nd4jLong* address, Nd4jLong 
 
 template <>
 inline __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
+#if __CUDA_ARCH__ < 600
 	unsigned long long int* address_as_ull =
 			(unsigned long long int *) address;
 	unsigned long long int old = *address_as_ull, assumed;
@@ -1008,6 +1009,9 @@ inline __device__ double nd4j_atomicAdd<double>(double* address, double val)  {
 				__longlong_as_double(assumed)));
 	} while (assumed != old);
 	return __longlong_as_double(old);
+#else
+	return atomicAdd(address, val);
+#endif
 }
 
 template <>

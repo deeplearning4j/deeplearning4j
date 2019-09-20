@@ -110,12 +110,21 @@ namespace helpers {
     template<typename T>
     static __global__ void
     invertLowKernel(void *invertedBuf, Nd4jLong *invertedShape, void *inputBuf, Nd4jLong *inputShape, Nd4jLong n) {
+
         T *inverted = reinterpret_cast<T *>(invertedBuf);
         T *input = reinterpret_cast<T *>(inputBuf);
+        if (threadIdx.x == 0) {
+            inverted = reinterpret_cast<T *>(invertedBuf);
+            input = reinterpret_cast<T *>(inputBuf);
+        }
+        __syncthreads();
 
-        for (int i = blockIdx.x + 2; i < n; i += gridDim.x) {
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = gridDim.x * blockDim.x;
+
+        for (int i = tid + 2; i < n; i += step) {
             for (int j = i - 2; j >= 0; --j)
-                for (int k = threadIdx.x; k < i; k += blockDim.x) {
+                for (int k = 0; k < i; k++) {
                     Nd4jLong posZ[] = {i, j};
                     Nd4jLong posY[] = {k, j};
                     Nd4jLong posX[] = {i, k};
@@ -144,10 +153,12 @@ namespace helpers {
             input = reinterpret_cast<T *>(inputBuf);
         }
         __syncthreads();
+        auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = blockDim.x * gridDim.x;
 
-        for (int i = (int)n - blockIdx.x - 2; i >= 0; i -= gridDim.x) {
+        for (int i = (int)n - tid - 2; i >= 0; i -= step) {
             for (int j = i + 2; j < (int)n; j++)
-                for (int k = i + threadIdx.x; k < (int)n; k += blockDim.x) {
+                for (int k = i; k < (int)n; k++) {
                     Nd4jLong posZ[] = {i, j};
                     Nd4jLong posY[] = {k, j};
                     Nd4jLong posX[] = {i, k};
@@ -498,8 +509,6 @@ namespace helpers {
             fillMatrix<T, T><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
 //            else
 //                fillMatrix<T, float><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), pos, n);
-
-//            if (matrix.dataType() == input->dataType())
             lup_<T>(context, &matrix, nullptr, nullptr);
 //            else
 //                lup_<float>(context, &matrix, nullptr, nullptr);
@@ -627,9 +636,14 @@ namespace helpers {
             for (auto i = 0LL; i < packX.numberOfTads(); i++) {
                 fillMatrix<T, T><<<1, n2, 1024, *stream>>>(matrix.specialBuffer(), matrix.specialShapeInfo(), input->specialBuffer(), input->specialShapeInfo(), i * n2, n);
                 matrix.tickWriteDevice();
-                compound.assign(matrix);
-                lup_<T>(context, &compound, nullptr, nullptr);
-                fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower.specialBuffer(), lower.specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), compound.specialBuffer(), compound.specialShapeInfo(), n);
+                //compound.assign(matrix);
+//            if (matrix.dataType() == input->dataType())
+                lup_<T>(context, &matrix, nullptr, nullptr);
+                fillLowerUpperKernel<T><<<n, n, 1024, *stream>>>(lower.specialBuffer(), lower.specialShapeInfo(), upper.specialBuffer(), upper.specialShapeInfo(), matrix.specialBuffer(), matrix.specialShapeInfo(), n);
+                lower.tickWriteDevice();
+                upper.tickWriteDevice();
+//                lower.printIndexedBuffer("LOWER");
+//                upper.printIndexedBuffer("UPPER");
                 matrix.assign(0);
                 invertUpperMatrix(context, &upper, &matrix); // U^{-1}
                 matrix.tickWriteDevice();
