@@ -23,6 +23,7 @@ import org.bytedeco.javacpp.Pointer;
 import org.bytedeco.javacv.FFmpegFrameRecorder;
 import org.bytedeco.javacv.Frame;
 import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.opencv.global.opencv_core;
 import org.bytedeco.opencv.global.opencv_imgproc;
 import org.bytedeco.opencv.opencv_core.Mat;
 import org.bytedeco.opencv.opencv_core.Rect;
@@ -30,7 +31,7 @@ import org.bytedeco.opencv.opencv_core.Size;
 import org.opencv.imgproc.Imgproc;
 
 import static org.bytedeco.ffmpeg.global.avcodec.*;
-import static org.bytedeco.opencv.global.opencv_core.CV_8UC;
+import static org.bytedeco.opencv.global.opencv_core.*;
 
 /**
  * VideoRecorder is used to create a video from a sequence of individual frames. If using 3 channels
@@ -59,6 +60,8 @@ import static org.bytedeco.opencv.global.opencv_core.CV_8UC;
 @Slf4j
 public class VideoRecorder implements AutoCloseable {
 
+    public enum FrameInputTypes { BGR, RGB, Float }
+
     private final int height;
     private final int width;
     private final int imageType;
@@ -66,7 +69,7 @@ public class VideoRecorder implements AutoCloseable {
     private final int codec;
     private final double framerate;
     private final int videoQuality;
-    private final boolean isRGBOrder;
+    private final FrameInputTypes frameInputType;
 
     private FFmpegFrameRecorder fmpegFrameRecorder = null;
 
@@ -84,7 +87,7 @@ public class VideoRecorder implements AutoCloseable {
         codec = builder.codec;
         framerate = builder.frameRate;
         videoQuality = builder.videoQuality;
-        isRGBOrder = builder.isRGBOrder;
+        frameInputType = builder.frameInputType;
     }
 
     /**
@@ -156,7 +159,7 @@ public class VideoRecorder implements AutoCloseable {
      * @return An instance of VideoFrame
      */
     public VideoFrame createFrame(Pointer data) {
-        return new VideoFrame(height, width, imageType, isRGBOrder, data);
+        return new VideoFrame(height, width, imageType, frameInputType, data);
     }
 
     /**
@@ -168,7 +171,7 @@ public class VideoRecorder implements AutoCloseable {
      * @return A VideoFrame instance
      */
     public VideoFrame createFrame(Pointer data, int customHeight, int customWidth) {
-        return new VideoFrame(customHeight, customWidth, imageType, isRGBOrder, data);
+        return new VideoFrame(customHeight, customWidth, imageType, frameInputType, data);
     }
 
     /**
@@ -200,17 +203,26 @@ public class VideoRecorder implements AutoCloseable {
         @Getter
         private Mat mat;
 
-        private VideoFrame(int height, int width, int imageType, boolean isRGBOrder, Pointer data) {
+        private VideoFrame(int height, int width, int imageType, FrameInputTypes frameInputType, Pointer data) {
             this.height = height;
             this.width = width;
             this.imageType = imageType;
-            if(isRGBOrder) {
-                Mat src = new Mat(height, width, imageType, data);
-                mat = new Mat(height, width, imageType);
-                opencv_imgproc.cvtColor(src, mat, Imgproc.COLOR_RGB2BGR);
-            }
-            else {
-                mat = new Mat(height, width, imageType, data);
+
+            switch(frameInputType) {
+                case RGB:
+                    Mat src = new Mat(height, width, imageType, data);
+                    mat = new Mat(height, width, imageType);
+                    opencv_imgproc.cvtColor(src, mat, Imgproc.COLOR_RGB2BGR);
+                    break;
+
+                case BGR:
+                    mat = new Mat(height, width, imageType, data);
+                    break;
+
+                case Float:
+                    Mat tmpMat = new Mat(height, width, CV_32FC(3), data);
+                    mat = new Mat(height, width, imageType);
+                    tmpMat.convertTo(mat, CV_8UC(3), 255.0, 0.0);
             }
         }
 
@@ -242,7 +254,7 @@ public class VideoRecorder implements AutoCloseable {
         private final int height;
         private final int width;
         private int numChannels = 3;
-        private boolean isRGBOrder = false;
+        private FrameInputTypes frameInputType = FrameInputTypes.BGR;
         private int codec = AV_CODEC_ID_H264;
         private double frameRate = 30.0;
         private int videoQuality = 30;
@@ -257,7 +269,7 @@ public class VideoRecorder implements AutoCloseable {
         }
 
         /**
-         * Specify the number of channels. Default is 3 (B-G-R)
+         * Specify the number of channels. Default is 3
          * @param numChannels
          */
         public Builder numChannels(int numChannels) {
@@ -266,11 +278,11 @@ public class VideoRecorder implements AutoCloseable {
         }
 
         /**
-         * Tell the VideoRecorder that data will be in the R-G-B order (isRGBOrder(true))
-         * @param isRGBOrder
+         * Tell the VideoRecorder what data it will receive (default is BGR)
+         * @param frameInputType (See {@link FrameInputTypes}}
          */
-        public Builder isRGBOrder(boolean isRGBOrder) {
-            this.isRGBOrder = isRGBOrder;
+        public Builder frameInputType(FrameInputTypes frameInputType) {
+            this.frameInputType = frameInputType;
             return this;
         }
 
