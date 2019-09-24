@@ -29,10 +29,16 @@ nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
 thread_local nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
 #endif
 
+#ifdef HAVE_MKLDNN
+#include <mkldnn.hpp>
+#endif
+
 namespace nd4j {
 
     LaunchContext::~LaunchContext() {
-
+#ifdef HAVE_MKLDNN
+        delete reinterpret_cast<mkldnn::engine*>(_engine);
+#endif
     }
 
     std::vector<std::shared_ptr<LaunchContext>> LaunchContext::_contexts = std::vector<std::shared_ptr<LaunchContext>>();
@@ -42,6 +48,10 @@ namespace nd4j {
         // default constructor, just to make clang/ranlib happy
         _workspace = nullptr;
         _deviceID = 0;
+
+#ifdef HAVE_MKLDNN
+        _engine = new mkldnn::engine(mkldnn::engine::kind::cpu, 0);
+#endif
     }
 
     LaunchContext::LaunchContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer scalarPointer, Nd4jPointer allocationPointer) {
@@ -72,5 +82,9 @@ namespace nd4j {
 
     sd::ErrorReference* LaunchContext::errorReference() {
         return contextBuffers.errorReference();
+    }
+
+    void* LaunchContext::engine() {
+        return _engine;
     }
 }

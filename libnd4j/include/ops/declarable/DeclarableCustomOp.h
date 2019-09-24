@@ -30,12 +30,12 @@ namespace nd4j {
             /**
              * This method executes this Op
              */
-            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
+            Nd4jStatus validateAndExecute(Context& block) override = 0;
         public:
             DeclarableCustomOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs);
             ~DeclarableCustomOp();
 
-            virtual ShapeList* calculateOutputShape(ShapeList* inputShapes, nd4j::graph::Context& block) = 0;
+            ShapeList* calculateOutputShape(ShapeList* inputShapes, nd4j::graph::Context& block) override = 0;
         };
     }
 }

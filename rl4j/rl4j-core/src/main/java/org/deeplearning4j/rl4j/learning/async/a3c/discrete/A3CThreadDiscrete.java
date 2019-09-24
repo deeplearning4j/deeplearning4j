@@ -22,13 +22,13 @@ import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.async.AsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
 import org.deeplearning4j.rl4j.learning.async.MiniTrans;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.IDataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -46,24 +46,19 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
     @Getter
     final protected A3CDiscrete.A3CConfiguration conf;
     @Getter
-    final protected MDP<O, Integer, DiscreteSpace> mdp;
-    @Getter
     final protected AsyncGlobal<IActorCritic> asyncGlobal;
     @Getter
     final protected int threadNumber;
-    @Getter
-    final protected IDataManager dataManager;
 
     final private Random random;
 
     public A3CThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, AsyncGlobal<IActorCritic> asyncGlobal,
-                    A3CDiscrete.A3CConfiguration a3cc, int threadNumber, IDataManager dataManager, int deviceNum) {
-        super(asyncGlobal, threadNumber, deviceNum);
+                             A3CDiscrete.A3CConfiguration a3cc, int deviceNum, TrainingListenerList listeners,
+                             int threadNumber) {
+        super(asyncGlobal, mdp, listeners, threadNumber, deviceNum);
         this.conf = a3cc;
         this.asyncGlobal = asyncGlobal;
         this.threadNumber = threadNumber;
-        this.mdp = mdp;
-        this.dataManager = dataManager;
         mdp.getActionSpace().setSeed(conf.getSeed() + threadNumber);
         random = new Random(conf.getSeed() + threadNumber);
     }
@@ -85,15 +80,15 @@ public class A3CThreadDiscrete<O extends Encodable> extends AsyncThreadDiscrete<
         //if recurrent then train as a time serie with a batch size of 1
         boolean recurrent = getAsyncGlobal().getCurrent().isRecurrent();
 
-        int[] shape = getHistoryProcessor() == null ? mdp.getObservationSpace().getShape()
+        int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
                         : getHistoryProcessor().getConf().getShape();
         int[] nshape = recurrent ? Learning.makeShape(1, shape, size)
                         : Learning.makeShape(size, shape);
 
         INDArray input = Nd4j.create(nshape);
         INDArray targets = recurrent ? Nd4j.create(1, 1, size) : Nd4j.create(size, 1);
-        INDArray logSoftmax = recurrent ? Nd4j.zeros(1, mdp.getActionSpace().getSize(), size)
-                        : Nd4j.zeros(size, mdp.getActionSpace().getSize());
+        INDArray logSoftmax = recurrent ? Nd4j.zeros(1, getMdp().getActionSpace().getSize(), size)
+                        : Nd4j.zeros(size, getMdp().getActionSpace().getSize());
 
         double r = minTrans.getReward();
         for (int i = size - 1; i >= 0; i--) {

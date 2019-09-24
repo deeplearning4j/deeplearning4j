@@ -110,11 +110,11 @@ trait NDArrayEvidence[NDArray <: INDArray, Value] {
 
   def put(a: NDArray, i: Array[Int], element: INDArray): NDArray
 
-  def get(a: NDArray, i: Int): Value
+  def get(a: NDArray, i: Long): Value
 
-  def get(a: NDArray, i: Int, j: Int): Value
+  //def get(a: NDArray, i: Long, j: Long): Value
 
-  def get(a: NDArray, i: Int*): Value
+  def get(a: NDArray, i: Long*): Value
 
   def get(a: NDArray, i: INDArrayIndex*): NDArray
 
@@ -254,11 +254,15 @@ case object DoubleNDArrayEvidence extends RealNDArrayEvidence[Double] {
   override def norm1(ndarray: INDArray): Double =
     ndarray.norm1Number().doubleValue()
 
-  override def get(a: INDArray, i: Int): Double = a.getDouble(i.toLong)
+  override def get(a: INDArray, i: Long): Double = a.getDouble(i)
 
-  override def get(a: INDArray, i: Int, j: Int): Double = a.getDouble(i.toLong, j.toLong)
+  //override def get(a: INDArray, i: Int): Double = a.getDouble(i.toLong)
 
-  override def get(a: INDArray, i: Int*): Double = a.getDouble(i: _*)
+  //override def get(a: INDArray, i: Int, j: Int): Double = a.getDouble(i.toLong, j.toLong)
+
+  //override def get(a: INDArray, i: Int*): Double = a.getDouble(i: _*)
+
+  override def get(a: INDArray, i: Long*): Double = a.getDouble(i: _*)
 
   override def create(arr: Array[Double]): INDArray = arr.toNDArray
 
@@ -315,11 +319,13 @@ case object FloatNDArrayEvidence extends RealNDArrayEvidence[Float] {
   override def norm1(ndarray: INDArray): Float =
     ndarray.norm1Number().floatValue()
 
-  override def get(a: INDArray, i: Int): Float = a.getFloat(i)
+  override def get(a: INDArray, i: Long): Float = a.getFloat(i)
 
-  override def get(a: INDArray, i: Int, j: Int): Float = a.getFloat(i, j)
+  //override def get(a: INDArray, i: Long, j: Long): Float = a.getFloat(i, j)
 
-  override def get(a: INDArray, i: Int*): Float = a.getFloat(i.toArray)
+  //override def get(a: INDArray, i: Int*): Float = a.getFloat(i: _*)
+
+  override def get(a: INDArray, i: Long*): Float = a.getFloat(i: _*)
 
   override def create(arr: Array[Float]): INDArray = arr.toNDArray
 
@@ -440,11 +446,14 @@ case object IntNDArrayEvidence extends IntegerNDArrayEvidence[Int] {
 
   def variance(ndarray: INDArray): Int = ndarray.varNumber().intValue()
 
+  def get(a: INDArray, i: Long): Int = a.getInt(i.toInt)
+
   def get(a: INDArray, i: Int): Int = a.getInt(i)
 
   def get(a: INDArray, i: Int, j: Int): Int = a.getInt(i, j)
 
-  def get(a: INDArray, i: Int*): Int = a.getInt(i: _*)
+  def get(a: INDArray, i: Long*): Int =
+    a.getInt(i.map(_.toInt): _*)
 
   def create(arr: Array[Int]): INDArray = arr.toNDArray
 
@@ -480,11 +489,13 @@ case object LongNDArrayEvidence extends IntegerNDArrayEvidence[Long] {
 
   def variance(ndarray: INDArray): Long = ndarray.varNumber().longValue()
 
+  def get(a: INDArray, i: Long): Long = a.getLong(i)
+
   def get(a: INDArray, i: Int): Long = a.getLong(i)
 
   def get(a: INDArray, i: Int, j: Int): Long = a.getLong(i, j)
 
-  def get(a: INDArray, i: Int*): Long = a.getLong(i.map(_.toLong): _*)
+  def get(a: INDArray, i: Long*): Long = a.getLong(i: _*)
 
   def create(arr: Array[Long]): INDArray = arr.toNDArray
 
@@ -523,11 +534,13 @@ case object ByteNDArrayEvidence extends IntegerNDArrayEvidence[Byte] {
 
   def variance(ndarray: INDArray): Byte = ndarray.varNumber().byteValue()
 
+  def get(a: INDArray, i: Long): Byte = a.getInt(i.toInt).toByte
+
   def get(a: INDArray, i: Int): Byte = a.getInt(i).toByte
 
   def get(a: INDArray, i: Int, j: Int): Byte = a.getInt(i, j).toByte
 
-  def get(a: INDArray, i: Int*): Byte = a.getInt(i.map(_.toInt): _*).toByte
+  def get(a: INDArray, i: Long*): Byte = a.getInt(i.map(_.toInt): _*).toByte
 
   def create(arr: Array[Byte]): INDArray = arr.toNDArray
 

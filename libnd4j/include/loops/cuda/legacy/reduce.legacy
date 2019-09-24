@@ -169,7 +169,7 @@ namespace functions {
 
             template <>
             _CUDA_H void ReduceFunction<float>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float *x, Nd4jLong *xShapeInfo, float *extraParams, float *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, float *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
-                
+
                 DISPATCH_SIMPLE(reduceScalarSimple, float, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
 				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarFloat(...) failed");
@@ -177,7 +177,7 @@ namespace functions {
 
             template <>
             _CUDA_H void ReduceFunction<float16>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, float16 *x, Nd4jLong *xShapeInfo, float16 *extraParams, float16 *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, float16 *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
-                
+
                 DISPATCH_SIMPLE(reduceScalarSimple, float16, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
 				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarHalf(...) failed");
@@ -185,7 +185,7 @@ namespace functions {
 
             template <>
             _CUDA_H void ReduceFunction<double>::execReduceScalar(dim3 launchDims, cudaStream_t *stream, int opNum, double *x, Nd4jLong *xShapeInfo, double *extraParams, double *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, double *reductionBuffer, Nd4jLong *tadOnlyShapeInfo) {
-                
+
                 DISPATCH_SIMPLE(reduceScalarSimple, double, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, nullptr, 1, reductionBuffer, tadOnlyShapeInfo), OPS_A(REDUCE_OPS))
 
 				nd4j::DebugHelper::checkErrorCode(stream, "execReduceScalarDouble(...) failed");
@@ -294,7 +294,7 @@ namespace functions {
 
                         for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						    shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
-						    auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						    auto xOffset = shape::getOffset(tadOnlyShapeInfo, xCoord);
 
 						    sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					    }
@@ -358,7 +358,7 @@ namespace functions {
 					for (int i = tid; i < n; i += blockDim.x * gridDim.x) {
 						shape::ind2subC(rank, xShape, i, n, ind2sub);
 
-						auto offset = shape::getOffset(0, xShape, xStride, ind2sub, rank);
+						auto offset = shape::getOffset(xShapeInfo, ind2sub);
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[offset], extraParams), extraParams);
 					}
 				}
@@ -461,7 +461,7 @@ namespace functions {
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
-						auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						auto xOffset = shape::getOffset(tadOnlyShapeInfo, xCoord);
 
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}
@@ -526,7 +526,7 @@ namespace functions {
 
 					for (int i = threadIdx.x; i < tadLength; i += blockDim.x) {
 						shape::ind2subC(tadRank, tadShape, i, tadLength, xCoord);
-						auto xOffset = shape::getOffset(tadOffsetForBlock, tadShape, tadStride, xCoord, tadRank);
+						auto xOffset = shape::getOffset(tadOnlyShapeInfo, xCoord);
 
 						sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::op(dx[xOffset], extraParams), extraParams);
 					}

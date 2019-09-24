@@ -74,6 +74,7 @@
         <libnd4j.compute></libnd4j.compute>
         <libnd4j.classifier>${libnd4j.platform}</libnd4j.classifier>
         <libnd4j.buildthreads></libnd4j.buildthreads>
+        <libnd4j.helper></libnd4j.helper>
     </properties>
 
     <build>
@@ -111,11 +112,6 @@
                 <dependencies>
                     <dependency>
                         <groupId>org.bytedeco</groupId>
-                        <artifactId>mkl-dnn-platform</artifactId>
-                        <version>${mkl-dnn.javacpp.version}</version>
-                    </dependency>
-                    <dependency>
-                        <groupId>org.bytedeco</groupId>
                         <artifactId>openblas-platform</artifactId>
                         <version>${openblas.version}-${javacpp-presets.version}</version>
                     </dependency>
@@ -124,19 +120,15 @@
                     <properties>${libnd4j.platform}</properties>
                     <buildResources>
                         <buildResource>/${javacpp.platform.library.path}/</buildResource>
-                        <buildResource>/org/bytedeco/mkldnn/${libnd4j.platform}/</buildResource>
                         <buildResource>/org/bytedeco/openblas/${libnd4j.platform}/</buildResource>
                     </buildResources>
                     <includeResources>
                         <includeResource>/${javacpp.platform.library.path}/include/</includeResource>
-                        <includeResource>/org/bytedeco/mkldnn/${libnd4j.platform}/include/</includeResource>
                         <includeResource>/org/bytedeco/openblas/${libnd4j.platform}/include/</includeResource>
                     </includeResources>
                     <linkResources>
                         <linkResource>/${javacpp.platform.library.path}/</linkResource>
                         <linkResource>/${javacpp.platform.library.path}/lib/</linkResource>
-                        <linkResource>/org/bytedeco/mkldnn/${libnd4j.platform}/</linkResource>
-                        <linkResource>/org/bytedeco/mkldnn/${libnd4j.platform}/</linkResource>
                         <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/</linkResource>
                         <linkResource>/org/bytedeco/openblas/${libnd4j.platform}/lib/</linkResource>
                     </linkResources>
@@ -175,6 +167,8 @@
                                 <argument>${libnd4j.tests}</argument>
                                 <argument>-j</argument>
                                 <argument>${libnd4j.buildthreads}</argument>
+                                <argument>-h</argument>
+                                <argument>${libnd4j.helper}</argument>
                             </buildCommand>
                             <workingDirectory>${project.basedir}</workingDirectory>
                         </configuration>
@@ -390,6 +384,31 @@
                     </plugin>
                 </plugins>
             </build>
+        </profile>
+        <!-- Profiles to set the default libnd4j.helper property, example: mkdnn -->
+        <profile>
+            <id>libnd4j-helper-avx2</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>avx2</value>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.helper>mkldnn</libnd4j.helper>
+            </properties>
+        </profile>
+        <profile>
+            <id>libnd4j-helper-avx512</id>
+            <activation>
+                <property>
+                    <name>libnd4j.extension</name>
+                    <value>avx512</value>
+                </property>
+            </activation>
+            <properties>
+                <libnd4j.helper>mkldnn</libnd4j.helper>
+            </properties>
         </profile>
     </profiles>
 </project>

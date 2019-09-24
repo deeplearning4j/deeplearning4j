@@ -54,9 +54,9 @@ __global__ static void invertPermutationCuda(const void* vx, const Nd4jLong* xSh
 
     for (Nd4jLong i = tid; i < len; i += totalThreads) {
 
-        const auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
+        const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
         const Nd4jLong index = x[xOffset];
-        const auto zOffset = shape::getIndexOffset(index, zShapeInfo, len);
+        const auto zOffset = shape::getIndexOffset(index, zShapeInfo);
         z[zOffset] = i;
     }
 }
@@ -112,15 +112,15 @@ __global__ static void traceCuda(const void* vx, const Nd4jLong* xShapeInfo, voi
 
     for (uint m = blockIdx.x; m < zLen; m += gridDim.x) {   // one block per each element of z, that is per each matrix
 
-        shape::index2coords(zRank, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), m, zLen, coords);
-        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coords, zRank);
+        shape::index2coords(m, zShapeInfo, coords);
+        const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
         sharedMem[threadIdx.x] = 0;
 
           for (uint i = threadIdx.x; i < diagLen; i += blockDim.x) {
 
             coords[zRank] = coords[zRank + 1] = i;
-            const auto xOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, xRank);
+            const auto xOffset = shape::getOffset(xShapeInfo, coords);
             sharedMem[threadIdx.x] += x[xOffset];
           }
 
@@ -197,14 +197,14 @@ __global__ static void triuBPCuda(const void* vx, const Nd4jLong* xShapeInfo, vo
 
     for (Nd4jLong i = tid; i < len; i += totalThreads) {
 
-        shape::index2coords(rank, zShapeInfo + 1, i, len, coords);
+        shape::index2coords(i, zShapeInfo, coords);
 
-        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+        const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
         if((coords[rank - 2] + diag > coords[rank - 1]))    // row + diag > col
             z[zOffset] = 0;
         else
-            z[zOffset] = x[areSameOffsets ? zOffset : shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+            z[zOffset] = x[areSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords)];
     }
 }
 
@@ -263,7 +263,7 @@ __global__ static void tileBPCuda(const void* vx, const Nd4jLong* xShapeInfo, vo
 
     for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
 
-        const auto zOffset = shape::getIndexOffset(i, zShapeInfo, zLen);
+        const auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 
         shape::outerArrayOffsets(xOffsets, i, xShapeInfo, zShapeInfo, memBuff);
 
@@ -329,8 +329,8 @@ __global__ static void clipByNormBPWholeArrCuda(const void* vx, const Nd4jLong* 
     __syncthreads();
 
     // fill shared memory with array elements
-    const auto xVal = x[shape::getIndexOffset(tid, xShapeInfo, len)];
-    const auto yVal = y[shape::getIndexOffset(tid, yShapeInfo, len)];
+    const auto xVal = x[shape::getIndexOffset(tid, xShapeInfo)];
+    const auto yVal = y[shape::getIndexOffset(tid, yShapeInfo)];
 
     shMem[2*threadIdx.x]     = static_cast<Z>(xVal * xVal);   // for norm
     shMem[2*threadIdx.x + 1] = static_cast<Z>(xVal * yVal);   // for input * gradO
@@ -414,12 +414,12 @@ __global__ static void clipByNormBPCalcGradCuda(const void* vx, const Nd4jLong* 
     }
     __syncthreads();
 
-    const auto yOffset = shape::getIndexOffset(tid, yShapeInfo, len);
-    const auto zOffset = shape::getIndexOffset(tid, zShapeInfo, len);
+    const auto yOffset = shape::getIndexOffset(tid, yShapeInfo);
+    const auto zOffset = shape::getIndexOffset(tid, zShapeInfo);
 
    if(norm > clipNormVal) {
 
-        const auto xOffset = shape::getIndexOffset(tid, xShapeInfo, len);
+        const auto xOffset = shape::getIndexOffset(tid, xShapeInfo);
 
         const Z factor1 = static_cast<Z>(1) / norm;             // 1 / norm
         const Z factor2 = factor1 / (norm * norm);              // 1 / (norm * norm * norm)
@@ -462,8 +462,8 @@ __global__ static void clipByNormBPTadsCuda(const void* vx, const Nd4jLong* xTad
 
     for (uint i = threadIdx.x; i < tadLen; i += blockDim.x) {
 
-        const auto xOffset = shape::getIndexOffset(i, xTadShapeInfo, tadLen);
-        const auto yOffset = shape::getIndexOffset(i, yTadShapeInfo, tadLen);
+        const auto xOffset = shape::getIndexOffset(i, xTadShapeInfo);
+        const auto yOffset = shape::getIndexOffset(i, yTadShapeInfo);
 
         shMem[2*threadIdx.x]     = static_cast<Z>(xTad[xOffset] * xTad[xOffset]);   // for norm
         shMem[2*threadIdx.x + 1] = static_cast<Z>(xTad[xOffset] * yTad[yOffset]);   // for input * gradO
@@ -491,12 +491,12 @@ __global__ static void clipByNormBPTadsCuda(const void* vx, const Nd4jLong* xTad
 
     for (uint i = threadIdx.x; i < tadLen; i += blockDim.x) {
 
-        const auto yOffset = shape::getIndexOffset(i, yTadShapeInfo, tadLen);
-        const auto zOffset = shape::getIndexOffset(i, zTadShapeInfo, tadLen);
+        const auto yOffset = shape::getIndexOffset(i, yTadShapeInfo);
+        const auto zOffset = shape::getIndexOffset(i, zTadShapeInfo);
 
         if(norm > clipNormVal) {
 
-            const auto xOffset = shape::getIndexOffset(i, xTadShapeInfo, tadLen);
+            const auto xOffset = shape::getIndexOffset(i, xTadShapeInfo);
 
             const Z factor1 = static_cast<Z>(1) / norm;             // 1 / norm
             const Z factor2 = factor1 / (norm * norm);              // 1 / (norm * norm * norm)
@@ -563,23 +563,25 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
 }
 
     template <typename T>
-    static __global__ void swapShuffleKernel(T* input, Nd4jLong* shape, Nd4jLong firstDim, Nd4jLong len, nd4j::graph::RandomGenerator* rng) {
+    static __global__ void swapShuffleKernel(T* input, Nd4jLong* shape, Nd4jLong firstDim, nd4j::graph::RandomGenerator* rng) {
         auto tid = blockIdx.x * blockDim.x;
         auto step = blockDim.x * gridDim.x;
 
         for (int i = firstDim - 1 - tid - threadIdx.x; i > 0; i -= step) {
             int r = rng->relativeInt(i) % i;
             if (i != r) {
-                T e0 = input[shape::getIndexOffset(i, shape, len)];
-                T e1 = input[shape::getIndexOffset(r, shape, len)];
+                const auto iOffset = shape::getIndexOffset(i, shape);
+                const auto rOffset = shape::getIndexOffset(r, shape);
+                T e0 = input[iOffset];
+                T e1 = input[rOffset];
                 //math::nd4j_swap<T>(input(i), input(r));
-                input[shape::getIndexOffset(i, shape, len)] = e1;
-                input[shape::getIndexOffset(r, shape, len)] = e0;
+                input[iOffset] = e1;
+                input[rOffset] = e0;
             }
         }
     }
     template <typename T>
-    static __global__ void fillShuffleKernel(T* input, Nd4jLong* inputShape, T* output, Nd4jLong* outputShape, Nd4jLong firstDim, Nd4jLong len, int* indices, nd4j::graph::RandomGenerator* rng) {
+    static __global__ void fillShuffleKernel(T* input, Nd4jLong* inputShape, T* output, Nd4jLong* outputShape, Nd4jLong firstDim, int* indices, nd4j::graph::RandomGenerator* rng) {
 
 //        PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
         auto tid = blockIdx.x * blockDim.x;
@@ -587,9 +589,9 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
 
         for(int i = firstDim - 1 - tid - threadIdx.x; i > 0; i -= step) {
             int r = rng->relativeInt(i) % i;
-            output[shape::getIndexOffset(i, outputShape, len)] = input[shape::getIndexOffset(indices[r], inputShape, len)];
+            output[shape::getIndexOffset(i, outputShape)] = input[shape::getIndexOffset(indices[r], inputShape)];
             if(i != r) {
-                output[shape::getIndexOffset(r, outputShape, len)] = input[shape::getIndexOffset(indices[i], inputShape, len)];
+                output[shape::getIndexOffset(r, outputShape)] = input[shape::getIndexOffset(indices[i], inputShape)];
 //                output.p(r, input.e<T>(indices[i]));
 //                math::nd4j_swap<int>(indices[i], indices[r]);
                 atomicExch(&indices[i], indices[r]);
@@ -618,7 +620,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
             cudaMemcpy(dRandom, &rng, sizeof(nd4j::graph::RandomGenerator), cudaMemcpyHostToDevice);
             T* inputBuf = reinterpret_cast<T*>(input.specialBuffer());
             if(isInplace) {
-                swapShuffleKernel<T><<<128, 256, 1024, *stream>>>(inputBuf, input.specialShapeInfo(), firstDim, input.lengthOf(), dRandom);
+                swapShuffleKernel<T><<<128, 256, 1024, *stream>>>(inputBuf, input.specialShapeInfo(), firstDim, dRandom);
             }
             else {
                 std::vector<int> indices(firstDim);
@@ -628,7 +630,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
                 PointersManager pointersManager(context, "helper::randomShuffle_");
                 int* indicesDev = reinterpret_cast<int*>(pointersManager.replicatePointer(indices.data(), indices.size() * sizeof(int)));
                 T* outputBuf = reinterpret_cast<T*>(output.specialBuffer());
-                fillShuffleKernel<T><<<128, 256, 1024, *stream>>>(inputBuf, input.specialShapeInfo(), outputBuf, output.specialShapeInfo(), firstDim, input.lengthOf(), indicesDev, dRandom);
+                fillShuffleKernel<T><<<128, 256, 1024, *stream>>>(inputBuf, input.specialShapeInfo(), outputBuf, output.specialShapeInfo(), firstDim, indicesDev, dRandom);
                 pointersManager.synchronize();
             }
 //            rng.rewindH(firstDim - 1);
@@ -704,7 +706,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
             }
             __syncthreads();
             for (int j = threadIdx.x; j < len; j+= blockDim.x) {
-                auto xIndex = shape::getIndexOffset(j, shape, len);
+                auto xIndex = shape::getIndexOffset(j, shape);
 
                 if(norm2Buf[arr] > clipNorm)
                 z[xIndex] *= clipNorm / norm2Buf[arr]; // case with ews = 1 and ordering is 'c'
@@ -714,23 +716,22 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T>
     static __global__ void clipByNormKernel(Nd4jLong numOfSubArrs, T* inputBuffer, Nd4jLong* shape, Nd4jLong* inputOffsets, T* outputBuffer, Nd4jLong* outputShape, Nd4jLong* outputOffsets, T* norm2Buf, Nd4jLong* norm2shape, T clipNorm) {
+
         for (Nd4jLong arr = blockIdx.x; arr < numOfSubArrs; arr += gridDim.x) {
             __shared__ T* x, *z;
-            __shared__ Nd4jLong lenX, lenZ;
+            __shared__ Nd4jLong lenZ;
             __shared__ T norm2;
 
             if (threadIdx.x == 0) {
-                lenX = shape::length(shape);
                 x = inputBuffer + inputOffsets[arr];
                 z = outputBuffer + outputOffsets[arr];
                 lenZ = shape::length(outputShape);
-                norm2 = norm2Buf[shape::getIndexOffset(arr, norm2shape, numOfSubArrs)];
-                //printf("%d: %lf (vs %lf) %lld %lld\n", arr, norm2, clipNorm, lenX, lenZ);
+                norm2 = norm2Buf[shape::getIndexOffset(arr, norm2shape)];
             }
             __syncthreads();
             for (Nd4jLong j = threadIdx.x; j < lenZ; j+= blockDim.x) {
-                auto xIndex = shape::getIndexOffset(j, shape, lenX);
-                auto zIndex = shape::getIndexOffset(j, outputShape, lenZ);
+                auto xIndex = shape::getIndexOffset(j, shape);
+                auto zIndex = shape::getIndexOffset(j, outputShape);
                 if(norm2 > clipNorm) {
                     z[zIndex] = x[xIndex] * clipNorm / norm2; // case with ews = 1 and ordering is 'c'
                 } else {
@@ -916,8 +917,8 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
                 else outputBuf[e] = inputBuf[e];
             }
             else {
-                auto inputOffset = shape::getIndexOffset(e, inputShape, length);
-                auto outputOffset = shape::getIndexOffset(e, outputShape, length);
+                auto inputOffset = shape::getIndexOffset(e, inputShape);
+                auto outputOffset = shape::getIndexOffset(e, outputShape);
                 if (inputBuf[inputOffset] > rightBound) outputBuf[outputOffset] = (T) rightBound;
                 else if (inputBuf[inputOffset] < leftBound) outputBuf[outputOffset] = (T) leftBound;
                 else outputBuf[outputOffset] = inputBuf[outputOffset];

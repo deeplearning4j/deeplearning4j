@@ -59,9 +59,9 @@ __global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jL
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, tid, zLen, coords);
+    shape::index2coords(tid, zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     int inArrIdx = 0;
     Nd4jLong *xShapeInfo = reinterpret_cast<Nd4jLong**>(pxShapeInfo)[inArrIdx];
@@ -72,7 +72,7 @@ __global__ static void concatCuda(void* pVx,  void* pxShapeInfo, void* vz, Nd4jL
     }
 
     const auto* x      = reinterpret_cast<T*>(reinterpret_cast<void**>(pVx)[inArrIdx]);
-    const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
+    const auto xOffset = shape::getOffset(xShapeInfo, coords);
 
     z[zOffset] = x[xOffset];
 }

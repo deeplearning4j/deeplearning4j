@@ -20,6 +20,7 @@
 //
 
 #include <loops/special_kernels.h>
+#include <ops/declarable/helpers/flatten.h>
 
 namespace nd4j {
 
@@ -34,34 +35,26 @@ __global__ void flattenKernel(
 
     auto z = reinterpret_cast<T*>(vz);
     auto y = reinterpret_cast<T*>(vy);
-    
+
     __shared__ Nd4jLong lenY, yOrder, zEWS, yEWS;
 
-    if (threadIdx.x == 0) {                
-        
+    if (threadIdx.x == 0) {
+
         yEWS = shape::elementWiseStride(yShapeInfo);
         zEWS = shape::elementWiseStride(zShapeInfo);
         lenY = shape::length(yShapeInfo);
     }
     __syncthreads();
 
-    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;        
-        
-    if (zEWS >= 1 && yEWS >= 1 && yOrder == order) {
- 
-        for (int i = tid; i < lenY; i += gridDim.x * blockDim.x)
-            z[i * zEWS + dOffset] = y[i * yEWS];
-    } 
-    else {
-        
-        for(auto i = tid; i < lenY; i += gridDim.x * blockDim.x)
-            z[i * zEWS + dOffset] = y[shape::getIndexOrderOffset(i, yShapeInfo, lenY, order)];
-    } 
+    Nd4jLong tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for(auto i = tid; i < lenY; i += gridDim.x * blockDim.x)
+        z[i * zEWS + dOffset] = y[ops::helpers::getIndexOffsetOrdered(i, yShapeInfo, order)];
 }
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>
-__host__ void flattenKernelGeneric(dim3& launchDims, cudaStream_t *stream, 
+__host__ void flattenKernelGeneric(dim3& launchDims, cudaStream_t *stream,
                             Nd4jPointer *extraPointers,
                             int dOffset,
                             char order,

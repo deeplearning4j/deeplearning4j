@@ -19,9 +19,10 @@ package org.deeplearning4j.rl4j.learning.async.nstep.discrete;
 import lombok.Getter;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.AsyncThreadDiscrete;
+import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
 import org.deeplearning4j.rl4j.learning.async.MiniTrans;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
@@ -29,7 +30,6 @@ import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.policy.Policy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
-import org.deeplearning4j.rl4j.util.IDataManager;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -44,31 +44,25 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
     @Getter
     final protected AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf;
     @Getter
-    final protected MDP<O, Integer, DiscreteSpace> mdp;
-    @Getter
     final protected IAsyncGlobal<IDQN> asyncGlobal;
     @Getter
     final protected int threadNumber;
-    @Getter
-    final protected IDataManager dataManager;
 
     final private Random random;
 
     public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IAsyncGlobal<IDQN> asyncGlobal,
-                    AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf, int threadNumber,
-                    IDataManager dataManager, int deviceNum) {
-        super(asyncGlobal, threadNumber, deviceNum);
+                                             AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf,
+                                             TrainingListenerList listeners, int threadNumber, int deviceNum) {
+        super(asyncGlobal, mdp, listeners, threadNumber, deviceNum);
         this.conf = conf;
         this.asyncGlobal = asyncGlobal;
         this.threadNumber = threadNumber;
-        this.mdp = mdp;
-        this.dataManager = dataManager;
         mdp.getActionSpace().setSeed(conf.getSeed() + threadNumber);
         random = new Random(conf.getSeed() + threadNumber);
     }
 
     public Policy<O, Integer> getPolicy(IDQN nn) {
-        return new EpsGreedy(new DQNPolicy(nn), mdp, conf.getUpdateStart(), conf.getEpsilonNbStep(),
+        return new EpsGreedy(new DQNPolicy(nn), getMdp(), conf.getUpdateStart(), conf.getEpsilonNbStep(),
                         random, conf.getMinEpsilon(), this);
     }
 
@@ -81,11 +75,11 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
 
         int size = rewards.size();
 
-        int[] shape = getHistoryProcessor() == null ? mdp.getObservationSpace().getShape()
+        int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
                         : getHistoryProcessor().getConf().getShape();
         int[] nshape = Learning.makeShape(size, shape);
         INDArray input = Nd4j.create(nshape);
-        INDArray targets = Nd4j.create(size, mdp.getActionSpace().getSize());
+        INDArray targets = Nd4j.create(size, getMdp().getActionSpace().getSize());
 
         double r = minTrans.getReward();
         for (int i = size - 1; i >= 0; i--) {

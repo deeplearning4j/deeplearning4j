@@ -21,7 +21,7 @@ endif()
 # OPTIONAL MKL-DNN
 if ("${BUILD_MKLDNN}")
     # Download and unpack mkl-dnn at configure time
-    configure_file(./CMakeLists.txt.in mkldnn-download/CMakeLists.txt)
+    configure_file(../../CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
     execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
         RESULT_VARIABLE result
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-download )
@@ -40,7 +40,7 @@ if ("${BUILD_MKLDNN}")
         EXCLUDE_FROM_ALL)
     set(mkldnn_SOURCE_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
     set(HAVE_MKLDNN 1)
-    add_definitions(-DHAVE_MKLDNN=true)
+    add_definitions("-DHAVE_MKLDNN")
     include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_SOURCE_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
     set(MKLDNN mkldnn)
 endif()
@@ -131,7 +131,7 @@ else()
     endif()
 
     if (${F16C})
-        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mf16c -D__F16C__=true")
+        set(CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -mf16c -DSD_F16C=true")
     endif()
 endif()
 
@@ -177,6 +177,7 @@ if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU" AND "${CMAKE_CXX_COMPILER_VERSION}
     message(FATAL_ERROR "You need at least GCC 4.9")
 endif()
 
+message("Looking for OpenMP")
 find_package(OpenMP)
 if (OPENMP_FOUND)
     set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${OpenMP_C_FLAGS}")
@@ -185,10 +186,11 @@ else()
     message("OPENMP NOT FOUND")
 endif()
 
-if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release")
-    find_package(BLAS)
+if ("${OPENBLAS}" OR CMAKE_BUILD_TYPE STREQUAL "Release" OR "${BUILD_MKLDNN}")
+    message("Looking for BLAS")
+    find_package(BLAS REQUIRED)
     if (BLAS_FOUND)
-        message("Found external BLAS implementation...")
+        message("Found external BLAS library: ${BLAS_LIBRARIES}")
         add_definitions(-D__EXTERNAL_BLAS__=true)
     endif()
 endif()
@@ -201,13 +203,18 @@ file(GLOB_RECURSE ARRAY_SOURCES false ../../include/array/*.cpp ../../include/ar
 file(GLOB_RECURSE MEMORY_SOURCES false ../../include/memory/*.cpp ../../include/memory/*.h)
 file(GLOB_RECURSE GRAPH_SOURCES false ../../include/graph/*.cpp ../../include/graph/*.h)
 file(GLOB_RECURSE CUSTOMOPS_SOURCES false ../../include/ops/declarable/generic/*.cpp)
-file(GLOB_RECURSE CUSTOMOPS_HELPERS_SOURCES false ../../include/ops/declarable/helpers/cpu/*.cpp ../../include/ops/declarable/helpers/impl/*.cpp)
+file(GLOB_RECURSE CUSTOMOPS_GENERIC_SOURCES false ../../include/ops/declarable/helpers/cpu/*.cpp ../../include/ops/declarable/helpers/impl/*.cpp)
 file(GLOB_RECURSE OPS_SOURCES false ../../include/ops/impl/*.cpp ../../include/ops/declarable/impl/*.cpp  ../../include/ops/*.h)
 file(GLOB_RECURSE INDEXING_SOURCES false ../../include/indexing/*.cpp ../../include/indexing/*.h)
-file(GLOB_RECURSE HELPERS_SOURCES false ../../include/helpers/*.cpp ../../include/helpers/*.h)
+file(GLOB_RECURSE HELPERS_SOURCES false ../../include/helpers/*.cpp)
 file(GLOB_RECURSE LOOPS_SOURCES false ../../include/loops/*.cpp ../../include/loops/*.h)
 
-message("CPU BLAS")
+# optionally build mkldnn
+if ("${BUILD_MKLDNN}")
+    file(GLOB_RECURSE CUSTOMOPS_PLATFORM_SOURCES false ../../include/ops/declarable/platform/mkldnn/*.cpp)
+endif()
+
+message("CPU backend")
 add_definitions(-D__CPUBLAS__=true)
 
 if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(MINGW) AND NOT(APPLE))
@@ -216,8 +223,37 @@ if (CMAKE_BUILD_TYPE STREQUAL "Debug" AND NOT(MINGW) AND NOT(APPLE))
 endif()
 
 
+# this function strips path from file name, basically making up short file name, i.e. file.cpp
+function(SHORTNAME LONG_NAME OUTPUT)
+    SET(_TMP_STR "")
+    string (REGEX REPLACE ".*/" "" _TMP_STR "${LONG_NAME}")
+    set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
+endfunction()
+
+# now we ned to join two lists
+# first of all we'll build truncated list of files in platform sources
+# and list of priority implementations from platform helpers
+#set(CUSTOMOPS_HELPERS_SOURCES "")
+#set(SHORT_NAMES "")
+#foreach(LONG_NAME ${CUSTOMOPS_PLATFORM_SOURCES})
+#    SHORTNAME("${LONG_NAME}" "SHORT_NAME")
+#    set(CUSTOMOPS_HELPERS_SOURCES ${CUSTOMOPS_HELPERS_SOURCES} ${LONG_NAME})
+#    set(SHORT_NAMES ${SHORT_NAMES} ${SHORT_NAME})
+#endforeach()
+
+# now we're going to filter generic helpers, to exclude platform implementations
+#foreach(LONG_NAME ${CUSTOMOPS_GENERIC_SOURCES})
+#    SHORTNAME("${LONG_NAME}" "SHORT_NAME")
+
+    # and now we add this op ONLY if it wasn't announced in platform helpers
+#    string(FIND "${SHORT_NAMES}" "${SHORT_NAME}" "LOC")
+#    if (${LOC} EQUAL -1)
+#        set(CUSTOMOPS_HELPERS_SOURCES ${CUSTOMOPS_HELPERS_SOURCES} ${LONG_NAME})
+#    endif()
+#endforeach()
+
+
 file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/*.cpp ../layers_tests/*.h)
-# file(GLOB_RECURSE TEST_SOURCES false ../layers_tests/DeclarableOpsTests6.cpp ../layers_tests/*.h)
 
 
 # Filter out any source files from */CMakeFiles/* paths. these tend to cause problems such a multiple main definitions.
@@ -234,7 +270,7 @@ add_executable(runtests ${LOOPS_SOURCES} ../../blas/cpu/NativeOps.cpp ../../blas
         ../../blas/cpu/NativeOpExecutioner.cpp ../../blas/cpu/NDArray.cpp ../../blas/cpu/NDArrayFactory.cpp
     ../../include/cnpy/cnpy.cpp  ../../include/nd4jmemset.h ../../include/nd4jmalloc.h
     ../../blas/Environment.cpp ../../blas/Environment.h ${EXEC_SOURCES} ${HELPERS_SOURCES}  ${ARRAY_SOURCES} ${TYPES_SOURCES}
-    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_HELPERS_SOURCES}
+    ${MEMORY_SOURCES} ${GRAPH_SOURCES} ${CUSTOMOPS_SOURCES} ${EXCEPTIONS_SOURCES} ${INDEXING_SOURCES} ${CUSTOMOPS_PLATFORM_SOURCES} ${CUSTOMOPS_GENERIC_SOURCES}
     ${OPS_SOURCES} ${TEST_SOURCES} ${PERF_SOURCES})
 
 target_link_libraries(runtests gtest ${MKLDNN} gtest_main ${BLAS_LIBRARIES})

@@ -143,13 +143,13 @@ static void _CUDA_G adjustHueSingleNCHWKernel(void *xBuffer, Nd4jLong *xTadShape
 
 
     for (Nd4jLong e = tid; e < tuples; e += blockDim.x * gridDim.x) {
-        auto _ri = bufferR + shape::getIndexOffset(e, xTadShapeInfo, tadLength);;
-        auto _gi = bufferG + shape::getIndexOffset(e, xTadShapeInfo, tadLength);;
-        auto _bi = bufferB + shape::getIndexOffset(e, xTadShapeInfo, tadLength);;
+        auto _ri = bufferR + shape::getIndexOffset(e, xTadShapeInfo);
+        auto _gi = bufferG + shape::getIndexOffset(e, xTadShapeInfo);
+        auto _bi = bufferB + shape::getIndexOffset(e, xTadShapeInfo);
 
-        auto _ro = outputR + shape::getIndexOffset(e, xTadShapeInfo, tadLength);;
-        auto _go = outputG + shape::getIndexOffset(e, xTadShapeInfo, tadLength);;
-        auto _bo = outputB + shape::getIndexOffset(e, xTadShapeInfo, tadLength);;
+        auto _ro = outputR + shape::getIndexOffset(e, xTadShapeInfo);
+        auto _go = outputG + shape::getIndexOffset(e, xTadShapeInfo);
+        auto _bo = outputB + shape::getIndexOffset(e, xTadShapeInfo);
 
         T h, v_min, v_max;
         helpers::rgb_to_hv(_ri[0], _gi[0], _bi[0], &h, &v_min, &v_max);

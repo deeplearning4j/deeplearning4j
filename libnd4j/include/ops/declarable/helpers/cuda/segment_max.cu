@@ -58,10 +58,10 @@ namespace nd4j {
                     zLen = shape::length(outputShape);
 
                     if (segment < numOfClasses) {
-                        zIndex = shape::getIndexOffset(segment, outputShape, zLen);
+                        zIndex = shape::getIndexOffset(segment, outputShape);
                         start = starts[segment];
                         finish = start + lengths[segment];
-                        z[zIndex] = x[shape::getIndexOffset(start, inputShape, xLen)];
+                        z[zIndex] = x[shape::getIndexOffset(start, inputShape)];
                         val[segment] = z[zIndex];
                     }
 
@@ -69,7 +69,7 @@ namespace nd4j {
                 __syncthreads();
 
                 for (auto e = start + threadIdx.x + 1; e < finish; e += blockDim.x) {
-                    auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
+                    auto xIndex = shape::getIndexOffset(e, inputShape);
                     nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                 }
             }
@@ -94,19 +94,19 @@ namespace nd4j {
                     xLen = shape::length(inputShape);
                     zLen = shape::length(outputShape);
 
-                    zIndex = shape::getIndexOffset(segment, outputShape, zLen);
+                    zIndex = shape::getIndexOffset(segment, outputShape);
                     //start = starts[segment];
                     //finish = start + lengths[segment];
                     if (lengths[segment] > 0)
-                        z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape, xLen)];
+                        z[zIndex] = x[shape::getIndexOffset(starts[segment], inputShape)];
                     else
                         z[zIndex] = -DataTypeUtils::max<T>();
                 }
                 __syncthreads();
                 if (lengths[segment] > 0)
                     for (auto e = threadIdx.x + 1; e < xLen; e += blockDim.x) {
-                        auto xIndex = shape::getIndexOffset(e, inputShape, xLen);
-                        auto yIndex = shape::getIndexOffset(e, indicesShape, xLen);
+                        auto xIndex = shape::getIndexOffset(e, inputShape);
+                        auto yIndex = shape::getIndexOffset(e, indicesShape);
                         if (y[yIndex] == segment) {
                             nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                         }
@@ -140,16 +140,16 @@ namespace nd4j {
                     auto x = reinterpret_cast<T *>(inputBuf) + inputTadOffsets[idx];
                     if (blockIdx.x == start) {
                         for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                            auto xIndex = shape::getIndexOffset(e, inputTads, len);
-                            auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                            auto xIndex = shape::getIndexOffset(e, inputTads);
+                            auto zIndex = shape::getIndexOffset(e, outputTads);
                             nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                             //z[zIndex] = x[xIndex];
                         }
                     }
                     else {
                         for (auto e = threadIdx.x; e < len; e += blockDim.x) {
-                            auto xIndex = shape::getIndexOffset(e, inputTads, len);
-                            auto zIndex = shape::getIndexOffset(e, outputTads, len);
+                            auto xIndex = shape::getIndexOffset(e, inputTads);
+                            auto zIndex = shape::getIndexOffset(e, outputTads);
                             if (lengths[segment])
                                 nd4j::math::atomics::nd4j_atomicMax(&z[zIndex], x[xIndex]);
                         }
@@ -276,12 +276,12 @@ namespace nd4j {
 
                 for (auto e = start; e < xLen; e += step) {
 
-                    auto zOffset = shape::getIndexOffset(e, outputShape, xLen);
-                    auto xOffset = shape::getIndexOffset(e, inputShape, xLen);
-                    auto yOffset = shape::getIndexOffset(e, indicesShape, xLen);
+                    auto zOffset = shape::getIndexOffset(e, outputShape);
+                    auto xOffset = shape::getIndexOffset(e, inputShape);
+                    auto yOffset = shape::getIndexOffset(e, indicesShape);
                     auto classIndex = y[yOffset];
-                    auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape, gradLen);
-                    auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape, gradLen);
+                    auto gradOffsetI = shape::getIndexOffset(classIndex, forwardShape);
+                    auto gradOffsetO = shape::getIndexOffset(classIndex, epsShape);
 
                     if (nd4j::math::nd4j_abs(gradIn[gradOffsetI] - x[xOffset]) <= T(1.e-6)) {
                         z[zOffset] = gradOut[gradOffsetO];
@@ -318,7 +318,7 @@ namespace nd4j {
                 __syncthreads();
 
                 for (auto i = blockIdx.x; i < yLen; i += gridDim.x) {
-                    auto yIndex = shape::getIndexOffset(i, indicesShape, yLen);
+                    auto yIndex = shape::getIndexOffset(i, indicesShape);
                     auto segment = y[yIndex];
                     T* current = x + inputOffsets[i];
                     T* currentOut = z + outOffsets[i];

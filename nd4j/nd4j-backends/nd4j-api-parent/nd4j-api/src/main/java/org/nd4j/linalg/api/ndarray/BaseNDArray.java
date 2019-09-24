@@ -1724,12 +1724,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return z;
     }
 
-    /**
-     * Returns the elements at the specified indices
-     *
-     * @param indices the indices to getScalar
-     * @return the array with the specified elements
-     */
     @Override
     public int getInt(int... indices) {
         return (int) getDouble(indices);
@@ -1761,12 +1755,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Shape.getLong(this, indices);
     }
 
-    /**
-     * Returns the elements at the specified indices
-     *
-     * @param indices the indices to get
-     * @return the array with the specified elements
-     */
     @Override
     public double getDouble(int... indices) {
         autoProcessScalarCall();
@@ -1815,12 +1803,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Shape.getDouble(this, indices);
     }
 
-    /**
-     * Returns the elements at the specified indices
-     *
-     * @param indices the indices to get
-     * @return the array with the specified elements
-     */
     @Override
     public float getFloat(int... indices) {
         return (float) getDouble(indices);
@@ -1831,9 +1813,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return (float) getDouble(indices);
     }
 
-    /**
-     * Test whether a matrix is scalar.
-     */
     @Override
     public boolean isScalar() {
         if (isEmpty())
@@ -2000,11 +1979,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
-    /**
-     * Returns true if this ndarray is 2d
-     *
-     * @return true if the element is a matrix, false otherwise
-     */
     public boolean isMatrix() {
         return rank() == 2;
     }
@@ -2216,14 +2190,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return this;
     }
 
-    /**
-     * Mainly here for people coming from numpy.
-     * This is equivalent to a call to permute
-     *
-     * @param dimension the dimension to swap
-     * @param with      the one to swap it with
-     * @return the swapped axes view
-     */
     @Override
     public INDArray swapAxes(int dimension, int with) {
         int[] shape = ArrayUtil.range(0, shape().length);
@@ -2263,12 +2229,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         this.data = data;
     }
 
-    /**
-     * Number of slices: aka shape[0]
-     *
-     * @return the number of slices
-     * for this nd array
-     */
     @Override
     public long slices() {
         return size(0);
@@ -3377,18 +3337,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Shape.offset(jvmShapeInfo.javaShapeInformation) + (idx);
     }
 
-
-
-    /**
-     * Returns the specified slice of this matrix.
-     * In matlab, this would be equivalent to (given a 2 x 2 x 2):
-     * A(:,:,x) where x is the slice you want to return.
-     * <p/>
-     * The slice is always relative to the final dimension of the matrix.
-     *
-     * @param slice the slice to return
-     * @return the specified slice of this matrix
-     */
     @Override
     public INDArray slice(long slice) {
         Nd4j.getCompressor().autoDecompress(this);
@@ -3425,8 +3373,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Nd4j.scalar(d);
     }
 
-
-
     @Override
     public int getTrailingOnes() {
         int numLeadingOnes = 0;
@@ -3437,8 +3383,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         return numLeadingOnes;
     }
-
-
 
     @Override
     public int getLeadingOnes() {
@@ -3451,16 +3395,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return numLeadingOnes;
     }
 
-
-
-    /**
-     * Returns the slice of this from the specified dimension
-     *
-     * @param slice     the dimension to return from
-     * @param dimension the dimension of the slice to return
-     * @return the slice of this matrix from the specified dimension
-     * and dimension
-     */
     @Override
     public INDArray slice(long slice, int dimension) {
         Nd4j.getCompressor().autoDecompress(this);
@@ -3490,12 +3424,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    /**
-     * Fetch a particular number on a multi dimensional scale.
-     *
-     * @param indexes the indexes to get a number from
-     * @return the number at the specified indices
-     */
     @Override
     public INDArray getScalar(int[] indexes) {
         if (indexes.length > rank())
@@ -3717,16 +3645,12 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return (float) getDouble(i, j);
     }
 
-    /**
-     * Return transposed copy of this matrix.
-     */
     @Override
     public INDArray transpose() {
         Preconditions.checkState(rank() >= 2, "Can't transpose array with rank < 2: array shape %ndShape", this);
 
         return permute(ArrayUtil.reverseCopy(ArrayUtil.range(0, rank())));
     }
-
 
     /**
      *
@@ -4047,12 +3971,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return norm2(false, dimension);
     }
 
-    /**
-     * Number of columns (shape[1]), throws an exception when
-     * called when not 2d
-     *
-     * @return the number of columns in the array (only 2d)
-     */
     @Override
     public int columns() {
         // FIXME: int cast
@@ -4068,13 +3986,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    /**
-     * Returns the number of rows
-     * in the array (only 2d) throws an exception when
-     * called when not 2d
-     *
-     * @return the number of rows in the matrix
-     */
     @Override
     public int rows() {
         // FIXME:
@@ -4089,12 +4000,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         throw new IllegalStateException("Rank is " + rank() + " rows() call is not valid");
     }
 
-
-    /**
-     * Flattens the array for linear indexing
-     *
-     * @return the flattened version of this array
-     */
     @Override
     public INDArray ravel(char ordering) {
         Nd4j.getCompressor().autoDecompress(this);
@@ -4104,11 +4009,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return dup(ordering).reshape(ordering, length());
     }
 
-    /**
-     * Flattens the array for linear indexing
-     *
-     * @return the flattened version of this array
-     */
     @Override
     public INDArray ravel() {
         return reshape(length());
@@ -4125,22 +4025,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
-    /**
-     * Reshape the matrix. Number of elements must not change.
-     *
-     * @param newRows
-     * @param newColumns
-     */
     @Override
     public INDArray reshape(long newRows, long newColumns) {
         return reshape(new long[] {newRows, newColumns});
     }
 
-    /**
-     * Get the specified column
-     *
-     * @param c
-     */
     @Override
     public INDArray getColumn(long c) {
         Nd4j.getCompressor().autoDecompress(this);
@@ -4383,11 +4272,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return create(new int[] {rows, length});
     }
 
-    /**
-     * Get a copy of a row.
-     *
-     * @param r the row to get
-     */
     @Override
     public INDArray getRow(long r) {
         if (isRowVector() && r == 0)
@@ -4409,14 +4293,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return row.reshape(1, row.length());
     }
 
-
-    /**
-     * This method allows you to compare INDArray against other INDArray, with variable eps
-     *
-     * @param o
-     * @param eps
-     * @return
-     */
     public boolean equalsWithEps(Object o, double eps) {
         Nd4j.getCompressor().autoDecompress(this);
 
@@ -4432,10 +4308,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
         if (n == this)
             return true;
-
-        if (n.isSparse()) {
-            return n.equals(this);
-        }
 
         if (this.rank() != n.rank())
             return false;
@@ -4563,11 +4435,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return shapeInformation.asNioLong();
     }
 
-    /**
-     * Returns the shape(dimensions) of this array
-     *
-     * @return the shape of this matrix
-     */
     public long[] shape() {
         return jvmShapeInfo.shape;
     }
@@ -4577,11 +4444,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return Shape.shapeToString(this);
     }
 
-    /**
-     * Returns the stride(indices along the linear index for which each slice is accessed) of this array
-     *
-     * @return the stride of this array
-     */
     @Override
     public long[] stride() {
         return jvmShapeInfo.stride;
@@ -4598,13 +4460,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return jvmShapeInfo.order;
     }
 
-    /**
-     * Returns the size of this array
-     * along a particular dimension
-     *
-     * @param dimension the dimension to return from
-     * @return the shape of the specified dimension
-     */
     @Override
     public long size(int dimension) {
         if (dimension < 0)
@@ -4629,11 +4484,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return jvmShapeInfo.rank;
     }
 
-    /**
-     * Returns the total number of elements in the ndarray
-     *
-     * @return the number of elements in the ndarray
-     */
     @Override
     public long length() {
         if (isEmpty())
@@ -4745,12 +4595,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    /**
-     * Broadcasts this ndarray to be the specified shape
-     *
-     * @param shape the new shape of this ndarray
-     * @return the broadcasted ndarray
-     */
     @Override
     public INDArray broadcast(long... shape) {
       return broadcast(Nd4j.createUninitialized(this.dataType(), shape, this.ordering()));
@@ -4877,12 +4721,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     }
 
-    /**
-     * See: http://www.mathworks.com/help/matlab/ref/permute.html
-     *
-     * @param rearrange the dimensions to swap to
-     * @return the newly permuted array
-     */
     @Override
     public INDArray permute(int... rearrange) {
         Preconditions.checkArgument(rearrange.length == rank(), "Incorrect number of arguments for permute function:" +
@@ -4911,14 +4749,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return value;
     }
 
-    /**
-     * An <b>in-place</b> version of permute. The array  shape information (shape, strides)
-     * is modified by this operation (but not the data itself)
-     * See: http://www.mathworks.com/help/matlab/ref/permute.html
-     *
-     * @param rearrange the dimensions to swap to
-     * @return the current array
-     */
     @Override
     public INDArray permutei(int... rearrange) {
         Preconditions.checkArgument(rearrange.length == rank(), "Incorrect number of arguments for permute function:" +
@@ -5047,17 +4877,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return isMatrix() && rows() == columns();
     }
 
-    /**
-     * Checks whether the matrix is a row vector.
-     */
     @Override
     public boolean isRowVector() {
         return (rank() == 2 && rows() == 1) && length() > 1 || rank() == 1 && length() > 1;
     }
 
-    /**
-     * Checks whether the matrix is a column vector.
-     */
     @Override
     public boolean isColumnVector() {
         return rank() == 2 && columns() == 1 && length() > 1;
@@ -5112,12 +4936,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return toString(Long.MAX_VALUE, false, -1 * dataType().precision());
     }
 
-    /**
-     * Returns a scalar (individual element)
-     * of a scalar ndarray
-     *
-     * @return the individual item in this ndarray
-     */
     @Override
     public Object element() {
 
@@ -5236,11 +5054,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return new FirstAxisIterator(this);
     }
 
-    /**
-     * Returns the start of where the ndarray is for the original data buffer
-     *
-     * @return
-     */
     @Override
     public long originalOffset() {
         if (data().originalOffset() >= Integer.MAX_VALUE)
@@ -5294,24 +5107,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         data().read(s, headerData.getLeft(), headerData.getMiddle(), headerData.getRight());
     }
 
-
-    /**
-     * This method returns index of highest value along specified dimension(s)
-     *
-     * @param dimension
-     * @return
-     */
     @Override
     public INDArray argMax(int... dimension) {
         return Nd4j.argMax(this, dimension);
     }
 
-
-    /**
-     * This method returns True, if this INDArray instance is attached to some Workspace. False otherwise.
-     *
-     * @return
-     */
     @Override
     public boolean isAttached() {
         if (isEmpty())
@@ -5324,13 +5124,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
                 (data.originalDataBuffer() != null && data.originalDataBuffer().isAttached());
     }
 
-    /**
-     * This method checks, if given attached INDArray is still in scope of its parent Workspace
-     * <p>
-     * PLEASE NOTE: if this INDArray isn't attached to any Workspace, this method will return true
-     *
-     * @return
-     */
     @Override
     public boolean isInScope() {
         if (!isAttached())
@@ -5339,13 +5132,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return data.isInScope();
     }
 
-    /**
-     * This metod detaches INDArray from Workspace, returning copy. Basically it's dup() into new memory chunk.
-     * <p>
-     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
-     *
-     * @return
-     */
     @Override
     public INDArray detach() {
         if (!isAttached())
@@ -5402,14 +5188,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
-    /**
-     * This method detaches INDArray from current Workspace, and attaches it to Workspace above, if any.
-     * <p>
-     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
-     * PLEASE NOTE: If current Workspace is the top-tier one, effect will be equal to detach() call - detached copy will be returned
-     *
-     * @return
-     */
     @Override
     public INDArray leverage() {
         WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");
@@ -5453,33 +5231,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         }
     }
 
-    /**
-     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id
-     *
-     * PLEASE NOTE: If this INDArray instance is NOT attached - it will be returned unmodified.
-     * PLEASE NOTE: If Workspace with target Id wasn't created before - this array will be returned unmodified.
-     * PLEASE NOTE: If target workspace is the current one - this array will be returned unmodified.
-     *
-     * @param id
-     * @return
-     */
     @Override
     public INDArray leverageTo(String id) {
         return leverageTo(id, false);
     }
 
-    /**
-     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id.
-     * If enforceExistence == true, and no workspace with the specified ID exists, then an {@link Nd4jNoSuchWorkspaceException}
-     * is thrown. Otherwise, if enforceExistance == false and no workspace with the specified ID exists, then the current
-     * INDArray is returned unmodified (same as {@link #leverage()}
-     *
-     * @param id ID of the workspace to leverage to
-     * @param enforceExistence If true, and the specified workspace does not exist: an {@link Nd4jNoSuchWorkspaceException}
-     *                         will be thrown.
-     * @return The INDArray, leveraged to the specified workspace
-     * @see #leverageTo(String)
-     */
     @Override
     public INDArray leverageTo(String id, boolean enforceExistence) throws Nd4jNoSuchWorkspaceException {
         WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");
@@ -5518,16 +5274,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return copy;
     }
 
-    /**
-     * This method detaches INDArray from current Workspace, and attaches it to Workspace with a given Id, if a workspace
-     * with the given ID is open and active.
-     *
-     * If the workspace does not exist, or is not active, the array is detached from any workspaces.
-     *
-     * @param id ID of the workspace to leverage to
-     * @return The INDArray, leveraged to the specified workspace (if it exists and is active) otherwise the detached array
-     * @see #leverageTo(String)
-     */
     public INDArray leverageOrDetach(String id){
         if(!isAttached()){
             return this;
@@ -5539,30 +5285,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return leverageTo(id);
     }
 
-    /**
-     * This method pulls this INDArray into current Workspace.
-     *
-     * PLEASE NOTE: If there's no current Workspace - INDArray returned as is
-     *
-     * @return Migrated INDArray or <i>this</i> if no current workspace
-     * @see #migrate(boolean)
-     */
     @Override
     public INDArray migrate() {
         return migrate(false);
     }
 
-    /**
-     * This method pulls this INDArray into current Workspace, or optionally detaches if no workspace is present.<br>
-     * That is:<br>
-     * If current workspace is present/active, INDArray is migrated to it.<br>
-     * If no current workspace is present/active, one of two things occur:
-     * 1. If detachOnNoWs arg is true: if there is no current workspace, INDArray is detached
-     * 2. If detachOnNoWs arg is false: this INDArray is returned as-is (no-op) - equivalent to {@link #migrate()}
-     *
-     * @param detachOnNoWs If true: detach on no WS. If false and no workspace: return this.
-     * @return Migrated INDArray
-     */
     @Override
     public INDArray migrate(boolean detachOnNoWs){
         WorkspaceUtils.assertValidArray(this, "Cannot leverage INDArray to new workspace");
@@ -5711,56 +5438,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         return array;
     }
 
-    /*
-     * ------- Sparse methods -------
-     */
-
-    @Override
-    public DataBuffer getVectorCoordinates() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public INDArray toDense() {
-        return this;
-    }
-
-    @Override
-    public int nnz() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public SparseFormat getFormat() {
-        return SparseFormat.NONE;
-    }
-
-    @Override
-    public DataBuffer sparseInfoDataBuffer() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public int[] flags() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public int[] hiddenDimensions() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public int[] sparseOffsets() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-    }
-
-    @Override
-    public int underlyingRank() {
-        throw new UnsupportedOperationException("Not a sparse ndarray");
-
-    }
-
     protected static DataTypeEx convertType(DataType type) {
         if (type == DataType.HALF) {
             return DataTypeEx.FLOAT16;
@@ -5778,16 +5455,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
             throw new IllegalStateException("Unknown dataType: [" + type + "]");
     }
 
-    /**
-     * This method returns true if this INDArray is special case: no-value INDArray
-     *
-     * @return
-     */
     @Override
     public boolean isEmpty() {
         return Shape.isEmpty(jvmShapeInfo.javaShapeInformation);
     }
-
 
     @Override
     public long[] shapeInfoJava() {
@@ -5879,8 +5550,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
         if(!allowEmpty && isEmpty())
             throw new IllegalStateException("Cannot perform operation " + opName + " on empty array with datatype " + dataType());
     }
-
-
 
     @Override
     public boolean closeable() {

@@ -1612,55 +1612,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    @Override
-    public INDArray createSparseCSR(double[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCSR(float[] data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCSR(DataBuffer data, int[] columns, int[] pointerB, int[] pointerE, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCOO(double[] values, long[][] indices, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCOO(float[] values, long[][] indices, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCOO(double[] values, int[][] indices, long[] shape) {
-        return new JCusparseNDArrayCOO(values, indices, shape);
-    }
-
-    @Override
-    public INDArray createSparseCOO(float[] values, int[][] indices, long[] shape) {
-        return new JCusparseNDArrayCOO(values, indices, shape);
-    }
-
-    @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, DataBuffer sparseInformation, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public INDArray createSparseCOO(DataBuffer values, DataBuffer indices, long[] sparseOffsets, int[] flags, int[] hiddenDimensions, int underlyingRank, long[] shape) {
-        throw new UnsupportedOperationException();
-    }
 
     @Override
     public INDArray sortCooIndices(INDArray x) {

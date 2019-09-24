@@ -161,8 +161,8 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
         sPartials[threadIdx.x] = OpType::startingValue(x);
 		auto threadCount = gridDim.x * blockDim.x;
         for(Nd4jLong i = tid; i < length; i += threadCount) {
-            auto xOffset = shape::getIndexOffset(i, xShapeInfo, length);
-            auto yOffset = shape::getIndexOffset(i, yShapeInfo, length);
+            auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+            auto yOffset = shape::getIndexOffset(i, yShapeInfo);
             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset], y[yOffset], extraZ), extraZ);
         }
     }
@@ -290,7 +290,7 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
     	X *x = dx + xOffsets[r];
 
         if (threadIdx.x < xTadLength && threadIdx.x < maxBlock) {
-        	auto x0 = shape::getIndexOffset(threadIdx.x, xTadShapeInfo, shape::length(xTadShapeInfo));
+        	auto x0 = shape::getIndexOffset(threadIdx.x, xTadShapeInfo);
             tempX[threadIdx.x] = x[x0];
         }
         __syncthreads();
@@ -311,12 +311,12 @@ __device__ void Reduce3<X,Z>::transformAll( void *vx, Nd4jLong *xShapeInfo,
 				// we reset tempX IF we have >1 tiles
                 if (t >= 1 || (limit > 1 && g > 0))
                 	if (threadIdx.x + (t * maxBlock) < xTadLength) {
-                    	auto x0 = shape::getIndexOffset(threadIdx.x + (t * maxBlock), xTadShapeInfo, xTadLength);
+                    	auto x0 = shape::getIndexOffset(threadIdx.x + (t * maxBlock), xTadShapeInfo);
                     	tempX[threadIdx.x] = x[x0];
                  	}
 
                     for (int f = threadIdx.x + (t * maxBlock); f < xTadLength && f < threadIdx.x + ((t + 1) * maxBlock); f += blockDim.x * gridDim.x) {
-                    	auto y0 = shape::getIndexOffset(f, yTadShapeInfo, yTadLength);
+                    	auto y0 = shape::getIndexOffset(f, yTadShapeInfo);
                     	sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], OpType::opAtomic(tempX[threadIdx.x], y[y0], extraZ), extraZ);
                     }
 
@@ -433,8 +433,8 @@ __device__ void Reduce3<X,Z>::transform(void *vx, Nd4jLong *xShapeInfo,
 
             for (int j = threadIdx.x; j < tadLen; j += blockDim.x) {
 
-                Nd4jLong xOffset2 =  xOffset + shape::getIndexOffset(j, tadOnlyShapeInfo, tadLen);
-                Nd4jLong yOffset2 =  yOffset + shape::getIndexOffset(j, yTadOnlyShapeInfo, tadLen);
+                Nd4jLong xOffset2 =  xOffset + shape::getIndexOffset(j, tadOnlyShapeInfo);
+                Nd4jLong yOffset2 =  yOffset + shape::getIndexOffset(j, yTadOnlyShapeInfo);
                 sPartials[threadIdx.x] =  j < blockDim.x ? OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ) : OpType::update(sPartials[threadIdx.x], OpType::opAtomic(x[xOffset2], y[yOffset2], extraZ), extraZ);
 
             }

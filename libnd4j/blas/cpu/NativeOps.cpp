@@ -76,6 +76,10 @@ bool experimentalSupport = false;
 #include <performance/benchmarking/FullBenchmarkSuit.h>
 #include <performance/benchmarking/LightBenchmarkSuit.h>
 
+#ifdef CPU_FEATURES
+#include <cpuinfo_x86.h>
+#endif
+
 using namespace nd4j;
 
 void setElementThreshold(int num) {
@@ -1385,8 +1389,8 @@ void pullRowsGeneric(void *vx,
         }
         else {
             for (int i = 0; i < tadLength; i++) {
-                auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo, tadLength);
-                auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo, tadLength);
+                auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
+                auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
                 hZ[zOffset] = hX[xOffset];
             }
         }
@@ -1450,7 +1454,7 @@ void tearGeneric(void *vx,
         else {
 
             for (Nd4jLong j = 0; j < tadLength; j++)
-                hZ[shape::getIndexOffset(j, hZShapeInfo, tadLength)] = s[shape::getIndexOffset(j, tadShapeInfo, tadLength)];
+                hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
         }
     }
 }
@@ -1597,7 +1601,7 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
                     }
                 } else {
                     for (Nd4jLong i = 0; i < tadLength; i++) {
-                        auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f], tadLength);
+                        auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
                         nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
                     }
                 }
@@ -3165,6 +3169,75 @@ int lastErrorCode() {
 
 const char* lastErrorMessage() {
     return nd4j::LaunchContext::defaultContext()->errorReference()->errorMessage();
+}
+
+int  binaryLevel() {
+#ifdef CPU_FEATURES
+
+
+#if defined(F_X64)
+    return 1;
+#elif defined (F_AVX2)
+    return 2;
+#elif defined (F_AVX512)
+    return 3;
+#else
+    return 0;
+#endif
+
+#else
+    return 0;
+#endif
+}
+
+int optimalLevel() {
+#ifdef CPU_FEATURES
+    auto features = cpu_features::GetX86Info().features;
+
+    if (features.avx && features.avx2 && features.avx512f && features.avx512vl && features.avx512bw && features.avx512dq && features.avx512cd)
+        return 3;
+    else if (features.avx && features.avx2)
+        return 2;
+    else
+        return 1;
+
+#else
+    return 0;
+#endif
+}
+
+bool isMinimalRequirementsMet() {
+#ifdef CPU_FEATURES
+    auto features = cpu_features::GetX86Info().features;
+
+#if defined(F_X64)
+    return true;
+#elif defined (F_AVX2)
+    return features.avx && features.avx2;
+#elif defined (F_AVX512)
+    // we're optimizing for skylake-avx512 features, so we'll check those out
+    return features.avx && features.avx2 && features.avx512f && features.avx512vl && features.avx512bw && features.avx512dq && features.avx512cd;
+#else
+    return true;
+#endif
+
+#else
+    return true;
+#endif
+}
+
+bool isOptimalRequirementsMet() {
+#ifdef CPU_FEATURES
+    auto b = ::binaryLevel();
+    auto o = ::optimalLevel();
+
+    if (b == o)
+        return true;
+    else
+        return false;
+#else
+    return true;
+#endif
 }
 
 BUILD_SINGLE_TEMPLATE(template void pullRowsGeneric, (void *, Nd4jLong*, void*, Nd4jLong*, const int, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*, Nd4jLong*), LIBND4J_TYPES);

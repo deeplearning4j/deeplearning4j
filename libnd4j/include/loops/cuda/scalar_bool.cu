@@ -36,7 +36,7 @@ __global__ void scalarAlongDimension(void *x, Nd4jLong *xShapeInfo,
                                     int *dimension, int dimensionLength,
                                     Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                     Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-        
+
     functions::scalar::ScalarBoolTransform<X,Z>::template transformCuda<OpType>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
 }
 
@@ -60,10 +60,10 @@ namespace scalar    {
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Z>
 template<typename OpType>
-__device__ void  ScalarBoolTransform<X, Z>::transformCuda(void* vscalar, 
-                                                        void *vy, Nd4jLong *yShapeInfo, 
-                                                        void *vparams, 
-                                                        void *vz, Nd4jLong *zShapeInfo, 
+__device__ void  ScalarBoolTransform<X, Z>::transformCuda(void* vscalar,
+                                                        void *vy, Nd4jLong *yShapeInfo,
+                                                        void *vparams,
+                                                        void *vz, Nd4jLong *zShapeInfo,
                                                         int *allocationBuffer) {
     auto scalar = reinterpret_cast<X*>(vscalar)[0];
     auto y      = reinterpret_cast<X*>(vy);
@@ -73,8 +73,8 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void* vscalar,
     auto yRank   = shape::rank(yShapeInfo);
     auto yEWS    = shape::elementWiseStride(yShapeInfo);
     auto yShape  = shape::shapeOf(yShapeInfo);
-    auto yStride = shape::stride(yShapeInfo);        
-    
+    auto yStride = shape::stride(yShapeInfo);
+
     auto zRank   = shape::rank(zShapeInfo);
     auto zEWS    = shape::elementWiseStride(zShapeInfo);
     auto zShape  = shape::shapeOf(zShapeInfo);
@@ -89,22 +89,22 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void* vscalar,
     __syncthreads();
 
     if(yEWS >= 1 && zEWS >= 1 && shape::order(yShapeInfo) == shape::order(zShapeInfo)) {
-            transformCuda<OpType>(len, vscalar, vy, yEWS, vparams, vz, zEWS, allocationBuffer);    
+            transformCuda<OpType>(len, vscalar, vy, yEWS, vparams, vz, zEWS, allocationBuffer);
     }
     else {
-        for (Nd4jLong i = tid; i < len; i+= totalThreads)                        
-            z[shape::getIndexOffset(i, zShapeInfo, len)] = OpType::op(y[shape::getIndexOffset(i, yShapeInfo, len)], scalar, params);
+        for (Nd4jLong i = tid; i < len; i+= totalThreads)
+            z[shape::getIndexOffset(i, zShapeInfo)] = OpType::op(y[shape::getIndexOffset(i, yShapeInfo)], scalar, params);
     }
 }
 
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Z>
 template<typename OpType>
-__device__ void  ScalarBoolTransform<X, Z>::transformCuda(Nd4jLong len, 
-                                                          void* vx, 
-                                                          void *vy, Nd4jLong yEWS, 
-                                                          void *vparams, 
-                                                          void *vz, Nd4jLong zEWS, 
+__device__ void  ScalarBoolTransform<X, Z>::transformCuda(Nd4jLong len,
+                                                          void* vx,
+                                                          void *vy, Nd4jLong yEWS,
+                                                          void *vparams,
+                                                          void *vz, Nd4jLong zEWS,
                                                           int *allocationBuffer) {
 
     auto x = reinterpret_cast<X*>(vx)[0];
@@ -130,18 +130,18 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(Nd4jLong len,
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Z>
 template<typename OpType>
-__device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xShapeInfo, 
-                                                        void *vextraParams, 
-                                                        void *vz, Nd4jLong *zShapeInfo, 
-                                                        void *vscalars, 
-                                                        int *dimension, int dimensionLength, 
-                                                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, 
+__device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xShapeInfo,
+                                                        void *vextraParams,
+                                                        void *vz, Nd4jLong *zShapeInfo,
+                                                        void *vscalars,
+                                                        int *dimension, int dimensionLength,
+                                                        Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                                         Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
     auto x = reinterpret_cast<X*>(vx);
     auto scalars = reinterpret_cast<X*>(vscalars);
     auto z = reinterpret_cast<Z*>(vz);
     auto extraParams = reinterpret_cast<X*>(vextraParams);
-    
+
     if (tadShapeInfoZ == nullptr) {
         tadShapeInfoZ = tadShapeInfo;
         tadOffsetsZ = tadOffsets;
@@ -174,7 +174,7 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
             auto s = scalars[r];
 
             for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
-                oZ[shape::getIndexOffset(f, tadShapeInfoZ, tadLength)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo, tadLength)], s, extraParams);
+                oZ[shape::getIndexOffset(f, tadShapeInfoZ)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo)], s, extraParams);
         }
     }
 }
@@ -184,12 +184,12 @@ __device__ void  ScalarBoolTransform<X, Z>::transformCuda(void *vx, Nd4jLong *xS
 template<typename X, typename Z>
 template <typename OpType>
 _CUDA_H void ScalarBoolTransform<X, Z>::intermediateAlongDimension(dim3& launchDims, cudaStream_t *stream,
-                                                                void *x, Nd4jLong *xShapeInfo, 
-                                                                void *z, Nd4jLong *zShapeInfo, 
-                                                                void *scalars, 
-                                                                void *extraParams, 
-                                                                int *dimension, int dimensionLength, 
-                                                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, 
+                                                                void *x, Nd4jLong *xShapeInfo,
+                                                                void *z, Nd4jLong *zShapeInfo,
+                                                                void *scalars,
+                                                                void *extraParams,
+                                                                int *dimension, int dimensionLength,
+                                                                Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets,
                                                                 Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
     scalarAlongDimension<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ);
@@ -200,11 +200,11 @@ _CUDA_H void ScalarBoolTransform<X, Z>::intermediateAlongDimension(dim3& launchD
 template<typename X, typename Z>
 template<typename OpType>
 void _CUDA_H ScalarBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream,
-                                                            void *vx, Nd4jLong *xShapeInfo, 
-                                                            void *vz, Nd4jLong *zShapeInfo, 
-                                                            void* vscalar, 
+                                                            void *vx, Nd4jLong *xShapeInfo,
+                                                            void *vz, Nd4jLong *zShapeInfo,
+                                                            void* vscalar,
                                                             void *vextraParams, int *allocPointer){
-    
+
     scalarSimpleShaped<X, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, vscalar, xShapeInfo, vextraParams, vz, zShapeInfo, allocPointer);
     nd4j::DebugHelper::checkErrorCode(stream, "scalarSimpleShaped(...) failed");
 }
@@ -212,10 +212,10 @@ void _CUDA_H ScalarBoolTransform<X,Z>::intermediateShaped(dim3& launchDims, cuda
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y>
 void ScalarBoolTransform<X,Y>::executeCudaShaped(dim3& launchDims, cudaStream_t *stream,
-                                                int opNum, 
-                                                void *vx, Nd4jLong *xShapeInfo, 
-                                                void *vz, Nd4jLong *zShapeInfo, 
-                                                void* vscalar, 
+                                                int opNum,
+                                                void *vx, Nd4jLong *xShapeInfo,
+                                                void *vz, Nd4jLong *zShapeInfo,
+                                                void* vscalar,
                                                 void *vextraParams) {
 
     if (nd4j::Environment::getInstance()->isDebugAndVerbose())

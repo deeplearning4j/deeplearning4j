@@ -61,7 +61,7 @@ public class BitwiseXor extends BaseDynamicTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "bitwise_xor";
+        return "BitwiseXor";
     }
 
 

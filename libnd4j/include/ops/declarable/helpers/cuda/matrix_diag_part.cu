@@ -31,6 +31,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// put diagonals from input batched matricies to output batched vectors
     template <typename T>
     static __global__ void matrixDiagPartKernel(void const* inputBuffer, void* outputBuffer, Nd4jLong numTads, Nd4jLong inputLength,
                                             Nd4jLong* tadOnlyInputShapeInfo,  Nd4jLong *tadInputOffsets,
@@ -41,9 +43,8 @@ namespace helpers {
             auto xOffset = tadOutputOffsets[i];
             for (Nd4jLong j = threadIdx.x; j < inputLength; j += totalThreads) {
                 Nd4jLong coords[2] = {j, j};
-                Nd4jLong tadOffset = shape::getOffset(0, shape::shapeOf(tadOnlyInputShapeInfo), shape::stride(tadOnlyInputShapeInfo), coords, 2);
-                //shape::getIndexOffset(j, tadOnlyOutputShapeInfo, inputLength)
-                *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo, inputLength)) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);
+                Nd4jLong tadOffset = shape::getOffset(tadOnlyInputShapeInfo, coords);
+                *(reinterpret_cast<T*>(outputBuffer) + xOffset + shape::getIndexOffset(j, tadOnlyOutputShapeInfo)) = *(reinterpret_cast<T const*>(inputBuffer) + yOffset + tadOffset);
             }
         }
     }
@@ -51,6 +52,7 @@ namespace helpers {
 //////////////////////////////////////////////////////////////////////////
 // Returns a batched matrix tensor with new batched diagonal values.
 // for detailed explanations please take a look on web page: https://www.tensorflow.org/api_docs/python/tf/matrix_set_diag
+//
     template <typename T>
     int _matrixDiagPart(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
         auto stream = context->getCudaStream();
@@ -86,6 +88,9 @@ namespace helpers {
         return Status::OK();
     }
 
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// caller for _matrixDiagPart
+//
     int matrixDiagPart(nd4j::LaunchContext * context, const NDArray* input, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), return _matrixDiagPart, (context, input, output), LIBND4J_TYPES);
     }

@@ -66,30 +66,23 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
     private static final String MODEL_FILENAME = "frozen_model.pb";
 
     public static final String[] IGNORE_REGEXES = new String[]{
-
-            //Still failing: 2019/07/01 - https://github.com/deeplearning4j/deeplearning4j/issues/6322 and https://github.com/eclipse/deeplearning4j/issues/7955
-            "broadcast_dynamic_shape/1_4",
-            "broadcast_dynamic_shape/2,2_1",
-
-            //Failing 2019/07/01 - Libnd4j Concat sizing issue - https://github.com/eclipse/deeplearning4j/issues/7963
-            "boolean_mask/.*",
-
             //Failing 2019/07/01 - Issue 10, https://github.com/deeplearning4j/deeplearning4j/issues/6958
+            //Still failing 2019/09/11
             "slogdet/.*",
 
-            //Failing 2019/07/01 - https://github.com/eclipse/deeplearning4j/issues/7965
+            //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             "bincount/.*",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             "truncatemod/.*",
 
-            //Still failing as of 2019/07/02 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
+            //Still failing as of 2019/09/11 - https://github.com/deeplearning4j/deeplearning4j/issues/6464 - not sure if related to: https://github.com/deeplearning4j/deeplearning4j/issues/6447
             "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME",
 
-            //2019/07/02 - No tensorflow op found for SparseTensorDenseAdd
+            //2019/09/11 - No tensorflow op found for SparseTensorDenseAdd
             "confusion/.*",
 
-            //2019/07/02 - Couple of tests failing (InferenceSession issues)
+            //2019/09/11 - Couple of tests failing (InferenceSession issues)
             "rnn/bstack/d_.*",
 
             //2019/05/21 - Failing on AVX2/512 intermittently (Linux, OSX), passing elsewhere
@@ -103,13 +96,6 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //2019/05/28 - JVM crash on ppc64le only - See issue 7657
             "g_11",
 
-            //2019/06/21 - Not yet implemented: https://github.com/eclipse/deeplearning4j/issues/7913
-            "fake_quant/min_max_args_per_channel/.*",
-
-            //2019/06/22 - Known issue: https://github.com/eclipse/deeplearning4j/issues/7935
-            "fake_quant/min_max_vars/.*",
-            "fake_quant/min_max_args/.*",
-      
             //2019/07/09 - Need "Multinomial" op - https://github.com/eclipse/deeplearning4j/issues/7913
             "multinomial/.*"
     };

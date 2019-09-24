@@ -43,7 +43,7 @@ namespace helpers {
             int remainShift = fullLen % actualShift; 
             
             // stage 1) swap last actualShift elements with first ones.
-            PRAGMA_OMP_PARALLEL_FOR_IF(actualShift > Environment::getInstance()->elementwiseThreshold())
+            //PRAGMA_OMP_PARALLEL_FOR //_IF(actualShift > Environment::getInstance()->elementwiseThreshold())
             for (int e = 0; e < actualShift; ++e) {
                 int sourceIndex = fullLen - actualShift + e;
 
@@ -56,7 +56,7 @@ namespace helpers {
             }
 
             // stage 2) swap swapped actualShift elements with rest remainShiftCount times.
-            PRAGMA_OMP_PARALLEL_FOR_IF(shiftCount > Environment::getInstance()->tadThreshold())
+            //PRAGMA_OMP_PARALLEL_FOR //_IF(shiftCount > Environment::getInstance()->tadThreshold())
             for (int count = 1; count < shiftCount; ++count) {
                 for (int e = 0; e < actualShift; ++e) {
                     int destinationIndex = fullLen - (count + 1) * actualShift + e;
@@ -91,7 +91,7 @@ namespace helpers {
             output->assign(input);
 
         auto source = output; //input;
-        for (auto i = 0; i < axes.size(); i++) {
+        for (size_t i = 0; i < axes.size(); i++) {
             int axe = axes[i];
             if (axe == source->rankOf() - 1) {// last dimension
                 std::unique_ptr<ResultSet> listOfTensors(source->allTensorsAlongDimension({axe}));
@@ -115,7 +115,7 @@ namespace helpers {
 
                 std::unique_ptr<ResultSet> listOfTensors(source->allTensorsAlongDimension({dims}));
                 std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension({dims}));
-            
+                //
                 int fullLen = listOfTensors->size();
                 int sizeAt = input->sizeAt(axe);
 

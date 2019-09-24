@@ -39,7 +39,7 @@ namespace helpers {
 		if(tadShape == nullptr) {	// scalar case
 
 			for (Nd4jLong i = blockIdx.x * blockDim.x + threadIdx.x; i < inputListLength; i += gridDim.x * blockDim.x)
-				z[shape::getIndexOffset(i, zShapeInfo, inputListLength)] = reinterpret_cast<T*>(inputList[i])[0];
+				z[shape::getIndexOffset(i, zShapeInfo)] = reinterpret_cast<T*>(inputList[i])[0];
 		}
 		else {
 
@@ -50,7 +50,7 @@ namespace helpers {
 			    auto xShapeInfo = reinterpret_cast<Nd4jLong*>(inputShapeList[t]);
 
 			    for (int e = threadIdx.x; e < arrLen; e += blockDim.x)
-			        tZ[shape::getIndexOffset(e, tadShape, arrLen)] = tX[shape::getIndexOffset(e, xShapeInfo, arrLen)];
+			        tZ[shape::getIndexOffset(e, tadShape)] = tX[shape::getIndexOffset(e, xShapeInfo)];
 			}
 		}
 	}

@@ -106,8 +106,8 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
 
     for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
 
-        shape::index2coords(zRank, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), i, zLen, coords);
-        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coords, zRank);
+        shape::index2coords(i, zShapeInfo, coords);
+        const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
         // if( (row + upper < col) || (row + lower > col) )
         if((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
@@ -115,7 +115,7 @@ __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xSha
         else if(vx != vz) {      // when x and z are different arrays
             if(xRank != zRank)
                 coords[0] = coords[1];
-            const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, xRank);
+            const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(xShapeInfo, coords);
             z[zOffset] = x[xOffset];
         }
     }
@@ -177,8 +177,8 @@ __global__ static void identityMatrixCuda(void* vx, const Nd4jLong* xShapeInfo, 
 
     for (Nd4jLong i = tid; i < len; i += totalThreads) {
 
-        shape::index2coords(rank, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), i, len, coords);
-        const auto offset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, rank);
+        shape::index2coords(i, xShapeInfo, coords);
+        const auto offset = shape::getOffset(xShapeInfo, coords);
 
         if(coords[rank - 2] == coords[rank - 1]) // row == col -> on diagonal
             x[offset] = val;
@@ -424,9 +424,9 @@ __global__ static void repeatCuda(const void* vx, const Nd4jLong* xShapeInfo,
 
     for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
 
-        shape::index2coords(rank, zShapeInfo + 1, i, zLen, coords);
+        shape::index2coords(i, zShapeInfo, coords);
 
-        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+        const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
         if(repSize > 1) {
             for (uint j = 0; j < repSize; ++j) {
@@ -440,7 +440,7 @@ __global__ static void repeatCuda(const void* vx, const Nd4jLong* xShapeInfo,
         else
             coords[axis] /= repeats[0];
 
-        z[zOffset] = x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+        z[zOffset] = x[shape::getOffset(xShapeInfo, coords)];
     }
 }
 

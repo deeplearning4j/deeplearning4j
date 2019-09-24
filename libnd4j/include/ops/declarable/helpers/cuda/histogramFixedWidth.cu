@@ -55,7 +55,7 @@ __global__ static void histogramFixedWidthCuda( const void* vx, const Nd4jLong* 
 
     for (Nd4jLong i = tid; i < xLen; i += totalThreads) {
 
-        const X value = x[shape::getIndexOffset(i, xShapeInfo, xLen)];
+        const X value = x[shape::getIndexOffset(i, xShapeInfo)];
 
         Nd4jLong zIndex;
 
@@ -66,7 +66,7 @@ __global__ static void histogramFixedWidthCuda( const void* vx, const Nd4jLong* 
         else
             zIndex = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
 
-        nd4j::math::atomics::nd4j_atomicAdd<Z>(&z[shape::getIndexOffset(zIndex, zShapeInfo, nbins)], 1);
+        nd4j::math::atomics::nd4j_atomicAdd<Z>(&z[shape::getIndexOffset(zIndex, zShapeInfo)], 1);
     }
 }
 
@@ -101,7 +101,7 @@ void histogramFixedWidth(nd4j::LaunchContext* context, const NDArray& input, con
 //         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
 //         const auto step = gridDim.x * blockDim.x;
 //         for (int t = tid; t < bufferLength; t += step) {
-//             destination[t] = reinterpret_cast<T const*>(source)[shape::getIndexOffset(t, sourceShape, bufferLength)];
+//             destination[t] = reinterpret_cast<T const*>(source)[shape::getIndexOffset(t, sourceShape)];
 //         }
 //     }
 
@@ -110,7 +110,7 @@ void histogramFixedWidth(nd4j::LaunchContext* context, const NDArray& input, con
 //         const auto tid = blockIdx.x * gridDim.x + threadIdx.x;
 //         const auto step = gridDim.x * blockDim.x;
 //         for (int t = tid; t < bufferLength; t += step) {
-//             reinterpret_cast<T*>(destination)[shape::getIndexOffset(t, destinationShape, bufferLength)] = source[t];
+//             reinterpret_cast<T*>(destination)[shape::getIndexOffset(t, destinationShape)] = source[t];
 //         }
 //     }
 
@@ -130,7 +130,7 @@ void histogramFixedWidth(nd4j::LaunchContext* context, const NDArray& input, con
 
 //         for(auto i = tid; i < inputLength; i += step) {
 
-//             const T value = x[shape::getIndexOffset(i, inputShape, inputLength)];
+//             const T value = x[shape::getIndexOffset(i, inputShape)];
 //             Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
 
 //             if(value < secondEdge)

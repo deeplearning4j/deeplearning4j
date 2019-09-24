@@ -42,7 +42,7 @@ static __global__ void broadcastBoolSimple(
         Nd4jLong *zShapeInfo,
         int *dimension,
         int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-    
+
     functions::broadcast::BroadcastBool<X, Z>::template transformCuda<OpClass>(x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,dimension,dimensionLength,tadOnlyShapeInfo,tadOffsets,tadOnlyShapeInfoZ,tadOffsetsZ);
 }
 
@@ -145,9 +145,9 @@ namespace functions {
                 else {
                     // it is expected that x and z tads and y array all have the same length
                     for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                        auto xOffset = shape::getIndexOffset(i, xShapeInfo,  tadLength);
-                        auto yOffset = shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
-                        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
+                        auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+                        auto yOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
+                        auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
 
                         rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset]);
                     }
@@ -183,13 +183,13 @@ namespace functions {
             __shared__ int numTads;
             __shared__ Nd4jLong yEWS;
             __shared__ Nd4jLong zEWS;
-      
+
             if (threadIdx.x == 0) {
    	            tadLength = shape::length(tadOnlyShapeInfo);//shape::tadLength(xShapeInfo, dimension, dimensionLength);
                 tadEWS = shape::elementWiseStride(tadOnlyShapeInfo);
                 numTads = shape::length(xShapeInfo) / tadLength;
                 yEWS = shape::elementWiseStride(yShapeInfo);
-                zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);    
+                zEWS = shape::elementWiseStride(tadOnlyShapeInfoZ);
             }
             __syncthreads();
 
@@ -213,9 +213,9 @@ namespace functions {
             else {
                 // it is expected that x and z tads and y array all have the same length
                 for (Nd4jLong i = threadIdx.x; i < tadLength; i+= blockDim.x) {
-                    auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo,  tadLength);
-                    auto yOffset = shape::getIndexOffset(i, yShapeInfo, tadLength);
-                    auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ, tadLength);
+                    auto xOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
+                    auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+                    auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
 
                     rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
                 }

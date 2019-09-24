@@ -28,54 +28,6 @@
 namespace nd4j {
 namespace ops {
 
-#ifdef HAVE_MKLDNN
-using namespace mkldnn;
-
-static void getMKLDNNMemoryDescBatchNorm(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
-        mkldnn::memory::desc* batchnorm_src_md, mkldnn::memory::desc* batchnorm_diff_src_md, mkldnn::memory::desc* batchnorm_dst_md,
-        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md, int axis) {
-    const Nd4jLong* shape = src->getShapeInfo();
-    Nd4jLong rank = shape[0];
-    Nd4jLong dim1 = axis; // MKL-DNN supports only 1 axis, which has to be the "channel" one
-    Nd4jLong dim2 = axis >= 2 ? 1 : 2;
-    Nd4jLong dim3 = axis >= 3 ? 2 : 3;
-    mkldnn::memory::dims batchnorm_src_tz = { (int)shape[1], (int)shape[dim1 + 1], rank > 2 ? (int)shape[dim2 + 1] : 1, rank > 3 ? (int)shape[dim3 + 1] : 1};
-
-    auto type = mkldnn::memory::data_type::f32;
-    auto format = mkldnn::memory::format::nchw;
-    auto supposed_to_be_any_format = mkldnn::memory::format::nChw8c; // doesn't work with "any"
-
-    if (src != nullptr && src->getBuffer() != nullptr && batchnorm_src_md != nullptr) {
-        *batchnorm_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
-        *user_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
-        user_src_md->data.format = mkldnn_blocked; // overrides format
-        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[0];
-        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[dim1];
-        user_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? src->stridesOf()[dim2] : 1;
-        user_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? src->stridesOf()[dim3] : 1;
-    }
-
-    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && batchnorm_diff_src_md != nullptr) {
-        *batchnorm_diff_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
-        *user_diff_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
-        user_diff_src_md->data.format = mkldnn_blocked; // overrides format
-        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[0];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[dim1];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? diff_src->stridesOf()[dim2] : 1;
-        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
-    }
-
-    if (dst != nullptr && dst->getBuffer() != nullptr && batchnorm_dst_md != nullptr) {
-        *batchnorm_dst_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
-        *user_dst_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
-        user_dst_md->data.format = mkldnn_blocked; // overrides format
-        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[0];
-        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[dim1];
-        user_dst_md->data.layout_desc.blocking.strides[0][2] = rank > 2 ? dst->stridesOf()[dim2] : 1;
-        user_dst_md->data.layout_desc.blocking.strides[0][3] = rank > 3 ? dst->stridesOf()[dim3] : 1;
-    }
-}
-#endif
 
 CUSTOM_OP_IMPL(batchnorm, 3, 1, false, 1, 2) {    
     auto input    = INPUT_VARIABLE(0);
@@ -208,84 +160,6 @@ CUSTOM_OP_IMPL(batchnorm_new, 3, 1, false, 1, 2) {
     for(int i = 1; i < block.width(); ++i)
         REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0, "BATCHNORM_NEW op: types of all input arrays should be the same !");
 
-#ifdef HAVE_MKLDNN
-    if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported({input, mean, variance, gamma, beta, output}) && numOfAxes == 1) {
-        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-        if (streams.empty()) {
-            streams.push_back(MKLDNNStream("batchnorm_new"));
-        }
-
-        std::vector<Nd4jLong> shape({2, mean->lengthOf()});
-        NDArray weights = NDArrayFactory::create<float>('c', shape, block.launchContext());
-        weights({0, 1, 0, 0}).assign(1.0f);
-        weights({1, 2, 0, 0}).assign(0.0f);
-
-        if (streams[0].checkAndReset({input, mean, variance, gamma, beta}, {output}, {(float)epsilon}, axes)) {
-            mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc batchnorm_src_md(empty), batchnorm_dst_md(empty), user_src_md(empty), user_dst_md(empty);
-
-            getMKLDNNMemoryDescBatchNorm(input, nullptr, output,
-                        &batchnorm_src_md, nullptr, &batchnorm_dst_md,
-                        &user_src_md, nullptr, &user_dst_md, axes[0]);
-
-            auto batchnorm_desc = batch_normalization_forward::desc(prop_kind::forward_inference, batchnorm_src_md, epsilon,
-                            use_global_stats | (applyScale || applyOffset ? use_scale_shift : 0));
-
-            auto engine = streams[0].getEngine();
-            auto batchnorm_prim_desc = batch_normalization_forward::primitive_desc(batchnorm_desc, engine);
-            auto user_src_memory = mkldnn::memory({user_src_md, engine}, input->buffer());
-            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
-            auto batchnorm_mean_memory = mkldnn::memory(batchnorm_prim_desc.mean_primitive_desc(), mean->buffer());
-            auto batchnorm_variance_memory = mkldnn::memory(batchnorm_prim_desc.variance_primitive_desc(), variance->buffer());
-
-            auto batchnorm_src_memory = user_src_memory;
-            streams[0].addMemory(user_src_memory);
-            if (mkldnn::memory::primitive_desc({batchnorm_src_md, engine})
-                    != user_src_memory.get_primitive_desc()) {
-                batchnorm_src_memory = mkldnn::memory({batchnorm_src_md, engine});
-                streams[0].addMemory(batchnorm_src_memory);
-                streams[0].addOperation(reorder(user_src_memory, batchnorm_src_memory));
-            }
-
-            auto batchnorm_dst_memory = user_dst_memory;
-            streams[0].addMemory(user_dst_memory);
-            if (mkldnn::memory::primitive_desc(batchnorm_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                batchnorm_dst_memory = mkldnn::memory(batchnorm_prim_desc.dst_primitive_desc());
-                streams[0].addMemory(batchnorm_dst_memory);
-            }
-
-            streams[0].addMemory(batchnorm_mean_memory);
-            streams[0].addMemory(batchnorm_variance_memory);
-
-            if (applyScale || applyOffset) {
-                auto batchnorm_weights_memory = mkldnn::memory(batchnorm_prim_desc.weights_primitive_desc(), weights.buffer());
-                streams[0].addMemory(batchnorm_weights_memory);
-                streams[0].addOperation(batch_normalization_forward(batchnorm_prim_desc, (mkldnn::primitive::at)batchnorm_src_memory,
-                        (mkldnn::primitive::at)batchnorm_mean_memory, (mkldnn::primitive::at)batchnorm_variance_memory, (mkldnn::primitive::at)batchnorm_weights_memory, batchnorm_dst_memory));
-            } else {
-                streams[0].addOperation(batch_normalization_forward(batchnorm_prim_desc, (mkldnn::primitive::at)batchnorm_src_memory,
-                        (mkldnn::primitive::at)batchnorm_mean_memory, (mkldnn::primitive::at)batchnorm_variance_memory, batchnorm_dst_memory));
-            }
-
-            if (mkldnn::memory::primitive_desc(batchnorm_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                streams[0].addOperation(reorder(batchnorm_dst_memory, user_dst_memory));
-            }
-        }
-
-        if (applyScale || applyOffset) {
-            if (gamma != nullptr) {
-                weights({0, 1, 0, 0}).assign(gamma);
-            }
-            if (beta != nullptr) {
-                weights({1, 2, 0, 0}).assign(beta);
-            }
-        }
-        streams[0].submitAndWait();
-        return Status::OK();
-    }
-#endif
     nd4j_debug("MKL-DNN is not used for batchnorm_new!\n", 0);
 
     // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta

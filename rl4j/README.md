@@ -19,9 +19,9 @@ Here is a useful blog post I wrote to introduce you to reinforcement learning, D
 
 [Blog post](https://rubenfiszel.github.io/posts/rl4j/2016-08-24-Reinforcement-Learning-and-DQN.html)
 
-[Examples](https://github.com/deeplearning4j/dl4j-examples/tree/master/rl4j-examples)
+[Examples](https://github.com/eclipse/deeplearning4j-examples/tree/master/rl4j-examples)
 
-[Cartpole example](https://github.com/deeplearning4j/dl4j-examples/blob/master/rl4j-examples/src/main/java/org/deeplearning4j/examples/rl4j/Cartpole.java)
+[Cartpole example](https://github.com/eclipse/deeplearning4j-examples/blob/master/rl4j-examples/src/main/java/org/deeplearning4j/examples/rl4j/Cartpole.java)
 
 # Disclaimer
 
@@ -35,7 +35,7 @@ Comments are welcome on our gitter channel:
 ** INSTALL rl4j-api before installing all (see below)!**
 
 * mvn install -pl rl4j-api
-* [if you want rl4j-gym too] Download and mvn install: [gym-java-client](https://github.com/deeplearning4j/gym-java-client)
+* [if you want rl4j-gym too] Download and mvn install: [gym-java-client](https://github.com/eclipse/deeplearning4j/tree/master/gym-java-client)
 * mvn install
 
 # Visualisation
@@ -64,7 +64,7 @@ Doom is not ready yet but you can make it work if you feel adventurous with some
 * export MALMO_HOME=YOURMALMO_FOLDER
 * export MALMO_XSD_PATH=$MALMO_HOME/Schemas
 * launch malmo per [instructions](https://github.com/Microsoft/malmo#launching-minecraft-with-our-mod)
-* run with this [main](https://github.com/deeplearning4j/dl4j-examples/blob/master/rl4j-examples/src/main/java/org/deeplearning4j/examples/rl4j/MalmoPixels.java)
+* run with this [main](https://github.com/eclipse/deeplearning4j-examples/blob/master/rl4j-examples/src/main/java/org/deeplearning4j/examples/rl4j/MalmoPixels.java)
 
 
 

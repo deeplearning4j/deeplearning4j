@@ -73,12 +73,12 @@ namespace nd4j {
                         if (idx < 0 || idx >= tLen) {
                             PRAGMA_OMP_SIMD
                             for (unsigned int t = 0; t < tLen; t++) {
-                                cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo(), tLen)] = zero;
+                                cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = zero;
                             }
                         } else {
                             PRAGMA_OMP_SIMD
                             for (unsigned int t = 0; t < tLen; t++) {
-                                cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo(), tLen)] = idx == t ? one : zero;
+                                cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = idx == t ? one : zero;
                             }
                         }
                     }

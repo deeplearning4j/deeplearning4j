@@ -223,7 +223,7 @@ DataBuffer::DataBuffer(const size_t lenInBytes, const DataType dataType, memory:
 
     setCountersToZero();
 
-    if(!lenInBytes == 0) {
+    if(lenInBytes != 0) {
         allocateBuffers(allocBoth);
         writeSpecial();
     }

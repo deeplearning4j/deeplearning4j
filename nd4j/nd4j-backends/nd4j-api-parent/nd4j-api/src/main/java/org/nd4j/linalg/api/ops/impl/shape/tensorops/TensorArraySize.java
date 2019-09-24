@@ -31,8 +31,8 @@ import java.util.Map;
 
 public class TensorArraySize extends BaseTensorOp {
    @Override
-   public String tensorflowName() {
-      return "TensorArraySizeV3";
+   public String[] tensorflowNames() {
+      return new String[]{"TensorArraySize", "TensorArraySizeV2", "TensorArraySizeV3"};
    }
 
 

@@ -67,17 +67,17 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 	}
 	else if (vx == vz) {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
-			auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
-				
+			auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+			auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+
 			z[xOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}
 	}
 	else {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
-			auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
-			auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
+			auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+			auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+			auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 
 			z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}
@@ -165,7 +165,7 @@ void PairWiseIntTransform<X>::executeCudaShaped(dim3& launchDims, cudaStream_t *
     }
 
 
-      
+
     BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT PairWiseIntTransform, , INTEGER_TYPES);
 }
 }

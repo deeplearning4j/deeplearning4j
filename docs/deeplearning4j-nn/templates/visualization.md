@@ -58,9 +58,9 @@ You can set the port by using the ```org.deeplearning4j.ui.port``` system proper
 Information will then be collected and routed to the UI when you call the ```fit``` method on your network.
 
 
-**Example:** [See a UI example here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface/UIExample.java)
+**Example:** [See a UI example here](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface/UIExample.java)
 
-The full set of UI examples are available [here](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface).
+The full set of UI examples are available [here](https://github.com/eclipse/deeplearning4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface).
 
 
 ### <a name="overviewpage">Deeplearning4j UI: The Overview Page</a>
@@ -137,7 +137,7 @@ First, in the JVM running the UI (note this is the server):
 This will require the ```deeplearning4j-ui_2.10``` or ```deeplearning4j-ui_2.11``` dependency. (NOTE THIS IS NOT THE CLIENT THIS IS YOUR SERVER - SEE BELOW FOR THE CLIENT WHICH USES: deeplearning4j-ui-model)
 
 Client (both spark and standalone neural networks using simple deeplearning4j-nn)
-Second, for your neural net (Note this example is for spark, but computation graph and multi layer network both have the equivalemtn setListeners method with the same usage, [example found here](https://github.com/deeplearning4j/dl4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface/RemoteUIExample.java)):
+Second, for your neural net (Note this example is for spark, but computation graph and multi layer network both have the equivalemtn setListeners method with the same usage, [example found here](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/userInterface/RemoteUIExample.java)):
 
 ```
     SparkDl4jMultiLayer sparkNet = new SparkDl4jMultiLayer(sc, conf, tm);
@@ -214,7 +214,7 @@ The layer update histogram is displayed for the most recent iteration only.
 - Keep an eye out for very large values: this can indicate exploding gradients in your network
     - Exploding gradients are problematic as they can 'mess up' the parameters of your network
     - In this case, it may indicate a weight initialization, learning rate or input/labels data normalization issue
-    - In the case of recurrent neural networks, adding some [gradient normalization or gradient clipping](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/GradientNormalization.java) may help
+    - In the case of recurrent neural networks, adding some [gradient normalization or gradient clipping](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-nn/src/main/java/org/deeplearning4j/nn/conf/GradientNormalization.java) may help
 
 **Model Page: Parameter Learning Rates Chart**
 

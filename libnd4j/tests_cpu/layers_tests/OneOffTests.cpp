@@ -159,8 +159,6 @@ TEST_F(OneOffTests, test_conv2d_nhwc_failed_1) {
     auto z = graph->getVariableSpace()->getVariable(9)->getNDArray();
     ASSERT_TRUE(z != nullptr);
 
-    // z->printIndexedBuffer("z");
-
     ASSERT_EQ(e, *z);
 
     delete graph;

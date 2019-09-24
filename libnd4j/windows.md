@@ -13,7 +13,7 @@ You will also need to setup your PATH environment variable to include `C:\msys64
 
 For cpu, we recommend openblas. We will be adding instructions for mkl and other cpu implementations later.
 
-Send us a pull request or [file an issue](https://github.com/deeplearning4j/libnd4j/issues) if you have something in particular you are looking for.
+Send us a pull request or [file an issue](https://github.com/eclipse/deeplearning4j/issues) if you have something in particular you are looking for.
 
 ## Building libnd4j
 
@@ -67,7 +67,7 @@ While still in the `libnd4j` folder, run:
 
     If you want to use Control Panel for that: if you have libnd4j path looking like 'c:\Users\username\libnd4j' set LIBND4J_HOME to '/Users/username/libnd4j'
 
-Now leave the libnd4j directory and clone the [nd4j repository](https://github.com/deeplearning4j/nd4j). Run the following to compile nd4j with support for both the native cpu backend as well as the cuda backend:
+Now leave the libnd4j directory and clone the [repository](https://github.com/eclipse/deeplearning4j). Run the following to compile nd4j with support for both the native cpu backend as well as the cuda backend:
 
 ```bash
 mvn clean install -DskipTests -Dmaven.javadoc.skip=true

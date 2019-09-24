@@ -17,7 +17,6 @@
 package org.deeplearning4j.rl4j.learning.async;
 
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -63,7 +62,6 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread implements IAsyncG
     @Getter
     private NN target;
     @Getter
-    @Setter
     private boolean running = true;
 
     public AsyncGlobal(NN initial, AsyncConfiguration a3cc) {
@@ -78,7 +76,9 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread implements IAsyncG
     }
 
     public void enqueue(Gradient[] gradient, Integer nstep) {
-        queue.add(new Pair<>(gradient, nstep));
+        if(running && !isTrainingComplete()) {
+            queue.add(new Pair<>(gradient, nstep));
+        }
     }
 
     @Override
@@ -103,6 +103,14 @@ public class AsyncGlobal<NN extends NeuralNet> extends Thread implements IAsyncG
             }
         }
 
+    }
+
+    /**
+     * Force the immediate termination of the AsyncGlobal instance. Queued work items will be discarded.
+     */
+    public void terminate() {
+        running = false;
+        queue.clear();
     }
 
 }

@@ -84,7 +84,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
                 const Nd4jLong end   = start + step;
 
                 // calculate offset for mean, variance, gamma, beta (all of them have the same shape)
-                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);
+                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, canCastMean);
                 // calculate offset for input and output (all of them have the same shape)
                 shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, memBuff, dimsToExclude.data());
 
@@ -114,7 +114,7 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
                 const Nd4jLong end   = start + step;
 
                 // calculate offset for mean, variance, gamma, beta (all of them have the same shape)
-                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, lenSmall, canCastMean);
+                auto offsetSmall = shape::indexOffset(j, meanShapeInfo, meanShapeInfoCast, canCastMean);
                 // calculate offset for input and output (all of them have the same shape)
                 shape::outerArrayOffsets(inOffsets, j, inShapeInfo, meanShapeInfo, memBuff, dimsToExclude.data());
 

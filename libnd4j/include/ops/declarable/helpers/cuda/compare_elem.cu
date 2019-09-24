@@ -32,8 +32,8 @@ namespace nd4j {
 
                 // each thread will compare 2 elements: E and E+1
                 for (int e = tid; e < length - 1; e += blockDim.x * gridDim.x) {
-                    auto val0 = x[shape::getIndexOffset(e, xShapeInfo, length)];
-                    auto val1 = x[shape::getIndexOffset(e+1, xShapeInfo, length)];
+                    auto val0 = x[shape::getIndexOffset(e, xShapeInfo)];
+                    auto val1 = x[shape::getIndexOffset(e+1, xShapeInfo)];
 
                     bool v = false;
                     if (isStrict)

@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/convolutions.h>
 #include <ops/declarable/helpers/im2col.h>
 #include <ops/declarable/helpers/col2im.h>
+#include<ops/declarable/helpers/addBias.h>
 #include <exceptions/cuda_exception.h>
 #include <NDArrayFactory.h>
 #include <MmulHelper.h>
@@ -63,7 +64,7 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
 
     auto coords = sharedMem + threadIdx.x * colRank;
 
-    shape::index2coords(colRank, colShapeInfo + 1, colInd, colLen, coords);
+    shape::index2coords(colInd, colShapeInfo, coords);
 
     // const auto colW = coords[7];
     // const auto colH = coords[6];
@@ -74,7 +75,7 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
     // const auto c    = coords[1];
     // const auto b    = coords[0];
 
-    const auto colOffset = shape::getOffset(0, colShapeInfo + 1, colShapeInfo + colRank + 1, coords, colRank);
+    const auto colOffset = shape::getOffset(colShapeInfo, coords);
 
     coords[2] = -pD + coords[2] * dD + coords[5] * sD;     // const auto volDep = (-pD + kDep * dD) + colD * sD;
     coords[3] = -pH + coords[3] * dH + coords[6] * sH;     // const auto volRow = (-pH + kRow * dH) + colH * sH;
@@ -83,7 +84,7 @@ static __global__ void vol2colCuda(const void* volume, const Nd4jLong* volShapeI
     if (static_cast<unsigned>(coords[2]) >= static_cast<unsigned>(iD) || static_cast<unsigned>(coords[3]) >= static_cast<unsigned>(iH) || static_cast<unsigned>(coords[4]) >= static_cast<unsigned>(iW))
         col[colOffset] = static_cast<T>(0.);
     else
-        col[colOffset] = vol[shape::getOffset(0, volShapeInfo + 1, volShapeInfo + volRank + 1, coords, volRank)];
+        col[colOffset] = vol[shape::getOffset(volShapeInfo, coords)];
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -149,9 +150,9 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
 
     auto coords = sharedMem + threadIdx.x * colRank;
 
-    shape::index2coords(volRank, volShapeInfo + 1, volInd, volLen, coords);
+    shape::index2coords(volInd, volShapeInfo, coords);
 
-    const auto volOffset = shape::getOffset(0, volShapeInfo + 1, volShapeInfo + volRank + 1, coords, volRank);
+    const auto volOffset = shape::getOffset(volShapeInfo, coords);
 
     const int imD = coords[2] + pD;
     const int imH = coords[3] + pH;
@@ -181,7 +182,7 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
                     coords[3] /= dH;
                     coords[4] /= dW;
 
-                    val += col[shape::getOffset(0, colShapeInfo + 1, colShapeInfo + colRank + 1, coords, colRank)];
+                    val += col[shape::getOffset(colShapeInfo, coords)];
                 }
             }
         }
@@ -268,8 +269,8 @@ static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDA
 
     //----- add biases if required -----//
     if(bias)
-        output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
-        // helpers::addBias(*output, *bias, isNCHW);
+        // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        helpers::addBias(block, *output, *bias, *output, isNCHW);
 
     if(!isNCHW)
         delete input;
@@ -283,7 +284,7 @@ void ConvolutionUtils::conv2d(nd4j::graph::Context& block, const NDArray* input,
 
 //////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y>
-static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+static void depthwiseConv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
     // input     [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
     // weights   [kH, kW, iC, mC] always
@@ -330,7 +331,8 @@ static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const
     MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 
     if(bias)
-        output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+        helpers::addBias(block, *output, *bias, *output, isNCHW);
 
     if(!isNCHW)
         delete input;
@@ -338,7 +340,7 @@ static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const
 
 //////////////////////////////////////////////////////////////////////////
 void ConvolutionUtils::depthwiseConv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
+    BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -735,9 +737,9 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
+    shape::index2coords(zInd, zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     int dstart = coords[2] * sD - pD;
     int hstart = coords[3] * sH - pH;
@@ -768,7 +770,7 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD) {
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH){
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
-                        T val = x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+                        T val = x[shape::getOffset(xShapeInfo, coords)];
                         if (val > max)
                             max = val;
                     }
@@ -784,7 +786,7 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-                        sum += x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+                        sum += x[shape::getOffset(xShapeInfo, coords)];
 
             if (extraParam0 == 0) {         //Exclude padding
                 uint a = (dend - dstart) / dD + ((dend - dstart) % dD == 0 ? 0 : 1);
@@ -805,7 +807,7 @@ __global__ static void pooling3dCuda(const void* vx, const Nd4jLong* xShapeInfo,
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-                        sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)]), extraParam0);
+                        sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
             sum = nd4j::math::nd4j_pow<T,T,T>(sum, (T) 1.f / extraParam0);
 
@@ -885,9 +887,9 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, yShapeInfo + 1, yInd, yLen, coords);
+    shape::index2coords(yInd, yShapeInfo, coords);
 
-    const auto yOffset = shape::getOffset(0, yShapeInfo + 1, yShapeInfo + rank + 1, coords, rank);
+    const auto yOffset = shape::getOffset(yShapeInfo, coords);
 
     int hstart = coords[2] * sH - pH;
     int wstart = coords[3] * sW - pW;
@@ -913,7 +915,7 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             T max = -DataTypeUtils::max<T>();
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
                 for (coords[3] = wstart; coords[3] < wend; coords[3] += dW){
-                    T val = x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+                    T val = x[shape::getOffset(xShapeInfo, coords)];
                     if (val > max) {
                         max = val;
                         coord2 = coords[2];
@@ -923,7 +925,7 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             }
             coords[2] = coord2;
             coords[3] = coord3;
-            auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+            auto zOffset = shape::getOffset(zShapeInfo, coords);
             nd4j::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], y[yOffset]);
             //z[zOffset] += y[yOffset];
         }
@@ -941,7 +943,7 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH)
                 for (coords[3] = wstart; coords[3] < wend; coords[3] += dW)
-                    nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank)], val);
+                    nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(zShapeInfo, coords)], val);
         }
         break;
 
@@ -953,14 +955,14 @@ __global__ static void pooling2dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH)
                 for (coords[3] = wstart; coords[3] < wend; coords[3] += dW)
-                    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)]), extraParam0);
+                    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
             val *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
 
             for (coords[2] = hstart; coords[2] < hend; coords[2] += dH) {
                 for (coords[3] = wstart; coords[3] < wend; coords[3] += dW) {
-                    const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
-                    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+                    const auto xOffset = shape::getOffset(xShapeInfo, coords);
+                    const auto zOffset = shape::getOffset(zShapeInfo, coords);
                     nd4j::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], val * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[xOffset]), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(x[xOffset]));
                 }
             }
@@ -1046,9 +1048,9 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, yShapeInfo + 1, yInd, yLen, coords);
+    shape::index2coords(yInd, yShapeInfo, coords);
 
-    const auto yOffset = shape::getOffset(0, yShapeInfo + 1, yShapeInfo + rank + 1, coords, rank);
+    const auto yOffset = shape::getOffset(yShapeInfo, coords);
 
     int dstart = coords[2] * sD - pD;
     int hstart = coords[3] * sH - pH;
@@ -1080,7 +1082,7 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD) {
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH){
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
-                        T val = x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+                        T val = x[shape::getOffset(xShapeInfo, coords)];
                         if (val > max) {
                             max = val;
                             coord2 = coords[2];
@@ -1093,7 +1095,7 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             coords[2] = coord2;
             coords[3] = coord3;
             coords[4] = coord4;
-            nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank)], y[yOffset]);
+            nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(zShapeInfo, coords)], y[yOffset]);
         }
         break;
 
@@ -1110,7 +1112,7 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-                        nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank)], val);
+                        nd4j::math::atomics::nd4j_atomicAdd<T>(&z[shape::getOffset(zShapeInfo, coords)], val);
         }
         break;
 
@@ -1123,15 +1125,15 @@ __global__ static void pooling3dBPCuda(const void* vx, const Nd4jLong* xShapeInf
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD)
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH)
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW)
-                        sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)]), extraParam0);
+                        sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[shape::getOffset(xShapeInfo, coords)]), extraParam0);
 
             val *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
 
             for (coords[2] = dstart; coords[2] < dend; coords[2] += dD) {
                 for (coords[3] = hstart; coords[3] < hend; coords[3] += dH) {
                     for (coords[4] = wstart; coords[4] < wend; coords[4] += dW) {
-                        const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
-                        const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+                        const auto xOffset = shape::getOffset(xShapeInfo, coords);
+                        const auto zOffset = shape::getOffset(zShapeInfo, coords);
                         nd4j::math::atomics::nd4j_atomicAdd<T>(&z[zOffset], val * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(x[xOffset]), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(x[xOffset]));
                     }
                 }
@@ -1363,14 +1365,14 @@ __global__ static void upsampling2dCuda(const void* vx, const Nd4jLong* xShapeIn
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
+    shape::index2coords(zInd, zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     coords[dimIH]     /= factorH;
     coords[dimIH + 1] /= factorW;
 
-    const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
+    const auto xOffset = shape::getOffset(xShapeInfo, coords);
 
     z[zOffset] = x[xOffset];
 }
@@ -1431,15 +1433,15 @@ __global__ static void upsampling3dCuda(const void* vx, const Nd4jLong* xShapeIn
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
+    shape::index2coords(zInd, zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     coords[dimID]     /= factorD;
     coords[dimID + 1] /= factorH;
     coords[dimID + 2] /= factorW;
 
-    const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
+    const auto xOffset = shape::getOffset(xShapeInfo, coords);
 
     z[zOffset] = x[xOffset];
 }
@@ -1504,9 +1506,9 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
+    shape::index2coords(zInd, zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     z[zOffset] = 0;
 
@@ -1515,7 +1517,7 @@ __global__ static void upsampling2dBPCuda(const void* vx, const Nd4jLong* xShape
 
     for(coords[dimIH] = zCoord2; coords[dimIH] < zCoord2 + factorH; ++coords[dimIH])
         for(coords[dimIH + 1] = zCoord3; coords[dimIH + 1] < zCoord3 + factorW; ++coords[dimIH + 1])
-            z[zOffset] += x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+            z[zOffset] += x[shape::getOffset(xShapeInfo, coords)];
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -1579,9 +1581,9 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
 
     auto coords = sharedMem + threadIdx.x * rank;
 
-    shape::index2coords(rank, zShapeInfo + 1, zInd, zLen, coords);
+    shape::index2coords(zInd, zShapeInfo, coords);
 
-    const auto zOffset = shape::getOffset(0, zShapeInfo + 1, zShapeInfo + rank + 1, coords, rank);
+    const auto zOffset = shape::getOffset(zShapeInfo, coords);
 
     z[zOffset] = 0;
 
@@ -1592,7 +1594,7 @@ __global__ static void upsampling3dBPCuda(const void* vx, const Nd4jLong* xShape
     for(coords[dimID] = zCoord2; coords[dimID] < zCoord2 + factorD; ++coords[dimID])
         for(coords[dimID + 1] = zCoord3; coords[dimID + 1] < zCoord3 + factorH; ++coords[dimID + 1])
             for(coords[dimID + 2] = zCoord4; coords[dimID + 2] < zCoord4 + factorW; ++coords[dimID + 2])
-                z[zOffset] += x[shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank)];
+                z[zOffset] += x[shape::getOffset(xShapeInfo, coords)];
 }
 
 //////////////////////////////////////////////////////////////////////////

@@ -40,8 +40,8 @@ namespace helpers {
 
         for (auto i = blockIdx.x; i < maxIndex; i += gridDim.x)
             for(auto k = threadIdx.x; k < inputLen; k += blockDim.x)
-                if (i < input[shape::getIndexOffset(k, inputShape, inputLen)])
-                    output[shape::getIndexOffset(k * maxIndex + i, outputShape, outputLen)] = B(true);
+                if (i < input[shape::getIndexOffset(k, inputShape)])
+                    output[shape::getIndexOffset(k * maxIndex + i, outputShape)] = B(true);
 
     }
 

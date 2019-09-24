@@ -59,7 +59,7 @@ namespace helpers {
             auto tZ = z + tadOffsets[label];
             T val = (weightsBuffer == nullptr ? (T)1.0f : w[t]);
 
-            auto idx = shape::getIndexOffset(pred, tadShape, arrLen);
+            auto idx = shape::getIndexOffset(pred, tadShape);
             tZ[idx] = val;
         }
     }

@@ -27,7 +27,7 @@ public interface IDataManager {
     String getVideoDir();
     void appendStat(StatEntry statEntry) throws IOException;
     void writeInfo(ILearning iLearning) throws IOException;
-    void save(Learning learning) throws IOException;
+    void save(ILearning learning) throws IOException;
 
     //In order for jackson to serialize StatEntry
     //please use Lombok @Value (see QLStatEntry)

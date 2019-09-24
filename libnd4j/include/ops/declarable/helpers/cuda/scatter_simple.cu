@@ -40,9 +40,9 @@ namespace nd4j {
                 auto tid = threadIdx.x + blockIdx.x * blockDim.x;
                 for (int i = tid; i < iLength; i += blockDim.x * gridDim.x) {
                     auto x = reinterpret_cast<X*>(vx) + xTadOffsets[i];
-                    auto idx = indices[shape::getIndexOffset(i, iShapeInfo, iLength)];
+                    auto idx = indices[shape::getIndexOffset(i, iShapeInfo)];
 
-                    x[shape::getIndexOffset(idx, xTadShape, xLength)] = u[shape::getIndexOffset(i, uShapeInfo, uLength)];
+                    x[shape::getIndexOffset(idx, xTadShape)] = u[shape::getIndexOffset(i, uShapeInfo)];
                 }
             }
 

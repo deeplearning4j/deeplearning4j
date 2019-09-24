@@ -220,23 +220,23 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
     val list = (0 to 9).toNDArray
     val step = list(1 -> 7 by 2).reshape(-1)
     assert(step.length() == 3)
-    assert(step.getFloat(0) == 1)
+    assert(step.getFloat(0: Long) == 1)
     assert(step(0) == 1)
     assert(step(0, 0) == 1)
-    assert(step.getFloat(1) == 3)
-    assert(step.getFloat(2) == 5)
+    assert(step.getFloat(1: Long) == 3)
+    assert(step.getFloat(2: Long) == 5)
 
     val filtered = list(-2 -> 10).reshape(-1)
     assert(filtered.length() == 2)
-    assert(filtered.getFloat(0) == 8)
-    assert(filtered.getFloat(1) == 9)
+    assert(filtered.getFloat(0: Long) == 8)
+    assert(filtered.getFloat(1: Long) == 9)
 
     val nStep = list(-3 -> 3 by -1).reshape(-1)
     assert(nStep.length() == 4)
-    assert(nStep.getFloat(0) == 7)
-    assert(nStep.getFloat(1) == 6)
-    assert(nStep.getFloat(2) == 5)
-    assert(nStep.getFloat(3) == 4)
+    assert(nStep.getFloat(0: Long) == 7)
+    assert(nStep.getFloat(1: Long) == 6)
+    assert(nStep.getFloat(2: Long) == 5)
+    assert(nStep.getFloat(3: Long) == 4)
   }
 
   it should "be able to update value with specified indices" in {

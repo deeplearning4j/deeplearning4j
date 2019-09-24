@@ -61,14 +61,14 @@ __global__ static void onehotCuda(const void *vx, const Nd4jLong *xShapeInfo, vo
 
     for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
 
-        shape::index2coords(zRank, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), i, zLen, coord);
-        const auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coord, zRank);
+        shape::index2coords(i, zShapeInfo, coord);
+        const auto zOffset = shape::getOffset(zShapeInfo, coord);
         const auto depthCoord = coord[axis];
 
         for (uint j = axis; j < zRank - 1; ++j)
           coord[j] = coord[j + 1];
 
-        const auto xOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coord, xRank);
+        const auto xOffset = shape::getOffset(xShapeInfo, coord);
         const Nd4jLong idx = x[xOffset];
         z[zOffset] = depthCoord == idx ? on : off;
     }

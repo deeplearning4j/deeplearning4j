@@ -41,11 +41,6 @@
             <version>${mkl.version}-${javacpp-presets.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.bytedeco</groupId>
-            <artifactId>mkl-dnn-platform</artifactId>
-            <version>${mkl-dnn.javacpp.version}</version>
-        </dependency>
-        <dependency>
             <groupId>${project.groupId}</groupId>
             <artifactId>${nd4j.backend}</artifactId>
             <version>${project.version}</version>

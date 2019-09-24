@@ -46,8 +46,8 @@ __global__ void bitonicSortStepKernelKey(void *vx, Nd4jLong *xShapeInfo, void *v
 
     /* The threads with the lowest ids sort the array. */
     if ((ixj)>i) {
-        int posI = shape::getIndexOffset(i, xShapeInfo, xLength);
-        int posIXJ = shape::getIndexOffset(ixj, xShapeInfo, xLength);
+        int posI = shape::getIndexOffset(i, xShapeInfo);
+        int posIXJ = shape::getIndexOffset(ixj, xShapeInfo);
 
         if ((i&k)==0) {
             /* Sort ascending */
@@ -100,8 +100,8 @@ __global__ void bitonicSortStepKernel(void *vx, Nd4jLong *xShapeInfo, int j, int
 
     /* The threads with the lowest ids sort the array. */
     if ((ixj)>i) {
-        int posI = shape::getIndexOffset(i, xShapeInfo, xLength);
-        int posIXJ = shape::getIndexOffset(ixj, xShapeInfo, xLength);
+        int posI = shape::getIndexOffset(i, xShapeInfo);
+        int posIXJ = shape::getIndexOffset(ixj, xShapeInfo);
 
         if ((i&k)==0) {
             /* Sort ascending */

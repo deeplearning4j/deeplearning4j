@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// Created by Yurii Shyrma on 11.12.2017
+// @author Yurii Shyrma (iuriish@yahoo.com)
 //
 
 #include<cmath>
@@ -117,10 +117,10 @@ __global__ void betaIncForArrayCuda(const void* va, const Nd4jLong* aShapeInfo,
 
     Nd4jLong len = shape::length(xShapeInfo);
 
-    const T  a = *(reinterpret_cast<const T*>(va) + shape::getIndexOffset(j, aShapeInfo, len));
-    const T  b = *(reinterpret_cast<const T*>(vb) + shape::getIndexOffset(j, bShapeInfo, len));
-    const T  x = *(reinterpret_cast<const T*>(vx) + shape::getIndexOffset(j, xShapeInfo, len));
-    	  T& z = *(reinterpret_cast<T*>(vz) 	 	 + shape::getIndexOffset(j, zShapeInfo, len));
+    const T  a = *(reinterpret_cast<const T*>(va) + shape::getIndexOffset(j, aShapeInfo));
+    const T  b = *(reinterpret_cast<const T*>(vb) + shape::getIndexOffset(j, bShapeInfo));
+    const T  x = *(reinterpret_cast<const T*>(vx) + shape::getIndexOffset(j, xShapeInfo));
+    	  T& z = *(reinterpret_cast<T*>(vz) 	  + shape::getIndexOffset(j, zShapeInfo));
 
     // t^{n-1} * (1 - t)^{n-1} is symmetric function with respect to x = 0.5
    	if(a == b && x == static_cast<T>(0.5)) {

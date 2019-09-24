@@ -32,7 +32,7 @@ namespace nd4j {
             OpDescriptor * _descriptor;
 
             bool prepareOutputs(Context& block);
-            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
+            Nd4jStatus validateAndExecute(Context& block) override = 0;
         public:
             BooleanOp(const char *name, int numInputs, bool scalar);
             ~BooleanOp();

@@ -41,7 +41,7 @@ brew insall gcc
 
 10. Now download the latest JavaCPP (https://github.com/bytedeco/javacpp) and build it using `mvn clean install -X -DskipTests -Dmaven.javadoc.skip=true`
 
-11. Now download the latest [nd4j](https://github.com/deeplearning4j/nd4j.git) project from the repo. Make sure that nd4j is at the same leve in the tree as libnd4j, otherwise the maven will complain about not being able to find the header files.
+11. Now download the latest [nd4j](https://github.com/eclipse/deeplearning4j.git) project from the repo. Make sure that nd4j is at the same leve in the tree as libnd4j, otherwise the maven will complain about not being able to find the header files.
 
 12. inside the nd4j directory run `mvn clean install -X -DskipTests -Dmaven.javadoc.skip=true -pl '!org.nd4j:nd4j-cuda-9.0,!org.nd4j:nd4j-tests,!org.nd4j:nd4j-cuda-9.0-platform'` this should mainly fly by.
 

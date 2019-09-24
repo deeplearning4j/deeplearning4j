@@ -3228,8 +3228,8 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
 
         for (Nd4jLong i = threadIdx.x; i < arrLenX; i += blockDim.x) {
 
-            const auto xOffset = shape::getIndexOffset(i, xShapeInfo, arrLenX);
-            const auto yOffset = shape::getIndexOffset(i, yShapeInfo, arrLenY);
+            const auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+            const auto yOffset = shape::getIndexOffset(i, yShapeInfo);
 
             switch (opCode) {
                 case 0:
@@ -3576,4 +3576,20 @@ int lastErrorCode() {
 
 const char* lastErrorMessage() {
     return nd4j::LaunchContext::defaultContext()->errorReference()->errorMessage();
+}
+
+int  binaryLevel() {
+    return 0;
+}
+
+int optimalLevel() {
+    return 0;
+}
+
+bool isMinimalRequirementsMet() {
+    return true;
+}
+
+bool isOptimalRequirementsMet() {
+    return true;
 }

@@ -59,19 +59,10 @@ To version:
 <nd4j.version>1.0.0-SNAPSHOT</nd4j.version>
 ```
 
-For Spark dependencies, change as follows:
-```
-<dl4j.spark.version>1.0.0-beta2_spark_2</dl4j.spark.version>
-```
-to
-```
-<dl4j.spark.version>1.0.0_spark_2-SNAPSHOT</dl4j.spark.version>
-```
-
 **Sample pom.xml using Snapshots**
 
 A sample pom.xml is provided here: [sample pom.xml using snapshots](https://gist.github.com/AlexDBlack/28b0c9a72bce562c8782be326a6e2aaa)
-This has been taken from the DL4J standalone sample project and modified using step 1 and 2 above. The original (using the last release) can be found [here](https://github.com/deeplearning4j/dl4j-examples/blob/master/standalone-sample-project/pom.xml)
+This has been taken from the DL4J standalone sample project and modified using step 1 and 2 above. The original (using the last release) can be found [here](https://github.com/eclipse/deeplearning4j-examples/blob/master/standalone-sample-project/pom.xml)
 
 
 ## <a name="Limitations">Limitations</a>
@@ -129,4 +120,4 @@ dependencies {
 
 should work in theory, but it does not. This is due to [a bug in Gradle](https://github.com/gradle/gradle/issues/2882). Gradle with snapshots *and* Maven classifiers appears to be a problem.
 
- Of note when using the nd4j-native backend on Gradle (and SBT - but not Maven), you need to add openblas as a dependency. We do this for you in the -platform pom. Reference the -platform pom [here](https://github.com/deeplearning4j/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-platform/pom.xml#L19) to double check your dependencies. Note that these are version properties. See the ```<properties>``` section of the pom for current versions of the openblas and javacpp presets required to run nd4j-native.
+ Of note when using the nd4j-native backend on Gradle (and SBT - but not Maven), you need to add openblas as a dependency. We do this for you in the -platform pom. Reference the -platform pom [here](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-backend-impls/nd4j-native-platform/pom.xml#L19) to double check your dependencies. Note that these are version properties. See the ```<properties>``` section of the pom for current versions of the openblas and javacpp presets required to run nd4j-native.

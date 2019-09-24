@@ -73,7 +73,7 @@ namespace functions {
 
 
             for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-                z[shape::getIndexOffset(i, zShapeInfo, length)] = OpType::op(y[shape::getIndexOffset(i, yShapeInfo, length)], scalar, params);
+                z[shape::getIndexOffset(i, zShapeInfo)] = OpType::op(y[shape::getIndexOffset(i, yShapeInfo)], scalar, params);
             }
         }
     }

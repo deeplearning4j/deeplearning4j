@@ -246,9 +246,9 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 auto lenPerThread = static_cast<uint>(threadsInfo.getItersPerThread(threadNum));
                 PRAGMA_OMP_SIMD
                 for (uint i = 0; i < lenPerThread; i++) {
-                    auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
-                    auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, len, canCastY);
-                    auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
+                    auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
+                    auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, canCastY);
+                    auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, canCastZ);
                     z[zOffset] = op(x[xOffset], y[yOffset], extraParams);
                 }
             }
@@ -452,7 +452,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     for (uint j = 0; j < tadLen; j++)
                         start = OpType::update(start, OpType::op(tad[j * tadEws], extraParams), extraParams);
 
-                    auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
+                    auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
                     z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
                 }
             }
@@ -469,7 +469,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     auto start = OpType::startingValue(tad);
 
                     for (uint j = 0; j < tadLen; j++) {
-                        auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
+                        auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
                         start = OpType::update(start, OpType::op(tad[tadOffset], extraParams), extraParams);
                     }
 
@@ -491,11 +491,11 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //         auto start = OpType::startingValue(tad);
 
             //         for (uint j = 0; j < tadLen; j++) {
-            //             auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, tadLen, canCastTad);
+            //             auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
             //             start = OpType::update(start, OpType::op(tad[tadOffset], extraParams), extraParams);
             //         }
 
-            //         auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
+            //         auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
             //         z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
             //     }
             // }
@@ -517,7 +517,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     for (uint j = 0; j < tadLen; j++)
                         start = OpType::update(start, OpType::op(tad[innertadOffsets[j]], extraParams), extraParams);
 
-                    auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, zLen, canCastZ);
+                    auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
                     z[zOffset] = OpType::postProcess(start, tadLen, extraParams);
                 }
 
@@ -658,13 +658,13 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                         PRAGMA_OMP_SIMD
                         for (uint i = 0; i < lenPerThread; i++) {
-                            const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
+                            const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, canCastX);
                             zi[i * zEws] = OpType::op(x[xOffset], extraParams);
                         }
                     } else {
                         PRAGMA_OMP_SIMD
                         for (uint i = 0; i < lenPerThread; i++) {
-                            const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, len, canCastX);
+                            const auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, castXShapeInfo, canCastX);
                             zi[i] = OpType::op(x[xOffset], extraParams);
                         }
                     }
@@ -782,8 +782,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                     PRAGMA_OMP_SIMD
                     for (uint i = 0; i < lenPerThread; i++) {
-                        auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, len, canCastX);
-                        auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, len, canCastZ);
+                        auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
+                        auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpType::op(x[xOffset], extraParams);
                     }
                 }
@@ -1123,7 +1123,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         auto start      = OpType::startingValue(xTad);
 
                         for (uint j = 0; j < tadLen; ++j) {
-                            const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, tadLen, canCastXTad);
+                            const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
                             start = OpType::update(start, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
                         }
 
@@ -1147,8 +1147,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         auto start      = OpType::startingValue(xTad);
 
                         for (uint j = 0; j < tadLen; ++j) {
-                            const auto xTadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, tadLen, canCastXTad);
-                            const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, tadLen, canCastYTad);
+                            const auto xTadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
+                            const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, canCastYTad);
                             start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                         }
 
@@ -1423,7 +1423,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                                   auto start = startVal;
 
                             for (uint j = 0; j < tadLen; ++j) {
-                                const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, tadLen, canCastXTad);
+                                const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
                                 start = OpType::update(start, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
                             }
                             z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
@@ -1449,8 +1449,8 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                                   auto start = startVal;
 
                             for (uint j = 0; j < tadLen; ++j) {
-                                const auto xTadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, tadLen, canCastXTad);
-                                const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, tadLen, canCastYTad);
+                                const auto xTadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
+                                const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, canCastYTad);
                                 start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                             }
 

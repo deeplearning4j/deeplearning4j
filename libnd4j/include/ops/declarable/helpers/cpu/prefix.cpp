@@ -53,8 +53,8 @@ namespace nd4j {
 
                         for (Nd4jLong e = length - 1; e >= 0; --e) {
 
-                            auto xOffset = shape::getIndexOffset(e, xShapeInfo, length);
-                            auto zOffset = shape::getIndexOffset(e, zShapeInfo, length);
+                            auto xOffset = shape::getIndexOffset(e, xShapeInfo);
+                            auto zOffset = shape::getIndexOffset(e, zShapeInfo);
                             sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
 
                             if (!exclusive)
@@ -83,8 +83,8 @@ namespace nd4j {
 
                         for (int e = 0; e < length; e++) {
 
-                            auto xOffset = shape::getIndexOffset(e, xShapeInfo, length);
-                            auto zOffset = shape::getIndexOffset(e, zShapeInfo, length);
+                            auto xOffset = shape::getIndexOffset(e, xShapeInfo);
+                            auto zOffset = shape::getIndexOffset(e, zShapeInfo);
                             sum = op == scalar::Add ? simdOps::Add<T, T, T>::op(sum, x[xOffset]) : simdOps::Multiply<T, T, T>::op(sum, x[xOffset]);
 
                             if (!exclusive)

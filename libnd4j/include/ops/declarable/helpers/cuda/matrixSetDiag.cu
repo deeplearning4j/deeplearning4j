@@ -61,14 +61,14 @@ __global__ static void matrixSetDiagCuda(const void* vx, const Nd4jLong* xShapeI
 
     for (Nd4jLong i = tid; i < xLen; i += gridDim.x * blockDim.x) {
 
-        shape::index2coords(xRank, xShapeInfo + 1, i, xLen, coords);
+        shape::index2coords(i, xShapeInfo, coords);
 
-        const auto xOffset = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + xRank + 1, coords, xRank);
-        const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(0, zShapeInfo + 1, zShapeInfo + xRank + 1, coords, xRank);
+        const auto xOffset = shape::getOffset(xShapeInfo, coords);
+        const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(zShapeInfo, coords);
 
         // condition to be on diagonal of innermost matrix
         if(coords[xRank - 2] == coords[xRank - 1])
-            z[zOffset] = y[shape::getOffset(0, yShapeInfo + 1, yShapeInfo + xRank, coords, xRank - 1)];
+            z[zOffset] = y[shape::getOffset(yShapeInfo, coords)];
         else
             z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
     }

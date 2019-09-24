@@ -119,16 +119,13 @@ public class Nd4j {
     @Deprecated
     public final static String DTYPE = ND4JSystemProperties.DTYPE;
     private final static String BLAS_OPS = "blas.ops";
-    private final static String SPARSE_BLAS_OPS = "sparseblas.ops";
     public final static String NATIVE_OPS = "native.ops";
     private final static String ORDER_KEY = "ndarray.order";
     private final static String NDARRAY_FACTORY_CLASS = "ndarrayfactory.class";
-    private final static String SPARSE_NDARRAY_FACTORY_CLASS = "sparsendarrayfactory.class";
     private final static String OP_EXECUTIONER = "opexec";
 
     public final static String DISTRIBUTION = "dist";
     private final static String SHAPEINFO_PROVIDER = "shapeinfoprovider";
-    private final static String SPARSEINFO_PROVIDER = "sparseinfoprovider";
     private final static String CONSTANT_PROVIDER = "constantsprovider";
     private final static String AFFINITY_MANAGER = "affinitymanager";
     //disable toString() on compressed arrays for debugging. Should be off by default.
@@ -156,14 +153,11 @@ public class Nd4j {
 
     private static DataBufferFactory DATA_BUFFER_FACTORY_INSTANCE;
     private static BlasWrapper BLAS_WRAPPER_INSTANCE;
-    private static BlasWrapper SPARSE_BLAS_WRAPPER_INSTANCE;
     protected static NDArrayFactory INSTANCE;
-    private static NDArrayFactory SPARSE_INSTANCE;
     private static ConvolutionInstance CONVOLUTION_INSTANCE;
     private static OpExecutioner OP_EXECUTIONER_INSTANCE;
     private static DistributionFactory DISTRIBUTION_FACTORY;
     private static ShapeInfoProvider shapeInfoProvider;
-    private static SparseInfoProvider sparseInfoProvider;
     private static ConstantHandler constantHandler;
     private static AffinityManager affinityManager;
     private static MemoryManager memoryManager;
@@ -798,14 +792,6 @@ public class Nd4j {
      */
     public static NDArrayFactory factory() {
         return INSTANCE;
-    }
-
-    /**
-     * The factory used for creating sparse arrays.
-     * @return the factory used for creating sparse arrays.
-     */
-    public static NDArrayFactory sparseFactory() {
-        return SPARSE_INSTANCE;
     }
 
     /**
@@ -1698,14 +1684,6 @@ public class Nd4j {
      */
     public static BlasWrapper getBlasWrapper() {
         return BLAS_WRAPPER_INSTANCE;
-    }
-
-    /**
-     * Retreive the sparse BLAS wrapper.
-     * @return the sparse BLAS wrapper.
-     */
-    public static BlasWrapper getSparseBlasWrapper() {
-        return SPARSE_BLAS_WRAPPER_INSTANCE;
     }
 
     /**
@@ -2836,13 +2814,13 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int rows, int columns) {
+    /*public static INDArray rand(int rows, int columns) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
         INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
         return rand(ret);
-    }
+    }*/
 
     /**
      * Create a random ndarray with the given shape and output order
@@ -2853,13 +2831,13 @@ public class Nd4j {
      * @param columns the number of columns in the matrix
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(char order, int rows, int columns) {
+    /*public static INDArray rand(char order, int rows, int columns) {
         if (rows < 1 || columns < 1)
             throw new ND4JIllegalStateException("Number of rows and columns should be positive for new INDArray");
 
         INDArray ret = createUninitialized(new int[] {rows, columns}, order);//INSTANCE.rand(order, rows, columns);
         return rand(ret);
-    }
+    }*/
 
     /**
      * Create a random ndarray with values from a uniform distribution over (0, 1) with the given shape
@@ -2892,10 +2870,10 @@ public class Nd4j {
      * @param seed    the  seed to use
      * @return the random ndarray with the specified shape
      */
-    public static INDArray rand(int rows, int columns, long seed) {
+    /*public static INDArray rand(int rows, int columns, long seed) {
         INDArray ret = createUninitialized(new int[] {rows, columns}, Nd4j.order());
         return rand(ret, seed);
-    }
+    }*/
 
     /**
      * @deprecated use {@link Nd4j#rand(org.nd4j.linalg.api.rng.Random, long...)}
@@ -2999,10 +2977,10 @@ public class Nd4j {
      * @param rng     the rng to use
      * @return a drandom matrix of the specified shape and range
      */
-    public static INDArray rand(int rows, int columns, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+    /*public static INDArray rand(int rows, int columns, double min, double max, @NonNull org.nd4j.linalg.api.rng.Random rng) {
         INDArray ret = createUninitialized(rows, columns);
         return rand(ret, min, max, rng);
-    }
+    }*/
 
     /**
      * Fill the given ndarray with random numbers drawn from a normal distribution
@@ -3020,7 +2998,7 @@ public class Nd4j {
      * @param shape the shape of the array
      * @return new array with random values
      */
-    public static INDArray randn(@NonNull int... shape) {
+    public static INDArray randn(@NonNull int[] shape) {
         return randn(ArrayUtil.toLongArray(shape));
     }
 
@@ -3031,7 +3009,7 @@ public class Nd4j {
      * @param shape the shape of the ndarray
      * @return new array with random values
      */
-    public static INDArray randn(@NonNull DataType dataType, @NonNull int... shape) {
+    public static INDArray randn(@NonNull DataType dataType, @NonNull int[] shape) {
         return randn(dataType, ArrayUtil.toLongArray(shape));
     }
 
@@ -3098,10 +3076,10 @@ public class Nd4j {
     }
 
     /**
-     * @deprecated use {@link Nd4j#randn(long, long...)}
+     * @deprecated use {@link Nd4j#randn(long, long[])}
      */
     @Deprecated
-    public static INDArray randn(int[] shape, long seed) {
+    public static INDArray randn(long seed, int[] shape) {
         return randn(seed, ArrayUtil.toLongArray(shape));
     }
 
@@ -3111,58 +3089,9 @@ public class Nd4j {
      * @param shape the shape of the array
      * @return new array with random values
      */
-    public static INDArray randn(long seed, @NonNull long... shape) {
+    public static INDArray randn(long seed, @NonNull long[] shape) {
         INDArray ret = Nd4j.createUninitialized(shape, order());
         return randn(ret, seed);
-    }
-
-    /**
-     * Random normal N(0, 1)
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return new array with random values
-     */
-    public static INDArray randn(long rows, long columns) {
-        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
-        return randn(ret);
-    }
-
-    /**
-     * Random normal N(0,1) with the specified shape and array order
-     *
-     * @param order   the order of the output array
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     */
-    public static INDArray randn(char order, long rows, long columns) {
-        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order);
-        return randn(ret);
-    }
-
-    /**
-     * Random normal using the specified seed
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @return new array with random values
-     */
-    public static INDArray randn(long rows, long columns, long seed) {
-        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
-        return randn(ret, seed);
-    }
-
-    /**
-     * Random normal using the given rng
-     *
-     * @param rows    the number of rows in the matrix
-     * @param columns the number of columns in the matrix
-     * @param r       the random generator to use
-     * @return new array with random values
-     */
-    public static INDArray randn(long rows, long columns, @NonNull org.nd4j.linalg.api.rng.Random r) {
-        INDArray ret = Nd4j.createUninitialized(new long[]{rows, columns}, order());
-        return randn(ret, r);
     }
 
     /**
@@ -3193,6 +3122,14 @@ public class Nd4j {
         return randn(ret, r);
     }
 
+    public static INDArray randn(double mean, double stddev, INDArray target, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        return getExecutioner().exec(new GaussianDistribution(target, mean, stddev), rng);
+    }
+
+    public static INDArray randn(double mean, double stddev, long[] shape, @NonNull org.nd4j.linalg.api.rng.Random rng) {
+        INDArray target = Nd4j.createUninitialized(shape);
+        return getExecutioner().exec(new GaussianDistribution(target, mean, stddev), rng);
+    }
     /**
      * Fill the given ndarray with random numbers drawn from a uniform distribution
      *
@@ -3361,9 +3298,9 @@ public class Nd4j {
      * @param columns columns
      * @return uninitialized 2D array of rows x columns
      */
-    public static INDArray createUninitialized(long rows, long columns) {
+    /*public static INDArray createUninitialized(long rows, long columns) {
         return createUninitialized(new long[] {rows, columns});
-    }
+    }*/
 
     /**
      * Creates a row vector with the data
@@ -3740,7 +3677,7 @@ public class Nd4j {
      * @param shape the shape of the array
      * @return the created ndarray
      */
-    public static INDArray create(float[] data, int... shape) {
+    public static INDArray create(float[] data, int[] shape) {
         if (shape.length == 0 && data.length == 1) {
             return scalar(data[0]);
         }
@@ -3782,7 +3719,7 @@ public class Nd4j {
      * @param shape the shape of the array
      * @return the created ndarray
      */
-    public static INDArray create(double[] data, int... shape) {
+    public static INDArray create(double[] data, int[] shape) {
         commonCheckCreate(data.length, LongUtils.toLongs(shape));
         val lshape = ArrayUtil.toLongArray(shape);
         return INSTANCE.create(data, lshape, Nd4j.getStrides(lshape, Nd4j.order()), DataType.DOUBLE, Nd4j.getMemoryManager().getCurrentWorkspace());
@@ -5200,8 +5137,6 @@ public class Nd4j {
             affinityManager = affinityManagerClazz.newInstance();
             Class<? extends NDArrayFactory> ndArrayFactoryClazz = (Class<? extends NDArrayFactory>) Class.forName(
                     pp.toString(NDARRAY_FACTORY_CLASS));
-            Class<? extends NDArrayFactory> sparseNDArrayClazz = (Class<? extends NDArrayFactory>) Class.forName(
-                    pp.toString(SPARSE_NDARRAY_FACTORY_CLASS));
             Class<? extends ConvolutionInstance> convolutionInstanceClazz = (Class<? extends ConvolutionInstance>) Class
                     .forName(pp.toString(CONVOLUTION_OPS, DefaultConvolutionInstance.class.getName()));
             String defaultName = pp.toString(DATA_BUFFER_OPS, DefaultDataBufferFactory.class.getName());
@@ -5209,8 +5144,6 @@ public class Nd4j {
                     .forName(pp.toString(DATA_BUFFER_OPS, defaultName));
             Class<? extends BaseShapeInfoProvider> shapeInfoProviderClazz = (Class<? extends BaseShapeInfoProvider>) Class
                     .forName(pp.toString(SHAPEINFO_PROVIDER));
-            Class<? extends BaseSparseInfoProvider> sparseInfoProviderClazz = (Class<? extends BaseSparseInfoProvider>) Class.forName(
-                    pp.toString(SPARSEINFO_PROVIDER));
 
             Class<? extends BasicConstantHandler> constantProviderClazz = (Class<? extends BasicConstantHandler>) Class
                     .forName(pp.toString(CONSTANT_PROVIDER));
@@ -5228,8 +5161,6 @@ public class Nd4j {
 
             Class<? extends BlasWrapper> blasWrapperClazz = (Class<? extends BlasWrapper>) Class
                     .forName(pp.toString(BLAS_OPS));
-            Class<? extends BlasWrapper> sparseBlasWrapperClazz = (Class<? extends BlasWrapper>) Class
-                    .forName(pp.toString(SPARSE_BLAS_OPS));
             String clazzName = pp.toString(DISTRIBUTION, DefaultDistributionFactory.class.getName());
             Class<? extends DistributionFactory> distributionFactoryClazz = (Class<? extends DistributionFactory>) Class.forName(clazzName);
 
@@ -5237,7 +5168,6 @@ public class Nd4j {
             memoryManager = memoryManagerClazz.newInstance();
             constantHandler = constantProviderClazz.newInstance();
             shapeInfoProvider = shapeInfoProviderClazz.newInstance();
-            sparseInfoProvider = sparseInfoProviderClazz.newInstance();
             workspaceManager = workspaceManagerClazz.newInstance();
 
             Class<? extends OpExecutioner> opExecutionerClazz = (Class<? extends OpExecutioner>) Class
@@ -5246,10 +5176,8 @@ public class Nd4j {
             OP_EXECUTIONER_INSTANCE = opExecutionerClazz.newInstance();
             Constructor c2 = ndArrayFactoryClazz.getConstructor(DataType.class, char.class);
             INSTANCE = (NDArrayFactory) c2.newInstance(dtype, ORDER);
-            SPARSE_INSTANCE = sparseNDArrayClazz.newInstance();
             CONVOLUTION_INSTANCE = convolutionInstanceClazz.newInstance();
             BLAS_WRAPPER_INSTANCE = blasWrapperClazz.newInstance();
-            SPARSE_BLAS_WRAPPER_INSTANCE = sparseBlasWrapperClazz.newInstance();
             DATA_BUFFER_FACTORY_INSTANCE = dataBufferFactoryClazz.newInstance();
 
             DISTRIBUTION_FACTORY = distributionFactoryClazz.newInstance();
@@ -5345,14 +5273,6 @@ public class Nd4j {
      */
     public static ShapeInfoProvider getShapeInfoProvider() {
         return shapeInfoProvider;
-    }
-
-    /**
-     *
-     * @return Sparse shape info provider
-     */
-    public static SparseInfoProvider getSparseInfoProvider() {
-        return sparseInfoProvider;
     }
 
     /**

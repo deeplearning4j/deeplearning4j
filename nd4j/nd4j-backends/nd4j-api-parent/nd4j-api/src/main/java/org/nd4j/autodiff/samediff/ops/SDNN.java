@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.samediff.ops;
 
+import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
@@ -491,6 +492,34 @@ public class SDNN extends SDOps {
     }
 
     /**
+     * See {@link #prelu(String, SDVariable, SDVariable, int...)}.
+     */
+    public SDVariable prelu(@NonNull SDVariable input, @NonNull SDVariable alpha, @NonNull int... sharedAxes){
+        return f().prelu(input, alpha, sharedAxes);
+    }
+
+    /**
+     * PReLU (Parameterized Rectified Linear Unit) operation.  Like LeakyReLU with a learnable alpha:<br>
+     * out[i] = in[i] if in[i] >= 0<br>
+     * out[i] = in[i] * alpha[i] otherwise<br>
+     *
+     * sharedAxes allows you to share learnable parameters along axes.
+     * For example, if the input has shape [batchSize, channels, height, width]
+     * and you want each channel to have its own cutoff, use sharedAxes = [2, 3] and an
+     * alpha with shape [channels].
+     *
+     * @param name    Name of the output variable
+     * @param input   Input data
+     * @param alpha   The cutoff variable.  Note that the batch dimension (the 0th, whether it is batch or not) should not be part of alpha.
+     * @param sharedAxes Which axes to share cutoff parameters along.
+     * @return Output variable
+     */
+    public SDVariable prelu(String name, @NonNull SDVariable input, @NonNull SDVariable alpha, @NonNull int... sharedAxes){
+        SDVariable res = f().prelu(input, alpha, sharedAxes);
+        return updateVariableNameAndReference(res, name);
+    }
+
+    /**
      * Element-wise SeLU function - Scaled exponential Lineal Unit: see <a href="https://arxiv.org/abs/1706.02515">Self-Normalizing Neural Networks</a>
      * <br>
      * out[i] = scale * alpha * (exp(in[i])-1) if in[i]>0, or 0 if in[i] <= 0<br>
@@ -568,7 +597,7 @@ public class SDNN extends SDOps {
     }
 
     /**
-     * Softmax activation
+     * Softmax activation on dimension 1.
      *
      * @param x Input variable
      * @return Output variable
@@ -578,7 +607,7 @@ public class SDNN extends SDOps {
     }
 
     /**
-     * Softmax activation
+     * Softmax activation on dimension 1.
      *
      * @param x Input variable
      * @return Output variable

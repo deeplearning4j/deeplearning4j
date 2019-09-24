@@ -218,34 +218,6 @@ public abstract class BaseBlasWrapper implements BlasWrapper {
     }
 
     @Override
-    public INDArray gemm(double alpha, INDArray a, INDArray b, double beta, INDArray c) {
-        LinAlgExceptions.assertMatrix(a, b, c);
-
-        if (a.data().dataType() == DataType.FLOAT) {
-            return gemm((float) alpha, a, b, (float) beta, c);
-        }
-
-
-        level3().gemm(BlasBufferUtil.getCharForTranspose(a), BlasBufferUtil.getCharForTranspose(b),
-                        BlasBufferUtil.getCharForTranspose(c), alpha, a, b, beta, c);
-        return c;
-    }
-
-    @Override
-    public INDArray gemm(float alpha, INDArray a, INDArray b, float beta, INDArray c) {
-        LinAlgExceptions.assertMatrix(a, b, c);
-
-
-        if (a.data().dataType() == DataType.DOUBLE) {
-            return gemm((double) alpha, a, b, (double) beta, c);
-        }
-
-        level3().gemm(BlasBufferUtil.getCharForTranspose(a), BlasBufferUtil.getCharForTranspose(b),
-                        BlasBufferUtil.getCharForTranspose(c), alpha, a, b, beta, c);
-        return c;
-    }
-
-    @Override
     public INDArray gesv(INDArray a, int[] ipiv, INDArray b) {
         throw new UnsupportedOperationException();
     }

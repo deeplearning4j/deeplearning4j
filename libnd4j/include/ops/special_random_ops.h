@@ -111,24 +111,24 @@ namespace randomOps {
                     }
 //                    __syncthreads();  // Eliminated due RTX20xx specific
                 }
-            } 
+            }
             else {
-            
+
                 for (Nd4jLong i = tid; i < zLength; i+=blockDim.x * gridDim.x) {
 
-                    auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, zLength);
+                    auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
                     T prob = rng->relativeT<T>(i);
                     T cumProb = (T) 0.0f;
 
                     for (Nd4jLong f = 0; f < yLength; f++) {
-                        
-                        auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer, yLength);
+
+                        auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer);
                         T relProb = y[yOffset2];
                         cumProb += relProb;
 
-                        if (prob <= cumProb || f == yLength - 1) {                            
-                            
-                            auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer, xLength);
+                        if (prob <= cumProb || f == yLength - 1) {
+
+                            auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer);
                             z[zOffset2] = x[xOffset2];
                             f += yLength;
                         }
@@ -179,25 +179,25 @@ namespace randomOps {
                         }
                     }
                 }
-            } 
+            }
             else {
 
                 PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
                 for (Nd4jLong i = 0; i < zLength; i++) {
 
-                    auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer, zLength);
+                    auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
                     T prob = rng->relativeT<T>(i);
                     T cumProb = (T) 0.0f;
 
                     for (Nd4jLong f = 0; f < yLength; f++) {
-                        
-                        auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer, yLength);
+
+                        auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer);
                         T relProb = y[yOffset2];
                         cumProb += relProb;
 
-                        if (prob <= cumProb || f == yLength - 1) {                        
-                            
-                            auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer, xLength);
+                        if (prob <= cumProb || f == yLength - 1) {
+
+                            auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer);
                             z[zOffset2] = x[xOffset2];
                             break;
                         }
@@ -571,8 +571,8 @@ namespace randomOps {
             }
         }
     };
-    
-//////////////////////////////////////////////////////////////////////        
+
+//////////////////////////////////////////////////////////////////////
     // This Op produces random Gaussian values within [mean-2*stddev,mean+2*stddev]
     template<typename T>
     class TruncatedNormalDistribution {

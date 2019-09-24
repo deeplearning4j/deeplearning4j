@@ -32,7 +32,7 @@ namespace nd4j {
         */
         class ND4J_EXPORT LegacyRandomOp : public LegacyOp {
         protected:
-            Nd4jStatus validateAndExecute(Context& block);
+            Nd4jStatus validateAndExecute(Context& block) override;
         public:
             LegacyRandomOp();
             LegacyRandomOp(int opNum);
@@ -43,10 +43,10 @@ namespace nd4j {
 
             nd4j::ResultSet*  execute(nd4j::graph::RandomGenerator& rng, std::initializer_list<NDArray*> inputs, std::initializer_list<double> tArgs, std::initializer_list<int> iArgs, bool isInplace = false);
             nd4j::ResultSet*  execute(nd4j::graph::RandomGenerator& rng, std::vector<NDArray*>& inputs, std::vector<double>& tArgs, std::vector<int>& iArgs, bool isInplace = false);
-            Nd4jStatus execute(Context* block);
+            Nd4jStatus execute(Context* block) override;
 
-            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block);
-            virtual LegacyOp* clone();
+            ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override;
+            LegacyOp* clone() override;
         };
     }
 }

@@ -29,7 +29,7 @@ namespace helpers {
 
 ///////////////////////////////////////////////////////////////////
 // modified Lentz’s algorithm for continued fractions,
-// reference: Lentz, W.J. 1976, “Generating Bessel Functions in Mie Scattering Calculations Using Continued Fractions,”
+// reference: Lentz, W.J. 1976, “Generating Bessel Functions in Mie Scattering Calculations Using Continued Fractions”
 template <typename T>
 static T continuedFraction(const T a, const T b, const T x) {
 
@@ -122,9 +122,8 @@ static void betaIncForArray(nd4j::LaunchContext * context, const NDArray& a, con
 	int xLen = x.lengthOf();
 
     PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
-	for(int i = 0; i < xLen; ++i) {
-		output.p(i, betaIncCore<T>(a.e<T>(i), b.e<T>(i), x.e<T>(i)));
-	}
+	for(int i = 0; i < xLen; ++i)
+		output.t<T>(i) = betaIncCore<T>(a.t<T>(i), b.t<T>(i), x.t<T>(i));
 }
 
 ///////////////////////////////////////////////////////////////////

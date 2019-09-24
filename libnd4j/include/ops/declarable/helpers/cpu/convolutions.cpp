@@ -28,121 +28,6 @@
 namespace nd4j {
     namespace ops  {
 
-#ifdef HAVE_MKLDNN
-        using namespace mkldnn;
-
-void ConvolutionUtils::getMKLDNNMemoryDescPool2d(
-        int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, int poolingMode, int extraParam0, bool isNCHW,
-        int bS, int iC, int iH, int iW, int oC, int oH, int oW,
-        const NDArray* src, const NDArray* diff_src, const NDArray* dst, mkldnn::algorithm& algorithm,
-        mkldnn::memory::desc* pool_src_md, mkldnn::memory::desc* pool_diff_src_md, mkldnn::memory::desc* pool_dst_md,
-        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md,
-        mkldnn::memory::dims& pool_strides, mkldnn::memory::dims& pool_kernel, mkldnn::memory::dims& pool_padding, mkldnn::memory::dims& pool_padding_r) {
-    mkldnn::memory::dims pool_src_tz = { bS, iC, iH, iW };
-    mkldnn::memory::dims pool_dst_tz = { bS, oC, oH, oW };
-
-    pool_strides = { sH, sW };
-    pool_kernel = { kH, kW };
-    pool_padding = { pH, pW };
-    pool_padding_r = { (oH - 1) * sH - iH + kH - pH,
-                       (oW - 1) * sW - iW + kW - pW };
-
-    algorithm = poolingMode == 0 ? pooling_max
-                                 : extraParam0 == 0 ? pooling_avg_exclude_padding
-                                                    : pooling_avg_include_padding;
-    auto type = mkldnn::memory::data_type::f32;
-    auto format = isNCHW ? mkldnn::memory::format::nchw : mkldnn::memory::format::nhwc;
-    auto supposed_to_be_any_format = mkldnn::memory::format::nChw8c; // doesn't work with "any"
-
-    if (src != nullptr && src->getBuffer() != nullptr && pool_src_md != nullptr) {
-        *pool_src_md = mkldnn::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
-        *user_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
-        user_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCHW ? 0 : 0];
-        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCHW ? 1 : 3];
-        user_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCHW ? 2 : 1];
-        user_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCHW ? 3 : 2];
-    }
-
-    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && pool_diff_src_md != nullptr) {
-        *pool_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
-        *user_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
-        user_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCHW ? 0 : 0];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCHW ? 1 : 3];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCHW ? 2 : 1];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCHW ? 3 : 2];
-    }
-
-    if (dst != nullptr && dst->getBuffer() != nullptr && pool_dst_md != nullptr) {
-        *pool_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, supposed_to_be_any_format);
-        *user_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, format);
-        user_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCHW ? 0 : 0];
-        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCHW ? 1 : 3];
-        user_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCHW ? 2 : 1];
-        user_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCHW ? 3 : 2];
-    }
-}
-
-void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
-        int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, int dD, int dH, int dW, int poolingMode, int extraParam0, bool isNCDHW,
-        int bS, int iC, int iD, int iH, int iW, int oC, int oD, int oH, int oW,
-        const NDArray* src, const NDArray* diff_src, const NDArray* dst, mkldnn::algorithm& algorithm,
-        mkldnn::memory::desc* pool_src_md, mkldnn::memory::desc* pool_diff_src_md, mkldnn::memory::desc* pool_dst_md,
-        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md,
-        mkldnn::memory::dims& pool_strides, mkldnn::memory::dims& pool_kernel, mkldnn::memory::dims& pool_padding, mkldnn::memory::dims& pool_padding_r) {
-    mkldnn::memory::dims pool_src_tz = { bS, iC, iD, iH, iW };
-    mkldnn::memory::dims pool_dst_tz = { bS, oC, oD, oH, oW };
-
-    pool_strides = { sD, sH, sW };
-    pool_kernel = { kD, kH, kW };
-    pool_padding = { pD, pH, pW };
-    pool_padding_r = { (oD - 1) * sD - iD + kD - pD,
-                       (oH - 1) * sH - iH + kH - pH,
-                       (oW - 1) * sW - iW + kW - pW };
-
-    algorithm = poolingMode == 0 ? pooling_max
-                                 : extraParam0 == 0 ? pooling_avg_exclude_padding
-                                                    : pooling_avg_include_padding;
-    auto type = mkldnn::memory::data_type::f32;
-    auto format = isNCDHW ? mkldnn::memory::format::ncdhw : mkldnn::memory::format::ndhwc;
-    auto supposed_to_be_any_format = mkldnn::memory::format::nCdhw8c; // doesn't work with "any"
-
-    if (src != nullptr && src->getBuffer() != nullptr && pool_src_md != nullptr) {
-        *pool_src_md = mkldnn::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
-        *user_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
-        user_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCDHW ? 0 : 0];
-        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCDHW ? 1 : 4];
-        user_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCDHW ? 2 : 1];
-        user_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCDHW ? 3 : 2];
-        user_src_md->data.layout_desc.blocking.strides[0][4] = src->stridesOf()[isNCDHW ? 4 : 3];
-    }
-
-    if (diff_src != nullptr && diff_src->getBuffer() != nullptr && pool_diff_src_md != nullptr) {
-        *pool_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, supposed_to_be_any_format);
-        *user_diff_src_md = mkldnn::memory::desc({ pool_src_tz }, type, format);
-        user_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCDHW ? 0 : 0];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCDHW ? 1 : 4];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCDHW ? 2 : 1];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCDHW ? 3 : 2];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][4] = diff_src->stridesOf()[isNCDHW ? 4 : 3];
-    }
-
-    if (dst != nullptr && dst->getBuffer() != nullptr && pool_dst_md != nullptr) {
-        *pool_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, supposed_to_be_any_format);
-        *user_dst_md = mkldnn::memory::desc({ pool_dst_tz }, type, format);
-        user_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCDHW ? 0 : 0];
-        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCDHW ? 1 : 4];
-        user_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCDHW ? 2 : 1];
-        user_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCDHW ? 3 : 2];
-        user_dst_md->data.layout_desc.blocking.strides[0][4] = dst->stridesOf()[isNCDHW ? 4 : 3];
-    }
-}
-#endif
 
 //////////////////////////////////////////////////////////////////////////
 // [bS, iC, iD, iH, iW] is convoluted to [bS, iC, kD, kH, kW, oD, oH, oW]
@@ -348,174 +233,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescPool3d(
         }
 
 
-#ifdef HAVE_MKLDNN
-        using namespace mkldnn;
-
-void ConvolutionUtils::getMKLDNNMemoryDescConv2d(
-        int kH, int kW, int sH, int sW, int pH, int pW, int dH, int dW, bool isSameMode, bool isNCHW,
-        int bS, int iC, int iH, int iW, int oC, int oH, int oW, const NDArray* src, const NDArray* diff_src,
-        const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
-        mkldnn::memory::desc* conv_src_md, mkldnn::memory::desc* conv_diff_src_md, mkldnn::memory::desc* conv_weights_md,
-        mkldnn::memory::desc* conv_diff_weights_md, mkldnn::memory::desc* conv_bias_md, mkldnn::memory::desc* conv_dst_md,
-        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_weights_md,
-        mkldnn::memory::desc* user_diff_weights_md, mkldnn::memory::desc* user_bias_md, mkldnn::memory::desc* user_dst_md,
-        mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r) {
-    mkldnn::memory::dims conv_src_tz = { bS, iC, iH, iW };
-    mkldnn::memory::dims conv_weights_tz = { oC, iC, kH, kW };
-    mkldnn::memory::dims conv_bias_tz = { oC };
-    mkldnn::memory::dims conv_dst_tz = { bS, oC, oH, oW };
-
-    conv_strides = { sH, sW };
-    conv_padding = { pH, pW };
-    conv_padding_r = { (oH - 1) * sH - iH + kH - pH,
-                       (oW - 1) * sW - iW + kW - pW };
-
-    auto type = mkldnn::memory::data_type::f32;
-    auto format = isNCHW ? mkldnn::memory::format::nchw : mkldnn::memory::format::nhwc;
-    auto formatw = mkldnn::memory::format::hwio;
-
-    if (src != nullptr && conv_src_md != nullptr) {
-        *conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, mkldnn::memory::format::any);
-        *user_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
-        user_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCHW ? 0 : 0];
-        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCHW ? 1 : 3];
-        user_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCHW ? 2 : 1];
-        user_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCHW ? 3 : 2];
-    }
-
-    if (diff_src != nullptr && conv_diff_src_md != nullptr) {
-        *conv_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, mkldnn::memory::format::any);
-        *user_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
-        user_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCHW ? 0 : 0];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCHW ? 1 : 3];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCHW ? 2 : 1];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCHW ? 3 : 2];
-    }
-
-    if (weights != nullptr && conv_weights_md != nullptr) {
-        *conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, mkldnn::memory::format::any);
-        *user_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
-        user_weights_md->data.format = mkldnn_blocked; // overrides "formatw = hwio"
-        user_weights_md->data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[3];
-        user_weights_md->data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[2];
-        user_weights_md->data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[0];
-        user_weights_md->data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[1];
-    }
-
-    if (diff_weights != nullptr && conv_diff_weights_md != nullptr) {
-        *conv_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, mkldnn::memory::format::any);
-        *user_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
-        user_diff_weights_md->data.format = mkldnn_blocked; // overrides "formatw = hwio"
-        user_diff_weights_md->data.layout_desc.blocking.strides[0][0] = diff_weights->stridesOf()[3];
-        user_diff_weights_md->data.layout_desc.blocking.strides[0][1] = diff_weights->stridesOf()[2];
-        user_diff_weights_md->data.layout_desc.blocking.strides[0][2] = diff_weights->stridesOf()[0];
-        user_diff_weights_md->data.layout_desc.blocking.strides[0][3] = diff_weights->stridesOf()[1];
-    }
-
-    if (bias != nullptr && conv_bias_md != nullptr) {
-        *conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::any);
-        *user_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
-    }
-
-    if (dst != nullptr && conv_dst_md != nullptr) {
-        *conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, mkldnn::memory::format::any);
-        *user_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
-        user_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCHW ? nchw : nhwc"
-        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCHW ? 0 : 0];
-        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCHW ? 1 : 3];
-        user_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCHW ? 2 : 1];
-        user_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCHW ? 3 : 2];
-    }
-}
-
-void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
-        int kD, int kH, int kW, int sD, int sH, int sW, int pD, int pH, int pW, int dD, int dH, int dW, bool isSameMode, bool isNCDHW,
-        int bS, int iC, int iD, int iH, int iW, int oC, int oD, int oH, int oW, const NDArray* src, const NDArray* diff_src,
-        const NDArray* weights, const NDArray* diff_weights, const NDArray* bias, const NDArray* dst,
-        mkldnn::memory::desc* conv_src_md, mkldnn::memory::desc* conv_diff_src_md, mkldnn::memory::desc* conv_weights_md,
-        mkldnn::memory::desc* conv_diff_weights_md, mkldnn::memory::desc* conv_bias_md, mkldnn::memory::desc* conv_dst_md,
-        mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_weights_md,
-        mkldnn::memory::desc* user_diff_weights_md, mkldnn::memory::desc* user_bias_md, mkldnn::memory::desc* user_dst_md,
-        mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r) {
-    mkldnn::memory::dims conv_src_tz = { bS, iC, iD, iH, iW };
-    mkldnn::memory::dims conv_weights_tz = { oC, iC, kD, kH, kW };
-    mkldnn::memory::dims conv_bias_tz = { oC };
-    mkldnn::memory::dims conv_dst_tz = { bS, oC, oD, oH, oW };
-
-    conv_strides = { sD, sH, sW };
-    conv_padding = { pD, pH, pW };
-    conv_padding_r = { (oD - 1) * sD - iD + kD - pD,
-                       (oH - 1) * sH - iH + kH - pH,
-                       (oW - 1) * sW - iW + kW - pW };
-
-    auto type = mkldnn::memory::data_type::f32;
-    auto format = isNCDHW ? mkldnn::memory::format::ncdhw : mkldnn::memory::format::ndhwc;
-    auto formatw = mkldnn::memory::format::dhwio;
-
-    if (src != nullptr && conv_src_md != nullptr) {
-        *conv_src_md = mkldnn::memory::desc({ conv_src_tz }, type, mkldnn::memory::format::any);
-        *user_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
-        user_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        user_src_md->data.layout_desc.blocking.strides[0][0] = src->stridesOf()[isNCDHW ? 0 : 0];
-        user_src_md->data.layout_desc.blocking.strides[0][1] = src->stridesOf()[isNCDHW ? 1 : 4];
-        user_src_md->data.layout_desc.blocking.strides[0][2] = src->stridesOf()[isNCDHW ? 2 : 1];
-        user_src_md->data.layout_desc.blocking.strides[0][3] = src->stridesOf()[isNCDHW ? 3 : 2];
-        user_src_md->data.layout_desc.blocking.strides[0][4] = src->stridesOf()[isNCDHW ? 4 : 3];
-    }
-
-    if (diff_src != nullptr && conv_diff_src_md != nullptr) {
-        *conv_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, mkldnn::memory::format::any);
-        *user_diff_src_md = mkldnn::memory::desc({ conv_src_tz }, type, format);
-        user_diff_src_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        user_diff_src_md->data.layout_desc.blocking.strides[0][0] = diff_src->stridesOf()[isNCDHW ? 0 : 0];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][1] = diff_src->stridesOf()[isNCDHW ? 1 : 4];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][2] = diff_src->stridesOf()[isNCDHW ? 2 : 1];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][3] = diff_src->stridesOf()[isNCDHW ? 3 : 2];
-        user_diff_src_md->data.layout_desc.blocking.strides[0][4] = diff_src->stridesOf()[isNCDHW ? 4 : 3];
-    }
-
-    if (weights != nullptr && conv_weights_md != nullptr) {
-        *conv_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, mkldnn::memory::format::any);
-        *user_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
-        user_weights_md->data.format = mkldnn_blocked; // overrides "formatw = dhwio"
-        user_weights_md->data.layout_desc.blocking.strides[0][0] = weights->stridesOf()[4];
-        user_weights_md->data.layout_desc.blocking.strides[0][1] = weights->stridesOf()[3];
-        user_weights_md->data.layout_desc.blocking.strides[0][2] = weights->stridesOf()[0];
-        user_weights_md->data.layout_desc.blocking.strides[0][3] = weights->stridesOf()[1];
-        user_weights_md->data.layout_desc.blocking.strides[0][4] = weights->stridesOf()[2];
-    }
-
-    if (diff_weights != nullptr && conv_diff_weights_md != nullptr) {
-        *conv_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, mkldnn::memory::format::any);
-        *user_diff_weights_md = mkldnn::memory::desc({ conv_weights_tz }, type, formatw);
-        user_diff_weights_md->data.format = mkldnn_blocked; // overrides "formatw = dhwio"
-        user_diff_weights_md->data.layout_desc.blocking.strides[0][0] = diff_weights->stridesOf()[4];
-        user_diff_weights_md->data.layout_desc.blocking.strides[0][1] = diff_weights->stridesOf()[3];
-        user_diff_weights_md->data.layout_desc.blocking.strides[0][2] = diff_weights->stridesOf()[0];
-        user_diff_weights_md->data.layout_desc.blocking.strides[0][3] = diff_weights->stridesOf()[1];
-        user_diff_weights_md->data.layout_desc.blocking.strides[0][4] = diff_weights->stridesOf()[2];
-    }
-
-    if (bias != nullptr && conv_bias_md != nullptr) {
-        *conv_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::any);
-        *user_bias_md = mkldnn::memory::desc({ conv_bias_tz }, type, mkldnn::memory::format::x);
-    }
-
-    if (dst != nullptr && conv_dst_md != nullptr) {
-        *conv_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, mkldnn::memory::format::any);
-        *user_dst_md = mkldnn::memory::desc({ conv_dst_tz }, type, format);
-        user_dst_md->data.format = mkldnn_blocked; // overrides "format = isNCDHW ? ncdhw : ndhwc"
-        user_dst_md->data.layout_desc.blocking.strides[0][0] = dst->stridesOf()[isNCDHW ? 0 : 0];
-        user_dst_md->data.layout_desc.blocking.strides[0][1] = dst->stridesOf()[isNCDHW ? 1 : 4];
-        user_dst_md->data.layout_desc.blocking.strides[0][2] = dst->stridesOf()[isNCDHW ? 2 : 1];
-        user_dst_md->data.layout_desc.blocking.strides[0][3] = dst->stridesOf()[isNCDHW ? 3 : 2];
-        user_dst_md->data.layout_desc.blocking.strides[0][4] = dst->stridesOf()[isNCDHW ? 4 : 3];
-    }
-}
-#endif
-
 //////////////////////////////////////////////////////////////////////////
         template <typename X, typename Y>
         static void conv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
@@ -543,83 +260,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             if(isSameMode)                       // SAME
                 ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-#ifdef HAVE_MKLDNN
-                if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<X, Y>()) {
-        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-        if (streams.empty()) {
-            streams.push_back(MKLDNNStream("conv2d"));
-        }
-
-        if (streams[0].checkAndReset({input, weights, bias}, {output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW})) {
-            mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc conv_src_md(empty), conv_weights_md(empty), conv_bias_md(empty), conv_dst_md(empty);
-            mkldnn::memory::desc user_src_md(empty), user_weights_md(empty), user_bias_md(empty), user_dst_md(empty);
-            mkldnn::memory::dims conv_strides, conv_padding, conv_padding_r;
-
-            ConvolutionUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
-                    bS, iC, iH, iW, oC, oH, oW, input, nullptr, weights, nullptr, bias, output,
-                    &conv_src_md, nullptr, &conv_weights_md, nullptr, &conv_bias_md, &conv_dst_md,
-                    &user_src_md, nullptr, &user_weights_md, nullptr, &user_bias_md, &user_dst_md,
-                    conv_strides, conv_padding, conv_padding_r);
-
-            auto conv_desc = bias != nullptr
-                    ? convolution_forward::desc(prop_kind::forward,
-                            convolution_direct, conv_src_md, conv_weights_md, conv_bias_md,
-                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
-                    : convolution_forward::desc(prop_kind::forward,
-                            convolution_direct, conv_src_md, conv_weights_md,
-                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
-
-            auto engine = streams[0].getEngine();
-            auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, engine);
-            auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray*>(input)->buffer());
-            auto user_weights_memory = mkldnn::memory({user_weights_md, engine}, const_cast<NDArray*>(weights)->buffer());
-            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output->buffer());
-
-            auto conv_src_memory = user_src_memory;
-            streams[0].addMemory(user_src_memory);
-            if (mkldnn::memory::primitive_desc(conv_prim_desc.src_primitive_desc())
-                    != user_src_memory.get_primitive_desc()) {
-                conv_src_memory = mkldnn::memory(conv_prim_desc.src_primitive_desc());
-                streams[0].addMemory(conv_src_memory);
-                streams[0].addOperation(reorder(user_src_memory, conv_src_memory));
-            }
-
-            auto conv_weights_memory = user_weights_memory;
-            streams[0].addMemory(user_weights_memory);
-            if (mkldnn::memory::primitive_desc(conv_prim_desc.weights_primitive_desc())
-                    != user_weights_memory.get_primitive_desc()) {
-                conv_weights_memory = mkldnn::memory(conv_prim_desc.weights_primitive_desc());
-                streams[0].addMemory(conv_weights_memory);
-                streams[0].addOperation(reorder(user_weights_memory, conv_weights_memory));
-            }
-
-            auto conv_dst_memory = user_dst_memory;
-            streams[0].addMemory(user_dst_memory);
-            if (mkldnn::memory::primitive_desc(conv_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                conv_dst_memory = mkldnn::memory(conv_prim_desc.dst_primitive_desc());
-                streams[0].addMemory(conv_dst_memory);
-            }
-
-            if (bias != nullptr) {
-                auto conv_bias_memory = mkldnn::memory(conv_prim_desc.bias_primitive_desc(), const_cast<NDArray*>(bias)->buffer());
-                streams[0].addMemory(conv_bias_memory);
-                streams[0].addOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_bias_memory, conv_dst_memory));
-            } else {
-                streams[0].addOperation(convolution_forward(conv_prim_desc, conv_src_memory, conv_weights_memory, conv_dst_memory));
-            }
-
-            if (mkldnn::memory::primitive_desc(conv_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                streams[0].addOperation(reorder(conv_dst_memory, user_dst_memory));
-            }
-        }
-
-        streams[0].submitAndWait();
-        return;
-    }
-#endif
             nd4j_debug("MKL-DNN is not used for conv2d!\n", 0);
 
             std::vector<int> permutForOutput;
@@ -648,7 +288,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             //----- add biases if required -----//
             if(bias)
                 // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
-                helpers::addBias(*output, *bias, isNCHW);
+                helpers::addBias(block, *output, *bias, *output, isNCHW);
 
             if(!isNCHW)
                 delete input;
@@ -686,151 +326,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             if(isSameMode)                       // SAME
                 ConvolutionUtils::calcPadding2D(pH, pW, oH, oW, iH, iW, kH, kW, sH, sW, dH, dW);
 
-#ifdef HAVE_MKLDNN
-                if (block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<X, Y>()) {
-        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-        if (streams.empty()) {
-            streams.push_back(MKLDNNStream("conv2d_bp_weights"));
-            streams.push_back(MKLDNNStream("conv2d_bp_data"));
-        }
-
-        bool resetW = streams[0].checkAndReset({input, weights, bias, gradO}, {gradI, gradW, gradB}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW});
-        bool resetI = streams[1].checkAndReset({input, weights, bias, gradO}, {gradI, gradW, gradB}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW});
-        if (resetW || resetI) {
-            mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc conv_src_md(empty), conv_diff_src_md(empty), conv_weights_md(empty),
-                                 conv_diff_weights_md(empty), conv_bias_md(empty), conv_dst_md(empty);
-            mkldnn::memory::desc user_src_md(empty), user_diff_src_md(empty), user_weights_md(empty),
-                                 user_diff_weights_md(empty), user_bias_md(empty), user_dst_md(empty);
-            mkldnn::memory::dims conv_strides, conv_padding, conv_padding_r;
-
-            ConvolutionUtils::getMKLDNNMemoryDescConv2d(kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW,
-                    bS, iC, iH, iW, oC, oH, oW, input, gradI, weights, gradW, gradB, gradO,
-                    &conv_src_md, &conv_diff_src_md, &conv_weights_md, &conv_diff_weights_md, &conv_bias_md, &conv_dst_md,
-                    &user_src_md, &user_diff_src_md, &user_weights_md, &user_diff_weights_md, &user_bias_md, &user_dst_md,
-                    conv_strides, conv_padding, conv_padding_r);
-
-            auto conv_desc = gradB != nullptr
-                    ? convolution_forward::desc(prop_kind::forward,
-                            convolution_direct, conv_src_md, conv_weights_md, conv_bias_md,
-                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
-                    : convolution_forward::desc(prop_kind::forward,
-                            convolution_direct, conv_src_md, conv_weights_md,
-                            conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
-
-            auto conv_prim_desc = convolution_forward::primitive_desc(conv_desc, streams[0].getEngine());
-
-            if (gradW != nullptr) {
-                auto convW_desc = gradB != nullptr
-                        ? convolution_backward_weights::desc(
-                                convolution_direct, conv_src_md, conv_diff_weights_md, conv_bias_md,
-                                conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero)
-                        : convolution_backward_weights::desc(
-                                convolution_direct, conv_src_md, conv_diff_weights_md,
-                                conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
-
-                auto engine = streams[0].getEngine();
-                auto convW_prim_desc = convolution_backward_weights::primitive_desc(convW_desc, engine, conv_prim_desc);
-                auto userW_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray*>(input)->buffer());
-                auto userW_weights_memory = mkldnn::memory({user_diff_weights_md, engine}, gradW->buffer());
-                auto userW_dst_memory = mkldnn::memory({user_dst_md, engine}, const_cast<NDArray*>(gradO)->buffer());
-
-                auto convW_src_memory = userW_src_memory;
-                streams[0].addMemory(userW_src_memory);
-                if (mkldnn::memory::primitive_desc(convW_prim_desc.src_primitive_desc())
-                        != userW_src_memory.get_primitive_desc()) {
-                    convW_src_memory = mkldnn::memory(convW_prim_desc.src_primitive_desc());
-                    streams[0].addMemory(convW_src_memory);
-                    streams[0].addOperation(reorder(userW_src_memory, convW_src_memory));
-                }
-
-                auto convW_weights_memory = userW_weights_memory;
-                streams[0].addMemory(userW_weights_memory);
-                if (mkldnn::memory::primitive_desc(convW_prim_desc.diff_weights_primitive_desc())
-                        != userW_weights_memory.get_primitive_desc()) {
-                    convW_weights_memory = mkldnn::memory(convW_prim_desc.diff_weights_primitive_desc());
-                    streams[0].addMemory(convW_weights_memory);
-                }
-
-                auto convW_dst_memory = userW_dst_memory;
-                streams[0].addMemory(userW_dst_memory);
-                if (mkldnn::memory::primitive_desc(convW_prim_desc.diff_dst_primitive_desc())
-                        != userW_dst_memory.get_primitive_desc()) {
-                    convW_dst_memory = mkldnn::memory(convW_prim_desc.diff_dst_primitive_desc());
-                    streams[0].addMemory(convW_dst_memory);
-                    streams[0].addOperation(reorder(userW_dst_memory, convW_dst_memory));
-                }
-
-                if (gradB != nullptr) {
-                    auto convW_bias_memory = mkldnn::memory(convW_prim_desc.diff_bias_primitive_desc(), gradB->buffer());
-                    streams[0].addMemory(convW_bias_memory);
-                    streams[0].addOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory, convW_bias_memory));
-                } else {
-                    streams[0].addOperation(convolution_backward_weights(convW_prim_desc, convW_src_memory, convW_dst_memory, convW_weights_memory));
-                }
-
-                if (mkldnn::memory::primitive_desc(convW_prim_desc.diff_weights_primitive_desc())
-                        != userW_weights_memory.get_primitive_desc()) {
-                    streams[0].addOperation(reorder(convW_weights_memory, userW_weights_memory));
-                }
-            }
-
-            if (gradI != nullptr) {
-                auto convI_desc =
-                        convolution_backward_data::desc(
-                                convolution_direct, conv_diff_src_md, conv_weights_md,
-                                conv_dst_md, conv_strides, conv_padding, conv_padding_r, padding_kind::zero);
-
-                auto engine = streams[1].getEngine();
-                auto convI_prim_desc = convolution_backward_data::primitive_desc(convI_desc, engine, conv_prim_desc);
-                auto userI_src_memory = mkldnn::memory({user_diff_src_md, engine}, gradI->buffer());
-                auto userI_weights_memory = mkldnn::memory({user_weights_md, engine}, const_cast<NDArray*>(weights)->buffer());
-                auto userI_dst_memory = mkldnn::memory({user_dst_md, engine}, const_cast<NDArray*>(gradO)->buffer());
-
-                auto convI_src_memory = userI_src_memory;
-                streams[1].addMemory(userI_src_memory);
-                if (mkldnn::memory::primitive_desc(convI_prim_desc.diff_src_primitive_desc())
-                        != userI_src_memory.get_primitive_desc()) {
-                    convI_src_memory = mkldnn::memory(convI_prim_desc.diff_src_primitive_desc());
-                    streams[1].addMemory(convI_src_memory);
-                }
-
-                auto convI_weights_memory = userI_weights_memory;
-                streams[1].addMemory(userI_weights_memory);
-                if (mkldnn::memory::primitive_desc(convI_prim_desc.weights_primitive_desc())
-                        != userI_weights_memory.get_primitive_desc()) {
-                    convI_weights_memory = mkldnn::memory(convI_prim_desc.weights_primitive_desc());
-                    streams[1].addMemory(convI_weights_memory);
-                    streams[1].addOperation(reorder(userI_weights_memory, convI_weights_memory));
-                }
-
-                auto convI_dst_memory = userI_dst_memory;
-                streams[1].addMemory(userI_dst_memory);
-                if (mkldnn::memory::primitive_desc(convI_prim_desc.diff_dst_primitive_desc())
-                        != userI_dst_memory.get_primitive_desc()) {
-                    convI_dst_memory = mkldnn::memory(convI_prim_desc.diff_dst_primitive_desc());
-                    streams[1].addMemory(convI_dst_memory);
-                    streams[1].addOperation(reorder(userI_dst_memory, convI_dst_memory));
-                }
-
-                streams[1].addOperation(convolution_backward_data(convI_prim_desc, convI_dst_memory, convI_weights_memory, convI_src_memory));
-
-                if (mkldnn::memory::primitive_desc(convI_prim_desc.diff_src_primitive_desc())
-                        != userI_src_memory.get_primitive_desc()) {
-                    streams[1].addOperation(reorder(convI_src_memory, userI_src_memory));
-                }
-            }
-        }
-
-        if (gradW != nullptr) {
-            streams[0].submitAndWait();
-        }
-        if (gradI != nullptr) {
-            streams[1].submitAndWait();
-        }
-        return;
-    }
-#endif
             nd4j_debug("MKL-DNN is not used for conv2d_bp!\n", 0);
 
             std::vector<int> gradOaxesForDot;
@@ -875,7 +370,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
 
 //////////////////////////////////////////////////////////////////////////
         template <typename X, typename Y>
-        static void depthwiseConv2d_(const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
+        static void depthwiseConv2d_(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
 
             // input     [bS, iH, iW, iC] (NHWC) or [bS, iC, iH, iW] (NCHW)
             // weights   [kH, kW, iC, mC] always
@@ -922,7 +417,8 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             MmulHelper::tensorDot(&columns, weights, &outputReshaped, modifColumns, {{2,0,1,3},{iC,kH*kW,mC}}, modifOutput);              // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
 
             if(bias)
-                output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+                // output->applyBroadcast(broadcast::Add, {indIOioC}, bias);
+                helpers::addBias(block, *output, *bias, *output, isNCHW);
 
             if(!isNCHW)
                 delete input;
@@ -1268,62 +764,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             const int oH = output.sizeAt(2);
             const int oW = output.sizeAt(3);
 
-#ifdef HAVE_MKLDNN
-            if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
-        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-        if (streams.empty()) {
-            streams.push_back(MKLDNNStream("pooling2d"));
-        }
-
-        if (streams[0].checkAndReset({&input}, {&output}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0})) {
-            mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc pool_src_md(empty), pool_dst_md(empty);
-            mkldnn::memory::desc user_src_md(empty), user_dst_md(empty);
-            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
-            mkldnn::algorithm algorithm;
-
-            ConvolutionUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0, true,
-                    bS, iC, iH, iW, oC, oH, oW, &input, nullptr, &output, algorithm,
-                    &pool_src_md, nullptr, &pool_dst_md, &user_src_md, nullptr, &user_dst_md,
-                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
-
-            auto pool_desc = pooling_forward::desc(prop_kind::forward_inference, algorithm, pool_src_md, pool_dst_md,
-                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
-
-            auto engine = streams[0].getEngine();
-            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
-            auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray&>(input).buffer());
-            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output.buffer());
-
-            auto pool_src_memory = user_src_memory;
-            streams[0].addMemory(user_src_memory);
-            if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
-                    != user_src_memory.get_primitive_desc()) {
-                pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
-                streams[0].addMemory(pool_src_memory);
-                streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
-            }
-
-            auto pool_dst_memory = user_dst_memory;
-            streams[0].addMemory(user_dst_memory);
-            if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
-                streams[0].addMemory(pool_dst_memory);
-            }
-
-            streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
-
-            if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                streams[0].addOperation(reorder(pool_dst_memory, user_dst_memory));
-            }
-        }
-
-        streams[0].submitAndWait();
-        return;
-    }
-#endif
             nd4j_debug("MKL-DNN is not used for pooling2d!\n", 0);
 
             const Nd4jLong iStride0 = input.stridesOf()[0];
@@ -1504,62 +944,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             const int oH = output.sizeAt(3);
             const int oW = output.sizeAt(4);
 
-#ifdef HAVE_MKLDNN
-            if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
-        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-        if (streams.empty()) {
-            streams.push_back(MKLDNNStream("pooling3d"));
-        }
-
-        if (streams[0].checkAndReset({&input}, {&output}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0})) {
-            mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc pool_src_md(empty), pool_dst_md(empty);
-            mkldnn::memory::desc user_src_md(empty), user_dst_md(empty);
-            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
-            mkldnn::algorithm algorithm;
-
-            ConvolutionUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0, true,
-                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, nullptr, &output, algorithm,
-                    &pool_src_md, nullptr, &pool_dst_md, &user_src_md, nullptr, &user_dst_md,
-                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
-
-            auto pool_desc = pooling_forward::desc(prop_kind::forward_inference, algorithm, pool_src_md, pool_dst_md,
-                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
-
-            auto engine = streams[0].getEngine();
-            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
-            auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray&>(input).buffer());
-            auto user_dst_memory = mkldnn::memory({user_dst_md, engine}, output.buffer());
-
-            auto pool_src_memory = user_src_memory;
-            streams[0].addMemory(user_src_memory);
-            if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
-                    != user_src_memory.get_primitive_desc()) {
-                pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
-                streams[0].addMemory(pool_src_memory);
-                streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
-            }
-
-            auto pool_dst_memory = user_dst_memory;
-            streams[0].addMemory(user_dst_memory);
-            if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
-                streams[0].addMemory(pool_dst_memory);
-            }
-
-            streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory));
-
-            if (mkldnn::memory::primitive_desc(pool_prim_desc.dst_primitive_desc())
-                    != user_dst_memory.get_primitive_desc()) {
-                streams[0].addOperation(reorder(pool_dst_memory, user_dst_memory));
-            }
-        }
-
-        streams[0].submitAndWait();
-        return;
-    }
-#endif
             nd4j_debug("MKL-DNN is not used for pooling3d!\n", 0);
 
             const Nd4jLong iStride0 = input.stridesOf()[0];
@@ -1776,91 +1160,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             const int oH = gradO.sizeAt(2);
             const int oW = gradO.sizeAt(3);
 
-#ifdef HAVE_MKLDNN
-            if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
-        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-        if (streams.empty()) {
-            streams.push_back(MKLDNNStream("pooling2d_bp"));
-        }
-
-        if (streams[0].checkAndReset({&input, &gradO}, {&gradI}, {}, {kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0})) {
-            mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
-            mkldnn::memory::desc user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
-            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
-            mkldnn::algorithm algorithm;
-
-            ConvolutionUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0, true,
-                    bS, iC, iH, iW, oC, oH, oW, &input, &gradI, &gradO, algorithm,
-                    &pool_src_md, &pool_diff_src_md, &pool_dst_md, &user_src_md, &user_diff_src_md, &user_dst_md,
-                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
-
-            // input is sometimes null, so we can't rely on pool_src_md being valid
-            auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm,
-                    const_cast<NDArray&>(input).buffer() != nullptr ? pool_src_md : pool_diff_src_md,
-                    pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
-
-            auto engine = streams[0].getEngine();
-            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
-
-            auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md,
-                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
-
-            auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, engine, pool_prim_desc);
-            auto userB_src_memory = mkldnn::memory({user_src_md, engine}, gradI.buffer());
-            auto userB_dst_memory = mkldnn::memory({user_dst_md, engine}, const_cast<NDArray&>(gradO).buffer());
-
-            auto poolB_src_memory = userB_src_memory;
-            streams[0].addMemory(userB_src_memory);
-            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
-                    != userB_src_memory.get_primitive_desc()) {
-                poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc());
-                streams[0].addMemory(poolB_src_memory);
-            }
-
-            auto poolB_dst_memory = userB_dst_memory;
-            streams[0].addMemory(userB_dst_memory);
-            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_dst_primitive_desc())
-                    != userB_dst_memory.get_primitive_desc()) {
-                poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc());
-                streams[0].addMemory(poolB_dst_memory);
-                streams[0].addOperation(reorder(userB_dst_memory, poolB_dst_memory));
-            }
-
-            if (algorithm == mkldnn::pooling_max) {
-                auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray&>(input).buffer());
-
-                auto pool_src_memory = user_src_memory;
-                streams[0].addMemory(user_src_memory);
-                if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
-                        != user_src_memory.get_primitive_desc()) {
-                    pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
-                    streams[0].addMemory(pool_src_memory);
-                    streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
-                }
-
-                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
-                streams[0].addMemory(pool_dst_memory);
-
-                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
-                streams[0].addMemory(pool_workspace_memory);
-
-                streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
-                streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
-            } else {
-                streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
-            }
-
-            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
-                    != userB_src_memory.get_primitive_desc()) {
-                streams[0].addOperation(reorder(poolB_src_memory, userB_src_memory));
-            }
-        }
-
-        streams[0].submitAndWait();
-        return;
-    }
-#endif
             nd4j_debug("MKL-DNN is not used for pooling2d_bp!\n", 0);
 
             const Nd4jLong iStride0  = input.stridesOf()[0];
@@ -2099,94 +1398,6 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             const int oH = gradO.sizeAt(3);
             const int oW = gradO.sizeAt(4);
 
-#ifdef HAVE_MKLDNN
-            if (poolingMode < 2 && block.isUseMKLDNN() && nd4j::MKLDNNStream::isSupported<T, T>()) {
-        std::vector<nd4j::MKLDNNStream>& streams = block.getMKLDNNStreams();
-        if (streams.empty()) {
-            streams.push_back(MKLDNNStream("pooling3d_bp"));
-        }
-
-        if (streams[0].checkAndReset({&input, &gradO}, {&gradI}, {}, {kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0})) {
-            mkldnn_memory_desc_t empty;
-            mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
-            mkldnn::memory::desc user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
-            mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
-            mkldnn::algorithm algorithm;
-
-            ConvolutionUtils::getMKLDNNMemoryDescPool3d(kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, poolingMode, extraParam0, true,
-                    bS, iC, iD, iH, iW, oC, oD, oH, oW, &input, &gradI, &gradO, algorithm,
-                    &pool_src_md, &pool_diff_src_md, &pool_dst_md, &user_src_md, &user_diff_src_md, &user_dst_md,
-                    pool_strides, pool_kernel, pool_padding, pool_padding_r);
-
-            // input is sometimes null, so we can't rely on pool_src_md being valid
-            if (const_cast<NDArray&>(input).buffer() == nullptr) {
-                pool_src_md = pool_diff_src_md;
-                user_src_md = user_diff_src_md;
-            }
-            auto pool_desc = pooling_forward::desc(prop_kind::forward, algorithm, pool_src_md,
-                    pool_dst_md, pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
-
-            auto engine = streams[0].getEngine();
-            auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
-
-            auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md,
-                    pool_strides, pool_kernel, pool_padding, pool_padding_r, padding_kind::zero);
-
-            auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, engine, pool_prim_desc);
-            auto userB_src_memory = mkldnn::memory({user_diff_src_md, engine}, gradI.buffer());
-            auto userB_dst_memory = mkldnn::memory({user_dst_md, engine}, const_cast<NDArray&>(gradO).buffer());
-
-            auto poolB_src_memory = userB_src_memory;
-            streams[0].addMemory(userB_src_memory);
-            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
-                    != userB_src_memory.get_primitive_desc()) {
-                poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_primitive_desc());
-                streams[0].addMemory(poolB_src_memory);
-            }
-
-            auto poolB_dst_memory = userB_dst_memory;
-            streams[0].addMemory(userB_dst_memory);
-            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_dst_primitive_desc())
-                    != userB_dst_memory.get_primitive_desc()) {
-                poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_primitive_desc());
-                streams[0].addMemory(poolB_dst_memory);
-                streams[0].addOperation(reorder(userB_dst_memory, poolB_dst_memory));
-            }
-
-            if (algorithm == mkldnn::pooling_max) {
-                auto user_src_memory = mkldnn::memory({user_src_md, engine}, const_cast<NDArray&>(input).buffer());
-
-                auto pool_src_memory = user_src_memory;
-                streams[0].addMemory(user_src_memory);
-                if (mkldnn::memory::primitive_desc(pool_prim_desc.src_primitive_desc())
-                        != user_src_memory.get_primitive_desc()) {
-                    pool_src_memory = mkldnn::memory(pool_prim_desc.src_primitive_desc());
-                    streams[0].addMemory(pool_src_memory);
-                    streams[0].addOperation(reorder(user_src_memory, pool_src_memory));
-                }
-
-                auto pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_primitive_desc());
-                streams[0].addMemory(pool_dst_memory);
-
-                auto pool_workspace_memory = mkldnn::memory(pool_prim_desc.workspace_primitive_desc());
-                streams[0].addMemory(pool_workspace_memory);
-
-                streams[0].addOperation(pooling_forward(pool_prim_desc, pool_src_memory, pool_dst_memory, pool_workspace_memory));
-                streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, pool_workspace_memory, poolB_src_memory));
-            } else {
-                streams[0].addOperation(pooling_backward(poolB_prim_desc, poolB_dst_memory, poolB_src_memory));
-            }
-
-            if (mkldnn::memory::primitive_desc(poolB_prim_desc.diff_src_primitive_desc())
-                    != userB_src_memory.get_primitive_desc()) {
-                streams[0].addOperation(reorder(poolB_src_memory, userB_src_memory));
-            }
-        }
-
-        streams[0].submitAndWait();
-        return;
-    }
-#endif
             nd4j_debug("MKL-DNN is not used for pooling3d_bp!\n", 0);
 
             const Nd4jLong iStride0  = input.stridesOf()[0];
@@ -2451,7 +1662,7 @@ void ConvolutionUtils::getMKLDNNMemoryDescConv3d(
             BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), conv2dBP_, (block, input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::depthwiseConv2d(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
-            BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
+            BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2d_, (block, input, weights, bias, output, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);
         }
         void ConvolutionUtils::depthwiseConv2dBP(nd4j::graph::Context& block, const NDArray* input, const NDArray* weights, const NDArray* bias, const NDArray* gradO, NDArray* gradI, NDArray* gradW, NDArray* gradB, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW) {
             BUILD_SINGLE_SELECTOR_TWICE(input->dataType(), depthwiseConv2dBP_, (input, weights, bias, gradO, gradI, gradW, gradB, kH, kW, sH, sW, pH, pW, dH, dW, isSameMode, isNCHW), FLOAT_TYPES);

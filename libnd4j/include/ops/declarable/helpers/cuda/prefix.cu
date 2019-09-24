@@ -68,12 +68,12 @@ __global__ static void prefixPerBlockCuda(scalar::Ops op,
         }
 
         if(leftArrInd < tadLen)
-            shared[sharedInd] = xLeft = xTad[shape::getIndexOffset(leftArrInd, xTadShapeInfo, tadLen)];
+            shared[sharedInd] = xLeft = xTad[shape::getIndexOffset(leftArrInd, xTadShapeInfo)];
         // else
         //     shared[sharedInd] = (op == scalar::Add) ? 0 : 1;
 
         if(rightArrInd < tadLen)
-            shared[sharedInd + 1] = xRight = xTad[shape::getIndexOffset(rightArrInd, xTadShapeInfo, tadLen)];
+            shared[sharedInd + 1] = xRight = xTad[shape::getIndexOffset(rightArrInd, xTadShapeInfo)];
         // else
         //     shared[sharedInd + 1] = (op == scalar::Add) ? 0 : 1;
 
@@ -117,7 +117,7 @@ __global__ static void prefixPerBlockCuda(scalar::Ops op,
                 result = (op == scalar::Add) ? result + xLeft : result * xLeft;
             if(i > 0)
                 result = (op == scalar::Add) ? result + lastElemInChunk : result * lastElemInChunk;
-            zTad[shape::getIndexOffset(leftArrInd, zTadShapeInfo, tadLen)] = result;
+            zTad[shape::getIndexOffset(leftArrInd, zTadShapeInfo)] = result;
         }
 
         if(rightArrInd < tadLen) {
@@ -128,7 +128,7 @@ __global__ static void prefixPerBlockCuda(scalar::Ops op,
                 result = (op == scalar::Add) ? result + lastElemInChunk : result * lastElemInChunk;
             if(i < numTadChunks - 1 && threadIdx.x == blockDim.x - 1)    // last element in chunk
                 lastElemInChunk = !exclusive ? result : (op == scalar::Add) ? result + xRight : result * xRight;
-            zTad[shape::getIndexOffset(rightArrInd, zTadShapeInfo, tadLen)] = result;
+            zTad[shape::getIndexOffset(rightArrInd, zTadShapeInfo)] = result;
         }
     }
 }

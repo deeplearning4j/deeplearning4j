@@ -28,11 +28,11 @@ using namespace simdOps;
 
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
-__global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo, 
-											void *vy, Nd4jLong *yShapeInfo, 
-											void *vz, Nd4jLong *zShapeInfo, 
+__global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
+											void *vy, Nd4jLong *yShapeInfo,
+											void *vz, Nd4jLong *zShapeInfo,
 											void *vextraParams) {
-	
+
 	auto x = reinterpret_cast<X*>(vx);
 	auto y = reinterpret_cast<Y*>(vy);
 	auto z = reinterpret_cast<Z*>(vz);
@@ -67,17 +67,17 @@ __global__ static void pairwiseSimpleShaped(void* vx, Nd4jLong *xShapeInfo,
 	}
 	else if (vx == vz) {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
-			auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
-				
+			auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+			auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+
 			z[xOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}
 	}
 	else {
 		for (Nd4jLong i = tid; i < len; i += gridDim.x * blockDim.x) {
-			auto xOffset = shape::getIndexOffset(i, xShapeInfo, len);
-			auto yOffset = shape::getIndexOffset(i, yShapeInfo, len);
-			auto zOffset = shape::getIndexOffset(i, zShapeInfo, len);
+			auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+			auto yOffset = shape::getIndexOffset(i, yShapeInfo);
+			auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 
 			z[zOffset] = OpType::op(x[xOffset], y[yOffset], extraParams);
 		}

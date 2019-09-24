@@ -16,6 +16,10 @@
 
 package org.nd4j.autodiff.validation;
 
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMax;
+import org.nd4j.linalg.api.ops.impl.indexaccum.custom.ArgMin;
+import org.nd4j.linalg.api.ops.impl.reduce.HashCode;
+import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinearDerivative;
 import org.nd4j.shade.guava.collect.ImmutableSet;
 import org.nd4j.shade.guava.reflect.ClassPath;
 import lombok.extern.slf4j.Slf4j;
@@ -253,7 +257,7 @@ public class OpValidation {
     public static void checkDeserializedEquality(SameDiff original, ByteBuffer bbSerialized, TestCase tc) {
         SameDiff deserialized;
         try{
-           deserialized = SameDiff.fromFlatBuffers(bbSerialized);
+            deserialized = SameDiff.fromFlatBuffers(bbSerialized);
         } catch (IOException e){
             throw new RuntimeException("IOException deserializing from FlatBuffers", e);
         }
@@ -890,6 +894,7 @@ public class OpValidation {
                 RationalTanhDerivative.class,
                 RectifiedTanhDerivative.class,
                 Relu6Derivative.class,
+                PReluBp.class,
                 SELUDerivative.class,
                 SigmoidDerivative.class,
                 org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative.class,
@@ -900,6 +905,7 @@ public class OpValidation {
                 TanhDerivative.class,
                 org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative.class,
                 PowDerivative.class,
+                org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinearDerivative.class,
                 org.nd4j.linalg.api.ops.impl.transforms.gradient.CubeBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.gradient.EluBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.gradient.HardSigmoidBp.class,
@@ -911,6 +917,8 @@ public class OpValidation {
                 org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftPlusBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignBp.class,
                 org.nd4j.linalg.api.ops.impl.transforms.gradient.ThresholdReluBp.class,
+                org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.bp.ModBpOp.class,
+
 
                 BiasAddGrad.class,
                 ConcatBp.class,
@@ -976,7 +984,8 @@ public class OpValidation {
                 BarnesHutSymmetrize.class,
                 SpTreeCell.class,
                 CbowRound.class,
-                SkipGramRound.class
+                SkipGramRound.class,
+                HashCode.class
         );
 
         return new HashSet<>(list);
@@ -1026,11 +1035,21 @@ public class OpValidation {
                 IMax.class,
                 IMin.class,
                 LastIndex.class,
+                ArgMax.class,
+                ArgMin.class,
 
                 //Exclude ops that output integer types only:
                 Shape.class,
                 ShapeN.class,
                 SizeAt.class,
+                BroadcastDynamicShape.class,
+                ReductionShape.class,
+                ShiftBits.class,
+                RShiftBits.class,
+                BitsHammingDistance.class,
+                CyclicShiftBits.class,
+                CyclicRShiftBits.class,
+
 
                 //Exclude Random ops
                 RandomStandardNormal.class,
@@ -1209,7 +1228,7 @@ public class OpValidation {
                 "to_int64",
                 "to_uint32",
                 "to_uint64"
-                );
+        );
 
         return out;
     }

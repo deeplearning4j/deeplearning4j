@@ -26,4 +26,4 @@ DL4J supports all available [Keras initializers](https://keras.io/initializers),
 * <i class="fa fa-check-square-o"></i> he_normal
 * <i class="fa fa-check-square-o"></i> he_uniform
 
-The mapping of Keras to DL4J initializers can be found in [KerasInitilizationUtils](https://github.com/deeplearning4j/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasInitilizationUtils.java).
+The mapping of Keras to DL4J initializers can be found in [KerasInitilizationUtils](https://github.com/eclipse/deeplearning4j/blob/master/deeplearning4j/deeplearning4j-modelimport/src/main/java/org/deeplearning4j/nn/modelimport/keras/utils/KerasInitilizationUtils.java).

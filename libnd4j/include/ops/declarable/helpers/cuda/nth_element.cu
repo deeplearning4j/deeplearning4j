@@ -31,22 +31,21 @@ namespace helpers {
 
     template <typename T>
     static __global__ void fillUpElementKernel(void* outputBuffer, Nd4jLong* outputShapeInfo, void* inputBuffer, Nd4jLong* inputShapeInfo, Nd4jLong* pTadShape, Nd4jLong* pTadOffsets, Nd4jLong n) {
-        __shared__ Nd4jLong bufferLength, arrLen;
+        __shared__ Nd4jLong bufferLength;
 
         auto z = reinterpret_cast<T*>(outputBuffer);
         auto x = reinterpret_cast<T*>(inputBuffer);
 
-        if (threadIdx.x == 0) {
-            arrLen = shape::length(pTadShape);
+        if (threadIdx.x == 0)
             bufferLength = shape::length(outputShapeInfo);
-        }
+
         __syncthreads();
 
         const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
         const auto step = gridDim.x * blockDim.x;
         for (int t = tid; t < bufferLength; t += step) {
             auto tX = x + pTadOffsets[t];
-            z[shape::getIndexOffset(t, outputShapeInfo, bufferLength)] = tX[shape::getIndexOffset(n, pTadShape, arrLen)]; //tX];
+            z[shape::getIndexOffset(t, outputShapeInfo)] = tX[shape::getIndexOffset(n, pTadShape)]; //tX];
         }
     }
 
@@ -58,7 +57,7 @@ namespace helpers {
         Nd4jPointer params[2];
         params[0] = context;
         params[1] = context->getCudaStream();
-
+        // Nth element in sorted sequence : basic algorithm sort and retrieve nth element in sorted
         if (input->isVector()) {
             sort(params, nullptr, sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), reverse);
 
@@ -72,9 +71,7 @@ namespace helpers {
             auto pTadShape = packX.specialShapeInfo();
             auto pTadShapeH = packX.primaryShapeInfo();
             auto pTadOffsets = packX.specialOffsets();
-//            auto pLastDimData = (int*) manager.replicatePointer(lastDims.data(), lastDims.size() * sizeof(int));
             sortTad(params, sortedVals.buffer(), sortedVals.shapeInfo(), sortedVals.specialBuffer(), sortedVals.specialShapeInfo(), lastDims.data(), lastDims.size(), pTadShape, pTadOffsets, reverse);
-//            manager.synchronize();
             sortedVals.tickWriteDevice();
             sortedVals.syncToHost();
             auto stream = context->getCudaStream();

@@ -178,8 +178,6 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
     const Nd4jLong* xShape  = input.shapeOf();
     const Nd4jLong* zShape  = output.shapeOf();
-    const Nd4jLong* xStride = input.stridesOf();
-    const Nd4jLong* zStride = output.stridesOf();
 
     const int rank = input.rankOf();  // both input and output have the same rank
     const int rankMinusOne = rank - 1;
@@ -195,8 +193,8 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
         PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
         for(uint i = 0; i < zLen; ++i) {
 
-            shape::index2coords(rank, zShape, i, zLen, coords.data());
-            const auto zOffset = shape::getOffset(0, zShape, zStride, coords.data(), rank);
+            shape::index2coords(i, output.getShapeInfo(), coords.data());
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
 
             bool within = true;
             for(int j = rankMinusOne; j >= 0; --j) {
@@ -207,7 +205,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
             }
 
             if(within)
-                z[zOffset] = x[shape::getOffset(0, xShape, xStride, coords.data(), rank)];
+                z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords.data())];
             else
                 z[zOffset] = padVal;
         }
@@ -220,8 +218,8 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
         PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
         for(uint i = 0; i < zLen; ++i) {
 
-            shape::index2coords(rank, zShape, i, zLen, coords.data());
-            const auto zOffset = shape::getOffset(0, zShape, zStride, coords.data(), rank);
+            shape::index2coords(i, output.getShapeInfo(), coords.data());
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
 
             for(int j = rankMinusOne; j >= 0; --j) {
 
@@ -231,7 +229,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
                 else if(coords[j] >= xShape[j]) coords[j] = 2 * xShape[j] - coords[j] - shift2; // means fill from right
             }
 
-            const auto xOffset = shape::getOffset(0, xShape, xStride, coords.data(), rank);
+            const auto xOffset = shape::getOffset(input.getShapeInfo(), coords.data());
             z[zOffset] = x[xOffset];
         }
     }
@@ -580,9 +578,9 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
             xCoordStart = coords.data();
         }
 
-        shape::index2coords(zRank, output.shapeOf(), i, zLen, zCoordStart);
+        shape::index2coords(i, output.getShapeInfo(), zCoordStart);
 
-        const auto zOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), zCoordStart, zRank);
+        const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoordStart);
 
         // last y coordinate
         uint coordToRestore;
@@ -590,7 +588,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
             coordToRestore = static_cast<uint>(zCoordStart[yRank - 1]);
 
         zCoordStart[yRank - 1] = 0;
-        const auto yOffset = shape::getOffset(0, indices.shapeOf(), indices.stridesOf(), zCoordStart, yRank);
+        const auto yOffset = shape::getOffset(indices.getShapeInfo(), zCoordStart);
 
         //restore z coordinate
         if(yLastDim != xRank)
@@ -600,7 +598,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
         for(uint j = 0; j < yLastDim; ++j)
             xCoordStart[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];   // last stride
 
-        const auto xOffset = shape::getOffset(0, input.shapeOf(), input.stridesOf(), xCoordStart, xRank);
+        const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoordStart);
 
         z[zOffset] = x[xOffset];
     }
@@ -957,26 +955,27 @@ void clipByNorm(nd4j::LaunchContext * context, NDArray& input, NDArray& output, 
 
     template <typename T>
     static void clipByGlobalNorm_(std::vector<NDArray*> const& inputs, double clipNorm, nd4j::memory::Workspace* workspace, std::vector<NDArray*>& outputs, bool isInplace) {
-        NDArray globalNorm = NDArrayFactory::create<T>(0, inputs[0]->getContext()); //sqrt(sum([l2norm(t)**2 for t in t_list]))
-        PRAGMA_OMP_PARALLEL_FOR
+        T globalNorm = 0; //NDArrayFactory::create<T>(0, inputs[0]->getContext()); //sqrt(sum([l2norm(t)**2 for t in t_list]))
+//        PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(sumT : globalNorm)
         for (size_t i = 0; i < inputs.size(); i++) {
             auto input = inputs[i];
             auto l2norm = input->reduceNumber(reduce::Norm2);
-            globalNorm += l2norm * l2norm;
+            globalNorm += l2norm.t<T>(0) * l2norm.t<T>(0);
         }
 
-        globalNorm.applyTransform(transform::Sqrt, nullptr, nullptr);// = nd4j::math::nd4j_sqrt(globalNorm);
-        outputs[inputs.size()]->p(0, globalNorm);
+        //globalNorm.applyTransform(transform::Sqrt, nullptr, nullptr);// = nd4j::math::nd4j_sqrt(globalNorm);
+        auto normS = nd4j::math::nd4j_sqrt<T,T>(globalNorm);
+        outputs[inputs.size()]->p(0, normS);
 
-        const T factor = clipNorm / globalNorm.e<T>(0);
+        const T factor = clipNorm / normS;
 
-        PRAGMA_OMP_PARALLEL_FOR
+//        PRAGMA_OMP_PARALLEL_FOR
         for (size_t e = 0; e < inputs.size(); e++) {
             // all-reduce
             auto input = inputs[e];
             auto output = outputs[e];
 
-            if (globalNorm.e<double>(0) <= clipNorm) {
+            if (normS <= clipNorm) {
                 output->assign(input);
             }
             else {
@@ -1171,7 +1170,7 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
         PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(inIdx, outIdx))
         for(int i = 0; i < outLen; ++i) {
 
-            shape::index2coords(rank, output.shapeOf(), i, outIdx.data());
+            shape::index2coords(i, output.getShapeInfo(), outIdx.data());
 
             for(int j = 0; j < rank; ++j) {
 
@@ -1190,8 +1189,8 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
                     inIdx[j] = len - outIdx[j];
             }
 
-            auto outOffset = shape::getOffset(0, output.shapeOf(), output.stridesOf(), outIdx.data(), rank);
-            auto inOffset  = shape::getOffset(0, input.shapeOf(),  input.stridesOf(),  inIdx.data(),  rank);
+            auto outOffset = shape::getOffset(output.getShapeInfo(), outIdx.data());
+            auto inOffset  = shape::getOffset(input.getShapeInfo(), inIdx.data());
             reinterpret_cast<T*>(output.buffer())[outOffset] = reinterpret_cast<T*>(input.getBuffer())[inOffset];
         }
     }
@@ -1258,7 +1257,7 @@ static void tileBP_(const NDArray& gradO /*input*/, NDArray& gradI /*output*/, c
         for(Nd4jLong i=0;  i<gradOLen; ++i) {
 
             auto fidx = shape::subArrayIndex(i, gradO.getShapeInfo(), gradI.getShapeInfo());
-            gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getIndexOffset(i, gradO.getShapeInfo(), gradOLen)]);
+            gradI.p(fidx, gradI.e<T>(fidx) + gradOBuff[shape::getIndexOffset(i, gradO.getShapeInfo())]);
         }
     }
 }

@@ -38,7 +38,7 @@ To get started using Deeplearning4j, please go to our [Quickstart](https://deepl
 
 ---
 ## Documentation
-Documentation is available at [deeplearning4j.org](https://deeplearning4j.org/overview) and [JavaDocs](https://deeplearning4j.org/api/latest/). Open-source contributors can help us improve our documentation for Deeplearning4j by sending pull requests for the DL4J website [here](https://github.com/deeplearning4j/deeplearning4j/tree/gh-pages) and ND4J [here](https://github.com/deeplearning4j/nd4j/tree/gh-pages).
+Documentation is available at [deeplearning4j.org](https://deeplearning4j.org/overview) and [JavaDocs](https://deeplearning4j.org/api/latest/). Open-source contributors can help us improve our documentation for Deeplearning4j by sending pull requests for the DL4J website [here](https://github.com/eclipse/deeplearning4j-docs)
 
 ## Support
 
@@ -52,7 +52,7 @@ To install Deeplearning4J, see our [Quickstart](https://deeplearning4j.org/docs/
 
 Search Maven Central for [deeplearning4j](https://search.maven.org/#search%7Cga%7C1%7Cdeeplearning4j) to get a list of dependencies. 
 
-Add the dependency information to your `pom.xml` file. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.** An easy way to get up-to-date dependencies is to use the ones listed in our [dl4j-examples POM](https://github.com/deeplearning4j/dl4j-examples/blob/master/pom.xml).
+Add the dependency information to your `pom.xml` file. **We highly recommend downloading via Maven unless you plan to help us develop DL4J.** An easy way to get up-to-date dependencies is to use the ones listed in our [dl4j-examples POM](https://github.com/eclipse/deeplearning4j-examples/blob/master/pom.xml).
 
 <!--
 #### Yum Install / Load RPM (Fedora or CentOS)
@@ -80,9 +80,9 @@ Note, be sure to install the ND4J modules you need first, especially the backend
 ---
 ## Contribute
 
-1. Check for [open issues](https://github.com/deeplearning4j/deeplearning4j/issues) or open a fresh one to start a discussion around a feature idea or a bug.
+1. Check for [open issues](https://github.com/eclipse/deeplearning4j/issues) or open a fresh one to start a discussion around a feature idea or a bug.
 2. If you feel uncomfortable or uncertain about an issue or your changes, don't hesitate to contact us on Gitter using the link above.
-3. Fork [the repository](https://github.com/deeplearning4j/deeplearning4j.git)
+3. Fork [the repository](https://github.com/eclipse/deeplearning4j.git)
    on GitHub to start making your changes (branch off of the master branch).
 4. Write a test that shows the bug was fixed or the feature works as expected.
 5. Note the repository follows
@@ -93,4 +93,4 @@ Note, be sure to install the ND4J modules you need first, especially the backend
    the repository to configure the Eclipse formatter, or by [using the Intellij
    plugin](https://github.com/HPI-Information-Systems/Metanome/wiki/Installing-the-google-styleguide-settings-in-intellij-and-eclipse).
 6. Send a pull request and bug us on Gitter until it gets merged and published. :)
-7. Add technical documentation on the [Deeplearning4j website](https://github.com/deeplearning4j/deeplearning4j/tree/gh-pages) and fix any typos you see.
+7. Add technical documentation on the [Deeplearning4j website](https://github.com/eclipse/deeplearning4j/tree/gh-pages) and fix any typos you see.

@@ -35,7 +35,7 @@ __global__ void transformFloatSimple(void *x, Nd4jLong *xShapeInfo, int xRank,
 								int *allocationPointer,
 								void *reductionPointer,
 								Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-	
+
 	functions::transform::TransformFloat<X,Z>::template transformCuda<OpType>(
 	    											x, xShapeInfo,
 	    											params,
@@ -64,7 +64,7 @@ namespace functions {
 											void *vparams,
 											void *vz,
 											Nd4jLong *zShapeInfo,
-											int *allocationPointer, void *vreductionPointer, 
+											int *allocationPointer, void *vreductionPointer,
 											Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
         	auto x = reinterpret_cast<X*>(vx);
@@ -75,7 +75,7 @@ namespace functions {
 		    if(OpType::requiresSpecial) {
 			    OpType::execSpecialCuda(x,xShapeInfo,z,zShapeInfo,params, allocationPointer, reductionPointer, tadShapeInfo, tadOffsets);
 			    return;
-		    } 
+		    }
 		    else {
 
 	            __shared__ Nd4jLong xEws;
@@ -83,9 +83,9 @@ namespace functions {
         	    __shared__ char xOrder;
             	__shared__ char zOrder;
             	__shared__ Nd4jLong length;
-            
+
 	            if (threadIdx.x == 0) {
-    	                               	                            
+
         	        xEws = shape::elementWiseStride(xShapeInfo);
             	    zEws = shape::elementWiseStride(zShapeInfo);
                 	xOrder = shape::order(xShapeInfo);
@@ -95,24 +95,24 @@ namespace functions {
             	__syncthreads();
 
 	    	    auto tid = blockIdx.x * blockDim.x + threadIdx.x;
-				int totalThreads = gridDim.x * blockDim.x;                
+				int totalThreads = gridDim.x * blockDim.x;
 
-		        if(xEws > 0 && zEws > 0 && xOrder == zOrder) {								
-					
+		        if(xEws > 0 && zEws > 0 && xOrder == zOrder) {
+
 					for (Nd4jLong i = tid; i < length; i += totalThreads)
                         z[i * zEws] = OpType::op(x[i * xEws], params);
 		        }
-		        else {			        
+		        else {
 					if(vx == vz) {
 						for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);						
+							auto xOffset = shape::getIndexOffset(i, xShapeInfo);
 	    			    	z[xOffset] = OpType::op(x[xOffset], params);
-		    	    	}		    	    
+		    	    	}
 					}
 					else {
 		    	    	for (Nd4jLong i = tid; i < length; i+= totalThreads) {
-							auto xOffset = shape::getIndexOffset(i, xShapeInfo,  length);
-							auto zOffset = shape::getIndexOffset(i, zShapeInfo, length);				        
+							auto xOffset = shape::getIndexOffset(i, xShapeInfo);
+							auto zOffset = shape::getIndexOffset(i, zShapeInfo);
 	    			    	z[zOffset] = OpType::op(x[xOffset], params);
 		    	    	}
 		    		}

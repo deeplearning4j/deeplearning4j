@@ -33,7 +33,7 @@ using namespace simdOps;
 ////////////////////////////////////////////////////////////////////////////////
 template <typename X, typename Y, typename Z, typename OpType>
 __global__ static void scalarSimpleShaped(void* vx, void *vscalar, Nd4jLong *xShapeInfo, void *vparams, void *vz, Nd4jLong *zShapeInfo, int *allocationBuffer) {
-    
+
     auto scalar = reinterpret_cast<Y*>(vscalar)[0];
     auto x      = reinterpret_cast<X*>(vx);
     auto params = reinterpret_cast<Z*>(vparams);
@@ -61,10 +61,10 @@ __global__ static void scalarSimpleShaped(void* vx, void *vscalar, Nd4jLong *xSh
         }
     } else {
         for (Nd4jLong i = tid; i < length; i += totalThreads) {
-            z[shape::getIndexOffset(i, zShapeInfo, length)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo, length)], scalar, params);
+            z[shape::getIndexOffset(i, zShapeInfo)] = OpType::op(x[shape::getIndexOffset(i, xShapeInfo)], scalar, params);
         }
     }
-    
+
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -76,7 +76,7 @@ __global__ static void scalarAlongDimension(void *vx, Nd4jLong *xShapeInfo,
                                           int *dimension, int dimensionLength,
                                           Nd4jLong *tadShapeInfo,  Nd4jLong *tadOffsets,
                                           Nd4jLong *tadShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-        
+
     auto x = reinterpret_cast<X*>(vx);
     auto extraParams = reinterpret_cast<Z*>(vextraParams);
     auto z = reinterpret_cast<Z*>(vz);
@@ -114,7 +114,7 @@ __global__ static void scalarAlongDimension(void *vx, Nd4jLong *xShapeInfo,
             auto s = scalars[r];
 
             for (int f = threadIdx.x; f < tadLength; f += blockDim.x)
-                oZ[shape::getIndexOffset(f, tadShapeInfoZ, tadLength)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo, tadLength)], s, extraParams);
+                oZ[shape::getIndexOffset(f, tadShapeInfoZ)] = OpType::op(oX[shape::getIndexOffset(f, tadShapeInfo)], s, extraParams);
         }
     }
 }
@@ -127,7 +127,7 @@ namespace scalar    {
 template<typename X, typename Y, typename Z>
 template<typename OpType>
 void _CUDA_H ScalarTransform<X,Y,Z>::intermediateShaped(dim3& launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, Nd4jLong *hxShapeInfo, void *vz, Nd4jLong *zShapeInfo, Nd4jLong *hzShapeInfo, void* vscalar, void *vextraParams, int *allocPointer){
-    
+
     auto xEws = shape::elementWiseStride(hxShapeInfo);
     auto xOrder = shape::order(hxShapeInfo);
 

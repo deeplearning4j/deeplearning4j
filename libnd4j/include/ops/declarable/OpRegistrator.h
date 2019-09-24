@@ -26,6 +26,7 @@
 #include <map>
 #include <mutex>
 #include <ops/declarable/DeclarableOp.h>
+#include <ops/declarable/PlatformHelper.h>
 
 // handlers part
 #include <cstdlib>
@@ -59,9 +60,15 @@ namespace nd4j {
 
             std::map<Nd4jLong, std::string> _msvc;
 
+            // pointers to our operations
             std::map<Nd4jLong, nd4j::ops::DeclarableOp*> _declarablesLD;
             std::map<std::string, nd4j::ops::DeclarableOp*> _declarablesD;
             std::vector<nd4j::ops::DeclarableOp *> _uniqueD;
+
+            // pointers to platform-specific helpers
+            std::map<Nd4jLong, nd4j::ops::platforms::PlatformHelper*> _helpersLH;
+            std::map<std::string, nd4j::ops::platforms::PlatformHelper*> _helpersH;
+            std::vector<nd4j::ops::platforms::PlatformHelper*> _uniqueH;
 
             std::mutex _locker;
             std::string _opsList;
@@ -82,16 +89,22 @@ namespace nd4j {
             const char * getAllCustomOperations();
 
             /**
-            * This method registers operation
+            * This method registers operation in our registry, so we can use them later
             *
             * @param op
             */
             bool registerOperation(const char* name, nd4j::ops::DeclarableOp* op);
             bool registerOperation(nd4j::ops::DeclarableOp *op);
 
+            void registerHelper(nd4j::ops::platforms::PlatformHelper* op);
+
+            bool hasHelper(Nd4jLong hash);
+
             nd4j::ops::DeclarableOp* getOperation(const char *name);
             nd4j::ops::DeclarableOp* getOperation(Nd4jLong hash);
-            nd4j::ops::DeclarableOp* getOperation(std::string& name);
+            nd4j::ops::DeclarableOp* getOperation(std::string &name);
+
+            nd4j::ops::platforms::PlatformHelper* getPlatformHelper(Nd4jLong hash);
 
             std::vector<Nd4jLong> getAllHashes();
 

@@ -246,12 +246,12 @@ namespace functions {
                 if (dimensionLength > 1 || tadEWS < 1) {
 
                     for (int r = blockIdx.x; r < numTads; r += gridDim.x) {
-                        
+
                         auto tadOffsetForBlock = tadOffsets[r];
                         sPartials[threadIdx.x] = OpType::startingIndexValue(dx);
 
-                        for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {                            
-                            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo, tadLength);
+                        for(int i = threadIdx.x;i < tadLength; i += blockDim.x) {
+                            auto xOffset = tadOffsetForBlock + shape::getIndexOffset(i, tadOnlyShapeInfo);
                             IndexValue<X> comp {dx[xOffset], i};
                             sPartials[threadIdx.x] = OpType::update(sPartials[threadIdx.x], comp, extraParams);
                         }
@@ -297,9 +297,9 @@ namespace functions {
                         reduction = OpType::update(reduction, indexVal, extraParams);
                     }
                 } else {
-                                        
-                    for(Nd4jLong i = tid;i < n; i += blockDim.x * gridDim.x) {                                                
-                        auto offset = shape::getIndexOffset(i, xShapeInfo, n);
+
+                    for(Nd4jLong i = tid;i < n; i += blockDim.x * gridDim.x) {
+                        auto offset = shape::getIndexOffset(i, xShapeInfo);
                         IndexValue<X> indexVal = {dx[offset], i};
                         reduction = OpType::update(reduction, indexVal, extraParams);
                     }

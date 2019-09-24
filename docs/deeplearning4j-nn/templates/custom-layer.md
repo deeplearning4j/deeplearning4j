@@ -45,7 +45,7 @@ These tests should at a minimum include the following:
 
 ## Example
 
-A full custom layer example is available in our [examples repository](https://github.com/deeplearning4j/dl4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/customlayers).
+A full custom layer example is available in our [examples repository](https://github.com/eclipse/deeplearning4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/customlayers).
 
 ## API
 

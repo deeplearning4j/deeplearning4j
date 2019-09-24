@@ -58,12 +58,12 @@ __global__ static void crossCuda(const void* vx, const Nd4jLong* xShapeInfo,
 
     for (uint i = tid; i < lenWithoutLastDim; i += totalThreads) {
 
-        shape::index2coords(rank - 1, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), i, lenWithoutLastDim, coords);
+        shape::index2coords(i, rank - 1, xShapeInfo + 1, coords);
 
         coords[rank - 1] = 0;
 
-        auto xOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(xShapeInfo)), shape::stride(const_cast<Nd4jLong*>(xShapeInfo)), coords, rank);
-        auto yOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(yShapeInfo)), shape::stride(const_cast<Nd4jLong*>(yShapeInfo)), coords, rank);
+        auto xOffset = shape::getOffset(xShapeInfo, coords);
+        auto yOffset = shape::getOffset(yShapeInfo, coords);
 
         const auto x0 = x[xOffset];
         const auto y0 = y[yOffset];
@@ -80,7 +80,7 @@ __global__ static void crossCuda(const void* vx, const Nd4jLong* xShapeInfo,
 		const auto x2 = x[xOffset];
         const auto y2 = y[yOffset];
 
-        auto zOffset = shape::getOffset(0, shape::shapeOf(const_cast<Nd4jLong*>(zShapeInfo)), shape::stride(const_cast<Nd4jLong*>(zShapeInfo)), coords, rank);
+        auto zOffset = shape::getOffset(zShapeInfo, coords);
         z[zOffset] = x1 * y2 - x2 * y1;
 
         zOffset += shape::stride(const_cast<Nd4jLong*>(zShapeInfo))[rank - 1];

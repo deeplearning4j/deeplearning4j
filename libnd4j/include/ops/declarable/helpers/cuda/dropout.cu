@@ -41,7 +41,7 @@ namespace helpers {
 
             // if probability is ok - we're saving scaled value
             if (double(val) < probVal)
-                output[shape::getIndexOffset(e, outputShape, inLen)] = T(input[shape::getIndexOffset(e, inputShape, inLen)] / probVal);
+                output[shape::getIndexOffset(e, outputShape)] = T(input[shape::getIndexOffset(e, inputShape)] / probVal);
         }
     }
 
@@ -140,11 +140,11 @@ namespace helpers {
         auto step = blockDim.x * gridDim.x;
 
         for (int e = tid; e < len; e += step) {
-            const auto zOffset = shape::getIndexOffset(e, outputShape, len);
+            const auto zOffset = shape::getIndexOffset(e, outputShape);
 
             // if probability was non-zero on FF step, we'll scale grads back
             if (output[zOffset] != T(0.))
-                output[zOffset] = T(input[shape::getIndexOffset(e, gradOutShape, len)] / probValue);
+                output[zOffset] = T(input[shape::getIndexOffset(e, gradOutShape)] / probValue);
 
         }
     }
@@ -173,8 +173,8 @@ namespace helpers {
 
         for (auto e = tid; e < inLen; e += step) {
             T val = nodeRng->relativeT(e, T(0.f), T(1.f));
-            T xVal = input[shape::getIndexOffset(e, inputShape, inLen)];
-            output[shape::getIndexOffset(e, outputShape, inLen)] = (val >= T(probValue) ? T(alpha * beta + alpha1) : T(alpha * (double)xVal + alpha1));
+            T xVal = input[shape::getIndexOffset(e, inputShape)];
+            output[shape::getIndexOffset(e, outputShape)] = (val >= T(probValue) ? T(alpha * beta + alpha1) : T(alpha * (double)xVal + alpha1));
         }
     }
     template <typename T>

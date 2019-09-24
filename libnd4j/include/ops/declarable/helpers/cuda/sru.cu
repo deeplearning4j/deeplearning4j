@@ -157,11 +157,11 @@ __global__ static void sruBICuda(const void* vx,    const Nd4jLong* xShapeInfo,
     if(tid >= len)
         return;
 
-    shape::index2coords(rank, xShapeInfo + 2, tid, len, coords + 1);    // loop through last two dimensions of x : {bS, 2*K}
+    shape::index2coords(tid, rank - 1, xShapeInfo + 2, coords + 1);    // loop through last two dimensions of x : {bS, 2*K}
 
-    const auto maskOffst = mask ? shape::getOffset(0, maskShapeInfo + 1, maskShapeInfo + rank, coords + 1, rank - 1) : 0;
-    const auto c0Offset  = shape::getOffset(0, c0ShapeInfo + 1, c0ShapeInfo + rank, coords + 1, rank - 1);
-    const auto bFOffset  = shape::getOffset(0, bShapeInfo + 1, bShapeInfo + rank - 1, coords + 2, rank - 2);
+    const auto maskOffst = mask ? shape::getOffset(maskShapeInfo, coords + 1) : 0;
+    const auto c0Offset  = shape::getOffset(c0ShapeInfo, coords + 1);
+    const auto bFOffset  = shape::getOffset(bShapeInfo, coords + 2);
     const auto bROffset  = bFOffset + 2 * K * bShapeInfo[2];    // 2*K*b_stride
 
     const T maskVal = mask ? mask[maskOffst] : static_cast<T>(1);
@@ -176,12 +176,12 @@ __global__ static void sruBICuda(const void* vx,    const Nd4jLong* xShapeInfo,
     else
         coords[0] = 0;
 
-    auto xOffset  = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
-    auto htOffset = shape::getOffset(0, htShapeInfo + 1, htShapeInfo + rank + 1, coords, rank);
-    auto ctOffset = shape::getOffset(0, ctShapeInfo + 1, ctShapeInfo + rank + 1, coords, rank);
+    auto xOffset  = shape::getOffset(xShapeInfo, coords);
+    auto htOffset = shape::getOffset(htShapeInfo, coords);
+    auto ctOffset = shape::getOffset(ctShapeInfo, coords);
 
     coords[2] *= 3;
-    auto wiOffset0 = shape::getOffset(0, wiShapeInfo + 1, wiShapeInfo + rank + 1, coords, rank);
+    auto wiOffset0 = shape::getOffset(wiShapeInfo, coords);
     auto wiOffset1 = wiOffset0 + wiShapeInfo[rank + 3];   // add last stride
     auto wiOffset2 = wiOffset1 + wiShapeInfo[rank + 3];   // add last stride
 
@@ -363,15 +363,15 @@ __global__ static void sruBIBPCuda(const void* vx,       const Nd4jLong* xShapeI
     if(tid >= len)
         return;
 
-    shape::index2coords(rank, xShapeInfo + 2, tid, len, coords + 1);    // loop through last two dimensions of x : {bS, 2*K}
+    shape::index2coords(tid, rank - 1, xShapeInfo + 2, coords + 1);    // loop through last two dimensions of x : {bS, 2*K}
 
-    const auto maskOffst    = mask ? shape::getOffset(0, maskShapeInfo + 1, maskShapeInfo + rank, coords + 1, rank - 1) : 0;
-    const auto c0Offset     = shape::getOffset(0, c0ShapeInfo + 1, c0ShapeInfo + rank, coords + 1, rank - 1);
-    const auto gradCtOffset = shape::getOffset(0, gradCtShapeInfo + 1, gradCtShapeInfo + rank, coords + 1, rank - 1);
-    const auto gradC0Offset = shape::getOffset(0, gradC0ShapeInfo + 1, gradC0ShapeInfo + rank, coords + 1, rank - 1);
-    const auto bFOffset     = shape::getOffset(0, bShapeInfo + 1, bShapeInfo + rank - 1, coords + 2, rank - 2);
+    const auto maskOffst    = mask ? shape::getOffset(maskShapeInfo, coords + 1) : 0;
+    const auto c0Offset     = shape::getOffset(c0ShapeInfo, coords + 1);
+    const auto gradCtOffset = shape::getOffset(gradCtShapeInfo, coords + 1);
+    const auto gradC0Offset = shape::getOffset(gradC0ShapeInfo, coords + 1);
+    const auto bFOffset     = shape::getOffset(bShapeInfo, coords + 2);
     const auto bROffset     = bFOffset + 2 * K * bShapeInfo[2];         // 2*K*b_stride
-    // const auto gradBFOffset = shape::getOffset(0, gradBShapeInfo + 1, gradBShapeInfo + rank, coords + 1, rank - 1);
+    // const auto gradBFOffset = shape::getOffset(gradBShapeInfo, coords + 1);
     const auto gradBFOffset = coords[1] * gradBShapeInfo[3] / 2 + coords[2] * gradBShapeInfo[4];
     const auto gradBROffset = gradBFOffset + gradBShapeInfo[3];
 
@@ -382,16 +382,16 @@ __global__ static void sruBIBPCuda(const void* vx,       const Nd4jLong* xShapeI
     else
         coords[0] = time - 1;
 
-    auto xOffset      = shape::getOffset(0, xShapeInfo + 1, xShapeInfo + rank + 1, coords, rank);
-    auto ctOffset     = shape::getOffset(0, ctShapeInfo + 1, ctShapeInfo + rank + 1, coords, rank);
-    auto gradIOffset  = shape::getOffset(0, gradIShapeInfo + 1, gradIShapeInfo + rank + 1, coords, rank);
-    auto gradHtOffset = shape::getOffset(0, gradHtShapeInfo + 1, gradHtShapeInfo + rank + 1, coords, rank);
+    auto xOffset      = shape::getOffset(xShapeInfo, coords);
+    auto ctOffset     = shape::getOffset(ctShapeInfo, coords);
+    auto gradIOffset  = shape::getOffset(gradIShapeInfo, coords);
+    auto gradHtOffset = shape::getOffset(gradHtShapeInfo, coords);
 
     coords[2] *= 3;
-    auto gradWiOffset0 = shape::getOffset(0, gradWiShapeInfo + 1, gradWiShapeInfo + rank + 1, coords, rank);
+    auto gradWiOffset0 = shape::getOffset(gradWiShapeInfo, coords);
     auto gradWiOffset1 = gradWiOffset0 + gradWiShapeInfo[rank + 3];   // add last stride
     auto gradWiOffset2 = gradWiOffset1 + gradWiShapeInfo[rank + 3];   // add last stride
-    auto wiOffset0     = shape::getOffset(0, wiShapeInfo + 1, wiShapeInfo + rank + 1, coords, rank);
+    auto wiOffset0     = shape::getOffset(wiShapeInfo, coords);
     auto wiOffset1     = wiOffset0 + wiShapeInfo[rank + 3];   // add last stride
     auto wiOffset2     = wiOffset1 + wiShapeInfo[rank + 3];   // add last stride
 

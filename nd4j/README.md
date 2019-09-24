@@ -12,7 +12,7 @@ It is meant to be used in production environments rather than as a research tool
 Please search for the latest version on search.maven.org.
 
 Or use the versions displayed in:
-https://github.com/deeplearning4j/dl4j-0.4-examples/blob/master/pom.xml
+https://github.com/eclipse/deeplearning4j-examples/blob/master/pom.xml
 
 
 ---
@@ -51,7 +51,7 @@ https://deeplearning4j.org/buildinglocally
 
 1. Check for open issues, or open a new issue to start a discussion around a feature idea or a bug.
 2. If you feel uncomfortable or uncertain about an issue or your changes, feel free to contact us on Gitter using the link above.
-3. Fork [the repository](https://github.com/deeplearning4j/nd4j.git) on GitHub to start making your changes to the **master** branch (or branch off of it).
+3. Fork [the repository](https://github.com/eclipse/deeplearning4j.git) on GitHub to start making your changes to the **master** branch (or branch off of it).
 4. Write a test, which shows that the bug was fixed or that the feature works as expected.
 5. Note the repository follows
    the [Google Java style](https://google.github.io/styleguide/javaguide.html)

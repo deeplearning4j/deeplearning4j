@@ -21,6 +21,8 @@
 #include <helpers/OpTracker.h>
 #include <sstream>
 #include <helpers/logger.h>
+#include <NativeOps.h>
+
 
 using namespace nd4j::ops;
 using namespace nd4j::graph;
@@ -35,6 +37,31 @@ namespace nd4j {
     }
 
     void OpTracker::storeOperation(nd4j::graph::OpType opType, const OpDescriptor& descriptor) {
+        // check out CPU features
+        if (!::isMinimalRequirementsMet()) {
+
+            auto binaryLevel = ::binaryLevel();
+            auto optimalLevel = ::optimalLevel();
+
+            switch (binaryLevel) {
+                case 3: {
+                        nd4j_printf("libnd4j binary was built with AVX512 support, but current CPU doesn't have this instruction set. Exiting now...","");
+                    }
+                    break;
+                case 2: {
+                        nd4j_printf("libnd4j binary was built with AVX/AVX2 support, but current CPU doesn't have this instruction set. Exiting now...","");
+                    }
+                    break;
+                default:  {
+                    nd4j_printf("Unknown binary validation error. Exiting now...","");
+                    }
+                    break;
+            }
+
+            // we're exiting now
+            exit(119);
+        }
+        //
         if (_map.count(opType) < 1) {
             std::vector<OpDescriptor> vec;
             _map[opType] = vec;

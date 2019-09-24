@@ -32,7 +32,7 @@ namespace nd4j {
     namespace ops {
         class ND4J_EXPORT DeclarableListOp : public nd4j::ops::DeclarableOp {
         protected:
-            virtual Nd4jStatus validateAndExecute(Context& block) = 0;
+            Nd4jStatus validateAndExecute(Context& block) override = 0;
 
             nd4j::NDArray* getZ(Context& block, int inputId);
             void setupResult(NDArray* array, Context& block);

@@ -53,7 +53,7 @@ namespace nd4j {
             if (dimensionLength > 1 || tadEWS < 1) {
 
                 for (Nd4jLong e = threadIdx.x; e < tadLength; e += blockDim.x) {
-                    auto xOffset = tadOffsetForBlock + shape::getIndexOffset(e, tadOnlyShapeInfo, tadLength);
+                    auto xOffset = tadOffsetForBlock + shape::getIndexOffset(e, tadOnlyShapeInfo);
                     dZ[xOffset] = (e == highestElement ? (T) 1 : (T) 0);
                 }
             } else {

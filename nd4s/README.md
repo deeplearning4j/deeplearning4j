@@ -2,7 +2,7 @@
 
 [![Join the chat at https://gitter.im/deeplearning4j/deeplearning4j](https://badges.gitter.im/Join%20Chat.svg)](https://gitter.im/deeplearning4j/deeplearning4j?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-ND4S is open-source Scala bindings for [ND4J](https://github.com/deeplearning4j/nd4j). Released under an Apache 2.0 license. 
+ND4S is open-source Scala bindings for [ND4J](https://github.com/eclipse/deeplearning4j/tree/master/nd4j). Released under an Apache 2.0 license. 
 
 # Main Features
 * NDArray manipulation syntax sugar with safer type.
@@ -34,7 +34,7 @@ ND4S is actively developed. You can clone the repository, compile it, and refere
 Clone the repository:
 
 ```
-$ git clone https://github.com/deeplearning4j/nd4s.git
+$ git clone https://github.com/eclipse/deeplearning4j.git
 ```
 
 Compile the project:

@@ -24,7 +24,7 @@ This video describes the conversion of image data to a vector.
 <iframe width="420" height="315" src="https://www.youtube.com/embed/EHHtyRKQIJ0" frameborder="0" allowfullscreen></iframe>
 
 ## Key Aspects
-- [DataVec](https://github.com/deeplearning4j/DataVec) uses an input/output format system (similar in some ways to how Hadoop MapReduce uses InputFormat to determine InputSplits and RecordReaders, DataVec also provides RecordReaders to Serialize Data)
+- [DataVec](https://github.com/eclipse/deeplearning4j/tree/master/datavec) uses an input/output format system (similar in some ways to how Hadoop MapReduce uses InputFormat to determine InputSplits and RecordReaders, DataVec also provides RecordReaders to Serialize Data)
 - Designed to support all major types of input data (text, CSV, audio, image and video) with these specific input formats
 - Uses an output format system to specify an implementation-neutral type of vector format (SVMLight, etc.)
 - Can be extended for specialized input formats (such as exotic image formats); i.e. You can write your own custom input format and let the rest of the codebase handle the transformation pipeline
@@ -62,7 +62,7 @@ A video tutorial of a simple DataVec transform along with code is available belo
 
 ## Example Java Code
 
-Our [examples](https://github.com/deeplearning4j/dl4j-examples) include a collection of DataVec examples.   
+Our [examples](https://github.com/eclipse/deeplearning4j-examples) include a collection of DataVec examples.   
 
 <!-- Note to Tom, write DataVec setup content
 
@@ -90,7 +90,7 @@ recordReader.initialize(new FileSplit(new File(labeledPath)));
 
 The RecordReader is a class in DataVec that helps convert the byte-oriented input into data that's oriented toward a record; i.e. a collection of elements that are fixed in number and indexed with a unique ID. Converting data to records is the process of vectorization. The record itself is a vector, each element of which is a feature.
 
-The [ImageRecordReader](https://github.com/deeplearning4j/DataVec/blob/a64389c08396bb39626201beeabb7c4d5f9288f9/datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. Thus, LFW images are scaled to 28 pixels x 28 pixels. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as long as you make sure to adjust the `nIn` hyperparameter, which will be equal to the product of image height x image width. 
+The [ImageRecordReader](https://github.com/eclipse/deeplearning4j/tree/master/datavec/blob/a64389c08396bb39626201beeabb7c4d5f9288f9/datavec-data/datavec-data-image/src/main/java/org/datavec/image/recordreader/ImageRecordReader.java) is a subclass of the RecordReader and is built to automatically take in 28 x 28 pixel images. Thus, LFW images are scaled to 28 pixels x 28 pixels. You can change dimensions to match your custom images by changing the parameters fed to the ImageRecordReader, as long as you make sure to adjust the `nIn` hyperparameter, which will be equal to the product of image height x image width. 
 
 Other parameters shown above include `true`, which instructs the reader to append a label to the record, and `labels`, which is the array of supervised values (e.g. targets) used to validate neural net model results. Here are all the RecordReader extensions that come pre-built with DataVec (you can find them by right-clicking on `RecordReader` in IntelliJ, clicking `Go To` in the drop-down menu, and selection `Implementations`):
 
