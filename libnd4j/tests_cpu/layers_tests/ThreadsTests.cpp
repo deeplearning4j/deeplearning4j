@@ -34,8 +34,6 @@ public:
 
 };
 
-#define PRAGMA_THREADS_FOR  [&](uint64_t start, uint64_t stop, uint64_t increment) -> void
-
 TEST_F(ThreadsTests, basic_test_1) {
     if (!Environment::getInstance()->isCPU())
         return;

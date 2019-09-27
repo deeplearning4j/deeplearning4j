@@ -99,4 +99,6 @@
 
 #endif
 
+#define PRAGMA_THREADS_FOR  [&](uint64_t start, uint64_t stop, uint64_t increment) -> void
+
 #endif //DEV_TESTS_OPENMP_PRAGMAS_H
