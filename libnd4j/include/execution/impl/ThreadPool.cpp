@@ -62,6 +62,7 @@ namespace samediff {
             _queues[e] = new BlockingQueue<CallableWithArguments*>(2);
             _threads[e] = new std::thread(_executionLoop, e, _queues[e]);
 
+            // TODO: add other platforms here as well
             // now we must set affinity, and it's going to be platform-specific thing
 #ifdef LINUX_BUILD
             cpu_set_t cpuset;
@@ -85,7 +86,10 @@ namespace samediff {
         }
     }
 
+    static std::mutex _lmutex;
+
     ThreadPool* ThreadPool::getInstance() {
+        std::unique_lock<std::mutex> lock(_lmutex);
         if (!_INSTANCE)
             _INSTANCE = new ThreadPool();
 
@@ -97,24 +101,26 @@ namespace samediff {
     }
 
     Ticket ThreadPool::tryAcquire(int num_threads) {
-        // we check for threads availability here
-        _lock.lock();
-
+        // we check for threads availability first
         bool threaded = false;
-        if (_available >= num_threads) {
-            threaded = true;
-            _available -= num_threads;
+        {
+            // we lock before checking availability
+            std::unique_lock<std::mutex> lock(_lock);
+            if (_available >= num_threads) {
+                threaded = true;
+                _available -= num_threads;
+            }
         }
-
-        _lock.unlock();
 
         // we either dispatch tasks to threads, or run single-threaded
         if (threaded) {
             // FIXME: why would we want copies here?
+            // FIXME: obviously having, say, 4 available threads doesn't mean threads 0..3 are available
             std::vector<BlockingQueue<CallableWithArguments*>*> queues(num_threads);
             for (int e = 0; e < num_threads; e++)
                 queues[e] = _queues[e];
 
+            // TODO: can we have pool here as well?
             return Ticket(queues);
         } else {
             // if there's no threads available - return empty ticket
