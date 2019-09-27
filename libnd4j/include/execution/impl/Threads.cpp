@@ -37,6 +37,7 @@ namespace samediff {
                 if (e == numThreads - 1)
                     _stop = stop;
 
+                // FIXME: make callables served from pool, rather than from creating new one
                 // putting the task into the queue for a given thread
                 ticket.enqueue(e, new CallableWithArguments(function, _start, _stop, increment));
             }

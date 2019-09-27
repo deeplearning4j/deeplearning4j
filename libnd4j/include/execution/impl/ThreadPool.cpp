@@ -110,6 +110,7 @@ namespace samediff {
 
         // we either dispatch tasks to threads, or run single-threaded
         if (threaded) {
+            // FIXME: why would we want copies here?
             std::vector<BlockingQueue<CallableWithArguments*>*> queues(num_threads);
             for (int e = 0; e < num_threads; e++)
                 queues[e] = _queues[e];

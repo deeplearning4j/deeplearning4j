@@ -59,8 +59,6 @@ TEST_F(ThreadsTests, basic_test_1) {
     auto timeEndThreads = std::chrono::system_clock::now();
     auto outerTimeThreads = std::chrono::duration_cast<std::chrono::microseconds> (timeEndThreads - timeStartThreads).count();
 
-    //ASSERT_NEAR((float) array.lengthOf(), array.sumNumber().e<float>(0), 1e-5f);
-
     auto timeStartOmp = std::chrono::system_clock::now();
     PRAGMA_OMP_PARALLEL_FOR_SIMD
     for (uint64_t e = 0; e < array.lengthOf(); e ++) {
@@ -69,6 +67,7 @@ TEST_F(ThreadsTests, basic_test_1) {
     auto timeEndOmp = std::chrono::system_clock::now();
     auto outerTimeOmp = std::chrono::duration_cast<std::chrono::microseconds> (timeEndOmp - timeStartOmp).count();
 
+    ASSERT_NEAR((float) array.lengthOf(), array.sumNumber().e<float>(0), 1e-5f);
 
     nd4j_printf("Threads time: %lld us; OMP time: %lld us; %p\n", outerTimeThreads, outerTimeOmp, instance)
 }
