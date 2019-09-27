@@ -169,6 +169,9 @@ namespace nd4j {
          * @return
          */
         static Nd4jLong stringBufferHeaderRequirements(Nd4jLong numStrings);
+
+        // check whether arr1/arr2 is sub-array of arr2/arr1, this method do not evaluate what array is sub-array, it returns true if arr1 is sub-array of arr2 or arr2 is sub-array of arr1
+        static bool isSubArrayCase(const NDArray& arr1, const NDArray& arr2);
     };
 
 

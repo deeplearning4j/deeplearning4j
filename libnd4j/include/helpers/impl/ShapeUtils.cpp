@@ -997,13 +997,40 @@ std::vector<int> ShapeUtils::tadAxesForSimpleBroadcast(const NDArray& max, const
 }
 
 
-    Nd4jLong ShapeUtils::stringBufferHeaderRequirements(Nd4jLong numStrings) {
-        // we store +1 offset
-        auto base = numStrings + 1;
+Nd4jLong ShapeUtils::stringBufferHeaderRequirements(Nd4jLong numStrings) {
+    // we store +1 offset
+    auto base = numStrings + 1;
 
-        // since we return number of bytes...
-        return base * sizeof(Nd4jLong);
+    // since we return number of bytes...
+    return base * sizeof(Nd4jLong);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+bool ShapeUtils::isSubArrayCase(const NDArray& arr1, const NDArray& arr2) {
+
+    const NDArray* max = &arr1;
+    const NDArray* min = &arr2;
+
+    if(arr1.lengthOf() < arr2.lengthOf()) {
+        max = &arr2;
+        min = &arr1;
     }
+
+    for (int i = -1; i >= -min->rankOf(); --i) {
+
+        if(i >= -max->rankOf()) {
+            if(max->sizeAt(i) != min->sizeAt(i) && min->sizeAt(i) != 1)
+                return false;
+        }
+        else {
+            if(min->sizeAt(i) != 1)
+                return false;
+        }
+    }
+
+    return true;
+}
+
 
 }
 

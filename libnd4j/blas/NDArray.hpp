@@ -2538,12 +2538,19 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* othe
         max = other;
         min = this;
     }
+
     if(checkTargetShape) {
         Nd4jLong* newShapeInfo = nullptr;
         if(!ShapeUtils::evalBroadcastShapeInfo(*max, *min, false, newShapeInfo, getContext()->getWorkspace()))          // the rank of target array must be equal to max->rankOf)()
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shapes of this and other arrays are not suitable for broadcast operation !");
         if(!shape::equalsTypesAndShapesSoft(target->getShapeInfo(), newShapeInfo))
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
+    }
+
+    if(ShapeUtils::isSubArrayCase(*this, *other)) {
+        std::vector<int> sameDims2 = ShapeUtils::getDimsWithSameShape(*max, *min);
+        const_cast<NDArray*>(this)->applyBroadcast(op.b, sameDims2, other, target, extraArgs);
+        return;
     }
 
     NDArray* pTarget = (max->dataType() == target->dataType()) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->dataType(), target->getContext());
@@ -2625,6 +2632,12 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
             throw std::invalid_argument("NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");
     }
 
+    if(ShapeUtils::isSubArrayCase(*this, *other)) {
+        std::vector<int> sameDims2 = ShapeUtils::getDimsWithSameShape(*max, *min);
+        const_cast<NDArray*>(this)->applyBroadcast(op.b, sameDims2, other, target, extraArgs);
+        return;
+    }
+
     NDArray* pTarget = (max->dataType() == target->dataType()) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->dataType(), target->getContext());
     // check whether max array has to be tiled
     if(!max->isSameShape(target)) {
@@ -2703,6 +2716,12 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
                 throw std::runtime_error("NDArray::applyTrueBroadcast int method: the shape or type of target array is wrong !");
             if(dataType() != other->dataType())
                 throw std::invalid_argument("NDArray::applyTrueBroadcast int method: this and other arrays must have the same type !");
+        }
+
+        if(ShapeUtils::isSubArrayCase(*this, *other)) {
+            std::vector<int> sameDims2 = ShapeUtils::getDimsWithSameShape(*max, *min);
+            const_cast<NDArray*>(this)->applyBroadcast(op.b, sameDims2, other, target, extraArgs);
+            return;
         }
 
         NDArray* pTarget = (max->dataType() == target->dataType()) ? target : new NDArray(target->ordering(), target->getShapeAsVector(), max->dataType(), target->getContext());
