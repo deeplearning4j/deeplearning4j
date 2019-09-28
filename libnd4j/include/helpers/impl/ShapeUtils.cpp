@@ -1006,7 +1006,11 @@ Nd4jLong ShapeUtils::stringBufferHeaderRequirements(Nd4jLong numStrings) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-bool ShapeUtils::isSubArrayCase(const NDArray& arr1, const NDArray& arr2) {
+/*
+bool ShapeUtils::isSubArrayCase(const NDArray& arr1, const NDArray& arr2, std::vector<int>& sameDims) {
+
+    if(!sameDims.empty())
+        sameDims.clear();
 
     const NDArray* max = &arr1;
     const NDArray* min = &arr2;
@@ -1016,21 +1020,32 @@ bool ShapeUtils::isSubArrayCase(const NDArray& arr1, const NDArray& arr2) {
         min = &arr1;
     }
 
-    for (int i = -1; i >= -min->rankOf(); --i) {
+    int numUnitiesInMin = 0;
 
-        if(i >= -max->rankOf()) {
-            if(max->sizeAt(i) != min->sizeAt(i) && min->sizeAt(i) != 1)
-                return false;
+    for (int iMax = -1, iMin = -1; iMax >= -max->rankOf() && iMin >= -min->rankOf(); ) {
+
+        if(max->sizeAt(iMax) == 1) {      // ignore unities in shape
+            --iMax;
+            continue;
         }
-        else {
-            if(min->sizeAt(i) != 1)
-                return false;
+
+        if(min->sizeAt(iMin) == 1) {     // ignore unities in shape
+            ++numUnitiesInMin;
+            --iMin;
+            continue;
         }
+
+        if(max->sizeAt(iMax) == min->sizeAt(iMin)) {
+            sameDims.insert(sameDims.begin(), iMax + max->rankOf());
+            --iMin;
+        }
+
+        --iMax;
     }
 
-    return true;
+    return sameDims.size() + numUnitiesInMin == min->rankOf();
 }
-
+*/
 
 }
 

@@ -2547,9 +2547,8 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* othe
             throw std::runtime_error("NDArray::applyTrueBroadcast method: the shape or type of target array is wrong !");
     }
 
-    if(ShapeUtils::isSubArrayCase(*this, *other)) {
-        std::vector<int> sameDims2 = ShapeUtils::getDimsWithSameShape(*max, *min);
-        const_cast<NDArray*>(this)->applyBroadcast(op.b, sameDims2, other, target, extraArgs);
+    if(target->isSameShape(this) || target->isSameShape(other)) {
+        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*max, *min), other, target, extraArgs);
         return;
     }
 
@@ -2632,9 +2631,8 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
             throw std::invalid_argument("NDArray::applyTrueBroadcast bool method: this and other arrays must have the same type !");
     }
 
-    if(ShapeUtils::isSubArrayCase(*this, *other)) {
-        std::vector<int> sameDims2 = ShapeUtils::getDimsWithSameShape(*max, *min);
-        const_cast<NDArray*>(this)->applyBroadcast(op.b, sameDims2, other, target, extraArgs);
+    if(target->isSameShape(this) || target->isSameShape(other)) {
+        const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*max, *min), other, target, extraArgs);
         return;
     }
 
@@ -2718,9 +2716,8 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
                 throw std::invalid_argument("NDArray::applyTrueBroadcast int method: this and other arrays must have the same type !");
         }
 
-        if(ShapeUtils::isSubArrayCase(*this, *other)) {
-            std::vector<int> sameDims2 = ShapeUtils::getDimsWithSameShape(*max, *min);
-            const_cast<NDArray*>(this)->applyBroadcast(op.b, sameDims2, other, target, extraArgs);
+        if(target->isSameShape(this) || target->isSameShape(other)) {
+            const_cast<NDArray*>(this)->applyBroadcast(op.b, ShapeUtils::getDimsWithSameShape(*max, *min), other, target, extraArgs);
             return;
         }
 

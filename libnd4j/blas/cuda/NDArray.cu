@@ -79,6 +79,63 @@ bool NDArray::isActualOnDeviceSide() const  { return _buffer->isSpecialActual();
 void NDArray::makeBothBuffersActual() const { if(!isActualOnHostSide()) syncToHost(); if(!isActualOnDeviceSide()) syncToDevice(); }
 
 
+////////////////////////////////////////////////////////////////////////
+template <typename X, typename Y, typename Z, typename OpType>
+__global__ static void trueBroadcastCuda(const void* vx, const Nd4jLong* xShapeInfo, const void* vy, const Nd4jLong* yShapeInfo, void* vz, const Nd4jLong* zShapeInfo) {
+
+    const auto x = reinterpret_cast<const X*>(vx);
+    const auto y = reinterpret_cast<const Y*>(vy);
+          auto z = reinterpret_cast<Z*>(vz);
+
+    __shared__ int xRank, yRank, zRank;
+    __shared__ Nd4jLong zLen, totalThreads, *sharedMem;  // xLen == zLen, except when xRank = 1, in this case zLen = 2*xLen
+
+    if (threadIdx.x == 0) {
+        extern __shared__ unsigned char shmem[];
+        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+
+        xRank = shape::rank(xShapeInfo);
+        yRank = shape::rank(yShapeInfo);
+        zRank = shape::rank(zShapeInfo);
+
+        zLen  = shape::length(zShapeInfo);
+        totalThreads = gridDim.x * blockDim.x;
+    }
+    __syncthreads();
+
+    auto xCoords = sharedMem + threadIdx.x * (xRank + yRank + zRank);
+    auto yCoords = xCoords + xRank;
+    auto zCoords = yCoords + yRank;
+
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+    for (Nd4jLong i = tid; i < zLen; i += totalThreads) {
+
+        shape::index2coords(i, zShapeInfo, zCoords);
+
+        for(int ix = xRank - 1, iy = yRank - 1, iz = zRank - 1; iz >= 0; --iz) {
+
+            if(ix >= 0)
+                if(xShapeInfo[ix + 1] == zShapeInfo[iz + 1])
+                    xCoords[ix--] = zCoords[iz];
+                else
+                    xCoords[ix--] = 0;
+
+            if(iy >= 0)
+                if(yShapeInfo[iy + 1] == zShapeInfo[iz + 1])
+                    yCoords[iy--] = zCoords[iz];
+                else
+                    yCoords[iy--] = 0;
+        }
+
+        const auto xOffset = shape::getOffset(xShapeInfo, xCoords);
+        const auto zOffset = shape::getOffset(zShapeInfo, zCoords);
+        const auto yOffset = shape::getOffset(yShapeInfo, yCoords);
+
+        z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
+    }
+}
+
 ///////////////////////////////////////////////////////////////////
 template<typename T>
 __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const T val, const int lower, const int upper) {
