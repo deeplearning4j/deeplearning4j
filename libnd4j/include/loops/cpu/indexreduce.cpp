@@ -65,8 +65,9 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
 
     uint xShapeInfoCast[MAX_RANK];
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-    IndexValue<X> intermediatery[32];
-    for (int e = 0; e < 32; e++)
+    const int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
+    IndexValue<X> intermediatery[64];
+    for (int e = 0; e < maxThreads; e++)
         intermediatery[e].index = -1;
 
     if (xEws == 1) {
@@ -79,9 +80,9 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
             }
         };
 
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+        samediff::Threads::parallel_for(func, maxThreads, 0, len, 1);
 
-        for (int e = 0; e < 32; e++)
+        for (int e = 0; e < maxThreads; e++)
             if (intermediatery[e].index >= 0)
                 startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
 
@@ -96,9 +97,9 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
             }
         };
 
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+        samediff::Threads::parallel_for(func, maxThreads, 0, len, 1);
 
-        for (int e = 0; e < 32; e++)
+        for (int e = 0; e < maxThreads; e++)
             if (intermediatery[e].index >= 0)
                 startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
     }
@@ -128,7 +129,7 @@ void IndexReduce<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
 
         for (uint i = 0; i < zLen; i++)
             z[i] = (Z) indexValue.index;
-        
+
         return;
     }
 
