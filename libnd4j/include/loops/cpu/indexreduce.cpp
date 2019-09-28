@@ -23,6 +23,7 @@
 #include <Loops.h>
 #include <types/types.h>
 #include <helpers/ConstantTadHelper.h>
+#include <execution/Threads.h>
 #include "../legacy_ops.h"
 
 using namespace simdOps;
@@ -64,42 +65,42 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
 
     uint xShapeInfoCast[MAX_RANK];
     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+    IndexValue<X> intermediatery[32];
+    for (int e = 0; e < 32; e++)
+        intermediatery[e].index = -1;
 
     if (xEws == 1) {
-        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-        {
-            auto local = OpType::startingIndexValue(x);
-            auto threadNum = omp_get_thread_num();
-            auto threadOffset = info.getThreadOffset(threadNum);
+        auto func = PRAGMA_THREADS_FOR {
+            intermediatery[thread_id] = OpType::startingIndexValue(x);
 
-            auto ulen = info.getItersPerThread(threadNum);
-
-            for (Nd4jLong i = 0; i < ulen; i++) {
-                IndexValue<X> curr(x[i + threadOffset], i + threadOffset);
-                local = OpType::update(local, curr, extraParams);
+            for (auto i = start; i < stop; i += increment) {
+                IndexValue<X> curr(x[i], i);
+                intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
             }
+        };
 
-            PRAGMA_OMP_CRITICAL
-            startingIndex = OpType::update(startingIndex, local, extraParams);
-        }
+        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+
+        for (int e = 0; e < 32; e++)
+            if (intermediatery[e].index >= 0)
+                startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
+
     } else {
-        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-        {
-            auto local = OpType::startingIndexValue(x);
-            auto threadNum = omp_get_thread_num();
-            auto threadOffset = info.getThreadOffset(threadNum);
+        auto func = PRAGMA_THREADS_FOR {
+            intermediatery[thread_id] = OpType::startingIndexValue(x);
 
-            auto ulen = info.getItersPerThread(threadNum);
-
-            for (Nd4jLong i = 0; i < ulen; i++) {
-                auto offset = shape::indexOffset(threadOffset + i, xShapeInfo, xShapeInfoCast, canCastX);
-                IndexValue<X> curr(x[offset], threadOffset + i);
-                local = OpType::update(local, curr, extraParams);
+            for (auto i = start; i < stop; i += increment) {
+                auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                IndexValue<X> curr(x[offset], i);
+                intermediatery[thread_id] = OpType::update(intermediatery[thread_id], curr, extraParams);
             }
+        };
 
-            PRAGMA_OMP_CRITICAL
-            startingIndex = OpType::update(startingIndex, local, extraParams);
-        }
+        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+
+        for (int e = 0; e < 32; e++)
+            if (intermediatery[e].index >= 0)
+                startingIndex = OpType::update(startingIndex, intermediatery[e], extraParams);
     }
     return startingIndex.index;
 }
@@ -124,9 +125,10 @@ void IndexReduce<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
             return;
         const auto indexValue = OpType::startingIndexValue(x);
-        PRAGMA_OMP_PARALLEL_FOR_IF(zLen > nd4j::Environment::getInstance()->elementwiseThreshold())
+
         for (uint i = 0; i < zLen; i++)
-            z[i] = (Z) indexValue.index;;
+            z[i] = (Z) indexValue.index;
+        
         return;
     }
 
