@@ -25,11 +25,12 @@
 #include <vector>
 #include <atomic>
 #include <condition_variable>
+#include <op_boilerplate.h>
 
 namespace samediff {
     class CallableWithArguments {
-        std::function<void(uint64_t, uint64_t, uint64_t)> _function_1d;
-        std::function<void(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)> _function_2d;
+        FUNC_1D _function_1d;
+        FUNC_2D _function_2d;
 
         std::vector<uint64_t> _arguments;
 
@@ -38,9 +39,11 @@ namespace samediff {
         std::condition_variable _condition;
 
         std::mutex _lock;
+
+        uint64_t _threadId;
     public:
-        CallableWithArguments(std::function<void(uint64_t, uint64_t, uint64_t)> &func, uint64_t start_x, uint64_t stop_x, uint64_t increment_x);
-        CallableWithArguments(std::function<void(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)> &func, uint64_t start_x, uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y);
+        CallableWithArguments(FUNC_1D &func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x);
+        CallableWithArguments(FUNC_2D &func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y);
 
 
         /**
@@ -66,8 +69,11 @@ namespace samediff {
         void waitUntilFinished();
 
         std::vector<uint64_t>& arguments();
-        std::function<void(uint64_t, uint64_t, uint64_t)> function_1d();
-        std::function<void(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)> function_2d();
+        FUNC_1D function_1d();
+        FUNC_2D function_2d();
+
+
+        uint64_t threadId();
     };
 }
 

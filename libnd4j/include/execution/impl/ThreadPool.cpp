@@ -32,13 +32,13 @@ namespace samediff {
             switch (c->dimensions()) {
                 case 1: {
                         auto args = c->arguments();
-                        c->function_1d()(args[0], args[1], args[2]);
+                        c->function_1d()(c->threadId(), args[0], args[1], args[2]);
                         c->finish();
                     }
                     break;
                 case 2: {
                         auto args = c->arguments();
-                        c->function_2d()(args[0], args[1], args[2], args[3], args[4], args[5]);
+                        c->function_2d()(c->threadId(), args[0], args[1], args[2], args[3], args[4], args[5]);
                         c->finish();
                     }
                     break;

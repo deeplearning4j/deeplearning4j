@@ -21,6 +21,7 @@
 #define SAMEDIFF_THREADS_H
 
 #include <functional>
+#include <openmp_pragmas.h>
 
 namespace samediff {
     class Threads {
@@ -33,7 +34,7 @@ namespace samediff {
          * @param stop
          * @param increment
          */
-        static void parallel_for(std::function<void(uint64_t, uint64_t, uint64_t)> function, uint32_t numThreads, uint64_t start, uint64_t stop, uint64_t increment = 1);
+        static void parallel_for(FUNC_1D function, uint32_t numThreads, uint64_t start, uint64_t stop, uint64_t increment = 1);
 
 
 

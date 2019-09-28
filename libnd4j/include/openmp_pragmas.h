@@ -99,6 +99,9 @@
 
 #endif
 
-#define PRAGMA_THREADS_FOR  [&](uint64_t start, uint64_t stop, uint64_t increment) -> void
+#define FUNC_1D std::function<void(uint64_t, uint64_t, uint64_t, uint64_t)>
+#define FUNC_2D std::function<void(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)>
+
+#define PRAGMA_THREADS_FOR  [&](uint64_t thread_id, uint64_t start, uint64_t stop, uint64_t increment) -> void
 
 #endif //DEV_TESTS_OPENMP_PRAGMAS_H

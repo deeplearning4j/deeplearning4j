@@ -25,7 +25,7 @@
 
 
 namespace samediff {
-    void Threads::parallel_for(std::function<void(uint64_t, uint64_t, uint64_t)> function, uint32_t numThreads, uint64_t start, uint64_t stop, uint64_t increment) {
+    void Threads::parallel_for(FUNC_1D function, uint32_t numThreads, uint64_t start, uint64_t stop, uint64_t increment) {
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
         if (ticket.acquired()) {
             // if we got our threads - we'll run our jobs here
@@ -39,7 +39,7 @@ namespace samediff {
 
                 // FIXME: make callables served from pool, rather than from creating new one
                 // putting the task into the queue for a given thread
-                ticket.enqueue(e, new CallableWithArguments(function, _start, _stop, increment));
+                ticket.enqueue(e, new CallableWithArguments(function, e, _start, _stop, increment));
             }
 
             // block and wait till all threads finished the job
@@ -47,7 +47,7 @@ namespace samediff {
         } else {
             nd4j_printf("Running one thread\n","");
             // if there were no threads available - we'll execute function right within current thread
-            function(start, stop, increment);
+            function(0, start, stop, increment);
         }
     }
 }

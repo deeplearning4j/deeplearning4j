@@ -21,19 +21,21 @@
 #include <execution/CallableWithArguments.h>
 
 namespace samediff {
-    CallableWithArguments::CallableWithArguments(std::function<void(uint64_t, uint64_t, uint64_t)> &func, uint64_t start_x,
+    CallableWithArguments::CallableWithArguments(FUNC_1D &func, uint64_t thread_id, uint64_t start_x,
                                                  uint64_t stop_x, uint64_t increment_x) {
         _function_1d = func;
         _arguments = {start_x, stop_x, increment_x};
         _finished = false;
+        _threadId = thread_id;
     }
 
     CallableWithArguments::CallableWithArguments(
-            std::function<void(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)> &func, uint64_t start_x,
+            FUNC_2D &func, uint64_t thread_id, uint64_t start_x,
             uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y) {
         _function_2d = func;
         _arguments = {start_x, stop_x, increment_x, start_y, stop_y, increment_y};
         _finished = false;
+        _threadId = thread_id;
     }
 
     int CallableWithArguments::dimensions() {
@@ -59,11 +61,15 @@ namespace samediff {
     }
 
 
-    std::function<void(uint64_t, uint64_t, uint64_t)> CallableWithArguments::function_1d() {
+    FUNC_1D CallableWithArguments::function_1d() {
         return _function_1d;
     }
 
-    std::function<void(uint64_t, uint64_t, uint64_t, uint64_t, uint64_t, uint64_t)> CallableWithArguments::function_2d() {
+    FUNC_2D CallableWithArguments::function_2d() {
         return _function_2d;
+    }
+
+    uint64_t CallableWithArguments::threadId() {
+        return _threadId;
     }
 }
