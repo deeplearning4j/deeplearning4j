@@ -75,7 +75,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     for (int e = 0; e < maxThreads; e++)
         intermediate[e] = startingVal;
 
-    memset(extraParamsLocal, 0, 3 * 256 * sizeof(Z));
+    memset(extraParamsLocal, 0, 3 * 64 * sizeof(Z));
     if (extraParams != nullptr) {
         PRAGMA_OMP_SIMD
         for (int e = 0; e < maxThreads; e++)
