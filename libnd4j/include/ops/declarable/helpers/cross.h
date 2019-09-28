@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/helpers.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -66,14 +67,17 @@ void FORCEINLINE cross(nd4j::LaunchContext * context, NDArray *a, NDArray *b, ND
 
         int tads = tadsA->size();
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int e = 0; e < tads; e++) {
-            auto a_ = tadsA->at(e);
-            auto b_ = tadsB->at(e);
-            auto o_ = tadsO->at(e);
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment) {
+                auto a_ = tadsA->at(e);
+                auto b_ = tadsB->at(e);
+                auto o_ = tadsO->at(e);
 
-            helpers::cross(context, a_, b_, o_);
-        }
+                helpers::cross(context, a_, b_, o_);
+            }
+        };
+
+        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, tads);
 
         delete tadsA;
         delete tadsB;

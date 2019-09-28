@@ -75,6 +75,7 @@ bool experimentalSupport = false;
 #include <performance/benchmarking/BenchmarkSuit.h>
 #include <performance/benchmarking/FullBenchmarkSuit.h>
 #include <performance/benchmarking/LightBenchmarkSuit.h>
+#include <execution/Threads.h>
 
 #ifdef CPU_FEATURES
 #include <cpuinfo_x86.h>
@@ -1366,35 +1367,35 @@ void pullRowsGeneric(void *vx,
     int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
     _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
 
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
-    for (int idx = 0; idx < n; idx++) {
-        auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
-        auto zTadOffsetForBlock = zTadOffsets[idx];
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto idx = start; idx < stop; idx += increment) {
+            auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
+            auto zTadOffsetForBlock = zTadOffsets[idx];
 
-        auto rX = hX + xTadOffsetForBlock;
-        auto rZ = hZ + zTadOffsetForBlock;
+            auto rX = hX + xTadOffsetForBlock;
+            auto rZ = hZ + zTadOffsetForBlock;
 
-        if (xEWS == 1 && zEWS == 1) {
-
-            PRAGMA_OMP_SIMD
-            for (int i = 0; i < tadLength; i++ ) {
-                rZ[i] = rX[i];
-            }
-        } else if (xEWS >= 1 && zEWS >= 1) {
-
-            PRAGMA_OMP_SIMD
-            for (int i = 0; i < tadLength; i++ ) {
-                rZ[i * zEWS] = rX[i * xEWS];
-            }
-        }
-        else {
-            for (int i = 0; i < tadLength; i++) {
-                auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
-                auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
-                hZ[zOffset] = hX[xOffset];
+            if (xEWS == 1 && zEWS == 1) {
+                PRAGMA_OMP_SIMD
+                for (int i = 0; i < tadLength; i++) {
+                    rZ[i] = rX[i];
+                }
+            } else if (xEWS >= 1 && zEWS >= 1) {
+                PRAGMA_OMP_SIMD
+                for (int i = 0; i < tadLength; i++) {
+                    rZ[i * zEWS] = rX[i * xEWS];
+                }
+            } else {
+                for (int i = 0; i < tadLength; i++) {
+                    auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
+                    auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
+                    hZ[zOffset] = hX[xOffset];
+                }
             }
         }
-    }
+    };
+
+    samediff::Threads::parallel_for(func, _threads, 0, n, 1);
 }
 
 void pullRows(Nd4jPointer *extraPointers,
@@ -1433,30 +1434,29 @@ void tearGeneric(void *vx,
     auto zEWS = shape::elementWiseStride(hZShapeInfo);
     auto numTads = shape::length(hXShapeInfo) / tadLength;
 
-    PRAGMA_OMP_PARALLEL_FOR
-    for (Nd4jLong i = 0; i < numTads; i++) {
-        auto hZ = reinterpret_cast<T *>(targets[i]);
-        auto s = hX + tadOffsets[i];
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment) {
+            auto hZ = reinterpret_cast<T *>(targets[i]);
+            auto s = hX + tadOffsets[i];
 
-        if (zEWS == 1 && tadEWS == 1) {
-
-            PRAGMA_OMP_SIMD
-            for (Nd4jLong j = 0; j < tadLength; j++) {
-                hZ[j] = s[j];
-            }
-        } else if (zEWS > 0 && tadEWS > 0) {
-
-            PRAGMA_OMP_SIMD
-            for (Nd4jLong j = 0; j < tadLength; j++) {
-                hZ[j * zEWS] = s[j * tadEWS];
+            if (zEWS == 1 && tadEWS == 1) {
+                PRAGMA_OMP_SIMD
+                for (Nd4jLong j = 0; j < tadLength; j++) {
+                    hZ[j] = s[j];
+                }
+            } else if (zEWS > 0 && tadEWS > 0) {
+                PRAGMA_OMP_SIMD
+                for (Nd4jLong j = 0; j < tadLength; j++) {
+                    hZ[j * zEWS] = s[j * tadEWS];
+                }
+            } else {
+                for (Nd4jLong j = 0; j < tadLength; j++)
+                    hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
             }
         }
-        else {
+    };
 
-            for (Nd4jLong j = 0; j < tadLength; j++)
-                hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
-        }
-    }
+    samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, numTads, 1);
 }
 
 void tear(Nd4jPointer *extraPointers,
@@ -1557,57 +1557,60 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
     auto dX = reinterpret_cast<T **>(hX);
     auto dZ = reinterpret_cast<T **>(dz);
 
-    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(N)
-    for (int f = 0; f < N; f++) {
-        auto hX = reinterpret_cast<T *>(dX[f]);
-        //auto hZ = reinterpret_cast<T *>(dZ[f]);
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto f = start; f < stop; f += increment) {
+            auto hX = reinterpret_cast<T *>(dX[f]);
+            //auto hZ = reinterpret_cast<T *>(dZ[f]);
 
-        auto xShapeInfo = hXShapeInfo[f];
-        auto tadOffset = reinterpret_cast<Nd4jLong *>(tadOffsets[f]);
+            auto xShapeInfo = hXShapeInfo[f];
+            auto tadOffset = reinterpret_cast<Nd4jLong *>(tadOffsets[f]);
 
 
-        const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
-        auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
-        auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
-        auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
+            const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
+            auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
+            auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
+            auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
 
-        auto tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
-        auto tadStride = shape::stride(tadOnlyShapeInfo[f]);
+            auto tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
+            auto tadStride = shape::stride(tadOnlyShapeInfo[f]);
 
-        if (shape::rank(xShapeInfo) == 1) {
-            auto xLength = shape::length(xShapeInfo);
-            auto ews = shape::elementWiseStride(xShapeInfo);
-            for (Nd4jLong r = 0; r < xLength; r++) {
-                auto swapIdx = shuffleMap[r];
-                if (swapIdx < 0)
-                    continue;
+            if (shape::rank(xShapeInfo) == 1) {
+                auto xLength = shape::length(xShapeInfo);
+                auto ews = shape::elementWiseStride(xShapeInfo);
+                for (Nd4jLong r = 0; r < xLength; r++) {
+                    auto swapIdx = shuffleMap[r];
+                    if (swapIdx < 0)
+                        continue;
 
-                nd4j::math::nd4j_swap<T>(hX[r*ews], hX[swapIdx*ews]);
-            }
-        } else {
-            for (Nd4jLong r = 0; r < numTads; r++) {
-                if (shuffleMap[r] < 0)
-                    continue;
+                    nd4j::math::nd4j_swap<T>(hX[r * ews], hX[swapIdx * ews]);
+                }
+            } else {
+                for (Nd4jLong r = 0; r < numTads; r++) {
+                    if (shuffleMap[r] < 0)
+                        continue;
 
-                auto oldOffset = tadOffset[r];
-                auto newOffset = tadOffset[shuffleMap[r]];
+                    auto oldOffset = tadOffset[r];
+                    auto newOffset = tadOffset[shuffleMap[r]];
 
-                auto rX = hX + oldOffset;
-                auto rY = hX + newOffset;
+                    auto rX = hX + oldOffset;
+                    auto rY = hX + newOffset;
 
-                if (tadEWS == 1) {
-                    for (Nd4jLong i = 0; i < tadLength; i++) {
-                        nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
-                    }
-                } else {
-                    for (Nd4jLong i = 0; i < tadLength; i++) {
-                        auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
-                        nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+                    if (tadEWS == 1) {
+                        for (Nd4jLong i = 0; i < tadLength; i++) {
+                            nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
+                        }
+                    } else {
+                        for (Nd4jLong i = 0; i < tadLength; i++) {
+                            auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
+                            nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+                        }
                     }
                 }
             }
         }
-    }
+    };
+
+    samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, N, 1);
 }
 
 void shuffle(Nd4jPointer *extras,
@@ -1806,7 +1809,6 @@ void _batchExecutor(Nd4jPointer *extraPointers,
                                         maxReals);
 
     // special case here, we prefer spread arrangement here, all threads are detached from each other
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
     for (int i = 0; i < numAggregates; i++) {
         auto intArrays = new int *[maxIntArrays];
 

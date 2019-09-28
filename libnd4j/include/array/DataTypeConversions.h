@@ -29,6 +29,7 @@
 #include <helpers/BitwiseUtils.h>
 #include <loops/type_conversions.h>
 #include <dll.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
     template <typename T>
@@ -50,9 +51,12 @@ namespace nd4j {
                             else
                                 TypeCast::convertGeneric<T2, T>(nullptr, tmp, length, buffer);
 #else
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (Nd4jLong e = 0; e < length; e++)
-                    buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                auto func = PRAGMA_THREADS_FOR {
+                    for (auto e = start; e < stop; e += increment)
+                        buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                };
+
+                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length);
 #endif
 
                 delete[] tmp;
@@ -105,9 +109,12 @@ namespace nd4j {
                             else
                                 TypeCast::convertGeneric<float, T>(nullptr, tmp, length, buffer);
 #else
-                            PRAGMA_OMP_PARALLEL_FOR_SIMD
-                            for (Nd4jLong e = 0; e < length; e++)
-                                buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            auto func = PRAGMA_THREADS_FOR {
+                                for (auto e = start; e < stop; e += increment)
+                                    buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            };
+
+                            samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length);
 #endif
 
                             delete[] tmp;
@@ -130,9 +137,12 @@ namespace nd4j {
 
 
 #else
-                            PRAGMA_OMP_PARALLEL_FOR
-                            for (Nd4jLong e = 0; e < length; e++)
-                                buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            auto func = PRAGMA_THREADS_FOR {
+                                for (auto e = start; e < stop; e += increment)
+                                    buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            };
+
+                            samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length);
 #endif
                             delete[] tmp;
                         }
@@ -153,9 +163,12 @@ namespace nd4j {
                             else
                                 TypeCast::convertGeneric<float16, T>(nullptr, tmp, length, buffer);
 #else
-                            PRAGMA_OMP_PARALLEL_FOR
-                            for (Nd4jLong e = 0; e < length; e++)
-                                buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            auto func = PRAGMA_THREADS_FOR {
+                                for (auto e = start; e < stop; e += increment)
+                                    buffer[e] = canKeep ? static_cast<T>(tmp[e]) : BitwiseUtils::swap_bytes<T>(static_cast<T>(tmp[e]));
+                            };
+
+                            samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length);
 #endif
                             delete[] tmp;
                         }

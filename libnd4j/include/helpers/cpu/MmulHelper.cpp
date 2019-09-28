@@ -22,6 +22,7 @@
 #include <NDArrayFactory.h>
 #include <helpers/BlasHelper.h>
 #include <exceptions/datatype_exception.h>
+#include <execution/Threads.h>
 
 
 namespace nd4j {
@@ -108,24 +109,27 @@ static void usualGemv(const char aOrder, const int M, const int N, const double 
     
     const bool flagA = aOrder == 'f';
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(M > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
-    for(int row = 0; row < M; ++row) {
-                        
-        T3* y = Y + row * incy;
-        T3 val = 0;
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto row = start; row < stop; row += increment) {
 
-        PRAGMA_OMP_SIMD
-        for(int i = 0; i < N; ++i) {
-            T3 a = flagA ? *(A + row + i * lda) : *(A + row * lda + i);
-            T3 x = *(X + i * incx);
-            val += alphaZ * a * x;
+            T3 *y = Y + row * incy;
+            T3 val = 0;
+
+            PRAGMA_OMP_SIMD
+            for (int i = 0; i < N; ++i) {
+                T3 a = flagA ? *(A + row + i * lda) : *(A + row * lda + i);
+                T3 x = *(X + i * incx);
+                val += alphaZ * a * x;
+            }
+
+            if (betaZ)
+                *y = val + betaZ * *y;
+            else
+                *y = val;
         }
-        
-        if(betaZ)
-            *y = val + betaZ * *y;
-        else
-            *y = val;
-    }
+    };
+
+        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, M);
 }
 
 //////////////////////////////////////////////////////////////////////////////

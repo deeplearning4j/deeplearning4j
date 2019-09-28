@@ -55,7 +55,7 @@ namespace functions {
                 if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
                     return;
                 const auto startingVal = OpType::startingValue(x);
-                PRAGMA_OMP_PARALLEL_FOR_IF(length > nd4j::Environment::getInstance()->elementwiseThreshold())
+
                 for (uint i = 0; i < length; i++)
                     z[i] = startingVal;
                 return;
@@ -66,8 +66,8 @@ namespace functions {
             }
             else {
                 X start = OpType::startingValue(x);
-                const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
-                X intermediate[256];
+                const int maxThreads = nd4j::math::nd4j_min<int>(64, omp_get_max_threads());
+                X intermediate[64];
 
                 for (int e = 0; e < maxThreads; e++)
                     intermediate[e] = start;
@@ -75,10 +75,12 @@ namespace functions {
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
-                for(Nd4jLong i = 0; i < length; ++i)
-                    intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
+                auto func = PRAGMA_THREADS_FOR {
+                    for (auto i = start; i < stop; i += increment)
+                        intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
+                };
 
+                samediff::Threads::parallel_for(func, maxThreads, 0, length);
 
                 for (int e = 0; e < maxThreads; e++)
                     start = OpType::update(start, intermediate[e], extraParams);
@@ -104,18 +106,22 @@ namespace functions {
                 }
                 else {
                     X start = OpType::startingValue(x);
-                    auto intermediate = new X[nd4j::math::nd4j_max<int>(1, omp_get_max_threads())];
-                    for (int e = 0; e < omp_get_max_threads(); e++)
+                    auto maxThreads = nd4j::math::nd4j_max<int>(1, nd4j::Environment::getInstance()->maxThreads());
+                    auto intermediate = new X[maxThreads];
+                    for (int e = 0; e < maxThreads; e++)
                         intermediate[e] = start;
 
                     uint xShapeInfoCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD
-                    for(Nd4jLong i = 0; i < length; ++i)
-                        intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto i = start; i < stop; i += increment)
+                            intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
+                    };
 
-                    for (int e = 0; e < omp_get_max_threads(); e++)
+                    samediff::Threads::parallel_for(func, maxThreads, 0, length);
+
+                    for (int e = 0; e < maxThreads; e++)
                         start = OpType::update(start, intermediate[e], extraParams);
 
                     delete[] intermediate;
@@ -178,7 +184,7 @@ namespace functions {
                     if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
                         return;
                     const auto startingVal = OpType::startingValue(x);
-                    PRAGMA_OMP_PARALLEL_FOR_IF(resultLength > nd4j::Environment::getInstance()->elementwiseThreshold())
+
                     for (uint i = 0; i < resultLength; i++)
                         z[i] = startingVal;
                     return;

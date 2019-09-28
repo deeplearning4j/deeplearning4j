@@ -33,13 +33,11 @@ void GradCheck::fillGradArrays(const LossFunc loss, const std::vector<NDArray*>&
 	switch(loss) {
 
 		case MEAN:
-            PRAGMA_OMP_PARALLEL_FOR_IF(numInGradArrs > 1)
 			for(int i = 0; i < numInGradArrs; ++i)
 				*gradArrs[i] = 1. / gradArrs[i]->lengthOf();
 			break;
 
 		case SUM:
-            PRAGMA_OMP_PARALLEL_FOR_IF(numInGradArrs > 1)
 			for(int i = 0; i < numInGradArrs; ++i)
 				*gradArrs[i] = 1.;
 			break;

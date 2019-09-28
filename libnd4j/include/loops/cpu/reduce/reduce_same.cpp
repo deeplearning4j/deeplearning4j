@@ -57,7 +57,7 @@ namespace functions {
                 if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
                     return;
                 const auto startingVal = OpType::startingValue(x);
-                PRAGMA_OMP_PARALLEL_FOR_IF(length > nd4j::Environment::getInstance()->elementwiseThreshold())
+
                 for (uint i = 0; i < length; i++)
                     z[i] = startingVal;
                 return;
@@ -68,8 +68,8 @@ namespace functions {
             }
             else {
                 X start = OpType::startingValue(x);
-                const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
-                X intermediate[256];
+                const int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
+                X intermediate[64];
 
                 for (int e = 0; e < maxThreads; e++)
                     intermediate[e] = start;
@@ -77,10 +77,12 @@ namespace functions {
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
-                for(Nd4jLong i = 0; i < length; ++i)
-                    intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
+                auto func = PRAGMA_THREADS_FOR {
+                    for (auto i = start; i < stop; i += increment)
+                        intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
+                };
 
+                samediff::Threads::parallel_for(func, maxThreads, 0, length);
 
                 for (int e = 0; e < maxThreads; e++)
                     start = OpType::update(start, intermediate[e], extraParams);
@@ -106,8 +108,8 @@ namespace functions {
                 }
                 else {
                     X start = OpType::startingValue(x);
-                    const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
-                    X intermediate[256];
+                    const int maxThreads = nd4j::math::nd4j_min<int>(64, omp_get_max_threads());
+                    X intermediate[64];
 
                     for (int e = 0; e < maxThreads; e++)
                         intermediate[e] = start;
@@ -115,9 +117,12 @@ namespace functions {
                     uint xShapeInfoCast[MAX_RANK];
                     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(maxThreads)
-                    for(Nd4jLong i = 0; i < length; ++i)
-                        intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto i = start; i < stop; i += increment)
+                            intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
+                    };
+
+                    samediff::Threads::parallel_for(func, maxThreads, 0, length);
 
                     for (int e = 0; e < maxThreads; e++)
                         start = OpType::update(start, intermediate[e], extraParams);
@@ -189,7 +194,7 @@ namespace functions {
                     if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
                         return;
                     const auto startingVal = OpType::startingValue(x);
-                    PRAGMA_OMP_PARALLEL_FOR_IF(zLength > nd4j::Environment::getInstance()->elementwiseThreshold())
+
                     for (uint i = 0; i < zLength; i++)
                         z[i] = startingVal;
                     return;
