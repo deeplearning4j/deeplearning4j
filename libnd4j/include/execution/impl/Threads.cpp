@@ -38,6 +38,7 @@ namespace samediff {
             throw std::runtime_error("Threads::parallel_for got start > stop");
 
         numThreads = ThreadsHelper::numberOfThreads(numThreads, stop - start);
+        // we don't want to launch single thread, just call function in place
         if (numThreads == 1) {
             function(0, start, stop, increment);
             return 1;

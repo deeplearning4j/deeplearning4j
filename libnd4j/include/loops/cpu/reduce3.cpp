@@ -52,8 +52,10 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
         if(nd4j::ArrayOptions::arrayType(zShapeInfo) == nd4j::ArrayType::EMPTY)
             return;
         const auto startingVal = OpType::startingValue(x);
+
         for (uint i = 0; i < length; i++)
             z[i] = startingVal;
+
         return;
     }
 
@@ -66,7 +68,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     Z startingVal = OpType::startingValue(x);
-    const int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
+    int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
     nd4j::OmpLaunchHelper t(length, maxThreads);
     Z intermediate[64];
     Z extraParamsLocal[3 * 64];
@@ -91,7 +93,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+        maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
     } else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
 
@@ -102,7 +104,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+        maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
     } else {
         uint yShapeInfoCast[MAX_RANK];
         const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
@@ -115,7 +117,7 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+        maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
     }
 
     // merge step
