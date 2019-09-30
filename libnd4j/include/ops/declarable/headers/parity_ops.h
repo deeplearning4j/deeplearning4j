@@ -600,6 +600,21 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(adjust_saturation, 1, 1, true, 1, -2);
         #endif
 
+        /**
+         * This operation adjusts image contrast by given factor ( z = (x - mean) * factor + mean )
+         * Input arrays:
+         * 0 - input array with rank >= 3, must have last one dimension equal 3, that is dimension containing channels.
+         *
+         * T arguments:
+         * 0 - contrast factor
+         *
+         */
+        #if NOT_EXCLUDED(OP_adjust_contrast)
+        DECLARE_CONFIGURABLE_OP(adjust_contrast, 1, 1, true, 1, 0);
+        #endif
+
+
+
 
         /**
          * This operation rearranges data from depth into blocks of spatial data. This is the reverse transformation
