@@ -2543,15 +2543,11 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* othe
         return;
     }
 
-    NDArray::prepareSpecialUse({target}, {this, other});
-
     #ifdef __ND4J_EXPERIMENTAL__
         BUILD_PAIRWISE_SELECTOR(dataType(), other->dataType(), target->dataType(), helpers::TrueBroadcastHelper, ::exec(op.b, *this, *other, *target), LIBND4J_TYPES, LIBND4J_TYPES);
     #else
         BUILD_SINGLE_SELECTOR_THRICE(dataType(), helpers::TrueBroadcastHelper, ::exec(op.b, *this, *other, *target), LIBND4J_TYPES);
     #endif
-
-    NDArray::registerSpecialUse({target}, {this, other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2590,9 +2586,7 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastBoolOpsTuple op, const NDArray* 
         return;
     }
 
-    NDArray::prepareSpecialUse({target}, {this, other});
     BUILD_DOUBLE_SELECTOR(dataType(), target->dataType(), helpers::TrueBroadcastBoolHelper, ::exec(op.b, *this, *other, *target), LIBND4J_TYPES, BOOL_TYPES);
-    NDArray::registerSpecialUse({target}, {this, other});
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2631,9 +2625,7 @@ void NDArray::applyTrueBroadcast(nd4j::BroadcastIntOpsTuple op, const NDArray* o
         return;
     }
 
-    NDArray::prepareSpecialUse({target}, {this, other});
     BUILD_SINGLE_SELECTOR(dataType(), helpers::TrueBroadcastIntHelper, ::exec(op.b, *this, *other, *target), INTEGER_TYPES);
-    NDArray::registerSpecialUse({target}, {this, other});
 }
 
 //////////////////////////////////////////////////////////////////////////
