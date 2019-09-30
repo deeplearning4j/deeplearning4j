@@ -21,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.bytedeco.javacv.*;
 import org.datavec.image.loader.NativeImageLoader;
+import org.deeplearning4j.rl4j.util.VideoRecorder;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -46,7 +47,7 @@ public class HistoryProcessor implements IHistoryProcessor {
     final private Configuration conf;
     final private OpenCVFrameConverter openCVFrameConverter = new OpenCVFrameConverter.ToMat();
     private CircularFifoQueue<INDArray> history;
-    private FFmpegFrameRecorder fmpegFrameRecorder = null;
+    private VideoRecorder videoRecorder;
 
     public HistoryProcessor(Configuration conf) {
         this.conf = conf;
@@ -60,46 +61,39 @@ public class HistoryProcessor implements IHistoryProcessor {
     }
 
     public void startMonitor(String filename, int[] shape) {
-        stopMonitor();
-        fmpegFrameRecorder = new FFmpegFrameRecorder(filename, shape[1], shape[0]);
-        fmpegFrameRecorder.setVideoCodec(AV_CODEC_ID_H264);
-        fmpegFrameRecorder.setFrameRate(30.0);
-        fmpegFrameRecorder.setVideoQuality(30);
+        if(videoRecorder == null) {
+            videoRecorder = VideoRecorder.builder(shape[0], shape[1])
+                    .frameInputType(VideoRecorder.FrameInputTypes.Float)
+                    .build();
+        }
+
         try {
-            log.info("Started monitoring: " + filename);
-            fmpegFrameRecorder.start();
-        } catch (FrameRecorder.Exception e) {
+            videoRecorder.startRecording(filename);
+        } catch (Exception e) {
             e.printStackTrace();
         }
     }
 
     public void stopMonitor() {
-        if (fmpegFrameRecorder != null) {
+        if(videoRecorder != null) {
             try {
-                fmpegFrameRecorder.stop();
-                fmpegFrameRecorder.release();
-                log.info("Stopped monitoring");
-            } catch (FrameRecorder.Exception e) {
+                videoRecorder.stopRecording();
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
-        fmpegFrameRecorder = null;
     }
 
     public boolean isMonitoring() {
-        return fmpegFrameRecorder != null;
+        return videoRecorder != null && videoRecorder.isRecording();
     }
 
     public void record(INDArray raw) {
-        if (fmpegFrameRecorder != null) {
-            long[] shape = raw.shape();
-            Mat ocvmat = new Mat((int)shape[0], (int)shape[1], CV_32FC(3), raw.data().pointer());
-            Mat cvmat = new Mat(shape[0], shape[1], CV_8UC(3));
-            ocvmat.convertTo(cvmat, CV_8UC(3), 255.0, 0.0);
-            Frame frame = openCVFrameConverter.convert(cvmat);
+        if(isMonitoring()) {
+            VideoRecorder.VideoFrame frame = videoRecorder.createFrame(raw.data().pointer());
             try {
-                fmpegFrameRecorder.record(frame);
-            } catch (FrameRecorder.Exception e) {
+                videoRecorder.record(frame);
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
