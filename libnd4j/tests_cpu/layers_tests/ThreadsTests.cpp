@@ -53,7 +53,7 @@ TEST_F(ThreadsTests, basic_test_1) {
     };
 
     auto timeStartThreads = std::chrono::system_clock::now();
-    samediff::Threads::parallel_for(func, 6, 0, array.lengthOf(), 1);
+    samediff::Threads::parallel_for(func, 0, array.lengthOf());
     auto timeEndThreads = std::chrono::system_clock::now();
     auto outerTimeThreads = std::chrono::duration_cast<std::chrono::microseconds> (timeEndThreads - timeStartThreads).count();
 

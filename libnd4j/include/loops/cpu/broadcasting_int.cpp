@@ -188,7 +188,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, threads, 0, tads, 1);
+                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
                 }
                 else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo)) {
 
@@ -211,7 +211,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, threads, 0, tads, 1);
+                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
                 }
                 else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
 
@@ -234,7 +234,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, threads, 0, tads, 1);
+                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
                 }
                 else if(shape::haveSameShapeAndStrides(yShapeInfo, zTadShapeInfo)) {
 
@@ -257,7 +257,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, threads, 0, tads, 1);
+                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
                 }
                 else {
 
@@ -283,7 +283,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, threads, 0, tads, 1);
+                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
                 }
         }
 

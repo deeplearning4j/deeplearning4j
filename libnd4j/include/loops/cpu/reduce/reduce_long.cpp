@@ -248,6 +248,8 @@ namespace functions {
 
             auto maxThreads = nd4j::math::nd4j_min(nd4j::Environment::getInstance()->maxThreads(), 64);
             Z intermediatery[64];
+            for (int e = 0; e < maxThreads; e++)
+                intermediatery[e] = startingVal;
 
             if (xEws == 1) {
                 auto func = PRAGMA_THREADS_FOR {

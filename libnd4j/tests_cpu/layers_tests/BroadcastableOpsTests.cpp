@@ -41,6 +41,8 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
     y.linspace(1);
     exp.linspace(1);
 
+    //exp.printIndexedBuffer("E B");
+
     exp.applyBroadcast(broadcast::Add, {1}, &y);
 
     nd4j::ops::add op;
@@ -50,8 +52,8 @@ TEST_F(BroadcastableOpsTests, Test_Add_1) {
 
     auto z = result->at(0);
 
-    // exp.printIndexedBuffer("E");
-    // z->printIndexedBuffer("Z");
+    //exp.printIndexedBuffer("E A");
+    //z->printIndexedBuffer("Z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

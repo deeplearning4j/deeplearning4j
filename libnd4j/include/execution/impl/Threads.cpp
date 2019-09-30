@@ -26,6 +26,9 @@
 
 namespace samediff {
     int Threads::parallel_for(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment, uint32_t numThreads) {
+        function(0, start, stop, increment);
+        return 1;
+        /*
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
         if (ticket.acquired()) {
             // if we got our threads - we'll run our jobs here
@@ -55,6 +58,7 @@ namespace samediff {
             // we tell that parallelism request declined
             return 1;
         }
+        */
     }
 
     int Threads::parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads) {
@@ -108,7 +112,8 @@ namespace samediff {
 
     int Threads::parallel_do(FUNC_DO function, uint64_t numThreads) {
         // TODO: to be implemented
-        function(0);
+        for (uint64_t e = 0; e < numThreads; e++)
+            function(e);
 
         return 1;
     }

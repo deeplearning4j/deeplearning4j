@@ -78,7 +78,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             }
         };
 
-        samediff::Threads::parallel_for(func, num_threads, 0, numTads, 1);
+        samediff::Threads::parallel_for(func, 0, numTads, 1, num_threads);
     }
     else {
         auto func = PRAGMA_THREADS_FOR {
@@ -92,7 +92,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
             }
         };
 
-        samediff::Threads::parallel_for(func, num_threads, 0, numTads, 1);
+        samediff::Threads::parallel_for(func, 0, numTads, 1, num_threads);
     }
 }
 

@@ -119,7 +119,7 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
                             for (auto e = start; e < stop; e += increment)
                                 outArr[e * outEWS] = inArr[e * inEWS];
                         };
-                        samediff::Threads::parallel_for(func, numOfElemsToReverse, inLength);
+                        samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
                     }
                 }
                 else {
