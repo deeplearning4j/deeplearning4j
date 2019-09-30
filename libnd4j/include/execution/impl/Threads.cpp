@@ -25,10 +25,24 @@
 
 
 namespace samediff {
+    int ThreadsHelper::numberOfThreads(int maxThreads, uint64_t numberOfElements) {
+        // no sense launching more threads than elements
+        if (maxThreads < numberOfElements)
+            return numberOfElements;
+
+        return maxThreads;
+    }
+
     int Threads::parallel_for(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment, uint32_t numThreads) {
-        function(0, start, stop, increment);
-        return 1;
-        /*
+        if (start > stop)
+            throw std::runtime_error("Threads::parallel_for got start > stop");
+
+        numThreads = ThreadsHelper::numberOfThreads(numThreads, stop - start);
+        if (numThreads == 1) {
+            function(0, start, stop, increment);
+            return 1;
+        }
+
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
         if (ticket.acquired()) {
             // if we got our threads - we'll run our jobs here
@@ -51,17 +65,21 @@ namespace samediff {
             // we tell that parallelism request succeeded
             return numThreads;
         } else {
-            nd4j_printf("Running one thread\n","");
             // if there were no threads available - we'll execute function right within current thread
             function(0, start, stop, increment);
 
             // we tell that parallelism request declined
             return 1;
         }
-        */
     }
 
     int Threads::parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads) {
+        if (start_x > stop_x)
+            throw std::runtime_error("Threads::parallel_for got start_x > stop_x");
+
+        if (start_y > stop_y)
+            throw std::runtime_error("Threads::parallel_for got start_y > stop_y");
+
         function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
         return 1;
         /*
@@ -87,6 +105,15 @@ namespace samediff {
 
 
     int Threads::parallel_for(FUNC_3D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t start_z, uint64_t stop_z, uint64_t inc_z, uint64_t numThreads) {
+        if (start_x > stop_x)
+            throw std::runtime_error("Threads::parallel_for got start_x > stop_x");
+
+        if (start_y > stop_y)
+            throw std::runtime_error("Threads::parallel_for got start_y > stop_y");
+
+        if (start_z > stop_z)
+            throw std::runtime_error("Threads::parallel_for got start_z > stop_z");
+
         function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y, start_z, stop_z, inc_z);
         return 1;
         /*
@@ -111,10 +138,22 @@ namespace samediff {
     }
 
     int Threads::parallel_do(FUNC_DO function, uint64_t numThreads) {
-        // TODO: to be implemented
-        for (uint64_t e = 0; e < numThreads; e++)
-            function(e);
+        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+        if (ticket.acquired()) {
 
-        return 1;
+            // submit tasks one by one
+            for (uint64_t e = 0; e < numThreads; e++)
+                ticket.enqueue(e, new CallableWithArguments(function, e));
+
+            ticket.waitAndRelease();
+
+            return numThreads;
+        } else {
+            // if there's no threads available - we'll execute function sequentially one by one
+            for (uint64_t e = 0; e < numThreads; e++)
+                function(e);
+
+            return 1;
+        }
     }
 }

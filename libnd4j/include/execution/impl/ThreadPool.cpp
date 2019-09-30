@@ -30,6 +30,11 @@ namespace samediff {
             // this method blocks until there's something within queue
             auto c = queue->poll();
             switch (c->dimensions()) {
+                case 0: {
+                        c->function_do()(c->threadId());
+                        c->finish();
+                    }
+                    break;
                 case 1: {
                         auto args = c->arguments();
                         c->function_1d()(c->threadId(), args[0], args[1], args[2]);
@@ -42,10 +47,18 @@ namespace samediff {
                         c->finish();
                     }
                     break;
-                case 3:
+                case 3: {
+                        auto args = c->arguments();
+                        c->function_3d()(c->threadId(), args[0], args[1], args[2], args[3], args[4], args[5], args[6], args[7], args[8]);
+                        c->finish();
+                    }
+                    break;
                 default:
                     throw std::runtime_error("Don't know what to do with provided Callable");
             }
+
+            // mark queue available for next task
+            queue->markAvailable();
         }
     }
 
@@ -101,6 +114,9 @@ namespace samediff {
     }
 
     Ticket ThreadPool::tryAcquire(int num_threads) {
+
+        std::vector<BlockingQueue<CallableWithArguments*>*> queues;
+
         // we check for threads availability first
         bool threaded = false;
         {
@@ -109,17 +125,16 @@ namespace samediff {
             if (_available >= num_threads) {
                 threaded = true;
                 _available -= num_threads;
+
+                queues.resize(num_threads);
+                for (int e = 0, i = 0; e < _queues.size() && i < num_threads; e++)
+                    if (_queues[e]->available())
+                        queues[i++] = _queues[e];
             }
         }
 
         // we either dispatch tasks to threads, or run single-threaded
         if (threaded) {
-            // FIXME: why would we want copies here?
-            // FIXME: obviously having, say, 4 available threads doesn't mean threads 0..3 are available
-            std::vector<BlockingQueue<CallableWithArguments*>*> queues(num_threads);
-            for (int e = 0; e < num_threads; e++)
-                queues[e] = _queues[e];
-
             // TODO: can we have pool here as well?
             return Ticket(queues);
         } else {

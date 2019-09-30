@@ -25,6 +25,11 @@
 #include <Environment.h>
 
 namespace samediff {
+    class ThreadsHelper {
+    public:
+        static int numberOfThreads(int maxThreads, uint64_t numberOfElements);
+    };
+
     class Threads {
     public:
         /**

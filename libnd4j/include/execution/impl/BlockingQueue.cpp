@@ -26,6 +26,7 @@ namespace samediff {
     template <typename T>
     BlockingQueue<T>::BlockingQueue(int queueSize) {
         _size = 0;
+        _available = true;
     }
 
     template <typename T>
@@ -45,10 +46,21 @@ namespace samediff {
             // locking before push, unlocking after
             std::unique_lock<std::mutex> lock(_lock);
             _queue.push(t);
+            _available = false;
         }
 
         // notifying condition
         _condition.notify_one();
+    }
+
+    template <typename T>
+    bool BlockingQueue<T>::available() {
+        return _available.load();
+    }
+
+    template <typename T>
+    void BlockingQueue<T>::markAvailable() {
+        _available = true;
     }
 
     template class BlockingQueue<CallableWithArguments*>;

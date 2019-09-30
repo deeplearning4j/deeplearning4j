@@ -34,6 +34,7 @@ namespace samediff {
         std::queue<T> _queue;
         std::mutex _lock;
         std::atomic<int> _size;
+        std::atomic<bool> _available;
 
         std::condition_variable _condition;
     public:
@@ -41,6 +42,9 @@ namespace samediff {
         ~BlockingQueue() = default;
         T poll();
         void put(const T &t);
+
+        bool available();
+        void markAvailable();
     };
 }
 
