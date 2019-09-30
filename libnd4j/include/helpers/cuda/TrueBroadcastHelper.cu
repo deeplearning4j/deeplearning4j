@@ -20,7 +20,7 @@
 
 // #include <exceptions/cuda_exception.h>
 #include <TrueBroadcastHelper.h>
-
+#include <PointersManager.h>
 #include <execution/LaunchContext.h>
 #include <specials.h>
 #include <logger.h>
@@ -92,7 +92,7 @@ __global__ static void trueBroadcastCuda(const void* vx, const Nd4jLong* xShapeI
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Y, typename Z>
 template <typename OpType>
-void TrueBroadcastHelper<X,Y,Z>::execLauncher(dim3 launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo) {
+void TrueBroadcastHelper<X,Y,Z>::execLauncher(dim3 launchDims, cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
 
     trueBroadcastCuda<X, Y, Z, OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
@@ -101,17 +101,19 @@ void TrueBroadcastHelper<X,Y,Z>::execLauncher(dim3 launchDims, cudaStream_t *str
 template<typename X, typename Y, typename Z>
 void TrueBroadcastHelper<X,Y,Z>::exec(const nd4j::broadcast::Ops opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
 
-    const int launchDims.x = MAX_NUM_THREADS / 8;   // threadsPerBlock
-    const int launchDims.y = (zArr.lengthOf() + launchDims.x - 1) / launchDims.x;  // blocksPerGrid
-    const int launchDims.z = sizeof(Nd4jLong) * launchDims.x * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMem
+    dim3 launchDims;
+
+    launchDims.x = MAX_NUM_THREADS / 8;   // threadsPerBlock
+    launchDims.y = (zArr.lengthOf() + launchDims.x - 1) / launchDims.x;  // blocksPerGrid
+    launchDims.z = sizeof(Nd4jLong) * launchDims.x * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMem
 
     PointersManager manager(xArr.getContext(), "TrueBroadcastHelper<X,Y,Z>::exec");
 
     NDArray::prepareSpecialUse({&zArr}, {&xArr, &yArr});
 
-    DISPATCH_BY_OPNUM_TTT(exec, PARAMS(launchDims, xArr.getContext()->getCudaStream(), xArr.getSpecialBuffer(), xArr.getSpecialShapeInfo(), yArr.getSpecialBuffer(), yArr.getSpecialShapeInfo(), zArr.specialBuffer(), zArr.specialShapeInfo()), OPS_A(BROADCAST_OPS));
+    DISPATCH_BY_OPNUM_TTT(execLauncher, PARAMS(launchDims, xArr.getContext()->getCudaStream(), xArr.getSpecialBuffer(), xArr.getSpecialShapeInfo(), yArr.getSpecialBuffer(), yArr.getSpecialShapeInfo(), zArr.specialBuffer(), zArr.specialShapeInfo()), OPS_A(BROADCAST_OPS));
 
-    NDArray::registyerSpecialUse({&zArr}, {&xArr, &yArr});
+    NDArray::registerSpecialUse({&zArr}, {&xArr, &yArr});
 
     manager.synchronize();
 }
@@ -176,7 +178,7 @@ __global__ static void trueBroadcastBoolCuda(const void* vx, const Nd4jLong* xSh
 ////////////////////////////////////////////////////////////////////////
 template<typename X, typename Z>
 template <typename OpType>
-void TrueBroadcastBoolHelper<X,Z>::execLauncher(dim3 launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo) {
+void TrueBroadcastBoolHelper<X,Z>::execLauncher(dim3 launchDims, cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
 
     trueBroadcastBoolCuda<X,Z,OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
@@ -185,17 +187,18 @@ void TrueBroadcastBoolHelper<X,Z>::execLauncher(dim3 launchDims, cudaStream_t *s
 template<typename X, typename Y>
 void TrueBroadcastBoolHelper<X,Y>::exec(const nd4j::broadcast::BoolOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
 
-    const int launchDims.x = MAX_NUM_THREADS / 8;   // threadsPerBlock
-    const int launchDims.y = (zArr.lengthOf() + launchDims.x - 1) / launchDims.x;  // blocksPerGrid
-    const int launchDims.z = sizeof(Nd4jLong) * launchDims.x * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMem
+    dim3 launchDims;
+    launchDims.x = MAX_NUM_THREADS / 8;   // threadsPerBlock
+    launchDims.y = (zArr.lengthOf() + launchDims.x - 1) / launchDims.x;  // blocksPerGrid
+    launchDims.z = sizeof(Nd4jLong) * launchDims.x * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMem
 
     PointersManager manager(xArr.getContext(), "TrueBroadcastBoolHelper<X,Y>::exec");
 
     NDArray::prepareSpecialUse({&zArr}, {&xArr, &yArr});
 
-    DISPATCH_BY_OPNUM_TT(exec, PARAMS(launchDims, xArr.getContext()->getCudaStream(), xArr.getSpecialBuffer(), xArr.getSpecialShapeInfo(), yArr.getSpecialBuffer(), yArr.getSpecialShapeInfo(), zArr.specialBuffer(), zArr.specialShapeInfo()), OPS_A(BROADCAST_BOOL_OPS));
+    DISPATCH_BY_OPNUM_TT(execLauncher, PARAMS(launchDims, xArr.getContext()->getCudaStream(), xArr.getSpecialBuffer(), xArr.getSpecialShapeInfo(), yArr.getSpecialBuffer(), yArr.getSpecialShapeInfo(), zArr.specialBuffer(), zArr.specialShapeInfo()), OPS_A(BROADCAST_BOOL_OPS));
 
-    NDArray::registyerSpecialUse({&zArr}, {&xArr, &yArr});
+    NDArray::registerSpecialUse({&zArr}, {&xArr, &yArr});
 
     manager.synchronize();
 }
@@ -260,7 +263,7 @@ __global__ static void trueBroadcastIntCuda(const void* vx, const Nd4jLong* xSha
 ////////////////////////////////////////////////////////////////////////
 template<typename X>
 template <typename OpType>
-void TrueBroadcastIntHelper<X>::execLauncher(dim3 launchDims, cudaStream_t *stream, void *vx, Nd4jLong *xShapeInfo, void *vy, Nd4jLong *yShapeInfo, void *vz, Nd4jLong *zShapeInfo) {
+void TrueBroadcastIntHelper<X>::execLauncher(dim3 launchDims, cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo) {
 
     trueBroadcastIntCuda<X,OpType><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(vx, xShapeInfo, vy, yShapeInfo, vz, zShapeInfo);
 }
@@ -269,17 +272,18 @@ void TrueBroadcastIntHelper<X>::execLauncher(dim3 launchDims, cudaStream_t *stre
 template<typename X>
 void TrueBroadcastIntHelper<X>::exec(const nd4j::broadcast::IntOps opNum, const NDArray& xArr, const NDArray& yArr, NDArray& zArr) {
 
-    const int launchDims.x = MAX_NUM_THREADS / 8;   // threadsPerBlock
-    const int launchDims.y = (zArr.lengthOf() + launchDims.x - 1) / launchDims.x;  // blocksPerGrid
-    const int launchDims.z = sizeof(Nd4jLong) * launchDims.x * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMem
+    dim3 launchDims;
+    launchDims.x = MAX_NUM_THREADS / 8;   // threadsPerBlock
+    launchDims.y = (zArr.lengthOf() + launchDims.x - 1) / launchDims.x;  // blocksPerGrid
+    launchDims.z = sizeof(Nd4jLong) * launchDims.x * (xArr.rankOf() + yArr.rankOf() + zArr.rankOf()) + 128; // sharedMem
 
     PointersManager manager(xArr.getContext(), "TrueBroadcastIntHelper<X>::exec");
 
     NDArray::prepareSpecialUse({&zArr}, {&xArr, &yArr});
 
-    DISPATCH_BY_OPNUM_T(exec, PARAMS(launchDims, xArr.getContext()->getCudaStream(), xArr.getSpecialBuffer(), xArr.getSpecialShapeInfo(), yArr.getSpecialBuffer(), yArr.getSpecialShapeInfo(), zArr.specialBuffer(), zArr.specialShapeInfo()), OPS_A(BROADCAST_INT_OPS));
+    DISPATCH_BY_OPNUM_T(execLauncher, PARAMS(launchDims, xArr.getContext()->getCudaStream(), xArr.getSpecialBuffer(), xArr.getSpecialShapeInfo(), yArr.getSpecialBuffer(), yArr.getSpecialShapeInfo(), zArr.specialBuffer(), zArr.specialShapeInfo()), OPS_A(BROADCAST_INT_OPS));
 
-    NDArray::registyerSpecialUse({&zArr}, {&xArr, &yArr});
+    NDArray::registerSpecialUse({&zArr}, {&xArr, &yArr});
 
     manager.synchronize();
 }
