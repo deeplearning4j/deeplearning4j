@@ -67,7 +67,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
 
@@ -85,7 +85,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
@@ -103,7 +103,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
 
@@ -121,7 +121,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else {
 
@@ -142,7 +142,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
         };
 
@@ -177,7 +177,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else {
 
@@ -193,7 +193,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length, 1);
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
         }
 
@@ -221,7 +221,7 @@ namespace functions {
                 }
             };
 
-            samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length, 1);
+            samediff::Threads::parallel_for(func,  0, length, 1);
         }
 
         template<typename X>

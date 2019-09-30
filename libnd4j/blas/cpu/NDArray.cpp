@@ -118,7 +118,7 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, const char
         }
     };
 
-    samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
 BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, int lower, int upper, const char direction, NDArray* target), LIBND4J_TYPES);
 
@@ -162,7 +162,7 @@ static void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
         }
     };
 
-    samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, length, 1);
+    samediff::Threads::parallel_for(func, 0, length);
 }
 BUILD_SINGLE_TEMPLATE(template void templatedSwap, (void *xBuffer, void *yBuffer, Nd4jLong length), LIBND4J_TYPES);
 
@@ -275,7 +275,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
             }
         };
 
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, resultLen, 1);
+        samediff::Threads::parallel_for(func, 0, resultLen);
     }
     else {
 
@@ -287,7 +287,7 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
             }
         };
 
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, resultLen, 1);
+        samediff::Threads::parallel_for(func, 0, resultLen);
     }
     result.tickWriteHost();
     return result;
@@ -400,7 +400,7 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
         }
     };
 
-    samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

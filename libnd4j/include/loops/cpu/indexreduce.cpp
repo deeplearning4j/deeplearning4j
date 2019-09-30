@@ -80,7 +80,7 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
             }
         };
 
-        samediff::Threads::parallel_for(func, maxThreads, 0, len, 1);
+        samediff::Threads::parallel_for(func, 0, len, 1, maxThreads);
 
         for (int e = 0; e < maxThreads; e++)
             if (intermediatery[e].index >= 0)
@@ -97,7 +97,7 @@ Nd4jLong IndexReduce<X, Y>::execScalar(void *vx, Nd4jLong *xShapeInfo, void *vex
             }
         };
 
-        samediff::Threads::parallel_for(func, maxThreads, 0, len, 1);
+        samediff::Threads::parallel_for(func, 0, len, 1, maxThreads);
 
         for (int e = 0; e < maxThreads; e++)
             if (intermediatery[e].index >= 0)

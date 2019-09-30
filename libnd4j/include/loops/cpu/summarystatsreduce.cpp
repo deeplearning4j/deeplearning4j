@@ -187,7 +187,7 @@ namespace functions {
                 }
             };
 
-            samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, resultLength, 1);
+            samediff::Threads::parallel_for(func,  0, resultLength, 1);
         }
 
 

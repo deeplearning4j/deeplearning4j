@@ -172,7 +172,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+            samediff::Threads::parallel_for(func,  0, len, 1);
         }
         else {
 
@@ -188,7 +188,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+            samediff::Threads::parallel_for(func,  0, len, 1);
         }
     }
 }
@@ -217,7 +217,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
                 z[i] = OpType::op(x[i], scalar, extraParams);
         };
 
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+        samediff::Threads::parallel_for(func,  0, len, 1);
     }
     else {
 
@@ -227,7 +227,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
                 z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
         };
 
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+        samediff::Threads::parallel_for(func,  0, len, 1);
     }
 }
 

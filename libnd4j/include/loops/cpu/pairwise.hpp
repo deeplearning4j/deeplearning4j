@@ -77,7 +77,7 @@ namespace functions {
                         z[i] = OpType::op(x[i], y[i], extraParams);
                 };
 
-                samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(),0, n, 1);
+                samediff::Threads::parallel_for(f, 0, n, 1);
             }
             else {
 
@@ -87,7 +87,7 @@ namespace functions {
                         z[i*zEws] = OpType::op(x[i*xEws], y[i*yEws], extraParams);
                 };
 
-                samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(),0, n, 1);
+                samediff::Threads::parallel_for(f, 0, n, 1);
             }
         }
 
@@ -149,7 +149,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(),0, n, 1);
+                    samediff::Threads::parallel_for(f, 0, n, 1);
                 }
                 else {
                     uint zShapeInfoCast[MAX_RANK];
@@ -164,7 +164,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(),0, n, 1);
+                    samediff::Threads::parallel_for(f, 0, n, 1);
                 }
                 return;
             }
@@ -195,7 +195,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(),0, n, 1);
+                    samediff::Threads::parallel_for(f, 0, n, 1);
                 }
                 else if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
 
@@ -213,7 +213,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(),0, n, 1);
+                    samediff::Threads::parallel_for(f, 0, n, 1);
                 }
                 else if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
@@ -231,7 +231,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(),0, n, 1);
+                    samediff::Threads::parallel_for(f, 0, n, 1);
                 }
                 else if(shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
 
@@ -249,7 +249,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(),0, n, 1);
+                    samediff::Threads::parallel_for(f, 0, n, 1);
                 }
                 else {
 
@@ -270,7 +270,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(), 0, n, 1);
+                    samediff::Threads::parallel_for(f,  0, n, 1);
                 }
             }
         }

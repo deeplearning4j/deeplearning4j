@@ -333,7 +333,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
             }
                 break;
 
@@ -352,7 +352,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
             }
                 break;
 
@@ -371,7 +371,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
             }
                 break;
 
@@ -391,7 +391,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
             }
                 break;
 
@@ -412,7 +412,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
             }
                 break;
 
@@ -434,7 +434,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
             }
                 break;
 
@@ -457,7 +457,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
             }
                 break;
 
@@ -479,7 +479,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
             }
                 break;
 
@@ -502,7 +502,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
             }
                 break;
             //*********************************************//
@@ -526,7 +526,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, zLen, 1);
+                samediff::Threads::parallel_for(func, 0, zLen, 1);
 
                 delete[] innertadOffsets;
             }
@@ -563,7 +563,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         z[i] = OpType::op(x[i], extraParams);
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+                samediff::Threads::parallel_for(func, 0, len, 1);
             }
                 break;
 
@@ -578,7 +578,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         z[i*zEws] = OpType::op(x[i*xEws], extraParams);
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+                samediff::Threads::parallel_for(func, 0, len, 1);
             }
                 break;
 
@@ -604,7 +604,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+                samediff::Threads::parallel_for(func, 0, len, 1);
             }
                 break;
 
@@ -615,7 +615,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+                samediff::Threads::parallel_for(func, 0, len, 1);
             }
                 break;
 
@@ -634,7 +634,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, uXShape0, 1);
+                samediff::Threads::parallel_for(func, 0, uXShape0, 1);
             }
                 break;
 
@@ -732,7 +732,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     }
                 };
 
-                samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+                samediff::Threads::parallel_for(func, 0, len, 1);
             }
         }
     }

@@ -37,7 +37,7 @@ void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::
                 z[e] = func(f[e], s[e], t[e]);
         };
 
-        samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -51,7 +51,7 @@ void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -65,7 +65,7 @@ void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -115,7 +115,7 @@ void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T,
                 z[e] = func(f[e], s[e]);
         };
 
-        samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -128,7 +128,7 @@ void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T,
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -141,7 +141,7 @@ void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T,
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -180,7 +180,7 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray* target) {
                 z[e] = func(f[e]);
         };
 
-        samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -192,7 +192,7 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray* target) {
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -204,7 +204,7 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray* target) {
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -243,7 +243,7 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
                 z[e] = func(e, f[e]);
         };
 
-        samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -255,7 +255,7 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -267,7 +267,7 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -315,7 +315,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<T(N
                 z[e] = func((Nd4jLong) e, f[e], s[e]);
         };
 
-        samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
@@ -328,7 +328,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<T(N
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
             auto loop = PRAGMA_THREADS_FOR {
@@ -341,7 +341,7 @@ void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<T(N
                 }
             };
 
-            samediff::Threads::parallel_for(loop, nd4j::Environment::getInstance()->maxThreads(), 0, _length);
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }

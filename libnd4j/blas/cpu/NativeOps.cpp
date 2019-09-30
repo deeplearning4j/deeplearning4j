@@ -1395,7 +1395,7 @@ void pullRowsGeneric(void *vx,
         }
     };
 
-    samediff::Threads::parallel_for(func, _threads, 0, n, 1);
+    samediff::Threads::parallel_for(func, 0, n, 1, _threads);
 }
 
 void pullRows(Nd4jPointer *extraPointers,
@@ -1456,7 +1456,7 @@ void tearGeneric(void *vx,
         }
     };
 
-    samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, numTads, 1);
+    samediff::Threads::parallel_for(func,0, numTads);
 }
 
 void tear(Nd4jPointer *extraPointers,
@@ -1610,7 +1610,7 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
         }
     };
 
-    samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, N, 1);
+    samediff::Threads::parallel_for(func, 0, N);
 }
 
 void shuffle(Nd4jPointer *extras,

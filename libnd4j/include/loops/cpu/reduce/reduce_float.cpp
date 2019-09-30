@@ -71,7 +71,7 @@ namespace functions {
             }
             else {
                 X start = OpType::startingValue(x);
-                const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
+                int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
                 X intermediate[256];
 
                 for (int e = 0; e < maxThreads; e++)
@@ -85,7 +85,7 @@ namespace functions {
                         intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
                 };
 
-                samediff::Threads::parallel_for(func, maxThreads, 0, length);
+                maxThreads = samediff::Threads::parallel_for(func, 0, length, maxThreads);
 
                 for (int e = 0; e < maxThreads; e++)
                     start = OpType::update(start, intermediate[e], extraParams);
@@ -122,7 +122,7 @@ namespace functions {
                             intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
                     };
 
-                    samediff::Threads::parallel_for(func, maxThreads, 0, length);
+                    maxThreads = samediff::Threads::parallel_for(func, maxThreads, 0, length);
 
                     for (int e = 0; e < maxThreads; e++)
                         start = OpType::update(start, intermediate[e], extraParams);

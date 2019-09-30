@@ -86,7 +86,7 @@ namespace nd4j {
             }
         };
 
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, N);
+        samediff::Threads::parallel_for(func,  0, N);
     }
 
     template <typename T>
@@ -184,7 +184,7 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
             }
         };
 
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 4, flimit);
+        samediff::Threads::parallel_for(func,  4, flimit);
     }
 
     /**
@@ -206,7 +206,7 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
                 z[i] = static_cast<T>(static_cast<float>(x[i]));
             }
         };
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, N);
+        samediff::Threads::parallel_for(func,  0, N);
     };
 
     template void TypeCast::convertFromThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);

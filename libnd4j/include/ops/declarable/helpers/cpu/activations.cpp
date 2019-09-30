@@ -243,7 +243,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
                 }
             };
 
-            samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, numOfSubArrs);
+            samediff::Threads::parallel_for(func,0, numOfSubArrs);
         }
         else {
 
@@ -275,7 +275,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
                 }
             };
 
-            samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, numOfSubArrs);
+            samediff::Threads::parallel_for(func, 0, numOfSubArrs);
 
             delete []offsets;
         }
@@ -315,7 +315,7 @@ void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& a
         }
     };
 
-    samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, inputLen);
+    samediff::Threads::parallel_for(func, 0, inputLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

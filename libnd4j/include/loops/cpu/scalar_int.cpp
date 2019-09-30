@@ -79,7 +79,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, num_threads, 0, numTads, 1);
+                samediff::Threads::parallel_for(func, 0, numTads, 1, num_threads);
             }
             else {
                 auto func = PRAGMA_THREADS_FOR {
@@ -93,7 +93,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, num_threads, 0, numTads, 1);
+                samediff::Threads::parallel_for(func, 0, numTads, 1, num_threads);
             }
         }
 
@@ -176,7 +176,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+                samediff::Threads::parallel_for(f,  0, len, 1);
             }
             else {
 
@@ -192,7 +192,7 @@ namespace functions {
                     }
                 };
 
-                samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+                samediff::Threads::parallel_for(f,  0, len, 1);
             }
         }
 
@@ -220,7 +220,7 @@ namespace functions {
                             z[i] = OpType::op(x[i], scalar, extraParams);
                     };
 
-                    samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+                    samediff::Threads::parallel_for(f,  0, len, 1);
                 }
                 else {
 
@@ -230,7 +230,7 @@ namespace functions {
                             z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
                     };
 
-                    samediff::Threads::parallel_for(f, nd4j::Environment::getInstance()->maxThreads(), 0, len, 1);
+                    samediff::Threads::parallel_for(f,  0, len, 1);
                 }
             }
 

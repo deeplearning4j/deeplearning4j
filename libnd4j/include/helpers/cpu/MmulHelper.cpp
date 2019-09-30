@@ -131,7 +131,7 @@ static void usualGemv(const char aOrder, const int M, const int N, const double 
         }
     };
 
-        samediff::Threads::parallel_for(func, nd4j::Environment::getInstance()->maxThreads(), 0, M);
+        samediff::Threads::parallel_for(func, 0, M);
 }
 
 //////////////////////////////////////////////////////////////////////////////
