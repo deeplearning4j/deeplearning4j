@@ -23,6 +23,7 @@
 #include <helpers/TAD.h>
 #include<ops/declarable/helpers/ismax.h>
 #include <helpers/ConstantTadHelper.h>
+#include <execution/Threads.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -144,14 +145,8 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
 
         int span = (tads / num_threads) + 8;
 
-        PRAGMA_OMP_PARALLEL_THREADS(num_threads)
-        {
-            int tid = omp_get_thread_num();
-            int start = span * tid;
-            int end = span * (tid + 1);
-            if (end > tads) end = tads;
-
-            for (int r = start; r < end; r++) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto r = start; r < stop; r += increment) {
                     auto rX = const_cast<NDArray*>(input)->bufferAsT<X>() + tadOffsets[r];
                     auto rZ = output->bufferAsT<Z>() + zOfsets[r];
 
@@ -198,7 +193,9 @@ static void ismax_(const NDArray* input, NDArray* output, const std::vector<int>
                         }
                     }
             }
-        }
+        };
+
+        samediff::Threads::parallel_for(func, 0, tads);
     }
 }
 

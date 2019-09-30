@@ -2782,8 +2782,7 @@ void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
 
         int numThreads = omp_get_max_threads();
 
-        PRAGMA_OMP_PARALLEL_THREADS(numThreads)
-        {
+        auto func = PRAGMA_THREADS_DO {
             for (int i = 0; i < numOfSubArrs; ++i) {
 
                 int threadIndex = omp_get_thread_num();
@@ -2829,7 +2828,9 @@ void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
                         continue;
                 }
             }
-        }
+        };
+
+        samediff::Threads::parallel_do(func, numThreads);
     } catch (std::exception &e) {
         nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
         nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

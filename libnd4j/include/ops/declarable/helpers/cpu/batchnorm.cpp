@@ -22,6 +22,7 @@
 #include<ops/declarable/helpers/batchnorm.h>
 #include <helpers/ShapeUtils.h>
 #include <OmpLaunchHelper.h>
+#include <execution/Threads.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -69,9 +70,8 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
 
     if(beta != nullptr) {
         const T* betaBuff  = beta->bufferAsT<T>();
-        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-        {
-            const auto threadNum = omp_get_thread_num();
+        auto func = PRAGMA_THREADS_DO {
+            const auto threadNum = thread_id;
             Nd4jLong* inOffsets = new Nd4jLong[step];
             Nd4jLong* memBuff = new Nd4jLong[2 * inShapeInfo[0]];
 
@@ -96,17 +96,17 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
             }
             delete []inOffsets;
             delete []memBuff;
-        }
+        };
+
+        samediff::Threads::parallel_do(func, info._numThreads);
     }
     else {
-        PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-        {
-            const auto threadNum = omp_get_thread_num();
+        auto func = PRAGMA_THREADS_DO {
+            const auto threadNum = thread_id;
             Nd4jLong* inOffsets = new Nd4jLong[step];
             Nd4jLong* memBuff = new Nd4jLong[2 * inShapeInfo[0]];
 
             for (int j = 0; j < lenSmall; ++j) {
-
                 const bool isOwner = j < info._numThreads ? threadNum == j : threadNum == j % info._numThreads;
                 if (!isOwner) continue;
 
@@ -126,7 +126,9 @@ static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray*
             }
             delete []inOffsets;
             delete []memBuff;
-        }
+        };
+
+        samediff::Threads::parallel_do(func, info._numThreads);
     }
 }
 

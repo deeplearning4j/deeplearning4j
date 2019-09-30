@@ -25,7 +25,7 @@
 
 
 namespace samediff {
-    bool Threads::parallel_for(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment, uint32_t numThreads) {
+    int Threads::parallel_for(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment, uint32_t numThreads) {
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
         if (ticket.acquired()) {
             // if we got our threads - we'll run our jobs here
@@ -46,18 +46,18 @@ namespace samediff {
             ticket.waitAndRelease();
 
             // we tell that parallelism request succeeded
-            return true;
+            return numThreads;
         } else {
             nd4j_printf("Running one thread\n","");
             // if there were no threads available - we'll execute function right within current thread
             function(0, start, stop, increment);
 
             // we tell that parallelism request declined
-            return false;
+            return 1;
         }
     }
 
-    bool Threads::parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads) {
+    int Threads::parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads) {
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
         if (ticket.acquired()) {
 
@@ -66,19 +66,19 @@ namespace samediff {
             }
 
             // we tell that parallelism request succeeded
-            return true;
+            return numThreads;
         } else {
             nd4j_printf("Running one thread\n","");
             // if there were no threads available - we'll execute function right within current thread
             function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
 
             // we tell that parallelism request declined
-            return false;
+            return 1;
         }
     }
 
 
-    bool Threads::parallel_for(FUNC_3D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t start_z, uint64_t stop_z, uint64_t inc_z, uint64_t numThreads) {
+    int Threads::parallel_for(FUNC_3D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t start_z, uint64_t stop_z, uint64_t inc_z, uint64_t numThreads) {
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
         if (ticket.acquired()) {
 
@@ -87,14 +87,21 @@ namespace samediff {
             }
 
             // we tell that parallelism request succeeded
-            return true;
+            return numThreads;
         } else {
             nd4j_printf("Running one thread\n","");
             // if there were no threads available - we'll execute function right within current thread
             function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y, start_z, stop_z, inc_z);
 
             // we tell that parallelism request declined
-            return false;
+            return 1;
         }
+    }
+
+    int parallel_do(FUNC_DO function, uint64_t numThreads) {
+        // TODO: to be implemented
+        function(0);
+
+        return 1;
     }
 }

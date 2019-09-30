@@ -238,43 +238,32 @@ namespace functions {
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
 
                 auto startingVal = OpType::startingValue(x);
-                nd4j::OmpLaunchHelper info(length);
+
+                auto maxThreads = nd4j::math::nd4j_min(nd4j::Environment::getInstance()->maxThreads(), 64);
+                Z intermediatery[64];
 
                 if (xEws == 1) {
-
-                    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                    {
-                        auto local = OpType::startingValue(x);
-                        auto threadNum = omp_get_thread_num();
-                        auto threadOffset = info.getThreadOffset(threadNum);
-                        auto xi = x + threadOffset;
-                        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
-                        for (Nd4jLong i = 0; i < ulen; i++) {
-                            local = OpType::update(local, OpType::op(xi[i], extraParams), extraParams);
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto i = start; i < stop; i += increment) {
+                            intermediatery[thread_id] = OpType::update(intermediatery[thread_id], OpType::op(x[i], extraParams), extraParams);
                         }
+                    };
 
-                        PRAGMA_OMP_CRITICAL
-                        startingVal = OpType::update(startingVal, local, extraParams);
-                    }
+                    auto actual_threads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+                    for (int e = 0; e < actual_threads; e++)
+                        startingVal = OpType::update(startingVal, intermediatery[e], extraParams);
+
+                } else {
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto i = start; i < stop; i += increment)
+                            intermediatery[thread_id] = OpType::update(intermediatery[thread_id], OpType::op(x[i * xEws], extraParams), extraParams);
+                    };
+
+                    auto actual_threads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+                    for (int e = 0; e < actual_threads; e++)
+                        startingVal = OpType::update(startingVal, intermediatery[e], extraParams);
                 }
-                else {
 
-                    PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                    {
-                        auto local = OpType::startingValue(x);
-                        auto threadNum = omp_get_thread_num();
-                        auto threadOffset = info.getThreadOffset(threadNum);
-                        auto xi = x + xEws*threadOffset;
-                        auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
-                        for (Nd4jLong i = 0; i < ulen; i++)
-                            local = OpType::update(local, OpType::op(xi[i*xEws], extraParams), extraParams);
-
-                        PRAGMA_OMP_CRITICAL
-                        startingVal = OpType::update(startingVal, local, extraParams);
-                    }
-                }
                 return OpType::postProcess(startingVal, length, extraParams);
             }
 
