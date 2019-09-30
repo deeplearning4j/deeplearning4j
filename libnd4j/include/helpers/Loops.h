@@ -644,16 +644,19 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 auto uXShape1 = static_cast<uint>(xShape[1]);
                 auto uXShape2 = static_cast<uint>(xShape[2]);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 2)
-                for (uint i0 = 0; i0 < uXShape0; ++i0)
-                    for (uint i1 = 0; i1 < uXShape1; ++i1) {
+                //PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 2)
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    for (uint i0 = start_x; i0 < stop_x; i0 += inc_x)
+                        for (uint i1 = start_y; i1 < stop_y; i1 += inc_y) {
+                            auto z0 = i0 * zStride[0] + i1 * zStride[1];
+                            auto x0 = i0 * xStride[0] + i1 * xStride[1];
 
-                        auto z0 = i0 * zStride[0] + i1 * zStride[1];
-                        auto x0 = i0 * xStride[0] + i1 * xStride[1];
+                            for (uint i2 = 0; i2 < uXShape2; ++i2)
+                                z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
+                        }
+                };
 
-                        for (uint i2 = 0; i2 < uXShape2; ++i2)
-                            z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
-                    }
+                samediff::Threads::parallel_for(func, 0, uXShape0, 1, 0, uXShape1, 1);
             }
                 break;
 
@@ -664,17 +667,19 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 auto uXShape2 = static_cast<uint>(xShape[2]);
                 auto uXShape3 = static_cast<uint>(xShape[3]);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 2)
-                for (uint i0 = 0; i0 < uXShape0; ++i0)
-                    for (uint i1 = 0; i1 < uXShape1; ++i1)
-                        for (uint i2 = 0; i2 < uXShape2; ++i2) {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    for (uint i0 = start_x; i0 < stop_x; i0 += inc_x)
+                        for (uint i1 = start_y; i1 < stop_y; i1 += inc_y)
+                            for (uint i2 = start_z; i2 < stop_z; i2 += inc_z) {
+                                auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
+                                auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
 
-                            auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
-                            auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
+                                for (uint i3 = 0; i3 < uXShape3; ++i3)
+                                    z[z0 + i3 * zStride[3]] = OpType::op(x[x0 + i3 * xStride[3]], extraParams);
+                            }
+                };
 
-                            for (uint i3 = 0; i3 < uXShape3; ++i3)
-                                z[z0 + i3 * zStride[3]] = OpType::op(x[x0 + i3 * xStride[3]], extraParams);
-                        }
+                samediff::Threads::parallel_for(func, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
             }
                 break;
 
@@ -686,24 +691,27 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 auto uXShape3 = static_cast<uint>(xShape[3]);
                 auto uXShape4 = static_cast<uint>(xShape[4]);
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 3)
-                for (uint i0 = 0; i0 < uXShape0; ++i0)
-                    for (uint i1 = 0; i1 < uXShape1; ++i1)
-                        for (uint i2 = 0; i2 < uXShape2; ++i2) {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    for (uint i0 = start_x; i0 < stop_x; i0 += inc_x)
+                        for (uint i1 = start_y; i1 < stop_y; i1 += inc_y)
+                            for (uint i2 = start_z; i2 < stop_z; i2 += inc_z) {
 
-                            auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
-                            auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
+                                auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
+                                auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
 
-                            for (uint i3 = 0; i3 < uXShape3; ++i3) {
+                                for (uint i3 = 0; i3 < uXShape3; ++i3) {
 
-                                auto z1 = z0 + i3 * zStride[3];
-                                auto x1 = x0 + i3 * xStride[3];
+                                    auto z1 = z0 + i3 * zStride[3];
+                                    auto x1 = x0 + i3 * xStride[3];
 
-                                for (uint i4 = 0; i4 < uXShape4; ++i4)
-                                    z[z1 + i4 * zStride[4]] = OpType::op(x[x1 + i4 * xStride[4]], extraParams);
+                                    for (uint i4 = 0; i4 < uXShape4; ++i4)
+                                        z[z1 + i4 * zStride[4]] = OpType::op(x[x1 + i4 * xStride[4]], extraParams);
 
+                                }
                             }
-                        }
+                };
+
+                samediff::Threads::parallel_for(func, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
             }
                 break;
 
@@ -742,7 +750,6 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         // both tads have same shape, however strides and ews may differ
 
         Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)), param2(extraParameters ? extraParameters[0] : OpType::startingValue(x));
-        Z extraParams[3] = {param0, param1, param2};
 
         const Nd4jLong xLen = shape::length(xShapeInfo);
         const Nd4jLong yLen = shape::length(yShapeInfo);
@@ -793,184 +800,212 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::EWS1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint i = 0; i < zLen; ++i) {
+                auto func = PRAGMA_THREADS_FOR {
+                    Z extraParams[3];
+                    for (auto i = start; i < stop; i += increment) {
+                        extraParams[0] = param0;
+                        extraParams[1] = param1;
+                        extraParams[2] = param2;
 
-                    extraParams[0] = param0;
-                    extraParams[1] = param1;
-                    extraParams[2] = param2;
+                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+                        auto s = OpType::startingValue(xTad);
 
-                    const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-                    const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-                    auto start      = OpType::startingValue(xTad);
+                        for (uint j = 0; j < tadLen; ++j)
+                            s = OpType::update(s, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
 
-                    for (uint j = 0; j < tadLen; ++j)
-                        start = OpType::update(start, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
+                        z[i] = OpType::postProcess(s, tadLen, extraParams);
+                    }
+                };
 
-                    z[i] = OpType::postProcess(start, tadLen, extraParams);
-                }
+                samediff::Threads::parallel_for(func, 0, zLen);
             }
                 break;
 
             //*********************************************//
             case LoopKind::EWSNONZERO: {
 
-               PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint i = 0; i < zLen; ++i) {
+                auto func = PRAGMA_THREADS_FOR {
+                    Z extraParams[3];
+                    for (auto i = start; i < stop; i += increment) {
 
-                    extraParams[0] = param0;
-                    extraParams[1] = param1;
-                    extraParams[2] = param2;
+                        extraParams[0] = param0;
+                        extraParams[1] = param1;
+                        extraParams[2] = param2;
 
-                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
-                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
-                          auto start = OpType::startingValue(xTad);
+                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+                        auto s = OpType::startingValue(xTad);
 
-                    for (uint j = 0; j < tadLen; ++j)
-                        start = OpType::update(start, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
+                        for (uint j = 0; j < tadLen; ++j)
+                            s = OpType::update(s, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams),
+                                                   extraParams);
 
-                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                }
+                        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
+                    }
+                };
+
+                samediff::Threads::parallel_for(func, 0, zLen);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint i = 0; i < zLen; i++) {
+                auto func = PRAGMA_THREADS_FOR {
+                    Z extraParams[3];
+                    for (auto i = start; i < stop; i += increment) {
 
-                    extraParams[0] = param0;
-                    extraParams[1] = param1;
-                    extraParams[2] = param2;
+                        extraParams[0] = param0;
+                        extraParams[1] = param1;
+                        extraParams[2] = param2;
 
-                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
-                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
-                          auto start = OpType::startingValue(xTad);
+                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+                        auto s = OpType::startingValue(xTad);
 
-                    for (uint i0 = 0; i0 < tadLen; ++i0) {
-                        const auto xTadOffset = i0 * xTadStride[0];
-                        const auto yTadOffset = i0 * yTadStride[0];
-                        start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                        for (uint i0 = 0; i0 < tadLen; ++i0) {
+                            const auto xTadOffset = i0 * xTadStride[0];
+                            const auto yTadOffset = i0 * yTadStride[0];
+                            start = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                        }
+                        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
-                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, zLen);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK2: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint i = 0; i < zLen; i++) {
+                auto func = PRAGMA_THREADS_FOR {
+                    Z extraParams[3];
+                    for (auto i = start; i < stop; i += increment) {
 
-                    extraParams[0] = param0;
-                    extraParams[1] = param1;
-                    extraParams[2] = param2;
+                        extraParams[0] = param0;
+                        extraParams[1] = param1;
+                        extraParams[2] = param2;
 
-                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
-                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
-                          auto start = OpType::startingValue(xTad);
+                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+                        auto s = OpType::startingValue(xTad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                            const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1];
-                            const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1];
-                            start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                        for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                            for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                                const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1];
+                                const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1];
+                                s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            }
                         }
+                        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
-                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, zLen);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK3: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint i = 0; i < zLen; i++) {
+                auto func = PRAGMA_THREADS_FOR {
+                    Z extraParams[3];
+                    for (auto i = start; i < stop; i += increment) {
 
-                    extraParams[0] = param0;
-                    extraParams[1] = param1;
-                    extraParams[2] = param2;
+                        extraParams[0] = param0;
+                        extraParams[1] = param1;
+                        extraParams[2] = param2;
 
-                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
-                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
-                          auto start = OpType::startingValue(xTad);
+                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+                        auto s = OpType::startingValue(xTad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                            for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                                const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2];
-                                const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2];
-                                start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                        for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                            for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                                for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                                    const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2];
+                                    const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2];
+                                    s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                }
                             }
                         }
+                        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
-                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, zLen);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK4: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint i = 0; i < zLen; i++) {
+                auto func = PRAGMA_THREADS_FOR {
+                    Z extraParams[3];
+                    for (auto i = start; i < stop; i += increment) {
 
-                    extraParams[0] = param0;
-                    extraParams[1] = param1;
-                    extraParams[2] = param2;
+                        extraParams[0] = param0;
+                        extraParams[1] = param1;
+                        extraParams[2] = param2;
 
-                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
-                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
-                          auto start = OpType::startingValue(xTad);
+                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+                        auto s = OpType::startingValue(xTad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                            for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                                for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
-                                    const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3];
-                                    const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3];
-                                    start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                        for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                            for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                                for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                                    for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
+                                        const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3];
+                                        const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3];
+                                        s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                    }
                                 }
                             }
                         }
+                        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
-                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, zLen);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK5: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint i = 0; i < zLen; i++) {
+                auto func = PRAGMA_THREADS_FOR {
+                    Z extraParams[3];
+                    for (auto i = start; i < stop; i += increment) {
 
-                    extraParams[0] = param0;
-                    extraParams[1] = param1;
-                    extraParams[2] = param2;
+                        extraParams[0] = param0;
+                        extraParams[1] = param1;
+                        extraParams[2] = param2;
 
-                    const auto xTad  = xTadOffsets ? x + xTadOffsets[i] : x;
-                    const auto yTad  = yTadOffsets ? y + yTadOffsets[i] : y;
-                          auto start = OpType::startingValue(xTad);
+                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+                        auto s = OpType::startingValue(xTad);
 
-                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                            for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                                for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
-                                    for (uint i4 = 0; i4 < tadShape[4]; ++i4) {
-                                        const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3] + i4 * xTadStride[4];
-                                        const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3] + i4 * yTadStride[4];
-                                        start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                        for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                            for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                                for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                                    for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
+                                        for (uint i4 = 0; i4 < tadShape[4]; ++i4) {
+                                            const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3] + i4 * xTadStride[4];
+                                            const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3] + i4 * yTadStride[4];
+                                            s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                        }
                                     }
                                 }
                             }
                         }
+                        z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
-                    z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, zLen);
             }
                 break;
 
@@ -982,49 +1017,57 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                 if(shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                    for (uint i = 0; i < zLen; ++i) {
+                    auto func = PRAGMA_THREADS_FOR {
+                        Z extraParams[3];
+                        for (auto i = start; i < stop; i += increment) {
 
-                        extraParams[0] = param0;
-                        extraParams[1] = param1;
-                        extraParams[2] = param2;
+                            extraParams[0] = param0;
+                            extraParams[1] = param1;
+                            extraParams[2] = param2;
 
-                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-                        auto start      = OpType::startingValue(xTad);
+                            const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                            const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+                            auto s = OpType::startingValue(xTad);
 
-                        for (uint j = 0; j < tadLen; ++j) {
-                            const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
-                            start = OpType::update(start, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
+                            for (uint j = 0; j < tadLen; ++j) {
+                                const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
+                                s = OpType::update(s, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
+                            }
+
+                            z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
                         }
+                    };
 
-                        z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                    }
+                    samediff::Threads::parallel_for(func, 0, zLen);
                 }
                 else {
 
                     uint castYTadShapeInfo[MAX_RANK];
                     const bool canCastYTad = nd4j::DataTypeUtils::castShapeInfo<uint>(yTadShapeInfo, castYTadShapeInfo);
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                    for (uint i = 0; i < zLen; ++i) {
+                    auto func = PRAGMA_THREADS_FOR {
+                        Z extraParams[3];
+                        for (auto i = start; i < stop; i += increment) {
 
-                        extraParams[0] = param0;
-                        extraParams[1] = param1;
-                        extraParams[2] = param2;
+                            extraParams[0] = param0;
+                            extraParams[1] = param1;
+                            extraParams[2] = param2;
 
-                        const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
-                        const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
-                        auto start      = OpType::startingValue(xTad);
+                            const auto xTad = xTadOffsets ? x + xTadOffsets[i] : x;
+                            const auto yTad = yTadOffsets ? y + yTadOffsets[i] : y;
+                            auto s = OpType::startingValue(xTad);
 
-                        for (uint j = 0; j < tadLen; ++j) {
-                            const auto xTadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
-                            const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, canCastYTad);
-                            start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            for (uint j = 0; j < tadLen; ++j) {
+                                const auto xTadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
+                                const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, canCastYTad);
+                                s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            }
+
+                            z[i * zEws] = OpType::postProcess(s, tadLen, extraParams);
                         }
+                    };
 
-                        z[i * zEws] = OpType::postProcess(start, tadLen, extraParams);
-                    }
+                    samediff::Threads::parallel_for(func, 0, zLen);
                 }
             }
         }
@@ -1043,7 +1086,6 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         // both tads have same shape, however strides and ews may differ
 
         Z param0(OpType::startingValue(x)), param1(OpType::startingValue(x)), param2(extraParameters ? extraParameters[0] : OpType::startingValue(x));
-        Z extraParams[3] = {param0, param1, param2};
 
         const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXYZ(xTadShapeInfo, yTadShapeInfo, zShapeInfo);
 
@@ -1070,205 +1112,233 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::EWS1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint ix = 0; ix < numXTads; ++ix) {
-                    for (uint iy = 0; iy < numYTads; ++iy) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Z extraParams[3];
+                    for (auto ix = start_x; ix < stop_x; ix += inc_x) {
+                        for (auto iy = start_y; iy < stop_y; iy += inc_y) {
 
-                        extraParams[0] = param0;
-                        extraParams[1] = param1;
-                        extraParams[2] = param2;
+                            extraParams[0] = param0;
+                            extraParams[1] = param1;
+                            extraParams[2] = param2;
 
-                        const auto xTad  = x + xTadOffsets[ix];
-                        const auto yTad  = y + yTadOffsets[iy];
-                        const auto zInd  = ix * numYTads + iy;
-                        auto start = startVal;
+                            const auto xTad = x + xTadOffsets[ix];
+                            const auto yTad = y + yTadOffsets[iy];
+                            const auto zInd = ix * numYTads + iy;
+                            auto start = startVal;
 
-                        for (uint j = 0; j < tadLen; ++j)
-                            start = OpType::update(start, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
+                            for (uint j = 0; j < tadLen; ++j)
+                                start = OpType::update(start, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
 
-                        z[zInd] = OpType::postProcess(start, tadLen, extraParams);
+                            z[zInd] = OpType::postProcess(start, tadLen, extraParams);
+                        }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, numXTads, 1, 0, numYTads, 1);
             }
                 break;
 
             //*********************************************//
             case LoopKind::EWSNONZERO: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint ix = 0; ix < numXTads; ++ix) {
-                    for (uint iy = 0; iy < numYTads; ++iy) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Z extraParams[3];
+                    for (auto ix = start_x; ix < stop_x; ix += inc_x) {
+                        for (auto iy = start_y; iy < stop_y; iy += inc_y) {
 
-                        extraParams[0] = param0;
-                        extraParams[1] = param1;
-                        extraParams[2] = param2;
+                            extraParams[0] = param0;
+                            extraParams[1] = param1;
+                            extraParams[2] = param2;
 
-                        const auto xTad  = x + xTadOffsets[ix];
-                        const auto yTad  = y + yTadOffsets[iy];
-                        const auto zInd  = ix * numYTads + iy;
-                              auto start = startVal;
+                            const auto xTad = x + xTadOffsets[ix];
+                            const auto yTad = y + yTadOffsets[iy];
+                            const auto zInd = ix * numYTads + iy;
+                            auto start = startVal;
 
-                        for (uint j = 0; j < tadLen; ++j)
-                            start = OpType::update(start, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
+                            for (uint j = 0; j < tadLen; ++j)
+                                start = OpType::update(start, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
 
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
+                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
+                        }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, numXTads, 1, 0, numYTads, 1);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK1: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint ix = 0; ix < numXTads; ++ix) {
-                    for (uint iy = 0; iy < numYTads; ++iy) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Z extraParams[3];
+                    for (auto ix = start_x; ix < stop_x; ix += inc_x) {
+                        for (auto iy = start_y; iy < stop_y; iy += inc_y) {
 
-                        extraParams[0] = param0;
-                        extraParams[1] = param1;
-                        extraParams[2] = param2;
+                            extraParams[0] = param0;
+                            extraParams[1] = param1;
+                            extraParams[2] = param2;
 
-                        const auto xTad  = x + xTadOffsets[ix];
-                        const auto yTad  = y + yTadOffsets[iy];
-                        const auto zInd  = ix * numYTads + iy;
-                              auto start = startVal;
+                            const auto xTad = x + xTadOffsets[ix];
+                            const auto yTad = y + yTadOffsets[iy];
+                            const auto zInd = ix * numYTads + iy;
+                            auto start = startVal;
 
-                        for (uint i0 = 0; i0 < tadLen; ++i0) {
-                            const auto xTadOffset = i0 * xTadStride[0];
-                            const auto yTadOffset = i0 * yTadStride[0];
-                            start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            for (uint i0 = 0; i0 < tadLen; ++i0) {
+                                const auto xTadOffset = i0 * xTadStride[0];
+                                const auto yTadOffset = i0 * yTadStride[0];
+                                start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            }
+                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                         }
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, numXTads, 1, 0, numYTads, 1);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK2: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint ix = 0; ix < numXTads; ++ix) {
-                    for (uint iy = 0; iy < numYTads; ++iy) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Z extraParams[3];
+                    for (auto ix = start_x; ix < stop_x; ix += inc_x) {
+                        for (auto iy = start_y; iy < stop_y; iy += inc_y) {
 
-                        extraParams[0] = param0;
-                        extraParams[1] = param1;
-                        extraParams[2] = param2;
+                            extraParams[0] = param0;
+                            extraParams[1] = param1;
+                            extraParams[2] = param2;
 
-                        const auto xTad  = x + xTadOffsets[ix];
-                        const auto yTad  = y + yTadOffsets[iy];
-                        const auto zInd  = ix * numYTads + iy;
-                              auto start = startVal;
+                            const auto xTad = x + xTadOffsets[ix];
+                            const auto yTad = y + yTadOffsets[iy];
+                            const auto zInd = ix * numYTads + iy;
+                            auto start = startVal;
 
-                        for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                            for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                                const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1];
-                                const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1];
-                                start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                                for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                                    const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1];
+                                    const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1];
+                                    start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                }
                             }
+                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                         }
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, numXTads, 1, 0, numYTads, 1);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK3: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint ix = 0; ix < numXTads; ++ix) {
-                    for (uint iy = 0; iy < numYTads; ++iy) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Z extraParams[3];
+                    for (auto ix = start_x; ix < stop_x; ix += inc_x) {
+                        for (auto iy = start_y; iy < stop_y; iy += inc_y) {
 
-                        extraParams[0] = param0;
-                        extraParams[1] = param1;
-                        extraParams[2] = param2;
+                            extraParams[0] = param0;
+                            extraParams[1] = param1;
+                            extraParams[2] = param2;
 
-                        const auto xTad  = x + xTadOffsets[ix];
-                        const auto yTad  = y + yTadOffsets[iy];
-                        const auto zInd  = ix * numYTads + iy;
-                              auto start = startVal;
+                            const auto xTad = x + xTadOffsets[ix];
+                            const auto yTad = y + yTadOffsets[iy];
+                            const auto zInd = ix * numYTads + iy;
+                            auto start = startVal;
 
-                        for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                            for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                                for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                                    const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2];
-                                    const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2];
-                                    start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                                for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                                    for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                                        const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2];
+                                        const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2];
+                                        start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                    }
                                 }
                             }
+                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                         }
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, numXTads, 1, 0, numYTads, 1);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK4: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint ix = 0; ix < numXTads; ++ix) {
-                    for (uint iy = 0; iy < numYTads; ++iy) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Z extraParams[3];
+                    for (auto ix = start_x; ix < stop_x; ix += inc_x) {
+                        for (auto iy = start_y; iy < stop_y; iy += inc_y) {
 
-                        extraParams[0] = param0;
-                        extraParams[1] = param1;
-                        extraParams[2] = param2;
+                            extraParams[0] = param0;
+                            extraParams[1] = param1;
+                            extraParams[2] = param2;
 
-                        const auto xTad  = x + xTadOffsets[ix];
-                        const auto yTad  = y + yTadOffsets[iy];
-                        const auto zInd  = ix * numYTads + iy;
-                              auto start = startVal;
+                            const auto xTad = x + xTadOffsets[ix];
+                            const auto yTad = y + yTadOffsets[iy];
+                            const auto zInd = ix * numYTads + iy;
+                            auto start = startVal;
 
-                        for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                            for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                                for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                                    for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
-                                        const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3];
-                                        const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3];
-                                        start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                                for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                                    for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                                        for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
+                                            const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3];
+                                            const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3];
+                                            start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                        }
                                     }
                                 }
                             }
+                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                         }
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, numXTads, 1, 0, numYTads, 1);
             }
                 break;
 
             //*********************************************//
             case LoopKind::RANK5: {
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                for (uint ix = 0; ix < numXTads; ++ix) {
-                    for (uint iy = 0; iy < numYTads; ++iy) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Z extraParams[3];
+                    for (auto ix = start_x; ix < stop_x; ix += inc_x) {
+                        for (auto iy = start_y; iy < stop_y; iy += inc_y) {
 
-                        extraParams[0] = param0;
-                        extraParams[1] = param1;
-                        extraParams[2] = param2;
+                            extraParams[0] = param0;
+                            extraParams[1] = param1;
+                            extraParams[2] = param2;
 
-                        const auto xTad  = x + xTadOffsets[ix];
-                        const auto yTad  = y + yTadOffsets[iy];
-                        const auto zInd  = ix * numYTads + iy;
-                              auto start = startVal;
+                            const auto xTad = x + xTadOffsets[ix];
+                            const auto yTad = y + yTadOffsets[iy];
+                            const auto zInd = ix * numYTads + iy;
+                            auto start = startVal;
 
-                        for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                            for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                                for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                                    for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
-                                        for (uint i4 = 0; i4 < tadShape[4]; ++i4) {
-                                            const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3] + i4 * xTadStride[4];
-                                            const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3] + i4 * yTadStride[4];
-                                            start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                                for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                                    for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                                        for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
+                                            for (uint i4 = 0; i4 < tadShape[4]; ++i4) {
+                                                const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3] + i4 * xTadStride[4];
+                                                const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3] + i4 * yTadStride[4];
+                                                start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                            }
                                         }
                                     }
                                 }
                             }
+                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                         }
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, numXTads, 1, 0, numYTads, 1);
             }
                 break;
 
@@ -1280,54 +1350,66 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                 if(shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                    for (uint ix = 0; ix < numXTads; ++ix) {
-                        for (uint iy = 0; iy < numYTads; ++iy) {
+                    auto func = PRAGMA_THREADS_FOR_2D {
+                        Z extraParams[3];
+                        for (auto ix = start_x; ix < stop_x; ix += inc_x) {
+                            for (auto iy = start_y; iy < stop_y; iy += inc_y) {
 
-                            extraParams[0] = param0;
-                            extraParams[1] = param1;
-                            extraParams[2] = param2;
+                                extraParams[0] = param0;
+                                extraParams[1] = param1;
+                                extraParams[2] = param2;
 
-                            const auto xTad  = x + xTadOffsets[ix];
-                            const auto yTad  = y + yTadOffsets[iy];
-                            const auto zInd  = ix * numYTads + iy;
-                                  auto start = startVal;
+                                const auto xTad = x + xTadOffsets[ix];
+                                const auto yTad = y + yTadOffsets[iy];
+                                const auto zInd = ix * numYTads + iy;
+                                auto start = startVal;
 
-                            for (uint j = 0; j < tadLen; ++j) {
-                                const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
-                                start = OpType::update(start, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
+                                for (uint j = 0; j < tadLen; ++j) {
+                                    const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
+                                    start = OpType::update(start, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
+                                }
+                                z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                             }
-                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                         }
-                    }
+                    };
+
+                    samediff::Threads::parallel_for(func, 0, numXTads, 1, 0, numYTads, 1);
                 }
                 else {
 
                     uint castYTadShapeInfo[MAX_RANK];
                     const bool canCastYTad = nd4j::DataTypeUtils::castShapeInfo<uint>(yTadShapeInfo, castYTadShapeInfo);
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(2) num_threads(numThreads) OMP_IF(numThreads > 1) private(extraParams))
-                    for (uint ix = 0; ix < numXTads; ++ix) {
-                        for (uint iy = 0; iy < numYTads; ++iy) {
+                    auto func = PRAGMA_THREADS_FOR_2D {
+                        Z extraParams[3];
+                        for (auto ix = start_x; ix < stop_x; ix += inc_x) {
+                            for (auto iy = start_y; iy < stop_y; iy += inc_y) {
 
-                            extraParams[0] = param0;
-                            extraParams[1] = param1;
-                            extraParams[2] = param2;
+                                extraParams[0] = param0;
+                                extraParams[1] = param1;
+                                extraParams[2] = param2;
 
-                            const auto xTad  = x + xTadOffsets[ix];
-                            const auto yTad  = y + yTadOffsets[iy];
-                            const auto zInd  = ix * numYTads + iy;
-                                  auto start = startVal;
+                                const auto xTad = x + xTadOffsets[ix];
+                                const auto yTad = y + yTadOffsets[iy];
+                                const auto zInd = ix * numYTads + iy;
+                                auto start = startVal;
 
-                            for (uint j = 0; j < tadLen; ++j) {
-                                const auto xTadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
-                                const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, canCastYTad);
-                                start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                for (uint j = 0; j < tadLen; ++j) {
+                                    const auto xTadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo,
+                                                                               canCastXTad);
+                                    const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo,
+                                                                               canCastYTad);
+                                    start = OpType::update(start,
+                                                           OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams),
+                                                           extraParams);
+                                }
+
+                                z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                             }
-
-                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
                         }
-                    }
+                    };
+
+                    samediff::Threads::parallel_for(func, 0, numXTads, 1, 0, numYTads, 1);
                 }
             }
         }
