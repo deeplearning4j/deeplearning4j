@@ -45,8 +45,13 @@ class TrueBroadcastHelper {
 template <typename X, typename Y>
 class TrueBroadcastBoolHelper {
 
-        template <typename OpType>
-        static void exec(const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
+        #ifdef __CUDACC__
+            template <typename OpType>
+            static __host__ void execLauncher(dim3 launchDims, cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo);
+        #else
+            template <typename OpType>
+            static void exec(const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
+        #endif
 
     public:
 
@@ -57,8 +62,13 @@ class TrueBroadcastBoolHelper {
 template <typename X>
 class TrueBroadcastIntHelper {
 
-        template <typename OpType>
-        static void exec(const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
+        #ifdef __CUDACC__
+            template <typename OpType>
+            static __host__ void execLauncher(dim3 launchDims, cudaStream_t *stream, const void *vx, const Nd4jLong *xShapeInfo, const void *vy, const Nd4jLong *yShapeInfo, void *vz, const Nd4jLong *zShapeInfo);
+        #else
+            template <typename OpType>
+            static void exec(const NDArray& xArr, const NDArray& yArr, NDArray& zArr);
+        #endif
 
     public:
 
