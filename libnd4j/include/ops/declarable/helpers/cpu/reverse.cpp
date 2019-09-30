@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/reverse.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ResultSet.h>
+#include <execution/Threads.h>
 
 
 namespace nd4j    {
@@ -52,36 +53,36 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
             // two step phase here
             if (inArr == outArr) {
                 if (inEWS == 1) {
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < numOfElemsToReverse / 2; e++) {
-                        auto idx = sLength - e;
-                        swap(inArr, e, idx);
-//                        T tmp = inArr[e];
-//                        inArr[e] = inArr[idx];
-//                        inArr[idx] = tmp;
-                    }
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = start; e < stop; e += increment) {
+                            auto idx = sLength - e;
+                            swap(inArr, e, idx);
+                        }
+                    };
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
                 }
                 else if (inEWS > 1) {
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < numOfElemsToReverse / 2; e++) {
-                        auto idx1 = (sLength - e) * inEWS;
-                        Nd4jLong idx2 =  e * inEWS;
-//                        T tmp = inArr[idx2];
-//                        inArr[idx2] = inArr[idx1];
-//                        inArr[idx1] = tmp;
-                        swap(inArr, idx1, idx2);
-                    }
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = start; e < stop; e += increment) {
+                            auto idx1 = (sLength - e) * inEWS;
+                            Nd4jLong idx2 = e * inEWS;
+                            swap(inArr, idx1, idx2);
+                        }
+                    };
+
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
                 }
                 else {
 
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < numOfElemsToReverse / 2; e++) {
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = start; e < stop; e += increment) {
+                            auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
+                            auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer);
+                            swap(outArr, inOffset, outOffset);
+                        }
+                    };
 
-                        auto inOffset  = shape::getIndexOffset(e, inShapeBuffer);
-                        auto outOffset = shape::getIndexOffset(sLength - e, inShapeBuffer);
-                        //outArr[outOffset] = inArr[inOffset];
-                        swap(outArr, inOffset, outOffset);
-                    }
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse / 2);
                 }
             }
             else {
@@ -91,47 +92,57 @@ static void reverseArray(nd4j::LaunchContext * context, void *vinArr, Nd4jLong *
 
                 if (inEWS == 1 && outEWS == 1 && inOrder == outOrder) {
 
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < numOfElemsToReverse; e++)
-                        outArr[sLength - e] = inArr[e];
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (Nd4jLong e = start; e < stop; e += increment)
+                            outArr[sLength - e] = inArr[e];
+                    };
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
-                        PRAGMA_OMP_PARALLEL_FOR
-                        for (Nd4jLong e = numOfElemsToReverse; e < inLength; e++)
-                            outArr[e] = inArr[e];
+                        auto f2 = PRAGMA_THREADS_FOR {
+                            for (auto e = start; e < stop; e += increment)
+                                outArr[e] = inArr[e];
+                        };
+                        samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
                     }
                 }
                 else if (inEWS >= 1 && outEWS >= 1 && inOrder == outOrder) {
 
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < numOfElemsToReverse; e++)
-                        outArr[(sLength - e) * outEWS] = inArr[e * inEWS];
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = start; e < stop; e += increment)
+                            outArr[(sLength - e) * outEWS] = inArr[e * inEWS];
+                    };
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
-                        PRAGMA_OMP_PARALLEL_FOR
-                        for (Nd4jLong e = numOfElemsToReverse; e < inLength; e++)
-                            outArr[e * outEWS] = inArr[e * inEWS];
+                        auto f2 = PRAGMA_THREADS_FOR {
+                            for (auto e = start; e < stop; e += increment)
+                                outArr[e * outEWS] = inArr[e * inEWS];
+                        };
+                        samediff::Threads::parallel_for(func, numOfElemsToReverse, inLength);
                     }
                 }
                 else {
 
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < numOfElemsToReverse; e++) {
-
-                        auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
-                        auto outOffset = shape::getIndexOffset(sLength - e, outShapeBuffer);
-                        outArr[outOffset] = inArr[inOffset];
-                    }
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = start; e < stop; e += increment) {
+                            auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
+                            auto outOffset = shape::getIndexOffset(sLength - e, outShapeBuffer);
+                            outArr[outOffset] = inArr[inOffset];
+                        }
+                    };
+                    samediff::Threads::parallel_for(func, 0, numOfElemsToReverse);
 
                     if(inLength != numOfElemsToReverse) {
 
-                        PRAGMA_OMP_PARALLEL_FOR
-                        for (Nd4jLong e = numOfElemsToReverse; e < inLength; e++) {
-
-                            auto inOffset  = shape::getIndexOffset(e, inShapeBuffer);
-                            auto outOffset = shape::getIndexOffset(e, outShapeBuffer);
-                            outArr[outOffset] = inArr[inOffset];
-                        }
+                        auto f2 = PRAGMA_THREADS_FOR {
+                            for (auto e = start; e < stop; e += increment) {
+                                auto inOffset = shape::getIndexOffset(e, inShapeBuffer);
+                                auto outOffset = shape::getIndexOffset(e, outShapeBuffer);
+                                outArr[outOffset] = inArr[inOffset];
+                            }
+                        };
+                        samediff::Threads::parallel_for(f2, numOfElemsToReverse, inLength);
                     }
                 }
             }

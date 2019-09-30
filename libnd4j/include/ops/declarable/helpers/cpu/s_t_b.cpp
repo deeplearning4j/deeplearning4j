@@ -20,6 +20,7 @@
 //
 
 #include <ops/declarable/helpers/s_t_b.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -53,21 +54,22 @@ static void batchToSpace_(const NDArray& input, NDArray& output, const uint crop
     const uint iC = xShapeInfo[4];
 
     // loop through output array
-    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(4))
-    for (uint b = 0; b < bS; ++b) {
-        for (uint h = cropBottom; h < iH - cropTop; ++h) {
-            for (uint w = cropLeft; w < iW - cropRight; ++w) {
-                for (uint c = 0; c < iC; ++c) {
+    auto func = PRAGMA_THREADS_FOR_3D {
+        for (uint b = start_x; b < stop_x; b += inc_x) {
+            for (uint h = start_y; h < stop_y; h += inc_y) {
+                for (uint w = start_z; w < stop_z; w += inc_z) {
+                    for (uint c = 0; c < iC; ++c) {
+                        const Nd4jLong xOffset = b * xShapeInfo[5] + h * xShapeInfo[6] + w * xShapeInfo[7] + c * xShapeInfo[8];
+                        const Nd4jLong zOffset = b * zShapeInfo[5] + (h - cropBottom) * zShapeInfo[6] + (w - cropLeft) * zShapeInfo[7] + c * zShapeInfo[8];
 
-                    const Nd4jLong xOffset = b * xShapeInfo[5] + h * xShapeInfo[6] + w * xShapeInfo[7] + c * xShapeInfo[8];
-
-                    const Nd4jLong zOffset = b * zShapeInfo[5] + (h - cropBottom) * zShapeInfo[6] + (w - cropLeft) * zShapeInfo[7] + c * zShapeInfo[8];
-
-                    z[zOffset] = x[xOffset];
+                        z[zOffset] = x[xOffset];
+                    }
                 }
             }
         }
-    }
+    };
+
+    samediff::Threads::parallel_for(func, 0, bS, 1, cropBottom, iH - cropTop, 1, cropLeft, iW - cropRight, 1);
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchToSpace_, (const NDArray& input, NDArray& output, const uint cropBottom, const uint cropTop, const uint cropLeft, const uint cropRight), LIBND4J_TYPES);
@@ -109,23 +111,24 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
     const int rank = input.rankOf();
     const Nd4jLong zLen = output.lengthOf();
 
-    std::vector<Nd4jLong> coords(rank);
-
     // loop through input array
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
+    auto func = PRAGMA_THREADS_FOR {
+        Nd4jLong coords[MAX_RANK];
+        for (auto i = start; i < stop; i += increment) {
 
-    for (Nd4jLong i = 0; i < zLen; ++i) {
+            shape::index2coords(i, output.getShapeInfo(), coords);
 
-        shape::index2coords(i, output.getShapeInfo(), coords.data());
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
 
-        const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
+            // evaluate spatial coordinates for x
+            for (uint j = 1; j <= numOfSpatialDims; ++j)
+                coords[j] += crop.e<uint>(j - 1, 0);       // add crop left
 
-        // evaluate spatial coordinates for x
-        for(uint j = 1; j <= numOfSpatialDims; ++j)
-            coords[j] += crop.e<uint>(j - 1, 0);       // add crop left
+            z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords)];
+        }
+    };
 
-        z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords.data())];
-    }
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_, (const NDArray& input, const NDArray& crop, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);
@@ -212,24 +215,26 @@ static void spaceToBatch_(const NDArray& input, NDArray& output, const uint padB
     const uint iC = zShapeInfo[4];
 
     // loop through output array
-    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(4))
-    for (uint b = 0; b < bS; ++b) {
-        for (uint h = 0; h < oH; ++h) {
-            for (uint w = 0; w < oW; ++w) {
-                for (uint c = 0; c < iC; ++c) {
+    auto func = PRAGMA_THREADS_FOR_2D {
+        for (uint b = start_x; b < stop_x; b += inc_x) {
+            for (uint h = start_y; h < stop_y; h += inc_y) {
+                for (uint w = 0; w < oW; ++w) {
+                    for (uint c = 0; c < iC; ++c) {
 
-                    const Nd4jLong zOffset = b * zShapeInfo[5] + h * zShapeInfo[6] + w * zShapeInfo[7] + c * zShapeInfo[8];
+                        const Nd4jLong zOffset = b * zShapeInfo[5] + h * zShapeInfo[6] + w * zShapeInfo[7] + c * zShapeInfo[8];
 
-                    if(h >= padBottom && h < oH - padTop && w >= padLeft && w < oW - padRight) {
-                        const Nd4jLong xOffset = b * xShapeInfo[5] + (h - padBottom) * xShapeInfo[6] + (w - padLeft) * xShapeInfo[7] + c * xShapeInfo[8];
-                        z[zOffset] = x[xOffset];
+                        if (h >= padBottom && h < oH - padTop && w >= padLeft && w < oW - padRight) {
+                            const Nd4jLong xOffset = b * xShapeInfo[5] + (h - padBottom) * xShapeInfo[6] + (w - padLeft) * xShapeInfo[7] + c * xShapeInfo[8];
+                            z[zOffset] = x[xOffset];
+                        } else
+                            z[zOffset] = 0.f;
                     }
-                    else
-                        z[zOffset] = 0.f;
                 }
             }
         }
-    }
+    };
+
+    samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
 }
 
 BUILD_SINGLE_TEMPLATE(template void spaceToBatch_, (const NDArray& input, NDArray& output, const uint padBottom, const uint padTop, const uint padLeft, const uint padRight), LIBND4J_TYPES);
@@ -292,36 +297,37 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
     const int rank = input.rankOf();
     const Nd4jLong zLen = output.lengthOf();
 
-    std::vector<Nd4jLong> coords(rank);
-
     // loop through output array
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
-    for (Nd4jLong i = 0; i < zLen; ++i) {
+    auto func = PRAGMA_THREADS_FOR {
+        Nd4jLong coords[MAX_RANK];
+        for (auto i = start; i < stop; i += increment) {
+            shape::index2coords(i, output.getShapeInfo(), coords);
 
-        shape::index2coords(i, output.getShapeInfo(), coords.data());
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
 
-        const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
+            bool within = true;
 
-        bool within = true;
+            for (uint j = 1; j <= numOfSpatialDims; ++j) {
 
-        for(uint j = 1; j <= numOfSpatialDims; ++j) {
+                const auto padLeft = padding.e<uint>(j - 1, 0);
+                const auto padRight = padding.e<uint>(j - 1, 1);
 
-            const auto padLeft  = padding.e<uint>(j - 1, 0);
-            const auto padRight = padding.e<uint>(j - 1, 1);
+                within &= (coords[j] >= padLeft && coords[j] < output.sizeAt(j) - padRight);
 
-            within &= (coords[j] >= padLeft && coords[j] < output.sizeAt(j) - padRight);
+                if (!within)
+                    break;
 
-            if(!within)
-                break;
+                coords[j] -= padLeft;       // get coordinates for x
+            }
 
-            coords[j] -= padLeft;       // get coordinates for x
+            if (within)
+                z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords)];
+            else
+                z[zOffset] = 0.f;
         }
+    };
 
-        if(within)
-            z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords.data())];
-        else
-            z[zOffset] = 0.f;
-    }
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
 
 BUILD_SINGLE_TEMPLATE(template void spaceToBatchND_, (const NDArray& input, const NDArray& padding, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);

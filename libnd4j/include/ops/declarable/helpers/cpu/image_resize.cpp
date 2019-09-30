@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/image_resize.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -83,7 +84,7 @@ namespace helpers {
             return top + (bottom - top) * yVal;
         };
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
+        // FIXME: fix parallelism here
         for (Nd4jLong b = 0; b < batchSize; ++b) {
             for (Nd4jLong y = 0; y < outHeight; ++y) {
                 const T *ys_input_lower_ptr = input_b_ptr + ys[y].bottomIndex * inRowSize;
@@ -149,11 +150,13 @@ namespace helpers {
 
         int xsSize = xs.size();
         // Scale x interpolation weights to avoid a multiplication during iteration.
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int i = 0; i < xsSize; ++i) {
-            xs[i].bottomIndex *= channels;
-            xs[i].topIndex *= channels;
-        }
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                xs[i].bottomIndex *= channels;
+                xs[i].topIndex *= channels;
+            }
+        };
+        samediff::Threads::parallel_for(func, 0, xsSize);
 
         resizeImage(images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs, ys, output);
         return ND4J_STATUS_OK;
@@ -184,24 +187,22 @@ namespace helpers {
         double heightScale = center ? (inHeight - 1.) / double(outHeight - 1.0) : (inHeight / double(outHeight));
         double widthScale = center ? (inWidth - 1.) / double(outWidth - 1.0) : (inWidth / double(outWidth));
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
-        for (int b = 0; b < batchSize; ++b) {
-            for (int y = 0; y < outHeight; ++y) {
-                Nd4jLong inY = nd4j::math::nd4j_min(
-                        (center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(y * heightScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(
-                                y * heightScale)), inHeight - 1);
-                for (int x = 0; x < outWidth; ++x) {
-                    Nd4jLong inX = nd4j::math::nd4j_min(
-                            (center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(x * widthScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(
-                                    x * widthScale)), inWidth - 1);
-                    for (Nd4jLong e = 0; e < channels; e++)
-                        output->p(b, y, x, e, images->e<T>(b, inY, inX, e));
-//              std::copy_n(&input(b, in_y, in_x, 0), channels, &output(b, y, x, 0));
+        auto func = PRAGMA_THREADS_FOR_2D {
+            for (auto b = start_x; b < stop_x; b += inc_x) {
+                for (auto y = start_y; y < stop_y; y += inc_y) {
+                    Nd4jLong inY = nd4j::math::nd4j_min((center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(y * heightScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(y * heightScale)), inHeight - 1);
+
+                    for (int x = 0; x < outWidth; ++x) {
+                        Nd4jLong inX = nd4j::math::nd4j_min((center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(x * widthScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(x * widthScale)),inWidth - 1);
+                        for (Nd4jLong e = 0; e < channels; e++)
+                            output->p(b, y, x, e, images->e<T>(b, inY, inX, e));
+                    }
                 }
             }
-        }
+        };
+        samediff::Threads::parallel_for(func, 0, batchSize, 1, 0, outHeight, 1);
 
-        return ND4J_STATUS_OK;
+        return Status::OK();
     }
 
     void resizeImage(NDArray const *images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
@@ -263,67 +264,73 @@ namespace helpers {
             T heightScale = (cropHeight > 1) ? (y2 - y1) * (imageHeight - 1) / (cropHeight - 1) : T(0);
             T widthScale = (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : T(0);
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int y = 0; y < cropHeight; ++y) {
-                const float inY = (cropHeight > 1)
-                                  ? y1 * (imageHeight - 1) + y * heightScale
-                                  : 0.5 * (y1 + y2) * (imageHeight - 1);
-                if (inY < 0 || inY > imageHeight - 1) {
-                    for (int x = 0; x < cropWidth; ++x) {
-                        for (int d = 0; d < depth; ++d) {
-                            crops->p(b, y, x, d, extrapolationVal);
-                        }
-                    }
-                    continue;
-                }
-                if (method == 0 /* bilinear */) {
-                    const int topYIndex = nd4j::math::p_floor(inY);
-                    const int bottomYIndex = nd4j::math::p_ceil(inY);
-                    const float y_lerp = inY - topYIndex;
+            auto func = PRAGMA_THREADS_FOR {
+                for (int y = start; y < stop; y += increment) {
+                    const float inY = (cropHeight > 1)
+                                      ? y1 * (imageHeight - 1) + y * heightScale
+                                      : 0.5 * (y1 + y2) * (imageHeight - 1);
 
-                    for (int x = 0; x < cropWidth; ++x) {
-                        const float in_x = (cropWidth > 1)
-                                           ? x1 * (imageWidth - 1) + x * widthScale
-                                           : 0.5 * (x1 + x2) * (imageWidth - 1);
-                        if (in_x < 0 || in_x > imageWidth - 1) {
+                    if (inY < 0 || inY > imageHeight - 1) {
+                        for (int x = 0; x < cropWidth; ++x) {
                             for (int d = 0; d < depth; ++d) {
                                 crops->p(b, y, x, d, extrapolationVal);
                             }
-                            continue;
                         }
-                        int left_x_index = math::p_floor(in_x);
-                        int right_x_index = math::p_ceil(in_x);
-                        T x_lerp = in_x - left_x_index;
-
-                        for (int d = 0; d < depth; ++d) {
-                            const float topLeft(images->e<float>(bIn, topYIndex, left_x_index, d));
-                            const float topRight(images->e<float>(bIn, topYIndex, right_x_index, d));
-                            const float bottomLeft(images->e<float>(bIn, bottomYIndex, left_x_index, d));
-                            const float bottomRight(images->e<float>(bIn, bottomYIndex, right_x_index, d));
-                            const float top = topLeft + (topRight - topLeft) * x_lerp;
-                            const float bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
-                            crops->p(b, y, x, d, top + (bottom - top) * y_lerp);
-                        }
+                        continue;
                     }
-                } else {  // method is "nearest neighbor"
-                    for (int x = 0; x < cropWidth; ++x) {
-                        const float inX = (cropWidth > 1)
-                                          ? x1 * (imageWidth - 1) + x * widthScale
-                                          : 0.5 * (x1 + x2) * (imageWidth - 1);
-                        if (inX < 0 || inX > imageWidth - 1) {
-                            for (int d = 0; d < depth; ++d) {
-                                crops->p(b, y, x, d, extrapolationVal);
+                    if (method == 0 /* bilinear */) {
+                        const int topYIndex = nd4j::math::p_floor(inY);
+                        const int bottomYIndex = nd4j::math::p_ceil(inY);
+                        const float y_lerp = inY - topYIndex;
+
+                        for (int x = 0; x < cropWidth; ++x) {
+                            const float in_x = (cropWidth > 1)
+                                               ? x1 * (imageWidth - 1) + x * widthScale
+                                               : 0.5 * (x1 + x2) * (imageWidth - 1);
+
+                            if (in_x < 0 || in_x > imageWidth - 1) {
+                                for (int d = 0; d < depth; ++d) {
+                                    crops->p(b, y, x, d, extrapolationVal);
+                                }
+                                continue;
                             }
-                            continue;
+                            int left_x_index = math::p_floor(in_x);
+                            int right_x_index = math::p_ceil(in_x);
+                            T x_lerp = in_x - left_x_index;
+
+                            for (int d = 0; d < depth; ++d) {
+                                const float topLeft(images->e<float>(bIn, topYIndex, left_x_index, d));
+                                const float topRight(images->e<float>(bIn, topYIndex, right_x_index, d));
+                                const float bottomLeft(images->e<float>(bIn, bottomYIndex, left_x_index, d));
+                                const float bottomRight(images->e<float>(bIn, bottomYIndex, right_x_index, d));
+                                const float top = topLeft + (topRight - topLeft) * x_lerp;
+                                const float bottom = bottomLeft + (bottomRight - bottomLeft) * x_lerp;
+                                crops->p(b, y, x, d, top + (bottom - top) * y_lerp);
+                            }
                         }
-                        const int closestXIndex = roundf(inX);
-                        const int closestYIndex = roundf(inY);
-                        for (int d = 0; d < depth; ++d) {
-                            crops->p(b, y, x, d, (F)images->e<T>(bIn, closestYIndex, closestXIndex, d));
+                    } else {  // method is "nearest neighbor"
+                        for (int x = 0; x < cropWidth; ++x) {
+                            const float inX = (cropWidth > 1)
+                                              ? x1 * (imageWidth - 1) + x * widthScale
+                                              : 0.5 * (x1 + x2) * (imageWidth - 1);
+
+                            if (inX < 0 || inX > imageWidth - 1) {
+                                for (int d = 0; d < depth; ++d) {
+                                    crops->p(b, y, x, d, extrapolationVal);
+                                }
+                                continue;
+                            }
+                            const int closestXIndex = roundf(inX);
+                            const int closestYIndex = roundf(inY);
+                            for (int d = 0; d < depth; ++d) {
+                                crops->p(b, y, x, d, (F) images->e<T>(bIn, closestYIndex, closestXIndex, d));
+                            }
                         }
                     }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, cropHeight);
         }
     }
 

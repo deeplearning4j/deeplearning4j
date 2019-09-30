@@ -22,6 +22,7 @@
 #include <DataTypeUtils.h>
 #include<ops/declarable/helpers/betaInc.h>
 #include <NDArrayFactory.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -121,9 +122,12 @@ static void betaIncForArray(nd4j::LaunchContext * context, const NDArray& a, con
 
 	int xLen = x.lengthOf();
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
-	for(int i = 0; i < xLen; ++i)
-		output.t<T>(i) = betaIncCore<T>(a.t<T>(i), b.t<T>(i), x.t<T>(i));
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment)
+            output.t<T>(i) = betaIncCore<T>(a.t<T>(i), b.t<T>(i), x.t<T>(i));
+    };
+
+    samediff::Threads::parallel_for(func, 0, xLen);
 }
 
 ///////////////////////////////////////////////////////////////////

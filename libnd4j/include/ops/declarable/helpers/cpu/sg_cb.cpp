@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/sg_cb.h>
 #include <specials.h>
+#include <execution/Threads.h>
 
 #define HS_MAX_EXP 6.0f
 
@@ -350,8 +351,6 @@ namespace nd4j {
                 const auto negTable = reinterpret_cast<T*>(vnegTable);
                 const auto infVector = reinterpret_cast<T*>(vinfVector);
 
-                T sneu1e[600];
-
                 //const auto numThreads = omp_get_max_threads();
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
@@ -362,64 +361,71 @@ namespace nd4j {
                     auto bIndices = indices.bufferAsT<int>();
                     auto bCodes = codes.bufferAsT<int8_t>();
 
-                    PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads) private(sneu1e))
-                    for (int t = 0; t < numTargets; t++) {
-                        T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
-                        memset(neu1e, 0, vectorLength * sizeof(T));
+                    auto func = PRAGMA_THREADS_FOR {
+                        T sneu1e[600];
 
-                        auto target = bTarget[t];
-                        auto alpha = lr.e<double>(t);
-                        unsigned long long randomValue = nextRandom.e<Nd4jLong>(t);
+                        for (auto t = start; t < stop; t += increment) {
+                            T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
+                            memset(neu1e, 0, vectorLength * sizeof(T));
 
-                        auto syn0row = reinterpret_cast<T*>(s0.bufferWithOffset(target * vectorLength));
+                            auto target = bTarget[t];
+                            auto alpha = lr.e<double>(t);
+                            unsigned long long randomValue = nextRandom.e<Nd4jLong>(t);
 
-                        if (hsRounds > 0) {
-                            int irow = 0;
-                            auto cShift = t * idxShift;
+                            auto syn0row = reinterpret_cast<T *>(s0.bufferWithOffset(target * vectorLength));
 
-                            for (int e = 0; e < hsRounds; e++) {
-                                irow = bIndices[e + cShift];
-                                if (irow < 0 || irow >= vocabSize)
-                                    continue;
+                            if (hsRounds > 0) {
+                                int irow = 0;
+                                auto cShift = t * idxShift;
 
-                                auto syn1row = s1.bufferWithOffset(irow * vectorLength);
-                                auto code = bCodes[e + cShift];
+                                for (int e = 0; e < hsRounds; e++) {
+                                    irow = bIndices[e + cShift];
+                                    if (irow < 0 || irow >= vocabSize)
+                                        continue;
+
+                                    auto syn1row = s1.bufferWithOffset(irow * vectorLength);
+                                    auto code = bCodes[e + cShift];
 
                                     //nd4j_printf("syn0: [%i]; syn1: [%i]; code: [%i]\n", target, irow, code);
-                                hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code, expLength, false);
-                            }
-                        }
-
-
-                        if (nsRounds > 0) {
-                            int irow = negStarters.e<int>(t);
-                            int nsStarter = irow;
-                            for (int r = 0; r < nsRounds + 1; r++) {
-                                if (r == 0) {
-                                    // target is known in advance
-                                } else {
-                                    randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                                    auto idx = nd4j::math::nd4j_abs<Nd4jLong >((randomValue >> 16) % negLength);
-                                    irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
-
-                                    if (irow < 0 || irow >= vocabSize)
-                                        irow = randomValue % (vocabSize - 1) + 1;
-
-                                    if (irow == nsStarter)
-                                        continue;
+                                    hSoftmax_<T>(syn0row, syn1row, expTable, neu1e, alpha, vectorLength, code,
+                                                 expLength, false);
                                 }
-
-                                nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
                             }
+
+
+                            if (nsRounds > 0) {
+                                int irow = negStarters.e<int>(t);
+                                int nsStarter = irow;
+                                for (int r = 0; r < nsRounds + 1; r++) {
+                                    if (r == 0) {
+                                        // target is known in advance
+                                    } else {
+                                        randomValue = randomValue * (unsigned long long) 25214903917 + 11;
+                                        auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
+                                        irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+                                        if (irow < 0 || irow >= vocabSize)
+                                            irow = randomValue % (vocabSize - 1) + 1;
+
+                                        if (irow == nsStarter)
+                                            continue;
+                                    }
+
+                                    nSampling_<T>(syn0row, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e,
+                                                  alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                                }
+                            }
+
+                            for (int e = 0; e < vectorLength; e++)
+                                syn0row[e] += neu1e[e];
+
+                            // optionally release temp arrays
+                            if (vectorLength > 600)
+                                delete[] neu1e;
                         }
+                    };
 
-                        for (int e = 0; e < vectorLength; e++)
-                            syn0row[e] += neu1e[e];
-
-                        // optionally release temp arrays
-                        if (vectorLength > 600)
-                            delete[] neu1e;
-                    }
+                    samediff::Threads::parallel_for(func, 0, numTargets, 1, numThreads);
             }
             BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads), FLOAT_TYPES);
 
@@ -434,9 +440,6 @@ namespace nd4j {
                 const auto negTable = reinterpret_cast<T*>(vnegTable);
                 const auto infVector = reinterpret_cast<T*>(vinfVector);
 
-                T sneu1[600];
-                T sneu1e[600];
-
                 //const auto numThreads = omp_get_max_threads();
                 const auto idxShift = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
@@ -450,122 +453,131 @@ namespace nd4j {
                 const auto bStarters = negStarters.bufferAsT<int>();
                 const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
 
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(num_threads(numThreads) private(sneu1, sneu1e))
-                for (int e = 0; e < numTargets; e++){
-                    T* neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
-                    T* neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
+                auto func = PRAGMA_THREADS_FOR {
+                    T sneu1[600];
+                    T sneu1e[600];
 
-                    // optionally we nullify temp arrays after successful (and on first) cycle
-                    memset(neu1, 0, sizeof(T) * vectorLength);
-                    memset(neu1e, 0, sizeof(T) * vectorLength);
+                    for (int e = start; e < stop; e += increment) {
+                        T *neu1 = vectorLength <= 600 ? sneu1 : new T[vectorLength];
+                        T *neu1e = vectorLength <= 600 ? sneu1e : new T[vectorLength];
 
-                    auto alpha = lr.e<double>(e);
-                    auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(e);
+                        // optionally we nullify temp arrays after successful (and on first) cycle
+                        memset(neu1, 0, sizeof(T) * vectorLength);
+                        memset(neu1e, 0, sizeof(T) * vectorLength);
 
-                    int actualContext = 0;
+                        auto alpha = lr.e<double>(e);
+                        auto numLabels = nLabels.isEmpty() ? 0 : nLabels.e<int>(e);
 
-                    // building neu1 for current window
-                    for (int c = 0; c < contextWidth; c++) {
-                        // getting next context word
-                        auto cContext = bContext[c + (e * contextWidth)];
+                        int actualContext = 0;
 
-                        // skipping padded values
-                        if (cContext < 0)
-                            continue;
+                        // building neu1 for current window
+                        for (int c = 0; c < contextWidth; c++) {
+                            // getting next context word
+                            auto cContext = bContext[c + (e * contextWidth)];
 
-                        if (cContext >= vocabSize)
-                            throw std::runtime_error("ContextID can't be >= vocab size");
-
-                        T *syn0word = syn0 + (cContext * vectorLength);
-
-                        for (int i = 0; i < vectorLength; i++)
-                            neu1[i] += syn0word[i];
-
-                        actualContext++;
-                    }
-
-                    if (infVector != nullptr)
-                        actualContext++;
-
-                    if (actualContext > 1) {
-                        for (int i = 0; i < vectorLength; i++)
-                            neu1[i] /= actualContext;
-                    }
-
-                    // hierarchic softmax step
-                    if (!indices.isEmpty()) {
-                        for (int i = 0; i < numIndices; i++) {
-                            const int cIndex = bIndices[(e * numIndices) + i];
-                            const int cCode = bCodes[(e * numIndices) + i];
-
-                            // we're skipping padded values
-                            if (cIndex < 0)
+                            // skipping padded values
+                            if (cContext < 0)
                                 continue;
 
-                            if (cIndex >= vocabSize)
-                                throw std::runtime_error("Index can't be > vocab size");
+                            if (cContext >= vocabSize)
+                                throw std::runtime_error("ContextID can't be >= vocab size");
 
-                            hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength, cCode, expLength, false);
+                            T *syn0word = syn0 + (cContext * vectorLength);
+
+                            for (int i = 0; i < vectorLength; i++)
+                                neu1[i] += syn0word[i];
+
+                            actualContext++;
                         }
-                    }
 
-                    // negative sampling step
-                    if (!negStarters.isEmpty() && nsRounds > 0) {
-                        int irow = bStarters[e];
-                        const int nsStarter = irow;
-                        unsigned long long randomValue = nextRandom.e<Nd4jLong>(e);
+                        if (infVector != nullptr)
+                            actualContext++;
 
-                        for (int r = 0; r < nsRounds + 1; r++) {
-                            // we're skipping rng on 0 step
-                            if (r != 0) {
-                                randomValue = randomValue * (unsigned long long) 25214903917 + 11;
-                                auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
-                                irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+                        if (actualContext > 1) {
+                            for (int i = 0; i < vectorLength; i++)
+                                neu1[i] /= actualContext;
+                        }
 
-                                if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
-                                if (irow == nsStarter)
+                        // hierarchic softmax step
+                        if (!indices.isEmpty()) {
+                            for (int i = 0; i < numIndices; i++) {
+                                const int cIndex = bIndices[(e * numIndices) + i];
+                                const int cCode = bCodes[(e * numIndices) + i];
+
+                                // we're skipping padded values
+                                if (cIndex < 0)
                                     continue;
 
-                                nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
-                            } else {
-                                nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e, alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
-                            }
+                                if (cIndex >= vocabSize)
+                                    throw std::runtime_error("Index can't be > vocab size");
 
-                            //nd4j_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), 0, irow);
+                                hSoftmax_<T>(neu1, syn1 + (cIndex * vectorLength), expTable, neu1e, alpha, vectorLength,
+                                             cCode, expLength, false);
+                            }
+                        }
+
+                        // negative sampling step
+                        if (!negStarters.isEmpty() && nsRounds > 0) {
+                            int irow = bStarters[e];
+                            const int nsStarter = irow;
+                            unsigned long long randomValue = nextRandom.e<Nd4jLong>(e);
+
+                            for (int r = 0; r < nsRounds + 1; r++) {
+                                // we're skipping rng on 0 step
+                                if (r != 0) {
+                                    randomValue = randomValue * (unsigned long long) 25214903917 + 11;
+                                    auto idx = nd4j::math::nd4j_abs<Nd4jLong>((randomValue >> 16) % negLength);
+                                    irow = idx >= negLength ? -1 : static_cast<int>(negTable[idx]);
+
+                                    if (irow < 0 || irow >= vocabSize) irow = randomValue % (vocabSize - 1) + 1;
+                                    if (irow == nsStarter)
+                                        continue;
+
+                                    nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e,
+                                                  alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                                } else {
+                                    nSampling_<T>(neu1, s1n.bufferWithOffset(irow * vectorLength), expTable, neu1e,
+                                                  alpha, vectorLength, r == 0 ? 1 : 0, expLength, infVector != nullptr);
+                                }
+
+                                //nd4j_printf("Thread <%i>: syn0: [%i]; s1n: [%i];\n", omp_get_thread_num(), 0, irow);
+                            }
+                        }
+
+
+                        // if we're skipping labels
+                        int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
+
+                        // applying previously averaged results
+                        for (int c = starter; c < contextWidth; c++) {
+                            // getting context
+                            auto cContext = bContext[c + (e * contextWidth)];
+                            auto cLock = bLocker[c + (e * contextWidth)];
+
+                            // skipping padded values
+                            if (cContext < 0 || cLock == 1)
+                                continue;
+
+                            if (cContext >= vocabSize)
+                                throw std::runtime_error("ContextID can't be > vocab size");
+
+                            // one word from context
+                            T *syn0word = syn0 + (cContext * vectorLength);
+
+                            for (int i = 0; i < vectorLength; i++)
+                                syn0word[i] += neu1e[i];
+
+                        }
+
+                        // optionally release temp arrays
+                        if (vectorLength > 600) {
+                            delete[] neu1;
+                            delete[] neu1e;
                         }
                     }
+                };
 
-
-                    // if we're skipping labels
-                    int starter = trainWords == 1 ? 0 : contextWidth - numLabels;
-
-                    // applying previously averaged results
-                    for (int c = starter; c < contextWidth; c++) {
-                        // getting context
-                        auto cContext = bContext[c + (e * contextWidth)];
-                        auto cLock = bLocker[c + (e * contextWidth)];
-
-                        // skipping padded values
-                        if (cContext < 0 || cLock == 1)
-                            continue;
-
-                        if (cContext >= vocabSize)
-                            throw std::runtime_error("ContextID can't be > vocab size");
-
-                        // one word from context
-                        T *syn0word = syn0 + (cContext * vectorLength);
-
-                        for (int i = 0; i < vectorLength; i++)
-                            syn0word[i] += neu1e[i];
-
-                    }
-
-                    // optionally release temp arrays
-                    if (vectorLength > 600) {
-                        delete[] neu1;
-                        delete[] neu1e;
-                    }
-                }
+                samediff::Threads::parallel_for(func, 0, numTargets, 1, numThreads);
             }
             BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength,  const bool trainWords, const int numThreads), FLOAT_TYPES);
 

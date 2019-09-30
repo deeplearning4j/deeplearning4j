@@ -20,6 +20,7 @@
 
 
 #include <ops/declarable/helpers/range.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -37,10 +38,11 @@ static void _range(const NDArray& start, const NDArray& delta, NDArray& outVecto
     auto s = start.e<T>(0);
     auto d = delta.e<T>(0);
 
-    PRAGMA_OMP_PARALLEL_FOR_SIMD
-    for(Nd4jLong i = 0; i < len; ++i)
-    	buff[i] = s + i * d;
-        
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment)
+            buff[i] = s + i * d;
+    };
+    samediff::Threads::parallel_for(func, 0, len);
 }
 
     void range(nd4j::LaunchContext * context, const NDArray& start, const NDArray& delta, NDArray& outVector) {

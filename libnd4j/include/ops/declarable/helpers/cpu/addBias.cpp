@@ -20,6 +20,7 @@
 
 
 #include<ops/declarable/helpers/addBias.h>
+#include <execution/Threads.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -62,12 +63,15 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray &output,
 
         if(inOutAreSame) {
 
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(4))
-            for(uint b = 0; b < bS; ++b)
-                for(uint c = 0; c < C; ++c)
-                    for(uint h = 0; h < oH ; ++h)
-                        for(uint w = 0; w < oW ; ++w)
-                            z[b*zStrideB + c*zStrideC + h*zStrideH + w*zStrideW] += static_cast<X>(y[c*yStrideC]);
+            auto func = PRAGMA_THREADS_FOR_3D {
+                for (uint b = start_x; b < stop_x; b += inc_x)
+                    for (uint c = start_y; c < stop_y; c += inc_y)
+                        for (uint h = start_z; h < stop_z; h += inc_z)
+                            for (uint w = 0; w < oW; ++w)
+                                z[b * zStrideB + c * zStrideC + h * zStrideH + w * zStrideW] += static_cast<X>(y[c * yStrideC]);
+            };
+
+            samediff::Threads::parallel_for(func, 0, bS, 1, 0, C, 1, 0, oH, 1);
         }
         else {
 
@@ -76,12 +80,15 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray &output,
             const Nd4jLong xStrideH = isNCHW ? input.stridesOf()[2] : input.stridesOf()[1];
             const Nd4jLong xStrideW = isNCHW ? input.stridesOf()[3] : input.stridesOf()[2];
 
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(4))
-            for(uint b = 0; b < bS; ++b)
-                for(uint c = 0; c < C; ++c)
-                    for(uint h = 0; h < oH ; ++h)
-                        for(uint w = 0; w < oW ; ++w)
-                            z[b*zStrideB + c*zStrideC + h*zStrideH + w*zStrideW] = x[b*xStrideB + c*xStrideC + h*xStrideH + w*xStrideW] +  static_cast<X>(y[c*yStrideC]);
+            auto func = PRAGMA_THREADS_FOR_3D {
+                for (uint b = start_x; b < stop_x; b += inc_x)
+                    for (uint c = start_y; c < stop_y; c += inc_y)
+                        for (uint h = start_z; h < stop_z; h += inc_z)
+                            for (uint w = 0; w < oW; ++w)
+                                z[b * zStrideB + c * zStrideC + h * zStrideH + w * zStrideW] = x[b * xStrideB + c * xStrideC + h * xStrideH + w * xStrideW] + static_cast<X>(y[c * yStrideC]);
+            };
+
+            samediff::Threads::parallel_for(func, 0, bS, 1, 0, C, 1, 0, oH, 1);
         }
     }
     else if(output.rankOf() == 5) {
@@ -98,13 +105,16 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray &output,
 
         if(inOutAreSame) {
 
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(5))
-            for(uint b = 0; b < bS; ++b)
-                for(uint c = 0; c < C; ++c)
-                    for(uint d = 0; d < oD ; ++d)
-                        for(uint h = 0; h < oH ; ++h)
-                            for(uint w = 0; w < oW ; ++w)
-                                z[b*zStrideB + c*zStrideC + d*zStrideD + h*zStrideH + w*zStrideW] += static_cast<X>(y[c*yStrideC]);
+            auto func = PRAGMA_THREADS_FOR_3D {
+                for (uint b = start_x; b < stop_x; b += inc_x)
+                    for (uint c = start_y; c < stop_y; c += inc_y)
+                        for (uint d = start_z; d < stop_z; d += inc_z)
+                            for (uint h = 0; h < oH; ++h)
+                                for (uint w = 0; w < oW; ++w)
+                                    z[b * zStrideB + c * zStrideC + d * zStrideD + h * zStrideH + w * zStrideW] += static_cast<X>(y[c * yStrideC]);
+            };
+
+            samediff::Threads::parallel_for(func, 0, bS, 1, 0, C, 1, 0, oD, 1);
         }
         else {
 
@@ -114,13 +124,16 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray &output,
             const Nd4jLong xStrideH = isNCHW ? input.stridesOf()[3] : input.stridesOf()[2];
             const Nd4jLong xStrideW = isNCHW ? input.stridesOf()[4] : input.stridesOf()[3];
 
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(5))
-            for(uint b = 0; b < bS; ++b)
-                for(uint c = 0; c < C; ++c)
-                    for(uint d = 0; d < oD ; ++d)
-                        for(uint h = 0; h < oH ; ++h)
-                            for(uint w = 0; w < oW ; ++w)
-                                z[b*zStrideB + c*zStrideC + d*zStrideD + h*zStrideH + w*zStrideW] = x[b*xStrideB + c*xStrideC + d*xStrideD + h*xStrideH + w*xStrideW] + static_cast<X>(y[c*yStrideC]);
+            auto func = PRAGMA_THREADS_FOR_3D {
+                for (uint b = start_x; b < stop_x; b += inc_x)
+                    for (uint c = start_y; c < stop_y; c += inc_y)
+                        for (uint d = start_z; d < stop_z; d += inc_z)
+                            for (uint h = 0; h < oH; ++h)
+                                for (uint w = 0; w < oW; ++w)
+                                    z[b * zStrideB + c * zStrideC + d * zStrideD + h * zStrideH + w * zStrideW] = x[b * xStrideB + c * xStrideC + d * xStrideD + h * xStrideH + w * xStrideW] + static_cast<X>(y[c * yStrideC]);
+            };
+
+            samediff::Threads::parallel_for(func, 0, bS, 1, 0, C, 1, 0, oD, 1);
         }
     }
     else {

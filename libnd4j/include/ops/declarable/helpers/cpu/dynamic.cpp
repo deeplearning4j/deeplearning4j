@@ -18,6 +18,7 @@
 // Created by george on 05.04.18.
 //
 #include <ops/declarable/helpers/dynamic.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
     namespace ops {
@@ -61,14 +62,17 @@ namespace nd4j {
                 } else {
                     unsigned int outSize = outputList.size();
 
-                    PRAGMA_OMP_PARALLEL_FOR_IF(outSize > Environment::getInstance()->tadThreshold())
-                    for (unsigned int i = 0; i < outSize; i++) {
-                        outputs[i].first = outputList[i];
-                        outputs[i].second = 0;
-                        for (int e = 0; e < indices->lengthOf(); ++e)
-                            if (indices->e<Nd4jLong>(e) == i)
-                                outputs[i].first->p(outputs[i].second++, input->e<T>(e));
-                    }
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto i = start; i < stop; i += increment) {
+                            outputs[i].first = outputList[i];
+                            outputs[i].second = 0;
+                            for (int e = 0; e < indices->lengthOf(); ++e)
+                                if (indices->e<Nd4jLong>(e) == i)
+                                    outputs[i].first->p(outputs[i].second++, input->e<T>(e));
+                        }
+                    };
+
+                    samediff::Threads::parallel_for(func, 0, outSize);
                 }
             }
             template <typename T>
@@ -165,14 +169,17 @@ namespace nd4j {
                     auto output = outputList[0];
                     unsigned int gradsSize = inputGradientList.size();
 
-                    PRAGMA_OMP_PARALLEL_FOR_IF(gradsSize > Environment::getInstance()->tadThreshold())
-                    for (unsigned int i = 0; i < gradsSize; i++) {
-                        outputs[i].first = inputGradientList[i];
-                        outputs[i].second = 0;
-                        for (int e = 0; e < indices->lengthOf(); ++e)
-                            if (indices->e<Nd4jLong>(e) == i)
-                                output->p<T>(e, outputs[i].first->e<T>(outputs[i].second++));
-                    }
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto i = start; i < stop; i += increment) {
+                            outputs[i].first = inputGradientList[i];
+                            outputs[i].second = 0;
+                            for (int e = 0; e < indices->lengthOf(); ++e)
+                                if (indices->e<Nd4jLong>(e) == i)
+                                    output->p<T>(e, outputs[i].first->e<T>(outputs[i].second++));
+                        }
+                    };
+
+                    samediff::Threads::parallel_for(func, 0, gradsSize);
                 }
 
                 outputList[1]->assign(indices);

@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/unique.h>
 #include <Status.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -67,12 +68,14 @@ namespace helpers {
             }
         }
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(values->lengthOf() > Environment::getInstance()->elementwiseThreshold())
-        for (int e = 0; e < values->lengthOf(); e++) {
-            values->p(e, static_cast<T>(valuesVector[e]));
-            if (counts != nullptr) 
-                counts->p(e, countsMap[valuesVector[e]]);
-        }
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment) {
+                values->p(e, static_cast<T>(valuesVector[e]));
+                if (counts != nullptr)
+                    counts->p(e, countsMap[valuesVector[e]]);
+            }
+        };
+        samediff::Threads::parallel_for(func, 0, values->lengthOf());
 
         for (int e = 0; e < indices->lengthOf(); e++) {
             auto posI = std::find(valuesVector.begin(), valuesVector.end(), input->e<T>(e));

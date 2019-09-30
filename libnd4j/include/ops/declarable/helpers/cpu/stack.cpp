@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/stack.h>
 #include <helpers/ShapeUtils.h>
 #include <array/ResultSet.h>
+#include <execution/Threads.h>
 
 
 namespace nd4j {
@@ -35,9 +36,12 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray* outArr, c
 	if(inArrs[0]->rankOf() == 0) {
 	    int inSize = inArrs.size();
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(inSize > Environment::getInstance()->tadThreshold())
-		for(int i=0; i < inSize; ++i)
-			outArr->p<T>(i, inArrs[i]->t<T>(0));
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment)
+                outArr->p<T>(i, inArrs[i]->t<T>(0));
+        };
+
+        samediff::Threads::parallel_for(func, 0, inSize);
 	}
 	else {
 
@@ -45,9 +49,11 @@ static void stack_(const std::vector<const NDArray*>& inArrs, NDArray* outArr, c
 		auto list = outArr->allTensorsAlongDimension(dimsToExclude);		// list.size() == block.width()
         int listSize = list->size();
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(listSize > Environment::getInstance()->tadThreshold())
-		for(int i=0; i<listSize; ++i)
-			list->at(i)->assign(inArrs[i]);
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment)
+                list->at(i)->assign(inArrs[i]);
+        };
+        samediff::Threads::parallel_for(func, 0, listSize);
 
 		delete list;
 	}

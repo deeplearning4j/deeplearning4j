@@ -22,6 +22,7 @@
 
 #include <functional>
 #include <openmp_pragmas.h>
+#include <Environment.h>
 
 namespace samediff {
     class Threads {
@@ -33,11 +34,40 @@ namespace samediff {
          * @param start
          * @param stop
          * @param increment
+         * @return
          */
-        static void parallel_for(FUNC_1D function, uint32_t numThreads, uint64_t start, uint64_t stop, uint64_t increment = 1);
+        static bool parallel_for(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment = 1, uint32_t numThreads = nd4j::Environment::getInstance()->maxThreads());
 
+        /**
+         *
+         * @param function
+         * @param numThreads
+         * @param start_x
+         * @param stop_x
+         * @param inc_x
+         * @param start_y
+         * @param stop_y
+         * @param inc_y
+         * @return
+         */
+        static bool parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads());
 
-
+        /**
+         *
+         * @param function
+         * @param numThreads
+         * @param start_x
+         * @param stop_x
+         * @param inc_x
+         * @param start_y
+         * @param stop_y
+         * @param inc_y
+         * @param start_z
+         * @param stop_z
+         * @param inc_z
+         * @return
+         */
+        static bool parallel_for(FUNC_3D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t start_z, uint64_t stop_z, uint64_t inc_z, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads());
     };
 }
 

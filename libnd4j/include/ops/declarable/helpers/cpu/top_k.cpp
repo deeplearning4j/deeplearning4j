@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/top_k.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <NDArrayFactory.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -148,19 +149,21 @@ namespace helpers {
             int status = topKFunctor(context, input, values, indices.get(), k, true);
             result->assign(0);
             if (status == ND4J_STATUS_OK) {
-                bool condition = target->lengthOf() > Environment::getInstance()->tadThreshold();
-                PRAGMA_OMP_PARALLEL_FOR_IF(condition)
-                for (int e = 0; e < target->lengthOf(); e++) {
-                    bool found = false;
-                    for (int j = 0; j < k; j++) {
-                        if (target->e<Nd4jLong>(e) == indices->e<Nd4jLong>(e * k + j)) {
-                            found = true;
-                            break;
+                auto func = PRAGMA_THREADS_FOR {
+                    for (auto e = start; e < stop; e += increment) {
+                        bool found = false;
+                        for (int j = 0; j < k; j++) {
+                            if (target->e<Nd4jLong>(e) == indices->e<Nd4jLong>(e * k + j)) {
+                                found = true;
+                                break;
+                            }
                         }
+                        if (found)
+                            result->p<bool>(e, true);
                     }
-                    if (found)
-                        result->p<bool>(e, true);
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, target->lengthOf());
             }
             return status;
 

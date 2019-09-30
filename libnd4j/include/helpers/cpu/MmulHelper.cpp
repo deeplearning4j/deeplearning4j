@@ -75,26 +75,28 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
     //     }
     // }   
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(M*N > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2))
-    for(uint row = 0; row < M; ++row) {
-       for(uint col = 0; col < N; ++col) {
-            
-            T3* c = flagC ? (C + row + col * ldc) : (C + row * ldc + col);
-            T3 val = 0;  
+    auto func = PRAGMA_THREADS_FOR_2D { ;
+        for (auto row = start_x; row < stop_x; row += inc_x) {
+            for (auto col = start_y; col < stop_y; col += inc_y) {
+                T3 *c = flagC ? (C + row + col * ldc) : (C + row * ldc + col);
+                T3 val = 0;
 
-            PRAGMA_OMP_SIMD
-            for(uint i = 0; i < K; ++i) {
-                T3 a = flagA ? *(A + row * lda + i) : *(A + row + i * lda);
-                T3 b = flagB ? *(B + col + i * ldb) : *(B + col * ldb + i);             
-                val += alphaZ * a * b;
+                PRAGMA_OMP_SIMD
+                for (uint i = 0; i < K; ++i) {
+                    T3 a = flagA ? *(A + row * lda + i) : *(A + row + i * lda);
+                    T3 b = flagB ? *(B + col + i * ldb) : *(B + col * ldb + i);
+                    val += alphaZ * a * b;
+                }
+
+                if (betaZ)
+                    *c = val + betaZ * *c;
+                else
+                    *c = val;
             }
-            
-            if(betaZ)
-                *c = val + betaZ * *c;
-            else
-                *c = val;
-       }
-    }
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, M, 1, 0, N, 1);
 }
 
 //////////////////////////////////////////////////////////////////////////////

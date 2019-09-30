@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/im2col.h>
+#include <execution/Threads.h>
 
 
 namespace nd4j    {
@@ -59,64 +60,73 @@ static void im2col_(nd4j::LaunchContext & context, const NDArray& input,  NDArra
     const Nd4jLong imStride2  = imStride[2];
     const Nd4jLong imStride3  = imStride[3];
 
-    T *col, *im;
-    int imRow, imCol;
-
     if (shape::order(imShapeBuffer) == 'c' &&  shape::order(colShapeBuffer) == 'c' && shape::strideDescendingCAscendingF(imShapeBuffer) && shape::strideDescendingCAscendingF(colShapeBuffer)) {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(private(col, im, imRow, imCol) collapse(2))
-    	for (int b = 0; b < bS; b++) {
-        	for (int c = 0; c < iC; ++c) {
-            	for (int kRow = 0; kRow < kH; ++kRow) {
-                	for (int kCol = 0; kCol < kW; ++kCol) {
-                    	for (int colH = 0; colH < oH; ++colH) {
-                        	for (int colW = 0; colW < oW; ++colW) {
+        auto func = PRAGMA_THREADS_FOR_2D {
+            T *col, *im;
+            int imRow, imCol;
 
-                            	imRow = (-pH + kRow * dH) + colH*sH;
-                                imCol = (-pW + kCol * dW) + colW*sW;
+            for (int b = start_x; b < stop_x; b += inc_x) {
+                for (int c = start_y; c < stop_y; c += inc_y) {
+                    for (int kRow = 0; kRow < kH; ++kRow) {
+                        for (int kCol = 0; kCol < kW; ++kCol) {
+                            for (int colH = 0; colH < oH; ++colH) {
+                                for (int colW = 0; colW < oW; ++colW) {
 
-                                col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                    imRow = (-pH + kRow * dH) + colH * sH;
+                                    imCol = (-pW + kCol * dW) + colW * sW;
 
-                                if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
-                                	*col = zeroPadVal;
-                                else {
-                                    im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
-                                	*col = *im;
+                                    col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 + colH * colStride4 + colW * colStride5;
+
+                                    if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
+                                        *col = zeroPadVal;
+                                    else {
+                                        im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
+                                        *col = *im;
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
+        };
+
+        samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
     }
     else {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(private(im, col, imRow, imCol) collapse(2))
-    	for (int b = 0; b < bS; b++) {
-        	for (int colH = 0; colH < oH; ++colH) {
-            	for (int colW = 0; colW < oW; ++colW) {
-                	for (int c = 0; c < iC; ++c) {
-                    	for (int kRow = 0; kRow < kH; ++kRow) {
-                        	for (int kCol = 0; kCol < kW; ++kCol) {
+        auto func = PRAGMA_THREADS_FOR_2D {
+            T *col, *im;
+            int imRow, imCol;
 
-                            	imRow = (-pH + kRow * dH) + colH*sH;
-                                imCol = (-pW + kCol * dW) + colW*sW;
+            for (int b = start_x; b < stop_x; b += inc_x) {
+                for (int colH = start_y; colH < stop_y; colH += inc_y) {
+                    for (int colW = 0; colW < oW; ++colW) {
+                        for (int c = 0; c < iC; ++c) {
+                            for (int kRow = 0; kRow < kH; ++kRow) {
+                                for (int kCol = 0; kCol < kW; ++kCol) {
 
-                                col = colBuff + b*colStride0 + c*colStride1 + kRow*colStride2 + kCol*colStride3 + colH*colStride4 + colW*colStride5;
+                                    imRow = (-pH + kRow * dH) + colH * sH;
+                                    imCol = (-pW + kCol * dW) + colW * sW;
 
-                                if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
-                                	*col = zeroPadVal;
-                                else {
-                                    im  = imBuff  + b*imStride0  + c*imStride1  + imRow*imStride2 + imCol*imStride3;
-                                	*col = *im;
+                                    col = colBuff + b * colStride0 + c * colStride1 + kRow * colStride2 + kCol * colStride3 + colH * colStride4 + colW * colStride5;
+
+                                    if (static_cast<unsigned>(imRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(imCol) >= static_cast<unsigned>(iW))
+                                        *col = zeroPadVal;
+                                    else {
+                                        im = imBuff + b * imStride0 + c * imStride1 + imRow * imStride2 + imCol * imStride3;
+                                        *col = *im;
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-        }
+        };
+
+        samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
     }
 }
 

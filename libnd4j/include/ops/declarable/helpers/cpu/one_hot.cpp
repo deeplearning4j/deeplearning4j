@@ -20,6 +20,7 @@
 
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <execution/Threads.h>
 #include "../one_hot.h"
 
 namespace nd4j {
@@ -47,41 +48,47 @@ namespace nd4j {
                 Z one = static_cast<Z>(on);
 
                 if (tadEws >= 1) {
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (unsigned int e = 0; e < numTads; e++) {
-                        auto cO = output + tadPack.primaryOffsets()[e];
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = 0; e < stop; e += increment) {
+                            auto cO = output + tadPack.primaryOffsets()[e];
 
-                        auto idx = static_cast<int>(indices[e]);
-                        if (idx < 0 || idx >= tLen) {
-                            PRAGMA_OMP_SIMD
-                            for (unsigned int t = 0; t < tLen; t++) {
-                                cO[t * tadEws] = zero;
-                            }
-                        } else {
-                            PRAGMA_OMP_SIMD
-                            for (unsigned int t = 0; t < tLen; t++) {
-                                cO[t * tadEws] = idx == t ? one : zero;
+                            auto idx = static_cast<int>(indices[e]);
+                            if (idx < 0 || idx >= tLen) {
+                                PRAGMA_OMP_SIMD
+                                for (unsigned int t = 0; t < tLen; t++) {
+                                    cO[t * tadEws] = zero;
+                                }
+                            } else {
+                                PRAGMA_OMP_SIMD
+                                for (unsigned int t = 0; t < tLen; t++) {
+                                    cO[t * tadEws] = idx == t ? one : zero;
+                                }
                             }
                         }
-                    }
+                    };
+
+                    samediff::Threads::parallel_for(func, 0, numTads);
                 } else {
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (unsigned int e = 0; e < numTads; e++) {
-                        auto cO = output + tadPack.primaryOffsets()[e];
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = start; e < stop; e += increment) {
+                            auto cO = output + tadPack.primaryOffsets()[e];
 
-                        auto idx = static_cast<int>(indices[e]);
-                        if (idx < 0 || idx >= tLen) {
-                            PRAGMA_OMP_SIMD
-                            for (unsigned int t = 0; t < tLen; t++) {
-                                cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = zero;
-                            }
-                        } else {
-                            PRAGMA_OMP_SIMD
-                            for (unsigned int t = 0; t < tLen; t++) {
-                                cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = idx == t ? one : zero;
+                            auto idx = static_cast<int>(indices[e]);
+                            if (idx < 0 || idx >= tLen) {
+                                PRAGMA_OMP_SIMD
+                                for (unsigned int t = 0; t < tLen; t++) {
+                                    cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = zero;
+                                }
+                            } else {
+                                PRAGMA_OMP_SIMD
+                                for (unsigned int t = 0; t < tLen; t++) {
+                                    cO[shape::getIndexOffset(t, tadPack.primaryShapeInfo())] = idx == t ? one : zero;
+                                }
                             }
                         }
-                    }
+                    };
+
+                    samediff::Threads::parallel_for(func, 0, numTads);
                 }
             }
 

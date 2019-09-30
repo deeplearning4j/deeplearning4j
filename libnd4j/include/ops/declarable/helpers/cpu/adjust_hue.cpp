@@ -21,6 +21,7 @@
 
 #include <ops/declarable/helpers/adjust_hue.h>
 #include <helpers/ConstantTadHelper.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -38,50 +39,56 @@ static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDAr
 
     if(dimC == rank - 1 && input->ews() == 1 && output->ews() == 1 && input->ordering() == 'c' && output->ordering() == 'c') {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (Nd4jLong i = 0; i < input->lengthOf(); i += 3) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
 
-            T h, s, v;
+                T h, s, v;
 
-            rgbToHsv<T>(x[i], x[i+1], x[i+2], h, s, v);
+                rgbToHsv<T>(x[i], x[i + 1], x[i + 2], h, s, v);
 
-            h += delta * 360;
-            if(h > 360)
-                h -= 360;
-            else if(h < 0)
-                h += 360;
+                h += delta * 360;
+                if (h > 360)
+                    h -= 360;
+                else if (h < 0)
+                    h += 360;
 
-            hsvToRgb<T>(h, s, v, z[i], z[i+1], z[i+2]);
-        }
+                hsvToRgb<T>(h, s, v, z[i], z[i + 1], z[i + 2]);
+            }
+        };
+
+        samediff::Threads::parallel_for(func, 0, input->lengthOf(), 3);
     }
     else {
 
-        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  {dimC});
-        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), {dimC});
+        auto packX = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input->getShapeInfo(),  dimC);
+        auto packZ = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(output->getShapeInfo(), dimC);
 
         const Nd4jLong numOfTads   = packX.numberOfTads();
         const Nd4jLong xDimCstride = input->stridesOf()[dimC];
         const Nd4jLong zDimCstride = output->stridesOf()[dimC];
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(Nd4jLong i = 0; i < numOfTads; ++i) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
 
-            const T* xTad = x + packX.platformOffsets()[i];
-                  T* zTad = z + packZ.platformOffsets()[i];
+                const T *xTad = x + packX.platformOffsets()[i];
+                T *zTad = z + packZ.platformOffsets()[i];
 
-            T h, s, v;
+                T h, s, v;
 
-            rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], h, s, v);
+                rgbToHsv<T>(xTad[0], xTad[xDimCstride], xTad[2 * xDimCstride], h, s, v);
 
-            h += delta * 360;
-            if(h > 360)
-                h -= 360;
-            else if(h < 0)
-                h += 360;
+                h += delta * 360;
+                if (h > 360)
+                    h -= 360;
+                else if (h < 0)
+                    h += 360;
 
-            hsvToRgb<T>(h, s, v, zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
+                hsvToRgb<T>(h, s, v, zTad[0], zTad[zDimCstride], zTad[2 * zDimCstride]);
 
-        }
+            }
+        };
+
+        samediff::Threads::parallel_for(func, 0, numOfTads);
     }
 }
 

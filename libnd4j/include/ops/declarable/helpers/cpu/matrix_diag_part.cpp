@@ -21,6 +21,7 @@
 #include "ResultSet.h"
 #include <ops/declarable/helpers/matrix_diag_part.h>
 #include <Status.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -43,10 +44,14 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
     int lastDimension = nd4j::math::nd4j_min(input->sizeAt(-2), input->sizeAt(-1));
     // TODO: tune this properlys
     int lO = listOut->size();
-    PRAGMA_OMP_PARALLEL_FOR_IF(lO > Environment::getInstance()->tadThreshold())
-    for(int i = 0; i < lO; ++i)
-        for(int j = 0; j < lastDimension; ++j)
-            listOut->at(i)->p(j, listDiag->at(i)->e<T>(j, j));
+
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment)
+            for (int j = 0; j < lastDimension; ++j)
+                listOut->at(i)->p(j, listDiag->at(i)->e<T>(j, j));
+    };
+
+    samediff::Threads::parallel_for(func, 0, lO);
     
     delete listOut;
     delete listDiag;

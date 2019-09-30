@@ -348,14 +348,7 @@ void NDArray::tile(NDArray& target) const {
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
     const auto ews = target.ews();
     const auto targetLen = target.lengthOf();
-    if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
-
-        for (Nd4jLong i = 0; i < targetLen; ++i) {
-            auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
-            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
-        }
-    }
-    else if(target.ordering() == 'c' && ews > 1) {
+    if(target.ordering() == 'c' && ews >= 1) {
 
         for(Nd4jLong i=0;  i<targetLen; ++i) {
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());

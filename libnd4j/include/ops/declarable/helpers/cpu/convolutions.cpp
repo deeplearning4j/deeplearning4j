@@ -24,6 +24,7 @@
 #include <ops/declarable/helpers/col2im.h>
 #include <NDArrayFactory.h>
 #include <MmulHelper.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
     namespace ops  {
@@ -62,32 +63,34 @@ namespace nd4j {
             T* colBuff = columns.bufferAsT<T>();
             T* volBuff = const_cast<NDArray&>(volume).bufferAsT<T>();
 
-            T *col, *vol;
-            int volDep, volRow, volCol;
 
-            if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo()))
+            if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo())) {
 
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
-                for (int b = 0; b < bS; ++b) {
-                    for (int c = 0; c < iC; ++c) {
-                        for (int kDep = 0; kDep < kD; ++kDep) {
-                            for (int kRow = 0; kRow < kH; ++kRow) {
-                                for (int kCol = 0; kCol < kW; ++kCol) {
-                                    for (int colD = 0; colD < oD; ++colD) {
-                                        for (int colH = 0; colH < oH; ++colH) {
-                                            for (int colW = 0; colW < oW; ++colW) {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    T *col, *vol;
+                    int volDep, volRow, volCol;
 
-                                                volDep = (-pD + kDep * dD) + colD*sD;
-                                                volRow = (-pH + kRow * dH) + colH*sH;
-                                                volCol = (-pW + kCol * dW) + colW*sW;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int kDep = start_z; kDep < stop_z; kDep += inc_z) {
+                                for (int kRow = 0; kRow < kH; ++kRow) {
+                                    for (int kCol = 0; kCol < kW; ++kCol) {
+                                        for (int colD = 0; colD < oD; ++colD) {
+                                            for (int colH = 0; colH < oH; ++colH) {
+                                                for (int colW = 0; colW < oW; ++colW) {
 
-                                                col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
+                                                    volDep = (-pD + kDep * dD) + colD * sD;
+                                                    volRow = (-pH + kRow * dH) + colH * sH;
+                                                    volCol = (-pW + kCol * dW) + colW * sW;
 
-                                                if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
-                                                    *col = static_cast<T>(0.);
-                                                else {
-                                                    vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
-                                                    *col = *vol;
+                                                    col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 + kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
+
+                                                    if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
+                                                        *col = static_cast<T>(0.);
+                                                    else {
+                                                        vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 + volCol * volStride4;
+                                                        *col = *vol;
+                                                    }
                                                 }
                                             }
                                         }
@@ -96,31 +99,36 @@ namespace nd4j {
                             }
                         }
                     }
-                }
+                };
 
-            else
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, kD, 1);
 
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
-                for (int b = 0; b < bS; b++) {
-                    for (int colD = 0; colD < oD; ++colD) {
-                        for (int colH = 0; colH < oH; ++colH) {
-                            for (int colW = 0; colW < oW; ++colW) {
-                                for (int c = 0; c < iC; ++c) {
-                                    for (int kDep = 0; kDep < kD; ++kDep) {
-                                        for (int kRow = 0; kRow < kH; ++kRow) {
-                                            for (int kCol = 0; kCol < kW; ++kCol) {
+            } else {
 
-                                                volDep = (-pD + kDep * dD) + colD*sD;
-                                                volRow = (-pH + kRow * dH) + colH*sH;
-                                                volCol = (-pW + kCol * dW) + colW*sW;
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    T *col, *vol;
+                    int volDep, volRow, volCol;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int colD = start_y; colD < stop_y; colD += inc_y) {
+                            for (int colH = 0; colH < oH; ++colH) {
+                                for (int colW = 0; colW < oW; ++colW) {
+                                    for (int c = 0; c < iC; ++c) {
+                                        for (int kDep = 0; kDep < kD; ++kDep) {
+                                            for (int kRow = 0; kRow < kH; ++kRow) {
+                                                for (int kCol = 0; kCol < kW; ++kCol) {
 
-                                                col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
+                                                    volDep = (-pD + kDep * dD) + colD * sD;
+                                                    volRow = (-pH + kRow * dH) + colH * sH;
+                                                    volCol = (-pW + kCol * dW) + colW * sW;
 
-                                                if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
-                                                    *col = static_cast<T>(0.);
-                                                else {
-                                                    vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
-                                                    *col = *vol;
+                                                    col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 + kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
+
+                                                    if (static_cast<unsigned>(volDep) >= static_cast<unsigned>(iD) || static_cast<unsigned>(volRow) >= static_cast<unsigned>(iH) || static_cast<unsigned>(volCol) >= static_cast<unsigned>(iW))
+                                                        *col = static_cast<T>(0.);
+                                                    else {
+                                                        vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 + volCol * volStride4;
+                                                        *col = *vol;
+                                                    }
                                                 }
                                             }
                                         }
@@ -129,7 +137,10 @@ namespace nd4j {
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, oD, 1);
+            }
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -168,29 +179,31 @@ namespace nd4j {
             T* volBuff = volume.bufferAsT<T>();
             T* colBuff = const_cast<NDArray&>(columns).bufferAsT<T>();
 
-            T* col, *vol;
-            int volDep, volRow, volCol;
 
-            if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo()))
+            if (volume.ordering() == 'c' &&  columns.ordering() == 'c' && shape::strideDescendingCAscendingF(volume.getShapeInfo()) && shape::strideDescendingCAscendingF(columns.getShapeInfo())) {
 
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(col, vol, volDep, volRow, volCol) collapse(2))
-                for (int b = 0; b < bS; b++) {
-                    for (int c = 0; c < iC; ++c) {
-                        for (int kDep = 0; kDep < kD; ++kDep) {
-                            for (int kRow = 0; kRow < kH; ++kRow) {
-                                for (int kCol = 0; kCol < kW; ++kCol) {
-                                    for (int colD = 0; colD < oD; ++colD) {
-                                        for (int colH = 0; colH < oH; ++colH) {
-                                            for (int colW = 0; colW < oW; ++colW) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    T* col, *vol;
+                    int volDep, volRow, volCol;
 
-                                                volDep = -pD + kDep * dD + colD * sD;
-                                                volRow = -pH + kRow * dH + colH * sH;
-                                                volCol = -pW + kCol * dW + colW * sW;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int kDep = 0; kDep < kD; ++kDep) {
+                                for (int kRow = 0; kRow < kH; ++kRow) {
+                                    for (int kCol = 0; kCol < kW; ++kCol) {
+                                        for (int colD = 0; colD < oD; ++colD) {
+                                            for (int colH = 0; colH < oH; ++colH) {
+                                                for (int colW = 0; colW < oW; ++colW) {
 
-                                                if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
-                                                    col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
-                                                    vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
-                                                    *vol += *col;
+                                                    volDep = -pD + kDep * dD + colD * sD;
+                                                    volRow = -pH + kRow * dH + colH * sH;
+                                                    volCol = -pW + kCol * dW + colW * sW;
+
+                                                    if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
+                                                        col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 + kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
+                                                        vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 + volCol * volStride4;
+                                                        *vol += *col;
+                                                    }
                                                 }
                                             }
                                         }
@@ -199,28 +212,34 @@ namespace nd4j {
                             }
                         }
                     }
-                }
+                };
 
-            else
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
 
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(vol, col, volDep, volRow, volCol))
-                for (int b = 0; b < bS; b++) {
-                    for (int colD = 0; colD < oD; ++colD) {
-                        for (int colH = 0; colH < oH; ++colH) {
-                            for (int colW = 0; colW < oW; ++colW) {
-                                for (int c = 0; c < iC; ++c) {
-                                    for (int kDep = 0; kDep < kD; ++kDep) {
-                                        for (int kRow = 0; kRow < kH; ++kRow) {
-                                            for (int kCol = 0; kCol < kW; ++kCol) {
+            } else {
 
-                                                volDep = (-pD + kDep * dD) + colD*sD;
-                                                volRow = (-pH + kRow * dH) + colH*sH;
-                                                volCol = (-pW + kCol * dW) + colW*sW;
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    T* col, *vol;
+                    int volDep, volRow, volCol;
 
-                                                if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
-                                                    col = colBuff + b*colStride0 + c*colStride1 + kDep*colStride2 + kRow*colStride3 + kCol*colStride4 + colD*colStride5 + colH*colStride6 + colW*colStride7;
-                                                    vol = volBuff + b*volStride0 + c*volStride1 + volDep*volStride2 + volRow*volStride3 + volCol*volStride4;
-                                                    *vol += *col;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int colD = start_y; colD < stop_y; colD += inc_y) {
+                            for (int colH = 0; colH < oH; ++colH) {
+                                for (int colW = 0; colW < oW; ++colW) {
+                                    for (int c = 0; c < iC; ++c) {
+                                        for (int kDep = 0; kDep < kD; ++kDep) {
+                                            for (int kRow = 0; kRow < kH; ++kRow) {
+                                                for (int kCol = 0; kCol < kW; ++kCol) {
+
+                                                    volDep = (-pD + kDep * dD) + colD * sD;
+                                                    volRow = (-pH + kRow * dH) + colH * sH;
+                                                    volCol = (-pW + kCol * dW) + colW * sW;
+
+                                                    if (static_cast<unsigned>(volDep) < static_cast<unsigned>(iD) && static_cast<unsigned>(volRow) < static_cast<unsigned>(iH) && static_cast<unsigned>(volCol) < static_cast<unsigned>(iW)) {
+                                                        col = colBuff + b * colStride0 + c * colStride1 + kDep * colStride2 + kRow * colStride3 + kCol * colStride4 + colD * colStride5 + colH * colStride6 + colW * colStride7;
+                                                        vol = volBuff + b * volStride0 + c * volStride1 + volDep * volStride2 + volRow * volStride3 + volCol * volStride4;
+                                                        *vol += *col;
+                                                    }
                                                 }
                                             }
                                         }
@@ -229,7 +248,10 @@ namespace nd4j {
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, oD, 1);
+            }
         }
 
 
@@ -568,22 +590,24 @@ namespace nd4j {
             const Nd4jLong zStride2 = output.stridesOf()[dimIH];
             const Nd4jLong zStride3 = output.stridesOf()[dimIH + 1];
 
-            uint xCoord2, xCoord3;
             // loop through output array
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(4) private(xCoord2, xCoord3))
-            for(uint b = 0; b < bS; ++b) {
-                for(uint c = 0; c < iC; ++c) {
-                    for(uint h = 0; h < oH ; ++h) {
-                        for(uint w = 0; w < oW ; ++w) {
+            auto func = PRAGMA_THREADS_FOR_3D {
+                uint xCoord2, xCoord3;
+                for (uint b = start_x; b < stop_x; b += inc_x) {
+                    for (uint c = start_y; c < stop_y; c += inc_y) {
+                        for (uint h = start_z; h < stop_z; h += inc_z) {
+                            for (uint w = 0; w < oW; ++w) {
+                                xCoord2 = h / factorH;
+                                xCoord3 = w / factorW;
 
-                            xCoord2 = h / factorH;
-                            xCoord3 = w / factorW;
-
-                            z[b*zStride0 + c*zStride1 + h*zStride2 + w*zStride3] = x[b*xStride0 + c*xStride1 + xCoord2*xStride2 + xCoord3*xStride3];
+                                z[b * zStride0 + c * zStride1 + h * zStride2 + w * zStride3] = x[b * xStride0 + c * xStride1 + xCoord2 * xStride2 + xCoord3 * xStride3];
+                            }
                         }
                     }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oH, 1);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -616,25 +640,31 @@ namespace nd4j {
             const Nd4jLong zStride3 = output.stridesOf()[dimID + 1];
             const Nd4jLong zStride4 = output.stridesOf()[dimID + 2];
 
-            uint xCoord2, xCoord3, xCoord4;
             // loop through output array
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(5) private(xCoord2, xCoord3, xCoord4))
-            for(uint b = 0; b < bS; ++b) {
-                for(uint c = 0; c < iC; ++c) {
-                    for(uint d = 0; d < oD ; ++d) {
-                        for(uint h = 0; h < oH ; ++h) {
-                            for(uint w = 0; w < oW ; ++w) {
+            auto func = PRAGMA_THREADS_FOR_3D {
+                uint xCoord2, xCoord3, xCoord4;
 
-                                xCoord2 = d / factorD;
-                                xCoord3 = h / factorH;
-                                xCoord4 = w / factorW;
+                for (uint b = start_x; b < stop_x; b += inc_x) {
+                    for (uint c = start_y; c < stop_y; c += inc_y) {
+                        for (uint d = start_z; d < stop_z; d += inc_z) {
+                            for (uint h = 0; h < oH; ++h) {
+                                for (uint w = 0; w < oW; ++w) {
 
-                                z[b*zStride0 + c*zStride1 + d*zStride2 + h*zStride3 + w*zStride4] = x[b*xStride0 + c*xStride1 + xCoord2*xStride2 + xCoord3*xStride3 + xCoord4*xStride4];
+                                    xCoord2 = d / factorD;
+                                    xCoord3 = h / factorH;
+                                    xCoord4 = w / factorW;
+
+                                    z[b * zStride0 + c * zStride1 + d * zStride2 + h * zStride3 + w * zStride4] = x[
+                                            b * xStride0 + c * xStride1 + xCoord2 * xStride2 + xCoord3 * xStride3 +
+                                            xCoord4 * xStride4];
+                                }
                             }
                         }
                     }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -668,23 +698,26 @@ namespace nd4j {
             const Nd4jLong zStride3 = gradI.stridesOf()[dimIH + 1];
 
             // loop through output array
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(4))
-            for(uint b = 0; b < bS; ++b) {
-                for(uint c = 0; c < iC; ++c) {
-                    for(uint h = 0; h < iH; ++h) {
-                        for(uint w = 0; w < iW; ++w) {
+            auto func = PRAGMA_THREADS_FOR_3D {
+                for (uint b = start_x; b < stop_x; b += inc_x) {
+                    for (uint c = start_y; c < stop_y; c += inc_y) {
+                        for (uint h = start_z; h < stop_z; h += inc_z) {
+                            for (uint w = 0; w < iW; ++w) {
 
-                            const auto zOffset = b*zStride0 + c*zStride1 + h*zStride2 + w*zStride3;
+                                const auto zOffset = b * zStride0 + c * zStride1 + h * zStride2 + w * zStride3;
 
-                            z[zOffset] = 0;
+                                z[zOffset] = 0;
 
-                            for(uint xh = h * factorH; xh < h * factorH + factorH; ++xh)
-                                for(uint xw = w * factorW; xw < w * factorW + factorW; ++xw)
-                                    z[zOffset] += x[b*xStride0 + c*xStride1 + xh*xStride2 + xw*xStride3];
+                                for (uint xh = h * factorH; xh < h * factorH + factorH; ++xh)
+                                    for (uint xw = w * factorW; xw < w * factorW + factorW; ++xw)
+                                        z[zOffset] += x[b * xStride0 + c * xStride1 + xh * xStride2 + xw * xStride3];
+                            }
                         }
                     }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, iH, 1);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -723,26 +756,29 @@ namespace nd4j {
             const Nd4jLong zStride4 = gradI.stridesOf()[dimID + 2];
 
             // loop through output array
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(collapse(5))
-            for(uint b = 0; b < bS; ++b) {
-                for(uint c = 0; c < iC; ++c) {
-                    for(uint d = 0; d < iD; ++d) {
-                        for(uint h = 0; h < iH; ++h) {
-                            for(uint w = 0; w < iW; ++w) {
+            auto func = PRAGMA_THREADS_FOR_3D {
+                for (uint b = start_x; b < stop_x; b += inc_x) {
+                    for (uint c = start_y; c < stop_y; c += inc_y) {
+                        for (uint d = start_z; d < stop_z; d += inc_z) {
+                            for (uint h = 0; h < iH; ++h) {
+                                for (uint w = 0; w < iW; ++w) {
 
-                                const auto zOffset = b*zStride0 + c*zStride1 + d*zStride2 + h*zStride3 + w*zStride4;
+                                    const auto zOffset = b * zStride0 + c * zStride1 + d * zStride2 + h * zStride3 + w * zStride4;
 
-                                z[zOffset] = 0;
+                                    z[zOffset] = 0;
 
-                                for(uint xd = d * factorD; xd < d * factorD + factorD; ++xd)
-                                    for(uint xh = h * factorH; xh < h * factorH + factorH; ++xh)
-                                        for(uint xw = w * factorW; xw < w * factorW + factorW; ++xw)
-                                            z[zOffset] += x[b*xStride0 + c*xStride1 + xd*xStride2 + xh*xStride3 + xw*xStride4];
+                                    for (uint xd = d * factorD; xd < d * factorD + factorD; ++xd)
+                                        for (uint xh = h * factorH; xh < h * factorH + factorH; ++xh)
+                                            for (uint xw = w * factorW; xw < w * factorW + factorW; ++xw)
+                                                z[zOffset] += x[b * xStride0 + c * xStride1 + xd * xStride2 + xh * xStride3 + xw * xStride4];
+                                }
                             }
                         }
                     }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, iD, 1);
         }
 
 //////////////////////////////////////////////////////////////////////////
@@ -779,142 +815,156 @@ namespace nd4j {
             const Nd4jLong iStep3   = dW*iStride3;
             const int kProd         = kH*kW;
 
-            Nd4jLong hstart, wstart, hend, wend;
-            T *pIn;
-
             if(poolingMode == 0) {        // max
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, hstart, wstart, hend, wend) collapse(2))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int oh = 0; oh < oH; ++oh) {
-                            for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Nd4jLong hstart, wstart, hend, wend;
+                    T *pIn;
 
-                                pIn  = in  + b * iStride0 + c * iStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int oh = 0; oh < oH; ++oh) {
+                                for (int ow = 0; ow < oW; ++ow) {
 
-                                hstart = oh * sH - pH;
-                                wstart = ow * sW - pW;
-                                hend = hstart + kHEff;
-                                wend = wstart + kWEff;
+                                    pIn = in + b * iStride0 + c * iStride1;
 
-                                if(hstart < 0)
-                                    hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
-                                if(wstart < 0)
-                                    wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
-                                if(hend > iH)
-                                    hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
-                                if(wend > iW)
-                                    wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                    hstart = oh * sH - pH;
+                                    wstart = ow * sW - pW;
+                                    hend = hstart + kHEff;
+                                    wend = wstart + kWEff;
 
-                                hstart *= iStride2;
-                                hend   *= iStride2;
-                                wstart *= iStride3;
-                                wend   *= iStride3;
+                                    if (hstart < 0)
+                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                    if (wstart < 0)
+                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                    if (hend > iH)
+                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                    if (wend > iW)
+                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                T max = -DataTypeUtils::max<T>();
+                                    hstart *= iStride2;
+                                    hend *= iStride2;
+                                    wstart *= iStride3;
+                                    wend *= iStride3;
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
-                                        T val = pIn[kh + kw];
-                                        if (val > max)
-                                            max = val;
-                                    }
-                                out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = max;
+                                    T max = -DataTypeUtils::max<T>();
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
+                                            T val = pIn[kh + kw];
+                                            if (val > max)
+                                                max = val;
+                                        }
+                                    out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = max;
+                                }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 1) {      // avg
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, hstart, wstart, hend, wend) collapse(2))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int oh = 0; oh < oH; ++oh) {
-                            for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Nd4jLong hstart, wstart, hend, wend;
+                    T *pIn;
 
-                                pIn  = in  + b * iStride0 + c * iStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int oh = 0; oh < oH; ++oh) {
+                                for (int ow = 0; ow < oW; ++ow) {
 
-                                hstart = oh * sH - pH;
-                                wstart = ow * sW - pW;
-                                hend = hstart + kHEff;
-                                wend = wstart + kWEff;
+                                    pIn = in + b * iStride0 + c * iStride1;
 
-                                if(hstart < 0)
-                                    hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
-                                if(wstart < 0)
-                                    wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
-                                if(hend > iH)
-                                    hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
-                                if(wend > iW)
-                                    wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                    hstart = oh * sH - pH;
+                                    wstart = ow * sW - pW;
+                                    hend = hstart + kHEff;
+                                    wend = wstart + kWEff;
 
-                                hstart *= iStride2;
-                                hend   *= iStride2;
-                                wstart *= iStride3;
-                                wend   *= iStride3;
+                                    if (hstart < 0)
+                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                    if (wstart < 0)
+                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                    if (hend > iH)
+                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                    if (wend > iW)
+                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                T sum = static_cast<T>(0.f);
+                                    hstart *= iStride2;
+                                    hend *= iStride2;
+                                    wstart *= iStride3;
+                                    wend *= iStride3;
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                        sum += pIn[kh + kw];
+                                    T sum = static_cast<T>(0.f);
 
-                                if (extraParam0 == 0) {                     //Exclude padding
-                                    int a = (hend-hstart)/iStep2 + ((hend-hstart) % iStep2 == 0 ? 0 : 1);
-                                    int b = (wend-wstart)/iStep3 + ((wend-wstart) % iStep3 == 0 ? 0 : 1);
-                                    sum /=  static_cast<T>(a * b);          //  Accounts for dilation
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                            sum += pIn[kh + kw];
+
+                                    if (extraParam0 == 0) {                     //Exclude padding
+                                        int a = (hend - hstart) / iStep2 + ((hend - hstart) % iStep2 == 0 ? 0 : 1);
+                                        int r = (wend - wstart) / iStep3 + ((wend - wstart) % iStep3 == 0 ? 0 : 1);
+                                        sum /= static_cast<T>(a * r);          //  Accounts for dilation
+                                    } else if (extraParam0 == 1)                  //Include padding
+                                        sum /= kProd;
+
+                                    out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                                 }
-                                else if (extraParam0 == 1)                  //Include padding
-                                    sum /= kProd;
-
-                                out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 2) {  // pnorm
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, hstart, wstart, hend, wend) collapse(2))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int oh = 0; oh < oH; ++oh) {
-                            for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Nd4jLong hstart, wstart, hend, wend;
+                    T *pIn;
 
-                                pIn  = in  + b * iStride0 + c * iStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int oh = 0; oh < oH; ++oh) {
+                                for (int ow = 0; ow < oW; ++ow) {
 
-                                hstart = oh * sH - pH;
-                                wstart = ow * sW - pW;
-                                hend = hstart + kHEff;
-                                wend = wstart + kWEff;
+                                    pIn = in + b * iStride0 + c * iStride1;
 
-                                if(hstart < 0)
-                                    hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
-                                if(wstart < 0)
-                                    wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
-                                if(hend > iH)
-                                    hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
-                                if(wend > iW)
-                                    wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                    hstart = oh * sH - pH;
+                                    wstart = ow * sW - pW;
+                                    hend = hstart + kHEff;
+                                    wend = wstart + kWEff;
 
-                                hstart *= iStride2;
-                                hend   *= iStride2;
-                                wstart *= iStride3;
-                                wend   *= iStride3;
+                                    if (hstart < 0)
+                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                    if (wstart < 0)
+                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                    if (hend > iH)
+                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                    if (wend > iW)
+                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                T sum = static_cast<T>(0.f);
+                                    hstart *= iStride2;
+                                    hend *= iStride2;
+                                    wstart *= iStride3;
+                                    wend *= iStride3;
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                        sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                    T sum = static_cast<T>(0.f);
 
-                                sum = nd4j::math::nd4j_pow<T,T,T>(sum, static_cast<T>((T)1.f) / extraParam0);
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                            sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
 
-                                out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                                    sum = nd4j::math::nd4j_pow<T, T, T>(sum, static_cast<T>((T) 1.f) / extraParam0);
+
+                                    out[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3] = sum;
+                                }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
             else {
                 nd4j_printf("ConvolutionUtils::pooling2d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
@@ -961,176 +1011,192 @@ namespace nd4j {
             const Nd4jLong iStep4   = dW*iStride4;
             const int kProd         = kD*kH*kW;
 
-            Nd4jLong dstart, hstart, wstart, dend, hend, wend;
-            T sum, *pIn;
-
             if(poolingMode == 0) {        // max
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, dstart, hstart, wstart, dend, hend, wend))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int od = 0; od < oD; ++od) {
-                            for(int oh = 0; oh < oH; ++oh) {
-                                for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    Nd4jLong dstart, hstart, wstart, dend, hend, wend;
+                    T sum, *pIn;
 
-                                    pIn  = in  + b * iStride0 + c * iStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int od = start_z; od < stop_z; od += inc_z) {
+                                for (int oh = 0; oh < oH; ++oh) {
+                                    for (int ow = 0; ow < oW; ++ow) {
 
-                                    dstart = od * sD - pD;
-                                    hstart = oh * sH - pH;
-                                    wstart = ow * sW - pW;
-                                    dend = dstart + kDEff;
-                                    hend = hstart + kHEff;
-                                    wend = wstart + kWEff;
+                                        pIn = in + b * iStride0 + c * iStride1;
 
-                                    if(dstart < 0)
-                                        dstart += dD * ((-dstart + dD - 1) / dD);
-                                    if(hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH);
-                                    if(wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW);
-                                    if(dend > iD)
-                                        dend -= dD * ((dend-iD + dD - 1) / dD);
-                                    if(hend > iH)
-                                        hend -= dH * ((hend-iH + dH - 1) / dH);
-                                    if(wend > iW)
-                                        wend -= dW * ((wend-iW + dW - 1) / dW);
+                                        dstart = od * sD - pD;
+                                        hstart = oh * sH - pH;
+                                        wstart = ow * sW - pW;
+                                        dend = dstart + kDEff;
+                                        hend = hstart + kHEff;
+                                        wend = wstart + kWEff;
 
-                                    dstart *= iStride2;
-                                    dend   *= iStride2;
-                                    hstart *= iStride3;
-                                    hend   *= iStride3;
-                                    wstart *= iStride4;
-                                    wend   *= iStride4;
+                                        if (dstart < 0)
+                                            dstart += dD * ((-dstart + dD - 1) / dD);
+                                        if (hstart < 0)
+                                            hstart += dH * ((-hstart + dH - 1) / dH);
+                                        if (wstart < 0)
+                                            wstart += dW * ((-wstart + dW - 1) / dW);
+                                        if (dend > iD)
+                                            dend -= dD * ((dend - iD + dD - 1) / dD);
+                                        if (hend > iH)
+                                            hend -= dH * ((hend - iH + dH - 1) / dH);
+                                        if (wend > iW)
+                                            wend -= dW * ((wend - iW + dW - 1) / dW);
 
-                                    sum = -DataTypeUtils::max<T>();
+                                        dstart *= iStride2;
+                                        dend *= iStride2;
+                                        hstart *= iStride3;
+                                        hend *= iStride3;
+                                        wstart *= iStride4;
+                                        wend *= iStride4;
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4) {
-                                                T val = pIn[kd + kh + kw];
-                                                if (val > sum)
-                                                    sum = val;
-                                            }
-                                    out[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4] = sum;
+                                        sum = -DataTypeUtils::max<T>();
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4) {
+                                                    T val = pIn[kd + kh + kw];
+                                                    if (val > sum)
+                                                        sum = val;
+                                                }
+
+                                        out[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4] = sum;
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 1) {     // avg
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, dstart, hstart, wstart, dend, hend, wend))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int od = 0; od < oD; ++od) {
-                            for(int oh = 0; oh < oH; ++oh) {
-                                for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    Nd4jLong dstart, hstart, wstart, dend, hend, wend;
+                    T sum, *pIn;
 
-                                    pIn  = in  + b * iStride0 + c * iStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int od = start_z; od < stop_z; od += inc_z) {
+                                for (int oh = 0; oh < oH; ++oh) {
+                                    for (int ow = 0; ow < oW; ++ow) {
 
-                                    dstart = od * sD - pD;
-                                    hstart = oh * sH - pH;
-                                    wstart = ow * sW - pW;
-                                    dend = dstart + kDEff;
-                                    hend = hstart + kHEff;
-                                    wend = wstart + kWEff;
+                                        pIn = in + b * iStride0 + c * iStride1;
 
-                                    if(dstart < 0)
-                                        dstart += dD * ((-dstart + dD - 1) / dD);
-                                    if(hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH);
-                                    if(wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW);
-                                    if(dend > iD)
-                                        dend -= dD * ((dend-iD + dD - 1) / dD);
-                                    if(hend > iH)
-                                        hend -= dH * ((hend-iH + dH - 1) / dH);
-                                    if(wend > iW)
-                                        wend -= dW * ((wend-iW + dW - 1) / dW);
+                                        dstart = od * sD - pD;
+                                        hstart = oh * sH - pH;
+                                        wstart = ow * sW - pW;
+                                        dend = dstart + kDEff;
+                                        hend = hstart + kHEff;
+                                        wend = wstart + kWEff;
 
-                                    dstart *= iStride2;
-                                    dend   *= iStride2;
-                                    hstart *= iStride3;
-                                    hend   *= iStride3;
-                                    wstart *= iStride4;
-                                    wend   *= iStride4;
+                                        if (dstart < 0)
+                                            dstart += dD * ((-dstart + dD - 1) / dD);
+                                        if (hstart < 0)
+                                            hstart += dH * ((-hstart + dH - 1) / dH);
+                                        if (wstart < 0)
+                                            wstart += dW * ((-wstart + dW - 1) / dW);
+                                        if (dend > iD)
+                                            dend -= dD * ((dend - iD + dD - 1) / dD);
+                                        if (hend > iH)
+                                            hend -= dH * ((hend - iH + dH - 1) / dH);
+                                        if (wend > iW)
+                                            wend -= dW * ((wend - iW + dW - 1) / dW);
 
-                                    sum = static_cast<T>(0.);
+                                        dstart *= iStride2;
+                                        dend *= iStride2;
+                                        hstart *= iStride3;
+                                        hend *= iStride3;
+                                        wstart *= iStride4;
+                                        wend *= iStride4;
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                sum += pIn[kd + kh + kw];
+                                        sum = static_cast<T>(0.);
 
-                                    if (extraParam0 == 0)         //Exclude padding
-                                        sum /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(iStep2)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(iStep3)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(iStep4));   //Accounts for dilation
-                                    else if (extraParam0 == 1)    //Include padding
-                                        sum /= kProd;
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                                    sum += pIn[kd + kh + kw];
 
-                                    out[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4] = sum;
+                                        if (extraParam0 == 0)         //Exclude padding
+                                            sum /= nd4j::math::nd4j_ceil<double, T>(static_cast<double>(dend - dstart) / static_cast<double>(iStep2)) * nd4j::math::nd4j_ceil<double, T>(static_cast<double>(hend - hstart) / static_cast<double>(iStep3)) * nd4j::math::nd4j_ceil<double, T>(static_cast<double>(wend - wstart) / static_cast<double>(iStep4));   //Accounts for dilation
+                                        else if (extraParam0 == 1)    //Include padding
+                                            sum /= kProd;
+
+                                        out[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4] = sum;
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 2) {  // pnorm
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, sum, dstart, hstart, wstart, dend, hend, wend))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int od = 0; od < oD; ++od) {
-                            for(int oh = 0; oh < oH; ++oh) {
-                                for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    Nd4jLong dstart, hstart, wstart, dend, hend, wend;
+                    T sum, *pIn;
 
-                                    pIn  = in  + b * iStride0 + c * iStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int od = start_z; od < stop_z; od += inc_z) {
+                                for (int oh = 0; oh < oH; ++oh) {
+                                    for (int ow = 0; ow < oW; ++ow) {
 
-                                    dstart = od * sD - pD;
-                                    hstart = oh * sH - pH;
-                                    wstart = ow * sW - pW;
-                                    dend = dstart + kDEff;
-                                    hend = hstart + kHEff;
-                                    wend = wstart + kWEff;
+                                        pIn = in + b * iStride0 + c * iStride1;
 
-                                    if(dstart < 0)
-                                        dstart += dD * ((-dstart + dD - 1) / dD);
-                                    if(hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH);
-                                    if(wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW);
-                                    if(dend > iD)
-                                        dend -= dD * ((dend-iD + dD - 1) / dD);
-                                    if(hend > iH)
-                                        hend -= dH * ((hend-iH + dH - 1) / dH);
-                                    if(wend > iW)
-                                        wend -= dW * ((wend-iW + dW - 1) / dW);
+                                        dstart = od * sD - pD;
+                                        hstart = oh * sH - pH;
+                                        wstart = ow * sW - pW;
+                                        dend = dstart + kDEff;
+                                        hend = hstart + kHEff;
+                                        wend = wstart + kWEff;
 
-                                    dstart *= iStride2;
-                                    dend   *= iStride2;
-                                    hstart *= iStride3;
-                                    hend   *= iStride3;
-                                    wstart *= iStride4;
-                                    wend   *= iStride4;
+                                        if (dstart < 0)
+                                            dstart += dD * ((-dstart + dD - 1) / dD);
+                                        if (hstart < 0)
+                                            hstart += dH * ((-hstart + dH - 1) / dH);
+                                        if (wstart < 0)
+                                            wstart += dW * ((-wstart + dW - 1) / dW);
+                                        if (dend > iD)
+                                            dend -= dD * ((dend - iD + dD - 1) / dD);
+                                        if (hend > iH)
+                                            hend -= dH * ((hend - iH + dH - 1) / dH);
+                                        if (wend > iW)
+                                            wend -= dW * ((wend - iW + dW - 1) / dW);
 
-                                    sum = static_cast<T>(0.);
+                                        dstart *= iStride2;
+                                        dend *= iStride2;
+                                        hstart *= iStride3;
+                                        hend *= iStride3;
+                                        wstart *= iStride4;
+                                        wend *= iStride4;
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
+                                        sum = static_cast<T>(0.);
 
-                                    sum = nd4j::math::nd4j_pow<T,T,T>(sum, (T) 1.f / extraParam0);
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                                    sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
 
-                                    out[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4] = sum;
+                                        sum = nd4j::math::nd4j_pow<T, T, T>(sum, (T) 1.f / extraParam0);
+
+                                        out[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4] = sum;
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
             else {
                 nd4j_printf("ConvolutionUtils::pooling3d: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
-                throw "";
+                throw std::runtime_error("Incorrect poooling3d mode");
             }
         }
 
@@ -1182,191 +1248,230 @@ namespace nd4j {
 
             const bool sameStrides = iStride0 == gIStride0 && iStride1 == gIStride1 && iStride2 == gIStride2 && iStride3 == gIStride3;
 
-            Nd4jLong hstart, wstart,hend, wend, maxKH, maxKW;
-            T sum, valO, *pIn, *pgI;
-
             if(poolingMode == 0) {        // max
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, valO, sum, hstart, wstart, hend, wend, maxKH, maxKW))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int oh = 0; oh < oH; ++oh) {
-                            for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Nd4jLong hstart, wstart,hend, wend, maxKH, maxKW;
+                    T sum, valO, *pIn, *pgI;
 
-                                pIn = in + b * iStride0 + c * iStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int oh = 0; oh < oH; ++oh) {
+                                for (int ow = 0; ow < oW; ++ow) {
 
-                                hstart = oh * sH - pH;
-                                wstart = ow * sW - pW;
-                                hend = hstart + kHEff;
-                                wend = wstart + kWEff;
+                                    pIn = in + b * iStride0 + c * iStride1;
 
-                                if(hstart < 0)
-                                    hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
-                                if(wstart < 0)
-                                    wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
-                                if(hend > iH)
-                                    hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
-                                if(wend > iW)
-                                    wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                    hstart = oh * sH - pH;
+                                    wstart = ow * sW - pW;
+                                    hend = hstart + kHEff;
+                                    wend = wstart + kWEff;
 
-                                sum = -DataTypeUtils::max<T>();
-                                valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
+                                    if (hstart < 0)
+                                        hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                    if (wstart < 0)
+                                        wstart += dW * ((-wstart + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                    if (hend > iH)
+                                        hend -= dH * ((hend - iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                    if (wend > iW)
+                                        wend -= dW * ((wend - iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                if(sameStrides) {
+                                    sum = -DataTypeUtils::max<T>();
+                                    valO = gO[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3];
 
-                                    hstart *= iStride2;
-                                    hend   *= iStride2;
-                                    wstart *= iStride3;
-                                    wend   *= iStride3;
+                                    if (sameStrides) {
 
-                                    // we set these to default values
-                                    maxKH = hstart;
-                                    maxKW = wstart;
+                                        hstart *= iStride2;
+                                        hend *= iStride2;
+                                        wstart *= iStride3;
+                                        wend *= iStride3;
 
-                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
-                                            T valIn = pIn[kh + kw];
-                                            if (valIn > sum) {
-                                                sum = valIn;
-                                                maxKH = kh;
-                                                maxKW = kw;
+                                        // we set these to default values
+                                        maxKH = hstart;
+                                        maxKW = wstart;
+
+                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3) {
+                                                T valIn = pIn[kh + kw];
+                                                if (valIn > sum) {
+                                                    sum = valIn;
+                                                    maxKH = kh;
+                                                    maxKW = kw;
+                                                }
                                             }
-                                        }
-                                    gI[pIn - in + maxKH + maxKW] += valO;
-                                }
-                                else {
+                                        gI[pIn - in + maxKH + maxKW] += valO;
+                                    } else {
 
-                                    // we set these to default values
-                                    maxKH = hstart;
-                                    maxKW = wstart;
+                                        // we set these to default values
+                                        maxKH = hstart;
+                                        maxKW = wstart;
 
-                                    for (Nd4jLong kh = hstart; kh < hend; kh += dH)
-                                        for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
-                                            T valIn = pIn[kh * iStride2 + kw * iStride3];
-                                            if (valIn > sum) {
-                                                sum = valIn;
-                                                maxKH = kh;
-                                                maxKW = kw;
+                                        for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                            for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                                T valIn = pIn[kh * iStride2 + kw * iStride3];
+                                                if (valIn > sum) {
+                                                    sum = valIn;
+                                                    maxKH = kh;
+                                                    maxKW = kw;
+                                                }
                                             }
-                                        }
-                                    gI[b * gIStride0 + c * gIStride1 + maxKH * gIStride2 + maxKW * gIStride3] += valO;
+
+                                        gI[b * gIStride0 + c * gIStride1 + maxKH * gIStride2 + maxKW * gIStride3] += valO;
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 1) {     // avg
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pgI, valO, hstart, wstart, hend, wend))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int oh = 0; oh < oH; ++oh) {
-                            for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Nd4jLong hstart, wstart, hend, wend, maxKH, maxKW;
+                    T sum, valO, *pIn, *pgI;
 
-                                pgI  = gI + b * gIStride0 + c * gIStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int oh = 0; oh < oH; ++oh) {
+                                for (int ow = 0; ow < oW; ++ow) {
 
-                                hstart = oh * sH - pH;
-                                wstart = ow * sW - pW;
-                                hend = hstart + kHEff;
-                                wend = wstart + kWEff;
+                                    pgI = gI + b * gIStride0 + c * gIStride1;
 
-                                if(hstart < 0)
-                                    hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
-                                if(wstart < 0)
-                                    wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
-                                if(hend > iH)
-                                    hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
-                                if(wend > iW)
-                                    wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                    hstart = oh * sH - pH;
+                                    wstart = ow * sW - pW;
+                                    hend = hstart + kHEff;
+                                    wend = wstart + kWEff;
 
-                                hstart *= gIStride2;
-                                hend   *= gIStride2;
-                                wstart *= gIStride3;
-                                wend   *= gIStride3;
+                                    if (hstart < 0)
+                                        hstart += dH * ((-hstart + dH - 1) /
+                                                        dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                    if (wstart < 0)
+                                        wstart += dW * ((-wstart + dW - 1) /
+                                                        dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                    if (hend > iH)
+                                        hend -= dH * ((hend - iH + dH - 1) /
+                                                      dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                    if (wend > iW)
+                                        wend -= dW * ((wend - iW + dW - 1) /
+                                                      dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
+                                    hstart *= gIStride2;
+                                    hend *= gIStride2;
+                                    wstart *= gIStride3;
+                                    wend *= gIStride3;
 
-                                if ((int) extraParam0 == 0)         //Exclude padding
-                                    valO /= static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(gIStep2))) * static_cast<T>(nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(gIStep3)));   //Accounts for dilation
-                                else if ((int) extraParam0 == 1)    //Include padding
-                                    valO /= kProd;
+                                    valO = gO[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3];
 
-                                for (Nd4jLong kh = hstart; kh < hend; kh += gIStep2)
-                                    for (Nd4jLong kw = wstart; kw < wend; kw += gIStep3)
-                                        pgI[kh + kw] += valO;
+                                    if ((int) extraParam0 == 0)         //Exclude padding
+                                        valO /= static_cast<T>(nd4j::math::nd4j_ceil<double, T>(
+                                                static_cast<double>(hend - hstart) / static_cast<double>(gIStep2))) *
+                                                static_cast<T>(nd4j::math::nd4j_ceil<double, T>(
+                                                        static_cast<double>(wend - wstart) /
+                                                        static_cast<double>(gIStep3)));   //Accounts for dilation
+                                    else if ((int) extraParam0 == 1)    //Include padding
+                                        valO /= kProd;
+
+                                    for (Nd4jLong kh = hstart; kh < hend; kh += gIStep2)
+                                        for (Nd4jLong kw = wstart; kw < wend; kw += gIStep3)
+                                            pgI[kh + kw] += valO;
+                                }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 2) {  // pnorm
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, valO, pgI, sum, hstart, wstart, hend, wend))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int oh = 0; oh < oH; ++oh) {
-                            for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    Nd4jLong hstart, wstart, hend, wend, maxKH, maxKW;
+                    T sum, valO, *pIn, *pgI;
 
-                                pIn  = in + b * iStride0 + c * iStride1;
-                                pgI  = sameStrides ? gI + (pIn - in) : gI + b * gIStride0 + c * gIStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int oh = 0; oh < oH; ++oh) {
+                                for (int ow = 0; ow < oW; ++ow) {
 
-                                hstart = oh * sH - pH;
-                                wstart = ow * sW - pW;
-                                hend = hstart + kHEff;
-                                wend = wstart + kWEff;
+                                    pIn = in + b * iStride0 + c * iStride1;
+                                    pgI = sameStrides ? gI + (pIn - in) : gI + b * gIStride0 + c * gIStride1;
 
-                                if(hstart < 0)
-                                    hstart += dH * ((-hstart + dH - 1) / dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
-                                if(wstart < 0)
-                                    wstart += dW * ((-wstart + dW -1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
-                                if(hend > iH)
-                                    hend -= dH * ((hend-iH + dH - 1) / dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
-                                if(wend > iW)
-                                    wend -= dW * ((wend-iW + dW - 1) / dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
+                                    hstart = oh * sH - pH;
+                                    wstart = ow * sW - pW;
+                                    hend = hstart + kHEff;
+                                    wend = wstart + kWEff;
 
-                                sum = static_cast<T>(0.f);
-                                valO = gO[b*oStride0 + c*oStride1 + oh*oStride2 + ow*oStride3];
+                                    if (hstart < 0)
+                                        hstart += dH * ((-hstart + dH - 1) /
+                                                        dH); // (Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-hstart) / static_cast<T>(dH));
+                                    if (wstart < 0)
+                                        wstart += dW * ((-wstart + dW - 1) /
+                                                        dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(-wstart) / static_cast<T>(dW));
+                                    if (hend > iH)
+                                        hend -= dH * ((hend - iH + dH - 1) /
+                                                      dH); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(hend-iH) / static_cast<T>(dH));
+                                    if (wend > iW)
+                                        wend -= dW * ((wend - iW + dW - 1) /
+                                                      dW); //(Nd4jLong)nd4j::math::nd4j_ceil<T,T>(static_cast<T>(wend-iW) / static_cast<T>(dW));
 
-                                if(sameStrides) {
+                                    sum = static_cast<T>(0.f);
+                                    valO = gO[b * oStride0 + c * oStride1 + oh * oStride2 + ow * oStride3];
 
-                                    hstart *= iStride2;
-                                    hend   *= iStride2;
-                                    wstart *= iStride3;
-                                    wend   *= iStride3;
+                                    if (sameStrides) {
 
-                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                            sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
+                                        hstart *= iStride2;
+                                        hend *= iStride2;
+                                        wstart *= iStride3;
+                                        wend *= iStride3;
 
-                                    valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1. - extraParam0) / extraParam0);
+                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                                sum += nd4j::math::nd4j_pow<T, T, T>(
+                                                        nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0);
 
-                                    for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
-                                        for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
-                                            pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(pIn[kh + kw]);
-                                }
-                                else {
+                                        valO *= nd4j::math::nd4j_pow<T, T, T>(sum,
+                                                                              ((T) 1. - extraParam0) / extraParam0);
 
-                                    for (Nd4jLong kh = hstart; kh < hend; kh += dH)
-                                        for (Nd4jLong kw = wstart; kw < wend; kw += dW)
-                                            sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kh * iStride2 + kw * iStride3]), extraParam0);
+                                        for (Nd4jLong kh = hstart; kh < hend; kh += iStep2)
+                                            for (Nd4jLong kw = wstart; kw < wend; kw += iStep3)
+                                                pgI[kh + kw] += valO * nd4j::math::nd4j_pow<T, T, T>(
+                                                        nd4j::math::nd4j_abs<T>(pIn[kh + kw]), extraParam0 - 1.f) *
+                                                                nd4j::math::nd4j_sgn<T, T>(pIn[kh + kw]);
+                                    } else {
 
-                                    valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1. - extraParam0) / extraParam0);
+                                        for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                            for (Nd4jLong kw = wstart; kw < wend; kw += dW)
+                                                sum += nd4j::math::nd4j_pow<T, T, T>(
+                                                        nd4j::math::nd4j_abs<T>(pIn[kh * iStride2 + kw * iStride3]),
+                                                        extraParam0);
 
-                                    for (Nd4jLong kh = hstart; kh < hend; kh += dH) {
-                                        for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
-                                            const auto inVal = pIn[kh * iStride2 + kw * iStride3];
-                                            pgI[kh * gIStride2 + kw * gIStride3] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(inVal), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(inVal);
+                                        valO *= nd4j::math::nd4j_pow<T, T, T>(sum,
+                                                                              ((T) 1. - extraParam0) / extraParam0);
+
+                                        for (Nd4jLong kh = hstart; kh < hend; kh += dH) {
+                                            for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                                const auto inVal = pIn[kh * iStride2 + kw * iStride3];
+                                                pgI[kh * gIStride2 + kw * gIStride3] += valO *
+                                                                                        nd4j::math::nd4j_pow<T, T, T>(
+                                                                                                nd4j::math::nd4j_abs<T>(
+                                                                                                        inVal),
+                                                                                                extraParam0 - 1.f) *
+                                                                                        nd4j::math::nd4j_sgn<T, T>(
+                                                                                                inVal);
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1);
             }
             else {
                 nd4j_printf("ConvolutionUtils::pooling2dBP: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
-                throw "";
+                throw std::runtime_error("Incorrect pooling2dBP mode");
             }
         }
 
@@ -1425,226 +1530,239 @@ namespace nd4j {
 
             const bool sameStrides = iStride0 == gIStride0 && iStride1 == gIStride1 && iStride2 == gIStride2 && iStride3 == gIStride3 && iStride4 == gIStride4;
 
-            Nd4jLong dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW;
-            T sum, valO, *pIn, *pgI;
-
             if(poolingMode == 0) {        // max
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, valO, sum, dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int od = 0; od < oD; ++od) {
-                            for(int oh = 0; oh < oH; ++oh) {
-                                for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    Nd4jLong dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW;
+                    T sum, valO, *pIn, *pgI;
 
-                                    pIn = in + b * iStride0 + c * iStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int od = start_z; od < stop_z; od += inc_z) {
+                                for (int oh = 0; oh < oH; ++oh) {
+                                    for (int ow = 0; ow < oW; ++ow) {
 
-                                    dstart = od * sD - pD;
-                                    hstart = oh * sH - pH;
-                                    wstart = ow * sW - pW;
-                                    dend = dstart + kDEff;
-                                    hend = hstart + kHEff;
-                                    wend = wstart + kWEff;
+                                        pIn = in + b * iStride0 + c * iStride1;
 
-                                    if(dstart < 0)
-                                        dstart += dD * ((-dstart + dD - 1) / dD);
-                                    if(hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH);
-                                    if(wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW);
-                                    if(dend > iD)
-                                        dend -= dD * ((dend-iD + dD - 1) / dD);
-                                    if(hend > iH)
-                                        hend -= dH * ((hend-iH + dH - 1) / dH);
-                                    if(wend > iW)
-                                        wend -= dW * ((wend-iW + dW - 1) / dW);
+                                        dstart = od * sD - pD;
+                                        hstart = oh * sH - pH;
+                                        wstart = ow * sW - pW;
+                                        dend = dstart + kDEff;
+                                        hend = hstart + kHEff;
+                                        wend = wstart + kWEff;
 
-                                    sum = -DataTypeUtils::max<T>();
-                                    valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
+                                        if (dstart < 0)
+                                            dstart += dD * ((-dstart + dD - 1) / dD);
+                                        if (hstart < 0)
+                                            hstart += dH * ((-hstart + dH - 1) / dH);
+                                        if (wstart < 0)
+                                            wstart += dW * ((-wstart + dW - 1) / dW);
+                                        if (dend > iD)
+                                            dend -= dD * ((dend - iD + dD - 1) / dD);
+                                        if (hend > iH)
+                                            hend -= dH * ((hend - iH + dH - 1) / dH);
+                                        if (wend > iW)
+                                            wend -= dW * ((wend - iW + dW - 1) / dW);
 
-                                    if(sameStrides) {
+                                        sum = -DataTypeUtils::max<T>();
+                                        valO = gO[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4];
 
-                                        dstart *= iStride2;
-                                        dend   *= iStride2;
-                                        hstart *= iStride3;
-                                        hend   *= iStride3;
-                                        wstart *= iStride4;
-                                        wend   *= iStride4;
+                                        if (sameStrides) {
 
-                                        maxKD = dstart;
-                                        maxKH = hstart;
-                                        maxKW = wstart;
+                                            dstart *= iStride2;
+                                            dend *= iStride2;
+                                            hstart *= iStride3;
+                                            hend *= iStride3;
+                                            wstart *= iStride4;
+                                            wend *= iStride4;
 
-                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4) {
-                                                    T valIn = pIn[kd + kh + kw];
-                                                    if (valIn > sum) {
-                                                        sum = valIn;
-                                                        maxKD = kd;
-                                                        maxKH = kh;
-                                                        maxKW = kw;
+                                            maxKD = dstart;
+                                            maxKH = hstart;
+                                            maxKW = wstart;
+
+                                            for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep4) {
+                                                        T valIn = pIn[kd + kh + kw];
+                                                        if (valIn > sum) {
+                                                            sum = valIn;
+                                                            maxKD = kd;
+                                                            maxKH = kh;
+                                                            maxKW = kw;
+                                                        }
                                                     }
-                                                }
-                                        gI[pIn - in + maxKD + maxKH + maxKW] += valO;
-                                    }
-                                    else {
+                                            gI[pIn - in + maxKD + maxKH + maxKW] += valO;
+                                        } else {
 
-                                        // we set these to default values
-                                        maxKH = hstart;
-                                        maxKW = wstart;
-                                        maxKD = dstart;
+                                            // we set these to default values
+                                            maxKH = hstart;
+                                            maxKW = wstart;
+                                            maxKD = dstart;
 
-                                        for (Nd4jLong kd = dstart; kd < dend; kd += dD)
-                                            for (Nd4jLong kh = hstart; kh < hend; kh += dH)
-                                                for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
-                                                    T valIn = pIn[kd * iStride2 + kh * iStride3 + kw * iStride4];
-                                                    if (valIn > sum) {
-                                                        sum = valIn;
-                                                        maxKD = kd;
-                                                        maxKH = kh;
-                                                        maxKW = kw;
+                                            for (Nd4jLong kd = dstart; kd < dend; kd += dD)
+                                                for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                                    for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                                        T valIn = pIn[kd * iStride2 + kh * iStride3 + kw * iStride4];
+                                                        if (valIn > sum) {
+                                                            sum = valIn;
+                                                            maxKD = kd;
+                                                            maxKH = kh;
+                                                            maxKW = kw;
+                                                        }
                                                     }
-                                                }
-                                        gI[b * gIStride0 + c * gIStride1 + maxKD * gIStride2 + maxKH * gIStride3 + maxKW * gIStride4] += valO;
+
+                                            gI[b * gIStride0 + c * gIStride1 + maxKD * gIStride2 + maxKH * gIStride3 + maxKW * gIStride4] += valO;
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 1) {     // avg
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pgI, valO, dstart, hstart, wstart, dend, hend, wend))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int od = 0; od < oD; ++od) {
-                            for(int oh = 0; oh < oH; ++oh) {
-                                for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    Nd4jLong dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW;
+                    T sum, valO, *pIn, *pgI;
 
-                                    pgI  = gI + b * gIStride0 + c * gIStride1;
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int od = start_z; od < stop_z; od += inc_z) {
+                                for (int oh = 0; oh < oH; ++oh) {
+                                    for (int ow = 0; ow < oW; ++ow) {
 
-                                    dstart = od * sD - pD;
-                                    hstart = oh * sH - pH;
-                                    wstart = ow * sW - pW;
-                                    dend = dstart + kDEff;
-                                    hend = hstart + kHEff;
-                                    wend = wstart + kWEff;
+                                        pgI = gI + b * gIStride0 + c * gIStride1;
 
-                                    if(dstart < 0)
-                                        dstart += dD * ((-dstart + dD - 1) / dD);
-                                    if(hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH);
-                                    if(wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW);
-                                    if(dend > iD)
-                                        dend -= dD * ((dend-iD + dD - 1) / dD);
-                                    if(hend > iH)
-                                        hend -= dH * ((hend-iH + dH - 1) / dH);
-                                    if(wend > iW)
-                                        wend -= dW * ((wend-iW + dW - 1) / dW);
+                                        dstart = od * sD - pD;
+                                        hstart = oh * sH - pH;
+                                        wstart = ow * sW - pW;
+                                        dend = dstart + kDEff;
+                                        hend = hstart + kHEff;
+                                        wend = wstart + kWEff;
 
-                                    dstart *= gIStride2;
-                                    dend   *= gIStride2;
-                                    hstart *= gIStride3;
-                                    hend   *= gIStride3;
-                                    wstart *= gIStride4;
-                                    wend   *= gIStride4;
+                                        if (dstart < 0)
+                                            dstart += dD * ((-dstart + dD - 1) / dD);
+                                        if (hstart < 0)
+                                            hstart += dH * ((-hstart + dH - 1) / dH);
+                                        if (wstart < 0)
+                                            wstart += dW * ((-wstart + dW - 1) / dW);
+                                        if (dend > iD)
+                                            dend -= dD * ((dend - iD + dD - 1) / dD);
+                                        if (hend > iH)
+                                            hend -= dH * ((hend - iH + dH - 1) / dH);
+                                        if (wend > iW)
+                                            wend -= dW * ((wend - iW + dW - 1) / dW);
 
-                                    valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
+                                        dstart *= gIStride2;
+                                        dend *= gIStride2;
+                                        hstart *= gIStride3;
+                                        hend *= gIStride3;
+                                        wstart *= gIStride4;
+                                        wend *= gIStride4;
 
-                                    if (extraParam0 == 0)         //Exclude padding
-                                        valO /= nd4j::math::nd4j_ceil<double,T>(static_cast<double>(dend-dstart) / static_cast<double>(gIStep2)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(hend-hstart) / static_cast<double>(gIStep3)) * nd4j::math::nd4j_ceil<double,T>(static_cast<double>(wend-wstart) / static_cast<double>(gIStep4));   //Accounts for dilation
-                                    else if (extraParam0 == 1)    //Include padding
-                                        valO /= kProd;
+                                        valO = gO[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4];
 
-                                    for (Nd4jLong kd = dstart; kd < dend; kd += gIStep2)
-                                        for (Nd4jLong kh = hstart; kh < hend; kh += gIStep3)
-                                            for (Nd4jLong kw = wstart; kw < wend; kw += gIStep4)
-                                                pgI[kd + kh + kw] += valO;
+                                        if (extraParam0 == 0)         //Exclude padding
+                                            valO /= nd4j::math::nd4j_ceil<double, T>(static_cast<double>(dend - dstart) / static_cast<double>(gIStep2)) * nd4j::math::nd4j_ceil<double, T>(static_cast<double>(hend - hstart) / static_cast<double>(gIStep3)) * nd4j::math::nd4j_ceil<double, T>(static_cast<double>(wend - wstart) / static_cast<double>(gIStep4));   //Accounts for dilation
+                                        else if (extraParam0 == 1)    //Include padding
+                                            valO /= kProd;
+
+                                        for (Nd4jLong kd = dstart; kd < dend; kd += gIStep2)
+                                            for (Nd4jLong kh = hstart; kh < hend; kh += gIStep3)
+                                                for (Nd4jLong kw = wstart; kw < wend; kw += gIStep4)
+                                                    pgI[kd + kh + kw] += valO;
+                                    }
                                 }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
 /*************************************************************************/
             else if(poolingMode == 2) {  // pnorm
-                PRAGMA_OMP_PARALLEL_FOR_ARGS(private(pIn, pgI, valO, sum, dstart, hstart, wstart, dend, hend, wend))
-                for(int b = 0; b < bS; ++b) {
-                    for(int c = 0; c < iC; ++c) {
-                        for(int od = 0; od < oD; ++od) {
-                            for(int oh = 0; oh < oH; ++oh) {
-                                for(int ow = 0; ow < oW; ++ow) {
+                auto func = PRAGMA_THREADS_FOR_3D {
+                    Nd4jLong dstart, hstart, wstart, dend, hend, wend, maxKD, maxKH, maxKW;
+                    T sum, valO, *pIn, *pgI;
 
-                                    pIn  = in + b * iStride0 + c * iStride1;
-                                    pgI  = gI + (pIn - in);
+                    for (int b = start_x; b < stop_x; b += inc_x) {
+                        for (int c = start_y; c < stop_y; c += inc_y) {
+                            for (int od = start_z; od < stop_z; od += inc_z) {
+                                for (int oh = 0; oh < oH; ++oh) {
+                                    for (int ow = 0; ow < oW; ++ow) {
 
-                                    dstart = od * sD - pD;
-                                    hstart = oh * sH - pH;
-                                    wstart = ow * sW - pW;
-                                    dend = dstart + kDEff;
-                                    hend = hstart + kHEff;
-                                    wend = wstart + kWEff;
+                                        pIn = in + b * iStride0 + c * iStride1;
+                                        pgI = gI + (pIn - in);
 
-                                    if(dstart < 0)
-                                        dstart += dD * ((-dstart + dD - 1) / dD);
-                                    if(hstart < 0)
-                                        hstart += dH * ((-hstart + dH - 1) / dH);
-                                    if(wstart < 0)
-                                        wstart += dW * ((-wstart + dW - 1) / dW);
-                                    if(dend > iD)
-                                        dend -= dD * ((dend-iD + dD - 1) / dD);
-                                    if(hend > iH)
-                                        hend -= dH * ((hend-iH + dH - 1) / dH);
-                                    if(wend > iW)
-                                        wend -= dW * ((wend-iW + dW - 1) / dW);
+                                        dstart = od * sD - pD;
+                                        hstart = oh * sH - pH;
+                                        wstart = ow * sW - pW;
+                                        dend = dstart + kDEff;
+                                        hend = hstart + kHEff;
+                                        wend = wstart + kWEff;
 
-                                    sum = static_cast<T>(0.);
-                                    valO = gO[b*oStride0 + c*oStride1+ od*oStride2 + oh*oStride3 + ow*oStride4];
+                                        if (dstart < 0)
+                                            dstart += dD * ((-dstart + dD - 1) / dD);
+                                        if (hstart < 0)
+                                            hstart += dH * ((-hstart + dH - 1) / dH);
+                                        if (wstart < 0)
+                                            wstart += dW * ((-wstart + dW - 1) / dW);
+                                        if (dend > iD)
+                                            dend -= dD * ((dend - iD + dD - 1) / dD);
+                                        if (hend > iH)
+                                            hend -= dH * ((hend - iH + dH - 1) / dH);
+                                        if (wend > iW)
+                                            wend -= dW * ((wend - iW + dW - 1) / dW);
 
-                                    if(sameStrides) {
+                                        sum = static_cast<T>(0.);
+                                        valO = gO[b * oStride0 + c * oStride1 + od * oStride2 + oh * oStride3 + ow * oStride4];
 
-                                        dstart *= iStride2;
-                                        dend   *= iStride2;
-                                        hstart *= iStride3;
-                                        hend   *= iStride3;
-                                        wstart *= iStride4;
-                                        wend   *= iStride4;
+                                        if (sameStrides) {
 
-                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
+                                            dstart *= iStride2;
+                                            dend *= iStride2;
+                                            hstart *= iStride3;
+                                            hend *= iStride3;
+                                            wstart *= iStride4;
+                                            wend *= iStride4;
 
-                                        valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+                                            for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                                        sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0);
 
-                                        for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
-                                            for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
-                                                for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
-                                                    pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]), extraParam0 - (T)1.f) *  nd4j::math::nd4j_sgn<T,T>(pIn[kd + kh + kw]);
-                                    }
-                                    else {
+                                            valO *= nd4j::math::nd4j_pow<T, T, T>(sum, ((T) 1.f - extraParam0) / extraParam0);
 
-                                        for (Nd4jLong kd = dstart; kd < dend; kd += dD)
-                                            for (Nd4jLong kh = hstart; kh < hend; kh += dH)
-                                                for (Nd4jLong kw = wstart; kw < wend; kw += dW)
-                                                    sum += nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(pIn[kd * iStride2 + kh * iStride3 + kw * iStride4]), extraParam0);
+                                            for (Nd4jLong kd = dstart; kd < dend; kd += iStep2)
+                                                for (Nd4jLong kh = hstart; kh < hend; kh += iStep3)
+                                                    for (Nd4jLong kw = wstart; kw < wend; kw += iStep4)
+                                                        pgI[kd + kh + kw] += valO * nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kd + kh + kw]),extraParam0 - (T) 1.f) * nd4j::math::nd4j_sgn<T, T>(pIn[kd + kh + kw]);
+                                        } else {
+                                            for (Nd4jLong kd = dstart; kd < dend; kd += dD)
+                                                for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                                    for (Nd4jLong kw = wstart; kw < wend; kw += dW)
+                                                        sum += nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(pIn[kd * iStride2 + kh * iStride3 + kw * iStride4]), extraParam0);
 
-                                        valO *= nd4j::math::nd4j_pow<T,T,T>(sum, ((T)1.f - extraParam0) / extraParam0);
+                                            valO *= nd4j::math::nd4j_pow<T, T, T>(sum, ((T) 1.f - extraParam0) / extraParam0);
 
-                                        for (Nd4jLong kd = dstart; kd < dend; kd += dD)
-                                            for (Nd4jLong kh = hstart; kh < hend; kh += dH)
-                                                for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
-                                                    const auto inVal = pIn[kD * iStride2 + kh * iStride3 + kw * iStride4];
-                                                    pgI[kd * gIStride2 + kh * gIStride3 + kw * gIStride4] += valO * nd4j::math::nd4j_pow<T,T,T>(nd4j::math::nd4j_abs<T>(inVal), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T,T>(inVal);
-                                                }
+                                            for (Nd4jLong kd = dstart; kd < dend; kd += dD)
+                                                for (Nd4jLong kh = hstart; kh < hend; kh += dH)
+                                                    for (Nd4jLong kw = wstart; kw < wend; kw += dW) {
+                                                        const auto inVal = pIn[kD * iStride2 + kh * iStride3 + kw * iStride4];
+                                                        pgI[kd * gIStride2 + kh * gIStride3 + kw * gIStride4] += valO * nd4j::math::nd4j_pow<T, T, T>(nd4j::math::nd4j_abs<T>(inVal), extraParam0 - 1.f) * nd4j::math::nd4j_sgn<T, T>(inVal);
+                                                    }
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, bS, 1, 0, iC, 1, 0, oD, 1);
             }
             else {
                 nd4j_printf("ConvolutionUtils::pooling3dBP: pooling mode argument can take three values only: 0, 1, 2, but got %i instead !\n", poolingMode);
