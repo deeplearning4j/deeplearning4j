@@ -81,7 +81,8 @@ namespace nd4j {
         // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
         static bool evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>& arrays, Nd4jLong*& resultShapeInfo, memory::Workspace* workspace = nullptr);
 
-        // return sorted vector of dimensions of array with larger dimensions along which two input arrays have same shape
+        // return sorted vector of dimensions common (same) for two arrays, dimensions values corresponds to array with bigger rank
+        // for example if arr1{2,7}, arr2{2,5,4,7} then vector = {0,3}
         static std::vector<int> getDimsWithSameShape(const NDArray& max, const NDArray& min);
 
         // evaluate shapeInfo for resulting array of tile operation

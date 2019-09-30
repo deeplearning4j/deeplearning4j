@@ -515,21 +515,30 @@ bool ShapeUtils::evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>&
 
 
 //////////////////////////////////////////////////////////////////////////
-// return sorted vector of dimensions of array with larger dimensions number along which two input arrays have same shape
-// the array with larger dimensions number has to be passed as first argument
-std::vector<int> ShapeUtils::getDimsWithSameShape(const NDArray& max, const NDArray& min) {
+// return sorted vector of dimensions common (same) for two arrays, dimensions values corresponds to array with bigger rank
+// for example if arr1{2,7}, arr2{2,5,4,7} then vector = {0,3}
+std::vector<int> ShapeUtils::getDimsWithSameShape(const NDArray& arr1, const NDArray& arr2) {
 
-    std::vector<int> result;
-    auto maxShapeInfo = max.getShapeInfo();
-    auto minShapeInfo = min.getShapeInfo();
-    int  maxRank      = maxShapeInfo[0];
-    int  minRank      = minShapeInfo[0];
+    const NDArray *min, *max;
 
-    for (int i = 1; i <= minRank; ++i)
-        if (minShapeInfo[i] == maxShapeInfo[maxRank - minRank + i])
-            result.emplace_back(maxRank - minRank + i - 1);
+    if(arr1.rankOf() >= arr2.rankOf()) {
+        max = &arr1;
+        min = &arr2;
+    }
+    else {
+        max = &arr2;
+        min = &arr1;
+    }
 
-    return result;
+    const int rankDiff = max->rankOf() - min->rankOf();
+
+    std::vector<int> dims;
+
+    for (int i = 0; i < min->rankOf(); ++i)
+        if (min->sizeAt(i) == max->sizeAt(rankDiff + i))
+            dims.emplace_back(rankDiff + i);
+
+    return dims;
 }
 
 //////////////////////////////////////////////////////////////////////////
