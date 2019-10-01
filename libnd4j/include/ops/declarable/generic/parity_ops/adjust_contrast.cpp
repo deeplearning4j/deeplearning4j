@@ -36,21 +36,19 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 1, 0) {
 
     REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
     REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
-
     // compute mean before
-    reduce_mean meanOp;
-    auto axes = NDArrayFactory::create<int>('c', {input->rankOf() - 1}, block.launchContext());
-    for (int i = 0; i < input->rankOf() -1; i++)
-        axes.p(i, i);
+    // fill up axes vector first
+    std::vector<int> axes(input->rankOf() - 1);
+    for (auto i = 0; i < axes.size(); ++i)
+        axes[i] = i;
+    // mean as reduction for last dimension set
+    auto mean = input->reduceAlongDims(reduce::Mean, axes);
 
-    auto meanRes = meanOp.execute({input, &axes}, {}, {}); 
-    REQUIRE_TRUE(meanRes->status() == Status::OK(), 0, "ADJUST_CONTRAST: op should be successful, but error code %i occured.", meanRes->status());
-    auto mean = meanRes->at(0);
     NDArray factorT(output->dataType(), block.launchContext()); // = NDArrayFactory::create(factor, block.launchContext());
     factorT.p(0, factor);
     // this is contrast calculation
-    *output = (*input - *mean) * factorT + *mean;
-    delete meanRes;
+    *output = (*input - mean) * factorT + mean;
+
     return Status::OK();
 }
 
@@ -72,24 +70,19 @@ DECLARE_TYPES(adjust_contrast) {
         REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
 
         // compute mean before
-        reduce_mean meanOp;
-        auto axes = NDArrayFactory::create<int>('c', {input->rankOf() - 1}, block.launchContext());
-        for (int i = 0; i < input->rankOf() -1; i++)
-            axes.p(i, i);
+        std::vector<int> axes(input->rankOf() - 1);
+        for (auto i = 0; i < axes.size(); ++i)
+            axes[i] = i;
 
-        auto meanRes = meanOp.execute({input, &axes}, {}, {});
-        REQUIRE_TRUE(meanRes->status() == Status::OK(), 0, "ADJUST_CONTRAST: op should be successful, but error code %i occured.", meanRes->status());
-        auto mean = meanRes->at(0);
-//        NDArray factorT(output->dataType(), block.launchContext()); // = NDArrayFactory::create(factor, block.launchContext());
-//        factorT.p(0, factor);
-        // this is contrast calculation
+        // mean as reduction for last dimension set
+        auto mean = input->reduceAlongDims(reduce::Mean, axes);
+
+        // result as (x - mean) * factor + mean
         std::unique_ptr<NDArray> temp(input->dup());
-        input->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), mean, temp.get());
+        input->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &mean, temp.get());
         temp->applyScalar(scalar::Multiply, factor);
-        temp->applyTrueBroadcast(BroadcastOpsTuple::Add(), mean, output);
-//        *output = (*input - *mean) * factorT + *mean;
+        temp->applyTrueBroadcast(BroadcastOpsTuple::Add(), &mean, output);
 
-        delete meanRes;
         return Status::OK();
     }
 
