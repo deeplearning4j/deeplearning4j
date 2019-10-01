@@ -45,6 +45,7 @@ namespace samediff {
 
         bool available();
         void markAvailable();
+        void markUnavailable();
     };
 }
 

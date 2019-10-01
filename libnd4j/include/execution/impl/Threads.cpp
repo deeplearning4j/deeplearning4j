@@ -27,7 +27,7 @@
 namespace samediff {
     int ThreadsHelper::numberOfThreads(int maxThreads, uint64_t numberOfElements) {
         // no sense launching more threads than elements
-        if (maxThreads < numberOfElements)
+        if (numberOfElements < maxThreads)
             return numberOfElements;
 
         return maxThreads;
@@ -37,7 +37,17 @@ namespace samediff {
         if (start > stop)
             throw std::runtime_error("Threads::parallel_for got start > stop");
 
-        numThreads = ThreadsHelper::numberOfThreads(numThreads, stop - start);
+        auto delta = (stop - start);
+
+        // in some cases we just fire func as is
+        if (delta == 0 || numThreads == 1) {
+            function(0, start, stop, increment);
+            return 1;
+        }
+
+        auto numElements = delta / increment;
+
+        numThreads = ThreadsHelper::numberOfThreads(numThreads, numElements);
         // we don't want to launch single thread, just call function in place
         if (numThreads == 1) {
             function(0, start, stop, increment);
@@ -47,11 +57,13 @@ namespace samediff {
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
         if (ticket.acquired()) {
             // if we got our threads - we'll run our jobs here
-            int span = (stop - start) / numThreads;
+            auto span = delta / numThreads;
 
             for (int e = 0; e < numThreads; e++) {
-                int _start = span * e + start;
-                int _stop = span * (e + 1) + start;
+                auto _start = span * e + start;
+                auto _stop = span * (e + 1) + start;
+
+                // last thread will process tail
                 if (e == numThreads - 1)
                     _stop = stop;
 

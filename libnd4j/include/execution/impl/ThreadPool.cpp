@@ -128,8 +128,10 @@ namespace samediff {
 
                 queues.resize(num_threads);
                 for (int e = 0, i = 0; e < _queues.size() && i < num_threads; e++)
-                    if (_queues[e]->available())
+                    if (_queues[e]->available()) {
                         queues[i++] = _queues[e];
+                        _queues[e]->markUnavailable();
+                    }
             }
         }
 

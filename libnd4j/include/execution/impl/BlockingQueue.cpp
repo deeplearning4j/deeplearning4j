@@ -46,7 +46,6 @@ namespace samediff {
             // locking before push, unlocking after
             std::unique_lock<std::mutex> lock(_lock);
             _queue.push(t);
-            _available = false;
         }
 
         // notifying condition
@@ -61,6 +60,11 @@ namespace samediff {
     template <typename T>
     void BlockingQueue<T>::markAvailable() {
         _available = true;
+    }
+
+    template <typename T>
+    void BlockingQueue<T>::markUnavailable() {
+        _available = false;
     }
 
     template class BlockingQueue<CallableWithArguments*>;

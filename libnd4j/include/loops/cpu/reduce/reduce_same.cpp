@@ -68,7 +68,7 @@ namespace functions {
             }
             else {
                 X start = OpType::startingValue(x);
-                const int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
+                int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
                 X intermediate[64];
 
                 for (int e = 0; e < maxThreads; e++)
@@ -82,7 +82,7 @@ namespace functions {
                         intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
                 };
 
-                samediff::Threads::parallel_for(func, maxThreads, 0, length);
+                maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
                 for (int e = 0; e < maxThreads; e++)
                     start = OpType::update(start, intermediate[e], extraParams);
@@ -108,7 +108,7 @@ namespace functions {
                 }
                 else {
                     X start = OpType::startingValue(x);
-                    const int maxThreads = nd4j::math::nd4j_min<int>(64, omp_get_max_threads());
+                    int maxThreads = nd4j::math::nd4j_min<int>(64, omp_get_max_threads());
                     X intermediate[64];
 
                     for (int e = 0; e < maxThreads; e++)
@@ -122,7 +122,7 @@ namespace functions {
                             intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
                     };
 
-                    samediff::Threads::parallel_for(func, maxThreads, 0, length);
+                    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
 
                     for (int e = 0; e < maxThreads; e++)
                         start = OpType::update(start, intermediate[e], extraParams);

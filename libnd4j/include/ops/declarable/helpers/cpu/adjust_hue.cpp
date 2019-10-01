@@ -41,7 +41,6 @@ static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDAr
 
         auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i += increment) {
-
                 T h, s, v;
 
                 rgbToHsv<T>(x[i], x[i + 1], x[i + 2], h, s, v);
