@@ -78,7 +78,6 @@ bool NDArray::isActualOnHostSide() const    { return _buffer->isPrimaryActual();
 bool NDArray::isActualOnDeviceSide() const  { return _buffer->isSpecialActual(); }
 void NDArray::makeBothBuffersActual() const { if(!isActualOnHostSide()) syncToHost(); if(!isActualOnDeviceSide()) syncToDevice(); }
 
-
 ///////////////////////////////////////////////////////////////////
 template<typename T>
 __global__ static void fillAsTriangularCuda(const void* vx, const Nd4jLong* xShapeInfo, void* vz, const Nd4jLong* zShapeInfo, const T val, const int lower, const int upper) {

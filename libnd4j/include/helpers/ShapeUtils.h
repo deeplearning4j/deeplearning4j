@@ -81,7 +81,8 @@ namespace nd4j {
         // check the possibility of broadcast operation for set of arrays, if true then return resulting broadcasted shapeInfo
         static bool evalCommonBroadcastShapeInfo(const std::vector<const NDArray*>& arrays, Nd4jLong*& resultShapeInfo, memory::Workspace* workspace = nullptr);
 
-        // return sorted vector of dimensions of array with larger dimensions along which two input arrays have same shape
+        // return sorted vector of dimensions common (same) for two arrays, dimensions values corresponds to array with bigger rank
+        // for example if arr1{2,7}, arr2{2,5,4,7} then vector = {0,3}
         static std::vector<int> getDimsWithSameShape(const NDArray& max, const NDArray& min);
 
         // evaluate shapeInfo for resulting array of tile operation
@@ -169,6 +170,18 @@ namespace nd4j {
          * @return
          */
         static Nd4jLong stringBufferHeaderRequirements(Nd4jLong numStrings);
+
+        /*
+        * check whether arr1/arr2 is sub-array of arr2/arr1,
+        * this method do not evaluate what array is sub-array, it returns true if arr1 is sub-array of arr2 or arr2 is sub-array of arr1
+        * sameDims is filled (and sorted) with dimensions values that match both in arr1 and arr2 shapes (unities are ignored)
+        * for example:
+        * if arr1{2,3} and arr2{2,4,3,7} then return true and sameDims contains {0,2}
+        * if arr1{1,1,3,1,3,1,1} and arr2{1,2,3,1,3} then return true and sameDims contains {2,4}
+        * if arr1{2,1,4,1,7,5} and arr2{1,1,4,5} then return true and sameDims contains {2,5}
+
+        static bool isSubArrayCase(const NDArray& arr1, const NDArray& arr2, std::vector<int>& sameDims);
+        */
     };
 
 
