@@ -61,6 +61,43 @@ DECLARE_TYPES(adjust_contrast) {
 }
 
 
+    CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 1, 0) {
+
+        auto input  = INPUT_VARIABLE(0);
+        auto output = OUTPUT_VARIABLE(0);
+
+        const double factor = T_ARG(0);
+
+        REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
+        REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
+
+        // compute mean before
+        reduce_mean meanOp;
+        auto axes = NDArrayFactory::create<int>('c', {input->rankOf() - 1}, block.launchContext());
+        for (int i = 0; i < input->rankOf() -1; i++)
+            axes.p(i, i);
+
+        auto meanRes = meanOp.execute({input, &axes}, {}, {});
+        REQUIRE_TRUE(meanRes->status() == Status::OK(), 0, "ADJUST_CONTRAST: op should be successful, but error code %i occured.", meanRes->status());
+        auto mean = meanRes->at(0);
+//        NDArray factorT(output->dataType(), block.launchContext()); // = NDArrayFactory::create(factor, block.launchContext());
+//        factorT.p(0, factor);
+        // this is contrast calculation
+        std::unique_ptr<NDArray> temp(input->dup());
+        input->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), mean, temp.get());
+        temp->applyScalar(scalar::Multiply, factor);
+        temp->applyTrueBroadcast(BroadcastOpsTuple::Add(), mean, output);
+//        *output = (*input - *mean) * factorT + *mean;
+
+        delete meanRes;
+        return Status::OK();
+    }
+
+    DECLARE_TYPES(adjust_contrast_v2) {
+        getOpDescriptor()->setAllowedInputTypes(nd4j::DataType::ANY)
+                ->setAllowedOutputTypes({ALL_FLOATS})
+                ->setSameMode(true);
+    }
 
 }
 }

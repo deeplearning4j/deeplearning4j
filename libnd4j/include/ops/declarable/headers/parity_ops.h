@@ -611,6 +611,7 @@ namespace nd4j {
          */
         #if NOT_EXCLUDED(OP_adjust_contrast)
         DECLARE_CONFIGURABLE_OP(adjust_contrast, 1, 1, true, 1, 0);
+        DECLARE_CONFIGURABLE_OP(adjust_contrast_v2, 1, 1, true, 1, 0);
         #endif
 
 
