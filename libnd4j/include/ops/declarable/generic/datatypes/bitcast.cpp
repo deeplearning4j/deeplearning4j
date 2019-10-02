@@ -29,20 +29,15 @@ namespace nd4j {
         CUSTOM_OP_IMPL(bitcast, 1, 1, false, 0, 1) {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
-
+            // when empty - nothing to do
             if(input->isEmpty()){
                 REQUIRE_TRUE(output->isEmpty(), 0, "BITCAST: If input is empty, output array must also be empty.");
                 return Status::OK();
             }
+            // buffers for both input and output should be equals
+            DataBuffer buf(input->buffer(), input->specialBuffer(), input->lengthOf() * input->sizeOfT(), input->dataType());
+            *(output->dataBuffer()) = buf;
 
-//            if (!block.isInplace())
-//                output->assign(input);
-            input->syncToHost();
-            output->syncToHost();
-            memcpy(output->buffer(), input->buffer(), input->lengthOf() * input->sizeOfT());
-            output->syncToDevice();
-            output->tickWriteDevice();
-            //STORE_RESULT(output);
             return Status::OK();
         }
         DECLARE_SYN(BitCast, bitcast);
