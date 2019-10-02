@@ -504,8 +504,20 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
         const Nd4jLong len = shape::length(xShapeInfo);
 
+        if (len == 0)
+            return;
+
+        if (numThreads == 0) {
+            nd4j_printf("Empty numThreads\n","");
+        }
+
         // linear case first
         auto linearSpan = len / numThreads;
+        if (linearSpan <= 1) {
+            numThreads = 1;
+            linearSpan = len / numThreads;
+        }
+
         auto start = linearSpan * threadId;
         auto stop = linearSpan * (threadId + 1);
 

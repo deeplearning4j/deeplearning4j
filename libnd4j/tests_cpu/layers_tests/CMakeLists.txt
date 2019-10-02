@@ -130,6 +130,10 @@ foreach (TMP_PATH ${TEST_SOURCES})
 endforeach(TMP_PATH)
 
 if (CPU_BLAS)
+    if (NOT BLAS_LIBRARIES)
+        set(BLAS_LIBRARIES "")
+    endif()
+
 	add_executable(runtests ${TEST_SOURCES})
 	target_link_libraries(runtests ${LIBND4J_NAME}static ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${MKLDNN} ${BLAS_LIBRARIES} ${CPU_FEATURES} gtest gtest_main)
 elseif(CUDA_BLAS)

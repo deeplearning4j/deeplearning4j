@@ -42,7 +42,7 @@ public:
 
 };
 
-#ifndef __CUDABLAS__
+#ifndef _MSC_VER
 
 TEST_F(HelpersTests1, test_binary_search_1) {
     std::array<int, 10> array({0, 1, 2, 3, 4, 5, 6, 7, 8, 9});

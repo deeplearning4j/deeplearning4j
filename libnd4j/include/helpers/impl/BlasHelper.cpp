@@ -74,7 +74,7 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMV<float>() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return true;
 #else
         return _hasSgemv;
@@ -83,7 +83,7 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMV<double>() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return true;
 #else
     return _hasDgemv;
@@ -132,14 +132,14 @@ namespace nd4j {
 
     bool BlasHelper::hasGEMV(const nd4j::DataType dtype)  {
         if(dtype == DataType::FLOAT32) {
-            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;
             #else
                 return _hasSgemv;
             #endif
         }
         if(dtype == DataType::DOUBLE) {
-            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;
             #else
                 return _hasDgemv;
@@ -150,7 +150,7 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMM<float>() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return true;
 #else
     return _hasSgemm;
@@ -159,7 +159,7 @@ namespace nd4j {
 
     template <>
     bool BlasHelper::hasGEMM<double>() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return true;
 #else
     return _hasDgemm;
@@ -208,14 +208,14 @@ namespace nd4j {
 
     bool BlasHelper:: hasGEMM(const nd4j::DataType dtype) {
         if(dtype == DataType::FLOAT32) {
-            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;
             #else
                 return _hasSgemm;
             #endif
         }
         if(dtype == DataType::DOUBLE) {
-            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+            #if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
                 return true;
             #else
                 return _hasDgemm;
@@ -276,14 +276,14 @@ namespace nd4j {
     }
 
     CblasSgemv BlasHelper::sgemv() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+#if defined(__EXTERNAL_BLAS__)|| defined(HAVE_OPENBLAS)
         return (CblasSgemv)&cblas_sgemv;
 #else
         return this->cblasSgemv;
 #endif
     }
     CblasDgemv BlasHelper::dgemv() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return (CblasDgemv)&cblas_dgemv;
 #else
         return this->cblasDgemv;
@@ -291,7 +291,7 @@ namespace nd4j {
     }
 
     CblasSgemm BlasHelper::sgemm() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return (CblasSgemm)&cblas_sgemm;
 #else
         return this->cblasSgemm;
@@ -299,7 +299,7 @@ namespace nd4j {
     }
 
     CblasDgemm BlasHelper::dgemm() {
-#if defined(__EXTERNAL_BLAS__) || defined(HAVE_MKLDNN) || defined(HAVE_OPENBLAS)
+#if defined(__EXTERNAL_BLAS__) || defined(HAVE_OPENBLAS)
         return (CblasDgemm)&cblas_dgemm;
 #else
         return this->cblasDgemm;

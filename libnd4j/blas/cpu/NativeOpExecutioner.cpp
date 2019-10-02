@@ -1005,7 +1005,7 @@ void NativeOpExecutioner::execTransformFloat(nd4j::LaunchContext  *lc,
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformFloat, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES, FLOAT_TYPES);
     };
 
-    samediff::Threads::parallel_do(func);
+    samediff::Threads::parallel_do(func, 1);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1024,7 +1024,7 @@ void NativeOpExecutioner::execTransformBool(nd4j::LaunchContext  *lc,
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES, BOOL_TYPES);
     };
 
-    samediff::Threads::parallel_do(func);
+    samediff::Threads::parallel_do(func, 1);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1043,7 +1043,7 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
         BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES, LIBND4J_TYPES);
     };
 
-    samediff::Threads::parallel_do(func);
+    samediff::Threads::parallel_do(func, 1);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1062,7 +1062,7 @@ void NativeOpExecutioner::execTransformSame(nd4j::LaunchContext  *lc,
         BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), LIBND4J_TYPES);
     };
 
-    samediff::Threads::parallel_do(func);
+    samediff::Threads::parallel_do(func, 1);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -1081,7 +1081,7 @@ void NativeOpExecutioner::execTransformStrict(nd4j::LaunchContext  *lc,
         BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::exec(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, extraParams, thread_id, numThreads), FLOAT_TYPES);
     };
 
-    samediff::Threads::parallel_do(func);
+    samediff::Threads::parallel_do(func, 1);
 }
 
 ////////////////////////////////////////////////////////////////////////

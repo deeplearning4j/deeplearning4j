@@ -45,6 +45,11 @@ namespace samediff {
         if (start > stop)
             throw std::runtime_error("Threads::parallel_for got start > stop");
 
+        if (1 > 0) {
+            function(0, start, stop, increment);
+            return 1;
+        }
+
         auto delta = (stop - start);
 
         // in some cases we just fire func as is
@@ -216,6 +221,7 @@ namespace samediff {
     }
 
     int Threads::parallel_do(FUNC_DO function, uint64_t numThreads) {
+        /*
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
         if (ticket.acquired()) {
 
@@ -233,6 +239,12 @@ namespace samediff {
 
             return numThreads;
         }
+         */
+
+        for (uint64_t e = 0; e < numThreads; e++)
+            function(e, numThreads);
+
+        return numThreads;
     }
 
 }
