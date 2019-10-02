@@ -109,7 +109,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 
-    set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /EHsc /w")
+    set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /EHsc")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
@@ -283,8 +283,8 @@ if(CUDA_BLAS)
 
         if(WIN32)
             message("CUDA on Windows: enabling /EHsc")
-            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj")
-            SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc /bigobj")
+            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
+            SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc /bigobj /std:c++14")
         endif()
 
 
@@ -342,7 +342,16 @@ elseif(CPU_BLAS)
         add_library(${LIBND4J_NAME}       SHARED $<TARGET_OBJECTS:nd4jobj>)
     endif()
 
+    if(WIN32)
+        message("CPU on Windows: enabling /EHsc")
+        SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
+        SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc /bigobj /std:c++14")
+    endif()
+
     # we're including {MKLDNN} here in case of building from sources. in future that'll replace {MKLDNN_LIBRARIES}. same applies to BLAS
+    if (NOT BLAS_LIBRARIES)
+        set(BLAS_LIBRARIES "")
+    endif()
     target_link_libraries(${LIBND4J_NAME} ${MKLDNN} ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
 
     if ("${LIBND4J_ALL_OPS}" AND "${LIBND4J_BUILD_MINIFIER}")

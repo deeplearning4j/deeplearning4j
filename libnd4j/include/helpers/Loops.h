@@ -97,7 +97,7 @@ namespace nd4j {
 
     public:
 
-        template<typename OpType, bool doParallel>
+        template<typename OpType>
         static FORCEINLINE void loopTransform(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, E* extraParams);
     };
 
@@ -537,7 +537,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
     //////////////////////////////////////////////////////////////////////////////
     template <typename X, typename Z, typename E>
-    template <typename OpType, bool doParallel>
+    template <typename OpType>
     void nd4j::TransformLoops<X,Z,E>::loopTransform(X* x, Nd4jLong* xShapeInfo,
                                              Z* z, Nd4jLong* zShapeInfo,
                                              E* extraParams) {
@@ -550,151 +550,117 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
         const Nd4jLong len = shape::length(xShapeInfo);
 
-        OmpLaunchHelper threadsInfo(len, doParallel ? -1 : 1);
+        OmpLaunchHelper threadsInfo(len);
 
         switch (kindOfLoop) {
 
             //*********************************************//
             case LoopKind::EWS1: {
-
-                auto func = PRAGMA_THREADS_FOR {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i += increment)
+                    for (auto i = 0; i < len; i++)
                         z[i] = OpType::op(x[i], extraParams);
-                };
-
-                samediff::Threads::parallel_for(func, 0, len, 1);
-            }
+                }
                 break;
 
             //*********************************************//
             case LoopKind::EWSNONZERO: {
-                const uint xEws = shape::elementWiseStride(xShapeInfo);
-                const uint zEws = shape::elementWiseStride(zShapeInfo);
+                    const uint xEws = shape::elementWiseStride(xShapeInfo);
+                    const uint zEws = shape::elementWiseStride(zShapeInfo);
 
-                auto func = PRAGMA_THREADS_FOR {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i += increment)
+                    for (auto i = 0; i < len; i++)
                         z[i*zEws] = OpType::op(x[i*xEws], extraParams);
-                };
-
-                samediff::Threads::parallel_for(func, 0, len, 1);
-            }
+                }
                 break;
 
                 //*********************************************//
             case LoopKind::Z_EWSNONZERO: {
-                const uint zEws = shape::elementWiseStride(zShapeInfo);
-                uint castXShapeInfo[MAX_RANK];
-                const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
+                    const uint zEws = shape::elementWiseStride(zShapeInfo);
+                    uint castXShapeInfo[MAX_RANK];
+                    const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
 
-                auto func = PRAGMA_THREADS_FOR {
                     if (zEws > 1) {
-                        PRAGMA_OMP_SIMD
-                        for (auto i = start; i < stop; i += increment) {
+                        for (auto i = 0; i < len; i++) {
                             const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
                             z[i * zEws] = OpType::op(x[xOffset], extraParams);
                         }
                     } else {
-                        PRAGMA_OMP_SIMD
-                        for (auto i = start; i < stop; i += increment) {
+                        for (auto i = 0; i < len; i++) {
                             const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
                             z[i] = OpType::op(x[xOffset], extraParams);
                         }
                     }
-                };
-
-                samediff::Threads::parallel_for(func, 0, len, 1);
-            }
+                }
                 break;
 
                 //*********************************************//
             case LoopKind::RANK1: {
-                auto func = PRAGMA_THREADS_FOR {
-                    for (auto i0 = start; i0 < stop; i0 += increment)
+                    for (auto i0 = 0; i0 < len; i0++)
                         z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
-                };
-
-                samediff::Threads::parallel_for(func, 0, len, 1);
-            }
+                }
                 break;
 
                 //*********************************************//
             case LoopKind::RANK2: {
-                auto uXShape0 = static_cast<uint>(xShape[0]);
-                auto uXShape1 = static_cast<uint>(xShape[1]);
+                    auto uXShape0 = static_cast<uint>(xShape[0]);
+                    auto uXShape1 = static_cast<uint>(xShape[1]);
 
-                auto func = PRAGMA_THREADS_FOR {
-                    for (auto i0 = start; i0 < stop; i0 += increment) {
-
+                    for (auto i0 = 0; i0 < uXShape0; i0++) {
                         auto z0 = i0 * zStride[0];
                         auto x0 = i0 * xStride[0];
+
                         for (uint i1 = 0; i1 < uXShape1; ++i1)
                             z[z0 + i1 * zStride[1]] = OpType::op(x[x0 + i1 * xStride[1]], extraParams);
                     }
-                };
-
-                samediff::Threads::parallel_for(func, 0, uXShape0, 1);
-            }
+                }
                 break;
 
                 //*********************************************//
             case LoopKind::RANK3: {
-                auto uXShape0 = static_cast<uint>(xShape[0]);
-                auto uXShape1 = static_cast<uint>(xShape[1]);
-                auto uXShape2 = static_cast<uint>(xShape[2]);
+                    auto uXShape0 = static_cast<uint>(xShape[0]);
+                    auto uXShape1 = static_cast<uint>(xShape[1]);
+                    auto uXShape2 = static_cast<uint>(xShape[2]);
 
-                //PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS_COLLAPSE(threadsInfo._numThreads, 2)
-                auto func = PRAGMA_THREADS_FOR_2D {
-                    for (uint i0 = start_x; i0 < stop_x; i0 += inc_x)
-                        for (uint i1 = start_y; i1 < stop_y; i1 += inc_y) {
+                    for (uint i0 = 0; i0 < uXShape0; i0++)
+                        for (uint i1 = 0; i1 < uXShape1; i1++) {
                             auto z0 = i0 * zStride[0] + i1 * zStride[1];
                             auto x0 = i0 * xStride[0] + i1 * xStride[1];
 
                             for (uint i2 = 0; i2 < uXShape2; ++i2)
                                 z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
                         }
-                };
-
-                samediff::Threads::parallel_for(func, 0, uXShape0, 1, 0, uXShape1, 1);
-            }
+                }
                 break;
 
                 //*********************************************//
             case LoopKind::RANK4: {
-                auto uXShape0 = static_cast<uint>(xShape[0]);
-                auto uXShape1 = static_cast<uint>(xShape[1]);
-                auto uXShape2 = static_cast<uint>(xShape[2]);
-                auto uXShape3 = static_cast<uint>(xShape[3]);
+                    auto uXShape0 = static_cast<uint>(xShape[0]);
+                    auto uXShape1 = static_cast<uint>(xShape[1]);
+                    auto uXShape2 = static_cast<uint>(xShape[2]);
+                    auto uXShape3 = static_cast<uint>(xShape[3]);
 
-                auto func = PRAGMA_THREADS_FOR_3D {
-                    for (uint i0 = start_x; i0 < stop_x; i0 += inc_x)
-                        for (uint i1 = start_y; i1 < stop_y; i1 += inc_y)
-                            for (uint i2 = start_z; i2 < stop_z; i2 += inc_z) {
+                    for (uint i0 = 0; i0 < uXShape0; i0++)
+                        for (uint i1 = 0; i1 < uXShape1; i1++)
+                            for (uint i2 = 0; i2 < uXShape2; i2++) {
                                 auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
                                 auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
 
                                 for (uint i3 = 0; i3 < uXShape3; ++i3)
                                     z[z0 + i3 * zStride[3]] = OpType::op(x[x0 + i3 * xStride[3]], extraParams);
                             }
-                };
-
-                samediff::Threads::parallel_for(func, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
-            }
+                }
                 break;
 
                 //*********************************************//
             case LoopKind::RANK5: {
-                auto uXShape0 = static_cast<uint>(xShape[0]);
-                auto uXShape1 = static_cast<uint>(xShape[1]);
-                auto uXShape2 = static_cast<uint>(xShape[2]);
-                auto uXShape3 = static_cast<uint>(xShape[3]);
-                auto uXShape4 = static_cast<uint>(xShape[4]);
+                    auto uXShape0 = static_cast<uint>(xShape[0]);
+                    auto uXShape1 = static_cast<uint>(xShape[1]);
+                    auto uXShape2 = static_cast<uint>(xShape[2]);
+                    auto uXShape3 = static_cast<uint>(xShape[3]);
+                    auto uXShape4 = static_cast<uint>(xShape[4]);
 
-                auto func = PRAGMA_THREADS_FOR_3D {
-                    for (uint i0 = start_x; i0 < stop_x; i0 += inc_x)
-                        for (uint i1 = start_y; i1 < stop_y; i1 += inc_y)
-                            for (uint i2 = start_z; i2 < stop_z; i2 += inc_z) {
+
+                    for (uint i0 = 0; i0 < uXShape0; i0++)
+                        for (uint i1 = 0; i1 < uXShape1; i1++)
+                            for (uint i2 = 0; i2 < uXShape2; i2++) {
 
                                 auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
                                 auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
@@ -709,31 +675,26 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                                 }
                             }
-                };
 
-                samediff::Threads::parallel_for(func, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
-            }
+                }
                 break;
 
             //*********************************************//
             default: {
-                uint xShapeInfoCast[MAX_RANK];
-                uint zShapeInfoCast[MAX_RANK];
+                    uint xShapeInfoCast[MAX_RANK];
+                    uint zShapeInfoCast[MAX_RANK];
 
-                bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
-                bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
+                    bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-                auto func = PRAGMA_THREADS_FOR {
-                    PRAGMA_OMP_SIMD
-                    for (auto i = start; i < stop; i += increment) {
+
+                    for (auto i = 0; i < len; i++) {
                         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpType::op(x[xOffset], extraParams);
                     }
-                };
+                }
 
-                samediff::Threads::parallel_for(func, 0, len, 1);
-            }
         }
     }
 

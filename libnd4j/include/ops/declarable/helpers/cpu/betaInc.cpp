@@ -85,7 +85,7 @@ static T continuedFraction(const T a, const T b, const T x) {
 			return f;
     }
 
-    return 1.f / 0.f;	// no convergence, more iterations is required
+    return std::numeric_limits<float>::infinity(); // no convergence, more iterations is required
 }
 
 ///////////////////////////////////////////////////////////////////

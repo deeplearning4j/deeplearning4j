@@ -56,9 +56,6 @@ namespace samediff {
                 default:
                     throw std::runtime_error("Don't know what to do with provided Callable");
             }
-
-            // mark queue available for next task
-            queue->markAvailable();
         }
     }
 

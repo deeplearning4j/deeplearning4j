@@ -101,7 +101,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, ND
         auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i += increment) {
                 auto temp = output(indices[i], true);
-                nd4j::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>, true>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr);
+                nd4j::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr);
             }
         };
 

@@ -305,22 +305,22 @@ case "$OS" in
 
     windows*)
     # Do something under Windows NT platform
-    if [ "$CHIP" == "cuda" ]; then
+    #if [ "$CHIP" == "cuda" ]; then
         export CMAKE_COMMAND="cmake -G \"Ninja\""
         export MAKE_COMMAND="ninja"
         export CC="cl.exe"
         export CXX="cl.exe"
         PARALLEL="true"
-    else
-        export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
-        export MAKE_COMMAND="make"
+    #else
+    #    export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
+    #    export MAKE_COMMAND="make"
 
         # Sam, do we really need this?
-        export CC=/mingw64/bin/gcc
-        export CXX=/mingw64/bin/g++
-        PARALLEL="true"
+    #    export CC=/mingw64/bin/gcc
+    #    export CXX=/mingw64/bin/g++
+    #    PARALLEL="true"
 
-    fi
+    #fi
     # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
     if [ -z "${VCINSTALLDIR:-}" ]; then
         export VisualStudioVersion=12.0
@@ -334,7 +334,7 @@ case "$OS" in
         export PATH="$PATH:$VCINSTALLDIR\\BIN\\amd64:$WindowsSdkDir\\bin\\x64:$WindowsSdkDir\\bin\\x86"
     fi
     # Make sure we are using 64-bit MinGW-w64
-    export PATH=/mingw64/bin/:$PATH
+    export PATH=/mingw64/bin/:/mingw64/lib:$PATH
     # export GENERATOR="MSYS Makefiles"
     ;;
 esac

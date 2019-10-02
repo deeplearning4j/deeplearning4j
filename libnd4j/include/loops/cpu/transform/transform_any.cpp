@@ -59,10 +59,8 @@ void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
         return;
     }
 
-    if (allowParallelism)
-        nd4j::TransformLoops<X,Z,X>::template loopTransform<OpType, true>(x, xShapeInfo, z, zShapeInfo, extraParams);
-    else
-        nd4j::TransformLoops<X,Z,X>::template loopTransform<OpType, false>(x, xShapeInfo, z, zShapeInfo, extraParams);
+
+    nd4j::TransformLoops<X,Z,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams);
 }
 
 

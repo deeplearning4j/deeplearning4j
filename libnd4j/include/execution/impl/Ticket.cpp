@@ -45,6 +45,9 @@ namespace samediff {
             // release callable
             delete c;
 
+            // notify that queue is available
+            _queues[c->threadId()]->markAvailable();
+
             // notify ThreadPool that at least one thread finished
             ThreadPool::getInstance()->release();
         }

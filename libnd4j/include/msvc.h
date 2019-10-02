@@ -15,18 +15,25 @@
  ******************************************************************************/
 
 //
-// Created by agibsonccc on 3/5/16.
+//  @author raver119@gmail.com
 //
 
-#ifndef NATIVEOPERATIONS_DLL_H
-#define NATIVEOPERATIONS_DLL_H
+#ifndef SAMEDIFF_MSVC_H
+#define SAMEDIFF_MSVC_H
 
-#include <msvc.h>
+#if defined(_MSC_VER)
 
-#ifdef _WIN32
-//#include <windows.h>
-#  define ND4J_EXPORT __declspec(dllexport)
-#else
-#  define ND4J_EXPORT
+#pragma warning( disable : 4244 )
+#pragma warning( disable : 4267 )
+#pragma warning( disable : 4251 )
+#pragma warning( disable : 4101 )
+#pragma warning( disable : 4305 )
+#pragma warning( disable : 4309 )
+#pragma warning( disable : 4333 )
+#pragma warning( disable : 4146 )
+#pragma warning( disable : 4018 )
+#pragma warning( disable : 4297 )
+
 #endif
-#endif //NATIVEOPERATIONS_DLL_H
+
+#endif //DEV_TESTS_MSVC_H

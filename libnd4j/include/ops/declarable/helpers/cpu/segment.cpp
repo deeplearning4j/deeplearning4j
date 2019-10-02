@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/segment.h>
 #include <ShapeUtils.h>
 #include <execution/Threads.h>
+#include <map>
 
 namespace nd4j {
 namespace ops {
@@ -755,20 +756,20 @@ namespace helpers {
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
             int pos = 0;
-            auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+            //auto func = [&](uint64_t thread_id, uint64_t start, uint64_t stop, uint64_t increment) -> void {
+                for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors->at(i);
                     auto currentOut = listOfOutTensors->at(i);
                     auto currentGradOut = listOfGradOuts->at(classNum);
 
                     for (int e = 0; e < current->lengthOf(); e++) {
-                        currentOut->p(e, currentGradOut->e<double>(e) / classCount[classNum]);
+                        currentOut->p(e, currentGradOut->e<double>(e) / classCount.at(classNum));
                     }
                 }
-            };
+            //};
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         return ND4J_STATUS_OK;
     }
@@ -790,8 +791,8 @@ namespace helpers {
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
             std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
-            auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+            //auto func = PRAGMA_THREADS_FOR {
+                for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors->at(i);
                     auto currentOut = listOfOutTensors->at(i);
@@ -799,9 +800,9 @@ namespace helpers {
 
                     currentOut->assign(currentGradOut);
                 }
-            };
+            //};
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         return Status::OK();
     }
@@ -826,8 +827,8 @@ namespace helpers {
             //int numOfClasses = tempRes->sizeAt(0); // number of classes
             //std::vector<std::pair<NDArray*, int>> outputs(numOfClasses);
 
-            auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+            //auto func = PRAGMA_THREADS_FOR {
+                for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors->at(i);
                     auto currentOut = listOfOutTensors->at(i);
@@ -836,9 +837,9 @@ namespace helpers {
 
                     currentOut->assign((*currentFFOut) * (*currentGradOut) / (*current));
                 }
-            };
+            //};
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         delete tempRes;
         return ND4J_STATUS_OK;
@@ -914,8 +915,8 @@ namespace helpers {
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
             std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
-            auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+            //auto func = PRAGMA_THREADS_FOR {
+                for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors->at(i);
                     auto currentOut = listOfOutTensors->at(i);
@@ -926,9 +927,9 @@ namespace helpers {
                             currentOut->t<T>(e) = currentGradOut->t<T>(e);
                     }
                 }
-            };
+            //};
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         delete tempRes;
         return ND4J_STATUS_OK;
@@ -993,17 +994,17 @@ namespace helpers {
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
             std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
-            auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+            //auto func = PRAGMA_THREADS_FOR {
+                for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto currentOut = listOfOutTensors->at(i);
                     auto currentGradOut = listOfGradOuts->at(classNum);
 
                     currentOut->assign(currentGradOut);
                 }
-            };
+            //};
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         return Status::OK();
     }
@@ -1030,8 +1031,8 @@ namespace helpers {
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
             std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
-            auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+            //auto func = PRAGMA_THREADS_FOR {
+                for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors->at(i);
                     auto currentOut = listOfOutTensors->at(i);
@@ -1040,9 +1041,9 @@ namespace helpers {
 
                     currentOut->assign((*currentFFOut) * (*currentGradOut) / (*current));
                 }
-            };
+            //};
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         delete tempRes;
         return Status::OK();
@@ -1062,14 +1063,14 @@ namespace helpers {
 
         // if input is a vector: (as if in doc sample)
         if (input->isVector()) {
-            auto func = PRAGMA_THREADS_FOR {
-                for (auto e = start; e < stop; e += increment) {
+            //auto func = PRAGMA_THREADS_FOR {
+                for (auto e = 0; e < indices->lengthOf(); e++) {
                     auto classNum = indices->e<Nd4jLong>(e);
                     output->p(e, gradOut->e<double>(classNum) / nd4j::math::nd4j_sqrt<double, double>(classCount[classNum]));
                 }
-            };
+            //};
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         else {
             auto restDims = ShapeUtils::evalDimsToExclude(input->rankOf(), {0});
@@ -1078,20 +1079,20 @@ namespace helpers {
             std::unique_ptr<ResultSet> listOfTensors(input->allTensorsAlongDimension(restDims));
             std::unique_ptr<ResultSet> listOfOutTensors(output->allTensorsAlongDimension(restDims));
 
-            auto func = PRAGMA_THREADS_FOR {
-                for (auto i = start; i < stop; i += increment) {
+            //auto func = PRAGMA_THREADS_FOR {
+                for (auto i = 0; i < indices->lengthOf(); i++) {
                     auto classNum = indices->e<Nd4jLong>(i);
                     auto current = listOfTensors->at(i);
                     auto currentOut = listOfOutTensors->at(i);
                     auto currentGradOut = listOfGradOuts->at(classNum);
 
                     for (int e = 0; e < current->lengthOf(); e++) {
-                        currentOut->p(e, currentGradOut->e<double>(e) / nd4j::math::nd4j_sqrt<double, double>(classCount[classNum]));
+                        currentOut->p<double>(e, currentGradOut->e<double>(e) / nd4j::math::nd4j_sqrt<double, double>(classCount[classNum]));
                     }
                 }
-            };
+            //};
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            //samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         return Status::OK();
     }

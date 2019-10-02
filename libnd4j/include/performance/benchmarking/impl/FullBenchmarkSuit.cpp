@@ -21,6 +21,7 @@
 #include <ops/declarable/CustomOperations.h>
 #include <performance/benchmarking/FullBenchmarkSuit.h>
 #include <ops/declarable/LegacyRandomOp.h>
+#include <algorithm>
 
 #ifdef _RELEASE
     int wIterations = 4;
