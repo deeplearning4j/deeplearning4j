@@ -78,7 +78,7 @@ namespace functions {
                 };
             }
             else {
-                for (unsigned int r = start; r < stop; r += increment) {
+                for (unsigned int r = 0; r < numTads; r++) {
                     auto oZ = z + zTadOffsets[r];
                     auto oX = x + xTadOffsets[r];
 
