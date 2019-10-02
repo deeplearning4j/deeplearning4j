@@ -104,8 +104,8 @@ namespace nd4j {
          *
          * all as above op
          * */
-        #if NOT_EXCLUDED(OP_bincast)
-                DECLARE_CUSTOM_OP(bincast, 1, 1, false, 0, 1);
+        #if NOT_EXCLUDED(OP_bitcast)
+                DECLARE_CUSTOM_OP(bitcast, 1, 1, false, 0, 1);
         #endif
     }
 }
