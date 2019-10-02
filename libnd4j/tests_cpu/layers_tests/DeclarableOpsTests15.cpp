@@ -228,7 +228,7 @@ TEST_F(DeclarableOpsTests15, Test_AdjustContrast_4) {
     ASSERT_TRUE(e.equalsTo(out));
     delete result;
 }
-TEST_F(DeclarableOpsTests15, Test_BinCast_1) {
+TEST_F(DeclarableOpsTests15, Test_BitCast_1) {
     auto x = NDArrayFactory::create<float>('c', {2, 2, 2});
     auto e = NDArrayFactory::create<double>('c', {2, 2}, {2., 512., 8192., 131072.032 });
     x.linspace(1.);
@@ -241,7 +241,7 @@ TEST_F(DeclarableOpsTests15, Test_BinCast_1) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests15, Test_BinCast_2) {
+TEST_F(DeclarableOpsTests15, Test_BitCast_2) {
     auto x = NDArrayFactory::create<float>('c', {2, 4});
     auto e = NDArrayFactory::create<float16>('c', {2, 4, 2}, {0, 1.875, 0, 2.,    0, 2.125, 0,  2.25,
                                                                               0, 2.312, 0, 2.375, 0, 2.438, 0., 2.5});
