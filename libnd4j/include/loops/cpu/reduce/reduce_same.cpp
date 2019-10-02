@@ -67,27 +67,14 @@ namespace functions {
                 z[0] = execScalar<OpType>(x, xEws, length, extraParams);
             }
             else {
-                X start = OpType::startingValue(x);
-                int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
-                X intermediate[64];
-
-                for (int e = 0; e < maxThreads; e++)
-                    intermediate[e] = start;
-
+                auto startingValue = OpType::startingValue(x);
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                auto func = PRAGMA_THREADS_FOR {
-                    for (auto i = start; i < stop; i += increment)
-                        intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
-                };
+                for (auto i = 0; i < length; i++)
+                    startingValue = OpType::update(startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
 
-                maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-
-                for (int e = 0; e < maxThreads; e++)
-                    start = OpType::update(start, intermediate[e], extraParams);
-
-                z[0] = OpType::postProcess(start, length, extraParams);
+                z[0] = OpType::postProcess(startingValue, length, extraParams);
             }
         }
 
@@ -105,29 +92,15 @@ namespace functions {
 
                 if (xEws >= 1) {
                     return execScalar<OpType>(x, xEws, length, extraParams);
-                }
-                else {
-                    X start = OpType::startingValue(x);
-                    int maxThreads = nd4j::math::nd4j_min<int>(64, omp_get_max_threads());
-                    X intermediate[64];
-
-                    for (int e = 0; e < maxThreads; e++)
-                        intermediate[e] = start;
-
+                } else {
+                    auto startingValue = OpType::startingValue(x);
                     uint xShapeInfoCast[MAX_RANK];
-                    const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
+                    bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                    auto func = PRAGMA_THREADS_FOR {
-                        for (auto i = start; i < stop; i += increment)
-                            intermediate[omp_get_thread_num()] = OpType::update(intermediate[omp_get_thread_num()], OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
-                    };
+                    for (auto i = 0; i < length; i++)
+                        startingValue = OpType::update(startingValue, OpType::op(x[shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX)], extraParams), extraParams);
 
-                    maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-
-                    for (int e = 0; e < maxThreads; e++)
-                        start = OpType::update(start, intermediate[e], extraParams);
-
-                    return OpType::postProcess(start, shape::length(xShapeInfo), extraParams);
+                    return OpType::postProcess(startingValue, length, extraParams);
                 }
             }
 
@@ -253,33 +226,14 @@ namespace functions {
 
             auto x = reinterpret_cast<X *>(vx);
             auto extraParams = reinterpret_cast<X *>(vextraParams);
-
             auto startingVal = OpType::startingValue(x);
-            auto maxThreads = nd4j::math::nd4j_min(nd4j::Environment::getInstance()->maxThreads(), 64);
-            X intermediatery[64];
-            for (int e = 0; e < maxThreads; e++)
-                intermediatery[e] = startingVal;
 
             if (xEws == 1) {
-                auto func = PRAGMA_THREADS_FOR {
-                    for (auto i = start; i < stop; i += increment) {
-                        intermediatery[thread_id] = OpType::update(intermediatery[thread_id], OpType::op(x[i], extraParams), extraParams);
-                    }
-                };
-
-                auto actual_threads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-                for (int e = 0; e < actual_threads; e++)
-                    startingVal = OpType::update(startingVal, intermediatery[e], extraParams);
-
+                for (auto i = 0; i < length; i++)
+                    startingVal = OpType::update(startingVal, OpType::op(x[i], extraParams), extraParams);
             } else {
-                auto func = PRAGMA_THREADS_FOR {
-                    for (auto i = start; i < stop; i += increment)
-                        intermediatery[thread_id] = OpType::update(intermediatery[thread_id], OpType::op(x[i * xEws], extraParams), extraParams);
-                };
-
-                auto actual_threads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
-                for (int e = 0; e < actual_threads; e++)
-                    startingVal = OpType::update(startingVal, intermediatery[e], extraParams);
+                for (auto i = 0; i < length; i++)
+                    startingVal = OpType::update(startingVal, OpType::op(x[i * xEws], extraParams), extraParams);
             }
 
             return OpType::postProcess(startingVal, length, extraParams);
