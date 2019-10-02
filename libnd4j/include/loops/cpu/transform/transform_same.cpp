@@ -36,10 +36,8 @@ namespace functions {
 				Nd4jLong *xShapeInfo,
 				void *z,
 				Nd4jLong *zShapeInfo,
-				void *extraParams,
-				Nd4jLong *tadShapeInfo,
-				Nd4jLong *tadOffsets) {
-                    DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_SAME_OPS);
+				void *extraParams, uint64_t threadId, uint64_t numThreads) {
+                    DISPATCH_BY_OPNUM_T(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads), TRANSFORM_SAME_OPS);
 		}
 
         template <typename X>
@@ -47,18 +45,14 @@ namespace functions {
 		void _CUDA_H TransformSame<X>::exec(void *vx, Nd4jLong *xShapeInfo,
                                             void *vz, Nd4jLong *zShapeInfo,
                                             void *vextraParams,
-                                            Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
+                                            uint64_t threadId, uint64_t numThreads) {
 
 		    auto x = reinterpret_cast<X *>(vx);
 		    auto z = reinterpret_cast<X *>(vz);
 		    auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-            if(OpType::requiresSpecial) {
-                OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-                return;
-            }
 
-            nd4j::TransformLoops<X,X,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams);
+            nd4j::TransformLoops<X,X,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
         }
 
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformSame, , LIBND4J_TYPES);

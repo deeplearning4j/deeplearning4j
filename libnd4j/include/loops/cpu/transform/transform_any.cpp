@@ -37,9 +37,8 @@ namespace functions {
 				void *z,
 				Nd4jLong *zShapeInfo,
 				void *extraParams,
-				Nd4jLong *tadShapeInfo,
-				Nd4jLong *tadOffsets, bool allowParallelism) {
-                    DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets, allowParallelism), TRANSFORM_ANY_OPS);
+                uint64_t threadId, uint64_t numThreads) {
+                    DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads), TRANSFORM_ANY_OPS);
 		}
 
 /////////////////////////////////////////////////////////////////////
@@ -47,20 +46,13 @@ template <typename X, typename Z>
 template<typename OpType>
 void _CUDA_H TransformAny<X, Z>::exec(void *vx, Nd4jLong *xShapeInfo,
                                     void *vz,Nd4jLong *zShapeInfo,
-                                    void *vextraParams,
-                                    Nd4jLong *tadShapeInfo,Nd4jLong *tadOffsets, bool allowParallelism) {
+                                    void *vextraParams, uint64_t threadId, uint64_t numThreads) {
 
 	auto x = reinterpret_cast<X *>(vx);
 	auto z = reinterpret_cast<Z *>(vz);
 	auto extraParams = reinterpret_cast<X *>(vextraParams);
-             
-    if(OpType::requiresSpecial) {
-        OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-        return;
-    }
 
-
-    nd4j::TransformLoops<X,Z,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams);
+    nd4j::TransformLoops<X,Z,X>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
 }
 
 

@@ -98,7 +98,7 @@ namespace nd4j {
     public:
 
         template<typename OpType>
-        static FORCEINLINE void loopTransform(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, E* extraParams);
+        static FORCEINLINE void loopTransform(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, E* extraParams, uint64_t threadId, uint64_t numThreads);
     };
 
     template <typename X, typename Z>
@@ -494,7 +494,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
     template <typename OpType>
     void nd4j::TransformLoops<X,Z,E>::loopTransform(X* x, Nd4jLong* xShapeInfo,
                                              Z* z, Nd4jLong* zShapeInfo,
-                                             E* extraParams) {
+                                             E* extraParams, uint64_t threadId, uint64_t numThreads) {
 
         const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
@@ -504,13 +504,20 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
         const Nd4jLong len = shape::length(xShapeInfo);
 
-        OmpLaunchHelper threadsInfo(len);
+        // linear case first
+        auto linearSpan = len / numThreads;
+        auto start = linearSpan * threadId;
+        auto stop = linearSpan * (threadId + 1);
+
+        // processing tail here
+        if (threadId == numThreads - 1)
+            stop = len;
 
         switch (kindOfLoop) {
 
             //*********************************************//
             case LoopKind::EWS1: {
-                    for (auto i = 0; i < len; i++)
+                    for (auto i = start; i < stop; i++)
                         z[i] = OpType::op(x[i], extraParams);
                 }
                 break;
@@ -520,7 +527,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     const uint xEws = shape::elementWiseStride(xShapeInfo);
                     const uint zEws = shape::elementWiseStride(zShapeInfo);
 
-                    for (auto i = 0; i < len; i++)
+                    for (auto i = start; i < stop; i++)
                         z[i*zEws] = OpType::op(x[i*xEws], extraParams);
                 }
                 break;
@@ -532,12 +539,12 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
 
                     if (zEws > 1) {
-                        for (auto i = 0; i < len; i++) {
+                        for (auto i = start; i < stop; i++) {
                             const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
                             z[i * zEws] = OpType::op(x[xOffset], extraParams);
                         }
                     } else {
-                        for (auto i = 0; i < len; i++) {
+                        for (auto i = start; i < stop; i++) {
                             const auto xOffset = shape::indexOffset(i, xShapeInfo, castXShapeInfo, canCastX);
                             z[i] = OpType::op(x[xOffset], extraParams);
                         }
@@ -547,7 +554,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                 //*********************************************//
             case LoopKind::RANK1: {
-                    for (auto i0 = 0; i0 < len; i0++)
+                    for (auto i0 = start; i0 < stop; i0++)
                         z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
                 }
                 break;
@@ -641,8 +648,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                     bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-
-                    for (auto i = 0; i < len; i++) {
+                    for (auto i = start; i < stop; i++) {
                         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpType::op(x[xOffset], extraParams);

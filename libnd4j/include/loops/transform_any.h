@@ -71,10 +71,10 @@ class TransformAny {
 
 #endif
 
-		static void exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism);
+		static void exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *extraParams, uint64_t threadId, uint64_t numThreads);
 
 		template<typename OpType>
-		static ND4J_EXPORT void exec(void *dx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets, bool allowParallelism);
+		static ND4J_EXPORT void exec(void *dx, Nd4jLong *xShapeInfo, void *vz, Nd4jLong *zShapeInfo, void *extraParams, uint64_t threadId, uint64_t numThreads);
 };
 
 }
