@@ -42,10 +42,7 @@ namespace samediff {
          * @param increment
          * @return
          */
-        FORCEINLINE static int parallel_for(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment = 1, uint32_t numThreads = nd4j::Environment::getInstance()->maxThreads()) {
-            function(0, start, stop, increment);
-            return 1;
-        }
+        static int parallel_for(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment = 1, uint32_t numThreads = nd4j::Environment::getInstance()->maxThreads());
 
         /**
          *
@@ -59,10 +56,7 @@ namespace samediff {
          * @param inc_y
          * @return
          */
-        FORCEINLINE static int parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads()) {
-            function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
-            return 1;
-        }
+        static int parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads());
 
         /**
          *
@@ -79,10 +73,7 @@ namespace samediff {
          * @param inc_z
          * @return
          */
-        FORCEINLINE static int parallel_for(FUNC_3D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t start_z, uint64_t stop_z, uint64_t inc_z, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads()) {
-            function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y, start_z, stop_z, inc_z);
-            return 1;
-        }
+        static int parallel_for(FUNC_3D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t start_z, uint64_t stop_z, uint64_t inc_z, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads());
 
         /**
          *
@@ -90,12 +81,7 @@ namespace samediff {
          * @param numThreads
          * @return
          */
-        FORCEINLINE static int parallel_do(FUNC_DO function, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads()) {
-            for (uint64_t e = 0; e < numThreads; e++)
-                function(e);
-
-            return numThreads;
-        }
+        static int parallel_do(FUNC_DO function, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads());
     };
 }
 

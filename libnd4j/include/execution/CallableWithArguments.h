@@ -43,8 +43,9 @@ namespace samediff {
         std::mutex _lock;
 
         uint64_t _threadId;
+        uint64_t _numThreads;
     public:
-        CallableWithArguments(FUNC_DO &func, uint64_t thread_id);
+        CallableWithArguments(FUNC_DO &func, uint64_t thread_id, uint64_t numThreads);
         CallableWithArguments(FUNC_1D &func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x);
         CallableWithArguments(FUNC_2D &func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y);
         CallableWithArguments(FUNC_3D &func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y, uint64_t start_z, uint64_t stop_z, uint64_t increment_z);
@@ -80,6 +81,8 @@ namespace samediff {
 
 
         uint64_t threadId();
+
+        uint64_t numThreads();
     };
 }
 

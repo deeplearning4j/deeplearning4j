@@ -31,7 +31,7 @@ namespace samediff {
             auto c = queue->poll();
             switch (c->dimensions()) {
                 case 0: {
-                        c->function_do()(c->threadId());
+                        c->function_do()(c->threadId(), c->numThreads());
                         c->finish();
                     }
                     break;

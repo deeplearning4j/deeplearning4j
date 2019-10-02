@@ -2779,24 +2779,17 @@ void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
                       int* hIindexes, int* dIindexes) {
 
     try {
-
-        int numThreads = omp_get_max_threads();
-
         auto func = PRAGMA_THREADS_DO {
             for (int i = 0; i < numOfSubArrs; ++i) {
-
-                int threadIndex = omp_get_thread_num();
+                int threadIndex = thread_id;
                 const auto xIndex = hIindexes[i];
                 const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
 
                 if (!isOwner)
                     continue;
 
-                NDArray inSubArr(
-                        reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                        hXShapeInfo);
-                NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                                  hYShapeInfo);
+                NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)), hXShapeInfo);
+                NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)), hYShapeInfo);
 
                 if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
                     continue;
@@ -2830,7 +2823,7 @@ void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
             }
         };
 
-        samediff::Threads::parallel_do(func, numThreads);
+        samediff::Threads::parallel_do(func);
     } catch (std::exception &e) {
         nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
         nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());

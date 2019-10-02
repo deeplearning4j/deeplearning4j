@@ -21,10 +21,11 @@
 #include <execution/CallableWithArguments.h>
 
 namespace samediff {
-    CallableWithArguments::CallableWithArguments(FUNC_DO &func, uint64_t thread_id) {
+    CallableWithArguments::CallableWithArguments(FUNC_DO &func, uint64_t thread_id, uint64_t numThreads) {
         _function_do = func;
         _finished = false;
         _threadId = thread_id;
+        _numThreads = numThreads;
     }
 
     CallableWithArguments::CallableWithArguments(FUNC_3D &func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y, uint64_t start_z, uint64_t stop_z, uint64_t increment_z) {
@@ -92,5 +93,9 @@ namespace samediff {
 
     uint64_t CallableWithArguments::threadId() {
         return _threadId;
+    }
+
+    uint64_t CallableWithArguments::numThreads() {
+        return _numThreads;
     }
 }
