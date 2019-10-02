@@ -67,32 +67,24 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
     int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());
 
     if (kindOfLoop == nd4j::LoopKind::EWS1) {
-        auto func = PRAGMA_THREADS_FOR {
-            for (uint64_t r = start; r < stop; r += increment) {
-                auto oZ = z + zTadOffsets[r];
-                auto oX = x + xTadOffsets[r];
+        for (uint64_t r = 0; r < numTads; r++) {
+            auto oZ = z + zTadOffsets[r];
+            auto oX = x + xTadOffsets[r];
 
-                PRAGMA_OMP_SIMD
-                for (unsigned int f = 0; f < tadLength; f++)
-                    oZ[f] = OpType::op(oX[f], scalars[r], extraParams);
-            }
+            PRAGMA_OMP_SIMD
+            for (unsigned int f = 0; f < tadLength; f++)
+                oZ[f] = OpType::op(oX[f], scalars[r], extraParams);
         };
-
-        samediff::Threads::parallel_for(func, 0, numTads, 1, num_threads);
     }
     else {
-        auto func = PRAGMA_THREADS_FOR {
-            for (uint64_t r = start; r < stop; r += increment) {
-                auto oZ = z + zTadOffsets[r];
-                auto oX = x + xTadOffsets[r];
+        for (uint64_t r = 0; r < numTads; r++) {
+            auto oZ = z + zTadOffsets[r];
+            auto oX = x + xTadOffsets[r];
 
-                PRAGMA_OMP_SIMD
-                for (unsigned int f = 0; f < tadLength; f++)
-                    oZ[f * zTadEws] = OpType::op(oX[f * xTadEws], scalars[r], extraParams);
-            }
+            PRAGMA_OMP_SIMD
+            for (unsigned int f = 0; f < tadLength; f++)
+                oZ[f * zTadEws] = OpType::op(oX[f * xTadEws], scalars[r], extraParams);
         };
-
-        samediff::Threads::parallel_for(func, 0, numTads, 1, num_threads);
     }
 }
 
@@ -163,32 +155,22 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
         nd4j::OmpLaunchHelper info(len, allowParallelism ? -1 : 1);
 
         if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-
-            auto func = PRAGMA_THREADS_FOR {
-                PRAGMA_OMP_SIMD
-                for (uint64_t i = start; i < stop; i += increment) {
-                    auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                    z[offset] = OpType::op(x[offset], scalar, extraParams);
-                }
+            PRAGMA_OMP_SIMD
+            for (uint64_t i = 0; i < len; i++) {
+                auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                z[offset] = OpType::op(x[offset], scalar, extraParams);
             };
-
-            samediff::Threads::parallel_for(func,  0, len, 1);
         }
         else {
-
             uint zShapeInfoCast[MAX_RANK];
             const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, zShapeInfoCast);
 
-            auto func = PRAGMA_THREADS_FOR {
-                PRAGMA_OMP_SIMD
-                for (uint64_t i = start; i < stop; i += increment) {
-                    auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
-                    auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
-                    z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
-                }
+            PRAGMA_OMP_SIMD
+            for (uint64_t i = 0; i < len; i++) {
+                auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+                z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
             };
-
-            samediff::Threads::parallel_for(func,  0, len, 1);
         }
     }
 }
@@ -210,24 +192,14 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
     nd4j::OmpLaunchHelper info(len, allowParallelism ? -1 : 1);
 
     if (xEws == 1 && zEws == 1) {
-
-        auto func = PRAGMA_THREADS_FOR {
-            PRAGMA_OMP_SIMD
-            for (uint64_t i = start; i < stop; i += increment)
-                z[i] = OpType::op(x[i], scalar, extraParams);
-        };
-
-        samediff::Threads::parallel_for(func,  0, len, 1);
+        PRAGMA_OMP_SIMD
+        for (uint64_t i = 0; i < len; i++)
+            z[i] = OpType::op(x[i], scalar, extraParams);
     }
     else {
-
-        auto func = PRAGMA_THREADS_FOR {
-            PRAGMA_OMP_SIMD
-            for (uint64_t i = start; i < stop; i += increment)
-                z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
-        };
-
-        samediff::Threads::parallel_for(func,  0, len, 1);
+        PRAGMA_OMP_SIMD
+        for (uint64_t i = 0; i < len; i++)
+            z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
     }
 }
 
