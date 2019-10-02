@@ -33,6 +33,14 @@ namespace samediff {
         return maxThreads;
     }
 
+    int Threads::parallel_tad(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment, uint32_t numThreads) {
+        if (start > stop)
+            throw std::runtime_error("Threads::parallel_for got start > stop");
+
+        function(0, start, stop, increment);
+        return 1;
+    }
+
     int Threads::parallel_for(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment, uint32_t numThreads) {
         if (start > stop)
             throw std::runtime_error("Threads::parallel_for got start > stop");

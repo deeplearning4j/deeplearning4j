@@ -243,7 +243,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
                 }
             };
 
-            samediff::Threads::parallel_for(func,0, numOfSubArrs);
+            samediff::Threads::parallel_tad(func,0, numOfSubArrs);
         }
         else {
 
@@ -275,7 +275,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, numOfSubArrs);
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
 
             delete []offsets;
         }

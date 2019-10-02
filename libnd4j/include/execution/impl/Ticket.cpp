@@ -42,11 +42,11 @@ namespace samediff {
             // blocking on the current callable, till it finishes
             c->waitUntilFinished();
 
-            // release callable
-            delete c;
-
             // notify that queue is available
             _queues[c->threadId()]->markAvailable();
+
+            // release callable
+            delete c;
 
             // notify ThreadPool that at least one thread finished
             ThreadPool::getInstance()->release();

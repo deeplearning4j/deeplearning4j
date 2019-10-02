@@ -35,6 +35,8 @@ namespace samediff {
     public:
         /**
          * This function executes 1 dimensional loop for a given number of threads
+         * PLEASE NOTE: this function can use smaller number of threads than requested.
+         *
          * @param function
          * @param numThreads
          * @param start
@@ -43,6 +45,8 @@ namespace samediff {
          * @return
          */
         static int parallel_for(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment = 1, uint32_t numThreads = nd4j::Environment::getInstance()->maxThreads());
+
+        static int parallel_tad(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment = 1, uint32_t numThreads = nd4j::Environment::getInstance()->maxThreads());
 
         /**
          *
