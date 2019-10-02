@@ -60,16 +60,12 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     }
 
     Z extraParamsVals[3] = {(Z) 0.0f, (Z) 0.0f, (Z) 0.0f};
-    // it's possible case for EqualsWithEps op
-    if (extraParams != nullptr)
-        extraParamsVals[2] = extraParams[0];
 
     uint xShapeInfoCast[MAX_RANK];
     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
     Z startingVal = OpType::startingValue(x);
     int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
-    nd4j::OmpLaunchHelper t(length, maxThreads);
     Z intermediate[64];
     Z extraParamsLocal[3 * 64];
 
@@ -80,8 +76,12 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     memset(extraParamsLocal, 0, 3 * 64 * sizeof(Z));
     if (extraParams != nullptr) {
         PRAGMA_OMP_SIMD
-        for (int e = 0; e < maxThreads; e++)
-            extraParamsLocal[3 * e + 2] = extraParams[0];
+        // mostly for future reference
+        for (int e = 0; e < maxThreads; e++) {
+            extraParamsLocal[3 * e] = extraParams[0];
+            extraParamsLocal[3 * e + 1] = extraParams[1];
+            extraParamsLocal[3 * e + 2] = extraParams[2];
+        }
     }
 
     nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, yShapeInfo);
@@ -121,8 +121,9 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     }
 
     // merge step
-    for (int e = 0; e < maxThreads; e++)
+    for (int e = 0; e < maxThreads; e++) {
         OpType::aggregateExtraParams(extraParamsVals, extraParamsLocal + 3 * e);
+    }
     for (int e = 0; e < maxThreads; e++)
         startingVal = OpType::update(startingVal, intermediate[e], extraParamsVals);
 

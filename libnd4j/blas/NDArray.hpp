@@ -3389,7 +3389,7 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
         // regular numeric types
         NDArray tmp(nd4j::DataType::FLOAT32, getContext()); // scalar = 0
 
-        ExtraArguments extras({eps});
+        ExtraArguments extras({0.0, 0.0, eps});
 
         NDArray::prepareSpecialUse({&tmp}, {this, other});
         NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, getBuffer(), getShapeInfo(),
@@ -3402,7 +3402,7 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
 
         synchronize("NDArray::equalsTo");
 
-        if (tmp.e<int>(0) > 0)
+        if (tmp.e<Nd4jLong>(0) != 0)
             return false;
 
         return true;

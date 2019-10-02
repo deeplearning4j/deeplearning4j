@@ -49,7 +49,7 @@ public class EqualsWithEps extends BaseReduce3Op {
 
     public EqualsWithEps(INDArray x, INDArray y, INDArray z, double eps, int... dimensions) {
         super(x, y, z, false, dimensions);
-        this.extraArgs = new Object[] {eps};
+        this.extraArgs = new Object[] {0.0, 0.0, eps};
     }
 
     public EqualsWithEps(INDArray x, INDArray y, double eps, int... dimensions) {
