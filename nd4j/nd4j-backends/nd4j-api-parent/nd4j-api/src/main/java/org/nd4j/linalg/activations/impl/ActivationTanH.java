@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -28,7 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
 /**
  *  f(x) = (exp(x) - exp(-x)) / (exp(x) + exp(-x))
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationTanH extends BaseActivationFunction {
 

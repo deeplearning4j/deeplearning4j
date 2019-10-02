@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -37,7 +37,7 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
  *  <a href="http://arxiv.org/abs/1505.00853">
  *  Empirical Evaluation of Rectified Activations in Convolutional Network</a>
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @JsonIgnoreProperties({"alpha"})
 @Getter
 public class ActivationRReLU extends BaseActivationFunction {
@@ -62,7 +62,7 @@ public class ActivationRReLU extends BaseActivationFunction {
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
         if (training) {
-            try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            try(MemoryWorkspace ignored = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                 this.alpha = Nd4j.rand(l, u, Nd4j.getRandom(), in.shape());
             }
             INDArray inTimesAlpha = in.mul(alpha);

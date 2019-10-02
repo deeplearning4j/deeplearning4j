@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2019 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -32,7 +32,7 @@ import org.nd4j.linalg.primitives.Pair;
  *
  * @see GELU
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationGELU extends BaseActivationFunction {
 
@@ -58,7 +58,7 @@ public class ActivationGELU extends BaseActivationFunction {
     @Override
     public Pair<INDArray, INDArray> backprop(INDArray in, INDArray epsilon) {
         assertShape(in, epsilon);
-        INDArray dLdz = null;
+        INDArray dLdz;
         if (precise)
             dLdz = Nd4j.getExecutioner().exec(new PreciseGELUDerivative(in, in));
         else

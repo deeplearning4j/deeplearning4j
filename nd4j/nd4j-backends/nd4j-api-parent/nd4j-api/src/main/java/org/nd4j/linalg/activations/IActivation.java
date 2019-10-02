@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -37,8 +37,8 @@ public interface IActivation extends Serializable {
      * Carry out activation function on the input array (usually known as 'preOut' or 'z')
      * Implementations must overwrite "in", transform in place and return "in"
      * Can support separate behaviour during test
-     * @param in
-     * @param training
+     * @param in input array.
+     * @param training true when training.
      * @return transformed activation
      */
     INDArray getActivation(INDArray in, boolean training);
@@ -58,13 +58,5 @@ public interface IActivation extends Serializable {
 
 
     int numParams(int inputSize);
-
-    void setParametersViewArray(INDArray viewArray, boolean initialize);
-
-    INDArray getParametersViewArray();
-
-    void setGradientViewArray(INDArray viewArray);
-
-    INDArray getGradientViewArray();
 
 }

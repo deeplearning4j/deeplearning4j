@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -31,12 +31,12 @@ import org.nd4j.linalg.primitives.Pair;
  *
  *  alpha defaults to 1, if not specified
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationELU extends BaseActivationFunction {
     public static final double DEFAULT_ALPHA = 1.0;
 
-    private double alpha = DEFAULT_ALPHA;
+    private double alpha;
 
     public ActivationELU() {
         this(DEFAULT_ALPHA);

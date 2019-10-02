@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -18,26 +18,24 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUDerivative;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.scalar.LeakyReLU;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.LeakyReLUBp;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * Leaky RELU
  * f(x) = max(0, x) + alpha * min(0, x)
  * alpha defaults to 0.01
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationLReLU extends BaseActivationFunction {
     public static final double DEFAULT_ALPHA = 0.01;
 
-    private double alpha = DEFAULT_ALPHA;
+    private double alpha;
 
     public ActivationLReLU() {
         this(DEFAULT_ALPHA);
