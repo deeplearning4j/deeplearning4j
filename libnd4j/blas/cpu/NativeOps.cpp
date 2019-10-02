@@ -1365,7 +1365,7 @@ void pullRowsGeneric(void *vx,
 
     int elementsPerThread = n / TAD_THRESHOLD;
     int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-    _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+    _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
     auto func = PRAGMA_THREADS_FOR {
         for (auto idx = start; idx < stop; idx += increment) {
@@ -1395,7 +1395,7 @@ void pullRowsGeneric(void *vx,
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, n, 1, _threads);
+    samediff::Threads::parallel_tad(func, 0, n, 1, _threads);
 }
 
 void pullRows(Nd4jPointer *extraPointers,
@@ -1797,7 +1797,7 @@ void _batchExecutor(Nd4jPointer *extraPointers,
                            void *ptrToArguments,
                            nd4j::DataType dtype) {
     // probably, we don't want too much threads as usually
-    int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
+    int _threads = nd4j::math::nd4j_min<int>(numAggregates, nd4j::Environment::getInstance()->maxThreads());
 
     nd4j::PointersHelper<T> helper(ptrToArguments,
                                         numAggregates,

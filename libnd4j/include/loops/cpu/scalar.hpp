@@ -64,7 +64,7 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
         return;
     }
 
-    int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());
+    int num_threads = nd4j::math::nd4j_min<int>(numTads, nd4j::Environment::getInstance()->maxThreads());
 
     if (kindOfLoop == nd4j::LoopKind::EWS1) {
         for (uint64_t r = 0; r < numTads; r++) {

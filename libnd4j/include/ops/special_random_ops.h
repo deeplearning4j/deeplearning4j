@@ -163,7 +163,7 @@ namespace randomOps {
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
                 auto func = PRAGMA_THREADS_FOR {
@@ -315,7 +315,7 @@ namespace randomOps {
 
             int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             int span = (middle / _threads) + 8;
 
@@ -434,7 +434,7 @@ namespace randomOps {
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             T prob = extraArguments[1];
 
@@ -542,7 +542,7 @@ namespace randomOps {
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             T prob = extraArguments[1];
 
@@ -685,7 +685,7 @@ namespace randomOps {
             Nd4jLong middle = zLength / 2 + (zLength % 2);
             int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             const T epsilon = static_cast<T>(1e-5);
 
@@ -802,7 +802,7 @@ namespace randomOps {
 
             int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             int span = (zLength / _threads) + 8;
 

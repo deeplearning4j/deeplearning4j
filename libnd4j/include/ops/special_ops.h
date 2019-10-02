@@ -2177,7 +2177,7 @@ PRAGMA_OMP_CRITICAL
 
                 int tadsPerThread = tads / TAD_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                num_threads = nd4j::math::nd4j_min<int>(num_threads, nd4j::Environment::getInstance()->maxThreads());
 
                 auto tadEWS = shape::elementWiseStride(tadShapeShapeInfo);
                 auto zEWS = tadEWS;
@@ -2228,7 +2228,7 @@ PRAGMA_OMP_CRITICAL
                         } else {
                             int tadsPerThread = tads / TAD_THRESHOLD;
                             int num_threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                            num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
+                            num_threads = nd4j::math::nd4j_min<int>(num_threads, nd4j::Environment::getInstance()->maxThreads());
 
                             auto offset = tadOffsets[r];
                             Nd4jLong shapeIter[MAX_RANK];

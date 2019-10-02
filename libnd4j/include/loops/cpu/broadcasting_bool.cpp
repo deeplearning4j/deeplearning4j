@@ -134,7 +134,7 @@ namespace functions {
 
                 int tadsPerThread = tads / TAD_THRESHOLD;
                 int threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                threads = nd4j::math::nd4j_min<int>(threads, omp_get_max_threads());
+                threads = nd4j::math::nd4j_min<int>(threads, nd4j::Environment::getInstance()->maxThreads());
 
                 auto xEws = shape::elementWiseStride(xTadShapeShapeInfo);
                 auto yEws = shape::elementWiseStride(yShapeInfo);

@@ -36,11 +36,6 @@
 #include <cuda_runtime.h>
 #endif
 
-#ifndef _OPENMP
-#define omp_get_thread_num() 0
-#define omp_get_max_threads() 1
-#endif
-
 #include "legacy_ops.h"
 
 //an op for the kernel
