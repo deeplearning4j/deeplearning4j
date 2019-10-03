@@ -399,7 +399,7 @@
             </properties>
         </profile>
         <profile>
-            <id>mingw</id>
+            <id>msvc</id>
             <activation>
                 <os><family>windows</family></os>
             </activation>
@@ -409,7 +409,10 @@
                         <groupId>org.bytedeco</groupId>
                         <artifactId>javacpp</artifactId>
                         <configuration>
-                            <properties>${javacpp.platform}-mingw</properties>
+                            <properties>${javacpp.platform}</properties>
+                            <compilerOptions>
+                                <compilerOption>/MT</compilerOption>
+                            </compilerOptions>
                         </configuration>
                     </plugin>
                 </plugins>
