@@ -2388,6 +2388,25 @@ TEST_F(DeclarableOpsTests9, thresholdedrelu_test1) {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, compare_and_bitpack_test1) {
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3, 4}, {-12.f, -11.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f, -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f});
+    auto threshold = NDArrayFactory::create<double>(2.0);
+    auto exp = NDArrayFactory::create<uint8_t>('c', {2, 3, 4}, {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+                                                                                0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1});
+
+    nd4j::ops::compare_and_bitpack op;
+
+    auto result = op.execute({&x, &threshold}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+//    output->printIndexedBuffer("Packed to uint8");
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+    delete result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, thresholdedrelu_test2) {
 
     const float theta = -2.f;
