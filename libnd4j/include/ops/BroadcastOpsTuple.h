@@ -46,6 +46,7 @@ namespace nd4j {
         static BroadcastOpsTuple Add();
         static BroadcastOpsTuple Assign();
         static BroadcastOpsTuple Divide();
+        static BroadcastOpsTuple DivideNoNan();
         static BroadcastOpsTuple Multiply();
         static BroadcastOpsTuple Subtract();
     };
