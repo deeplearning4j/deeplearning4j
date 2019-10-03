@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -17,7 +17,6 @@
 package org.nd4j.list;
 
 import lombok.val;
-import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.buffer.util.DataTypeUtil;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -35,34 +34,14 @@ import java.util.*;
  *
  * @author Adam Gibson
  */
+@SuppressWarnings("unchecked") //too many of them.
 public abstract  class BaseNDArrayList<X extends Number> extends  AbstractList<X>  {
     protected INDArray container;
     protected int size;
 
-
-
-    public BaseNDArrayList() {
+    BaseNDArrayList() {
         this.container = Nd4j.create(10);
     }
-
-    /**
-     * Specify the underlying ndarray for this list.
-     * @param container the underlying array.
-     */
-    public BaseNDArrayList(INDArray container) {
-        this.container = container;
-    }
-
-    /**
-     * Allocates the container and this list with
-     * the given size
-     * @param size the size to allocate with
-     */
-    public void allocateWithSize(int size) {
-        container = Nd4j.create(1,size);
-        this.size = size;
-    }
-
 
     /**
      * Get a view of the underlying array
@@ -321,11 +300,11 @@ public abstract  class BaseNDArrayList<X extends Number> extends  AbstractList<X
     private class NDArrayListIterator implements ListIterator<X> {
         private int curr = 0;
 
-        public NDArrayListIterator(int curr) {
+        NDArrayListIterator(int curr) {
             this.curr = curr;
         }
 
-        public NDArrayListIterator() {
+        NDArrayListIterator() {
         }
 
         @Override
@@ -335,9 +314,9 @@ public abstract  class BaseNDArrayList<X extends Number> extends  AbstractList<X
 
         @Override
         public X next() {
-            Number ret = get(curr);
+            X ret = get(curr);
             curr++;
-            return (X) ret;
+            return ret;
         }
 
         @Override
@@ -347,9 +326,9 @@ public abstract  class BaseNDArrayList<X extends Number> extends  AbstractList<X
 
         @Override
         public X previous() {
-            Number ret = get(curr - 1);
+            X ret = get(curr - 1);
             curr--;
-            return (X) ret;
+            return ret;
         }
 
         @Override

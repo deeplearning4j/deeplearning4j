@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -17,7 +17,6 @@
 package org.nd4j.list;
 
 import lombok.NonNull;
-import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
@@ -272,11 +271,11 @@ public class NDArrayList extends  BaseNDArrayList<Double>  {
     private class NDArrayListIterator implements ListIterator<Double> {
         private int curr = 0;
 
-        public NDArrayListIterator(int curr) {
+        NDArrayListIterator(int curr) {
             this.curr = curr;
         }
 
-        public NDArrayListIterator() {
+        NDArrayListIterator() {
         }
 
         @Override
