@@ -1731,6 +1731,20 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vars, 3, 1, true, 0, -2);
         #endif
 
+        /**
+         * compare_and_bitpack - compare with greater and pack result with uint8 
+         *
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 0D Tensor - threshold
+         *
+         *
+         * output:
+         *    0 - NDArray with the same shape as input and type uint8
+         */
+        #if NOT_EXCLUDED(OP_compare_and_bitpack)
+        DECLARE_CUSTOM_OP(compare_and_bitpack, 2, 1, false, 0, 0);
+        #endif
     }
 }
 
