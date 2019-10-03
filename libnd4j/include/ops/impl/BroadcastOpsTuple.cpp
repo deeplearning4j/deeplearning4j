@@ -37,10 +37,6 @@ namespace nd4j {
         return custom(nd4j::scalar::Divide, nd4j::pairwise::Divide, nd4j::broadcast::Divide);
     }
 
-    BroadcastOpsTuple BroadcastOpsTuple::DivideNoNan() {
-        return custom(nd4j::scalar::DivideNoNan, nd4j::pairwise::DivideNoNan, nd4j::broadcast::DivideNoNan);
-    }
-
     BroadcastOpsTuple BroadcastOpsTuple::Multiply() {
         return custom(nd4j::scalar::Multiply, nd4j::pairwise::Multiply, nd4j::broadcast::Multiply);
     }
