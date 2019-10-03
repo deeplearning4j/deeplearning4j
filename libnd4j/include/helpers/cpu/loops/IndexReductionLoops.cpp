@@ -44,10 +44,6 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
     const Nd4jLong* tadShape  = shape::shapeOf(const_cast<Nd4jLong*>(tadShapeInfo));
     const Nd4jLong* tadStride = shape::stride(const_cast<Nd4jLong*>(tadShapeInfo));
 
-    int tadsPerThread = zLen / TAD_THRESHOLD;
-    int numThreads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-    numThreads = nd4j::math::nd4j_min<int>(numThreads, nd4j::Environment::getInstance()->maxThreads());
-
     switch (kindOfLoop) {
         //*********************************************//
         case nd4j::LoopKind::EWS1: {
@@ -66,7 +62,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, 1, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -87,7 +83,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, 1, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -108,7 +104,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, 1, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -135,7 +131,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, 1, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -164,7 +160,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, 1, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -195,7 +191,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, 1, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -228,7 +224,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, 1, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -252,7 +248,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, 1, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -276,7 +272,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, 1, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -303,7 +299,7 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
                 }
             };
 
-            samediff::Threads::parallel_tad(func, 0, zLen, numThreads);
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
     }
 }
