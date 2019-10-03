@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -18,19 +18,17 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignBp;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignBp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftSign;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftSignDerivative;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * f_i(x) = x_i / (1+|x_i|)
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationSoftSign extends BaseActivationFunction {
 

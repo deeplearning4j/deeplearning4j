@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -20,8 +20,6 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.CustomOp;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.impl.transforms.custom.SoftMax;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.SoftmaxBp;
 import org.nd4j.linalg.factory.Nd4j;
@@ -31,13 +29,13 @@ import org.nd4j.linalg.primitives.Pair;
  * f_i(x) = exp(x_i - shift) / sum_j exp(x_j - shift)
  * where shift = max_i(x_i)
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationSoftmax extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
-        Nd4j.getExecutioner().execAndReturn((CustomOp) new SoftMax(in, in));
+        Nd4j.getExecutioner().execAndReturn(new SoftMax(in, in));
         return in;
     }
 

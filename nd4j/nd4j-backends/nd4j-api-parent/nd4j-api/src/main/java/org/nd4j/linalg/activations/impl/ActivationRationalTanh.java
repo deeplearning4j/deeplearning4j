@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -18,14 +18,12 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhBp;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhBp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.RationalTanhDerivative;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * Rational tanh approximation
@@ -37,7 +35,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * Underlying implementation is in native code
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationRationalTanh extends BaseActivationFunction {
 

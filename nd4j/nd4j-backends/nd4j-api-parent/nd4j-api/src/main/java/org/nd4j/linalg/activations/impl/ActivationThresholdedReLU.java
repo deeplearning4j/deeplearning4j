@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -31,12 +31,12 @@ import org.nd4j.linalg.primitives.Pair;
  *
  * @author Max Pumperla
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationThresholdedReLU extends BaseActivationFunction {
 
     public static final double DEFAULT_THETA = 1.0;
-    private double theta = DEFAULT_THETA;
+    private double theta;
 
     public ActivationThresholdedReLU() {
         this(DEFAULT_THETA);

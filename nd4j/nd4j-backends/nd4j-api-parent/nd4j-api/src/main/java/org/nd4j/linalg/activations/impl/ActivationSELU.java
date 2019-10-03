@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -18,19 +18,17 @@ package org.nd4j.linalg.activations.impl;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SeluBp;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.activations.BaseActivationFunction;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.gradient.SeluBp;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.SELU;
-import org.nd4j.linalg.api.ops.impl.transforms.gradient.SELUDerivative;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 /**
  * https://arxiv.org/pdf/1706.02515.pdf
  */
-@EqualsAndHashCode
+@EqualsAndHashCode(callSuper = false)
 @Getter
 public class ActivationSELU extends BaseActivationFunction {
 

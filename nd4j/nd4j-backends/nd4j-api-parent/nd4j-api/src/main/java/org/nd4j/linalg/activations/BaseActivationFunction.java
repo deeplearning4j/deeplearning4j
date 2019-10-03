@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -30,26 +30,6 @@ public abstract class BaseActivationFunction implements IActivation {
     @Override
     public int numParams(int inputSize) {
         return 0;
-    }
-
-    @Override
-    public void setParametersViewArray(INDArray viewArray, boolean initialize) {
-        //No op
-    }
-
-    @Override
-    public INDArray getParametersViewArray() {
-        return null;
-    }
-
-    @Override
-    public void setGradientViewArray(INDArray viewArray) {
-        //No op
-    }
-
-    @Override
-    public INDArray getGradientViewArray() {
-        return null;
     }
 
     protected void assertShape(INDArray in, INDArray epsilon){
