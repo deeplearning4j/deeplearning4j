@@ -360,6 +360,34 @@ namespace simdOps {
 		}
 	};
 
+    template <typename X, typename Y, typename Z>
+    class DivideNoNan {
+    public:
+        op_def static Z op(X d1, Y d2) {
+            if (d2 == (Y)0) return (Z)0;
+            return static_cast<Z>(d1 / d2);
+        }
+
+        op_def static Z op(X d1, Y d2, Z *params) {
+            if (d2 == (Y)0) return (Z)0;
+            return static_cast<Z>(d1 / d2);
+        }
+
+        op_def static Z op(X d1) {
+            return static_cast<Z>(d1);
+        }
+
+        // op for MetaOps
+        op_def static Z op(X d1, Y *params) {
+            if (params[0] == (Y)0) return (Z)0;
+            return static_cast<Z>(d1 / params[0]);
+        }
+
+        op_def static X startingValue() {
+            return static_cast<X>(1);
+        }
+    };
+
 	template <typename X, typename Y, typename Z>
 	class SafeDivide {
 	public:

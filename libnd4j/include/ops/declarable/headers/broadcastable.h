@@ -156,6 +156,9 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(divide_bp, 3, 2, false, 0, 0);
         #endif
 
+        #if NOT_EXCLUDED(OP_divide_no_nan)
+        DECLARE_BROADCASTABLE_OP(divide_no_nan, 0, 0);
+        #endif
         /**
          * This is one of auto-broadcastable operations. It accepts 2 operands, and operation is applied based on their shapes:
          * 1) if shapes are equal that's pairwise operation, result will have the same shape.
