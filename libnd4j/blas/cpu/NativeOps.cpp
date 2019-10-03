@@ -1153,10 +1153,7 @@ void initializeFunctions(Nd4jPointer *functions) {
        * @param flags optional parameter
        */
 Nd4jPointer mallocHost(Nd4jLong memorySize, int flags) {
-    Nd4jPointer pointer = (Nd4jPointer) malloc(memorySize);
-    if (pointer == 0)
-        return 0L;
-    return pointer;
+    return reinterpret_cast<Nd4jPointer>(new int8_t[memorySize]);
 }
 
 /**
@@ -1180,7 +1177,7 @@ Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
  * @param pointer pointer that'll be freed
  */
 int freeHost(Nd4jPointer pointer) {
-    free(reinterpret_cast<void *>(pointer));
+    delete[] reinterpret_cast<int8_t *>(pointer);
     return 1L;
 }
 
