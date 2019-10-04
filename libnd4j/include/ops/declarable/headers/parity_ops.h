@@ -1245,6 +1245,23 @@ namespace nd4j {
         #endif
 
         /**
+         * draw_bounding_boxes op - modified input image with given colors exept given boxes.
+         *
+         * input params:
+         *    0 - images tensor (4D) with shape {batch, width, height, channels}, where channes is 1 (BW image),
+         * 3 (RGB) or 4 (RGBA)
+         *    1 - boxes tensor (3D) with shape {batch, number_of_boxes, 4} where last dimension encoded as
+         * (y_min, x_min, y_max, x_max), all values in between 0. and 1.
+         *    2 - colours tensor (2D) with shape {number_of_boxes, channels} -- bordering color set (palette)
+         *
+         * output:
+         *    0 - 4D tensor with same shape as images (input 0)
+         */
+        #if NOT_EXCLUDED(OP_draw_bounding_boxes)
+        DECLARE_OP(draw_bounding_boxes, 3, 1, true);
+        #endif
+
+        /**
          * roll - op porting from numpy (https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.roll.html)
          *
          * input params:

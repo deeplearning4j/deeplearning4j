@@ -2044,6 +2044,39 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_5) {
 }
 
 ////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_1) {
+    int axis = 0;
+    NDArray images = NDArrayFactory::create<float>('c', {2,4,5,3});
+    NDArray boxes = NDArrayFactory::create<float>('c', {2, 2, 4}, {0,0,1,1});
+    NDArray colors = NDArrayFactory::create<float>('c', {2, 3}, {201., 202., 203., 128., 129., 130.});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray expected = NDArrayFactory::create<float>('c', {2,4,5,3}, {
+        127., 128., 129.,    127., 128., 129.,    127., 128., 129.,    127., 128., 129.,    201., 202., 203.,
+        127., 128.,  129.,    19.,  20.,  21.,     22.,  23.,  24.,    127., 128., 129.,    201., 202., 203.,
+        127., 128.,  129.,   127., 128., 129.,    127., 128., 129.,    127., 128., 129.,    201., 202., 203.,
+        201., 202.,  203.,    201. ,202. ,203.,   201., 202., 203.,    201., 202., 203.,    201., 202., 203.,
+
+        61.,  62.,   63.,    201., 202., 203.,    201., 202., 203.,     70.,  71.,  72.,     73.,  74.,  75.,
+        76.,  77.,   78.,    127., 128., 129.,    127., 128., 129.,     85.,  86.,  87.,     88.,  89.,  90.,
+        91.,  92.,   93.,    201., 202., 203.,    201., 202., 203.,    100., 101., 102.,    103., 104., 105.,
+       106., 107.,  108.,    109., 110., 111.,    112., 113., 114.,    115., 116., 117.,    118., 119., 120.
+    });
+
+    nd4j::ops::draw_bounding_boxes op;
+    auto results = op.execute({&images, &boxes, &colors}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printIndexedBuffer("Bounded boxes");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
 
     NDArray x('c', {2,3}, {-63.80f, -63.75f, -63.70f, -63.5f, 0.0f, 0.1f}, nd4j::DataType::FLOAT32);
