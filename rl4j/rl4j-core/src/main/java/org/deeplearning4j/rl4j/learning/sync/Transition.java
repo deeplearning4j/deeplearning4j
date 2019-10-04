@@ -16,6 +16,7 @@
 
 package org.deeplearning4j.rl4j.learning.sync;
 
+import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
@@ -27,6 +28,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * State, Action, Reward, (isTerminal), State
  */
 @Value
+@AllArgsConstructor
 public class Transition<A> {
 
     INDArray[] observation;

@@ -35,7 +35,7 @@ public interface IDQN<NN extends IDQN> extends NeuralNet<NN> {
     void fit(INDArray input, INDArray labels);
 
     void fit(INDArray input, INDArray[] labels);
-
+	
     INDArray output(INDArray batch);
 
     INDArray[] outputAll(INDArray batch);

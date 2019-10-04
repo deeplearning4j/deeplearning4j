@@ -12,8 +12,8 @@ import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -139,8 +139,8 @@ public class QLearningDiscreteTest {
         }
 
         @Override
-        protected Pair<INDArray, INDArray> setTarget(ArrayList<Transition<Integer>> transitions) {
-            return new Pair<>(Nd4j.create(new double[] { 123.0 }), Nd4j.create(new double[] { 234.0 }));
+        protected DataSet setTarget(ArrayList<Transition<Integer>> transitions) {
+            return new org.nd4j.linalg.dataset.DataSet(Nd4j.create(new double[] { 123.0 }), Nd4j.create(new double[] { 234.0 }));
         }
 
         public void setExpReplay(IExpReplay<Integer> exp){
