@@ -25,6 +25,7 @@
 #include <chrono>
 #include <execution/ThreadPool.h>
 
+using namespace samediff;
 using namespace nd4j;
 using namespace nd4j::ops;
 using namespace nd4j::graph;
@@ -34,6 +35,68 @@ public:
 
 };
 
+TEST_F(ThreadsTests, th_test_1) {
+    ASSERT_EQ(1, ThreadsHelper::numberOfThreads(6, 1023));
+    ASSERT_EQ(1, ThreadsHelper::numberOfThreads(6, 1024));
+    ASSERT_EQ(1, ThreadsHelper::numberOfThreads(6, 1026));
+
+    ASSERT_EQ(1, ThreadsHelper::numberOfThreads(6, 2043));
+    ASSERT_EQ(2, ThreadsHelper::numberOfThreads(6, 2048));
+}
+
+
+TEST_F(ThreadsTests, th_test_2) {
+    // in this case we'll get better split over second loop - exactly 32 elements per thread
+    ASSERT_EQ(2, ThreadsHelper::pickLoop2d(32, 48, 1024));
+    ASSERT_EQ(2, ThreadsHelper::pickLoop2d(6, 4, 16384));
+
+    // in this case we'll get better split over first loop - 2 loops/2048 elements per thread
+    ASSERT_EQ(1, ThreadsHelper::pickLoop2d(32, 64, 1024));
+    ASSERT_EQ(1, ThreadsHelper::pickLoop2d(6, 6, 16384));
+
+    // in this case none of loops are good enough, but second loop is too small for split
+    ASSERT_EQ(1, ThreadsHelper::pickLoop2d(6, 64, 32));
+
+    // all loops are good enough, but we go with bigger one, since small
+    ASSERT_EQ(1, ThreadsHelper::pickLoop2d(2, 64, 32));
+
+    // obviously split goes into second loop, to give 1024 elements per thread
+    ASSERT_EQ(2, ThreadsHelper::pickLoop2d(2, 1, 2048));
+}
+
+TEST_F(ThreadsTests, validation_test_2d_1) {
+#ifndef _RELEASE
+    if (1 > 0)
+        return;
+#endif
+
+    std::vector<int> threads({1, 2, 4, 6, 8, 12, 16, 20, 32, 48, 64});
+
+    for (int e = 1; e < 1024; e++) {
+        for (int i = 1; i <= 1024; i++ ) {
+            for (auto t:threads) {
+                std::atomic<int64_t> sum;
+                sum.store(0);
+
+                auto func = PRAGMA_THREADS_FOR_2D {
+                    for (auto x = start_x; x < stop_x; x += inc_x) {
+                        for (auto y = start_y; y < stop_y; y += inc_y) {
+                            sum++;
+                        }
+                    }
+                };
+
+                samediff::Threads::parallel_for(func, 0, e, 1, 0, i, 1, t, true);
+
+                ASSERT_EQ(e * i, sum.load());
+            }
+        }
+
+        nd4j_printf("Finished iteration %i\n", e);
+    }
+}
+
+/*
 TEST_F(ThreadsTests, basic_test_1) {
     if (!Environment::getInstance()->isCPU())
         return;
@@ -69,3 +132,4 @@ TEST_F(ThreadsTests, basic_test_1) {
 
     nd4j_printf("Threads time: %lld us; OMP time: %lld us; %p\n", outerTimeThreads, outerTimeOmp, instance)
 }
+ */

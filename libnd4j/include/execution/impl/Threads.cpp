@@ -22,15 +22,99 @@
 #include <vector>
 #include <thread>
 #include <helpers/logger.h>
+#include <templatemath.h>
+#include <shape.h>
 
 
 namespace samediff {
     int ThreadsHelper::numberOfThreads(int maxThreads, uint64_t numberOfElements) {
-        // no sense launching more threads than elements
-        if (numberOfElements < maxThreads)
-            return numberOfElements;
+        // let's see how many threads we actually need first
+        auto optimalThreads = nd4j::math::nd4j_max<uint64_t>(1, numberOfElements / 1024);
 
-        return maxThreads;
+        // now return the smallest value
+        return nd4j::math::nd4j_min<int>(optimalThreads, maxThreads);
+    }
+
+    Span2::Span2(int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y) {
+        _startX = start_x;
+        _startY = start_y;
+        _stopX = stop_x;
+        _stopY = stop_y;
+        _incX = inc_x;
+        _incY = inc_y;
+    }
+
+
+    Span2 Span2::build(int loop, uint64_t thread_id, uint64_t num_threads, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y) {
+        if (loop == 1) {
+            auto span = (stop_x - start_x) / num_threads;
+            auto s = span * thread_id;
+            auto e = span * (thread_id + 1);
+            if (thread_id == num_threads - 1)
+                e = stop_x;
+
+            return Span2(s, e, inc_x, start_y, stop_y, inc_y);
+        } else {
+            auto span = (stop_y - start_y) / num_threads;
+            auto s = span * thread_id;
+            auto e = span * (thread_id + 1);
+            if (thread_id == num_threads - 1)
+                e = stop_y;
+
+            return Span2(start_x, stop_x, inc_x, s, e, inc_y);
+        }
+    }
+
+    int64_t Span2::startX() {
+        return _startX;
+    }
+
+    int64_t Span2::startY() {
+        return _startY;
+    }
+
+    int64_t Span2::stopX() {
+        return _stopX;
+    }
+
+    int64_t Span2::stopY() {
+        return _stopY;
+    }
+
+    int64_t Span2::incX() {
+        return _incX;
+    }
+
+    int64_t Span2::incY() {
+        return _incY;
+    }
+
+    int ThreadsHelper::pickLoop2d(int numThreads, uint64_t iters_x, uint64_t iters_y) {
+        // if one of dimensions is definitely too small - we just pick the other one
+        if (iters_x < numThreads)
+            return 2;
+        else if (iters_y < numThreads)
+            return 1;
+
+        // next step - we pick the most balanced dimension
+        auto rem_x = iters_x % numThreads;
+        auto rem_y = iters_y % numThreads;
+        auto split_y = iters_y / numThreads;
+
+        // if there's no remainder left in some dimension - we're picking that dimension, because it'll be the most balanced work distribution
+        if (rem_x == 0)
+            return 1;
+        else if (rem_y == 0)
+            return 2;
+
+
+        // if there's no loop without a remainder - we're picking one with smaller remainder
+        if (rem_x < rem_y)
+            return 1;
+        else if (rem_y < rem_x && split_y >= 64) // we don't want too small splits over last dimension, or vectorization will fail
+            return 2;
+        else // if loops are equally sized - give the preference to the first thread
+            return 1;
     }
 
     int Threads::parallel_tad(FUNC_1D function, uint64_t start, uint64_t stop, uint64_t increment, uint32_t numThreads) {
@@ -99,17 +183,12 @@ namespace samediff {
         }
     }
 
-    int Threads::parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads) {
+    int Threads::parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads, bool debug) {
         if (start_x > stop_x)
             throw std::runtime_error("Threads::parallel_for got start_x > stop_x");
 
         if (start_y > stop_y)
             throw std::runtime_error("Threads::parallel_for got start_y > stop_y");
-
-        if (1 > 0) {
-            function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
-            return 1;
-        }
 
         // number of elements per loop
         auto delta_x = (stop_x - start_x);
@@ -119,69 +198,50 @@ namespace samediff {
         auto iters_x = delta_x / inc_x;
         auto iters_y = delta_y / inc_y;
 
-        // basic shortcut for no-threading cases
-        if (numThreads == 1 || (iters_x <= 1 && iters_y <= 1) || 1 > 0) {
-            function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
-            return 1;
-        }
+        // total number of iterations
+        auto iters_t = iters_x * iters_y;
 
         // we are checking the case of number of requested threads was smaller
-        numThreads = ThreadsHelper::numberOfThreads(numThreads, iters_x * iters_y);
+        numThreads = ThreadsHelper::numberOfThreads(numThreads, iters_t);
 
-
-        // We have couple of scenarios:
-        // first loop is equal to number of threads.
-        // first loop has only 1 iteration (which is an edge case of 3)
-        // first loop is smaller than number of threads.
-        // first loop is bigger than number of threads
-
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
-        if (ticket.acquired()) {
-
-            if (iters_x >= numThreads && iters_x % numThreads == 0) {
-                // we'll just parallelise things right on the first loop
-                auto span_x = delta_x / numThreads;
-
-                for (int e = 0; e < numThreads; e++) {
-                    auto _start = span_x * e + start_x;
-                    auto _stop = span_x * (e + 1) + start_x;
-
-                    // last thread will process tail
-                    if (e == numThreads - 1)
-                        _stop = stop_x;
-
-                    // FIXME: make callables served from pool, rather than from creating new one
-                    ticket.enqueue(e, new CallableWithArguments(function, e, _start, _stop, inc_x, start_y, stop_y, inc_y));
-                }
-            } else if (iters_x <= 1) {
-                // in this case we parallelize along second loop
-                auto span_y = delta_y / numThreads;
-
-                for (int e = 0; e < numThreads; e++) {
-                    auto _start = span_y * e + start_y;
-                    auto _stop = span_y * (e + 1) + start_y;
-
-                    // last thread will process tail
-                    if (e == numThreads - 1)
-                        _stop = stop_y;
-
-                    // FIXME: make callables served from pool, rather than from creating new one
-                    ticket.enqueue(e, new CallableWithArguments(function, e, start_x, stop_x, inc_x, _start, _stop, inc_y));
-                }
-            } else if (iters_x < numThreads) {
-                // in this case we're probably going to split the workload across second dimension
-            }
-
-            // block until all threads finish their job
-            ticket.waitAndRelease();
-            return numThreads;
-        } else {
-            // if there were no threads available - we'll execute function right within current thread
+        // basic shortcut for no-threading cases
+        if (numThreads == 1) {
             function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
-
-            // we tell that parallelism request declined
             return 1;
         }
+
+        // We have couple of scenarios:
+        // either we split workload along 1st loop, or 2nd
+        auto splitLoop = ThreadsHelper::pickLoop2d(numThreads, iters_x, iters_y);
+
+        // for debug mode we execute things inplace, without any threada
+        if (debug) {
+            for (int e = 0; e < numThreads; e++) {
+                auto span = Span2::build(splitLoop, e, numThreads, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
+
+                function(e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY());
+            }
+        } else {
+            auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+            if (ticket.acquired()) {
+                //nd4j_printf("Threads: starting with %i threads\n", numThreads);
+                for (int e = 0; e < numThreads; e++) {
+                    auto span = Span2::build(splitLoop, e, numThreads, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
+
+                    ticket.enqueue(e, new CallableWithArguments(function, e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY()));
+                }
+
+                // block until all threads finish their job
+                ticket.waitAndRelease();
+                return numThreads;
+            } else {
+                // if there were no threads available - we'll execute function right within current thread
+                function(0, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
+
+                // we tell that parallelism request declined
+                return 1;
+            }
+        };
     }
 
 
@@ -221,7 +281,6 @@ namespace samediff {
     }
 
     int Threads::parallel_do(FUNC_DO function, uint64_t numThreads) {
-        /*
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
         if (ticket.acquired()) {
 
@@ -239,10 +298,7 @@ namespace samediff {
 
             return numThreads;
         }
-         */
 
-        for (uint64_t e = 0; e < numThreads; e++)
-            function(e, numThreads);
 
         return numThreads;
     }

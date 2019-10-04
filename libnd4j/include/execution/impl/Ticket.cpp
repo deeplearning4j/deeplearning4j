@@ -20,6 +20,7 @@
 
 #include <execution/Ticket.h>
 #include <execution/ThreadPool.h>
+#include <helpers/logger.h>
 
 namespace samediff {
     Ticket::Ticket(const std::vector<BlockingQueue<CallableWithArguments*>*> &queues) {
@@ -40,7 +41,9 @@ namespace samediff {
         // we need to wait till all chunks finished
         for (auto c:_callables) {
             // blocking on the current callable, till it finishes
+            //nd4j_printf("Ticket: waiting for thread %i\n", c->threadId());
             c->waitUntilFinished();
+            //nd4j_printf("Ticket: %i finished\n", c->threadId());
 
             // notify that queue is available
             _queues[c->threadId()]->markAvailable();

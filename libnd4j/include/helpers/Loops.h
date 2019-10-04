@@ -576,7 +576,9 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     auto uXShape0 = static_cast<uint>(xShape[0]);
                     auto uXShape1 = static_cast<uint>(xShape[1]);
 
-                    for (auto i0 = 0; i0 < uXShape0; i0++) {
+                    //
+
+                    for (auto i0 = start; i0 < stop; i0++) {
                         auto z0 = i0 * zStride[0];
                         auto x0 = i0 * xStride[0];
 
@@ -592,14 +594,16 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     auto uXShape1 = static_cast<uint>(xShape[1]);
                     auto uXShape2 = static_cast<uint>(xShape[2]);
 
-                    for (uint i0 = 0; i0 < uXShape0; i0++)
-                        for (uint i1 = 0; i1 < uXShape1; i1++) {
-                            auto z0 = i0 * zStride[0] + i1 * zStride[1];
-                            auto x0 = i0 * xStride[0] + i1 * xStride[1];
+                    for (uint64_t i0i1 = start; i0i1 < stop; i0i1++) {
+                        auto i0 = i0i1 / uXShape1;
+                        auto i1 = i0i1 % uXShape1;
 
-                            for (uint i2 = 0; i2 < uXShape2; ++i2)
-                                z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
-                        }
+                        auto z0 = i0 * zStride[0] + i1 * zStride[1];
+                        auto x0 = i0 * xStride[0] + i1 * xStride[1];
+
+                        for (uint i2 = 0; i2 < uXShape2; ++i2)
+                            z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
+                    }
                 }
                 break;
 

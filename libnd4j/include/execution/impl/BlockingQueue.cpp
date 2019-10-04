@@ -33,10 +33,11 @@ namespace samediff {
     T BlockingQueue<T>::poll() {
         // locking untill there's something within queue
         std::unique_lock<std::mutex> lock(_lock);
-        _condition.wait(lock, [=]{ return !this->_queue.empty(); });
+        _condition.wait(lock, [&]{ return this->_size.load() != 0; });
 
         T t(std::move(_queue.front()));
         _queue.pop();
+        _size--;
         return t;
     }
 
@@ -46,6 +47,7 @@ namespace samediff {
             // locking before push, unlocking after
             std::unique_lock<std::mutex> lock(_lock);
             _queue.push(t);
+            _size++;
         }
 
         // notifying condition

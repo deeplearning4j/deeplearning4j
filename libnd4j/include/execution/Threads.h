@@ -29,6 +29,28 @@ namespace samediff {
     class ThreadsHelper {
     public:
         static int numberOfThreads(int maxThreads, uint64_t numberOfElements);
+        static int pickLoop2d(int numThreads, uint64_t iters_x, uint64_t iters_y);
+    };
+
+
+    class Span2 {
+    private:
+        int64_t _startX, _stopX, _incX;
+        int64_t _startY, _stopY, _incY;
+    public:
+        Span2(int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y);
+        ~Span2() = default;
+
+        int64_t startX();
+        int64_t startY();
+
+        int64_t stopX();
+        int64_t stopY();
+
+        int64_t incX();
+        int64_t incY();
+
+        static Span2 build(int loop, uint64_t thread_id, uint64_t num_threads, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y);
     };
 
     class Threads {
@@ -60,7 +82,7 @@ namespace samediff {
          * @param inc_y
          * @return
          */
-        static int parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads());
+        static int parallel_for(FUNC_2D function, uint64_t start_x, uint64_t stop_x, uint64_t inc_x, uint64_t start_y, uint64_t stop_y, uint64_t inc_y, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads(), bool debug = false);
 
         /**
          *
