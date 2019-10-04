@@ -1195,6 +1195,41 @@ TEST_F(DeclarableOpsTests1, BroadcastDivideTest_1) {
 }
 
 //////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, BroadcastDivideTest_2) {
+
+    auto  x = NDArrayFactory::create<float>('c', {3, 4, 5, 1});
+    auto  y = NDArrayFactory::create<float>('c', {1, 6});
+    auto  exp = NDArrayFactory::create<float>('c', {3, 4, 5, 6});
+    x.assign(6);
+    y.assign(2);
+    exp.assign(3);
+
+    nd4j::ops::divide_no_nan div;
+    auto res = div.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    ASSERT_TRUE(res->at(0)->equalsTo(exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests1, BroadcastDivideTest_3) {
+
+    auto  x = NDArrayFactory::create<float>({6,6,6,6,6});
+    auto  y = NDArrayFactory::create<float>({3,3,0,3,3});
+    auto  exp = NDArrayFactory::create<float>({2, 2, 0, 2, 2});
+
+    nd4j::ops::divide_no_nan div;
+    auto res = div.execute({&x, &y}, {}, {});
+
+    ASSERT_EQ(res->status(), ND4J_STATUS_OK);
+    ASSERT_TRUE(res->at(0)->equalsTo(exp));
+
+    delete res;
+}
+
+//////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, BroadcastReverseDivideTest_1) {
 
     auto  x = NDArrayFactory::create<float>('c', {3, 4, 5, 1});
