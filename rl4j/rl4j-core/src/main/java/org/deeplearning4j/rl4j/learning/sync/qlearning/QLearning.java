@@ -43,7 +43,7 @@ import java.util.List;
  */
 @Slf4j
 public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
-                extends SyncLearning<O, A, AS, IDQN> {
+                extends SyncLearning<O, A, AS, IDQN> implements TargetQNetworkSource {
 
     // FIXME Changed for refac
     // @Getter
@@ -61,28 +61,19 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     public abstract MDP<O, A, AS> getMdp();
 
-    protected abstract IDQN getCurrentDQN();
+    public abstract IDQN getQNetwork();
 
-    protected abstract IDQN getTargetDQN();
+    public abstract IDQN getTargetQNetwork();
 
-    protected abstract void setTargetDQN(IDQN dqn);
-
-    protected INDArray dqnOutput(INDArray input) {
-        return getCurrentDQN().output(input);
-    }
-
-    protected INDArray targetDqnOutput(INDArray input) {
-        return getTargetDQN().output(input);
-    }
+    protected abstract void setTargetQNetwork(IDQN dqn);
 
     protected void updateTargetNetwork() {
         log.info("Update target network");
-        setTargetDQN(getCurrentDQN().clone());
+        setTargetQNetwork(getQNetwork().clone());
     }
 
-
     public IDQN getNeuralNet() {
-        return getCurrentDQN();
+        return getQNetwork();
     }
 
     public abstract QLConfiguration getConfiguration();
