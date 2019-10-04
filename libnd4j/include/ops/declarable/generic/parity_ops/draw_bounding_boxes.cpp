@@ -21,16 +21,18 @@
 #include <op_boilerplate.h>
 #if NOT_EXCLUDED(OP_draw_bounding_boxes)
 
-//#include <ops/declarable/headers/parity_ops.h>
-#include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/headers/parity_ops.h>
+#include <ops/declarable/helpers/image_draw_bounding_boxes.h>
 namespace nd4j {
     namespace ops {
         OP_IMPL(draw_bounding_boxes, 3, 1, true) {
 
-            auto image = INPUT_VARIABLE(0);
+            auto images = INPUT_VARIABLE(0);
             auto boxes = INPUT_VARIABLE(1);
             auto colors = INPUT_VARIABLE(2);
-            
+            auto output = OUTPUT_VARIABLE(0);
+
+            helpers::drawBoundingBoxesFunctor(block.launchContext(), images, boxes, colors, output);
             return ND4J_STATUS_OK;
         }
 

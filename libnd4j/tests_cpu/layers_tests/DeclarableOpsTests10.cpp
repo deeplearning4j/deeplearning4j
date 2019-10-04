@@ -2045,9 +2045,12 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_5) {
 
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_1) {
-    int axis = 0;
     NDArray images = NDArrayFactory::create<float>('c', {2,4,5,3});
-    NDArray boxes = NDArrayFactory::create<float>('c', {2, 2, 4}, {0,0,1,1});
+    NDArray boxes = NDArrayFactory::create<float>('c', {2, 2, 4}, {
+        0. , 0. , 1. , 1. ,     0.1, 0.2, 0.9, 0.8,
+        0.3, 0.3, 0.7, 0.7,     0.4, 0.4, 0.6, 0.6
+    });
+
     NDArray colors = NDArrayFactory::create<float>('c', {2, 3}, {201., 202., 203., 128., 129., 130.});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
@@ -2062,7 +2065,7 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_1) {
         91.,  92.,   93.,    201., 202., 203.,    201., 202., 203.,    100., 101., 102.,    103., 104., 105.,
        106., 107.,  108.,    109., 110., 111.,    112., 113., 114.,    115., 116., 117.,    118., 119., 120.
     });
-
+    images.linspace(1.);
     nd4j::ops::draw_bounding_boxes op;
     auto results = op.execute({&images, &boxes, &colors}, {}, {});
 
