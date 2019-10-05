@@ -62,6 +62,9 @@ public abstract class AbstractSession<T, O> {
      * in this set may not be executed depending on the graph structure - i.e., switch ops, etc
      */
     protected final Set<String> subgraph = new HashSet<>();
+
+    protected final Set<String> subgraphOps = new HashSet<>();
+
     /**
      * Stores what variables are required to calculate the specific variable. These inputs could be inputs to an op that
      * calculates the variable's value, or it could be a control dependenci
@@ -177,7 +180,7 @@ public abstract class AbstractSession<T, O> {
             Preconditions.checkState(sameDiff.variableMap().containsKey(s), "Requested output variable %s does not exist in SameDiff instance", s);
         }
 
-        Set<String> variablesSet = new HashSet<>(variables);
+        Set<String> reqOutputVariablesSet = new HashSet<>(variables);
 
         placeholderValues = preprocessPlaceholders(placeholderValues);
 
@@ -185,6 +188,7 @@ public abstract class AbstractSession<T, O> {
         availableForExec.clear();
         availableForExecSet.clear();
         subgraph.clear();
+        subgraphOps.clear();
         execInputs.clear();
         execInputsAllIter.clear();
         execConstInputs.clear();
@@ -333,8 +337,8 @@ public abstract class AbstractSession<T, O> {
 
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
-                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues, variablesSet);
-                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, at, batch);
+                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues, reqOutputVariablesSet);
+                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, at, batch, reqOutputVariablesSet);
 
 
                 //Post execution: work out what is now available for exec
@@ -445,6 +449,10 @@ public abstract class AbstractSession<T, O> {
                     execInputs.put(vid, new HashSet<VarId>());
                 }
                 subgraph.add(varName);
+
+                if(opName != null){
+                    subgraphOps.add(opName);
+                }
 
                 if(controlDeps != null){
                     //If variable has control dependencies, it's not available right away... to make it available,
@@ -850,7 +858,7 @@ public abstract class AbstractSession<T, O> {
      * @param inputs           The inputs to the op (excluding constants/placeholders) - for the specific frame + iteration
      * @param allIterInputs    The inputs - those that are not iteration-specific (mainly Enter op vars, which might be used in all iterations but are only executed once on iter 0)
      * @param constAndPhInputs The constant and placeholder inputs - used for all frames/iterations
-     * @param allReqVariables  All required variables requested for the current output (not just the current op outputs)
+     * @param allReqVariables  All required variables requested for the current session execution (not just the current op outputs)
      * @return The parameterized op
      */
     public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
@@ -862,10 +870,11 @@ public abstract class AbstractSession<T, O> {
      * @param op              Operation to exit. This should be parameterized (i.e., all inputs set)
      * @param outputFrameIter The frame and iteration of the outputs
      * @param inputs          The specific input arrays for the op
+     * @param allReqVariables All required variables requested for the current session execution (not just the current op outputs)
      * @return The outputs of the op
      */
     public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
-                                   List<Listener> listeners, At at, MultiDataSet batch);
+                                   List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables);
 
     /**
      * This method is used to record that the specified input is required for calculating the specified output.

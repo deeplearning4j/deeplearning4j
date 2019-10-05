@@ -112,7 +112,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
 
     @Override
     public INDArray[] getOutputs(SameDiffOp op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                 Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch) {
+                                 Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables) {
         if(listeners != null && listeners.size() > 0){
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOp().getOwnName());
             for(Listener l : listeners){
@@ -156,11 +156,44 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
         if(inputs != null && !inputs.isEmpty()){
             for( int i=0; i<inputs.size(); i++ ) {
                 String inName = inputs.get(i);
-                boolean canDealloc = false;
 
                 SDVariable v = sameDiff.getVariable(inName);
-                if(v.getVariableType() != VariableType.ARRAY ){
+                if(v.getVariableType() != VariableType.ARRAY || allReqVariables.contains(inName)){
                     continue;
+                }
+
+                //Check if fully consumed (not required anywhere else)
+                boolean canDealloc = false;
+                Variable var = sameDiff.getVariables().get(inName);
+                if(var.getInputsForOp().isEmpty()){
+                    canDealloc = true;
+                } else {
+                    List<String> inputForOps = var.getInputsForOp();
+                    boolean allAlreadyCalced = true;
+                    for(String opName : inputForOps){
+                        if(subgraphOps.contains(opName)){
+                            //This op IS required. We know if it has been calculated if any of the outputs of this op are present
+                            // in the set of outputs...
+
+                            VarId vidOfInput = null;
+                            for(VarId vid : opInputs){
+                                if(vid.getVariable().equals(inName)){
+                                    vidOfInput = vid;
+                                    break;
+                                }
+                            }
+
+                            String firstOutput = sameDiff.getOps().get(opName).getOutputsOfOp().get(0);
+                            VarId vid = newVarId(firstOutput, vidOfInput.toFrameIter());    //TODO this doesn't work for enter op, etc!
+
+                            allAlreadyCalced = nodeOutputs.containsKey(vid);
+
+                            if(!allAlreadyCalced)
+                                break;
+                        }
+                    }
+
+                    canDealloc = allAlreadyCalced;
                 }
 
 
@@ -181,10 +214,13 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                         }
                     }
 
+                    log.info("Determined safe to deallocate array for: {}", inName);      //TODO FrameIter
                     mmgr.release(arr);
 
                     //TODO: We should also clear references for other ops
                     //So, if we have (x -> y) and we're closing y, we should clear x from any other ops where (x -> z)
+
+                    //TODO: We should clear the input array from nodeOutputs map
                 }
             }
 
