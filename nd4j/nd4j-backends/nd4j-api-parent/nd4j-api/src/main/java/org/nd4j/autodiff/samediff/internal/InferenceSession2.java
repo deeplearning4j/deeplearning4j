@@ -24,6 +24,7 @@ import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.memory.SimpleSessionMemoryMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -54,12 +55,16 @@ import java.util.*;
  * @author Alex Black
  */
 @Slf4j
-public class InferenceSession extends AbstractSession<INDArray,DifferentialFunction> {
+public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
     private static final String SCOPE_PANIC_MSG = "If required, arrays in workspaces can be detached using INDArray.detach() before being passed to the SameDiff instance.\n" +
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
-    public InferenceSession(@NonNull SameDiff sameDiff) {
+    private SessionMemMrg mmgr;
+
+    public InferenceSession2(@NonNull SameDiff sameDiff) {
         super(sameDiff);
+
+        mmgr = new SimpleSessionMemoryMgr();
     }
 
     @Override
@@ -106,37 +111,86 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public INDArray[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+    public INDArray[] getOutputs(SameDiffOp op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                  Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch) {
         if(listeners != null && listeners.size() > 0){
-            SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
+            SameDiffOp sdOp = sameDiff.getOps().get(op.getOp().getOwnName());
             for(Listener l : listeners){
                 if(l.isActive(at.operation()))
                     l.preOpExecution(sameDiff, at, sdOp);
             }
         }
 
-        INDArray[] out = getOutputsHelper(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
+        INDArray[] out = getOutputsHelper(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
+
+        //Call listeners
         if(listeners != null && listeners.size() > 0){
-            SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
+//            SameDiffOp sdOp = sameDiff.getOps().get(op.getOp().getOwnName());
 
             Map<String, INDArray> namedOutsBuilder = new HashMap<>();
 
             for(int i = 0 ; i < out.length ; i++)
-                namedOutsBuilder.put(sdOp.outputsOfOp.get(i), out[i]);
+                namedOutsBuilder.put(op.outputsOfOp.get(i), out[i]);
 
             Map<String, INDArray> namedOuts = Collections.unmodifiableMap(namedOutsBuilder);
 
             for(Listener l : listeners){
                 if(l.isActive(at.operation())) {
-                    l.opExecution(sameDiff, at, batch, sdOp, out);
+                    l.opExecution(sameDiff, at, batch, op, out);
 
                     for(String varName : namedOuts.keySet()){
-                        l.activationAvailable(sameDiff, at, batch, sdOp, varName, namedOuts.get(varName));
+                        l.activationAvailable(sameDiff, at, batch, op, varName, namedOuts.get(varName));
                     }
                 }
             }
         }
+
+        /*
+        Deallocate input arrays if possible
+        We can only do this in the following cases:
+        1. The input is an ARRAY type SDVariable (not placeholder, constant, variable)
+        2. The input is not one of the requested output arrays
+        3. The input has been "fully consumed" - i.e., isn't required to calculate any other required ops
+         */
+        List<String> inputs = op.getInputsToOp();
+        if(inputs != null && !inputs.isEmpty()){
+            for( int i=0; i<inputs.size(); i++ ) {
+                String inName = inputs.get(i);
+                boolean canDealloc = false;
+
+                SDVariable v = sameDiff.getVariable(inName);
+                if(v.getVariableType() != VariableType.ARRAY ){
+                    continue;
+                }
+
+
+                if (canDealloc) {
+                    INDArray arr;
+                    if (op.getOp() instanceof DynamicCustomOp) {
+                        DynamicCustomOp dco = (DynamicCustomOp) op.getOp();
+                        arr = dco.getInputArgument(i);
+                        dco.setInputArgument(i, null);
+                    } else {    //TODO
+                        Op o = (Op)op;
+                        if(i == 0){
+                            arr = o.x();
+                            o.setX(null);
+                        } else {
+                            arr = o.y();
+                            o.setY(null);
+                        }
+                    }
+
+                    mmgr.release(arr);
+
+                    //TODO: We should also clear references for other ops
+                    //So, if we have (x -> y) and we're closing y, we should clear x from any other ops where (x -> z)
+                }
+            }
+
+        }
+
+
         return out;
     }
 
@@ -522,10 +576,12 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
     }
 
     @Override
-    public DifferentialFunction getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                                     Set<String> constAndPhInputs, Map<String,INDArray> placeholderValues, Set<String> allOutputs) {
+    public SameDiffOp getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+                                                     Set<String> constAndPhInputs, Map<String,INDArray> placeholderValues, Set<String> allReqVariables) {
 
-        DifferentialFunction df = sameDiff.getOpById(opName);
+//        DifferentialFunction df = sameDiff.getOpById(opName);
+        SameDiffOp sdo = sameDiff.getOps().get(opName);
+        DifferentialFunction df = sdo.getOp();
 
         //TODO We should clone these ops - probably - as we don't want them shared between threads/sessions!
         //But let's only clone them *once* and cache in inference session - not on every exec
@@ -536,7 +592,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 df instanceof Merge || df instanceof Switch || df instanceof If || df instanceof While ||
                 df instanceof BaseTensorOp){
             //Control dependencies and tensor ops (like TensorArray, TensorArrayRead etc) don't need inputs set, execution is a special case
-            return df;
+            return sdo;
         }
 
         //Infer the args based on the inputs (variable + frame + iteration)
@@ -696,11 +752,14 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                 }
 
                 if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || currOutput.isEmpty() != reqShape.isEmpty() || isLoop){
-                    INDArray out;
-                    try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        //TODO Proper workspace support will be added to SameDiff later
-                        out = Nd4j.create(reqShape, false);
-                    }
+//                    INDArray out;
+//                    try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+//                        //TODO Proper workspace support will be added to SameDiff later
+//                        out = Nd4j.create(reqShape, false);
+//                    }
+
+                    boolean isOutput = allReqVariables.contains(outNames[i]);
+                    INDArray out = mmgr.allocate(isOutput, reqShape);
                     customOp.setOutputArgument(i, out);
                 }
             }
@@ -766,17 +825,20 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
                     }
 
                     LongShapeDescriptor lsd = outputShape.get(0);
-                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                        //TODO Proper workspace support will be added to SameDiff later
-                        z = Nd4j.create(lsd, false);
-                    }
+//                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+//                        //TODO Proper workspace support will be added to SameDiff later
+//                        z = Nd4j.create(lsd, false);
+//                    }
+
+                    boolean isOutput = allReqVariables.contains(((BaseOp) op).outputVariablesNames()[0]);
+                    z = mmgr.allocate(isOutput, lsd);
                     op.setZ(z);
                 }
             }
             df.resolvePropertiesFromSameDiffBeforeExecution();
         }
 
-        return df;
+        return sdo;
     }
 
 

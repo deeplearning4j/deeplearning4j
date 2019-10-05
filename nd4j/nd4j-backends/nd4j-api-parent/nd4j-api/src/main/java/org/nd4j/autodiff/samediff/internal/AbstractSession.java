@@ -177,6 +177,8 @@ public abstract class AbstractSession<T, O> {
             Preconditions.checkState(sameDiff.variableMap().containsKey(s), "Requested output variable %s does not exist in SameDiff instance", s);
         }
 
+        Set<String> variablesSet = new HashSet<>(variables);
+
         placeholderValues = preprocessPlaceholders(placeholderValues);
 
         //Clear state from past
@@ -331,7 +333,7 @@ public abstract class AbstractSession<T, O> {
 
                 //Execute op
                 FrameIter frameIter = varToExec.toFrameIter();
-                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues);
+                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues, variablesSet);
                 T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, at, batch);
 
 
@@ -848,9 +850,11 @@ public abstract class AbstractSession<T, O> {
      * @param inputs           The inputs to the op (excluding constants/placeholders) - for the specific frame + iteration
      * @param allIterInputs    The inputs - those that are not iteration-specific (mainly Enter op vars, which might be used in all iterations but are only executed once on iter 0)
      * @param constAndPhInputs The constant and placeholder inputs - used for all frames/iterations
+     * @param allReqVariables  All required variables requested for the current output (not just the current op outputs)
      * @return The parameterized op
      */
-    public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs, Map<String,T> placeholderValues);
+    public abstract O getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
+                                           Map<String,T> placeholderValues, Set<String> allReqVariables);
 
     /**
      * Execute the op - calculate INDArrays, or shape info, etc
