@@ -25,7 +25,7 @@ public class SimpleSessionMemoryMgr implements SessionMemMrg {
     public void release(INDArray array) {
         if(!array.wasClosed() && array.closeable()){
             array.close();
-            log.info("Closed array");
+            log.info("Closed array (deallocated)");
         }
     }
 

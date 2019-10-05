@@ -107,7 +107,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
     @Override
     public INDArray[] getOutputs(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                 Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch) {
+                                 Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables) {
         if(listeners != null && listeners.size() > 0){
             SameDiffOp sdOp = sameDiff.getOps().get(op.getOwnName());
             for(Listener l : listeners){

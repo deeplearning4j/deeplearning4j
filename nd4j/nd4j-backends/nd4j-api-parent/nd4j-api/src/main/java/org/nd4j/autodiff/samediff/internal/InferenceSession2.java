@@ -183,10 +183,11 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                                 }
                             }
 
+
                             String firstOutput = sameDiff.getOps().get(opName).getOutputsOfOp().get(0);
                             VarId vid = newVarId(firstOutput, vidOfInput.toFrameIter());    //TODO this doesn't work for enter op, etc!
 
-                            allAlreadyCalced = nodeOutputs.containsKey(vid);
+                            allAlreadyCalced = opName.equals(op.getName()) || nodeOutputs.containsKey(vid); //Note: currently calculated op outputs haven't been added to op name
 
                             if(!allAlreadyCalced)
                                 break;
@@ -204,7 +205,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                         arr = dco.getInputArgument(i);
                         dco.setInputArgument(i, null);
                     } else {    //TODO
-                        Op o = (Op)op;
+                        Op o = (Op)op.getOp();
                         if(i == 0){
                             arr = o.x();
                             o.setX(null);
@@ -217,8 +218,40 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                     log.info("Determined safe to deallocate array for: {}", inName);      //TODO FrameIter
                     mmgr.release(arr);
 
-                    //TODO: We should also clear references for other ops
-                    //So, if we have (x -> y) and we're closing y, we should clear x from any other ops where (x -> z)
+                    //We should also clear input references for other ops - so they aren't storing reference to closed arrays
+                    //So, if we have (x -> y) and we're closing x, we should clear x from any other ops where (x -> z)
+                    List<String> inputForOps = var.getInputsForOp();
+                    if(inputForOps.size() > 1){
+                        for(String opName : inputForOps){
+                            SameDiffOp o = sameDiff.getOps().get(opName);
+                            int idx = o.getInputsToOp().indexOf(inName);
+                            if (op.getOp() instanceof DynamicCustomOp) {
+                                DynamicCustomOp dco = (DynamicCustomOp) op.getOp();
+                                dco.setInputArgument(idx, null);
+                            } else {    //TODO
+                                Op o2 = (Op)op.getOp();
+                                if(idx == 0){
+                                    o2.setX(null);
+                                } else {
+                                    o2.setY(null);
+                                }
+                            }
+                        }
+                    }
+
+                    //Also clear outputs:
+                    if(var.getOutputOfOp() != null){
+                        SameDiffOp o = sameDiff.getOps().get(var.getOutputOfOp());
+
+                        if( o.getOp() instanceof DynamicCustomOp){
+                            DynamicCustomOp dco = (DynamicCustomOp)o.getOp();
+                            List<String> outNames = o.getOutputsOfOp();
+                            int idx = outNames.indexOf(var.getName());
+                            dco.setOutputArgument(idx, null);
+                        } else {
+                            ((Op)o.getOp()).setZ(null);
+                        }
+                    }
 
                     //TODO: We should clear the input array from nodeOutputs map
                 }

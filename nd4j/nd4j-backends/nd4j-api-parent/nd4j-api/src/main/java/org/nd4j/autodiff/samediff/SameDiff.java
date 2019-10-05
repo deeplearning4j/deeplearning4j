@@ -75,11 +75,7 @@ import org.nd4j.autodiff.samediff.config.BatchOutputConfig;
 import org.nd4j.autodiff.samediff.config.EvaluationConfig;
 import org.nd4j.autodiff.samediff.config.FitConfig;
 import org.nd4j.autodiff.samediff.config.OutputConfig;
-import org.nd4j.autodiff.samediff.internal.AbstractSession;
-import org.nd4j.autodiff.samediff.internal.DataTypesSession;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
-import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.autodiff.samediff.internal.Variable;
+import org.nd4j.autodiff.samediff.internal.*;
 import org.nd4j.autodiff.samediff.ops.SDBaseOps;
 import org.nd4j.autodiff.samediff.ops.SDBitwise;
 import org.nd4j.autodiff.samediff.ops.SDCNN;
@@ -173,7 +169,7 @@ public class SameDiff extends SDBaseOps {
     @Getter
     private final Map<String, SameDiffOp> ops = new LinkedHashMap<>();
     @Getter
-    private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
+    private final Map<Long, InferenceSession2> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
     private final Map<String, DeviceLocalNDArray> constantArrays = new ConcurrentHashMap<>();
     private final Map<String, DeviceLocalNDArray> variablesArrays = new ConcurrentHashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
@@ -1025,10 +1021,10 @@ public class SameDiff extends SDBaseOps {
                 return constantArrays.get(varName).get();
             case ARRAY:
                 //Only stored in inference session...
-                InferenceSession s = sessions.get(Thread.currentThread().getId());
+                InferenceSession2 s = sessions.get(Thread.currentThread().getId());
                 if (s == null)
                     return null;
-                return s.get(varName, InferenceSession.OUTER_FRAME, 0, null, false);
+                return s.get(varName, InferenceSession2.OUTER_FRAME, 0, null, false);
             case PLACEHOLDER:
                 long tid = Thread.currentThread().getId();
                 if (placeholdersPerThread.get(tid) == null || !placeholdersPerThread.get(tid).containsKey(varName))
@@ -1072,7 +1068,7 @@ public class SameDiff extends SDBaseOps {
                 variable.getVarName(), variable.dataType(), arr.dataType());
 
         if (sessions.get(Thread.currentThread().getId()) == null) {
-            sessions.put(Thread.currentThread().getId(), new InferenceSession(this));
+            sessions.put(Thread.currentThread().getId(), new InferenceSession2(this));
         }
 
         boolean duped = false;
@@ -3218,7 +3214,8 @@ public class SameDiff extends SDBaseOps {
         long threadId = Thread.currentThread().getId();
         if (!sessions.containsKey(threadId)) {
             log.info("Creating new InferenceSession for thread {}", threadId);
-            sessions.put(threadId, new InferenceSession(this));
+//            sessions.put(threadId, new InferenceSession(this));
+            sessions.put(threadId, new InferenceSession2(this));
         }
 
         List<String> phNames = inputs();
@@ -3229,7 +3226,7 @@ public class SameDiff extends SDBaseOps {
 
         //Placeholder validation is performed in InferenceSession
 
-        InferenceSession is = sessions.get(threadId);
+        InferenceSession2 is = sessions.get(threadId);
         return is.output(outputs == null ? Collections.<String>emptyList() : Arrays.asList(outputs),
                 placeholders, batch, requiredActivations, activeListeners, at);
     }
