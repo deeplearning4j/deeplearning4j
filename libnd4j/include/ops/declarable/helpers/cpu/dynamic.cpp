@@ -72,7 +72,7 @@ namespace nd4j {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, outSize);
+                    samediff::Threads::parallel_tad(func, 0, outSize);
                 }
             }
             template <typename T>
@@ -179,7 +179,7 @@ namespace nd4j {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, gradsSize);
+                    samediff::Threads::parallel_tad(func, 0, gradsSize);
                 }
 
                 outputList[1]->assign(indices);

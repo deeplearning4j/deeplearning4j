@@ -34,7 +34,7 @@ namespace samediff {
         FUNC_2D _function_2d;
         FUNC_3D _function_3d;
 
-        std::vector<uint64_t> _arguments;
+        std::vector<int64_t> _arguments;
 
         std::atomic<bool> _finished;
 
@@ -46,9 +46,9 @@ namespace samediff {
         uint64_t _numThreads;
     public:
         CallableWithArguments(FUNC_DO func, uint64_t thread_id, uint64_t numThreads);
-        CallableWithArguments(FUNC_1D func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x);
-        CallableWithArguments(FUNC_2D func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y);
-        CallableWithArguments(FUNC_3D func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y, uint64_t start_z, uint64_t stop_z, uint64_t increment_z);
+        CallableWithArguments(FUNC_1D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x);
+        CallableWithArguments(FUNC_2D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x, int64_t start_y, int64_t stop_y, int64_t increment_y);
+        CallableWithArguments(FUNC_3D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x, int64_t start_y, int64_t stop_y, int64_t increment_y, int64_t start_z, int64_t stop_z, int64_t increment_z);
 
 
         /**
@@ -73,7 +73,7 @@ namespace samediff {
          */
         void waitUntilFinished();
 
-        std::vector<uint64_t>& arguments();
+        std::vector<int64_t>& arguments();
         FUNC_DO function_do();
         FUNC_1D function_1d();
         FUNC_2D function_2d();

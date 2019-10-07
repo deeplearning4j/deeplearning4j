@@ -28,15 +28,15 @@ namespace samediff {
         _numThreads = numThreads;
     }
 
-    CallableWithArguments::CallableWithArguments(FUNC_3D func, uint64_t thread_id, uint64_t start_x, uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y, uint64_t start_z, uint64_t stop_z, uint64_t increment_z) {
+    CallableWithArguments::CallableWithArguments(FUNC_3D func, uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t increment_x, int64_t start_y, int64_t stop_y, int64_t increment_y, int64_t start_z, int64_t stop_z, int64_t increment_z) {
         _function_3d = func;
         _arguments = {start_x, stop_x, increment_x, start_y, stop_y, increment_y, start_z, stop_z, increment_z};
         _finished = false;
         _threadId = thread_id;
     }
 
-    CallableWithArguments::CallableWithArguments(FUNC_1D func, uint64_t thread_id, uint64_t start_x,
-                                                 uint64_t stop_x, uint64_t increment_x) {
+    CallableWithArguments::CallableWithArguments(FUNC_1D func, uint64_t thread_id, int64_t start_x,
+                                                 int64_t stop_x, int64_t increment_x) {
         _function_1d = func;
         _arguments = {start_x, stop_x, increment_x};
         _finished = false;
@@ -44,8 +44,8 @@ namespace samediff {
     }
 
     CallableWithArguments::CallableWithArguments(
-            FUNC_2D func, uint64_t thread_id, uint64_t start_x,
-            uint64_t stop_x, uint64_t increment_x, uint64_t start_y, uint64_t stop_y, uint64_t increment_y) {
+            FUNC_2D func, uint64_t thread_id, int64_t start_x,
+            int64_t stop_x, int64_t increment_x, int64_t start_y, int64_t stop_y, int64_t increment_y) {
         _function_2d = func;
         _arguments = {start_x, stop_x, increment_x, start_y, stop_y, increment_y};
         _finished = false;
@@ -56,7 +56,7 @@ namespace samediff {
         return _arguments.size() / 3;
     }
 
-    std::vector<uint64_t>& CallableWithArguments::arguments() {
+    std::vector<int64_t>& CallableWithArguments::arguments() {
         return _arguments;
     }
 

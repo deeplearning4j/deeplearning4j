@@ -77,7 +77,7 @@ void FORCEINLINE cross(nd4j::LaunchContext * context, NDArray *a, NDArray *b, ND
             }
         };
 
-        samediff::Threads::parallel_for(func,  0, tads);
+        samediff::Threads::parallel_tad(func,  0, tads);
 
         delete tadsA;
         delete tadsB;

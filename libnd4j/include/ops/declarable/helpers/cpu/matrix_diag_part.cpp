@@ -51,7 +51,7 @@ int _matrixDiagPart(const NDArray* input, NDArray* output) {
                 listOut->at(i)->p(j, listDiag->at(i)->e<T>(j, j));
     };
 
-    samediff::Threads::parallel_for(func, 0, lO);
+    samediff::Threads::parallel_tad(func, 0, lO);
     
     delete listOut;
     delete listDiag;

@@ -667,7 +667,7 @@ namespace helpers {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            samediff::Threads::parallel_tad(func, 0, indices->lengthOf());
         }
         delete tempRes;
         return ND4J_STATUS_OK;
@@ -720,7 +720,7 @@ namespace helpers {
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
+            samediff::Threads::parallel_tad(func, 0, indices->lengthOf());
         }
         return ND4J_STATUS_OK;
     }

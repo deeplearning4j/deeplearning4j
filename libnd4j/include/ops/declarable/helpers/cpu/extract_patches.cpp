@@ -82,7 +82,7 @@ namespace helpers {
            }
        };
 
-       samediff::Threads::parallel_for(func, 0, batchCount);
+       samediff::Threads::parallel_tad(func, 0, batchCount);
     }
 
 

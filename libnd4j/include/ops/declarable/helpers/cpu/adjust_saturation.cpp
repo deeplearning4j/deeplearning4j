@@ -84,7 +84,7 @@ static void adjustSaturation_(const NDArray *input, const NDArray* factorScalarA
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, numOfTads);
+        samediff::Threads::parallel_tad(func, 0, numOfTads);
     }
 }
 

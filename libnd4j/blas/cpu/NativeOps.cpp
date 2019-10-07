@@ -1453,7 +1453,7 @@ void tearGeneric(void *vx,
         }
     };
 
-    samediff::Threads::parallel_for(func,0, numTads);
+    samediff::Threads::parallel_tad(func,0, numTads);
 }
 
 void tear(Nd4jPointer *extraPointers,
@@ -1607,7 +1607,7 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, N);
+    samediff::Threads::parallel_tad(func, 0, N);
 }
 
 void shuffle(Nd4jPointer *extras,

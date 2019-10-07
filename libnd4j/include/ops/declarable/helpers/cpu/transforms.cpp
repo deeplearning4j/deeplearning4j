@@ -215,7 +215,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, zLen);
+        samediff::Threads::parallel_tad(func, 0, zLen);
     }
     else {  // REFLECT and SYMMETRIC cases
 
@@ -241,7 +241,7 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, zLen);
+        samediff::Threads::parallel_tad(func, 0, zLen);
     }
 }
 
@@ -610,7 +610,7 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, zLen);
+    samediff::Threads::parallel_tad(func, 0, zLen);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -674,7 +674,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, numOfSubArrs);
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     }
     else {
@@ -698,7 +698,7 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, numOfSubArrs);
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     }
 }
@@ -718,7 +718,7 @@ void eye(nd4j::LaunchContext * context, NDArray& output) {
             arrs->at(i)->setIdentity();
     };
 
-    samediff::Threads::parallel_for(func, 0, arrs->size());
+    samediff::Threads::parallel_tad(func, 0, arrs->size());
 
     delete arrs;
 }
@@ -778,7 +778,7 @@ void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updat
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, indices.size());
+    samediff::Threads::parallel_tad(func, 0, indices.size());
 }
 
 
@@ -940,7 +940,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
                         *listOfInSubArrs->at(i) *= normClip / iNormActual;
                 }
             };
-            samediff::Threads::parallel_for(func, 0, listOfInSubArrs->size());
+            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs->size());
 
             delete listOfInSubArrs;
         }
@@ -971,7 +971,7 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
                         *outputSubArr *= clipNorm / iNormActual;
                 }
             };
-            samediff::Threads::parallel_for(func, 0, listOfInSubArrs->size());
+            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs->size());
 
             delete listOfInSubArrs;
             delete listOfOutSubArrs;
@@ -1090,7 +1090,7 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
                     gradISubArr->assign(gradOSubArr);
             }
         };
-        samediff::Threads::parallel_for(func, 0, gradISubArrs->size());
+        samediff::Threads::parallel_tad(func, 0, gradISubArrs->size());
 
         delete gradISubArrs;
         delete gradOSubArrs;

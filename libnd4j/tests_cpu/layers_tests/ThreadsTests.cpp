@@ -64,6 +64,22 @@ TEST_F(ThreadsTests, th_test_2) {
     ASSERT_EQ(2, ThreadsHelper::pickLoop2d(2, 1, 2048));
 }
 
+TEST_F(ThreadsTests, th_test_3) {
+    // typical conv cases
+    ASSERT_EQ(1, ThreadsHelper::pickLoop3d(4, 32, 3, 128));
+    ASSERT_EQ(2, ThreadsHelper::pickLoop3d(4, 1, 128, 64));
+    ASSERT_EQ(3, ThreadsHelper::pickLoop3d(4, 1, 3, 128));
+
+    // checking for optimal threads for conv inference
+    ASSERT_EQ(6, ThreadsHelper::numberOfThreads3d(6, 1, 3, 128));
+    ASSERT_EQ(4, ThreadsHelper::numberOfThreads3d(4, 1, 3, 128));
+    ASSERT_EQ(8, ThreadsHelper::numberOfThreads3d(8, 1, 3, 128));
+
+    // checking for optimal threads for conv training
+    ASSERT_EQ(6, ThreadsHelper::numberOfThreads3d(6, 16, 3, 128));
+    ASSERT_EQ(6, ThreadsHelper::numberOfThreads3d(6, 8, 3, 128));
+}
+
 TEST_F(ThreadsTests, validation_test_2d_1) {
 #ifndef _RELEASE
     if (1 > 0)

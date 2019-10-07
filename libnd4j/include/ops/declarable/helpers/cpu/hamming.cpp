@@ -47,7 +47,7 @@ namespace nd4j {
 
                 Nd4jLong distance = 0;
                 auto lengthOf = x.lengthOf();
-                const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
+                int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
                 Nd4jLong intermediate[256];
 
                 // nullify temp values
@@ -64,7 +64,7 @@ namespace nd4j {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, lengthOf);
+                    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 } else if (xEws > 1 && yEws > 1 && x.ordering() == y.ordering()) {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e += increment) {
@@ -75,7 +75,7 @@ namespace nd4j {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, lengthOf);
+                    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 } else {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e += increment) {
@@ -86,7 +86,7 @@ namespace nd4j {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, lengthOf);
+                    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 }
 
                 // accumulate intermediate variables into output array

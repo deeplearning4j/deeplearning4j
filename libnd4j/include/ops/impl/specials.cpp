@@ -80,7 +80,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, ND
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, numOfArrs);
+                samediff::Threads::parallel_tad(func, 0, numOfArrs);
                 return;
             }
         }
@@ -105,7 +105,7 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, ND
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, numOfArrs);
+        samediff::Threads::parallel_tad(func, 0, numOfArrs);
 }
 
 /**
@@ -342,7 +342,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
                 quickSort_parallel(dx, tadShapeInfo, xTadLength, 1, descending);
             }
         };
-        samediff::Threads::parallel_for(func, 0, numTads);
+        samediff::Threads::parallel_tad(func, 0, numTads);
     }
 
 
@@ -634,7 +634,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, numTads);
+        samediff::Threads::parallel_tad(func, 0, numTads);
     }
 
     template <typename X, typename Y>
@@ -658,7 +658,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, numTads);
+        samediff::Threads::parallel_tad(func, 0, numTads);
     }
 
     BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES);

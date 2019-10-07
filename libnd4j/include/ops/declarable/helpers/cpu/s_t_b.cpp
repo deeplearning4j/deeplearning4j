@@ -128,7 +128,7 @@ static void batchToSpaceND_(const NDArray& input, const NDArray& crop, NDArray& 
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, zLen);
+    samediff::Threads::parallel_tad(func, 0, zLen);
 }
 
 BUILD_SINGLE_TEMPLATE(template void batchToSpaceND_, (const NDArray& input, const NDArray& crop, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);
@@ -327,7 +327,7 @@ static void spaceToBatchND_(const NDArray& input, const NDArray& padding, NDArra
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, zLen);
+    samediff::Threads::parallel_tad(func, 0, zLen);
 }
 
 BUILD_SINGLE_TEMPLATE(template void spaceToBatchND_, (const NDArray& input, const NDArray& padding, NDArray& output, const uint numOfSpatialDims), LIBND4J_TYPES);

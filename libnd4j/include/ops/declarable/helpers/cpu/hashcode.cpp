@@ -54,7 +54,7 @@ namespace nd4j {
                         tempBuffer[b] = r;
                     }
                 };
-                samediff::Threads::parallel_for(func, 0, numBlocks);
+                samediff::Threads::parallel_tad(func, 0, numBlocks);
 
                 // we replace pointer with intermediate one, and repeat only one chunk left
                 int iterationCount = 0;
@@ -76,7 +76,7 @@ namespace nd4j {
                             tempResult[b] = r;
                         }
                     };
-                    samediff::Threads::parallel_for(func2, 0, numBlocks);
+                    samediff::Threads::parallel_tad(func2, 0, numBlocks);
 
 
                     iterationCount++;

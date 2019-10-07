@@ -425,7 +425,7 @@ namespace nd4j {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, numTargets, 1, numThreads);
+                    samediff::Threads::parallel_tad(func, 0, numTargets, 1, numThreads);
             }
             BUILD_SINGLE_TEMPLATE(template void skipgramBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const bool preciseMode, const int numThreads), FLOAT_TYPES);
 
@@ -577,7 +577,7 @@ namespace nd4j {
                     }
                 };
 
-                samediff::Threads::parallel_for(func, 0, numTargets, 1, numThreads);
+                samediff::Threads::parallel_tad(func, 0, numTargets, 1, numThreads);
             }
             BUILD_SINGLE_TEMPLATE(template void cbowBatchExec_, (NDArray &s0, NDArray &s1, NDArray &s1n, void *vexpTable, void *vnegTable, void *vinfVector, NDArray &context, NDArray &lockedWords, NDArray &targets, NDArray &negStarters, NDArray &indices, NDArray &codes, NDArray &lr, NDArray &nextRandom, NDArray &nLabels, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength,  const bool trainWords, const int numThreads), FLOAT_TYPES);
 

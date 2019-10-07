@@ -127,7 +127,7 @@ void col2im_(nd4j::LaunchContext & context, const NDArray& input,  NDArray& outp
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, bS);
+        samediff::Threads::parallel_tad(func, 0, bS);
     }
 }
 

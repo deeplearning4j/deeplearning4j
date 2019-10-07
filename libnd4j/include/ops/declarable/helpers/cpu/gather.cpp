@@ -66,7 +66,7 @@ void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* 
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, numOfSubArrs);
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     } 
     else {
@@ -86,7 +86,7 @@ void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* 
                 }
             };
 
-            samediff::Threads::parallel_for(func, 0, numOfSubArrs);
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     }    
 }

@@ -507,28 +507,13 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
         if (len == 0)
             return;
 
-        if (numThreads == 0) {
-            nd4j_printf("Empty numThreads\n","");
-        }
-
-        // linear case first
-        auto linearSpan = len / numThreads;
-        if (linearSpan <= 1) {
-            numThreads = 1;
-            linearSpan = len / numThreads;
-        }
-
-        auto start = linearSpan * threadId;
-        auto stop = linearSpan * (threadId + 1);
-
-        // processing tail here
-        if (threadId == numThreads - 1)
-            stop = len;
-
         switch (kindOfLoop) {
 
             //*********************************************//
             case LoopKind::EWS1: {
+                    auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+                    int64_t start = span.startX(), stop = span.stopX();
+
                     for (auto i = start; i < stop; i++)
                         z[i] = OpType::op(x[i], extraParams);
                 }
@@ -538,6 +523,9 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             case LoopKind::EWSNONZERO: {
                     const uint xEws = shape::elementWiseStride(xShapeInfo);
                     const uint zEws = shape::elementWiseStride(zShapeInfo);
+
+                    auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+                    int64_t start = span.startX(), stop = span.stopX();
 
                     for (auto i = start; i < stop; i++)
                         z[i*zEws] = OpType::op(x[i*xEws], extraParams);
@@ -549,6 +537,9 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     const uint zEws = shape::elementWiseStride(zShapeInfo);
                     uint castXShapeInfo[MAX_RANK];
                     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, castXShapeInfo);
+
+                    auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+                    int64_t start = span.startX(), stop = span.stopX();
 
                     if (zEws > 1) {
                         for (auto i = start; i < stop; i++) {
@@ -566,7 +557,9 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                 //*********************************************//
             case LoopKind::RANK1: {
-                    for (auto i0 = start; i0 < stop; i0++)
+                    auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+
+                    for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
                         z[i0 * zStride[0]] = OpType::op(x[i0 * xStride[0]], extraParams);
                 }
                 break;
@@ -576,13 +569,14 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     auto uXShape0 = static_cast<uint>(xShape[0]);
                     auto uXShape1 = static_cast<uint>(xShape[1]);
 
-                    //
+                    auto loop = samediff::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
+                    auto span = samediff::Span2::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1);
 
-                    for (auto i0 = start; i0 < stop; i0++) {
+                    for (auto i0 = span.startX(); i0 < span.stopX(); i0++) {
                         auto z0 = i0 * zStride[0];
                         auto x0 = i0 * xStride[0];
 
-                        for (uint i1 = 0; i1 < uXShape1; ++i1)
+                        for (uint i1 = span.startY(); i1 < span.stopY(); ++i1)
                             z[z0 + i1 * zStride[1]] = OpType::op(x[x0 + i1 * xStride[1]], extraParams);
                     }
                 }
@@ -594,16 +588,18 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     auto uXShape1 = static_cast<uint>(xShape[1]);
                     auto uXShape2 = static_cast<uint>(xShape[2]);
 
-                    for (uint64_t i0i1 = start; i0i1 < stop; i0i1++) {
-                        auto i0 = i0i1 / uXShape1;
-                        auto i1 = i0i1 % uXShape1;
+                    auto loop = samediff::ThreadsHelper::pickLoop2d(numThreads, uXShape0, uXShape1);
+                    auto span = samediff::Span2::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1);
 
-                        auto z0 = i0 * zStride[0] + i1 * zStride[1];
-                        auto x0 = i0 * xStride[0] + i1 * xStride[1];
 
-                        for (uint i2 = 0; i2 < uXShape2; ++i2)
-                            z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
-                    }
+                    for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
+                        for (auto i1 = span.startY(); i1 < span.stopY(); i1++) {
+                            auto z0 = i0 * zStride[0] + i1 * zStride[1];
+                            auto x0 = i0 * xStride[0] + i1 * xStride[1];
+
+                            for (uint i2 = 0; i2 < uXShape2; ++i2)
+                                z[z0 + i2 * zStride[2]] = OpType::op(x[x0 + i2 * xStride[2]], extraParams);
+                        }
                 }
                 break;
 
@@ -614,9 +610,12 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     auto uXShape2 = static_cast<uint>(xShape[2]);
                     auto uXShape3 = static_cast<uint>(xShape[3]);
 
-                    for (uint i0 = 0; i0 < uXShape0; i0++)
-                        for (uint i1 = 0; i1 < uXShape1; i1++)
-                            for (uint i2 = 0; i2 < uXShape2; i2++) {
+                    auto loop = samediff::ThreadsHelper::pickLoop3d(numThreads, uXShape0, uXShape1, uXShape2);
+                    auto span = samediff::Span3::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
+
+                    for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
+                        for (auto i1 = span.startY(); i1 < span.stopY(); i1++)
+                            for (auto i2 = span.startZ(); i2 < span.stopZ(); i2++) {
                                 auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
                                 auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
 
@@ -634,11 +633,13 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     auto uXShape3 = static_cast<uint>(xShape[3]);
                     auto uXShape4 = static_cast<uint>(xShape[4]);
 
+                    auto loop = samediff::ThreadsHelper::pickLoop3d(numThreads, uXShape0, uXShape1, uXShape2);
+                    auto span = samediff::Span3::build(loop, threadId, numThreads, 0, uXShape0, 1, 0, uXShape1, 1, 0, uXShape2, 1);
 
-                    for (uint i0 = 0; i0 < uXShape0; i0++)
-                        for (uint i1 = 0; i1 < uXShape1; i1++)
-                            for (uint i2 = 0; i2 < uXShape2; i2++) {
 
+                    for (auto i0 = span.startX(); i0 < span.stopX(); i0++)
+                        for (auto i1 = span.startY(); i1 < span.stopY(); i1++)
+                            for (auto i2 = span.startZ(); i2 < span.stopZ(); i2++) {
                                 auto z0 = i0 * zStride[0] + i1 * zStride[1] + i2 * zStride[2];
                                 auto x0 = i0 * xStride[0] + i1 * xStride[1] + i2 * xStride[2];
 
@@ -664,7 +665,9 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     bool canCastX = DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                     bool canCastZ = DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-                    for (auto i = start; i < stop; i++) {
+                    auto span = samediff::Span::build(threadId, numThreads, 0, len, 1);
+
+                    for (auto i = span.startX(); i < span.stopX(); i++) {
                         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpType::op(x[xOffset], extraParams);

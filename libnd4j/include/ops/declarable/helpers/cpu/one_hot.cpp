@@ -67,7 +67,7 @@ namespace nd4j {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, numTads);
+                    samediff::Threads::parallel_tad(func, 0, numTads);
                 } else {
                     auto func = PRAGMA_THREADS_FOR {
                         for (auto e = start; e < stop; e += increment) {
@@ -88,7 +88,7 @@ namespace nd4j {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, numTads);
+                    samediff::Threads::parallel_tad(func, 0, numTads);
                 }
             }
 

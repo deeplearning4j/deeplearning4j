@@ -154,10 +154,10 @@ namespace helpers {
 
         auto func = PRAGMA_THREADS_FOR {
             for (auto n = start; n < stop; n += increment) {
-                int start = rowP->e<int>(n);
+                int s = rowP->e<int>(n);
                 int end = rowP->e<int>(n + 1);
                 int shift = n * colCount;
-                for (int i = start; i < end; i++) {
+                for (int i = s; i < end; i++) {
                     T const *thisSlice = dataP + colP->e<int>(i) * colCount;
                     T res = 1;
 
@@ -174,7 +174,7 @@ namespace helpers {
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, N);
+        samediff::Threads::parallel_tad(func, 0, N);
     }
 
     void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {

@@ -87,7 +87,7 @@ static void adjustHue_(const NDArray *input, const NDArray* deltaScalarArr, NDAr
             }
         };
 
-        samediff::Threads::parallel_for(func, 0, numOfTads);
+        samediff::Threads::parallel_tad(func, 0, numOfTads);
     }
 }
 

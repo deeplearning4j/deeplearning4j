@@ -323,7 +323,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
+                    samediff::Threads::parallel_tad(func, 0, tads, 1, threads);
                 }
                 else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
                     auto func = PRAGMA_THREADS_FOR {
@@ -337,7 +337,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
+                    samediff::Threads::parallel_tad(func, 0, tads, 1, threads);
                 }
                 else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) && shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
 
@@ -357,7 +357,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
+                    samediff::Threads::parallel_tad(func, 0, tads, 1, threads);
                 }
                 else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo)) {
 
@@ -380,7 +380,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
+                    samediff::Threads::parallel_tad(func, 0, tads, 1, threads);
                 }
                 else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
 
@@ -403,7 +403,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
+                    samediff::Threads::parallel_tad(func, 0, tads, 1, threads);
                 }
                 else if(shape::haveSameShapeAndStrides(xShapeInfo, zTadShapeInfo)) {
 
@@ -426,7 +426,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
+                    samediff::Threads::parallel_tad(func, 0, tads, 1, threads);
                 }
                 else {
 
@@ -452,7 +452,7 @@ namespace functions {
                         }
                     };
 
-                    samediff::Threads::parallel_for(func, 0, tads, 1, threads);
+                    samediff::Threads::parallel_tad(func, 0, tads, 1, threads);
                 }
         }
 

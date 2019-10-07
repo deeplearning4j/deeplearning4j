@@ -48,7 +48,7 @@ void crossBatched(nd4j::LaunchContext * context, NDArray *a, NDArray *b, NDArray
         }
     };
 
-    samediff::Threads::parallel_for(func, 0, tads);
+    samediff::Threads::parallel_tad(func, 0, tads);
 
     delete tadsA;
     delete tadsB;
