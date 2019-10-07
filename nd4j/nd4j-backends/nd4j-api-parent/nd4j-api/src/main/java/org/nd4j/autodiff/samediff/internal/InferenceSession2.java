@@ -546,12 +546,8 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                 idx[0] = NDArrayIndex.point(i);
                 INDArray get = valuesArr.get(idx).dup();
                 int outIdx = idxs[i];
-                if(valuesArr.rank() == 2 && get.rank() == 2){
-                    //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7092
-                    get = get.reshape(get.length());
-                }
                 if(valuesArr.rank() == 1 && get.rank() > 0){
-                    get = get.reshape(new long[0]);
+                    get = get.reshape();
                 }
                 l.set(outIdx, get);
             }
@@ -621,15 +617,13 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
     @Override
     public SameDiffOp getAndParameterizeOp(String opName, FrameIter frameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                                      Set<String> constAndPhInputs, Map<String,INDArray> placeholderValues, Set<String> allReqVariables) {
-
-//        DifferentialFunction df = sameDiff.getOpById(opName);
         SameDiffOp sdo = sameDiff.getOps().get(opName);
         DifferentialFunction df = sdo.getOp();
 
         //TODO We should clone these ops - probably - as we don't want them shared between threads/sessions!
         //But let's only clone them *once* and cache in inference session - not on every exec
 
-        Preconditions.checkNotNull(df, "No differential function fond with name %s", opName);
+        Preconditions.checkNotNull(df, "No differential function found with name \"%s\"", opName);
 
         if(df instanceof LoopCond || df instanceof Enter || df instanceof Exit || df instanceof NextIteration ||
                 df instanceof Merge || df instanceof Switch || df instanceof While ||
@@ -741,22 +735,8 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                     INDArray arr = this.nodeOutputs.get(vid);
                     args[i] = arr;
                 } else {
-                    if(opInputs != null) {
-                        for (VarId vid : opInputs) {
-                            if (vid.getVariable().equals(s)) {
-                                args[i] = this.nodeOutputs.get(vid);
-                                break;
-                            }
-                        }
-                    }
-                    if(args[i] == null && allIterInputs != null){
-                        for(VarId vid : allIterInputs){
-                            if(vid.getVariable().equals(s)){
-                                args[i] = this.nodeOutputs.get(vid);
-                                break;
-                            }
-                        }
-                    }
+                    VarId vid = lookup(s, opInputs, allIterInputs, true);
+                    args[i] = nodeOutputs.get(vid);
                 }
                 Preconditions.checkNotNull(args[i], "Could not parameterize op %s: array %s (variable %s) is null", opName, i, v.getVarName());
                 i++;
@@ -880,13 +860,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
         if(sdv.getVariableType() == VariableType.CONSTANT || sdv.getVariableType() == VariableType.VARIABLE){
             return getConstantOrVariable(n);
         } else {
-            VarId inVarId = null;
-            if(opInputs != null){
-                inVarId = lookup(n, opInputs, false);
-            }
-            if(inVarId == null && allIterInputs != null && !allIterInputs.isEmpty()){
-                inVarId = lookup(n, allIterInputs, false);
-            }
+            VarId inVarId = lookup(n, opInputs, allIterInputs, false);
             Preconditions.checkState(inVarId != null,"Could not find array for variable %s", sdv.getVarName());
             return nodeOutputs.get(inVarId);
         }
