@@ -24,6 +24,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -232,6 +233,12 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public INDArray z() {
         return z;
+    }
+
+    @Override
+    public INDArray getInputArgument(int index){
+        Preconditions.checkState(index >= 0 && index < 2, "Input argument index must be 0 or 1, got %s", index);
+        return index == 0 ? x : y;
     }
 
     @Override

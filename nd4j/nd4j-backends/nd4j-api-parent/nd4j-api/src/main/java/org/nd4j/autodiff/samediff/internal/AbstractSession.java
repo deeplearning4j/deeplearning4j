@@ -940,6 +940,17 @@ public abstract class AbstractSession<T, O> {
         }
     }
 
+    protected static VarId lookup(String name, Collection<VarId> varIds, Collection<VarId> varIds2, boolean exceptionOnNotFound){
+        VarId vid = varIds == null ? null : lookup(name, varIds, false);
+        if(vid == null && varIds2 != null)
+            vid = lookup(name, varIds2, false);
+
+        if(exceptionOnNotFound) {
+            throw new RuntimeException("Could not find VarId to input " + name);
+        }
+        return vid;
+    }
+
 
     protected static VarId lookup(String name, Collection<VarId> varIds, boolean exceptionOnNotFound){
         for(VarId vid : varIds){

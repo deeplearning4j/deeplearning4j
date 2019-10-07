@@ -258,7 +258,7 @@ public class SDVariable implements Serializable {
     public DataType dataType() {
         if(this.dataType == null){
             //Try to infer datatype instead of returning null
-            if(getArr() != null){
+            if(variableType != VariableType.ARRAY && getArr() != null){
                 this.dataType = getArr().dataType();
             }
         }

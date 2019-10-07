@@ -108,7 +108,6 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
@@ -4539,26 +4538,6 @@ public class SameDiff extends SDBaseOps {
                 .trueBody(loopBody)
                 .parent(this)
                 .blockName("while-" + UUID.randomUUID().toString())
-                .build();
-    }
-
-    /**
-     * @deprecated Use {@link SDBaseOps#ifCond(String, String, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda)}
-     */
-    @Deprecated
-    public If ifStatement(SameDiffConditional conditional,
-                          SameDiffFunctionDefinition conditionBody,
-                          SameDiffFunctionDefinition trueBody,
-                          SameDiffFunctionDefinition falseBody
-            , SDVariable[] inputVars) {
-        return If.builder()
-                .conditionBody(conditionBody)
-                .falseBody(falseBody)
-                .trueBody(trueBody)
-                .predicate(conditional)
-                .inputVars(inputVars)
-                .parent(this)
-                .blockName("if-" + UUID.randomUUID().toString())
                 .build();
     }
 

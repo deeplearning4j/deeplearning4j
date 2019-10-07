@@ -39,7 +39,6 @@ import org.nd4j.imports.graphmapper.OpImportOverride;
 import org.nd4j.imports.graphmapper.tf.tensors.TFTensorMapper;
 import org.nd4j.imports.graphmapper.tf.tensors.TFTensorMappers;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.impl.controlflow.IfImportState;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.tensorflow.framework.*;
 import org.tensorflow.framework.DataType;
@@ -1097,104 +1096,4 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
 
         return shape;
     }
-
-
-    /**
-     * Returns the node for an if statement
-     * @param from the starting node (a merge node that represents a conditional)
-     * @param graph the graph to search
-     * @return an import state representing the nodes for each scope
-     */
-    public IfImportState nodesForIf(NodeDef from, GraphDef graph) {
-        //Assume we start with a switch statement
-        int currNodeIndex = graph.getNodeList().indexOf(from);
-        val trueDefName = from.getInput(1);
-        val falseDefName = from.getInput(0);
-        val scopeId = UUID.randomUUID().toString();
-        val scopeName = scopeId + "-" + trueDefName.substring(0,trueDefName.indexOf("/"));
-        val trueDefScopeName = scopeName + "-true-scope";
-        val falseDefScopeName = scopeName + "-false-scope";
-
-
-        boolean onFalseDefinition = true;
-        //start with the true
-        boolean onTrueDefinition = false;
-
-        List<NodeDef> falseBodyNodes = new ArrayList<>();
-        List<NodeDef> trueBodyNodes = new ArrayList<>();
-        List<NodeDef> conditionNodes = new ArrayList<>();
-        Set<String> seenNames = new LinkedHashSet<>();
-        /**
-         * Accumulate a list backwards to get proper ordering.
-         *
-         */
-        for(int i = currNodeIndex; i >= 0; i--) {
-            //switch to false names
-            if(graph.getNode(i).getName().equals(trueDefName)) {
-                onFalseDefinition = false;
-                onTrueDefinition = true;
-            }
-
-            //on predicate now
-            if(graph.getNode(i).getName().contains("pred_id")) {
-                onTrueDefinition = false;
-            }
-            //don't readd the same node, this causes a stackoverflow
-            if(onTrueDefinition  && !graph.getNode(i).equals(from)) {
-                trueBodyNodes.add(graph.getNode(i));
-            }
-            else if(onFalseDefinition && !graph.getNode(i).equals(from)) {
-                falseBodyNodes.add(graph.getNode(i));
-            }
-            //condition scope now
-            else {
-                val currNode = graph.getNode(i);
-                if(currNode.equals(from))
-                    continue;
-
-                //break only after bootstrapping the first node (the predicate id node)
-                if(!seenNames.contains(graph.getNode(i).getName()) && !graph.getNode(i).getName().contains("pred_id")) {
-                    break;
-                }
-
-                /**
-                 * Continuously add inputs seen for each node in the sub graph that occurs.
-                 * Starting from the predicate id, any node that has inputs in the condition scope
-                 * are by definition within the scope. Any node not encountered after that is considered out of scope.
-                 * This means we break.
-                 */
-                for(int inputIdx = 0; inputIdx < currNode.getInputCount(); inputIdx++) {
-                    seenNames.add(currNode.getInput(inputIdx));
-                }
-
-
-
-                //ensure the "current node" is added as well
-                seenNames.add(graph.getNode(i).getName());
-                conditionNodes.add(graph.getNode(i));
-            }
-        }
-
-        /**
-         * Since we are going over the graph backwards,
-         * we need to reverse the nodes to ensure proper ordering.
-         */
-        Collections.reverse(falseBodyNodes);
-        Collections.reverse(trueBodyNodes);
-        Collections.reverse(conditionNodes);
-
-
-        return IfImportState.builder()
-                .condNodes(conditionNodes)
-                .falseNodes(falseBodyNodes)
-                .trueNodes(trueBodyNodes)
-                .conditionBodyScopeName(falseDefScopeName)
-                .falseBodyScopeName(falseDefScopeName)
-                .trueBodyScopeName(trueDefScopeName)
-                .conditionBodyScopeName(scopeName)
-                .build();
-    }
-
-
-
 }

@@ -39,7 +39,6 @@ import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.scalar.RectifiedLinear;
 import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
@@ -135,42 +134,6 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val exp = Nd4j.createFromArray(new long[]{2, 2, 2});
 
         assertEquals(exp, result);
-    }
-
-
-    @Test
-    public void testIfStatementNodes() throws Exception {
-        // /home/agibsonccc/code/dl4j-test-resources/src/main/resources/tf_graphs/examples/simple_cond/frozen_graph.pbtxt
-        val resourceInputStream = new ClassPathResource("/tf_graphs/examples/simple_cond/frozen_model.pb").getInputStream();
-        val mapper = TFGraphMapper.getInstance();
-        val readGraph = TFGraphMapper.getInstance().parseGraphFrom(resourceInputStream);
-        val nodes = mapper.nodesByName(readGraph);
-        /**
-         * Work backwards starting fom the condition id (usually a name containing condid/pred_id:
-
-         */
-
-        val firstInput = nodes.get("cond5/Merge");
-        val ifNodes = mapper.nodesForIf(firstInput,readGraph);
-        assertEquals(5,ifNodes.getFalseNodes().size());
-        assertEquals(5,ifNodes.getTrueNodes().size());
-        assertEquals(10,ifNodes.getCondNodes().size());
-
-
-        val secondInput = nodes.get("cond6/Merge");
-        val ifNodesTwo = mapper.nodesForIf(secondInput,readGraph);
-        assertEquals(5,ifNodesTwo.getFalseNodes().size());
-        assertEquals(5,ifNodesTwo.getTrueNodes().size());
-        assertEquals(6,ifNodesTwo.getCondNodes().size());
-
-
-        val parentContext = SameDiff.create();
-        val ifStatement = new If();
-        ifStatement.initFromTensorFlow(firstInput,parentContext,Collections.emptyMap(),readGraph);
-        assertNotNull(ifStatement.getLoopBodyExecution());
-        assertNotNull(ifStatement.getFalseBodyExecution());
-        assertNotNull(ifStatement.getPredicateExecution());
-
     }
 
     @Test

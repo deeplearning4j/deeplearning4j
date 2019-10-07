@@ -69,8 +69,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThan.class,
             org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThanOrEqual.class,
             org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastNotEqual.class,
-            org.nd4j.linalg.api.ops.impl.controlflow.If.class,
-            org.nd4j.linalg.api.ops.impl.controlflow.IfDerivative.class,
             org.nd4j.linalg.api.ops.impl.controlflow.Select.class,
             org.nd4j.linalg.api.ops.impl.controlflow.Where.class,
             org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy.class,

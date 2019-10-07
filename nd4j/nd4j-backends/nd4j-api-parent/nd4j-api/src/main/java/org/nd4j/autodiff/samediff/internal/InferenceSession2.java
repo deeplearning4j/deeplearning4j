@@ -31,7 +31,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
@@ -121,39 +120,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
          */
         for(String s : output.keySet()){
             if(sameDiff.getVariable(s).getVariableType() == VariableType.ARRAY){
-                Variable v = sameDiff.getVariables().get(s);
-
-                //Clear op outputs
-                String outOfOp = v.getOutputOfOp();
-                SameDiffOp op = sameDiff.getOps().get(outOfOp);
-                int idx = op.getOutputsOfOp().indexOf(s);
-                if(op.getOp() instanceof DynamicCustomOp){
-                    DynamicCustomOp dco = (DynamicCustomOp)op.getOp();
-                    dco.setOutputArgument(idx, null);
-                } else {
-                    Op o = (Op)op.getOp();
-                    o.setZ(null);
-                }
-
-                //Clear op inputs
-                List<String> inTo = v.getInputsForOp();
-                if(inTo != null && !inTo.isEmpty()){
-                    for(String opName : inTo){
-                        SameDiffOp o = sameDiff.getOps().get(opName);
-                        int inIdx = o.getInputsToOp().indexOf(s);
-                        if(o.getOp() instanceof DynamicCustomOp){
-                            DynamicCustomOp dco = (DynamicCustomOp)o.getOp();
-                            dco.setInputArgument(inIdx, null);
-                        } else {
-                            Op op2 = (Op)o.getOp();
-                            if(inIdx == 0){
-                                op2.setX(null);
-                            } else {
-                                op2.setY(null);
-                            }
-                        }
-                    }
-                }
+                clearOpReferencesFor(s);
             }
         }
 
@@ -175,16 +142,20 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
 
         //Call listeners
         if(listeners != null && listeners.size() > 0){
-
-            Map<String, INDArray> namedOutsBuilder = new HashMap<>();
-
-            for(int i = 0 ; i < out.length ; i++)
-                namedOutsBuilder.put(op.outputsOfOp.get(i), out[i]);
-
-            Map<String, INDArray> namedOuts = Collections.unmodifiableMap(namedOutsBuilder);
+            Map<String, INDArray> namedOuts = null;
 
             for(Listener l : listeners){
                 if(l.isActive(at.operation())) {
+                    //Lazily create map, only if required
+                    if(namedOuts == null){
+                        Map<String, INDArray> namedOutsBuilder = new HashMap<>();
+
+                        for(int i = 0 ; i < out.length ; i++)
+                            namedOutsBuilder.put(op.outputsOfOp.get(i), out[i]);
+                        namedOuts = Collections.unmodifiableMap(namedOutsBuilder);
+                    }
+
+
                     l.opExecution(sameDiff, at, batch, op, out);
 
                     for(String varName : namedOuts.keySet()){
@@ -215,7 +186,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                 boolean canDealloc = false;
                 Variable var = sameDiff.getVariables().get(inName);
                 if(var.getInputsForOp().isEmpty()){
-                    canDealloc = true;
+                    canDealloc = true;      //Should never happen
                 } else {
                     List<String> inputForOps = var.getInputsForOp();
                     boolean allAlreadyCalced = true;
@@ -224,25 +195,8 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                             //This op IS required. We know if it has been calculated if any of the outputs of this op are present
                             // in the set of outputs...
 
-                            VarId vidOfInput = null;
-                            if(opInputs != null && !opInputs.isEmpty()) {
-                                for (VarId vid : opInputs) {
-                                    if (vid.getVariable().equals(inName)) {
-                                        vidOfInput = vid;
-                                        break;
-                                    }
-                                }
-                            } else if(allIterInputs != null && !allIterInputs.isEmpty()){
-                                for(VarId vid : allIterInputs){
-                                    if(vid.getVariable().equals(inName)){
-                                        vidOfInput = vid;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            Preconditions.checkState(vidOfInput != null, "Could not find vid of input array - %s", inName);
-
+                            VarId vidOfInput = lookup(inName, opInputs, allIterInputs, false);
+                            Preconditions.checkState(vidOfInput != null, "Could not find VarId of input array - %s", inName);
 
                             String firstOutput = sameDiff.getOps().get(opName).getOutputsOfOp().get(0);
                             VarId vid = newVarId(firstOutput, vidOfInput.toFrameIter());    //TODO this doesn't work for enter op, etc!
@@ -259,21 +213,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
 
 
                 if (canDealloc) {
-                    INDArray arr;
-                    if (op.getOp() instanceof DynamicCustomOp) {
-                        DynamicCustomOp dco = (DynamicCustomOp) op.getOp();
-                        arr = dco.getInputArgument(i);
-                        dco.setInputArgument(i, null);
-                    } else {    //TODO
-                        Op o = (Op)op.getOp();
-                        if(i == 0){
-                            arr = o.x();
-                            o.setX(null);
-                        } else {
-                            arr = o.y();
-                            o.setY(null);
-                        }
-                    }
+                    INDArray arr = op.getOp().getInputArgument(i);
 
                     if(arr == null)     //TODO Should this be an error?
                         continue;
@@ -283,47 +223,10 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
 
                     //We should also clear input references for other ops - so they aren't storing reference to closed arrays
                     //So, if we have (x -> y) and we're closing x, we should clear x from any other ops where (x -> z)
-                    List<String> inputForOps = var.getInputsForOp();
-                    if(inputForOps.size() > 1){
-                        for(String opName : inputForOps){
-                            SameDiffOp o = sameDiff.getOps().get(opName);
-                            int idx = o.getInputsToOp().indexOf(inName);
-                            if (op.getOp() instanceof DynamicCustomOp) {
-                                DynamicCustomOp dco = (DynamicCustomOp) op.getOp();
-                                dco.setInputArgument(idx, null);
-                            } else {    //TODO
-                                Op o2 = (Op)op.getOp();
-                                if(idx == 0){
-                                    o2.setX(null);
-                                } else {
-                                    o2.setY(null);
-                                }
-                            }
-                        }
-                    }
-
-                    //Also clear outputs:
-                    if(var.getOutputOfOp() != null){
-                        SameDiffOp o = sameDiff.getOps().get(var.getOutputOfOp());
-
-                        if( o.getOp() instanceof DynamicCustomOp){
-                            DynamicCustomOp dco = (DynamicCustomOp)o.getOp();
-                            List<String> outNames = o.getOutputsOfOp();
-                            int idx = outNames.indexOf(var.getName());
-                            dco.setOutputArgument(idx, null);
-                        } else {
-                            ((Op)o.getOp()).setZ(null);
-                        }
-                    }
+                    clearOpReferencesFor(inName);
 
                     //Finally, clear the input array from nodeOutputs map (so we don't leak deallocated array reference via getArray etc)
-                    VarId vidOfInput = null;
-                    for(VarId vid : opInputs){
-                        if(vid.getVariable().equals(inName)){
-                            vidOfInput = vid;
-                            break;
-                        }
-                    }
+                    VarId vidOfInput = lookup(inName, opInputs, allIterInputs, false);
 
                     nodeOutputs.remove(vidOfInput);
                 }
@@ -407,12 +310,6 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
 
             INDArray inArr = this.nodeOutputs.get(in);
             return new INDArray[]{inArr};
-        } else if(op instanceof If) {
-            If i = (If) op;
-            String[] argNames = i.argNames();       //Order should be: [boolean], true, false
-
-
-            throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
         } else if(op instanceof Merge) {
             //Merge avairable for forward pass when any of its inputs are available. When multiple are available, behaviour
             // is undefined
@@ -439,260 +336,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
             return new INDArray[]{arr};
         } else if(op instanceof BaseTensorOp) {
             //TensorOps - special cases...
-            if (op instanceof TensorArray) {
-                //Create a TensorArray
-                VarId vid = newVarId(op.outputVariable().getVarName(), outputFrameIter);
-                Preconditions.checkState(!tensorArrays.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
-                tensorArrays.put(vid, new ArrayList<INDArray>());
-
-                // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    //TODO Proper workspace support will be added to SameDiff later
-                    return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
-                }
-            } else if (op instanceof TensorArrayRead) {
-                //Do lookup and return
-                //Input 0 is the TensorArray (or dummy variable that represents it). Sometimes (for import) this can be like (TensorArray -> Enter -> TensorArrayRead)
-                //Input 1 is the index
-                SDVariable idxSDV = op.arg(1);
-                INDArray idxArr = getArray(idxSDV, opInputs, allIterInputs);
-                Preconditions.checkState(idxArr.isScalar(), "TensorArrayRead input argument 1 should be scalar - has shape %ndShape", idxArr);
-                int i = idxArr.getInt(0);
-
-                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-
-                //Work out the frame/iteration:
-                VarId v = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
-                if(v == null && allIterInputs != null){
-                    v = lookup(inTensorArray.getVarName(), allIterInputs, false);
-                }
-
-                Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.getVarName());
-
-                while(sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter){
-                    //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayRead
-                    //TODO also TensorArrayWrite, scatter, etc??
-                    inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
-                    v = newVarId(inTensorArray.getVarName(), v.getParentFrame());
-                }
-
-                List<INDArray> list = getTensorArrays().get(v);
-                Preconditions.checkState(list != null, "Could not find TensorList for %s", v);
-                Preconditions.checkState(list.size() > i, "Cannot get index %s from TensorList of size %s (array not present?) - VarId=%s", i, list.size(), v);
-
-                INDArray out = list.get(i);
-                return new INDArray[]{out};
-            } else if (op instanceof TensorArrayWrite) {
-                //TensorArrayWrite - also has a scalar 0.0 that it returns...
-
-                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-                //Work out the varid (frame/iteration) of the tensor array:
-                VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
-                if(tArr == null && allIterInputs != null){
-                    tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
-                }
-
-                Preconditions.checkState(tArr != null, "Could not find input %s", inTensorArray.getVarName());
-
-                while(sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter){
-                    //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayWrite
-                    //TODO also TensorArrayScatter, etc??
-                    inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
-                    tArr = newVarId(inTensorArray.getVarName(), tArr.getParentFrame());
-                }
-
-                //Input 0 is the TensorArray (or dummy variable that represents it) - but sometimes Enter, in TensorArray -> Enter -> TensorARrayRead
-                //Input 1 is the index
-                //Input 2 is the value to write
-
-                String idxName = op.arg(1).getVarName();
-                SDVariable idxSDV = sameDiff.getVariable(idxName);
-                INDArray idxArr = getArray(idxSDV, opInputs, allIterInputs);
-                Preconditions.checkState(idxArr.isScalar(), "Index variable ID for TensorArrayWrite should be a scalar, got %ndShape", idxArr);
-                int idx = idxArr.getInt(0);
-
-                String inName = op.arg(2).getVarName();
-                SDVariable inSDV = sameDiff.getVariable(inName);
-                INDArray arr = getArray(inSDV, opInputs, allIterInputs);
-                Preconditions.checkState(arr != null, "Could not find array for %s", inName);
-
-                Preconditions.checkState(tensorArrays.containsKey(tArr), "Tensor array does not exist for %s", tArr);
-                //TODO is this always safe to insert by index for all execution orders?
-                List<INDArray> l = tensorArrays.get(tArr); //.set(idx, arr);
-                while (l.size() <= idx) {
-                    //Can't use set(int, E) if index >= size
-                    l.add(null);
-                }
-                l.set(idx, arr);
-
-                //Return dummy array
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    //TODO Proper workspace support will be added to SameDiff later
-                    return new INDArray[]{Nd4j.scalar(0.0f)};
-                }
-            } else if (op instanceof TensorArraySize) {
-                //Index 0 is the TensorArray (or dummy variable that represents it)
-                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-                //Work out the varid (frame/iteration) of the tensor array:
-                VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
-                if(tArr == null && allIterInputs != null){
-                    tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
-                }
-                List<INDArray> l = tensorArrays.get(tArr);
-                Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    //TODO Proper workspace support will be added to SameDiff later
-                    return new INDArray[]{Nd4j.scalar(DataType.INT, l.size())};
-                }
-            } else if (op instanceof TensorArrayConcat) {
-                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-                VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
-                if(tArr == null && allIterInputs != null){
-                    tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
-                }
-                List<INDArray> l = tensorArrays.get(tArr);
-                //TODO - empty checks. But is size 0 OK?
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    //TODO Proper workspace support will be added to SameDiff later
-                    INDArray concat = Nd4j.concat(0, l.toArray(new INDArray[l.size()]));
-                    return new INDArray[]{concat};
-                }
-            } else if (op instanceof TensorArrayGather) {
-                //Input 0: the TensorArray
-                //Input 1: the indices (1d integer vector)
-
-                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-                VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
-                if(tArr == null && allIterInputs != null){
-                    tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
-                }
-                List<INDArray> l = tensorArrays.get(tArr);
-                Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
-
-                String indicesName = op.arg(1).getVarName();
-                SDVariable indicesSDV = sameDiff.getVariable(indicesName);
-                INDArray idxArr = getArray(indicesSDV, opInputs, allIterInputs);
-                Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayGather should be a vector, got %ndShape for %s", idxArr, indicesName);
-                Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayGather should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
-
-                int[] idxArrInt = idxArr.toIntVector();
-
-                //Edge case: -1 means "all"
-                ArrayList<INDArray> newList = new ArrayList<>();
-                if(idxArrInt.length == 1 && idxArrInt[0] == -1){
-                    newList.addAll(l);
-                } else {
-                    for (int id : idxArrInt) {
-                        Preconditions.checkState(id >=0,"Index for TensorArrayGather must be >= 0, got %s", id);
-                        newList.add(l.get(id));
-                    }
-                }
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    //TODO Proper workspace support will be added to SameDiff later
-                    INDArray out = Nd4j.pile(newList);
-                    return new INDArray[]{out};
-                }
-            } else if (op instanceof TensorArrayScatter) {
-                //Scatter values from a rank (N+1)d tensor into specific indices of the TensorArray
-                //Input 0: the TensorArray
-                //Input 1: the indices (1d integer vector)
-                //Input 2: The values to scatter
-
-                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-                TensorArray ta = (TensorArray) sameDiff.getVariableOutputOp(inTensorArray.getVarName());
-                VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
-                if(tArr == null && allIterInputs != null){
-                    tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
-                }
-                List<INDArray> l = tensorArrays.get(tArr);
-                Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
-
-                String indicesName = op.arg(1).getVarName();
-                SDVariable indicesSDV = sameDiff.getVariable(indicesName);
-                INDArray idxArr = getArray(indicesSDV, opInputs, allIterInputs);
-                Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayScatter should be a vector, got %ndShape for %s", idxArr, indicesName);
-                Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayScatter should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
-                int[] idxs = idxArr.toIntVector();
-
-                String valuesName = op.arg(2).getVarName();
-                SDVariable valuesSDV = sameDiff.getVariable(valuesName);
-                INDArray valuesArr = getArray(valuesSDV, opInputs, allIterInputs);
-
-                while (l.size() <= idxs.length) { //Can't use set(int, E) if index >= size
-                    l.add(null);
-                }
-
-                //Edge case: idxs being [-1] means "all sub arrays" (i.e., "unstack" case)
-                if(idxs.length == 1 && idxs[0] == -1){
-                    idxs = ArrayUtil.range(0, (int)valuesArr.size(0));
-                }
-
-                INDArrayIndex[] idx = ArrayUtil.nTimes(valuesArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
-                for (int i = 0; i < idxs.length; i++) {
-                    idx[0] = NDArrayIndex.point(i);
-                    INDArray get = valuesArr.get(idx).dup();
-                    int outIdx = idxs[i];
-                    if(valuesArr.rank() == 2 && get.rank() == 2){
-                        //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7092
-                        get = get.reshape(get.length());
-                    }
-                    if(valuesArr.rank() == 1 && get.rank() > 0){
-                        get = get.reshape(new long[0]);
-                    }
-                    l.set(outIdx, get);
-                }
-
-                //Return dummy array
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    //TODO Proper workspace support will be added to SameDiff later
-                    return new INDArray[]{Nd4j.scalar(0.0f)};
-                }
-            } else if (op instanceof TensorArraySplit) {
-                //Split values from a rank (N+1)d tensor into sequential indices of the TensorArray
-                //For example, orig=[8,2] sizearray with split (4,4) means TensorArray[0] = orig[0:4,:] and TensorArray[1] = orig[4:8,:]
-                //Input 0: the TensorArray
-                //Input 1: The values to split
-                //Input 2: the size of each split (1d integer vector)
-
-                SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-                VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
-                if(tArr == null && allIterInputs != null){
-                    tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
-                }
-                List<INDArray> l = tensorArrays.get(tArr);
-                Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
-
-                String splitName = op.arg(1).getVarName();
-                INDArray splitArr = getArray(sameDiff.getVariable(splitName), opInputs, allIterInputs);
-
-
-                String sizeName = op.arg(2).getVarName();
-                SDVariable sizeSDV = sameDiff.getVariable(sizeName);
-                INDArray sizeArr = getArray(sizeSDV, opInputs, allIterInputs);
-                Preconditions.checkState(sizeArr.isVector(), "Indices variable for TensorArraySplit should be a vector, got %ndShape for %s", sizeArr, sizeName);
-                Preconditions.checkState(sizeArr.dataType().isIntType(), "Indices variable for TensorArraySplit should be an integer type, got %s for array %s", sizeArr.dataType(), sizeName);
-                int[] sizes = sizeArr.toIntVector();
-
-                while (l.size() <= sizes.length) { //Can't use set(int, E) if index >= size
-                    l.add(null);
-                }
-
-                INDArrayIndex[] idx = ArrayUtil.nTimes(splitArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
-                int soFar = 0;
-                for (int i = 0; i < sizes.length; i++) {
-                    idx[0] = NDArrayIndex.interval(soFar, soFar + sizes[i]);
-                    INDArray sub = splitArr.get(idx).dup();
-                    l.set(i, sub);
-                    soFar += sizes[i];
-                }
-                //Return dummy array
-                try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                    //TODO Proper workspace support will be added to SameDiff later
-                    return new INDArray[]{Nd4j.scalar(0.0f)};
-                }
-            } else {
-                throw new IllegalStateException("Execution support not yet implemented for: " + op.getClass().getName());
-            }
+            return getOutputsHelperTensorArrayOps(op, outputFrameIter, opInputs, allIterInputs);
         } else if(op instanceof GradientBackwardsMarker){
             return new INDArray[]{Nd4j.scalar(1.0f)};
         } else if(op instanceof CustomOp){
@@ -707,6 +351,264 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
             throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
         }
     }
+
+    public INDArray[] getOutputsHelperTensorArrayOps(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs){
+        if (op instanceof TensorArray) {
+            //Create a TensorArray
+            VarId vid = newVarId(op.outputVariable().getVarName(), outputFrameIter);
+            Preconditions.checkState(!tensorArrays.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
+            tensorArrays.put(vid, new ArrayList<INDArray>());
+
+            // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                //TODO Proper workspace support will be added to SameDiff later
+                return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
+            }
+        } else if (op instanceof TensorArrayRead) {
+            //Do lookup and return
+            //Input 0 is the TensorArray (or dummy variable that represents it). Sometimes (for import) this can be like (TensorArray -> Enter -> TensorArrayRead)
+            //Input 1 is the index
+            SDVariable idxSDV = op.arg(1);
+            INDArray idxArr = getArray(idxSDV, opInputs, allIterInputs);
+            Preconditions.checkState(idxArr.isScalar(), "TensorArrayRead input argument 1 should be scalar - has shape %ndShape", idxArr);
+            int i = idxArr.getInt(0);
+
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+
+            //Work out the frame/iteration:
+            VarId v = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            if(v == null && allIterInputs != null){
+                v = lookup(inTensorArray.getVarName(), allIterInputs, false);
+            }
+
+            Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.getVarName());
+
+            while(sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter){
+                //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayRead
+                //TODO also TensorArrayWrite, scatter, etc??
+                inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
+                v = newVarId(inTensorArray.getVarName(), v.getParentFrame());
+            }
+
+            List<INDArray> list = getTensorArrays().get(v);
+            Preconditions.checkState(list != null, "Could not find TensorList for %s", v);
+            Preconditions.checkState(list.size() > i, "Cannot get index %s from TensorList of size %s (array not present?) - VarId=%s", i, list.size(), v);
+
+            INDArray out = list.get(i);
+            return new INDArray[]{out};
+        } else if (op instanceof TensorArrayWrite) {
+            //TensorArrayWrite - also has a scalar 0.0 that it returns...
+
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+            //Work out the varid (frame/iteration) of the tensor array:
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            if(tArr == null && allIterInputs != null){
+                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+            }
+
+            Preconditions.checkState(tArr != null, "Could not find input %s", inTensorArray.getVarName());
+
+            while(sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter){
+                //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayWrite
+                //TODO also TensorArrayScatter, etc??
+                inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
+                tArr = newVarId(inTensorArray.getVarName(), tArr.getParentFrame());
+            }
+
+            //Input 0 is the TensorArray (or dummy variable that represents it) - but sometimes Enter, in TensorArray -> Enter -> TensorARrayRead
+            //Input 1 is the index
+            //Input 2 is the value to write
+
+            String idxName = op.arg(1).getVarName();
+            SDVariable idxSDV = sameDiff.getVariable(idxName);
+            INDArray idxArr = getArray(idxSDV, opInputs, allIterInputs);
+            Preconditions.checkState(idxArr.isScalar(), "Index variable ID for TensorArrayWrite should be a scalar, got %ndShape", idxArr);
+            int idx = idxArr.getInt(0);
+
+            String inName = op.arg(2).getVarName();
+            SDVariable inSDV = sameDiff.getVariable(inName);
+            INDArray arr = getArray(inSDV, opInputs, allIterInputs);
+            Preconditions.checkState(arr != null, "Could not find array for %s", inName);
+
+            Preconditions.checkState(tensorArrays.containsKey(tArr), "Tensor array does not exist for %s", tArr);
+            //TODO is this always safe to insert by index for all execution orders?
+            List<INDArray> l = tensorArrays.get(tArr); //.set(idx, arr);
+            while (l.size() <= idx) {
+                //Can't use set(int, E) if index >= size
+                l.add(null);
+            }
+            l.set(idx, arr);
+
+            //Return dummy array
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                //TODO Proper workspace support will be added to SameDiff later
+                return new INDArray[]{Nd4j.scalar(0.0f)};
+            }
+        } else if (op instanceof TensorArraySize) {
+            //Index 0 is the TensorArray (or dummy variable that represents it)
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+            //Work out the varid (frame/iteration) of the tensor array:
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            if(tArr == null && allIterInputs != null){
+                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+            }
+            List<INDArray> l = tensorArrays.get(tArr);
+            Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                //TODO Proper workspace support will be added to SameDiff later
+                return new INDArray[]{Nd4j.scalar(DataType.INT, l.size())};
+            }
+        } else if (op instanceof TensorArrayConcat) {
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            if(tArr == null && allIterInputs != null){
+                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+            }
+            List<INDArray> l = tensorArrays.get(tArr);
+            //TODO - empty checks. But is size 0 OK?
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                //TODO Proper workspace support will be added to SameDiff later
+                INDArray concat = Nd4j.concat(0, l.toArray(new INDArray[l.size()]));
+                return new INDArray[]{concat};
+            }
+        } else if (op instanceof TensorArrayGather) {
+            //Input 0: the TensorArray
+            //Input 1: the indices (1d integer vector)
+
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            if(tArr == null && allIterInputs != null){
+                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+            }
+            List<INDArray> l = tensorArrays.get(tArr);
+            Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
+
+            String indicesName = op.arg(1).getVarName();
+            SDVariable indicesSDV = sameDiff.getVariable(indicesName);
+            INDArray idxArr = getArray(indicesSDV, opInputs, allIterInputs);
+            Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayGather should be a vector, got %ndShape for %s", idxArr, indicesName);
+            Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayGather should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
+
+            int[] idxArrInt = idxArr.toIntVector();
+
+            //Edge case: -1 means "all"
+            ArrayList<INDArray> newList = new ArrayList<>();
+            if(idxArrInt.length == 1 && idxArrInt[0] == -1){
+                newList.addAll(l);
+            } else {
+                for (int id : idxArrInt) {
+                    Preconditions.checkState(id >=0,"Index for TensorArrayGather must be >= 0, got %s", id);
+                    newList.add(l.get(id));
+                }
+            }
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                //TODO Proper workspace support will be added to SameDiff later
+                INDArray out = Nd4j.pile(newList);
+                return new INDArray[]{out};
+            }
+        } else if (op instanceof TensorArrayScatter) {
+            //Scatter values from a rank (N+1)d tensor into specific indices of the TensorArray
+            //Input 0: the TensorArray
+            //Input 1: the indices (1d integer vector)
+            //Input 2: The values to scatter
+
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+            TensorArray ta = (TensorArray) sameDiff.getVariableOutputOp(inTensorArray.getVarName());
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            if(tArr == null && allIterInputs != null){
+                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+            }
+            List<INDArray> l = tensorArrays.get(tArr);
+            Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
+
+            String indicesName = op.arg(1).getVarName();
+            SDVariable indicesSDV = sameDiff.getVariable(indicesName);
+            INDArray idxArr = getArray(indicesSDV, opInputs, allIterInputs);
+            Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayScatter should be a vector, got %ndShape for %s", idxArr, indicesName);
+            Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayScatter should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
+            int[] idxs = idxArr.toIntVector();
+
+            String valuesName = op.arg(2).getVarName();
+            SDVariable valuesSDV = sameDiff.getVariable(valuesName);
+            INDArray valuesArr = getArray(valuesSDV, opInputs, allIterInputs);
+
+            while (l.size() <= idxs.length) { //Can't use set(int, E) if index >= size
+                l.add(null);
+            }
+
+            //Edge case: idxs being [-1] means "all sub arrays" (i.e., "unstack" case)
+            if(idxs.length == 1 && idxs[0] == -1){
+                idxs = ArrayUtil.range(0, (int)valuesArr.size(0));
+            }
+
+            INDArrayIndex[] idx = ArrayUtil.nTimes(valuesArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
+            for (int i = 0; i < idxs.length; i++) {
+                idx[0] = NDArrayIndex.point(i);
+                INDArray get = valuesArr.get(idx).dup();
+                int outIdx = idxs[i];
+                if(valuesArr.rank() == 2 && get.rank() == 2){
+                    //Workaround for: https://github.com/deeplearning4j/deeplearning4j/issues/7092
+                    get = get.reshape(get.length());
+                }
+                if(valuesArr.rank() == 1 && get.rank() > 0){
+                    get = get.reshape(new long[0]);
+                }
+                l.set(outIdx, get);
+            }
+
+            //Return dummy array
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                //TODO Proper workspace support will be added to SameDiff later
+                return new INDArray[]{Nd4j.scalar(0.0f)};
+            }
+        } else if (op instanceof TensorArraySplit) {
+            //Split values from a rank (N+1)d tensor into sequential indices of the TensorArray
+            //For example, orig=[8,2] sizearray with split (4,4) means TensorArray[0] = orig[0:4,:] and TensorArray[1] = orig[4:8,:]
+            //Input 0: the TensorArray
+            //Input 1: The values to split
+            //Input 2: the size of each split (1d integer vector)
+
+            SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            if(tArr == null && allIterInputs != null){
+                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+            }
+            List<INDArray> l = tensorArrays.get(tArr);
+            Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
+
+            String splitName = op.arg(1).getVarName();
+            INDArray splitArr = getArray(sameDiff.getVariable(splitName), opInputs, allIterInputs);
+
+
+            String sizeName = op.arg(2).getVarName();
+            SDVariable sizeSDV = sameDiff.getVariable(sizeName);
+            INDArray sizeArr = getArray(sizeSDV, opInputs, allIterInputs);
+            Preconditions.checkState(sizeArr.isVector(), "Indices variable for TensorArraySplit should be a vector, got %ndShape for %s", sizeArr, sizeName);
+            Preconditions.checkState(sizeArr.dataType().isIntType(), "Indices variable for TensorArraySplit should be an integer type, got %s for array %s", sizeArr.dataType(), sizeName);
+            int[] sizes = sizeArr.toIntVector();
+
+            while (l.size() <= sizes.length) { //Can't use set(int, E) if index >= size
+                l.add(null);
+            }
+
+            INDArrayIndex[] idx = ArrayUtil.nTimes(splitArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
+            int soFar = 0;
+            for (int i = 0; i < sizes.length; i++) {
+                idx[0] = NDArrayIndex.interval(soFar, soFar + sizes[i]);
+                INDArray sub = splitArr.get(idx).dup();
+                l.set(i, sub);
+                soFar += sizes[i];
+            }
+            //Return dummy array
+            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
+                //TODO Proper workspace support will be added to SameDiff later
+                return new INDArray[]{Nd4j.scalar(0.0f)};
+            }
+        } else {
+            throw new IllegalStateException("Execution support not yet implemented for: " + op.getClass().getName());
+        }
+    }
+
 
     @Override
     public INDArray getConstantOrVariable(String variableName) {
@@ -730,7 +632,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
         Preconditions.checkNotNull(df, "No differential function fond with name %s", opName);
 
         if(df instanceof LoopCond || df instanceof Enter || df instanceof Exit || df instanceof NextIteration ||
-                df instanceof Merge || df instanceof Switch || df instanceof If || df instanceof While ||
+                df instanceof Merge || df instanceof Switch || df instanceof While ||
                 df instanceof BaseTensorOp){
             //Control dependencies and tensor ops (like TensorArray, TensorArrayRead etc) don't need inputs set, execution is a special case
             return sdo;
@@ -989,4 +891,42 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
             return nodeOutputs.get(inVarId);
         }
     }
+
+    protected void clearOpReferencesFor(String varName){
+        Variable v = sameDiff.getVariables().get(varName);
+
+        //Clear op outputs
+        String outOfOp = v.getOutputOfOp();
+        SameDiffOp op = sameDiff.getOps().get(outOfOp);
+        int idx = op.getOutputsOfOp().indexOf(varName);
+        if(op.getOp() instanceof DynamicCustomOp){
+            DynamicCustomOp dco = (DynamicCustomOp)op.getOp();
+            dco.setOutputArgument(idx, null);
+        } else {
+            Op o = (Op)op.getOp();
+            o.setZ(null);
+        }
+
+        //Clear op inputs
+        List<String> inTo = v.getInputsForOp();
+        if(inTo != null && !inTo.isEmpty()){
+            for(String opName : inTo){
+                SameDiffOp o = sameDiff.getOps().get(opName);
+                int inIdx = o.getInputsToOp().indexOf(varName);
+                if(o.getOp() instanceof DynamicCustomOp){
+                    DynamicCustomOp dco = (DynamicCustomOp)o.getOp();
+                    dco.setInputArgument(inIdx, null);
+                } else {
+                    Op op2 = (Op)o.getOp();
+                    if(inIdx == 0){
+                        op2.setX(null);
+                    } else {
+                        op2.setY(null);
+                    }
+                }
+            }
+        }
+    }
+
+
 }

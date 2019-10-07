@@ -696,29 +696,9 @@ public abstract class DifferentialFunction {
     }
 
     @JsonIgnore
-    private INDArray getX() {
-        INDArray ret =  sameDiff.getArrForVarName(args()[0].getVarName());
-        return ret;
+    public INDArray getInputArgument(int index){
+        throw new UnsupportedOperationException("Not implemented");
     }
-
-    @JsonIgnore
-    private INDArray getY() {
-        if(args().length > 1) {
-            INDArray ret =  sameDiff.getArrForVarName(args()[1].getVarName());
-            return ret;
-        }
-        return null;
-    }
-
-    @JsonIgnore
-    private INDArray getZ() {
-        if(isInPlace())
-            return getX();
-        SDVariable opId = outputVariables()[0];
-        INDArray ret = opId.getArr();
-        return ret;
-    }
-
 
 
 

@@ -30,7 +30,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.impl.controlflow.If;
 import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
@@ -212,12 +211,6 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
 
             INDArray inArr = this.nodeOutputs.get(in);
             return new INDArray[]{inArr};
-        } else if(op instanceof If) {
-            If i = (If) op;
-            String[] argNames = i.argNames();       //Order should be: [boolean], true, false
-
-
-            throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
         } else if(op instanceof Merge) {
             //Merge avairable for forward pass when any of its inputs are available. When multiple are available, behaviour
             // is undefined
@@ -533,8 +526,7 @@ public class InferenceSession extends AbstractSession<INDArray,DifferentialFunct
         Preconditions.checkNotNull(df, "No differential function fond with name %s", opName);
 
         if(df instanceof LoopCond || df instanceof Enter || df instanceof Exit || df instanceof NextIteration ||
-                df instanceof Merge || df instanceof Switch || df instanceof If || df instanceof While ||
-                df instanceof BaseTensorOp){
+                df instanceof Merge || df instanceof Switch || df instanceof While || df instanceof BaseTensorOp){
             //Control dependencies and tensor ops (like TensorArray, TensorArrayRead etc) don't need inputs set, execution is a special case
             return df;
         }
