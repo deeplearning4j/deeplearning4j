@@ -2728,7 +2728,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         INDArray out2 = tanh.eval();
 
-        assertEquals(out, out2);
+        assertNotEquals(out, out2);
         assertEquals(VariableType.VARIABLE, w.getVariableType());
         assertEquals(VariableType.VARIABLE, b.getVariableType());
         assertEquals(VariableType.ARRAY, add.getVariableType());
