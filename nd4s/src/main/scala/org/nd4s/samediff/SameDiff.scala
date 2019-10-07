@@ -44,6 +44,9 @@ class SameDiffWrapper {
   def bind(name: String, dataType: DataType, shape: Array[Long]): SDVariable =
     sd.`var`(name, dataType, shape: _*)
 
+  def bind(data: INDArray): SDVariable =
+    sd.`var`("", data)
+
   def bind(name: String, dataType: DataType, shape: Array[Int]): SDVariable =
     sd.`var`(name, dataType, shape: _*)
 
@@ -62,6 +65,16 @@ class SDVariableWrapper {
   }
 
   def apply(index: Long): SDVariable = thisVariable.get(SDIndex.point(index))
+
+  def apply(index: SDIndex*): SDVariable = thisVariable.get(index: _*)
+
+  def apply(x: SDIndex)(y: SDIndex): SDVariable =
+    (x, y) match {
+      case (_, y) => thisVariable.get(SDIndex.all(), y)
+      case (x, _) => thisVariable.get(x, SDIndex.all())
+      case (_, _) => thisVariable.get(SDIndex.all(), SDIndex.all())
+      case (x, y) => thisVariable.get(x, y)
+    }
 
   def add(other: Double): Unit = thisVariable.add(other)
 

@@ -205,9 +205,18 @@ class MathTest extends FlatSpec with Matchers {
     implicit val sd = SameDiff.create
 
     val arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L)
-    val x = sd.`var`(arr)
+    val x = sd.bind(arr)
     val y = new SDVariableWrapper(x)
 
     x.get(SDIndex.point(0)).getArr shouldBe y(0).getArr
+  }
+
+  "SDVariable " should "be indexable in 2d" in {
+    implicit val sd = SameDiff.create
+
+    val arr = Nd4j.rand(2, 5)
+    val x = sd.bind(arr)
+
+    println(x(SDIndex.point(0), _: SDIndex).getArr)
   }
 }
