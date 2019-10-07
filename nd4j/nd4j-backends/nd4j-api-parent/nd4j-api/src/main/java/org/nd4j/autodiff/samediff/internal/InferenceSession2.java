@@ -111,6 +111,56 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
     }
 
     @Override
+    protected Map<String,INDArray> postProcessOutput(Map<String,INDArray> output){
+        /*
+        Clear op array references. Why? Consider the following graph:
+        X -> Y -> Z, where X is a placeholder, variable or constant
+        On first call, user requests output Y, and stores it in a reference in user code.
+        On second call, user requests Z. Y is deallocated internally (memory reuse), but the user still has a reference to it
+        Then then tries to use Y and can't (exception - closed/released etc)
+         */
+        for(String s : output.keySet()){
+            if(sameDiff.getVariable(s).getVariableType() == VariableType.ARRAY){
+                Variable v = sameDiff.getVariables().get(s);
+
+                //Clear op outputs
+                String outOfOp = v.getOutputOfOp();
+                SameDiffOp op = sameDiff.getOps().get(outOfOp);
+                int idx = op.getOutputsOfOp().indexOf(s);
+                if(op.getOp() instanceof DynamicCustomOp){
+                    DynamicCustomOp dco = (DynamicCustomOp)op.getOp();
+                    dco.setOutputArgument(idx, null);
+                } else {
+                    Op o = (Op)op.getOp();
+                    o.setZ(null);
+                }
+
+                //Clear op inputs
+                List<String> inTo = v.getInputsForOp();
+                if(inTo != null && !inTo.isEmpty()){
+                    for(String opName : inTo){
+                        SameDiffOp o = sameDiff.getOps().get(opName);
+                        int inIdx = o.getInputsToOp().indexOf(s);
+                        if(o.getOp() instanceof DynamicCustomOp){
+                            DynamicCustomOp dco = (DynamicCustomOp)o.getOp();
+                            dco.setInputArgument(inIdx, null);
+                        } else {
+                            Op op2 = (Op)o.getOp();
+                            if(inIdx == 0){
+                                op2.setX(null);
+                            } else {
+                                op2.setY(null);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        return output;
+    }
+
+    @Override
     public INDArray[] getOutputs(SameDiffOp op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                  Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables) {
         if(listeners != null && listeners.size() > 0){
@@ -125,7 +175,6 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
 
         //Call listeners
         if(listeners != null && listeners.size() > 0){
-//            SameDiffOp sdOp = sameDiff.getOps().get(op.getOp().getOwnName());
 
             Map<String, INDArray> namedOutsBuilder = new HashMap<>();
 
@@ -176,12 +225,23 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                             // in the set of outputs...
 
                             VarId vidOfInput = null;
-                            for(VarId vid : opInputs){
-                                if(vid.getVariable().equals(inName)){
-                                    vidOfInput = vid;
-                                    break;
+                            if(opInputs != null && !opInputs.isEmpty()) {
+                                for (VarId vid : opInputs) {
+                                    if (vid.getVariable().equals(inName)) {
+                                        vidOfInput = vid;
+                                        break;
+                                    }
+                                }
+                            } else if(allIterInputs != null && !allIterInputs.isEmpty()){
+                                for(VarId vid : allIterInputs){
+                                    if(vid.getVariable().equals(inName)){
+                                        vidOfInput = vid;
+                                        break;
+                                    }
                                 }
                             }
+
+                            Preconditions.checkState(vidOfInput != null, "Could not find vid of input array - %s", inName);
 
 
                             String firstOutput = sameDiff.getOps().get(opName).getOutputsOfOp().get(0);
@@ -214,6 +274,9 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                             o.setY(null);
                         }
                     }
+
+                    if(arr == null)     //TODO Should this be an error?
+                        continue;
 
                     log.info("Determined safe to deallocate array for: {}", inName);      //TODO FrameIter
                     mmgr.release(arr);
@@ -253,8 +316,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                         }
                     }
 
-                    //Finally, clear the input array from nodeOutputs map (so we don't leak deallocated array reference)
-
+                    //Finally, clear the input array from nodeOutputs map (so we don't leak deallocated array reference via getArray etc)
                     VarId vidOfInput = null;
                     for(VarId vid : opInputs){
                         if(vid.getVariable().equals(inName)){
@@ -831,12 +893,6 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                 }
 
                 if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || currOutput.isEmpty() != reqShape.isEmpty() || isLoop){
-//                    INDArray out;
-//                    try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-//                        //TODO Proper workspace support will be added to SameDiff later
-//                        out = Nd4j.create(reqShape, false);
-//                    }
-
                     boolean isOutput = allReqVariables.contains(outNames[i]);
                     INDArray out = mmgr.allocate(isOutput, reqShape);
                     customOp.setOutputArgument(i, out);
@@ -904,10 +960,6 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                     }
 
                     LongShapeDescriptor lsd = outputShape.get(0);
-//                    try (MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-//                        //TODO Proper workspace support will be added to SameDiff later
-//                        z = Nd4j.create(lsd, false);
-//                    }
 
                     boolean isOutput = allReqVariables.contains(((BaseOp) op).outputVariablesNames()[0]);
                     z = mmgr.allocate(isOutput, lsd);

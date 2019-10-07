@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.samediff.internal.memory;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.internal.SessionMemMrg;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -22,7 +23,7 @@ public class SimpleSessionMemoryMgr implements SessionMemMrg {
     }
 
     @Override
-    public void release(INDArray array) {
+    public void release(@NonNull INDArray array) {
         if(!array.wasClosed() && array.closeable()){
             array.close();
             log.info("Closed array (deallocated)");

@@ -419,6 +419,7 @@ public abstract class AbstractSession<T, O> {
         //TODO under what circumstances should we clear the nodeOutputs map?
         //TODO when should we close the workspace? (Might want to leave it open if we expect to re-use)
 
+        out = postProcessOutput(out);
         return out;
     }
 
@@ -838,6 +839,10 @@ public abstract class AbstractSession<T, O> {
      */
     protected Map<String,T> preprocessPlaceholders(Map<String,T> placeholders){
         return placeholders;
+    }
+
+    protected Map<String,T> postProcessOutput(Map<String,T> output){
+        return output;
     }
 
     /**

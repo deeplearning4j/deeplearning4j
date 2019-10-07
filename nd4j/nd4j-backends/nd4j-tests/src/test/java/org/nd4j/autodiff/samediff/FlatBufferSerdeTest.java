@@ -317,7 +317,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
             }
 
             for(SDVariable v : sd.variables()){
-                if(v.isPlaceHolder())
+                if(v.isPlaceHolder() || v.getVariableType() == VariableType.ARRAY)
                     continue;
 
                 SDVariable v2 = sd2.getVariable(v.getVarName());

@@ -167,6 +167,10 @@ public class SDVariable implements Serializable {
         if(sameDiff.arrayAlreadyExistsForVarName(getVarName()))
             return sameDiff.getArrForVarName(getVarName());
 
+        if(variableType == VariableType.ARRAY){
+            throw new UnsupportedOperationException("Cannot get array for ARRAY type SDVariable - use SDVariable.exec or SameDiff.output instead");
+        }
+
         //initialize value if it's actually a scalar constant (zero or 1 typically...)
         if(variableType == VariableType.VARIABLE && weightInitScheme != null && shape != null){
             INDArray arr = weightInitScheme.create(dataType, shape);
@@ -230,7 +234,7 @@ public class SDVariable implements Serializable {
         }
 
         long[] initialShape =  sameDiff.getShapeForVarName(getVarName());
-        if(initialShape == null) {
+        if(initialShape == null && variableType != VariableType.ARRAY) {
             val arr = getArr();
             if(arr != null)
                 return arr.shape();

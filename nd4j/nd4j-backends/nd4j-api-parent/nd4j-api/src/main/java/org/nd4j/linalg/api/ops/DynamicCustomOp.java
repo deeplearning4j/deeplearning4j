@@ -389,6 +389,13 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     public void setInputArgument(int index, INDArray input) {
+        if(index >= inputArguments.size() ){
+            List<INDArray> oldArgs = inputArguments;
+            inputArguments = new ArrayList<>(index+1);
+            inputArguments.addAll(oldArgs);
+            while(inputArguments.size() <= index)
+                inputArguments.add(null);
+        }
         inputArguments.set(index, input);
     }
 

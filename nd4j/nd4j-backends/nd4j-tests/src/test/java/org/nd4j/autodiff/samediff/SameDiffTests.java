@@ -295,8 +295,8 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable y = sameDiff.var("y", arr);
         SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
-        sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
-        assertArrayEquals(new long[]{2, 2}, result.getShape());
+        Map<String,INDArray> m = sameDiff.outputAll(null);
+        assertArrayEquals(new long[]{2, 2}, m.get(result.getVarName()).shape());
     }
 
 
@@ -813,10 +813,10 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable in = sd.var("in", new long[]{10, 9, 8});
         SDVariable mean1 = sd.mean(in, 2);      //[10,9] out
         SDVariable mean2 = sd.mean(mean1, 1);   //[10] out
-        sd.execAndEndResult();
+        Map<String,INDArray> m = sd.output((Map<String,INDArray>)null, mean1.getVarName(), mean2.getVarName());
 
-        INDArray m1 = mean1.getArr();
-        INDArray m2 = mean2.getArr();
+        INDArray m1 = m.get(mean1.getVarName());
+        INDArray m2 = m.get(mean2.getVarName());
 
         assertArrayEquals(new long[]{10, 9}, m1.shape());
         assertArrayEquals(new long[]{10}, m2.shape());
@@ -833,16 +833,16 @@ public class SameDiffTests extends BaseNd4jTest {
         assertArrayEquals(new long[]{9, 8}, meanA.getShape());
 
         SDVariable meanB = sd2.mean(meanA, 0);   //[8] out
-        sd2.exec(null, sd2.outputs());
-        assertArrayEquals(new long[]{8}, meanB.getShape());
+        Map<String,INDArray> m = sd2.outputAll(null);
+        assertArrayEquals(new long[]{8}, m.get(meanB.getVarName()).shape());
 
-        assertArrayEquals(meanA.getShape(), meanA.getArr().shape());
-        assertArrayEquals(meanB.getShape(), meanB.getArr().shape());
+        assertArrayEquals(meanA.getShape(), m.get(meanA.getVarName()).shape());
+        assertArrayEquals(meanB.getShape(), m.get(meanB.getVarName()).shape());
 
-        sd2.exec(Collections.emptyMap(), sd2.outputs());
+        m = sd2.outputAll(null);
 
-        INDArray mA = meanA.getArr();
-        INDArray mB = meanB.getArr();
+        INDArray mA = m.get(meanA.getVarName());
+        INDArray mB = m.get(meanB.getVarName());
 
         assertArrayEquals(new long[]{9, 8}, mA.shape());
         assertArrayEquals(new long[]{8}, mB.shape());
@@ -858,10 +858,10 @@ public class SameDiffTests extends BaseNd4jTest {
         val f = m.add(2.0);
         val s = in2.add(5.0);
 
-        val arr = sd.execSingle(null, s.getVarName());
-        log.info("Result M: {}", m.getArr());
-        log.info("Result F: {}", f.getArr());
-        log.info("Result S: {}", s.getArr());
+        Map<String,INDArray> map = sd.outputAll(null);
+        log.info("Result M: {}", map.get(m.getVarName()));
+        log.info("Result F: {}", map.get(f.getVarName()));
+        log.info("Result S: {}", map.get(s.getVarName()));
     }
 
     @Test
@@ -1097,11 +1097,11 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray expZ = expMmul.addRowVector(iBias);
         INDArray expOut = Transforms.sigmoid(expZ, true);
 
-        sd.exec(Collections.emptyMap(), sd.outputs());
+        Map<String,INDArray> m = sd.outputAll(Collections.emptyMap());
 
-        assertEquals(expMmul, mmul.getArr());
-        assertEquals(expZ, z.getArr());
-        assertEquals(expOut, out.getArr());
+        assertEquals(expMmul, m.get(mmul.getVarName()));
+        assertEquals(expZ, m.get(z.getVarName()));
+        assertEquals(expOut, m.get(out.getVarName()));
     }
 
     @Test
@@ -1178,8 +1178,8 @@ public class SameDiffTests extends BaseNd4jTest {
             SDVariable sqDiff = diff.mul("sqDiff", diff);
             SDVariable totSum = sd.sum("totSum", sqDiff, Integer.MAX_VALUE);    //Loss function...
 
-            sd.exec(Collections.emptyMap(), sd.outputs());
-            INDArray outAct = sd.getVariable("out").getArr();
+            Map<String,INDArray> m = sd.output(Collections.emptyMap(), "out");
+            INDArray outAct = m.get("out");
             assertEquals(a.toString(), outExp, outAct);
 
             // L = sum_i (label - out)^2
@@ -1187,10 +1187,11 @@ public class SameDiffTests extends BaseNd4jTest {
             INDArray dLdOutExp = outExp.sub(labelArr).mul(2);
             INDArray dLdInExp = a.getActivationFunction().backprop(inArr.dup(), dLdOutExp.dup()).getFirst();
 
-            sd.execBackwards(Collections.emptyMap());
-            SameDiff gradFn = sd.getFunction("grad");
-            INDArray dLdOutAct = gradFn.getVariable("out-grad").getArr();
-            INDArray dLdInAct = gradFn.getVariable("in-grad").getArr();
+            Map<String,INDArray> grads = sd.calculateGradients(null, "out", "in");
+//            sd.execBackwards(Collections.emptyMap());
+//            SameDiff gradFn = sd.getFunction("grad");
+            INDArray dLdOutAct = grads.get("out");
+            INDArray dLdInAct = grads.get("in");
 
             assertEquals(a.toString(), dLdOutExp, dLdOutAct);
             assertEquals(a.toString(), dLdInExp, dLdInAct);
@@ -1256,10 +1257,10 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable out = sd.cnn().localResponseNormalization(sdInput, lrn);
         SDVariable sdOut = sd.math().tanh("out", out);
 
-        sd.exec(Collections.emptyMap(), sd.outputs());
+        Map<String,INDArray> map = sd.output(Collections.emptyMap(), "out", out.getVarName());
 
         for (int i = 0; i < 4; i++) {
-            assertEquals(1, out.getArr().get(all(), NDArrayIndex.point(i), all(), all()).getInt(0));
+            assertEquals(1, map.get(out.getVarName()).get(all(), NDArrayIndex.point(i), all(), all()).getInt(0));
         }
 
     }
@@ -1280,10 +1281,10 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable sum = mean.add(variance);
         SDVariable out = sd.math().tanh("out", sum);
 
-        INDArray outArr = sd.execAndEndResult();
+        Map<String,INDArray> m = sd.outputAll(null);
 
-        INDArray meanArray = mean.getArr();
-        INDArray varArray = variance.getArr();
+        INDArray meanArray = m.get(mean.getVarName());
+        INDArray varArray = m.get(variance.getVarName());
 
         assertEquals(meanArray.getDouble(0), 2.5, 1e-5);
         assertEquals(varArray.getDouble(0), 1.25, 1e-5);
@@ -1309,15 +1310,14 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable sum = normMean.add(normVariance);
         SDVariable out = sd.math().tanh("out", sum);
 
-        INDArray outArr = sd.execAndEndResult();
+        Map<String,INDArray> m = sd.outputAll(null);
 
-        INDArray meanArray = normMean.getArr();
-        INDArray varArray = normVariance.getArr();
+        INDArray meanArray = m.get(normMean.getVarName());
+        INDArray varArray = m.get(normVariance.getVarName());
 
         assertEquals(meanArray.getDouble(0, 0), 1, 1e-5);
         assertEquals(meanArray.getDouble(0, 1), 2, 1e-5);
         assertArrayEquals(meanArray.shape(), varArray.shape());
-
     }
 
 
@@ -2469,72 +2469,25 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable loss = out.std("out", true);
 
         INDArray outArr = sd.execAndEndResult().dup();
-        sd.execBackwards(Collections.emptyMap());
+//        sd.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> grads = sd.calculateGradients(null, in.getVarName(), w.getVarName(), out.getVarName());
 
         Map<String, INDArray> origGrad = new HashMap<>();
-        origGrad.put("in", in.gradient().getArr().dup());
-        origGrad.put("w", w.gradient().getArr().dup());
-        origGrad.put("out", out.gradient().getArr().dup());
+        origGrad.put("in", grads.get(in.getVarName()).dup());
+        origGrad.put("w", grads.get(w.getVarName()).dup());
+        origGrad.put("out", grads.get(out.getVarName()).dup());
 
         in.getArr().assign(Nd4j.rand(in.getArr().shape()));
         INDArray outArr2 = sd.execAndEndResult();
-        sd.execBackwards(Collections.emptyMap());
+//        sd.execBackwards(Collections.emptyMap());
+        grads = sd.calculateGradients(null, in.getVarName(), w.getVarName(), out.getVarName());
 
         assertNotEquals(outArr, outArr2);
 
         //Ensure gradients are also changed:
-        assertNotEquals(origGrad.get("in"), in.gradient().getArr());
-        assertNotEquals(origGrad.get("w"), w.gradient().getArr());
-        assertNotEquals(origGrad.get("out"), out.gradient().getArr());
-    }
-
-    @Test
-    public void testUpdatingInplaceFwd() {
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
-        SDVariable w = sd.var("w", Nd4j.linspace(1, 20, 20).reshape(4, 5));
-        SDVariable out = sd.mmul(in, w);
-        SDVariable loss = out.std("out", true);
-
-        INDArray outArr = sd.execAndEndResult().dup();
-        sd.execBackwards(Collections.emptyMap());
-
-        Map<String, INDArray> origGrad = new HashMap<>();
-        origGrad.put("in", in.gradient().getArr().dup());
-        origGrad.put("w", w.gradient().getArr().dup());
-        origGrad.put("out", out.gradient().getArr().dup());
-
-        in.getArr().muli(5);
-
-        //check gradient function copy of array
-        SameDiff sdGrad = sd.getFunction("grad");
-        INDArray gradArrIn = sdGrad.getVariable("in").getArr();
-        assertEquals(in.getArr(), gradArrIn);
-    }
-
-    @Test
-    public void testUpdatingAssociateFwd() {
-        SameDiff sd = SameDiff.create();
-        SDVariable in = sd.var("in", Nd4j.linspace(1, 12, 12).reshape(3, 4));
-        SDVariable w = sd.var("w", Nd4j.linspace(1, 20, 20).reshape(4, 5));
-        SDVariable out = sd.mmul(in, w);
-        SDVariable loss = out.std("out", true);
-
-        INDArray outArr = sd.execAndEndResult().dup();
-        sd.execBackwards(Collections.emptyMap());
-
-        Map<String, INDArray> origGrad = new HashMap<>();
-        origGrad.put("in", in.gradient().getArr().dup());
-        origGrad.put("w", w.gradient().getArr().dup());
-        origGrad.put("out", out.gradient().getArr().dup());
-
-        INDArray newIn = in.getArr().dup().muli(5);
-        in.setArray(newIn);
-
-        //check gradient function copy of array
-        SameDiff sdGrad = sd.getFunction("grad");
-        INDArray gradArrIn = sdGrad.getVariable("in").getArr();
-        assertEquals(newIn, gradArrIn);
+        assertNotEquals(origGrad.get("in"), grads.get(in.getVarName()));
+        assertNotEquals(origGrad.get("w"), grads.get(w.getVarName()));
+        assertNotEquals(origGrad.get("out"), grads.get(out.getVarName()));
     }
 
     @Test
@@ -2545,26 +2498,24 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable loss = out.std("out", true);
 
         INDArray outArr = sd.execAndEndResult().dup();
-        sd.execBackwards(Collections.emptyMap());
-
-        SameDiff sdGrad = sd.getFunction("grad");
+        Map<String,INDArray> grads = sd.calculateGradients(null, in.getVarName(), out.getVarName());
 
         Map<String, INDArray> origGrad = new HashMap<>();
-        origGrad.put("in", in.gradient().getArr().dup());
-        origGrad.put("out", out.gradient().getArr().dup());
+        origGrad.put("in", grads.get(in.getVarName()).dup());
+        origGrad.put("out", grads.get(out.getVarName()).dup());
 
         double stdBefore = in.getArr().stdNumber().doubleValue();
         in.getArr().assign(Nd4j.rand(in.getArr().shape()));
         double stdAfter = in.getArr().stdNumber().doubleValue();
         System.out.println("Before vs. after: " + stdBefore + ", " + stdAfter);
         INDArray outArr2 = sd.execAndEndResult();
-        sd.execBackwards(Collections.emptyMap());
+        grads = sd.calculateGradients(null, in.getVarName(), out.getVarName());
 
         assertNotEquals(outArr, outArr2);
 
         //Ensure gradients are also changed:
-        assertNotEquals(origGrad.get("in"), in.gradient().getArr());
-        assertNotEquals(origGrad.get("out"), out.gradient().getArr());
+        assertNotEquals(origGrad.get("in"), grads.get(in.getVarName()));
+        assertNotEquals(origGrad.get("out"), grads.get(out.getVarName()));
     }
 
     @Test
@@ -2658,9 +2609,8 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String, INDArray> placeholders = new HashMap<>();
         placeholders.put("x", x);
         placeholders.put("y", y);
-        sd.createGradFunction();    //Otherwise: xSd.gradient() etc won't be defined
-        sd.execBackwards(placeholders, Arrays.asList(xSd.gradient().getVarName(), ySd.gradient().getVarName()));
-        INDArray xGradientEnforced = add.getGradient().getArr(true);
+        Map<String,INDArray> grads = sd.calculateGradients(placeholders, xSd.getVarName(), ySd.getVarName());
+        INDArray xGradientEnforced = grads.get("x");
         assertNotNull(xGradientEnforced);
     }
 

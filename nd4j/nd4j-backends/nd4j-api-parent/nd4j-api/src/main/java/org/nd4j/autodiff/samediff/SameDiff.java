@@ -679,7 +679,7 @@ public class SameDiff extends SDBaseOps {
         for (val var : variables()) {
             SDVariable clone = var.clone(this);
             SDVariable newVar = sameDiff.var(clone);
-            if (var.getArr() != null && var.getVariableType() != VariableType.ARRAY) {      //ARRAY type = "activations" - are overwritten anyway
+            if (var.getVariableType() != VariableType.ARRAY && var.getArr() != null ) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
             }
 
@@ -4473,11 +4473,7 @@ public class SameDiff extends SDBaseOps {
         else if (function instanceof BaseOp) {
             SDVariable[] ret = new SDVariable[1];
             SDVariable checkGet = getVariable(baseName);
-            char ordering = 'c';
             SDVariable[] args = function.args();
-            if (args != null && args.length > 0 && function.args()[0].getArr() != null) { //Args may be null or length 0 for some ops, like eye
-                ordering = function.args()[0].getArr().ordering();
-            }
             if (checkGet == null) {
                 //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
                 org.nd4j.linalg.api.buffer.DataType dataType = outputDataTypes.get(0);
@@ -4645,6 +4641,34 @@ public class SameDiff extends SDBaseOps {
         return execSingle(placeholders, outputs.get(0));
     }
 
+    public Map<String,INDArray> calculateGradients(Map<String,INDArray> placeholderVals, @NonNull String... variables){
+        Preconditions.checkArgument(variables.length > 0, "No variables were specified");
+        return calculateGradients(placeholderVals, Arrays.asList(variables));
+    }
+
+    public Map<String,INDArray> calculateGradients(Map<String,INDArray> placeholderVals, @NonNull Collection<String> variables){
+        Preconditions.checkArgument(!variables.isEmpty(), "No variables were specified");
+        if (getFunction(GRAD_FN_KEY) == null) {
+            createGradFunction();
+        }
+
+        List<String> gradVarNames = new ArrayList<>(variables.size());
+        for(String s : variables){
+            gradVarNames.add(getVariable(s).getGradient().getVarName());
+        }
+
+        //Key is gradient variable name
+        Map<String,INDArray> grads = getFunction(GRAD_FN_KEY).output(placeholderVals, gradVarNames);
+
+        Map<String,INDArray> out = new HashMap<>();
+        for(String s : variables){
+            String gradVar = getVariable(s).getGradient().getVarName();
+            out.put(s, grads.get(gradVar));
+        }
+
+        return out;
+    }
+
     /**
      * Create (if required) and then calculate the variable gradients (backward pass) for this graph.<br>
      * After execution, the gradient arrays can be accessed using {@code myVariable.getGradient().getArr()}<br>
@@ -4666,6 +4690,7 @@ public class SameDiff extends SDBaseOps {
      * <p>
      * Uses {@link Operation#INFERENCE}.
      */
+    @Deprecated
     public void execBackwards(Map<String, INDArray> placeholders) {
         execBackwards(placeholders, Operation.INFERENCE);
     }
@@ -4706,6 +4731,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * See {@link #execBackwards(Map, List, Operation)}
      */
+    @Deprecated
     public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, Operation op, String... variableGradNamesList) {
         return execBackwards(placeholders, Arrays.asList(variableGradNamesList), op, null, Collections.<String>emptyList(), Collections.<Listener>emptyList());
     }
@@ -4715,6 +4741,7 @@ public class SameDiff extends SDBaseOps {
      * <p>
      * Uses {@link Operation#INFERENCE}.
      */
+    @Deprecated
     public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, String... variableGradNamesList) {
         return execBackwards(placeholders, Operation.INFERENCE, variableGradNamesList);
     }
@@ -4727,6 +4754,7 @@ public class SameDiff extends SDBaseOps {
      * @param placeholders          Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      * @param variableGradNamesList Names of the gradient variables to calculate
      */
+    @Deprecated
     public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, List<String> variableGradNamesList, Operation operation) {
         return execBackwards(placeholders, variableGradNamesList, operation, null, Collections.<String>emptyList(), Collections.<Listener>emptyList());
     }
@@ -4736,10 +4764,12 @@ public class SameDiff extends SDBaseOps {
      * <p>
      * Uses {@link Operation#INFERENCE}.
      */
+    @Deprecated
     public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, List<String> variableGradNamesList) {
         return execBackwards(placeholders, variableGradNamesList, Operation.INFERENCE);
     }
 
+    @Deprecated
     protected Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, List<String> variableGradNamesList, Operation operation,
                                                   MultiDataSet batch, Collection<String> requiredActivations, List<Listener> activeListeners) {
         if (getFunction(GRAD_FN_KEY) == null) {
@@ -5535,7 +5565,7 @@ public class SameDiff extends SDBaseOps {
         val idxForOps = new IdentityHashMap<DifferentialFunction, Integer>();
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
-            INDArray arr = variable.getArr();
+            INDArray arr = variable.getVariableType() == VariableType.ARRAY ? null : variable.getArr();
             log.trace("Exporting variable: [{}]", variable.getVarName());
 
             //If variable is the output of some op - let's use the ONE index for exporting, and properly track the output
