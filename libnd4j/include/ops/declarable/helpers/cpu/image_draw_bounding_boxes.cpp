@@ -32,28 +32,25 @@ namespace helpers {
         // height = images->sizeAt(1), width = images->sizeAt(2)
         // colors - colors for each box given
         // set up color for each box as frame
-
+        auto batchSize = images->sizeAt(0);
         auto height = images->sizeAt(1);
         auto width = images->sizeAt(2);
         auto channels = images->sizeAt(3);
-        auto imageList = images->allTensorsAlongDimension({1, 2, 3}); // split images by batch
-        auto boxList = boxes->allTensorsAlongDimension({1, 2}); // split boxes by batch
-        output->assign(images);
-        for (auto b = 0; b < imageList->size(); ++b) { // loop by batch
+        //auto imageList = images->allTensorsAlongDimension({1, 2, 3}); // split images by batch
+//        auto boxList = boxes->allTensorsAlongDimension({1, 2}); // split boxes by batch
+        auto colorSet = colors->allTensorsAlongDimension({1});
+        output->assign(images); // fill up all output with input images, then fill up boxes
+        for (auto b = 0; b < batchSize; ++b) { // loop by batch
 //            auto image = imageList->at(b);
-            auto box = boxList->at(b);
-
-            auto internalBoxes = box->allTensorsAlongDimension({1});
-            auto colorSet = colors->allTensorsAlongDimension({1});
 
             for (auto c = 0; c < colorSet->size(); ++c) {
                 // box with shape
-                auto internalBox = internalBoxes->at(c);
+                auto internalBox = (*boxes)(b, {0})(c, {0});//internalBoxes->at(c);
                 auto color = colorSet->at(c);
-                auto rowStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((height - 1) * internalBox->e<float>(0)));
-                auto rowEnd = nd4j::math::nd4j_min(Nd4jLong (height - 1), Nd4jLong ((height - 1) * internalBox->e<float>(2)));
-                auto colStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((width - 1) * internalBox->e<float>(1)));
-                auto colEnd = nd4j::math::nd4j_min(Nd4jLong(width - 1), Nd4jLong ((width - 1) * internalBox->e<float>(3)));
+                auto rowStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((height - 1) * internalBox.e<float>(0)));
+                auto rowEnd = nd4j::math::nd4j_min(Nd4jLong (height - 1), Nd4jLong ((height - 1) * internalBox.e<float>(2)));
+                auto colStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((width - 1) * internalBox.e<float>(1)));
+                auto colEnd = nd4j::math::nd4j_min(Nd4jLong(width - 1), Nd4jLong ((width - 1) * internalBox.e<float>(3)));
                 for (auto y = rowStart; y <= rowEnd; y++) {
                     for (auto e = 0; e < color->lengthOf(); ++e) {
                         output->p(b, y, colStart, e, color->e(e));
@@ -67,11 +64,11 @@ namespace helpers {
                     }
                 }
             }
-            delete colorSet;
-            delete internalBoxes;
+//            delete internalBoxes;
         }
-        delete imageList;
-        delete boxList;
+        delete colorSet;
+//        delete imageList;
+//        delete boxList;
     }
 
 }
