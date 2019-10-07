@@ -718,6 +718,8 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                 SDVariable v = sameDiff.getVariable(s);
                 if(v.isConstant()) {
                     args[i] = v.getArr();
+                } else if(v.getVariableType() == VariableType.VARIABLE){
+                    args[i] = v.getArr();
                 } else if(v.isPlaceHolder()) {
                     Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array provided for placeholder %s", s);
                     args[i] = placeholderValues.get(s);

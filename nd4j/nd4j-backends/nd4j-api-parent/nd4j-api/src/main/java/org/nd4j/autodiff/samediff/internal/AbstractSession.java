@@ -945,8 +945,8 @@ public abstract class AbstractSession<T, O> {
         if(vid == null && varIds2 != null)
             vid = lookup(name, varIds2, false);
 
-        if(exceptionOnNotFound) {
-            throw new RuntimeException("Could not find VarId to input " + name);
+        if(vid == null && exceptionOnNotFound) {
+            throw new RuntimeException("Could not find VarId for input \"" + name + "\"");
         }
         return vid;
     }
