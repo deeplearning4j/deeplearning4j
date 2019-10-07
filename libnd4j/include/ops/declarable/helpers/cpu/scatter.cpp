@@ -92,9 +92,10 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
         std::vector<int> dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank-1});
         std::vector<int> dimsToExcludeUpd(indRank - 1);
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
-        std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
 
         auto func = PRAGMA_THREADS_FOR {
+            std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
+
             for (auto i = start; i < stop; i += increment) {
                 NDArray indSubArr = indices(i, dimsToExcludeInd);
 
