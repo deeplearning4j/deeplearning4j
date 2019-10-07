@@ -81,10 +81,8 @@ TEST_F(ThreadsTests, th_test_3) {
 }
 
 TEST_F(ThreadsTests, validation_test_2d_1) {
-#ifndef _RELEASE
     if (1 > 0)
         return;
-#endif
 
     std::vector<int> threads({1, 2, 4, 6, 8, 12, 16, 20, 32, 48, 64});
 
