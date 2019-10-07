@@ -190,11 +190,12 @@ public class OpValidation {
         //Check forward pass:
         if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
             SameDiff sd = testCase.sameDiff();
+
+            //Collect variables we need outputs for...
+            Set<String> reqVars = testCase.fwdTestFns().keySet();
+
             try {
-                if(testCase.placeholderValues() != null){
-                    sd.resolveVariablesWith(testCase.placeholderValues());
-                }
-                sd.exec(null, sd.outputs());
+                sd.output(testCase.placeholderValues(), new ArrayList<>(reqVars));
             } catch (Exception e) {
                 throw new RuntimeException("Error during forward pass testing" + testCase.testNameErrMsg(), e);
             }

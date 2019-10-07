@@ -253,7 +253,17 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                         }
                     }
 
-                    //TODO: We should clear the input array from nodeOutputs map
+                    //Finally, clear the input array from nodeOutputs map (so we don't leak deallocated array reference)
+
+                    VarId vidOfInput = null;
+                    for(VarId vid : opInputs){
+                        if(vid.getVariable().equals(inName)){
+                            vidOfInput = vid;
+                            break;
+                        }
+                    }
+
+                    nodeOutputs.remove(vidOfInput);
                 }
             }
 
