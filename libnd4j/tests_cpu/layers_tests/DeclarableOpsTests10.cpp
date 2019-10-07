@@ -2051,7 +2051,7 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_1) {
         0.3, 0.3, 0.7, 0.7,     0.4, 0.4, 0.6, 0.6
     });
 
-    NDArray colors = NDArrayFactory::create<float>('c', {2, 3}, {201., 202., 203., 128., 129., 130.});
+    NDArray colors = NDArrayFactory::create<float>('c', {2, 3}, {201., 202., 203., 127., 128., 129.});
 
     //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
     NDArray expected = NDArrayFactory::create<float>('c', {2,4,5,3}, {
@@ -2072,7 +2072,39 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printIndexedBuffer("Bounded boxes");
+    result->printBuffer("Bounded boxes");
+    expected.printBuffer("Bounded expec");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_2) {
+    NDArray images = NDArrayFactory::create<float>('c', {1,9,9,1});
+    NDArray boxes = NDArrayFactory::create<float>('c', {1, 1, 4}, {0.2, 0.2, 0.7, 0.7});
+    NDArray colors = NDArrayFactory::create<float>('c', {1, 1}, {0.95});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+    NDArray expected = NDArrayFactory::create<float>('c', {1,9,9,1}, {
+             1.1 ,   2.1,  3.1 ,  4.1 ,  5.1 ,  6.1 ,  7.1 ,  8.1 ,  9.1 ,
+            10.1 ,  0.95,  0.95,  0.95,  0.95,  0.95, 16.1 , 17.1 , 18.1 ,
+            19.1 ,  0.95,  21.1, 22.1,   23.1,  0.95, 25.1 , 26.1 , 27.1 ,
+            28.1 ,  0.95,  30.1, 31.1,   32.1,  0.95, 34.1 , 35.1 , 36.1 ,
+            37.1 ,  0.95,  39.1, 40.1,   41.1,  0.95, 43.1 , 44.1 , 45.1 ,
+            46.1 ,  0.95,  0.95, 0.95,  0.95,   0.95, 52.1 , 53.1 , 54.1 ,
+            55.1 ,  56.1, 57.1 , 58.1 , 59.1 , 60.1 , 61.1 , 62.1 , 63.1 ,
+            64.1 ,  65.1, 66.1 , 67.1 , 68.1 , 69.1 , 70.1 , 71.1 , 72.1 ,
+            73.1 ,  74.1, 75.1 , 76.1 , 77.1 , 78.1 , 79.1 , 80.1 , 81.1    });
+    images.linspace(1.1);
+    nd4j::ops::draw_bounding_boxes op;
+    auto results = op.execute({&images, &boxes, &colors}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    result->printIndexedBuffer("Bounded boxes 2");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 

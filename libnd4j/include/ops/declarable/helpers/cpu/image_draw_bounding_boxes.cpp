@@ -25,7 +25,53 @@ namespace ops {
 namespace helpers {
 
     void drawBoundingBoxesFunctor(nd4j::LaunchContext * context, NDArray* images, NDArray* boxes, NDArray* colors, NDArray* output) {
+        // images - batch of 3D images with BW (last dim = 1), RGB (last dim = 3) or RGBA (last dim = 4) channel set
+        // boxes - batch of 2D bounds with last dim (y_start, x_start, y_end, x_end) to compute i and j as
+        // floor((height - 1 ) * y_start) => rowStart, floor((height - 1) * y_end) => rowEnd
+        // floor((width - 1 ) * x_start) => colStart, floor((width - 1) * x_end) => colEnd
+        // height = images->sizeAt(1), width = images->sizeAt(2)
+        // colors - colors for each box given
+        // set up color for each box as frame
 
+        auto height = images->sizeAt(1);
+        auto width = images->sizeAt(2);
+        auto channels = images->sizeAt(3);
+        auto imageList = images->allTensorsAlongDimension({1, 2, 3}); // split images by batch
+        auto boxList = boxes->allTensorsAlongDimension({1, 2}); // split boxes by batch
+        output->assign(images);
+        for (auto b = 0; b < imageList->size(); ++b) { // loop by batch
+//            auto image = imageList->at(b);
+            auto box = boxList->at(b);
+
+            auto internalBoxes = box->allTensorsAlongDimension({1});
+            auto colorSet = colors->allTensorsAlongDimension({1});
+
+            for (auto c = 0; c < colorSet->size(); ++c) {
+                // box with shape
+                auto internalBox = internalBoxes->at(c);
+                auto color = colorSet->at(c);
+                auto rowStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((height - 1) * internalBox->e<float>(0)));
+                auto rowEnd = nd4j::math::nd4j_min(Nd4jLong (height - 1), Nd4jLong ((height - 1) * internalBox->e<float>(2)));
+                auto colStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((width - 1) * internalBox->e<float>(1)));
+                auto colEnd = nd4j::math::nd4j_min(Nd4jLong(width - 1), Nd4jLong ((width - 1) * internalBox->e<float>(3)));
+                for (auto y = rowStart; y <= rowEnd; y++) {
+                    for (auto e = 0; e < color->lengthOf(); ++e) {
+                        output->p(b, y, colStart, e, color->e(e));
+                        output->p(b, y, colEnd, e, color->e(e));
+                    }
+                }
+                for (auto x = colStart + 1; x < colEnd; x++) {
+                    for (auto e = 0; e < color->lengthOf(); ++e) {
+                        output->p(b, rowStart, x, e, color->e(e));
+                        output->p(b, rowEnd, x, e, color->e(e));
+                    }
+                }
+            }
+            delete colorSet;
+            delete internalBoxes;
+        }
+        delete imageList;
+        delete boxList;
     }
 
 }
