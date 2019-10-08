@@ -760,7 +760,13 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
     if (xType != yType || xType != zType)
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar", zType, xType, yType);
 
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, allowParallelism), LIBND4J_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform,::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop), LIBND4J_TYPES);
+    };
+
+    auto zLen = shape::length(hZShapeInfo);
+    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxThreads())));
+
 #endif
 }
 
@@ -789,7 +795,13 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
     if (xType != yType || xType != zType)
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalar", zType, xType, yType);
 
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::scalar::ScalarTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ, start, stop), LIBND4J_TYPES);
+    };
+
+    auto yLen = shape::length(hScalarShapeInfo);
+    samediff::Threads::parallel_tad(func, 0, yLen, 1, nd4j::math::nd4j_min<int>(yLen, nd4j::Environment::getInstance()->maxThreads()));
+
 #endif
 }
 
@@ -816,7 +828,13 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
     if (zType != nd4j::DataType::BOOL)
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarBool", nd4j::DataType::BOOL, zType);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), LIBND4J_TYPES, BOOL_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop), LIBND4J_TYPES, BOOL_TYPES);
+    };
+
+    auto zLen = shape::length(hZShapeInfo);
+    samediff::Threads::parallel_for(func, 0, zLen, 1,  !allowParallelism ? 1 : nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxThreads())));
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -844,7 +862,12 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
     if (zType != nd4j::DataType::BOOL)
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarBool", nd4j::DataType::BOOL, zType);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::scalar::ScalarBoolTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ, start, stop), LIBND4J_TYPES, BOOL_TYPES);
+    };
+
+    auto yLen = shape::length(hScalarShapeInfo);
+    samediff::Threads::parallel_tad(func, 0, yLen, 1, nd4j::math::nd4j_min<int>(yLen, nd4j::Environment::getInstance()->maxThreads()));
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -870,7 +893,13 @@ void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
     if (!nd4j::DataTypeUtils::isZ(zType))
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarInt", nd4j::DataType::INT32, zType);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams), INTEGER_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform, ::transform(opNum, hX, hXShapeInfo, hZ, hZShapeInfo, hScalar, extraParams, start, stop), INTEGER_TYPES);
+    };
+
+    auto zLen = shape::length(hZShapeInfo);
+    samediff::Threads::parallel_for(func, 0, zLen, 1, !allowParallelism ? 1 : nd4j::math::nd4j_max<int>(1, nd4j::math::nd4j_min<int>(zLen / 1024, nd4j::Environment::getInstance()->maxThreads())));
+
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -898,7 +927,12 @@ void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
     if (!nd4j::DataTypeUtils::isZ(zType))
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execScalarInt requires integer data type", zType);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ), INTEGER_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_SINGLE_SELECTOR(xType, functions::scalar::ScalarIntTransform, ::transform(opNum, hX, hXShapeInfo, extraParams, hZ, hZShapeInfo, hScalars, dimension, dimensionLength, tadShapeInfo, tadOffsets, tadShapeInfoZ, tadOffsetsZ, start, stop), INTEGER_TYPES);
+    };
+
+    auto yLen = shape::length(hScalarShapeInfo);
+    samediff::Threads::parallel_tad(func, 0, yLen, 1, nd4j::math::nd4j_min<int>(yLen, nd4j::Environment::getInstance()->maxThreads()));
 }
 
 ////////////////////////////////////////////////////////////////////////

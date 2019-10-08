@@ -40,7 +40,8 @@ namespace functions {
                                                 void *vscalars,
                                                 int *dimension, int dimensionLength,
                                                 Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
-                                                Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+                                                Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets,
+                                                const uint64_t start, const uint64_t stop) {
 
             auto x = reinterpret_cast<X *>(vx);
             auto z = reinterpret_cast<X *>(vz);
@@ -68,7 +69,7 @@ namespace functions {
             int num_threads = nd4j::math::nd4j_min<int>(numTads, nd4j::Environment::getInstance()->maxThreads());
 
             if (kindOfLoop == nd4j::LoopKind::EWS1) {
-                for (unsigned int r = 0; r < numTads; r++) {
+                for (auto r = start; r < stop; r++) {
                     auto oZ = z + zTadOffsets[r];
                     auto oX = x + xTadOffsets[r];
 
@@ -78,7 +79,7 @@ namespace functions {
                 };
             }
             else {
-                for (unsigned int r = 0; r < numTads; r++) {
+                for (auto r = start; r < stop; r++) {
                     auto oZ = z + zTadOffsets[r];
                     auto oX = x + xTadOffsets[r];
 
@@ -102,8 +103,10 @@ namespace functions {
                               Nd4jLong *xTadShapeInfo,
                               Nd4jLong *xTadOffsets,
                               Nd4jLong *zTadShapeInfo,
-                              Nd4jLong *zTadOffsets) {
-            DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets), SCALAR_INT_OPS);
+                              Nd4jLong *zTadOffsets,
+                              const uint64_t start, const uint64_t stop) {
+
+            DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop), SCALAR_INT_OPS);
         }
 
 
@@ -115,8 +118,9 @@ namespace functions {
                 Nd4jLong zEws,
                 void *scalar,
                 void *extraParams,
-                const Nd4jLong n) {
-            DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xEws, z, zEws, scalar, extraParams, n), SCALAR_INT_OPS);
+                const uint64_t n,
+                const uint64_t start, const uint64_t stop) {
+            DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xEws, z, zEws, scalar, extraParams, n, start, stop), SCALAR_INT_OPS);
         }
 
         template<typename X>
@@ -126,8 +130,9 @@ namespace functions {
                 void *z,
                 Nd4jLong *zShapeInfo,
                 void *scalar,
-                void *extraParams) {
-            DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams), SCALAR_INT_OPS);
+                void *extraParams,
+                const uint64_t start, const uint64_t stop) {
+            DISPATCH_BY_OPNUM_T(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, start, stop), SCALAR_INT_OPS);
         }
 
         template<typename X>
@@ -137,7 +142,8 @@ namespace functions {
                                void *vz,
                                Nd4jLong *zShapeInfo,
                                void *vscalar,
-                               void *vextraParams) {
+                               void *vextraParams,
+                               const uint64_t start, const uint64_t stop) {
 
             auto x = reinterpret_cast<X *>(vx);
             auto z = reinterpret_cast<X *>(vz);
@@ -151,7 +157,7 @@ namespace functions {
             nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
             if (kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
-                transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len);
+                transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len, start, stop);
                 return;
             }
 
@@ -160,7 +166,7 @@ namespace functions {
 
             if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
                 PRAGMA_OMP_SIMD
-                for (uint64_t i = 0; i < len; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                     z[offset] = OpType::op(x[offset], scalar, extraParams);
                 };
@@ -170,7 +176,7 @@ namespace functions {
                 const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, zShapeInfoCast);
 
                 PRAGMA_OMP_SIMD
-                for (uint64_t i = 0; i < len; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                     auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                     z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
@@ -187,7 +193,8 @@ namespace functions {
                     Nd4jLong zEws,
                     void *vscalar,
                     void *vextraParams,
-                    const Nd4jLong len) {
+                    const uint64_t len,
+                    const uint64_t start, const uint64_t stop) {
 
                 auto x = reinterpret_cast<X *>(vx);
                 auto z = reinterpret_cast<X *>(vz);
@@ -196,12 +203,12 @@ namespace functions {
 
                 if (xEws == 1 && zEws == 1) {
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = 0; i < len; i++)
+                    for (auto i = start; i < stop; i++)
                         z[i] = OpType::op(x[i], scalar, extraParams);
                 }
                 else {
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = 0; i < len; i++)
+                    for (auto i = start; i < stop; i++)
                         z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
                 }
             }
