@@ -1747,6 +1747,9 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_fake_quant_with_min_max_vars)
         DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vars, 3, 1, true, 0, -2);
         #endif
+        #if NOT_EXCLUDED(OP_fake_quant_with_min_max_vars_per_channel)
+                DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vars_per_channel, 3, 1, true, 0, -2);
+        #endif
 
         /**
          * compare_and_bitpack - compare with greater and pack result with uint8 
