@@ -2104,7 +2104,9 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printIndexedBuffer("Bounded boxes 2");
+//    result->syncToHost();
+//    result->printBuffer("Bounded boxes 2");
+//    expected.printBuffer("Bounded expec 2");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
