@@ -407,12 +407,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     }
 
     public void setOutputArgument(int index, INDArray output) {
-        if(index == outputArguments.size()){
-            //For example, setOutputArgument(0,arr) on empty list
-            outputArguments.add(output);
-        } else {
-            outputArguments.set(index, output);
+        while(index >= outputArguments.size()){
+            //Resize list, in case we want to specify arrays not in order they are defined
+            //For example, index 1 on empty list, then index 0
+            outputArguments.add(null);
         }
+        outputArguments.set(index, output);
     }
 
     @Override

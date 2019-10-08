@@ -29,6 +29,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -3224,29 +3225,26 @@ public class SameDiffTests extends BaseNd4jTest {
 
     @Test
     public void testIf() throws IOException {
-        SameDiff SD = SameDiff.create();
-        SDVariable a = SD.placeHolder("a", DataType.DOUBLE);
-        SDVariable b = SD.var("b", Nd4j.createFromArray(5.0));
-        SDVariable c = SD.var("c", Nd4j.createFromArray(9.0));
+        SameDiff sd = SameDiff.create();
+        SDVariable a = sd.placeHolder("a", DataType.DOUBLE);
+        SDVariable b = sd.var("b", Nd4j.createFromArray(5.0));
+        SDVariable c = sd.var("c", Nd4j.createFromArray(9.0));
 
-        SDVariable output = SD.ifCond("out", null, (sd) -> a.lt(b), (sd) -> c, (sd) -> c.add(5));
+        SDVariable output = sd.ifCond("out", null, s -> a.lt(b), s -> c, s -> c.add(5));
 
         Map<String, INDArray> firstBranch = Maps.newHashMap();
         firstBranch.put("a", Nd4j.createFromArray(3.0));
-        assertEquals(Nd4j.createFromArray(9.0), SD.exec(firstBranch, "out").get("out"));
+        assertEquals(Nd4j.createFromArray(9.0), sd.exec(firstBranch, "out").get("out"));
 
         Map<String, INDArray> secondBranch = Maps.newHashMap();
         secondBranch.put("a", Nd4j.createFromArray(7.0));
-        assertEquals(Nd4j.createFromArray(14.0), SD.exec(secondBranch, "out").get("out"));
+        assertEquals(Nd4j.createFromArray(14.0), sd.exec(secondBranch, "out").get("out"));
 
-        //TODO complains that it can't deserialize a meta type, but there are no meta type ops here
-        // looks like a difference between Op.Type and OpType.  Switch is saved as a OpType.LOGIC
-        SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
+        ByteBuffer bb = sd.asFlatBuffers(false);
+        sd = SameDiff.fromFlatBuffers(bb);
 
-        assertEquals(Nd4j.createFromArray(9.0), SD.exec(firstBranch, "out").get("out"));
-        assertEquals(Nd4j.createFromArray(14.0), SD.exec(secondBranch, "out").get("out"));
-
-
+        assertEquals(Nd4j.createFromArray(9.0), sd.exec(firstBranch, "out").get("out"));
+        assertEquals(Nd4j.createFromArray(14.0), sd.exec(secondBranch, "out").get("out"));
     }
 
     @Test

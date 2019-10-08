@@ -115,7 +115,7 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
         for(Map.Entry<KeyRef<K>, V> e : map.entrySet()){
             K k = e.getKey().get();
             if(k != null){
-                ret.add(new Entry<>(k, e.getValue()));
+                ret.add(new Entry<K,V>(k, e.getValue()));
             }
         }
         return ret;
@@ -146,9 +146,16 @@ public class WeakIdentityHashMap<K, V> implements Map<K, V> {
         }
     }
 
-    @Getter @Setter @EqualsAndHashCode @AllArgsConstructor
+    @Data
+    @AllArgsConstructor
     protected static class Entry<K,V> implements Map.Entry<K, V> {
         protected K key;
         protected V value;
+
+        @Override
+        public V setValue(V value){
+            this.value = value;
+            return value;
+        }
     }
 }

@@ -349,7 +349,8 @@ public abstract class AbstractSession<T, O> {
                         opOutputVarNames.length, opOutputVarNames);
 
                 for (int i = 0; i < opOutputVarNames.length; i++) {
-                    if (opOutputValues[i] == null && parameterizedOp instanceof Switch) {
+                    if (opOutputValues[i] == null && (parameterizedOp instanceof Switch ||
+                            (parameterizedOp instanceof SameDiffOp && ((SameDiffOp) parameterizedOp).getOp() instanceof Switch))) {
                         //Skip null - for switch op only. Switch op forwards input to only one of its outputs
                         //All other ops should not
                         continue;

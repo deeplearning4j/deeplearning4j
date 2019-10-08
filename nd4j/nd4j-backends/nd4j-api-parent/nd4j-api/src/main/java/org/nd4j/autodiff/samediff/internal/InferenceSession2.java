@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.autodiff.samediff.internal.memory.SimpleSessionMemoryMgr;
 import org.nd4j.base.Preconditions;
+import org.nd4j.collections.WeakIdentityHashMap;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -60,10 +61,19 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
 
     private SessionMemMrg mmgr;
 
+    /**
+     * A weak identity hash set
+     */
+    private Set<INDArray> identitySetAllConstPhVar;
+
     public InferenceSession2(@NonNull SameDiff sameDiff) {
         super(sameDiff);
 
         mmgr = new SimpleSessionMemoryMgr();
+
+
+
+        identitySetAllConstPhVar = Collections.newSetFromMap(new WeakIdentityHashMap<INDArray, Boolean>());
     }
 
     @Override
@@ -123,6 +133,9 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                 clearOpReferencesFor(s);
             }
         }
+
+        //Also clear identity set, in case user has changed any arrays since last run
+        identitySetAllConstPhVar.clear();
 
         return output;
     }
@@ -195,13 +208,63 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                             //This op IS required. We know if it has been calculated if any of the outputs of this op are present
                             // in the set of outputs...
 
+                            //Get the VarId of the input. Note in the case of Merge(x, y) only one of x/y will be calculated
                             VarId vidOfInput = lookup(inName, opInputs, allIterInputs, false);
-                            Preconditions.checkState(vidOfInput != null, "Could not find VarId of input array - %s", inName);
+                            Preconditions.checkState(vidOfInput != null || op.getOp() instanceof Merge, "Could not find VarId of input array - %s", inName);
 
-                            String firstOutput = sameDiff.getOps().get(opName).getOutputsOfOp().get(0);
-                            VarId vid = newVarId(firstOutput, vidOfInput.toFrameIter());    //TODO this doesn't work for enter op, etc!
+                            //If currently executed op is X -> Y, and we're iterating over inputs X
+                            // then at this point opOut is Z, in X -> Z, where Z may or may not be same as Y
 
-                            allAlreadyCalced = opName.equals(op.getName()) || nodeOutputs.containsKey(vid); //Note: currently calculated op outputs haven't been added to op name
+                            SameDiffOp opOut = sameDiff.getOps().get(opName);
+                            String firstOutput = opOut.getOutputsOfOp().get(0);
+
+                            if(opName.equals(op.getName())) {
+                                //Just calculated this op in this current call...
+                                allAlreadyCalced = true;
+                            } else if(op.getOp() instanceof Merge){
+                                VarId vid = newVarId(firstOutput, vidOfInput.toFrameIter());
+                                allAlreadyCalced = nodeOutputs.containsKey(vid);
+                            } else if(op.getOp() instanceof Switch) {
+                                //Switch has been executed if EITHER of the outputs are available. And their frame/iter is same as input
+                                VarId vid1 = newVarId(firstOutput, vidOfInput.toFrameIter());
+                                VarId vid2 = newVarId(firstOutput, vidOfInput.toFrameIter());
+
+                                allAlreadyCalced = nodeOutputs.containsKey(vid1) || nodeOutputs.containsKey(vid2);
+                            } else if(op.getOp() instanceof Enter) {
+                                //Enter op: forwards input to specified execution frame
+                                Enter e = (Enter) op.getOp();
+                                VarId vid;
+                                if(constAndPhInputs.contains(inName)){
+                                    //Constant or placeholder -> always outer frame, iteration 0, no parent
+                                    vid = newVarId(firstOutput, OUTER_FRAME, 0, null);
+                                } else {
+                                    vid = newVarId(firstOutput, new FrameIter(e.getFrameName(), 0, vidOfInput.toFrameIter()));
+                                }
+                                allAlreadyCalced = nodeOutputs.containsKey(vid);
+                            } else if(op.getOp() instanceof Exit) {
+                                //Exit node forwards input to parent frame
+                                Exit e = (Exit) op.getOp();
+                                VarId vid;
+                                if (constAndPhInputs.contains(inName)) {
+                                    //Constant or placeholder -> always outer frame, iteration 0, no parent
+                                    vid = newVarId(firstOutput, OUTER_FRAME, 0, null);
+                                } else {
+                                    FrameIter parent = outputFrameIter.getParentFrame();
+                                    vid = newVarId(firstOutput, new FrameIter(e.getFrameName(), parent.getIteration(), parent.getParentFrame()));
+                                }
+                                allAlreadyCalced = nodeOutputs.containsKey(vid);
+                            } else if(op.getOp() instanceof NextIteration) {
+                                //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
+                                FrameIter f = vidOfInput.toFrameIter().clone();
+                                f.setIteration(f.getIteration() + 1);
+                                VarId vid = newVarId(firstOutput, f);
+                                allAlreadyCalced = nodeOutputs.containsKey(vid);
+                            } else if(op.getOp() instanceof Op || op.getOp() instanceof DynamicCustomOp){
+                                VarId vid = newVarId(firstOutput, vidOfInput.toFrameIter());
+                                allAlreadyCalced = nodeOutputs.containsKey(vid);
+                            } else {
+                                throw new IllegalStateException("TODO: " + op.getOp().getClass().getName());
+                            }
 
                             if(!allAlreadyCalced)
                                 break;
@@ -215,8 +278,17 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                 if (canDealloc) {
                     INDArray arr = op.getOp().getInputArgument(i);
 
-                    if(arr == null)     //TODO Should this be an error?
+                    /*
+                    Note regarding arrayIsConstVarOrPh(arr) call - this is to handle the case where an array is used
+                    like Constant -> enter -> enter -> switch -> X, and the output of the "switch" op isn't required
+                    anywhere else. But, for efficiency, enter/switch ops pass through the array unchanged - i.e., no
+                    copy, so the input to X is actually the exacty array for the variable "Constant" here.
+                    The "canDealloc" decision above was made locally (not knowing it's actually originally a constant),
+                     not accounting for this zero-copy behaviour
+                     */
+                    if(arr == null || arrayIsConstVarOrPh(arr))     //TODO Should null here be an error? Or OK just for merge where one may be missing?
                         continue;
+
 
                     log.info("Determined safe to deallocate array for: {}", inName);      //TODO FrameIter
                     mmgr.release(arr);
@@ -904,5 +976,33 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
         }
     }
 
+    /**
+     * Determine if the specified array is a constant, variable or placeholder
+     * This is used to determine when arrays are safe to deallocate
+     *
+     * See identitySetAllConstPhVar javadoc for more details
+     *
+     * @param arr Array to check
+     * @return True if constant/variable/placeholder - and false for ARRAY type SDVariable INDArray
+     */
+    protected boolean arrayIsConstVarOrPh(INDArray arr){
+        if(identitySetAllConstPhVar.isEmpty()){
+            for(SDVariable v : sameDiff.variables()){
+                if(v.getVariableType() == VariableType.PLACEHOLDER){
+                    //Only SOME placeholders may have been provided. For example, inference + no labels placeholder
+                    VarId vid = new VarId(v.getVarName(), OUTER_FRAME, 0, null);
+                    if(nodeOutputs.containsKey(vid)){
+                        identitySetAllConstPhVar.add(nodeOutputs.get(vid));
+                    }
+                } else if(v.getVariableType() != VariableType.ARRAY){
+                    //Constant or variable type
+                    identitySetAllConstPhVar.add(v.getArr());
+                }
+            }
+        }
+
+        boolean ret = identitySetAllConstPhVar.contains(arr);
+        return ret;
+    }
 
 }
