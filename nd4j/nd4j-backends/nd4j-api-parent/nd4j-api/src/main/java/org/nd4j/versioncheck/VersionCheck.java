@@ -17,10 +17,8 @@
 package org.nd4j.versioncheck;
 
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 import org.nd4j.config.ND4JSystemProperties;
 
-import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -45,7 +43,6 @@ public class VersionCheck {
     @Deprecated
     public static final String VERSION_CHECK_PROPERTY = ND4JSystemProperties.VERSION_CHECK_PROPERTY;
     public static final String GIT_PROPERTY_FILE_SUFFIX = "-git.properties";
-    public static final String PROPERTIES_FILE_SUFFIX = "properties";
 
     private static final String SCALA_210_SUFFIX = "_2.10";
     private static final String SCALA_211_SUFFIX = "_2.11";
