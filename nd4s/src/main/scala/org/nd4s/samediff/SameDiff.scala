@@ -54,10 +54,21 @@ class SameDiffWrapper {
     sd.placeHolder(name, dataType, shape: _*)
 }
 
+case class SDIndexWrapper(start: Long) {
+
+  def ::(end: Long): SDIndex =
+    SDIndex.interval(start, end)
+}
+
+object --- extends SDIndex {
+  val thisIndex: SDIndex = SDIndex.all()
+}
+
 class SDVariableWrapper {
 
   var thisVariable: SDVariable = null
   var isScalar: Boolean = false
+  val --- : SDIndex = SDIndex.all()
 
   def this(variable: SDVariable) {
     this
@@ -68,13 +79,13 @@ class SDVariableWrapper {
 
   def apply(index: SDIndex*): SDVariable = thisVariable.get(index: _*)
 
-  def apply(x: SDIndex)(y: SDIndex): SDVariable =
+  /*def apply(x: SDIndex, y: SDIndex): SDVariable =
     (x, y) match {
       case (_, y) => thisVariable.get(SDIndex.all(), y)
       case (x, _) => thisVariable.get(x, SDIndex.all())
       case (_, _) => thisVariable.get(SDIndex.all(), SDIndex.all())
       case (x, y) => thisVariable.get(x, y)
-    }
+    }*/
 
   def add(other: Double): Unit = thisVariable.add(other)
 

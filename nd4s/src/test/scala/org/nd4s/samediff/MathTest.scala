@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
+import org.nd4s.NDOrdering
 import org.nd4s.samediff.implicits.Implicits._
 import org.scalatest.{ FlatSpec, Matchers }
 
@@ -214,9 +215,20 @@ class MathTest extends FlatSpec with Matchers {
   "SDVariable " should "be indexable in 2d" in {
     implicit val sd = SameDiff.create
 
-    val arr = Nd4j.rand(2, 5)
+    val arr = Nd4j.linspace(DataType.FLOAT, 1.0, 1.0, 9).reshape(3, 3)
+
     val x = sd.bind(arr)
 
-    println(x(SDIndex.point(0), _: SDIndex).getArr)
+    println(x(SDIndex.point(0), ---).getArr)
+
+    val data1 = x(SDIndex.interval(0: Long, 2: Long), ---).getArr
+    println(data1)
+
+    val data2 = x(0 :: 2, ---).getArr
+    println(data2)
+
+    //assert(indices.indices == List(0, 1, 2, 3, 4, 5))
+    //assert(indices.targetShape.toList == List(2, 3))
+
   }
 }

@@ -15,9 +15,9 @@
   ******************************************************************************/
 package org.nd4s.samediff.implicits
 
-import org.nd4j.autodiff.samediff.{ SDVariable, SameDiff }
+import org.nd4j.autodiff.samediff.{ SDIndex, SDVariable, SameDiff }
 import org.nd4j.linalg.factory.Nd4j
-import org.nd4s.samediff.{ SDVariableWrapper, SameDiffWrapper }
+import org.nd4s.samediff.{ SDIndexWrapper, SDVariableWrapper, SameDiffWrapper }
 
 object Implicits {
   implicit def SameDiffToWrapper(sd: SameDiff): SameDiffWrapper =
@@ -41,6 +41,11 @@ object Implicits {
   implicit def BooleanToSDVariable(x: Boolean)(implicit sd: SameDiff): SDVariableWrapper = {
     val result = new SDVariableWrapper(sd.constant(Nd4j.scalar(x)))
     result.isScalar = true
+    result
+  }
+
+  implicit def RangeToWrapper(start: Long): SDIndexWrapper = {
+    val result = new SDIndexWrapper(start)
     result
   }
 }
