@@ -154,7 +154,16 @@ void NativeOpExecutioner::execBroadcast(nd4j::LaunchContext  *lc,
 #ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ, start, stop), LIBND4J_TYPES);
+    };
+
+    auto xLen = shape::length(hXShapeInfo);
+    auto yLen = shape::length(hYShapeInfo);
+    auto numTads = xLen / yLen;
+
+    samediff::Threads::parallel_tad(func, 0, numTads);
 #endif
 }
 
@@ -182,7 +191,15 @@ void NativeOpExecutioner::execInverseBroadcast(nd4j::LaunchContext  *lc,
 #ifdef __ND4J_EXPERIMENTAL__
     BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::broadcast::Broadcast, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, LIBND4J_TYPES);
 #else
-    BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_SINGLE_SELECTOR_THRICE(xType, functions::broadcast::Broadcast, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ, start, stop), LIBND4J_TYPES);
+    };
+
+    auto xLen = shape::length(hXShapeInfo);
+    auto yLen = shape::length(hYShapeInfo);
+    auto numTads = yLen / xLen;
+
+    samediff::Threads::parallel_tad(func, 0, numTads);
 #endif
 
 }
@@ -206,7 +223,15 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::LaunchContext  *lc,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ, start, stop), LIBND4J_TYPES, BOOL_TYPES);
+    };
+
+    auto xLen = shape::length(hXShapeInfo);
+    auto yLen = shape::length(hYShapeInfo);
+    auto numTads = xLen / yLen;
+
+    samediff::Threads::parallel_tad(func, 0, numTads);
 }
 
 void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
@@ -231,7 +256,15 @@ void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
         if (yType != xType || nd4j::DataType::BOOL != zType)
             throw nd4j::datatype_exception::build("NativeOps::execInverseBroadcastBool both operands must have same data type", xType, yType);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ, start, stop), LIBND4J_TYPES, BOOL_TYPES);
+    };
+
+    auto xLen = shape::length(hXShapeInfo);
+    auto yLen = shape::length(hYShapeInfo);
+    auto numTads = yLen / xLen;
+
+    samediff::Threads::parallel_tad(func, 0, numTads);
 }
 
 
@@ -260,7 +293,15 @@ void NativeOpExecutioner::execBroadcastInt(nd4j::LaunchContext  *lc,
     if (!nd4j::DataTypeUtils::isZ(zType))
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), INTEGER_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::exec(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ, start, stop), INTEGER_TYPES);
+    };
+
+    auto xLen = shape::length(hXShapeInfo);
+    auto yLen = shape::length(hYShapeInfo);
+    auto numTads = xLen / yLen;
+
+    samediff::Threads::parallel_tad(func, 0, numTads);
 }
 
 void NativeOpExecutioner::execInverseBroadcastInt(nd4j::LaunchContext  *lc,
@@ -287,7 +328,15 @@ void NativeOpExecutioner::execInverseBroadcastInt(nd4j::LaunchContext  *lc,
     if (!nd4j::DataTypeUtils::isZ(zType))
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execBroadcastInt requires integer data type", zType);
 
-    BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt, ::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), INTEGER_TYPES);
+    auto func = PRAGMA_THREADS_FOR {
+        BUILD_SINGLE_SELECTOR(xType, functions::broadcast::BroadcastInt,::execInverse(opNum, hX, hXShapeInfo, hY, hYShapeInfo, hZ, hZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ, start, stop), INTEGER_TYPES);
+    };
+
+    auto xLen = shape::length(hXShapeInfo);
+    auto yLen = shape::length(hYShapeInfo);
+    auto numTads = yLen / xLen;
+
+    samediff::Threads::parallel_tad(func, 0, numTads);
 }
 
 ////////////////////////////////////////////////////////////////////////

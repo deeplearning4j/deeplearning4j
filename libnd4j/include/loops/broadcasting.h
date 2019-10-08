@@ -105,7 +105,9 @@ namespace functions {
                              Nd4jLong *tadShapeInfo,
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
-                             Nd4jLong *tadOffsetZ);
+                             Nd4jLong *tadOffsetZ,
+                             uint64_t start,
+                             uint64_t stop);
 
             static void exec(int opNum,
                              void *x,
@@ -119,7 +121,9 @@ namespace functions {
                              Nd4jLong *tadShapeInfo,
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
-                             Nd4jLong *tadOffsetZ);
+                             Nd4jLong *tadOffsetZ,
+                             uint64_t start,
+                             uint64_t stop);
 
             /**
              * CPU execution
@@ -144,7 +148,9 @@ namespace functions {
                              Nd4jLong *tadShapeInfo,
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
-                             Nd4jLong *tadOffsetZ);
+                             Nd4jLong *tadOffsetZ,
+                             uint64_t start,
+                             uint64_t stop);
 
             template<typename OpType>
             static void execInverse(void *x,
@@ -158,7 +164,9 @@ namespace functions {
                              Nd4jLong *tadShapeInfo,
                              Nd4jLong *tadOffset,
                              Nd4jLong *tadShapeInfoZ,
-                             Nd4jLong *tadOffsetZ);
+                             Nd4jLong *tadOffsetZ,
+                             uint64_t start,
+                             uint64_t stop);
         };
     }
 }

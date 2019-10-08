@@ -44,7 +44,9 @@ namespace functions {
                                       Nd4jLong *xTadShapeInfo,
                                       Nd4jLong *xTadOffset,
                                       Nd4jLong *zTadShapeInfo,
-                                      Nd4jLong *zTadOffset) {
+                                      Nd4jLong *zTadOffset,
+                                      uint64_t start,
+                                      uint64_t stop) {
             DISPATCH_BY_OPNUM_TTT(execInverse, PARAMS(x,
                                                xShapeInfo,
                                                y,
@@ -56,7 +58,7 @@ namespace functions {
                                                xTadShapeInfo,
                                                xTadOffset,
                                                zTadShapeInfo,
-                                               zTadOffset), BROADCAST_OPS);
+                                               zTadOffset, start, stop), BROADCAST_OPS);
         }
 
         template <typename X, typename Y, typename Z>
@@ -72,7 +74,9 @@ namespace functions {
                              Nd4jLong *xTadShapeInfo,
                              Nd4jLong *xTadOffset,
                              Nd4jLong *zTadShapeInfo,
-                             Nd4jLong *zTadOffset) {
+                             Nd4jLong *zTadOffset,
+                             uint64_t start,
+                             uint64_t stop) {
             DISPATCH_BY_OPNUM_TTT(exec, PARAMS(x,
                                                xShapeInfo,
                                                y,
@@ -84,7 +88,7 @@ namespace functions {
                                                xTadShapeInfo,
                                                xTadOffset,
                                                zTadShapeInfo,
-                                               zTadOffset), BROADCAST_OPS);
+                                               zTadOffset, start, stop), BROADCAST_OPS);
         }
 
         template <typename X, typename  Y, typename Z>
@@ -100,7 +104,9 @@ namespace functions {
                              Nd4jLong *xTadShapeInfo,
                              Nd4jLong *xTadOffset,
                              Nd4jLong *zTadShapeInfo,
-                             Nd4jLong *zTadOffset) {
+                             Nd4jLong *zTadOffset,
+                             uint64_t start,
+                             uint64_t stop) {
 
                 auto x = reinterpret_cast<X *>(vx);
                 auto y = reinterpret_cast<Y *>(vy);
@@ -132,10 +138,6 @@ namespace functions {
                 auto lenZ = shape::length(zTadShapeInfo);
                 auto lenY = shape::length(yShapeInfo);
 
-                int tadsPerThread = tads / TAD_THRESHOLD;
-                int threads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-                threads = nd4j::math::nd4j_min<int>(threads, nd4j::Environment::getInstance()->maxThreads());
-
                 auto xEws = shape::elementWiseStride(xTadShapeShapeInfo);
                 auto yEws = shape::elementWiseStride(yShapeInfo);
                 auto zEws = shape::elementWiseStride(zTadShapeInfo);
@@ -143,7 +145,7 @@ namespace functions {
                 const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(xTadShapeShapeInfo, yShapeInfo, zTadShapeInfo);
 
                 if (kindOfLoop == nd4j::LoopKind::EWS1) {
-                    for (auto i = 0; i < tads; i++) {
+                    for (auto i = start; i < stop; i++) {
                         auto oX = x + tadOffsets[i];
                         auto oZ = z + zTadOffset[i];
 
@@ -153,7 +155,7 @@ namespace functions {
                     }
                 }
                 else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO){
-                    for (auto i = 0; i < tads; i++) {
+                    for (auto i = start; i < stop; i++) {
                         auto oX = x + tadOffsets[i];
                         auto oZ = z + zTadOffset[i];
 
@@ -166,7 +168,7 @@ namespace functions {
                     uint tadShapeShapeInfoCast[MAX_RANK];
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
 
-                    for (auto i = 0; i < tads; i++) {
+                    for (auto i = start; i < stop; i++) {
                         auto oX = x + tadOffsets[i];
                         auto oZ = z + zTadOffset[i];
 
@@ -184,7 +186,7 @@ namespace functions {
                     bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
 
-                    for (auto i = 0; i < tads; i++) {
+                    for (auto i = start; i < stop; i++) {
                         auto oZ = z + zTadOffset[i];
                         auto oX = x + tadOffsets[i];
 
@@ -202,7 +204,7 @@ namespace functions {
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
                     bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
-                    for (auto i = 0; i < tads; i++) {
+                    for (auto i = start; i < stop; i++) {
                         auto oZ = z + zTadOffset[i];
                         auto oX = x + tadOffsets[i];
 
@@ -220,7 +222,7 @@ namespace functions {
                     bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xTadShapeShapeInfo, tadShapeShapeInfoCast);
                     bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
-                    for (auto i = 0; i < tads; i++) {
+                    for (auto i = start; i < stop; i++) {
                         auto oZ = z + zTadOffset[i];
                         auto oX = x + tadOffsets[i];
 
@@ -240,7 +242,7 @@ namespace functions {
                     bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
                     bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
-                    for (auto i = 0; i < tads; i++) {
+                    for (auto i = start; i < stop; i++) {
                         auto oZ = z + zTadOffset[i];
                         auto oX = x + tadOffsets[i];
 
@@ -270,7 +272,9 @@ namespace functions {
                                       Nd4jLong *yTadShapeInfo,
                                       Nd4jLong *yTadOffset,
                                       Nd4jLong *zTadShapeInfo,
-                                      Nd4jLong *zTadOffset) {
+                                      Nd4jLong *zTadOffset,
+                                      uint64_t start,
+                                      uint64_t stop) {
 
             auto x = reinterpret_cast<X *>(vx);
             auto y = reinterpret_cast<Y *>(vy);
@@ -313,7 +317,7 @@ namespace functions {
             const nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXYZ(yTadShapeShapeInfo, xShapeInfo, zTadShapeInfo);
 
             if(kindOfLoop == nd4j::LoopKind::EWS1) {
-                for (auto i = 0; i < tads; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto oY = y + tadOffsets[i];
                     auto oZ = z + zTadOffset[i];
 
@@ -323,7 +327,7 @@ namespace functions {
                 }
             }
             else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
-                for (auto i = 0; i < tads; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto oY = y + tadOffsets[i];
                     auto oZ = z + zTadOffset[i];
 
@@ -336,7 +340,7 @@ namespace functions {
                 uint tadShapeShapeInfoCast[MAX_RANK];
                 bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
-                for (auto i = 0; i < tads; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto oY = x + tadOffsets[i];
                     auto oZ = z + zTadOffset[i];
 
@@ -353,7 +357,7 @@ namespace functions {
                 bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
                 bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
-                for (auto i = 0; i < tads; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto oZ = z + zTadOffset[i];
                     auto oY = y + tadOffsets[i];
 
@@ -371,7 +375,7 @@ namespace functions {
                 bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                 bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
-                for (auto i = 0; i < tads; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto oZ = z + zTadOffset[i];
                     auto oY = y + tadOffsets[i];
 
@@ -389,7 +393,7 @@ namespace functions {
                 bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                 bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
 
-                for (auto i = 0; i < tads; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto oZ = z + zTadOffset[i];
                     auto oY = y + tadOffsets[i];
 
@@ -409,7 +413,7 @@ namespace functions {
                 bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yTadShapeShapeInfo, tadShapeShapeInfoCast);
                 bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zTadShapeInfo, tadShapeInfoZCast);
 
-                for (auto i = 0; i < tads; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto oZ = z + zTadOffset[i];
                     auto oY = y + tadOffsets[i];
 
