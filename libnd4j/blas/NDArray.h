@@ -1422,6 +1422,7 @@ namespace nd4j {
 
         template <typename T>
         void p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const T value);
+        void p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, NDArray const& value);
 
 
         template <typename T>
