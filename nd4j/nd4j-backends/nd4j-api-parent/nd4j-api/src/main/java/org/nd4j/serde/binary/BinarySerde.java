@@ -1,4 +1,4 @@
-/*******************************************************************************
+/* *****************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
@@ -42,7 +42,6 @@ import java.nio.channels.WritableByteChannel;
 @Slf4j
 public class BinarySerde {
 
-
     /**
      * Create an ndarray
      * from the unsafe buffer
@@ -63,15 +62,13 @@ public class BinarySerde {
         return toArray(buffer, 0);
     }
 
-
-
     /**
      * Create an ndarray and existing bytebuffer
-     * @param buffer
-     * @param offset
-     * @return
+     * @param buffer the buffer to create the arrays from
+     * @param offset position in buffer to create the arrays from.
+     * @return the created INDArray and Bytebuffer pair.
      */
-    public static Pair<INDArray, ByteBuffer> toArrayAndByteBuffer(ByteBuffer buffer, int offset) {
+    protected static Pair<INDArray, ByteBuffer> toArrayAndByteBuffer(ByteBuffer buffer, int offset) {
         ByteBuffer byteBuffer = buffer.hasArray() ? ByteBuffer.allocateDirect(buffer.array().length).put(buffer.array())
                 .order(ByteOrder.nativeOrder()) : buffer.order(ByteOrder.nativeOrder());
         //bump the byte buffer to the proper position
@@ -272,7 +269,7 @@ public class BinarySerde {
      * binary format
      * @param arr the array to write
      * @param toWrite the file tow rite to
-     * @throws IOException
+     * @throws IOException on an I/O exception.
      */
     public static void writeArrayToDisk(INDArray arr, File toWrite) throws IOException {
         try (FileOutputStream os = new FileOutputStream(toWrite)) {
@@ -285,27 +282,25 @@ public class BinarySerde {
 
     /**
      * Read an ndarray from disk
-     * @param readFrom
-     * @return
-     * @throws IOException
+     * @param readFrom file to read
+     * @return the created INDArray.
+     * @throws IOException on an I/O exception.
      */
     public static INDArray readFromDisk(File readFrom) throws IOException {
         try (FileInputStream os = new FileInputStream(readFrom)) {
             FileChannel channel = os.getChannel();
             ByteBuffer buffer = ByteBuffer.allocateDirect((int) readFrom.length());
             channel.read(buffer);
-            INDArray ret = toArray(buffer);
-            return ret;
+            return toArray(buffer);
         }
     }
-
 
     /**
      * This method returns shape databuffer from saved earlier file
      *
-     * @param readFrom
-     * @return
-     * @throws IOException
+     * @param readFrom file to read
+     * @return the created databuffer,
+     * @throws IOException on an I/O exception.
      */
     public static DataBuffer readShapeFromDisk(File readFrom) throws IOException {
         try (FileInputStream os = new FileInputStream(readFrom)) {
@@ -315,8 +310,7 @@ public class BinarySerde {
             ByteBuffer buffer = ByteBuffer.allocateDirect(len);
             channel.read(buffer);
 
-            ByteBuffer byteBuffer = buffer == null ? ByteBuffer.allocateDirect(buffer.array().length)
-                    .put(buffer.array()).order(ByteOrder.nativeOrder()) : buffer.order(ByteOrder.nativeOrder());
+            ByteBuffer byteBuffer = buffer.order(ByteOrder.nativeOrder());
 
             buffer.position(0);
             int rank = byteBuffer.getInt();
@@ -336,10 +330,7 @@ public class BinarySerde {
             }
 
             // creating nd4j databuffer now
-            DataBuffer dataBuffer = Nd4j.getDataBufferFactory().createLong(result);
-            return dataBuffer;
+            return Nd4j.getDataBufferFactory().createLong(result);
         }
     }
-
-
 }

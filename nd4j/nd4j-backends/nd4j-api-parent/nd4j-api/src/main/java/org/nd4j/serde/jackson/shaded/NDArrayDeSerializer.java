@@ -34,8 +34,6 @@ public class NDArrayDeSerializer extends JsonDeserializer<INDArray> {
     public INDArray deserialize(JsonParser jp, DeserializationContext deserializationContext) throws IOException {
         JsonNode node = jp.getCodec().readTree(jp);
         String field = node.get("array").asText();
-        INDArray ret = Nd4jBase64.fromBase64(field);
-        return ret;
-
+        return Nd4jBase64.fromBase64(field);
     }
 }
