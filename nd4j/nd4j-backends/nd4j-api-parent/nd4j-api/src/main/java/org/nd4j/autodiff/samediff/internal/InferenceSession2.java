@@ -323,8 +323,12 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
             String[] argNames = i.argNames();
             Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in identity op, got %s", argNames);
             VarId vid = newVarId(argNames[0], outputFrameIter);
-            return new INDArray[]{nodeOutputs.get(vid)};
-
+            //TODO eventually we'll remove this dup for performance reasons, but no dup complicates checking for "input no longer required"
+            // because it actually *is* still
+            INDArray orig = nodeOutputs.get(vid);
+            INDArray ret = mmgr.allocate(false, orig.dataType(), orig.shape());
+            ret.assign(orig);
+            return new INDArray[]{ret };
         } else if(op instanceof Switch) {
             Switch s = (Switch) op;
             String[] argNames = s.argNames();       //Order: input, boolean array

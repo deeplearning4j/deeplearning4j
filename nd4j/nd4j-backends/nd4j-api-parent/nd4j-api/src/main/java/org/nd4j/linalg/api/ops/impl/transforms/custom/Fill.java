@@ -54,7 +54,6 @@ public class Fill extends DynamicCustomOp {
     public Fill(SameDiff sameDiff, SDVariable shape, DataType outputDataType, double value) {
         super(null,sameDiff, new SDVariable[] {shape}, false);
         this.value = value;
-        val shp = shape.getArr();
         this.outputDataType = outputDataType;
         addArgs();
     }

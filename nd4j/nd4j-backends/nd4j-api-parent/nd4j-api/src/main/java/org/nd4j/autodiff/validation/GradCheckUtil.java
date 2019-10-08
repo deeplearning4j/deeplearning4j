@@ -131,12 +131,12 @@ public class GradCheckUtil {
         // in this case, gradients of x and y are all 0 too
 
         //Collect variables to get gradients for - we want placeholders AND variables
-        Set<String> gradVarNames = new HashSet<>();
+        Set<String> varsNeedingGrads = new HashSet<>();
         for(Variable v : sd.getVariables().values()){
             if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)){
                 SDVariable g = v.getVariable().getGradient();
                 Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
-                gradVarNames.add(g.getVarName());
+                varsNeedingGrads.add(v.getName());
             }
         }
 
@@ -164,7 +164,7 @@ public class GradCheckUtil {
         }
 
 
-        sd.execBackwards(placeholderValues, new ArrayList<>(gradVarNames));
+        Map<String,INDArray> gm = sd.calculateGradients(placeholderValues, varsNeedingGrads);
 
         //Remove listener, to reduce overhead
         sd.getListeners().remove(listenerIdx);
@@ -183,11 +183,11 @@ public class GradCheckUtil {
             if(g == null){
                 throw new IllegalStateException("Null gradient variable for \"" + v.getVarName() + "\"");
             }
-            INDArray ga = g.getArr();
+            INDArray ga = gm.get(v.getVarName());
             if(ga == null){
                 throw new IllegalStateException("Null gradient array encountered for variable: " + v.getVarName());
             }
-            if(!Arrays.equals(v.getArr().shape(), g.getArr().shape())){
+            if(!Arrays.equals(v.getArr().shape(), ga.shape())){
                 throw new IllegalStateException("Gradient shape does not match variable shape for variable \"" +
                     v.getVarName() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
                     Arrays.toString(ga.shape()));

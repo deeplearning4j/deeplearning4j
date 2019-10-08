@@ -586,7 +586,8 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable varMul = varMulPre.mul("d", sdVariable1);
         SDVariable sum = sameDiff.sum("ret", varMul, Integer.MAX_VALUE);
 
-        sameDiff.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> m = sameDiff.outputAll(null);
+        Map<String,INDArray> gm = sameDiff.calculateGradients(null, m.keySet());
 
         SDVariable finalResult = sameDiff.grad(sum.getVarName());
 
@@ -597,7 +598,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable wGrad = sameDiff.grad(sdVariable1.getVarName());
         SDVariable dGrad = sameDiff.grad(varMul.getVarName());
 
-        INDArray scalarGradTest = finalResult.getArr();
+        INDArray scalarGradTest = gm.get(sum.getVarName());
         assertEquals(scalar, scalarGradTest);
 
 
@@ -1265,17 +1266,17 @@ public class MiscOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
 
-        SDVariable merged = sd.math().mergeAvg(var);
+        SDVariable merged = sd.math().mergeAvg("merged", var);
         SDVariable sum = sd.sum(merged);
 
-        sd.execAndEndResult();
-        sd.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> m = sd.output(Collections.emptyMap(), "merged");
+        Map<String,INDArray> gm = sd.calculateGradients(null, "in");
 
-        INDArray out = merged.getArr();
+        INDArray out = m.get("merged");
         assertEquals(1, out.rank());
 
-        INDArray inGrad = var.getGradient().getArr();
-        assertEquals(1, inGrad.rank());         //Fails here, getting rank 2
+        INDArray inGrad = gm.get("in");
+        assertEquals(1, inGrad.rank());
     }
 
     @Test
@@ -1643,10 +1644,10 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable v = new StopGradient(sd, w).outputVariable();
         SDVariable loss = v.std(true);
 
-        sd.execBackwards(null);
+        Map<String,INDArray> gm = sd.calculateGradients(null, v.getVarName(), w.getVarName());
 
-        INDArray vArr = v.getGradient().getArr();
-        INDArray wArr = w.getGradient().getArr();
+        INDArray vArr = gm.get(v.getVarName());
+        INDArray wArr = gm.get(w.getVarName());
 
         System.out.println(vArr);
         System.out.println(wArr);
