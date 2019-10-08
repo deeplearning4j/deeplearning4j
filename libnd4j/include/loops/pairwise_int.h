@@ -75,7 +75,9 @@ namespace functions {
 				Nd4jLong *yShapeBuffer,
 				void *result,
 				Nd4jLong *resultShapeBuffer,
-				void *extraParams);
+				void *extraParams,
+                const uint64_t start,
+                const uint64_t stop);
 			
 			static void exec(
 				const int opNum,
@@ -86,7 +88,9 @@ namespace functions {
 				void *result,
 				Nd4jLong resultStride,
 				void *extraParams,
-				Nd4jLong n);
+				Nd4jLong n,
+                const uint64_t start,
+                const uint64_t stop);
 
 
 			template<typename OpType>
@@ -97,7 +101,9 @@ namespace functions {
                     Nd4jLong* yShapeBuffer,
                     void *vresult,
                     Nd4jLong* resultShapeBuffer,
-                    void *vextraParams);
+                    void *vextraParams,
+                    const uint64_t start,
+                    const uint64_t stop);
 
             template<typename OpType>
             static void exec(void *vx,
@@ -107,7 +113,9 @@ namespace functions {
                              void *vresult,
                              Nd4jLong resultStride,
                              void *vextraParams,
-                             const Nd4jLong n);
+                             const Nd4jLong n,
+                             const uint64_t start,
+                             const uint64_t stop);
         };
     }
 }

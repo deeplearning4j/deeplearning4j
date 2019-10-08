@@ -39,7 +39,9 @@ namespace functions {
                 void *z,
                 Nd4jLong zEws,
                 void *extraParams,
-                Nd4jLong n) {
+                Nd4jLong n,
+                const uint64_t start,
+                const uint64_t stop) {
             DISPATCH_BY_OPNUM_T(exec, PARAMS(x,
                                                xEws,
                                                y,
@@ -47,7 +49,7 @@ namespace functions {
                                                z,
                                                zEws,
                                                extraParams,
-                                               n), PAIRWISE_INT_OPS);
+                                               n, start, stop), PAIRWISE_INT_OPS);
         };
 
 
@@ -61,7 +63,9 @@ namespace functions {
                                               void *vz,
                                               Nd4jLong zEws,
                                               void *vextraParams,
-                                              const Nd4jLong n) {
+                                              const Nd4jLong n,
+                                              const uint64_t start,
+                                              const uint64_t stop) {
 
             auto x = reinterpret_cast<X *>(vx);
             auto y = reinterpret_cast<X *>(vy);
@@ -70,12 +74,12 @@ namespace functions {
 
             if (xEws == 1 && yEws == 1 && zEws == 1) {
                 PRAGMA_OMP_SIMD
-                for (uint64_t i = 0; i < n; i ++)
+                for (auto i = start; i < stop; i++)
                     z[i] = OpType::op(x[i], y[i], extraParams);
             }
             else {
                 PRAGMA_OMP_SIMD
-                for (uint64_t i = 0; i < n; i ++)
+                for (auto i = start; i < stop; i++)
                     z[i*zEws] = OpType::op(x[i*xEws], y[i*yEws], extraParams);
             }
         }
@@ -89,14 +93,16 @@ namespace functions {
                 Nd4jLong *yShapeInfo,
                 void *z,
                 Nd4jLong *zShapeInfo,
-                void *extraParams) {
+                void *extraParams,
+                const uint64_t start,
+                const uint64_t stop) {
             DISPATCH_BY_OPNUM_T(exec, PARAMS(x,
                                               xShapeInfo,
                                               y,
                                               yShapeInfo,
                                               z,
                                               zShapeInfo,
-                                              extraParams),
+                                              extraParams, start, stop),
                                  PAIRWISE_INT_OPS);
         };
 
@@ -106,7 +112,9 @@ namespace functions {
         void PairWiseIntTransform<X>::exec(void *vx, Nd4jLong* xShapeInfo,
                                             void *vy, Nd4jLong* yShapeInfo,
                                             void *vz, Nd4jLong* zShapeInfo,
-                                            void *vextraParams) {
+                                            void *vextraParams,
+                                            const uint64_t start,
+                                            const uint64_t stop) {
 
             auto x = reinterpret_cast<X *>(vx);
             auto y = reinterpret_cast<X *>(vy);
@@ -125,7 +133,7 @@ namespace functions {
 
                 if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
                     PRAGMA_OMP_SIMD
-                    for(uint64_t i = 0; i < n; i ++)  {
+                    for(auto i = start; i < stop; i++)  {
                         auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         z[offset] = OpType::op(x[offset], y[0], extraParams);
                     };
@@ -135,7 +143,7 @@ namespace functions {
                     const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
-                    for(uint64_t i = 0; i < n; i ++)  {
+                    for(auto i = start; i < stop; i++)  {
                         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpType::op(x[xOffset], y[0], extraParams);
@@ -148,10 +156,10 @@ namespace functions {
             const bool sameShapesXY = shape::shapeEquals(xShapeInfo, yShapeInfo);
 
             if ((kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) && sameShapesXY) {
-                exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n);
+                exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, n, start, stop);
             }
             else if ((kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) && !sameShapesXY) { //not same shape
-                exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo));
+                exec<OpType>(x, xEws, y, yEws, z, zEws, extraParams, shape::length(yShapeInfo), start, stop);
             }
             else {
 
@@ -160,7 +168,7 @@ namespace functions {
                     const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = 0; i < n; i ++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         z[offset] = OpType::op(x[offset], y[offset], extraParams);
                     };
@@ -172,7 +180,7 @@ namespace functions {
                     const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = 0; i < n; i ++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpType::op(x[offset], y[offset], extraParams);
@@ -185,7 +193,7 @@ namespace functions {
                     const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = 0; i < n; i ++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                         z[offset] = OpType::op(x[offset], y[yOffset], extraParams);
@@ -198,7 +206,7 @@ namespace functions {
                     const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = 0; i < n; i ++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto offset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                         z[offset] = OpType::op(x[xOffset], y[offset], extraParams);
@@ -213,7 +221,7 @@ namespace functions {
                     const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
                     PRAGMA_OMP_SIMD
-                    for (uint64_t i = 0; i < n; i ++)  {
+                    for (auto i = start; i < stop; i++)  {
                         auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                         auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
