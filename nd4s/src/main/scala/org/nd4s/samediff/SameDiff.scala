@@ -54,9 +54,9 @@ class SameDiffWrapper {
     sd.placeHolder(name, dataType, shape: _*)
 }
 
-case class SDIndexWrapper(start: Long) {
+case class SDIndexWrapper(end: Long) {
 
-  def ::(end: Long): SDIndex =
+  def ::(start: Long): SDIndex =
     SDIndex.interval(start, end)
 }
 
@@ -75,18 +75,12 @@ class SDVariableWrapper {
     thisVariable = variable
   }
 
+  // Indexing
   def apply(index: Long): SDVariable = thisVariable.get(SDIndex.point(index))
 
   def apply(index: SDIndex*): SDVariable = thisVariable.get(index: _*)
 
-  /*def apply(x: SDIndex, y: SDIndex): SDVariable =
-    (x, y) match {
-      case (_, y) => thisVariable.get(SDIndex.all(), y)
-      case (x, _) => thisVariable.get(x, SDIndex.all())
-      case (_, _) => thisVariable.get(SDIndex.all(), SDIndex.all())
-      case (x, y) => thisVariable.get(x, y)
-    }*/
-
+  // Arithmetic
   def add(other: Double): Unit = thisVariable.add(other)
 
   def *(other: SDVariable): SDVariable =

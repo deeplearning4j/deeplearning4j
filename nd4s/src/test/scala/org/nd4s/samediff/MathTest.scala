@@ -219,16 +219,19 @@ class MathTest extends FlatSpec with Matchers {
 
     val x = sd.bind(arr)
 
-    println(x(SDIndex.point(0), ---).getArr)
+    x(0, ---).eval shouldBe x(SDIndex.point(0), SDIndex.all()).eval
 
-    val data1 = x(SDIndex.interval(0: Long, 2: Long), ---).getArr
-    println(data1)
+    val slice1 = x.get(SDIndex.interval(0, 2), SDIndex.all()).eval
+    val slice2 = x(0 :: 2, ---).eval
+    slice1 shouldBe slice2
+  }
 
-    val data2 = x(0 :: 2, ---).getArr
-    println(data2)
+  "SDVariable " should "be indexable in 3d" in {
+    implicit val sd = SameDiff.create
 
-    //assert(indices.indices == List(0, 1, 2, 3, 4, 5))
-    //assert(indices.targetShape.toList == List(2, 3))
+    val arr = Nd4j.linspace(DataType.FLOAT, 1.0, 1.0, 18).reshape(3, 3, 2)
+    val x = sd.bind(arr)
 
+    println(x(0,0,SDIndex.all()).eval)
   }
 }

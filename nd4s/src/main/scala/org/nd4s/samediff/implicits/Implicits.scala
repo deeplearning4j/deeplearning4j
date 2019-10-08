@@ -48,4 +48,7 @@ object Implicits {
     val result = new SDIndexWrapper(start)
     result
   }
+
+  implicit def LongToPoint(x: Long): SDIndex =
+    SDIndex.point(x)
 }
