@@ -40,6 +40,8 @@ namespace helpers {
 //        auto boxList = boxes->allTensorsAlongDimension({1, 2}); // split boxes by batch
         auto colorSet = colors->allTensorsAlongDimension({1});
         output->assign(images); // fill up all output with input images, then fill up boxes
+
+        PRAGMA_OMP_PARALLEL_FOR
         for (auto b = 0; b < batchSize; ++b) { // loop by batch
 //            auto image = imageList->at(b);
 
