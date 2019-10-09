@@ -58,6 +58,10 @@ public:
     }
 };
 
+TEST_F(PlaygroundTests, test_s_1) {
+    ::runLightBenchmarkSuit(true);
+}
+
 /*
 TEST_F(PlaygroundTests, test_relubp_1) {
     auto x = NDArrayFactory::create<float>('c', {128, 64, 224, 224});
