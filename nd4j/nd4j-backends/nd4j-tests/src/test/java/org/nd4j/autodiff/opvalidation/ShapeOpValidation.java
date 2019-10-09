@@ -546,7 +546,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                             .testName(msg);
                     String error = OpValidation.validate(tc, true);
                     if(error != null){
-                        failed.add(msg);
+                        failed.add(msg + " - " + error);
                     }
                 }
             }

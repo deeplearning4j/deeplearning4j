@@ -194,8 +194,9 @@ public class OpValidation {
             //Collect variables we need outputs for...
             Set<String> reqVars = testCase.fwdTestFns().keySet();
 
+            Map<String,INDArray> out;
             try {
-                sd.output(testCase.placeholderValues(), new ArrayList<>(reqVars));
+                out = sd.output(testCase.placeholderValues(), new ArrayList<>(reqVars));
             } catch (Exception e) {
                 throw new RuntimeException("Error during forward pass testing" + testCase.testNameErrMsg(), e);
             }
@@ -207,7 +208,7 @@ public class OpValidation {
                             e.getKey() + "\" but SameDiff instance does not have a variable for this name" + testCase.testNameErrMsg());
                 }
 
-                INDArray actual = v.getArr();
+                INDArray actual = out.get(v.getVarName());
                 if (actual == null) {
                     throw new IllegalStateException("Null INDArray after forward pass for variable \"" + e.getKey() + "\"");
                 }

@@ -408,18 +408,18 @@ public class GradCheckUtil {
 
         //Collect names of variables to get gradients for - i.e., the names of the GRADIENT variables for the specified activations
         sd.createGradFunction();
-        Set<String> gradVarNames = new HashSet<>();
+        Set<String> varsRequiringGrads = new HashSet<>();
         for(String s : actGrads){
             SDVariable grad = sd.getVariable(s).gradient();
             Preconditions.checkState( grad != null,"Could not get gradient for activation \"%s\": gradient variable is null", s);
-            gradVarNames.add(grad.getVarName());
+            varsRequiringGrads.add(s);
         }
 
         //Calculate analytical gradients
-        sd.execBackwards(config.getPlaceholderValues(), new ArrayList<>(gradVarNames));
+        Map<String,INDArray> grads = sd.calculateGradients(config.getPlaceholderValues(), new ArrayList<>(varsRequiringGrads));
         Map<String,INDArray> gradientsForAct = new HashMap<>();
         for(String s : actGrads){
-            INDArray arr = sd.getVariable(s).gradient().getArr();
+            INDArray arr = grads.get(s);
             Preconditions.checkState(arr != null, "No activation gradient array for variable \"%s\"", s);
             gradientsForAct.put(s, arr.dup());
         }

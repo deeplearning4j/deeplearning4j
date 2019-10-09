@@ -234,7 +234,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                                 //Enter op: forwards input to specified execution frame
                                 Enter e = (Enter) op.getOp();
                                 VarId vid;
-                                if(constAndPhInputs.contains(inName)){
+                                if(constAndPhInputs != null && constAndPhInputs.contains(inName)){
                                     //Constant or placeholder -> always outer frame, iteration 0, no parent
                                     vid = newVarId(firstOutput, OUTER_FRAME, 0, null);
                                 } else {

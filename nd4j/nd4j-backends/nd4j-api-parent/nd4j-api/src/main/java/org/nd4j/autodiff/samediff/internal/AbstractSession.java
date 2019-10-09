@@ -198,7 +198,8 @@ public abstract class AbstractSession<T, O> {
         //Step 1: determine subgraph structure we actually need to execute
         //Basic plan: work backwards from the variables we want, based on the graph structure, to work out what
         // we actually need to execute
-        List<String> allRequired = new ArrayList<>(requiredActivations);
+        Set<String> userRequestedUnique = new HashSet<>(variables);
+        Set<String> allRequired = new HashSet<>(requiredActivations);
         allRequired.addAll(variables);
         initSubgraph(allRequired);
 
@@ -262,14 +263,14 @@ public abstract class AbstractSession<T, O> {
 
         Map<String, T> out = new HashMap<>();
         int step = 0;
-        while (out.size() < variables.size()) {
+        while (out.size() < userRequestedUnique.size()) {
             if(availableForExec.size() == 0){
-                int missingCount = variables.size() - out.size();
+                int missingCount = userRequestedUnique.size() - out.size();
                 StringBuilder sb = new StringBuilder();
                 sb.append("No variable are available for execution at step ")
                         .append(step).append(": ").append(missingCount).append(" values remaining");
                 Set<String> missing = new HashSet<>();
-                for(String s : variables){
+                for(String s : userRequestedUnique){
                     if(!out.containsKey(s)){
                         missing.add(s);
                     }
@@ -424,7 +425,7 @@ public abstract class AbstractSession<T, O> {
         return out;
     }
 
-    protected void initSubgraph(List<String> variables) {
+    protected void initSubgraph(Set<String> variables) {
         //Step 1: determine subgraph structure we actually need to execute
         Queue<String> processingQueue = new LinkedList<>(variables);
 

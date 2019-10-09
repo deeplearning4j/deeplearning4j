@@ -2196,7 +2196,13 @@ public class SameDiff extends SDBaseOps {
                 resolveVariablesWith(placeholders);
 
                 //Calculate gradients:
-                execBackwards(placeholders, at.operation(), ds, requiredVars, activeListeners);
+//                execBackwards(placeholders, at.operation(), ds, requiredVars, activeListeners);
+                Set<String> allReqVars = new HashSet<>();
+                allReqVars.addAll(requiredVars);
+                for(Variable v : variables.values()){
+                    allReqVars.add(v.getName());
+                }
+                Map<String,INDArray> gradMap = calculateGradients(placeholders, allReqVars);
 
 
                 //Apply updater:
@@ -2225,9 +2231,12 @@ public class SameDiff extends SDBaseOps {
                         //No gradient will be present for in2, because in2 doesn't impact loss1 at all
                         continue;
                     }
-                    INDArray grad = gradVar.getArr();
+//                    INDArray grad = gradVar.getArr();
+                    INDArray grad = gradMap.get(v.getName());
                     //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
                     // which should flow through to here
+
+                    Preconditions.checkState(grad != null, "No gradient array received for \"%s\"", v.getName());
 
                     //Pre-apply regularization (L1, L2)
                     List<Regularization> r = trainingConfig.getRegularization();
@@ -2304,6 +2313,7 @@ public class SameDiff extends SDBaseOps {
                 int count = 0;
                 for (String s : lossVariables) {
                     INDArray arr = gradFn.getArrForVarName(s);
+                    Preconditions.checkState(arr != null, "FIXME - Could not get score array for variable \"%s\"", s);
                     double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
                     d[count++] = l;
                 }
