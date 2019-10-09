@@ -2947,6 +2947,7 @@ public class SameDiffTests extends BaseNd4jTest {
     @Test
     public void testPlaceholderShapeValidation() {
         SameDiff sd = SameDiff.create();
+        SDVariable scalar = sd.scalar("scalar", 0.0f);
         SDVariable ph1 = sd.placeHolder("ph1", DataType.FLOAT, 3, 4);
         SDVariable ph2 = sd.placeHolder("ph2", DataType.FLOAT, -1, 4);
         SDVariable ph3 = sd.placeHolder("ph3", DataType.FLOAT, 3, -1);
@@ -2991,7 +2992,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         //Also try training:
         SDVariable sum = sd.math.mergeAdd(ph1, ph2, ph3, ph4);
-        SDVariable mean = sum.mean();
+        SDVariable mean = sum.add(scalar).mean();
         MultiDataSet mds = new MultiDataSet(new INDArray[]{wrongShape, wrongShape, wrongShape, wrongShape}, null);
 
         sd.setTrainingConfig(TrainingConfig.builder()

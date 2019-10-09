@@ -2147,7 +2147,11 @@ public class SameDiff extends SDBaseOps {
             requiredVars.addAll(l.requiredVariables(this).trainingVariables());
         }
 
-        ArrayList<Listener> listenersWitHistory = new ArrayList<>(listeners);
+        List<Listener> listenersWitHistory = new ArrayList<>(listeners);
+        for(Listener l : this.listeners){
+            if(!listenersWitHistory.contains(l))
+                listenersWitHistory.add(l);
+        }
         listenersWitHistory.add(history);
 
 
@@ -2166,9 +2170,8 @@ public class SameDiff extends SDBaseOps {
             }
         }
 
-
+        Loss lastLoss = null;
         for (int i = 0; i < numEpochs; i++) {
-
             if (incrementEpochCount && hasListeners) {
                 at.setEpoch(trainingConfig.getEpochCount());
                 for (Listener l : activeListeners) {
@@ -2216,22 +2219,22 @@ public class SameDiff extends SDBaseOps {
                 if (!initializedTraining)
                     initializeTraining();
 
-                Loss l = ts.trainingIteration(
+                lastLoss = ts.trainingIteration(
                         trainingConfig,
                         placeholders,
                         paramsToTrain,
                         updaterMap,
                         ds,
                         getLossVariables(),
-                        listeners,
+                        listenersWitHistory,
                         at);
 
 
                 if (lossSums == null) {
-                    lossSums = l.getLosses().clone();
+                    lossSums = lastLoss.getLosses().clone();
                 } else {
                     for (int j = 0; j < lossSums.length; j++) {
-                        lossSums[j] += l.getLosses()[j];
+                        lossSums[j] += lastLoss.getLosses()[j];
                     }
                 }
                 lossCount++;
@@ -2242,6 +2245,8 @@ public class SameDiff extends SDBaseOps {
             long epochTime = System.currentTimeMillis() - epochStartTime;
 
             if (incrementEpochCount) {
+                lossNames = lastLoss.getLossNames();
+
                 for (int j = 0; j < lossSums.length; j++)
                     lossSums[j] /= lossCount;
 
@@ -3758,7 +3763,8 @@ public class SameDiff extends SDBaseOps {
                     long thisSize = trainingConfig.getUpdater().stateSize(arr.length());
                     if (thisSize > 0) {
                         INDArray stateArr = Nd4j.create(arr.dataType(), 1, thisSize);
-                        GradientUpdater u = trainingConfig.getUpdater().instantiate(stateArr, true);
+                        GradientUpdater u = trainingConfig.getUpdater().instantiate(stateArr, false);
+                        u.setStateViewArray(stateArr, arr.shape(), arr.ordering(), true);                       //TODO eventually this should be 1 call...
                         updaterMap.put(v.getVarName(), u);
                     } else {
                         GradientUpdater u = trainingConfig.getUpdater().instantiate((INDArray) null, true);

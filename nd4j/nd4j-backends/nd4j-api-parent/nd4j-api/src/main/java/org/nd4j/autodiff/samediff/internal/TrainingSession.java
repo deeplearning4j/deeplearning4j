@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.listeners.Loss;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
@@ -91,7 +92,9 @@ public class TrainingSession extends InferenceSession2 {
         Loss loss = new Loss(lossVariables, finalLoss);
         if (listeners != null) {
             for (Listener l : listeners) {
-                l.iterationDone(sameDiff, at, batch, loss);
+                if(l.isActive(Operation.TRAINING)) {
+                    l.iterationDone(sameDiff, at, batch, loss);
+                }
             }
         }
 
