@@ -137,6 +137,9 @@ trait SliceableNDArray[A <: INDArray] {
         case ---> :: t =>
           val ellipsised = List.fill(originalShape.length - i - t.size)(->)
           modifyTargetIndices(ellipsised ::: t, i, acc)
+        case --- :: t =>
+          val ellipsised = List.fill(originalShape.length - i - t.size)(->)
+          modifyTargetIndices(ellipsised ::: t, i, acc)
         case IntRangeFrom(from: Int) :: t =>
           val max = originalShape(i)
           modifyTargetIndices(t, i + 1, IndexNumberRange.toNDArrayIndex(from, max, false, 1, max) :: acc)

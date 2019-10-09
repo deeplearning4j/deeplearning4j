@@ -276,6 +276,10 @@ object Implicits {
     override def hasNegative: Boolean = false
   }
 
+  case object --- extends IndexRange {
+    override def hasNegative: Boolean = false
+  }
+
   implicit class IntRange(val underlying: Int) extends IndexNumberRange {
     protected[nd4s] override def asRange(max: => Int): DRange =
       DRange(underlying, underlying, true, 1, max)
