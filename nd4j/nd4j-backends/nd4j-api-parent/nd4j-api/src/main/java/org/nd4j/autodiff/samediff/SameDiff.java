@@ -2161,6 +2161,7 @@ public class SameDiff extends SDBaseOps {
             gradInstance = getFunction("grad");
         }
         TrainingSession ts = new TrainingSession(gradInstance);
+        gradInstance.setTrainingConfig(trainingConfig);     //In case any listeners want to use it
 
         Set<String> paramsToTrain = new LinkedHashSet<>();
         for(Variable v : variables.values()){

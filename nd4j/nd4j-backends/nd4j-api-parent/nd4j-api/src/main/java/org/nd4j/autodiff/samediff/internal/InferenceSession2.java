@@ -209,8 +209,17 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                             // in the set of outputs...
 
                             //Get the VarId of the input. Note in the case of Merge(x, y) only one of x/y will be calculated
+
                             VarId vidOfInput = lookup(inName, opInputs, allIterInputs, false);
-                            Preconditions.checkState(vidOfInput != null || op.getOp() instanceof Merge, "Could not find VarId of input array - %s", inName);
+                            if(vidOfInput == null && !(op.getOp() instanceof Merge)){
+                                //Could be nested enter case
+                                //For Enter case, this is nested enters - like constant -> enter -> enter. See getAndParameterizeOp method for this case for further details
+                                String outOfOp = sameDiff.getVariables().get(inName).getOutputOfOp();
+                                if( outOfOp != null && sameDiff.getOpById(outOfOp) instanceof Enter){
+                                    continue;
+                                }
+                                throw new IllegalStateException("Could not find VarId of input array - " + inName);
+                            }
 
                             //If currently executed op is X -> Y, and we're iterating over inputs X
                             // then at this point opOut is Z, in X -> Z, where Z may or may not be same as Y
@@ -328,7 +337,8 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
             INDArray orig = nodeOutputs.get(vid);
             INDArray ret = mmgr.allocate(false, orig.dataType(), orig.shape());
             ret.assign(orig);
-            return new INDArray[]{ret };
+            i.setInputArgument(0, null);    //Clear reference in case it's closed later
+            return new INDArray[]{ret};
         } else if(op instanceof Switch) {
             Switch s = (Switch) op;
             String[] argNames = s.argNames();       //Order: input, boolean array
@@ -852,7 +862,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                     reqShape = reqShape.asDataType(dt);
                 }
 
-                if(currOutput == null || !currOutput.shapeDescriptor().equals(reqShape) || currOutput.isEmpty() != reqShape.isEmpty() || isLoop){
+                if(currOutput == null || currOutput.wasClosed() || !currOutput.shapeDescriptor().equals(reqShape) || currOutput.isEmpty() != reqShape.isEmpty() || isLoop){
                     boolean isOutput = allReqVariables.contains(outNames[i]);
                     INDArray out = mmgr.allocate(isOutput, reqShape);
                     customOp.setOutputArgument(i, out);
