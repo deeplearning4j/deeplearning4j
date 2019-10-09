@@ -298,7 +298,14 @@ namespace samediff {
         else if (rem_z == 0) // TODO: we don't want too smal splits over last dimension? or we do?
             return 3;
 
-        return 0;
+        if (iters_x > numThreads)
+            return 1;
+        else if (iters_y > numThreads)
+            return 2;
+        else if (iters_z > numThreads)
+            return 3;
+
+        return 1;
     }
 
     int Threads::parallel_tad(FUNC_1D function, int64_t start, int64_t stop, int64_t increment, uint32_t numThreads) {

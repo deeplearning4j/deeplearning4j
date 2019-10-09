@@ -29,6 +29,7 @@
 
 #include <omp.h>
 #include <thread>
+#include <helpers/logger.h>
 
 #endif
 
@@ -59,6 +60,7 @@ namespace nd4j {
                 std::string omp(omp_threads);
                 int val = std::stoi(omp);
                 _maxThreads.store(val);
+                nd4j_printf("Max threads: %i\n", val);
             } catch (std::invalid_argument &e) {
                 // just do nothing
             } catch (std::out_of_range &e) {

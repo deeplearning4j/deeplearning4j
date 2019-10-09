@@ -78,6 +78,10 @@ TEST_F(ThreadsTests, th_test_3) {
     // checking for optimal threads for conv training
     ASSERT_EQ(6, ThreadsHelper::numberOfThreads3d(6, 16, 3, 128));
     ASSERT_EQ(6, ThreadsHelper::numberOfThreads3d(6, 8, 3, 128));
+
+
+    ASSERT_EQ(6, ThreadsHelper::numberOfThreads3d(6, 8, 3, 64));
+    ASSERT_EQ(1, ThreadsHelper::pickLoop3d(6, 8, 3, 64));
 }
 
 TEST_F(ThreadsTests, validation_test_2d_1) {
