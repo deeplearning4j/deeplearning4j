@@ -1,15 +1,28 @@
 package org.deeplearning4j.rl4j.learning.sync.support;
 
+import lombok.Setter;
 import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
 public class MockDQN implements IDQN {
+
+    private final double mult;
+
+    public MockDQN() {
+        this(1.0);
+    }
+
+    public MockDQN(double mult) {
+        this.mult = mult;
+    }
+
     @Override
     public NeuralNetwork[] getNeuralNetworks() {
         return new NeuralNetwork[0];
@@ -37,7 +50,11 @@ public class MockDQN implements IDQN {
 
     @Override
     public INDArray output(INDArray batch) {
-        return null;
+        if(mult != 1.0) {
+            return batch.dup().muli(mult);
+        }
+
+        return batch;
     }
 
     @Override

@@ -16,12 +16,14 @@
 
 package org.deeplearning4j.rl4j.learning.sync.qlearning.discrete;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
+import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.*;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
@@ -29,10 +31,7 @@ import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.indexing.INDArrayIndex;
-import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.primitives.Pair;
+import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -53,29 +52,38 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
     @Getter
     final private MDP<O, Integer, DiscreteSpace> mdp;
     @Getter
-    final private IDQN currentDQN;
-    @Getter
     private DQNPolicy<O> policy;
     @Getter
     private EpsGreedy<O, Integer, DiscreteSpace> egPolicy;
+
     @Getter
-    @Setter
-    private IDQN targetDQN;
+    final private IDQN qNetwork;
+    @Getter
+    @Setter(AccessLevel.PROTECTED)
+    private IDQN targetQNetwork;
+
     private int lastAction;
     private INDArray[] history = null;
     private double accuReward = 0;
+
+    ITDTargetAlgorithm tdTargetAlgorithm;
 
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
                              int epsilonNbStep) {
         super(conf);
         this.configuration = conf;
         this.mdp = mdp;
-        currentDQN = dqn;
-        targetDQN = dqn.clone();
-        policy = new DQNPolicy(getCurrentDQN());
+        qNetwork = dqn;
+        targetQNetwork = dqn.clone();
+        policy = new DQNPolicy(getQNetwork());
         egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), epsilonNbStep, getRandom(), conf.getMinEpsilon(),
                 this);
         mdp.getActionSpace().setSeed(conf.getSeed());
+
+        tdTargetAlgorithm = conf.isDoubleDQN()
+                ? new DoubleDQN(this, conf.getGamma(), conf.getErrorClamp())
+                : new StandardDQN(this, conf.getGamma(), conf.getErrorClamp());
+
     }
 
     public void postEpoch() {
@@ -134,7 +142,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             if (hstack.shape().length > 2)
                 hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape())));
 
-            INDArray qs = getCurrentDQN().output(hstack);
+            INDArray qs = getQNetwork().output(hstack);
             int maxAction = Learning.getMaxAction(qs);
 
             maxQ = qs.getDouble(maxAction);
@@ -160,96 +168,31 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             getExpReplay().store(trans);
 
             if (getStepCounter() > updateStart) {
-                Pair<INDArray, INDArray> targets = setTarget(getExpReplay().getBatch());
-                getCurrentDQN().fit(targets.getFirst(), targets.getSecond());
+                DataSet targets = setTarget(getExpReplay().getBatch());
+                getQNetwork().fit(targets.getFeatures(), targets.getLabels());
             }
 
             history = nhistory;
             accuReward = 0;
         }
 
-
-        return new QLStepReturn<O>(maxQ, getCurrentDQN().getLatestScore(), stepReply);
-
+        return new QLStepReturn<O>(maxQ, getQNetwork().getLatestScore(), stepReply);
     }
 
-    protected Pair<INDArray, INDArray> setTarget(ArrayList<Transition<Integer>> transitions) {
+    protected DataSet setTarget(ArrayList<Transition<Integer>> transitions) {
         if (transitions.size() == 0)
             throw new IllegalArgumentException("too few transitions");
 
-        int size = transitions.size();
-
+        // TODO: Remove once we use DataSets in observations
         int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
                 : getHistoryProcessor().getConf().getShape();
-        int[] nshape = makeShape(size, shape);
-        INDArray obs = Nd4j.create(nshape);
-        INDArray nextObs = Nd4j.create(nshape);
-        int[] actions = new int[size];
-        boolean[] areTerminal = new boolean[size];
+        ((BaseTDTargetAlgorithm) tdTargetAlgorithm).setNShape(makeShape(transitions.size(), shape));
 
-        for (int i = 0; i < size; i++) {
-            Transition<Integer> trans = transitions.get(i);
-            areTerminal[i] = trans.isTerminal();
-            actions[i] = trans.getAction();
-
-            INDArray[] obsArray = trans.getObservation();
-            if (obs.rank() == 2) {
-                obs.putRow(i, obsArray[0]);
-            } else {
-                for (int j = 0; j < obsArray.length; j++) {
-                    obs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, obsArray[j]);
-                }
-            }
-
-            INDArray[] nextObsArray = Transition.append(trans.getObservation(), trans.getNextObservation());
-            if (nextObs.rank() == 2) {
-                nextObs.putRow(i, nextObsArray[0]);
-            } else {
-                for (int j = 0; j < nextObsArray.length; j++) {
-                    nextObs.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, nextObsArray[j]);
-                }
-            }
-        }
-        if (getHistoryProcessor() != null) {
-            obs.muli(1.0 / getHistoryProcessor().getScale());
-            nextObs.muli(1.0 / getHistoryProcessor().getScale());
+        // TODO: Remove once we use DataSets in observations
+        if(getHistoryProcessor() != null) {
+            ((BaseTDTargetAlgorithm) tdTargetAlgorithm).setScale(getHistoryProcessor().getScale());
         }
 
-        INDArray dqnOutputAr = dqnOutput(obs);
-
-        INDArray dqnOutputNext = dqnOutput(nextObs);
-        INDArray targetDqnOutputNext = targetDqnOutput(nextObs);
-
-        INDArray tempQ = null;
-        INDArray getMaxAction = null;
-        if (getConfiguration().isDoubleDQN()) {
-            getMaxAction = Nd4j.argMax(dqnOutputNext, 1);
-        } else {
-            tempQ = Nd4j.max(targetDqnOutputNext, 1);
-        }
-
-
-        for (int i = 0; i < size; i++) {
-            double yTar = transitions.get(i).getReward();
-            if (!areTerminal[i]) {
-                double q = 0;
-                if (getConfiguration().isDoubleDQN()) {
-                    q += targetDqnOutputNext.getDouble(i, getMaxAction.getInt(i));
-                } else
-                    q += tempQ.getDouble(i);
-
-                yTar += getConfiguration().getGamma() * q;
-
-            }
-
-            double previousV = dqnOutputAr.getDouble(i, actions[i]);
-            double lowB = previousV - getConfiguration().getErrorClamp();
-            double highB = previousV + getConfiguration().getErrorClamp();
-            double clamped = Math.min(highB, Math.max(yTar, lowB));
-
-            dqnOutputAr.putScalar(i, actions[i], clamped);
-        }
-
-        return new Pair(obs, dqnOutputAr);
+        return tdTargetAlgorithm.computeTDTargets(transitions);
     }
 }
