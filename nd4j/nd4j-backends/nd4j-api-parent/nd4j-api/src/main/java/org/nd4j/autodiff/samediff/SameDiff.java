@@ -2150,6 +2150,23 @@ public class SameDiff extends SDBaseOps {
         ArrayList<Listener> listenersWitHistory = new ArrayList<>(listeners);
         listenersWitHistory.add(history);
 
+
+        SameDiff gradInstance = getFunction("grad");
+        if(gradInstance == null){
+            createGradFunction();
+            gradInstance = getFunction("grad");
+        }
+        TrainingSession ts = new TrainingSession(gradInstance);
+
+        Set<String> paramsToTrain = new LinkedHashSet<>();
+        for(Variable v : variables.values()){
+            if(v.getVariable().getVariableType() == VariableType.VARIABLE){
+                //TODO not all variable type are needed - i.e., variable that doesn't impact loss should be skipped
+                paramsToTrain.add(v.getName());
+            }
+        }
+
+
         for (int i = 0; i < numEpochs; i++) {
 
             if (incrementEpochCount && hasListeners) {
@@ -2195,12 +2212,29 @@ public class SameDiff extends SDBaseOps {
                 Preconditions.checkState(placeholders.size() > 0, "No placeholder variables were set for training");
                 resolveVariablesWith(placeholders);
 
+                //Call TrainingSession to perform training
+                if (!initializedTraining)
+                    initializeTraining();
+
+                ts.trainingIteration(
+                        trainingConfig,
+                        placeholders,
+                        paramsToTrain,
+                        updaterMap,
+                        ds,
+                        listeners,
+                        at);
+
+                /*
+
                 //Calculate gradients:
 //                execBackwards(placeholders, at.operation(), ds, requiredVars, activeListeners);
                 Set<String> allReqVars = new HashSet<>();
                 allReqVars.addAll(requiredVars);
                 for(Variable v : variables.values()){
-                    allReqVars.add(v.getName());
+                    if(v.getVariable().getVariableType() == VariableType.VARIABLE) {
+                        allReqVars.add(v.getName());
+                    }
                 }
                 Map<String,INDArray> gradMap = calculateGradients(placeholders, allReqVars);
 
@@ -2346,11 +2380,14 @@ public class SameDiff extends SDBaseOps {
 
                 }
 
+                 */
+
                 trainingConfig.incrementIterationCount();
             }
 
             long epochTime = System.currentTimeMillis() - epochStartTime;
 
+            /*
             if (incrementEpochCount) {
                 for (int j = 0; j < lossSums.length; j++)
                     lossSums[j] /= lossCount;
@@ -2436,6 +2473,7 @@ public class SameDiff extends SDBaseOps {
 
                 trainingConfig.incrementEpochCount();
             }
+            */
 
             if (i < numEpochs - 1) {
                 iter.reset();
@@ -4643,7 +4681,11 @@ public class SameDiff extends SDBaseOps {
 
         List<String> gradVarNames = new ArrayList<>(variables.size());
         for(String s : variables){
-            gradVarNames.add(getVariable(s).getGradient().getVarName());
+            SDVariable v = getVariable(s).getGradient();
+            if(v != null){
+                //In a few cases (like loss not depending on trainable parameters) we won't have gradient array for parameter variable
+                gradVarNames.add(v.getVarName());
+            }
         }
 
         //Key is gradient variable name
@@ -4651,8 +4693,10 @@ public class SameDiff extends SDBaseOps {
 
         Map<String,INDArray> out = new HashMap<>();
         for(String s : variables){
-            String gradVar = getVariable(s).getGradient().getVarName();
-            out.put(s, grads.get(gradVar));
+            if(getVariable(s).getGradient() != null) {
+                String gradVar = getVariable(s).getGradient().getVarName();
+                out.put(s, grads.get(gradVar));
+            }
         }
 
         return out;

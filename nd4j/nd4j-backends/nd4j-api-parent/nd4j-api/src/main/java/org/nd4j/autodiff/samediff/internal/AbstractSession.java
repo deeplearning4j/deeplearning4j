@@ -167,7 +167,7 @@ public abstract class AbstractSession<T, O> {
     public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues,
             MultiDataSet batch, Collection<String> requiredActivations, List<Listener> listeners, At at) {
 
-        Preconditions.checkState(!variables.isEmpty(), "Variables to perform forward pass for must not be empty");
+        Preconditions.checkState(!variables.isEmpty() || !requiredActivations.isEmpty(), "Variables to perform forward pass for must not be empty");
 
         if(requiredActivations == null)
             requiredActivations = Collections.emptyList();

@@ -215,8 +215,8 @@ public class SDVariable implements Serializable {
      * created automatically when training is performed.
      */
     public SDVariable getGradient() {
-        Preconditions.checkState(dataType().isFPType(), "Cannot get gradient of %s variable \"%s\": only floating" +
-                " point variables have gradients", getVarName(), dataType());
+        Preconditions.checkState(dataType().isFPType(), "Cannot get gradient of %s datatype variable \"%s\": only floating" +
+                " point variables have gradients", dataType(), getVarName());
         return sameDiff.getGradForVariable(getVarName());
     }
 
