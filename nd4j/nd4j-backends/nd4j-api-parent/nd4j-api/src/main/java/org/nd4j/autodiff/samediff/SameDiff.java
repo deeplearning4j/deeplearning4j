@@ -2550,7 +2550,9 @@ public class SameDiff extends SDBaseOps {
                 INDArray arr = v.getVariable().getArr();
                 long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
                 INDArray view = stateSize == 0 ? null : Nd4j.createUninitialized(arr.dataType(), 1, stateSize);
-                updaterMap.put(v.getName(), trainingConfig.getUpdater().instantiate(view, true));
+                GradientUpdater gu = trainingConfig.getUpdater().instantiate(view, false);
+                gu.setStateViewArray(view, arr.shape(), arr.ordering(), true);
+                updaterMap.put(v.getName(), gu);
             }
 
             initializedTraining = true;

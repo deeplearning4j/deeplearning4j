@@ -12,6 +12,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.learning.GradientUpdater;
+import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.*;
 
@@ -79,23 +80,52 @@ public class TrainingSession extends InferenceSession2 {
                 GradientUpdater u = updaters.get(varName);
                 Preconditions.checkState(u != null, "No updater found for variable \"%s\"", varName);
 
+                Variable var = sameDiff.getVariables().get(varName);
+                int outIdx = op.getOutputsOfOp().indexOf(s);
+                INDArray gradArr = out[outIdx];
+                INDArray paramArr = var.getVariable().getArr();
+
                 //TODO Parameter sharing case - this is *probably* actually safe, as backprop will add gradients
                 // in this case. i.e., gradient for x, dL/dx, is only available after all components have been added
                 // as x.gradient is updated to account for all uses, during backprop
                 // Put another way: gradient variable representing dL/dx must account for all uses of x - and hence accounts
                 // for gradient accumulation - already
-                Variable var = sameDiff.getVariables().get(varName);
                 List<String> inputsToOps = var.getInputsForOp();
-                Preconditions.checkState(inputsToOps.size() == 2, "FIXME: Possible parameter sharing detected (not handled yet)");
+                //Preconditions.checkState(inputsToOps.size() == 2, "FIXME: Possible parameter sharing detected (not handled yet)");
 
+                //Pre-updater regularization (L1, L2)
+                List<Regularization> r = config.getRegularization();
+                if(r != null && r.size() > 0){
+                    double lr = config.getUpdater().hasLearningRate() ? config.getUpdater().getLearningRate(at.iteration(), at.epoch()) : 1.0;
+                    for (Regularization reg : r) {
+                        if (reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER) {
+                            reg.apply(paramArr, gradArr, lr, at.iteration(), at.epoch());
+                        }
+                    }
+                }
 
-                int outIdx = op.getOutputsOfOp().indexOf(s);
-                INDArray gradArr = out[outIdx];
                 u.applyUpdater(gradArr, at.iteration(), at.epoch());
 
+                //Post-apply regularization (weight decay)
+                if (r != null && r.size() > 0) {
+                    double lr = config.getUpdater().hasLearningRate() ? config.getUpdater().getLearningRate(at.iteration(), at.epoch()) : 1.0;
+                    for (Regularization reg : r) {
+                        if (reg.applyStep() == Regularization.ApplyStep.POST_UPDATER) {
+                            reg.apply(paramArr, gradArr, lr, at.iteration(), at.epoch());
+                            /*
+                            if (hasListeners) {
+                                double score = reg.score(param, iterCount, epochCount);
+                                if (!regScore.containsKey(reg.getClass())) {
+                                    regScore.put(reg.getClass(), new AtomicDouble());
+                                }
+                                regScore.get(reg.getClass()).addAndGet(score);
+                            }
+                             */
+                        }
+                    }
+                }
 
                 //Update:
-                INDArray paramArr = var.getVariable().getArr();
                 if (config.isMinimize()) {
                     paramArr.subi(gradArr);
                 } else {
