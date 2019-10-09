@@ -320,7 +320,7 @@ public class History {
      * Gets the training evaluations ran during the last epoch
      */
     public EvaluationRecord finalTrainingEvaluations(){
-        Preconditions.checkState(!validationHistory.isEmpty(), "Cannot get final training evaluation - history is empty");
+        Preconditions.checkState(!trainingHistory.isEmpty(), "Cannot get final training evaluation - history is empty");
         return trainingHistory.get(trainingHistory.size() - 1);
     }
 

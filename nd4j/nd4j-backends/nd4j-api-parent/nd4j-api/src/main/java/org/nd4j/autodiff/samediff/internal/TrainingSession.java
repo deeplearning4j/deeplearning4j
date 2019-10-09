@@ -4,6 +4,7 @@ import com.sun.prism.paint.Gradient;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
+import org.nd4j.autodiff.listeners.Loss;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
@@ -13,6 +14,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
+import org.nd4j.linalg.primitives.AtomicDouble;
 
 import java.util.*;
 
@@ -20,6 +22,7 @@ import java.util.*;
  * TrainingSession extends InferenceSession, to add training-specific functionality:
  * - Application of regularization (L1, L2, weight decay etc)
  * - Inline updating of variables
+ * - Calculation of regularization scores (Score for L1, L2, etc)
  */
 @Slf4j
 public class TrainingSession extends InferenceSession2 {
@@ -27,13 +30,17 @@ public class TrainingSession extends InferenceSession2 {
     protected TrainingConfig config;
     protected Map<String,String> gradVarToVarMap;
     protected Map<String, GradientUpdater> updaters;
+    protected Map<String,Integer> lossVarsToLossIdx;
+    protected double[] currIterLoss;
+    protected Map<Class<?>, AtomicDouble> currIterRegLoss;
+
 
     public TrainingSession(SameDiff sameDiff) {
         super(sameDiff);
     }
 
-    public void trainingIteration(TrainingConfig config, Map<String, INDArray> placeholders, Set<String> paramsToTrain, Map<String, GradientUpdater> updaters,
-                                  MultiDataSet batch, List<Listener> listeners, At at){
+    public Loss trainingIteration(TrainingConfig config, Map<String, INDArray> placeholders, Set<String> paramsToTrain, Map<String, GradientUpdater> updaters,
+                                  MultiDataSet batch, List<String> lossVariables, List<Listener> listeners, At at){
         this.config = config;
         this.updaters = updaters;
 
@@ -52,10 +59,43 @@ public class TrainingSession extends InferenceSession2 {
             gradVarToVarMap.put(grad.getVarName(), s);
         }
 
-        List<String> outputVars = new ArrayList<>(gradVarToVarMap.keySet());    //TODO this should be empty, and grads calculated in requiredActivations
+        //Set up losses
+        lossVarsToLossIdx = new LinkedHashMap<>();
+        List<String> lossVars;
+        currIterLoss = new double[lossVariables.size()];
+        currIterRegLoss = new HashMap<>();
+        for( int i=0; i<lossVariables.size(); i++ ){
+            lossVarsToLossIdx.put(lossVariables.get(i), i);
+        }
 
-//        Map<String,INDArray> m = output(Collections.<String>emptyList(), placeholders, batch, requiredActivations, listeners, at );
+        //Do training iteration
+        List<String> outputVars = new ArrayList<>(gradVarToVarMap.keySet());    //TODO this should be empty, and grads calculated in requiredActivations
         Map<String,INDArray> m = output(outputVars, placeholders, batch, requiredActivations, listeners, at );
+
+
+        double[] finalLoss = new double[currIterLoss.length + currIterRegLoss.size()];
+        System.arraycopy(currIterLoss, 0, finalLoss, 0, currIterLoss.length);
+        if (currIterRegLoss.size() > 0) {
+            lossVars = new ArrayList<>(lossVariables.size() + currIterRegLoss.size());
+            lossVars.addAll(lossVariables);
+            int s = currIterRegLoss.size();
+            //Collect regularization losses
+            for (Map.Entry<Class<?>, AtomicDouble> entry : currIterRegLoss.entrySet()) {
+                lossVars.add(entry.getKey().getSimpleName());
+                finalLoss[s] = entry.getValue().get();
+            }
+        } else {
+            lossVars = lossVariables;
+        }
+
+        Loss loss = new Loss(lossVariables, finalLoss);
+        if (listeners != null) {
+            for (Listener l : listeners) {
+                l.iterationDone(sameDiff, at, batch, loss);
+            }
+        }
+
+        return loss;
     }
 
     @Override
@@ -65,7 +105,17 @@ public class TrainingSession extends InferenceSession2 {
         INDArray[] out = super.getOutputs(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs, listeners, at, batch, allReqVariables);
 
         List<String> outputs = op.getOutputsOfOp();
+        int outIdx = 0;
         for(String s : outputs){
+            //If this is a loss variable - record it
+            if(lossVarsToLossIdx.containsKey(s)){
+                int lossIdx = lossVarsToLossIdx.get(s);
+                INDArray arr = out[outIdx];
+                double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
+                currIterLoss[lossIdx] += l;
+            }
+
+            //If this is a gradient variable - apply the updater and update the parameter array in-line
             if(gradVarToVarMap.containsKey(s)){
                 String varName = gradVarToVarMap.get(s);
                 log.info("Calculated gradient for variable \"{}\": (grad var name: \"{}\")", varName, s);
@@ -81,7 +131,6 @@ public class TrainingSession extends InferenceSession2 {
                 Preconditions.checkState(u != null, "No updater found for variable \"%s\"", varName);
 
                 Variable var = sameDiff.getVariables().get(varName);
-                int outIdx = op.getOutputsOfOp().indexOf(s);
                 INDArray gradArr = out[outIdx];
                 INDArray paramArr = var.getVariable().getArr();
 
@@ -125,6 +174,13 @@ public class TrainingSession extends InferenceSession2 {
                     }
                 }
 
+                if (listeners != null) {
+                    for (Listener l : listeners) {
+                        if (l.isActive(at.operation()))
+                            l.preUpdate(sameDiff, at, var, gradArr);
+                    }
+                }
+
                 //Update:
                 if (config.isMinimize()) {
                     paramArr.subi(gradArr);
@@ -133,6 +189,8 @@ public class TrainingSession extends InferenceSession2 {
                 }
                 log.info("Applied updater to gradient and updated variable: {}", varName);
             }
+
+            outIdx++;
         }
 
         return out;

@@ -2216,178 +2216,31 @@ public class SameDiff extends SDBaseOps {
                 if (!initializedTraining)
                     initializeTraining();
 
-                ts.trainingIteration(
+                Loss l = ts.trainingIteration(
                         trainingConfig,
                         placeholders,
                         paramsToTrain,
                         updaterMap,
                         ds,
+                        getLossVariables(),
                         listeners,
                         at);
 
-                /*
-
-                //Calculate gradients:
-//                execBackwards(placeholders, at.operation(), ds, requiredVars, activeListeners);
-                Set<String> allReqVars = new HashSet<>();
-                allReqVars.addAll(requiredVars);
-                for(Variable v : variables.values()){
-                    if(v.getVariable().getVariableType() == VariableType.VARIABLE) {
-                        allReqVars.add(v.getName());
-                    }
-                }
-                Map<String,INDArray> gradMap = calculateGradients(placeholders, allReqVars);
-
-
-                //Apply updater:
-                if (!initializedTraining)
-                    initializeTraining();
-
-                Map<Class<?>, AtomicDouble> regScore = null;        //Holds regularization scores for later reporting to listeners
-                if (hasListeners) {
-                    regScore = new HashMap<>();
-                }
-
-                int iteration = trainingConfig.getIterationCount();
-                int e = trainingConfig.getEpochCount();
-                for (Variable v : variables.values()) {
-                    //Only update trainable params - float type parameters (variable type vars)
-                    SDVariable sdv = v.getVariable();
-                    if (sdv.getVariableType() != VariableType.VARIABLE || !sdv.dataType().isFPType())
-                        continue;
-
-
-                    INDArray param = sdv.getArr();
-                    SDVariable gradVar = sdv.getGradient();
-                    if (gradVar == null) {
-                        //Not all trainable parameters have gradients defined.
-                        //Consider graph: in1->loss1; in2->loss2, where we optimize only loss1.
-                        //No gradient will be present for in2, because in2 doesn't impact loss1 at all
-                        continue;
-                    }
-//                    INDArray grad = gradVar.getArr();
-                    INDArray grad = gradMap.get(v.getName());
-                    //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
-                    // which should flow through to here
-
-                    Preconditions.checkState(grad != null, "No gradient array received for \"%s\"", v.getName());
-
-                    //Pre-apply regularization (L1, L2)
-                    List<Regularization> r = trainingConfig.getRegularization();
-                    int iterCount = trainingConfig.getIterationCount();
-                    int epochCount = trainingConfig.getEpochCount();
-                    double lr = trainingConfig.getUpdater().hasLearningRate() ? trainingConfig.getUpdater().getLearningRate(iteration, epochCount) : 1.0;
-                    if (r != null && r.size() > 0) {
-                        for (Regularization reg : r) {
-                            if (reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER) {
-                                reg.apply(param, grad, lr, iterCount, epochCount);
-                            }
-                        }
-                    }
-
-                    //Apply updater. Note that we need to reshape to [1,length] for updater
-                    INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
-                    Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", sdv);
-                    GradientUpdater u = updaterMap.get(sdv.getVarName());
-                    try {
-                        u.applyUpdater(reshapedView, iteration, e);
-                    } catch (Throwable t) {
-                        throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + sdv.getVarName()
-                                + "\": either parameter size is inconsistent between iterations, or \"" + sdv.getVarName() + "\" should not be a trainable parameter?", t);
-                    }
-
-                    //Post-apply regularization (weight decay)
-                    if (r != null && r.size() > 0) {
-                        for (Regularization reg : r) {
-                            if (reg.applyStep() == Regularization.ApplyStep.POST_UPDATER) {
-                                reg.apply(param, grad, lr, iterCount, epochCount);
-                                if (hasListeners) {
-                                    double score = reg.score(param, iterCount, epochCount);
-                                    if (!regScore.containsKey(reg.getClass())) {
-                                        regScore.put(reg.getClass(), new AtomicDouble());
-                                    }
-                                    regScore.get(reg.getClass()).addAndGet(score);
-                                }
-                            }
-                        }
-                    }
-
-                    if (hasListeners) {
-                        for (Listener l : activeListeners) {
-                            if (l.isActive(at.operation()))
-                                l.preUpdate(this, at, v, reshapedView);
-                        }
-                    }
-
-
-                    if (trainingConfig.isMinimize()) {
-                        param.subi(grad);
-                    } else {
-                        param.addi(grad);
-                    }
-                }
-
-                double[] d = new double[lossVariables.size() + regScore.size()];
-                List<String> lossVars;
-                if (regScore.size() > 0) {
-                    lossVars = new ArrayList<>(lossVariables.size() + regScore.size());
-                    lossVars.addAll(lossVariables);
-                    int s = regScore.size();
-                    //Collect regularization losses
-                    for (Map.Entry<Class<?>, AtomicDouble> entry : regScore.entrySet()) {
-                        lossVars.add(entry.getKey().getSimpleName());
-                        d[s] = entry.getValue().get();
-                    }
-                } else {
-                    lossVars = lossVariables;
-                }
-
-                //Collect the losses...
-                SameDiff gradFn = sameDiffFunctionInstances.get(GRAD_FN_KEY);
-                int count = 0;
-                for (String s : lossVariables) {
-                    INDArray arr = gradFn.getArrForVarName(s);
-                    Preconditions.checkState(arr != null, "FIXME - Could not get score array for variable \"%s\"", s);
-                    double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
-                    d[count++] = l;
-                }
-
-                Loss loss = new Loss(lossVars, d);
-
-                if (lossNames == null) {
-                    lossNames = lossVars;
-                } else {
-                    Preconditions.checkState(lossNames.equals(lossVars),
-                            "Loss names mismatch, expected: %s, got: %s", lossNames, lossVars);
-                }
 
                 if (lossSums == null) {
-                    lossSums = d;
+                    lossSums = l.getLosses().clone();
                 } else {
-                    Preconditions.checkState(lossNames.equals(lossVars),
-                            "Loss size mismatch, expected: %s, got: %s", lossSums.length, d.length);
-
                     for (int j = 0; j < lossSums.length; j++) {
-                        lossSums[j] += d[j];
+                        lossSums[j] += l.getLosses()[j];
                     }
                 }
                 lossCount++;
-
-                if (hasListeners) {
-                    for (Listener l : activeListeners) {
-                        l.iterationDone(this, at, ds, loss);
-                    }
-
-                }
-
-                 */
 
                 trainingConfig.incrementIterationCount();
             }
 
             long epochTime = System.currentTimeMillis() - epochStartTime;
 
-            /*
             if (incrementEpochCount) {
                 for (int j = 0; j < lossSums.length; j++)
                     lossSums[j] /= lossCount;
@@ -2398,14 +2251,13 @@ public class SameDiff extends SDBaseOps {
                     lossCurve = new LossCurve(lossSums, lossNames);
             }
 
+
             if (incrementEpochCount) {
                 if (hasListeners) {
-
                     boolean doStop = false;
                     Listener stopped = null;
 
                     for (Listener l : activeListeners) {
-
                         ListenerResponse res = l.epochEnd(this, at, lossCurve, epochTime);
 
                         if (res == ListenerResponse.STOP && (i < numEpochs - 1)) {
@@ -2473,8 +2325,6 @@ public class SameDiff extends SDBaseOps {
 
                 trainingConfig.incrementEpochCount();
             }
-            */
-
             if (i < numEpochs - 1) {
                 iter.reset();
             }
