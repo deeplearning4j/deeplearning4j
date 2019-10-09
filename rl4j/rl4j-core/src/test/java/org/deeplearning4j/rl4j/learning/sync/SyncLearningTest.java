@@ -89,7 +89,6 @@ public class SyncLearningTest {
         private final LConfiguration conf;
 
         public MockSyncLearning(LConfiguration conf) {
-            super(conf);
             this.conf = conf;
         }
 

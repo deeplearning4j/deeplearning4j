@@ -24,8 +24,7 @@ import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Random;
+import org.nd4j.linalg.api.rng.Random;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/24/16.

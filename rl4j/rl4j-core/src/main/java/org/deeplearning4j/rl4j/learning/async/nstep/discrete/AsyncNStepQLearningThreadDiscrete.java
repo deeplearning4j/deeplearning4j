@@ -32,8 +32,8 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.rng.Random;
 
-import java.util.Random;
 import java.util.Stack;
 
 /**
@@ -58,7 +58,7 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
         this.asyncGlobal = asyncGlobal;
         this.threadNumber = threadNumber;
         mdp.getActionSpace().setSeed(conf.getSeed() + threadNumber);
-        random = new Random(conf.getSeed() + threadNumber);
+        random = Nd4j.getRandomFactory().getNewRandomInstance(conf.getSeed() + threadNumber);
     }
 
     public Policy<O, Integer> getPolicy(IDQN nn) {

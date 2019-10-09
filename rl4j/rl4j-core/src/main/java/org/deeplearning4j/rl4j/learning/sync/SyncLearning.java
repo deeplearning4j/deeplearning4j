@@ -41,10 +41,6 @@ public abstract class SyncLearning<O extends Encodable, A, AS extends ActionSpac
 
     private final TrainingListenerList listeners = new TrainingListenerList();
 
-    public SyncLearning(LConfiguration conf) {
-        super(conf);
-    }
-
     /**
      * Add a listener at the end of the listener list.
      *

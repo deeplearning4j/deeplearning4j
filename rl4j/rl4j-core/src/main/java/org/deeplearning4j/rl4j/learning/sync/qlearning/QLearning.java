@@ -31,6 +31,8 @@ import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager.StatEntry;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.rng.Random;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -53,8 +55,11 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     protected IExpReplay<A> expReplay;
 
     public QLearning(QLConfiguration conf) {
-        super(conf);
-        expReplay = new ExpReplay<>(conf.getExpRepMaxSize(), conf.getBatchSize(), conf.getSeed());
+        this(conf, Nd4j.getRandomFactory().getNewRandomInstance(conf.getSeed()));
+    }
+
+    public QLearning(QLConfiguration conf, Random random) {
+        expReplay = new ExpReplay<>(conf.getExpRepMaxSize(), conf.getBatchSize(), random);
     }
 
     protected abstract EpsGreedy<O, A, AS> getEgPolicy();

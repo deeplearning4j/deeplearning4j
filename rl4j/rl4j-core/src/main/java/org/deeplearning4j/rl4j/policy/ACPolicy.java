@@ -25,9 +25,10 @@ import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
-import java.util.Random;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
@@ -45,9 +46,9 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
         this.IActorCritic = IActorCritic;
         NeuralNetwork nn = IActorCritic.getNeuralNetworks()[0];
         if (nn instanceof ComputationGraph) {
-            rd = new Random(((ComputationGraph)nn).getConfiguration().getDefaultConfiguration().getSeed());
+            rd = Nd4j.getRandomFactory().getNewRandomInstance(((ComputationGraph) nn).getConfiguration().getDefaultConfiguration().getSeed());
         } else if (nn instanceof MultiLayerNetwork) {
-            rd = new Random(((MultiLayerNetwork)nn).getDefaultConfiguration().getSeed());
+            rd = Nd4j.getRandomFactory().getNewRandomInstance(((MultiLayerNetwork)nn).getDefaultConfiguration().getSeed());
         }
     }
     public ACPolicy(IActorCritic IActorCritic, Random rd) {

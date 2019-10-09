@@ -29,8 +29,6 @@ import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-import java.util.Random;
-
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/27/16.
  *
@@ -43,18 +41,13 @@ import java.util.Random;
 @Slf4j
 public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
-    @Getter
-    final private Random random;
+
     @Getter @Setter
     private int stepCounter = 0;
     @Getter @Setter
     private int epochCounter = 0;
     @Getter @Setter
     private IHistoryProcessor historyProcessor = null;
-
-    public Learning(LConfiguration conf) {
-        random = new Random(conf.getSeed());
-    }
 
     public static Integer getMaxAction(INDArray vector) {
         return Nd4j.argMax(vector, Integer.MAX_VALUE).getInt(0);
