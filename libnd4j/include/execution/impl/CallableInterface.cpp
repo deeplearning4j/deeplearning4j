@@ -42,7 +42,7 @@ namespace samediff {
     }
 
     void CallableInterface::fill(int thread_id, int num_threads, FUNC_DO func) {
-        _function_do = func;
+        _function_do = std::move(func);
 
         _branch = 0;
         _num_threads = num_threads;
@@ -56,7 +56,7 @@ namespace samediff {
     }
 
     void CallableInterface::fill(int thread_id, int num_threads, FUNC_1D func, int64_t start_x, int64_t stop_x, int64_t inc_x) {
-        _function_1d = func;
+        _function_1d = std::move(func);
         _arguments[0] = start_x;
         _arguments[1] = stop_x;
         _arguments[2] = inc_x;
@@ -74,7 +74,7 @@ namespace samediff {
     }
 
     void CallableInterface::fill(int thread_id, int num_threads, FUNC_2D func, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y) {
-        _function_2d = func;
+        _function_2d = std::move(func);
         _arguments[0] = start_x;
         _arguments[1] = stop_x;
         _arguments[2] = inc_x;
@@ -95,7 +95,7 @@ namespace samediff {
     }
 
     void CallableInterface::fill(int thread_id, int num_threads, FUNC_3D func, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y, int64_t start_z, int64_t stop_z, int64_t inc_z) {
-        _function_3d = func;
+        _function_3d = std::move(func);
         _arguments[0] = start_x;
         _arguments[1] = stop_x;
         _arguments[2] = inc_x;
@@ -128,22 +128,26 @@ namespace samediff {
     }
 
     void CallableInterface::waitForCompletion() {
+        while (!_finished.load());
+
         // block until finished
-        std::unique_lock<std::mutex> lock(_mf);
-        _finisher.wait(lock, [&]{ return _finished.load(); });
+        //std::unique_lock<std::mutex> lock(_mf);
+        //_finisher.wait(lock, [&] { return _finished.load(); });
     }
 
     void CallableInterface::finish() {
         // mark as finished
-        {
-            std::unique_lock<std::mutex> l(_mf);
+        //{
+          //  std::unique_lock<std::mutex> l(_mf);
             _finished = true;
-            _filled = false;
-        }
-        _finisher.notify_one();
+        //}
+        //_finisher.notify_one();
     }
 
     void CallableInterface::execute() {
+        // mark it as consumed
+        _filled = false;
+
         // actually executing op
         switch (_branch) {
             case 0:

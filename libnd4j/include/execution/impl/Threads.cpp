@@ -327,22 +327,23 @@ namespace samediff {
         }
 
 
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
         if (ticket != nullptr) {
             // if we got our threads - we'll run our jobs here
             auto span = delta / numThreads;
 
-            for (int e = 0; e < numThreads; e++) {
+            for (uint32_t e = 0; e < numThreads; e++) {
                 auto _start = span * e + start;
                 auto _stop = span * (e + 1) + start;
 
-                // last thread will process tail
-                if (e == numThreads - 1)
+                // last thread will process tail, and will process it in-place
+                if (e == numThreads - 1) {
                     _stop = stop;
-
-                // FIXME: make callables served from pool, rather than from creating new one
-                // putting the task into the queue for a given thread
-                ticket->enqueue(e, numThreads, function, _start, _stop, increment);
+                    function(e, _start, _stop, increment);
+                } else {
+                    // putting the task into the queue for a given thread
+                    ticket->enqueue(e, numThreads, function, _start, _stop, increment);
+                }
             }
 
             // block and wait till all threads finished the job

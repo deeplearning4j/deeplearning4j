@@ -62,6 +62,43 @@ TEST_F(PlaygroundTests, test_s_1) {
     ::runLightBenchmarkSuit(true);
 }
 
+TEST_F(PlaygroundTests, test_s_2) {
+    std::atomic<int> s;
+    s = 0;
+    auto func = PRAGMA_THREADS_FOR {
+        s++;
+    };
+
+    samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
+    std::vector<Nd4jLong> values;
+
+    for (int e = 0; e < 100000; e++) {
+        s = 0;
+
+        auto timeStart = std::chrono::system_clock::now();
+        samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+        values.emplace_back(outerTime);
+    };
+    std::sort(values.begin(), values.end());
+
+    nd4j_printf("Time: %lld;\n", values[values.size() / 2]);
+}
+
+TEST_F(PlaygroundTests, test_s_3) {
+    std::atomic<int> s;
+    s = 0;
+    auto func = PRAGMA_THREADS_FOR {
+        s++;
+    };
+
+    for (int e = 0; e < 10000; e++) {
+
+        samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
+    }
+}
+
 /*
 TEST_F(PlaygroundTests, test_relubp_1) {
     auto x = NDArrayFactory::create<float>('c', {128, 64, 224, 224});

@@ -59,8 +59,6 @@ namespace samediff {
         CallableInterface();
         ~CallableInterface() = default;
 
-        int branch();
-
         void waitForTask();
         void waitForCompletion();
 
