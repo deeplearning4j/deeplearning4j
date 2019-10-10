@@ -55,7 +55,7 @@ namespace nd4j {
                                                              " for quatization should be in between 2 and 16, but %i "
                                                              "was given.", numBits);
             }
-            helpers::fakeQuantWithMinMaxVarsPerChannel(x, min, max, numBits, narrowed, output);
+            helpers::fakeQuantWithMinMaxVarsPerChannel(block.launchContext(), x, min, max, numBits, narrowed, output);
             return ND4J_STATUS_OK;
         }
 
