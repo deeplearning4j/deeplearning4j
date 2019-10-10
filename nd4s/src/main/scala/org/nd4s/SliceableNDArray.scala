@@ -23,6 +23,12 @@ import org.slf4j.LoggerFactory
 
 import _root_.scala.annotation.tailrec
 
+package object ops {
+  case object :: extends IndexRange {
+    override def hasNegative: Boolean = false
+  }
+}
+
 trait SliceableNDArray[A <: INDArray] {
   lazy val log = LoggerFactory.getLogger(classOf[SliceableNDArray[A]])
   val underlying: A
@@ -68,6 +74,8 @@ trait SliceableNDArray[A <: INDArray] {
 
     @tailrec
     def modifyTargetIndices(input: List[IndexRange], i: Int, acc: List[DRange]): List[DRange] = input match {
+      case ops.:: :: t =>
+        modifyTargetIndices(t, i + 1, DRange(0, originalShape(i), 1) :: acc)
       case -> :: t =>
         modifyTargetIndices(t, i + 1, DRange(0, originalShape(i), 1) :: acc)
       case ---> :: t =>

@@ -54,9 +54,15 @@ class SameDiffWrapper {
     sd.placeHolder(name, dataType, shape: _*)
 }
 
-case class SDIndexWrapper(start: Long) {
+case class SDIndexWrapper(end: Long) {
 
-  def ->(end: Long): SDIndex =
+  def ::(start: Long): SDIndex =
+    SDIndex.interval(start, end)
+}
+
+case class SDIndexWrapper1(start: Int) {
+
+  def ::(end: Int): SDIndex =
     SDIndex.interval(start, end)
 }
 
