@@ -40,8 +40,7 @@ namespace nd4j {
 
             REQUIRE_TRUE(depth == max->lengthOf(), 0, "fake_quant_with_min_max_vars_per_channel: Max length should be"
                                                       "%lld, but %lld occurs.", depth, max->lengthOf());
-            if(block.width() == 3) {
-            }
+
             auto output  = OUTPUT_VARIABLE(0);
             int numBits = 8;
             if (block.getIArguments() && block.getIArguments()->size())
