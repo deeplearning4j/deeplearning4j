@@ -2127,8 +2127,8 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printBuffer("Quantized");
-    exp.printBuffer("Expected");
+//    result->printBuffer("Quantized");
+//    exp.printBuffer("Expected");
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 

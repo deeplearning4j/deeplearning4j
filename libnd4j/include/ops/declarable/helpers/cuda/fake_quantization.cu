@@ -81,19 +81,24 @@ namespace helpers {
     static __global__ void fakeQuantWithMinMaxKernel(T* input, Nd4jLong* inputShape, T* min, T* max,
             int lowIntBound, int upperIntBound, Nd4jLong channels,
             T* output, Nd4jLong* outputShape, Nd4jLong length) {
+        __shared__ int block;
+        if (threadIdx.x == 0) {
+            block = length / channels;
+        }
+        __syncthreads();
 
         for (auto i = blockIdx.x; i < (int)channels; i += gridDim.x) {
             T scale, nudged_min, nudged_max;
             Nudge(min[i], max[i], lowIntBound, upperIntBound, &scale, &nudged_min, &nudged_max);
             //auto wiseMinMaxAndSoOn = LAMBDA_T(x, nudged_min, nudged_max, scale) {
-            for (auto e = threadIdx.x; e < (int)length; e += (int)channels) {
-                T val = input[shape::getIndexOffset(e + i, inputShape)];
+            for (auto e = threadIdx.x; e < block; e += blockDim.x) {
+                T val = input[shape::getIndexOffset(e * channels + i, inputShape)];
                 if (val < nudged_min) {
                     val = nudged_min;
                 } else if (val > nudged_max) {
                     val = nudged_max;
                 }
-                output[shape::getIndexOffset(e + i, outputShape)] = (math::nd4j_floor<T, T>((val - nudged_min) / scale + T(0.5)) * scale + nudged_min);
+                output[shape::getIndexOffset(e* channels + i, outputShape)] = (math::nd4j_floor<T, T>((val - nudged_min) / scale + T(0.5)) * scale + nudged_min);
             };
         }
 
@@ -111,7 +116,7 @@ namespace helpers {
         T* outputBuf = output->dataBuffer()->specialAsT<T>();
         T* minBuf = min->dataBuffer()->specialAsT<T>();
         T* maxBuf = max->dataBuffer()->specialAsT<T>();
-        fakeQuantWithMinMaxKernel<<<1, 1, 256, *stream>>>(inputBuf, input->specialShapeInfo(),
+        fakeQuantWithMinMaxKernel<<<128, 256, 256, *stream>>>(inputBuf, input->specialShapeInfo(),
                 minBuf, maxBuf, lowIntBound, upperIntBound, channels, outputBuf, output->specialShapeInfo(), length);
         NDArray::registerSpecialUse({output}, {min, max, input});
 
