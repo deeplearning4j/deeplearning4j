@@ -77,14 +77,45 @@ namespace helpers {
         input->applyLambda(wiseMinMaxAndSoOn, output);
     }
 
+    template <typename T>
+    void fakeQuantWithMinMaxVarsPerChannel_(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
+        int lowIntBound = narrowed?1:0;
+        int upperIntBound = (1 << numBits) - 1;
+        min->syncToHost();
+        max->syncToHost();
+        T scale, nudged_min, nudged_max;
+        auto channels = min->lengthOf();
+        input->syncToHost();
+        input->syncToDevice();
+        output->syncToHost();
+        for (auto i = 0; i < channels; i++) {
+            Nudge(min->t<T>(i), max->t<T>(i), lowIntBound, upperIntBound, &scale, &nudged_min, &nudged_max);
+
+            //auto wiseMinMaxAndSoOn = LAMBDA_T(x, nudged_min, nudged_max, scale) {
+            for (auto e = 0; e < input->lengthOf(); e += channels) {
+                T val = input->t<T>(e + i);
+                if (val < nudged_min) {
+                    val = nudged_min;
+                } else if (val > nudged_max) {
+                    val = nudged_max;
+                }
+
+                output->t<T>(e + i) = (math::nd4j_floor<T, T>((val - nudged_min) / scale + T(0.5)) * scale + nudged_min);
+            };
+        }
+        output->syncToDevice();
+        output->tickWriteDevice();
+    }
+
     void fakeQuantWithMinMaxVars(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), fakeQuantWithMinMaxVars_, (input, min, max, numBits, narrowed, output), FLOAT_TYPES);
     }
     void fakeQuantWithMinMaxVarsPerChannel(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
-        BUILD_SINGLE_SELECTOR(input->dataType(), fakeQuantWithMinMaxVars_, (input, min, max, numBits, narrowed, output), FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR(input->dataType(), fakeQuantWithMinMaxVarsPerChannel_, (input, min, max, numBits, narrowed, output), FLOAT_TYPES);
     }
 
     BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVars_, (NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVarsPerChannel_, (NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output), FLOAT_TYPES);
 
 }
 }
