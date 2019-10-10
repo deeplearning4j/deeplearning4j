@@ -61,18 +61,32 @@ namespace samediff {
         }
     }
 
+    static void _executionLoopWithInterface(int thread_id, CallableInterface *c) {
+        while (true) {
+            // blocking here until there's something to do
+            c->waitForTask();
+
+            // execute whatever we have
+            c->execute();
+        }
+    }
+
     ThreadPool::ThreadPool() {
         // TODO: number of threads must reflect number of cores for UMA system. In case of NUMA it should be per-device pool
         // FIXME: on mobile phones this feature must NOT be used
-        _available = std::thread::hardware_concurrency();
+        _available = nd4j::Environment::getInstance()->maxThreads();
 
         _queues.resize(_available.load());
         _threads.resize(_available.load());
+        _interfaces.resize(_available.load());
 
         // creating threads here
         for (int e = 0; e < _available.load(); e++) {
             _queues[e] = new BlockingQueue<CallableWithArguments*>(2);
-            _threads[e] = new std::thread(_executionLoop, e, _queues[e]);
+            _interfaces[e] = new CallableInterface();
+            _threads[e] = new std::thread(_executionLoopWithInterface, e, _interfaces[e]);
+            _tickets.push(new Ticket());
+            // _threads[e] = new std::thread(_executionLoop, e, _queues[e]);
 
             // TODO: add other platforms here as well
             // now we must set affinity, and it's going to be platform-specific thing
@@ -112,10 +126,10 @@ namespace samediff {
         _available += num_threads;
     }
 
-    Ticket ThreadPool::tryAcquire(int num_threads) {
+    Ticket* ThreadPool::tryAcquire(int num_threads) {
+        //std::vector<BlockingQueue<CallableWithArguments*>*> queues;
 
-        std::vector<BlockingQueue<CallableWithArguments*>*> queues;
-
+        Ticket *t = nullptr;
         // we check for threads availability first
         bool threaded = false;
         {
@@ -125,23 +139,36 @@ namespace samediff {
                 threaded = true;
                 _available -= num_threads;
 
-                queues.resize(num_threads);
-                for (int e = 0, i = 0; e < _queues.size() && i < num_threads; e++)
-                    if (_queues[e]->available()) {
-                        queues[i++] = _queues[e];
-                        _queues[e]->markUnavailable();
+                // getting a ticket from the queue
+                t = _tickets.front();
+                _tickets.pop();
+
+                // ticket must contain information about number of threads for the current session
+                t->acquiredThreads(num_threads);
+
+                // filling ticket with executable interfaces
+                for (int e = 0, i = 0; e < _queues.size() && i < num_threads; e++) {
+                    if (_interfaces[e]->available()) {
+                        t->attach(i++, _interfaces[e]);
+                        _interfaces[e]->markUnavailable();
                     }
+                }
             }
         }
 
         // we either dispatch tasks to threads, or run single-threaded
         if (threaded) {
-            // TODO: can we have pool here as well?
-            return Ticket(queues);
+            return t;
         } else {
-            // if there's no threads available - return empty ticket
-            return Ticket();
+            // if there's no threads available - return nullptr
+            return nullptr;
         }
+    }
+
+    void ThreadPool::release(samediff::Ticket *ticket) {
+        // returning ticket back to the queue
+        std::unique_lock<std::mutex> lock(_lock);
+        _tickets.push(ticket);
     }
 
 

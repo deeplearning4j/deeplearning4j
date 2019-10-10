@@ -42,6 +42,8 @@ namespace samediff {
 
         std::mutex _lock;
 
+        int _dimensions = 0;
+
         uint64_t _threadId;
         uint64_t _numThreads;
     public:

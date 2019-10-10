@@ -28,7 +28,9 @@
 #include <mutex>
 #include <execution/BlockingQueue.h>
 #include <execution/CallableWithArguments.h>
+#include <execution/CallableInterface.h>
 #include <execution/Ticket.h>
+#include <queue>
 
 namespace samediff {
     class ThreadPool {
@@ -37,9 +39,11 @@ namespace samediff {
 
         std::vector<std::thread*> _threads;
         std::vector<BlockingQueue<CallableWithArguments*>*> _queues;
+        std::vector<CallableInterface*> _interfaces;
 
         std::mutex _lock;
         std::atomic<int> _available;
+        std::queue<Ticket*> _tickets;
     protected:
         ThreadPool();
         ~ThreadPool();
@@ -51,13 +55,15 @@ namespace samediff {
          * @param num_threads
          * @return
          */
-        Ticket tryAcquire(int num_threads);
+        Ticket* tryAcquire(int num_threads);
 
         /**
          * This method marks specified number of threads as released, and available for use
          * @param num_threads
          */
         void release(int num_threads = 1);
+
+        void release(Ticket *ticket);
     };
 }
 

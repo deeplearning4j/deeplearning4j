@@ -24,6 +24,7 @@
 #include <vector>
 #include <execution/BlockingQueue.h>
 #include <execution/CallableWithArguments.h>
+#include <execution/CallableInterface.h>
 #include <atomic>
 #include <mutex>
 
@@ -33,15 +34,27 @@ namespace samediff {
         bool _acquired = false;
         std::vector<BlockingQueue<CallableWithArguments*>*> _queues;
         std::vector<CallableWithArguments*> _callables;
+        std::vector<CallableInterface*> _interfaces;
 
+        uint32_t _acquiredThreads = 0;
     public:
         explicit Ticket(const std::vector<BlockingQueue<CallableWithArguments*>*> &queues);
-        Ticket() = default;
+        Ticket();
         ~Ticket() = default;
 
         bool acquired();
 
-        void enqueue(int thread_id, CallableWithArguments *callable);
+        void acquiredThreads(uint32_t threads);
+
+        void attach(uint32_t thread_id, CallableInterface *interface);
+
+        // deprecated one
+        void enqueue(int thread_id, CallableWithArguments* callable);
+
+        void enqueue(uint32_t thread_id, uint32_t num_threads, FUNC_DO func);
+        void enqueue(uint32_t thread_id, uint32_t num_threads, FUNC_1D func, int64_t start_x, int64_t stop_x, int64_t inc_x);
+        void enqueue(uint32_t thread_id, uint32_t num_threads, FUNC_2D func, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y);
+        void enqueue(uint32_t thread_id, uint32_t num_threads, FUNC_3D func, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y, int64_t start_, int64_t stop_z, int64_t inc_z);
 
         void waitAndRelease();
     };

@@ -328,7 +328,7 @@ namespace samediff {
 
 
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
-        if (ticket.acquired()) {
+        if (ticket != nullptr) {
             // if we got our threads - we'll run our jobs here
             auto span = delta / numThreads;
 
@@ -342,11 +342,11 @@ namespace samediff {
 
                 // FIXME: make callables served from pool, rather than from creating new one
                 // putting the task into the queue for a given thread
-                ticket.enqueue(e, new CallableWithArguments(function, e, _start, _stop, increment));
+                ticket->enqueue(e, numThreads, function, _start, _stop, increment);
             }
 
             // block and wait till all threads finished the job
-            ticket.waitAndRelease();
+            ticket->waitAndRelease();
 
             // we tell that parallelism request succeeded
             return numThreads;
@@ -418,16 +418,16 @@ namespace samediff {
             }
         } else {
             auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
-            if (ticket.acquired()) {
+            if (ticket != nullptr) {
                 //nd4j_printf("Threads: starting with %i threads\n", numThreads);
                 for (int e = 0; e < numThreads; e++) {
                     auto span = Span2::build(splitLoop, e, numThreads, start_x, stop_x, inc_x, start_y, stop_y, inc_y);
 
-                    ticket.enqueue(e, new CallableWithArguments(function, e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY()));
+                    ticket->enqueue(e, numThreads, function, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY());
                 }
 
                 // block until all threads finish their job
-                ticket.waitAndRelease();
+                ticket->waitAndRelease();
                 return numThreads;
             } else {
                 // if there were no threads available - we'll execute function right within current thread
@@ -466,16 +466,17 @@ namespace samediff {
         }
 
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
-        if (ticket.acquired()) {
+        if (ticket != nullptr) {
             auto splitLoop = ThreadsHelper::pickLoop3d(numThreads, iters_x, iters_y, iters_z);
 
             for (int e = 0; e < numThreads; e++) {
                 auto span = Span3::build(splitLoop, e, numThreads, start_x, stop_x, inc_x, start_y, stop_y, inc_y, start_z, stop_z, inc_z);
-                ticket.enqueue(e, new CallableWithArguments(function, e, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY(), span.startZ(), span.stopZ(), span.incZ()));
+
+                ticket->enqueue(e, numThreads, function, span.startX(), span.stopX(), span.incX(), span.startY(), span.stopY(), span.incY(), span.startZ(), span.stopZ(), span.incZ());
             }
 
             // block until we're done
-            ticket.waitAndRelease();
+            ticket->waitAndRelease();
 
             // we tell that parallelism request succeeded
             return numThreads;
@@ -491,13 +492,13 @@ namespace samediff {
 
     int Threads::parallel_do(FUNC_DO function, uint64_t numThreads) {
         auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
-        if (ticket.acquired()) {
+        if (ticket != nullptr) {
 
             // submit tasks one by one
             for (uint64_t e = 0; e < numThreads; e++)
-                ticket.enqueue(e, new CallableWithArguments(function, e, numThreads));
+                ticket->enqueue(e, numThreads, function);
 
-            ticket.waitAndRelease();
+            ticket->waitAndRelease();
 
             return numThreads;
         } else {
