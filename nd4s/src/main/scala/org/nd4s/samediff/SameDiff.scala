@@ -60,6 +60,12 @@ case class SDIndexWrapper(end: Long) {
     SDIndex.interval(start, end)
 }
 
+case class SDIndexWrapper1(start: Int) {
+
+  def ::(end: Int): SDIndex =
+    SDIndex.interval(start, end)
+}
+
 object --- extends SDIndex {
   val thisIndex: SDIndex = SDIndex.all()
 }

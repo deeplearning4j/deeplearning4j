@@ -276,6 +276,10 @@ object Implicits {
     override def hasNegative: Boolean = false
   }
 
+  case object --- extends IndexRange {
+    override def hasNegative: Boolean = false
+  }
+
   implicit class IntRange(val underlying: Int) extends IndexNumberRange {
     protected[nd4s] override def asRange(max: => Int): DRange =
       DRange(underlying, underlying, true, 1, max)
@@ -305,6 +309,10 @@ object Implicits {
 
   implicit class IntRangeFromGen(val underlying: Int) extends AnyVal {
     def -> = IntRangeFrom(underlying)
+  }
+
+  implicit class IntRangeFromGen1(val underlying: Int) extends AnyVal {
+    def :: = IntRangeFromReverse(underlying)
   }
 
   implicit class IndexRangeWrapper(val underlying: Range) extends IndexNumberRange {
@@ -377,17 +385,27 @@ object IndexNumberRange {
       val endExclusive = if (endR >= 0) endR + diff else max + endR + diff
       (start, endExclusive)
     }
-
     NDArrayIndex.interval(start, step, end, false)
   }
 }
 
-sealed trait IndexRange {
+/*sealed*/
+trait IndexRange {
   def hasNegative: Boolean
 }
 
 case class IntRangeFrom(underlying: Int) extends IndexRange {
-  def apply[T](a: T): (Int, T) = (underlying, a)
+  def apply[T](a: T): (Int, T) =
+    (underlying, a)
+
+  override def toString: String = s"$underlying->"
+
+  override def hasNegative: Boolean = false
+}
+
+case class IntRangeFromReverse(underlying: Int) extends IndexRange {
+  def apply[T](a: T): (T, Int) =
+    (a, underlying)
 
   override def toString: String = s"$underlying->"
 
