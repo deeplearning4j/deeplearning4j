@@ -26,7 +26,7 @@ namespace ops {
 namespace helpers {
 
     template <typename T>
-    static void Nudge(T min, T max, int quant_min, int quant_max, T* scale, T* nudged_min, T* nudged_max) {
+    static void nudge(T min, T max, int quant_min, int quant_max, T* scale, T* nudged_min, T* nudged_max) {
         T quant_max_float = static_cast<T>(quant_max);
         T quant_min_float = static_cast<T>(quant_min);
         *scale = (max - min) / (quant_max_float - quant_min_float);
@@ -53,7 +53,7 @@ namespace helpers {
         PRAGMA_OMP_PARALLEL_FOR
         for (auto i = 0; i < channels; i++) {
             T scale, nudged_min, nudged_max;
-            Nudge<T>(min->t<T>(i), max->t<T>(i), lowIntBound, upperIntBound, &scale, &nudged_min, &nudged_max);
+            nudge<T>(min->t<T>(i), max->t<T>(i), lowIntBound, upperIntBound, &scale, &nudged_min, &nudged_max);
 
             for (auto e = 0; e < input->lengthOf(); e += channels) {
                 T val = input->t<T>(e + i);
@@ -68,36 +68,25 @@ namespace helpers {
     }
 
     template <typename T>
-    static void WiseMinMax(NDArray* input, T min, T max, NDArray* output) {
-        auto wiseMinMax = LAMBDA_T(x, min, max) {
-            if (x < min) {
-                return min;
-            }
-            else if (x > max)
-                return max;
-            return x;
-        };
-
-        input->applyLambda<T>(wiseMinMax, output);
-    }
-
-    template <typename T>
     void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
         int lowIntBound = narrowed ? 1 : 0;
         int upperIntBound = (1 << numBits) - 1;
 
-        const float quant_min_float = static_cast<float>(lowIntBound);
-        const float quant_max_float = static_cast<float>(upperIntBound);
-        T nudged_min, nudged_max, scale;
+        T nudgedMin, nudgedMax, scale;
 
-        Nudge<T>(min->t<T>(0), max->t<T>(0), quant_min_float, quant_max_float, &scale, &nudged_min, &nudged_max);
-        WiseMinMax<T>(input, nudged_min, nudged_max, output);
-        *output -= nudged_min;
-        (*output) /= scale;
-        (*output) += T(0.5f);
-        output->applyTransform(transform::Floor, nullptr, nullptr);
-        (*output) *= scale;
-        (*output) += nudged_min;
+        nudge<T>(min->t<T>(0), max->t<T>(0), lowIntBound, upperIntBound, &scale, &nudgedMin, &nudgedMax);
+
+        auto fakeQuantizationWithMinMax = LAMBDA_T(x, nudgedMin, nudgedMax, scale) {
+            T val = x;
+            if (val < nudgedMin) {
+                val = nudgedMin;
+            }
+            else if (val > nudgedMax)
+                val = nudgedMax;
+            return (nd4j::math::nd4j_floor<T,T>((val - nudgedMin)/scale + T(0.5)) * scale + nudgedMin);
+        };
+
+        input->applyLambda<T>(fakeQuantizationWithMinMax, output);
     }
 
     void fakeQuantWithMinMaxVars(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
