@@ -138,7 +138,17 @@ public class TFGraphTestAllHelper {
                 " must be null or both must be provided");
         Nd4j.EPS_THRESHOLD = 1e-3;
 
-        Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, predictions.keySet());
+        Set<String> outputsToCheck = new HashSet<>();
+        for(String s : predictions.keySet()) {
+            // we need to convert name from python name format with . on indices, to :. i.e.: output.1 -> output:1
+            if (s.matches(".*\\.\\d+")) {
+                int idx = s.lastIndexOf('.');
+                s = s.substring(0, idx) + ":" + s.substring(idx+1);
+            }
+            outputsToCheck.add(s);
+        }
+
+        Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, outputsToCheck);
         SameDiff graph = p.getFirst();
         Map<String,INDArray> sameDiffPredictions = p.getSecond();
 
