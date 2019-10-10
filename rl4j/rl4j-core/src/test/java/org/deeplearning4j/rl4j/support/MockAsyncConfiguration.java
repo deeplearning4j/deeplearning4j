@@ -14,7 +14,7 @@ public class MockAsyncConfiguration implements AsyncConfiguration {
     }
 
     @Override
-    public int getSeed() {
+    public Integer getSeed() {
         return 0;
     }
 

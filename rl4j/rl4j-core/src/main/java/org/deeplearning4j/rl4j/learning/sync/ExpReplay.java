@@ -36,14 +36,14 @@ import java.util.ArrayList;
 public class ExpReplay<A> implements IExpReplay<A> {
 
     final private int batchSize;
-    final private Random random;
+    final private Random rnd;
 
     //Implementing this as a circular buffer queue
     private CircularFifoQueue<Transition<A>> storage;
 
-    public ExpReplay(int maxSize, int batchSize, Random random) {
+    public ExpReplay(int maxSize, int batchSize, Random rnd) {
         this.batchSize = batchSize;
-        this.random = random;
+        this.rnd = rnd;
         storage = new CircularFifoQueue<>(maxSize);
     }
 
@@ -55,9 +55,9 @@ public class ExpReplay<A> implements IExpReplay<A> {
         int[] actualIndex = new int[actualBatchSize];
         IntSet set = new IntOpenHashSet();
         for( int i=0; i<actualBatchSize; i++ ){
-            int next = random.nextInt(storageSize);
+            int next = rnd.nextInt(storageSize);
             while(set.contains(next)){
-                next = random.nextInt(storageSize);
+                next = rnd.nextInt(storageSize);
             }
             set.add(next);
             actualIndex[i] = next;

@@ -30,7 +30,6 @@ import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager.StatEntry;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.api.rng.Random;
 
@@ -55,11 +54,20 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     protected IExpReplay<A> expReplay;
 
     public QLearning(QLConfiguration conf) {
-        this(conf, Nd4j.getRandomFactory().getNewRandomInstance(conf.getSeed()));
+        this(conf, getSeededRandom(conf.getSeed()));
     }
 
     public QLearning(QLConfiguration conf, Random random) {
         expReplay = new ExpReplay<>(conf.getExpRepMaxSize(), conf.getBatchSize(), random);
+    }
+
+    private static Random getSeededRandom(Integer seed) {
+        Random rnd = Nd4j.getRandom();
+        if(seed != null) {
+            rnd.setSeed(seed);
+        }
+
+        return rnd;
     }
 
     protected abstract EpsGreedy<O, A, AS> getEgPolicy();
@@ -165,7 +173,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
     @JsonDeserialize(builder = QLConfiguration.QLConfigurationBuilder.class)
     public static class QLConfiguration implements LConfiguration {
 
-        int seed;
+        Integer seed;
         int maxEpochStep;
         int maxStep;
         int expRepMaxSize;

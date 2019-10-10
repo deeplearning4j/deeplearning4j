@@ -53,9 +53,16 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
         this.iActorCritic = iActorCritic;
         this.mdp = mdp;
         this.configuration = conf;
-        policy = new ACPolicy<>(iActorCritic, Nd4j.getRandomFactory().getNewRandomInstance(conf.getSeed()));
         asyncGlobal = new AsyncGlobal<>(iActorCritic, conf);
-        mdp.getActionSpace().setSeed(conf.getSeed());
+
+        Integer seed = conf.getSeed();
+        Random rnd = Nd4j.getRandom();
+        if(seed != null) {
+            mdp.getActionSpace().setSeed(seed);
+            rnd.setSeed(seed);
+        }
+
+        policy = new ACPolicy<>(iActorCritic, rnd);
     }
 
     protected AsyncThread newThread(int i, int deviceNum) {
@@ -72,7 +79,7 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
     @EqualsAndHashCode(callSuper = false)
     public static class A3CConfiguration implements AsyncConfiguration {
 
-        int seed;
+        Integer seed;
         int maxEpochStep;
         int maxStep;
         int numThread;

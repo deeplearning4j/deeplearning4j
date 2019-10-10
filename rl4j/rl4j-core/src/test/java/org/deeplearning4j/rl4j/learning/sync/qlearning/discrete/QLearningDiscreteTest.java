@@ -134,8 +134,8 @@ public class QLearningDiscreteTest {
     public static class TestQLearningDiscrete extends QLearningDiscrete<MockEncodable> {
         public TestQLearningDiscrete(MDP<MockEncodable, Integer, DiscreteSpace> mdp, IDQN dqn,
                                      QLConfiguration conf, IDataManager dataManager, MockExpReplay expReplay,
-                                     int epsilonNbStep, Random random) {
-            super(mdp, dqn, conf, epsilonNbStep, random);
+                                     int epsilonNbStep, Random rnd) {
+            super(mdp, dqn, conf, epsilonNbStep, rnd);
             addListener(new DataManagerTrainingListener(dataManager));
             setExpReplay(expReplay);
         }

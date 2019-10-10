@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.rl4j.policy;
 
-import lombok.AllArgsConstructor;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -34,19 +33,11 @@ import static org.nd4j.linalg.ops.transforms.Transforms.exp;
 public class BoltzmannQ<O extends Encodable> extends Policy<O, Integer> {
 
     final private IDQN dqn;
-    final private Random rd;
-
-    public BoltzmannQ(IDQN dqn) {
-        this(dqn, Nd4j.getRandomFactory().getNewRandomInstance());
-    }
-
-    public BoltzmannQ(IDQN dqn, int seed) {
-        this(dqn, Nd4j.getRandomFactory().getNewRandomInstance(seed));
-    }
+    final private Random rnd;
 
     public BoltzmannQ(IDQN dqn, Random random) {
         this.dqn = dqn;
-        this.rd = random;
+        this.rnd = random;
     }
 
     public IDQN getNeuralNet() {
@@ -59,7 +50,7 @@ public class BoltzmannQ<O extends Encodable> extends Policy<O, Integer> {
         INDArray exp = exp(output);
 
         double sum = exp.sum(1).getDouble(0);
-        double picked = rd.nextDouble() * sum;
+        double picked = rnd.nextDouble() * sum;
         for (int i = 0; i < exp.columns(); i++) {
             if (picked < exp.getDouble(i))
                 return i;

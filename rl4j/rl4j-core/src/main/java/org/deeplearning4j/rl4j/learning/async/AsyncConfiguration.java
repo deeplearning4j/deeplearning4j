@@ -26,7 +26,7 @@ import org.deeplearning4j.rl4j.learning.ILearning;
  */
 public interface AsyncConfiguration extends ILearning.LConfiguration {
 
-    int getSeed();
+    Integer getSeed();
 
     int getMaxEpochStep();
 

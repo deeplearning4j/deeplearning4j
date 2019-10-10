@@ -16,9 +16,6 @@
 
 package org.deeplearning4j.rl4j.policy;
 
-import org.deeplearning4j.nn.api.NeuralNetwork;
-import org.deeplearning4j.nn.graph.ComputationGraph;
-import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticCompGraph;
 import org.deeplearning4j.rl4j.network.ac.ActorCriticSeparate;
@@ -39,47 +36,41 @@ import java.io.IOException;
  */
 public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
 
-    final private IActorCritic IActorCritic;
-    Random rd;
+    final private IActorCritic actorCritic;
+    Random rnd;
 
-    public ACPolicy(IActorCritic IActorCritic) {
-        this.IActorCritic = IActorCritic;
-        NeuralNetwork nn = IActorCritic.getNeuralNetworks()[0];
-        if (nn instanceof ComputationGraph) {
-            rd = Nd4j.getRandomFactory().getNewRandomInstance(((ComputationGraph) nn).getConfiguration().getDefaultConfiguration().getSeed());
-        } else if (nn instanceof MultiLayerNetwork) {
-            rd = Nd4j.getRandomFactory().getNewRandomInstance(((MultiLayerNetwork)nn).getDefaultConfiguration().getSeed());
-        }
+    public ACPolicy(IActorCritic actorCritic) {
+        this(actorCritic, Nd4j.getRandom());
     }
-    public ACPolicy(IActorCritic IActorCritic, Random rd) {
-        this.IActorCritic = IActorCritic;
-        this.rd = rd;
+    public ACPolicy(IActorCritic actorCritic, Random rnd) {
+        this.actorCritic = actorCritic;
+        this.rnd = rnd;
     }
 
     public static <O extends Encodable> ACPolicy<O> load(String path) throws IOException {
         return new ACPolicy<O>(ActorCriticCompGraph.load(path));
     }
-    public static <O extends Encodable> ACPolicy<O> load(String path, Random rd) throws IOException {
-        return new ACPolicy<O>(ActorCriticCompGraph.load(path), rd);
+    public static <O extends Encodable> ACPolicy<O> load(String path, Random rnd) throws IOException {
+        return new ACPolicy<O>(ActorCriticCompGraph.load(path), rnd);
     }
 
     public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy) throws IOException {
         return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy));
     }
-    public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy, Random rd) throws IOException {
-        return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy), rd);
+    public static <O extends Encodable> ACPolicy<O> load(String pathValue, String pathPolicy, Random rnd) throws IOException {
+        return new ACPolicy<O>(ActorCriticSeparate.load(pathValue, pathPolicy), rnd);
     }
 
     public IActorCritic getNeuralNet() {
-        return IActorCritic;
+        return actorCritic;
     }
 
     public Integer nextAction(INDArray input) {
-        INDArray output = IActorCritic.outputAll(input)[1];
-        if (rd == null) {
+        INDArray output = actorCritic.outputAll(input)[1];
+        if (rnd == null) {
             return Learning.getMaxAction(output);
         }
-        float rVal = rd.nextFloat();
+        float rVal = rnd.nextFloat();
         for (int i = 0; i < output.length(); i++) {
             //System.out.println(i + " " + rVal + " " + output.getFloat(i));
             if (rVal < output.getFloat(i)) {
@@ -92,11 +83,11 @@ public class ACPolicy<O extends Encodable> extends Policy<O, Integer> {
     }
 
     public void save(String filename) throws IOException {
-        IActorCritic.save(filename);
+        actorCritic.save(filename);
     }
 
     public void save(String filenameValue, String filenamePolicy) throws IOException {
-        IActorCritic.save(filenameValue, filenamePolicy);
+        actorCritic.save(filenameValue, filenamePolicy);
     }
 
 }
