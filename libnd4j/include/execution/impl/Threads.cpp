@@ -492,12 +492,14 @@ namespace samediff {
     }
 
     int Threads::parallel_do(FUNC_DO function, uint64_t numThreads) {
-        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads);
+        auto ticket = ThreadPool::getInstance()->tryAcquire(numThreads - 1);
         if (ticket != nullptr) {
 
             // submit tasks one by one
-            for (uint64_t e = 0; e < numThreads; e++)
+            for (uint64_t e = 0; e < numThreads - 1; e++)
                 ticket->enqueue(e, numThreads, function);
+
+            function(numThreads - 1, numThreads);
 
             ticket->waitAndRelease();
 
