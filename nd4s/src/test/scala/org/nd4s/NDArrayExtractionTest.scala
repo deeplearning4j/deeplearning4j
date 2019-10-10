@@ -17,7 +17,6 @@ package org.nd4s
 
 import org.nd4s.Implicits._
 import org.scalatest.FlatSpec
-import org.nd4s.ops.::
 
 class NDArrayExtractionInCOrderingTest extends NDArrayExtractionTestBase with COrderingForTest
 class NDArrayExtractionInFortranOrderingTest extends NDArrayExtractionTestBase with FortranOrderingForTest
