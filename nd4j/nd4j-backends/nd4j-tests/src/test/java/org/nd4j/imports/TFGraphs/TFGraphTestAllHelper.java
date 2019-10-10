@@ -138,7 +138,9 @@ public class TFGraphTestAllHelper {
                 " must be null or both must be provided");
         Nd4j.EPS_THRESHOLD = 1e-3;
 
-        SameDiff graph = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null);
+        Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, predictions.keySet());
+        SameDiff graph = p.getFirst();
+        Map<String,INDArray> sameDiffPredictions = p.getSecond();
 
         //Collect coverage info about ops
         OpValidation.collectTensorflowImportCoverage(graph);
@@ -156,7 +158,7 @@ public class TFGraphTestAllHelper {
                     nd4jNode = outputNode.replaceAll("\\.", ":");
 
                 try {
-                    nd4jPred = graph.getVariable(nd4jNode).getArr();
+                    nd4jPred = sameDiffPredictions.get(nd4jNode);
                 } catch (NullPointerException e) {
                     throw new NullPointerException("Can't find SameDiff variable with name [" + nd4jNode + "]");
                 }
@@ -285,7 +287,9 @@ public class TFGraphTestAllHelper {
                 " must be null or both must be provided");
         Nd4j.EPS_THRESHOLD = 1e-3;
         OpExecOrderListener listener = new OpExecOrderListener();       //Used to collect exec order
-        SameDiff graph = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader, Collections.singletonList(listener));
+        Pair<SameDiff, Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader, Collections.singletonList(listener), null);
+        SameDiff graph = p.getFirst();
+        Map<String,INDArray> sdPredictions = p.getSecond();
 
         //Collect coverage info about ops
         OpValidation.collectTensorflowImportCoverage(graph);
@@ -313,7 +317,7 @@ public class TFGraphTestAllHelper {
                         log.info("\n\tFORCING no check on " + varName);
                     } else {
                         assertArrayEquals("Shape not equal on node " + varName, tfValue.shape(), graph.getVariable(varName).getShape());
-                        INDArray sdVal = graph.getVariable(varName).getArr();
+                        INDArray sdVal = sdPredictions.get(varName);
                         if(maxRelErrorOverride != null){
                             INDArray diff = Transforms.abs(tfValue.sub(sdVal), false);
                             INDArray absErrorMask = diff.gte(minAbsErrorOverride);   //value 1 if x[i] > minAbsError; value 0 otherwise. Used to get rid of 1e-30 vs. 1e-29 type failures
@@ -362,30 +366,24 @@ public class TFGraphTestAllHelper {
         Nd4j.EPS_THRESHOLD = 1e-5;
     }
 
-    public static SameDiff getGraphAfterExec(String baseDir, String modelFilename, String modelName, Map<String, INDArray> inputs,
-                                             ExecuteWith executeWith, BiFunction<File,String,SameDiff> graphLoaderFunction, List<Listener> listeners) throws IOException {
+    public static Pair<SameDiff, Map<String,INDArray>> getGraphAfterExec(String baseDir, String modelFilename, String modelName, Map<String, INDArray> inputs,
+                                             ExecuteWith executeWith, BiFunction<File,String,SameDiff> graphLoaderFunction, List<Listener> listeners,
+                                                                         Set<String> requiredOutputs) throws IOException {
         log.info("\n\tRUNNING TEST " + modelName + "...");
         SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
         if(listeners != null){
             graph.setListeners(listeners);
         }
+
+        if(requiredOutputs == null){
+            requiredOutputs = graph.variableMap().keySet();
+        }
+
 //        = TFGraphMapper.getInstance().importGraph(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getInputStream());
         //System.out.println(graph.summary());
+        Map<String,INDArray> outMap = null;
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
-            List<String> outputs = graph.outputs();
-            if(outputs.isEmpty()){
-                //Edge case: no ops
-                List<SDVariable> vars = graph.variables();
-                outputs = new ArrayList<>();
-                for(SDVariable v : vars) {
-                    outputs.add(v.getVarName());
-                }
-            }
-            if (!inputs.isEmpty()) {
-                graph.exec(inputs, outputs); //This is expected to be just one result
-            } else {
-                graph.exec(Collections.emptyMap(), outputs); //there are graphs with no placeholders like g_00
-            }
+            outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
@@ -405,7 +403,8 @@ public class TFGraphTestAllHelper {
             val string = graph.asFlatPrint();
             log.info("Graph structure: \n{}", string);
         }
-        return graph;
+
+        return new Pair<>(graph, outMap);
     }
 
     private static String[] modelDirNames(String base_dir, ExecuteWith executeWith, String modelFileName) throws IOException {
