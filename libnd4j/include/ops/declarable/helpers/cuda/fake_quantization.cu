@@ -34,64 +34,104 @@ namespace helpers {
 // output - output tensor
 //
     template <typename T>
+    static __host__ __device__ void
+    nudge(T min, T max, int quantMin, int quantMax, T* scale, T* nudgedMin, T* nudgedMax) {
+        T quantMaxF = static_cast<T>(quantMax);
+        T quantMinF = static_cast<T>(quantMin);
+        *scale = (max - min) / (quantMaxF - quantMinF);
+        auto zeroPointFromMin = quantMinF - min / *scale;
+        uint16_t const nudgedZeroPoint = [zeroPointFromMin, quantMin, quantMax, quantMaxF, quantMinF] {
+            if (zeroPointFromMin < quantMinF) {
+                return static_cast<uint16_t>(quantMin);
+            }
+            if (zeroPointFromMin > quantMaxF) {
+                return static_cast<uint16_t>(quantMax);
+            }
+            return nd4j::math::nd4j_round<T,uint16_t>(zeroPointFromMin);
+        }();
+        *nudgedMin = (quantMinF - nudgedZeroPoint) * (*scale);
+        *nudgedMax = (quantMaxF - nudgedZeroPoint) * (*scale);
+    }
+
+    template <typename T>
     void fakeQuantWithMinMaxVars_(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
         int lowIntBound = narrowed?1:0;
-        int upperIntBound = 1 << numBits - 1;
-        min->syncToHost();
+        int upperIntBound = (1 << numBits) - 1;
+        min->syncToHost(); // these are scalars, so nothing much happened
         max->syncToHost();
-        const float quant_min_float = static_cast<float>(lowIntBound);
-        const float quant_max_float = static_cast<float>(upperIntBound);
-        T scale = (max->t<T>(0) - min->t<T>(0)) / (quant_max_float - quant_min_float);
-        const T zero_point_from_min = quant_min_float - min->t<T>(0) / scale;
+        T scale, nudgedMin, nudgedMax;
+        nudge(min->t<T>(0), max->t<T>(0), lowIntBound, upperIntBound, &scale, &nudgedMin, &nudgedMax);
 
-        const uint16_t nudged_zero_point = [zero_point_from_min, lowIntBound,
-                                        quant_min_float, upperIntBound,
-                                        quant_max_float] {
-            if (zero_point_from_min < quant_min_float) {
-                return static_cast<uint16_t>(lowIntBound);
+        auto wiseMinMaxAndSoOn = LAMBDA_T(x, nudgedMin, nudgedMax, scale) {
+            T val = x;
+            if (x < nudgedMin) {
+                val = nudgedMin;
             }
-            if (zero_point_from_min > quant_max_float) {
-                return static_cast<uint16_t>(upperIntBound);
+            else if (x > nudgedMax) {
+                val = nudgedMax;
             }
-            return static_cast<uint16_t>(roundf(zero_point_from_min));
-        }();
-
-        auto nudged_min = (quant_min_float - nudged_zero_point) * (scale);
-        auto nudged_max = (quant_max_float - nudged_zero_point) * (scale);
-
-        auto wiseMax = LAMBDA_T(x, nudged_min) {
-            if (x < nudged_min) {
-                return nudged_min;
-            }
-            return x;
+            else
+                val = x;
+            return (math::nd4j_floor<T,T>((val - nudgedMin) / scale + T(0.5)) * scale + nudgedMin);
         };
 
-        auto wiseMin = LAMBDA_T(x, nudged_max) {
-            if (x > nudged_max) {
-                return nudged_max;
-            }
-            return x;
-        };
+        input->applyLambda(wiseMinMaxAndSoOn, output);
+    }
 
-        auto scaleTensor(*input);
-        auto clamped(*input);
-        scaleTensor.assign(scale);
-        input->applyLambda(wiseMin, &clamped);
+    template <typename T>
+    static __global__ void fakeQuantWithMinMaxKernel(T* input, Nd4jLong* inputShape, T* min, T* max,
+            int lowIntBound, int upperIntBound, Nd4jLong channels,
+            T* output, Nd4jLong* outputShape, Nd4jLong length) {
+        __shared__ int block;
+        if (threadIdx.x == 0) {
+            block = length / channels; // to loop with last dimension as block
+        }
+        __syncthreads();
 
-        clamped.applyLambda(wiseMax, output);
-        *output -= nudged_min;
+        for (auto i = blockIdx.x; i < (int)channels; i += gridDim.x) {
+            T scale, nudgedMin, nudgedMax;
+            nudge(min[i], max[i], lowIntBound, upperIntBound, &scale, &nudgedMin, &nudgedMax);
+            // loop over blocks to quantization between nudged min and max
+            for (auto b = threadIdx.x; b < block; b += blockDim.x) {
+                T val = input[shape::getIndexOffset(b * channels + i, inputShape)];
+                if (val < nudgedMin) {
+                    val = nudgedMin;
+                } else if (val > nudgedMax) {
+                    val = nudgedMax;
+                }
+                output[shape::getIndexOffset(b * channels + i, outputShape)] =
+                        (math::nd4j_floor<T, T>((val - nudgedMin) / scale + T(0.5)) * scale + nudgedMin);
+            };
+        }
+    }
 
-        (*output) /= scaleTensor;
-        (*output) += T(0.5f);
-        output->applyTransform(transform::Floor, nullptr, nullptr);
-        (*output) *= scaleTensor;
-        (*output) += nudged_min;
+    template <typename T>
+    void fakeQuantWithMinMaxVarsPerChannel_(LaunchContext* context, NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
+        int lowIntBound = narrowed?1:0;
+        int upperIntBound = (1 << numBits) - 1;
+        auto channels = min->lengthOf();
+        auto length = input->lengthOf();
+        NDArray::prepareSpecialUse({output}, {min, max, input});
+        auto stream = context->getCudaStream();
+        T* inputBuf = input->dataBuffer()->specialAsT<T>();
+        T* outputBuf = output->dataBuffer()->specialAsT<T>();
+        T* minBuf = min->dataBuffer()->specialAsT<T>();
+        T* maxBuf = max->dataBuffer()->specialAsT<T>();
+        fakeQuantWithMinMaxKernel<<<128, 256, 256, *stream>>>(inputBuf, input->specialShapeInfo(),
+                minBuf, maxBuf, lowIntBound, upperIntBound, channels, outputBuf, output->specialShapeInfo(), length);
+        NDArray::registerSpecialUse({output}, {min, max, input});
+
     }
 
     void fakeQuantWithMinMaxVars(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
         BUILD_SINGLE_SELECTOR(input->dataType(), fakeQuantWithMinMaxVars_, (input, min, max, numBits, narrowed, output), FLOAT_TYPES);
     }
+    void fakeQuantWithMinMaxVarsPerChannel(LaunchContext* context, NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(input->dataType(), fakeQuantWithMinMaxVarsPerChannel_, (context, input, min, max, numBits, narrowed, output), FLOAT_TYPES);
+    }
+
     BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVars_, (NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output), FLOAT_TYPES);
+    BUILD_SINGLE_TEMPLATE(template void fakeQuantWithMinMaxVarsPerChannel_, (LaunchContext* context, NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output), FLOAT_TYPES);
 
 }
 }

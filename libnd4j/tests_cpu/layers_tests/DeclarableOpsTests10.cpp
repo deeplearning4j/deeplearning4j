@@ -2117,7 +2117,7 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_2) {
 TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
 
     NDArray x('c', {2,3}, {-63.80f, -63.75f, -63.70f, -63.5f, 0.0f, 0.1f}, nd4j::DataType::FLOAT32);
-    NDArray exp('c', {2,3},  {-63.75f, -63.75f, -63.75f, -63.251953f, 0.0f, 0.0f}, nd4j::DataType::FLOAT32);
+    NDArray exp('c', {2,3},  {-63.75, -63.75, -63.75, -63.5, 0., 0.}, nd4j::DataType::FLOAT32);
     NDArray min('c', {},  {-63.65f}, nd4j::DataType::FLOAT32);
     NDArray max('c', {},  {0.1f}, nd4j::DataType::FLOAT32);
 
@@ -2127,7 +2127,8 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    // result->printIndexedBuffer("Quantized");
+//    result->printBuffer("Quantized");
+//    exp.printBuffer("Expected");
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
@@ -2137,7 +2138,7 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_1) {
 TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_2) {
 
     NDArray x = NDArrayFactory::create<double>('c', {2,3}, {-63.80, -63.75, -63.4, -63.5, 0.0, 0.1});
-    NDArray exp = NDArrayFactory::create<double>('c', {2,3},  {-63.75, -63.75, -63.251953, -63.251953, 0.0, 0.0});
+    NDArray exp = NDArrayFactory::create<double>('c', {2,3},  {-63.75, -63.75, -63.5 , -63.5 ,   0.  ,   0. });
     NDArray min = NDArrayFactory::create<double>(-63.65);
     NDArray max = NDArrayFactory::create<double>(0.1);
 
@@ -2148,6 +2149,119 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_2) {
 
     auto result = results->at(0);
     // result->printIndexedBuffer("Quantized2");
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_3) {
+
+    NDArray x = NDArrayFactory::create<double>('c', {1,2,3,1}, {-63.80, -63.75, -63.4, -63.5, 0.0, 0.1});
+    NDArray exp = NDArrayFactory::create<double>('c', {1,2,3,1},  {-63.75, -63.75, -63.5 , -63.5 ,   0.  ,   0. });
+    NDArray min = NDArrayFactory::create<double>('c', {1},{-63.65});
+    NDArray max = NDArrayFactory::create<double>('c', {1}, {0.1});
+
+    nd4j::ops::fake_quant_with_min_max_vars_per_channel op;
+    auto results = op.execute({&x, &min, &max}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+    // result->printIndexedBuffer("Quantized2");
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_4) {
+
+    NDArray x = NDArrayFactory::create<float>('c', {2,4,5,3});
+    NDArray exp = NDArrayFactory::create<float>('c', {2,4,5,3},{
+                  1.0588236,  1.9607843,  3.019608,  4.0588236,  5.098039,  6.039216,  7.0588236,  8.039216,  9.058824,
+                 10.058824,  10.980392,  12.078432, 13.058824,  13.921569, 15.09804,  16.058825,  17.058825, 18.117647,
+                 19.058825,  20.,        21.137257, 22.058825,  22.941177, 23.882355, 25.058825,  26.078432, 26.901962,
+                 28.058825, 29.019608,   29.92157,  31.058825,  31.960785, 32.941177, 34.058823,  35.09804,  35.960785,
+                 37.058823, 38.039215,   38.980392, 40.058823,  40.980392, 42.000004, 43.058826,  43.92157,  45.01961,
+                 45.,       47.058823,   48.03922,  45.,        50.,       51.058826, 45.,        50.,       54.078434,
+                 45.,       50.,         57.09804,  45.,        50.,       60.11765,  45.,        50.,       62.862747,
+                 45.,       50.,         65.882355, 45.,        50.,       68.90196,  45.,        50.,       70.,
+                 45.,       50.,         70.,       45.,        50.,       70.,       45.,        50.,       70.,
+                 45.,       50.,         70.,       45.,        50.,       70.,       45.,        50.,       70.,
+                 45.,       50.,         70.,       45.,        50.,       70.,       45.,        50.,       70.,
+                 45.,       50.,         70.,       45.,        50.,       70.,       45.,        50.,       70.,
+                 45.,       50.,         70.,       45.,        50.,       70.,       45.,        50.,       70.,
+                 45.,       50.,        70.});
+    NDArray min = NDArrayFactory::create<float>({20., 20., 20.});
+    NDArray max = NDArrayFactory::create<float>({65., 70., 90.});
+    x.linspace(1.);
+    nd4j::ops::fake_quant_with_min_max_vars_per_channel op;
+    auto results = op.execute({&x, &min, &max}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+//    result->printBuffer("Quantized per channels 4");
+//    exp.printBuffer("Quantized per channest E");
+//    auto diff = *result - exp;
+//    diff.printIndexedBuffer("Difference");
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_5) {
+    NDArray x = NDArrayFactory::create<float>('c', {2, 3, 5, 4});
+    NDArray exp = NDArrayFactory::create<float>('c', {2, 3, 5, 4},{
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -19.92157   , -18.980392  , -18.039217  , -16.941177  ,
+            -16.        , -15.058824  , -13.960785  , -13.0196085 ,
+            -11.92157   , -10.980392  , -10.039217  ,  -8.941177  ,
+            -8.000001  ,  -7.0588236 ,  -5.960785  ,  -5.0196085 ,
+            -3.9215698 ,  -2.9803925 ,  -2.039217  ,  -0.94117737,
+            0.        ,   0.94117737,   2.039215  ,   2.9803925 ,
+            4.07843   ,   5.0196075 ,   5.960783  ,   7.0588226 ,
+            8.        ,   8.941177  ,  10.039215  ,  10.980392  ,
+            12.07843   ,  13.019608  ,  13.960783  ,  15.058823  ,
+            16.        ,  16.941177  ,  18.039217  ,  18.980392  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823  ,
+            20.07843   ,  21.019608  ,  21.960783  ,  23.058823
+    });
+    NDArray min = NDArrayFactory::create<float>({-20., -19., -18., -17});
+    NDArray max = NDArrayFactory::create<float>({20., 21., 22., 23});
+    x.linspace(-60.);
+    nd4j::ops::fake_quant_with_min_max_vars_per_channel op;
+    auto results = op.execute({&x, &min, &max}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+//    result->printBuffer("Quantized per channels 5");
+//    exp.printBuffer("Quantized per channest E");
+//    auto diff = *result - exp;
+//    diff.printIndexedBuffer("Difference");
+
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
