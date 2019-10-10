@@ -23,7 +23,7 @@
 #include <ops/declarable/LegacyRandomOp.h>
 #include <algorithm>
 
-#ifdef _RELEASE
+#ifdef RELEASE_BUILD
     int wIterations = 4;
     int rIterations = 20;
     int gemmRegularUpperPow = 11;

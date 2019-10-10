@@ -21,14 +21,14 @@
 #include <ops/declarable/CustomOperations.h>
 #include "performance/benchmarking/LightBenchmarkSuit.h"
 
-#ifdef _RELEASE
+#ifdef RELEASE_BUILD
 #define WARMUP 5
 #define NUM_ITER 100
 
 #else
 
-#define WARMUP 0
-#define NUM_ITER 1
+#define WARMUP 5
+#define NUM_ITER 100
 
 #endif
 
@@ -592,7 +592,7 @@ namespace nd4j {
     }
 
     std::string LightBenchmarkSuit::runSuit() {
-#ifdef _RELEASE
+#ifdef RELEASE_BUILD
         std::vector<nd4j::DataType> dtypes({nd4j::DataType::FLOAT32, nd4j::DataType::HALF});
 #else
         std::vector<nd4j::DataType> dtypes({nd4j::DataType::FLOAT32});
