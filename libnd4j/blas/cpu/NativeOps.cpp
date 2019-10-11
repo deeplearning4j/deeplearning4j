@@ -2093,27 +2093,21 @@ const char* getAllCustomOps() {
 template <typename T>
 FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer hX, int N, T threshold) {
     auto buffer = reinterpret_cast<T *>(hX);
-
     int span = (N / 6) + 8;
-    int cnt = 0;
 
-    PRAGMA_OMP_PARALLEL_REDUCTION(+:cnt)
-    {
-        int tid = omp_get_thread_num();
-        int start = span * tid;
-        int stop = span * (tid + 1);
-        if (stop > N)
-            stop = N;
-
+    auto func = PRAGMA_REDUCE_LONG {
+        int64_t cnt = 0;
         PRAGMA_OMP_SIMD
-        for (int e = start; e < stop; e++) {
+        for (auto e = start; e < stop; e++) {
             auto v = nd4j::math::nd4j_abs<T>(buffer[e]);
             if (v >= threshold)
                 cnt++;
         }
-    }
 
-    return cnt;
+        return cnt;
+    };
+
+    return samediff::Threads::parallel_long(func, LAMBDA_AL { return _old + _new; }, 0, N);
 }
 
 

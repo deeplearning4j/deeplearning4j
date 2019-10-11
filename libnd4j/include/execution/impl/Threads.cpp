@@ -516,4 +516,58 @@ namespace samediff {
         return numThreads;
     }
 
+    int64_t Threads::parallel_long(FUNC_RL function, FUNC_AL aggregator, int64_t start, int64_t stop, int64_t increment, uint64_t numThreads) {
+        if (start > stop)
+            throw std::runtime_error("Threads::parallel_long got start > stop");
+
+        auto delta = (stop - start);
+        if (delta == 0 || numThreads == 1)
+            return function(0, start, stop, increment);
+
+        auto numElements = delta / increment;
+
+        // we decide what's optimal number of threads we need here, and execute it
+        numThreads = ThreadsHelper::numberOfThreads(numThreads, numElements);
+        if (numThreads == 1)
+            return function(0, start, stop, increment);
+
+        // create temporary array
+        int64_t intermediatery[256];
+        auto span = delta / numThreads;
+
+        // execute threads in parallel
+        for (uint64_t e = 0; e < numThreads; e++) {
+            auto _start = span * e + start;
+            auto _stop = span * (e + 1) + start;
+
+            if (e == numThreads - 1)
+                _stop = stop;
+
+            intermediatery[e] = function(e, _start, _stop, increment);
+        }
+
+        // aggregate results in single thread
+        for (uint64_t e = 1; e < numThreads; e++)
+            intermediatery[0] = aggregator(intermediatery[0], intermediatery[e]);
+
+        // return accumulated result
+        return intermediatery[0];
+    }
+
+    double Threads::parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t start, int64_t stop, int64_t increment, uint64_t numThreads) {
+        // create temporary array
+        double intermediatery[256];
+
+        // execute threads in parallel
+        for (uint64_t e = 0; e < numThreads; e++)
+            intermediatery[e] = function(e, start, stop, increment);
+
+        // aggregate results in single thread
+        for (uint64_t e = 1; e < numThreads; e++)
+            intermediatery[0] = aggregator(intermediatery[0], intermediatery[e]);
+
+        // return accumulated result
+        return intermediatery[0];
+    }
+
 }

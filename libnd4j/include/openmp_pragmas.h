@@ -99,12 +99,34 @@
 
 #endif
 
+// reductions
+#define FUNC_RL std::function<int64_t(uint64_t, int64_t, int64_t, int64_t)>
+#define FUNC_AL std::function<int64_t(int64_t, int64_t)>
+
+// aggregation functions
+#define FUNC_RD std::function<double(uint64_t, int64_t, int64_t, int64_t)>
+#define FUNC_AD std::function<double(double, double)>
+
+// parallel block
 #define FUNC_DO std::function<void(uint64_t, uint64_t)>
+
+// parallel_for block
 #define FUNC_1D std::function<void(uint64_t, int64_t, int64_t, int64_t)>
 #define FUNC_2D std::function<void(uint64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t)>
 #define FUNC_3D std::function<void(uint64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t)>
 
+// aggregation lambda
+#define LAMBDA_AL [&](int64_t _old, int64_t _new) -> int64_t
+#define LAMBDA_AD [&](double _old, double _new) -> double
+
+// reduction lambda
+#define PRAGMA_REDUCE_LONG  [&] (uint64_t thread_id, int64_t start, int64_t stop, int64_t incremen) mutable -> int64_t
+#define PRAGMA_REDUCE_DOUBLE  [&] (uint64_t thread_id, int64_t start, int64_t stop, int64_t incremen) mutable -> double
+
+// paralllel block lambda
 #define PRAGMA_THREADS_DO  [&](uint64_t thread_id, uint64_t numThreads) -> void
+
+// paralllel_for lambdas
 #define PRAGMA_THREADS_FOR  [&](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void
 #define PRAGMA_THREADS_FOR_2D [&](uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y) -> void
 #define PRAGMA_THREADS_FOR_3D [&](uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y, int64_t start_z, int64_t stop_z, int64_t inc_z) -> void

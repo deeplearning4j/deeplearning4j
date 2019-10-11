@@ -24,6 +24,7 @@
 #include <openmp_pragmas.h>
 #include <op_boilerplate.h>
 #include <Environment.h>
+#include <op_enums.h>
 
 namespace samediff {
     class ThreadsHelper {
@@ -147,6 +148,10 @@ namespace samediff {
          * @return
          */
         static int parallel_do(FUNC_DO function, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads());
+
+        static int64_t parallel_long(FUNC_RL function, FUNC_AL aggregator, int64_t start, int64_t stop, int64_t increment = 1, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads());
+
+        static double parallel_double(FUNC_RD function, FUNC_AD aggregator, int64_t start, int64_t stop, int64_t increment = 1, uint64_t numThreads = nd4j::Environment::getInstance()->maxThreads());
     };
 }
 

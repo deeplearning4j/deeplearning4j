@@ -114,6 +114,22 @@ TEST_F(ThreadsTests, validation_test_2d_1) {
     }
 }
 
+TEST_F(ThreadsTests, reduction_test_1) {
+
+    auto func = PRAGMA_REDUCE_LONG {
+        int64_t sum = 0;
+
+        for (auto e = start; e < stop; e++) {
+            sum++;
+        };
+
+        return sum;
+    };
+
+    auto sum = samediff::Threads::parallel_long(func, LAMBDA_AL {return _old + _new;}, 0, 8192, 1, 4);
+    ASSERT_EQ(8192, sum);
+}
+
 /*
 TEST_F(ThreadsTests, basic_test_1) {
     if (!Environment::getInstance()->isCPU())
