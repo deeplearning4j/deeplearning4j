@@ -398,49 +398,47 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
     Nd4jLong SpecialMethods<T>::encodeBitmapGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
         auto dx = reinterpret_cast<T *>(vx);
 
-        Nd4jLong retVal = 0L;
+//PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVal))
+        auto func = PRAGMA_REDUCE_LONG {
+            Nd4jLong retVal = 0L;
+            
+            for (auto x = start; x < stop; x += increment) {
+                int byte = 0;
+                int byteId = x / 16 + 4;
 
-PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVal))
-        for (Nd4jLong x = 0; x < N; x += 16) {
+                for (int f = 0; f < 16; f++) {
+                    Nd4jLong e = x + f;
 
-            int byte = 0;
-            int byteId = x / 16 + 4;
+                    if (e >= N)
+                        continue;
 
-            for (int f = 0; f < 16; f++) {
-                Nd4jLong e = x + f;
+                    T val = dx[e];
+                    T abs = nd4j::math::nd4j_abs<T>(val);
 
-                if (e >= N)
-                    continue;
+                    int bitId = e % 16;
 
-                T val = dx[e];
-                T abs = nd4j::math::nd4j_abs<T>(val);
+                    if (abs >= (T) threshold) {
+                        byte |= 1 << (bitId);
+                        retVal++;
 
-                int bitId = e % 16;
-
-                if (abs >= (T) threshold) {
-                    byte |= 1 << (bitId);
-
-                    retVal++;
-
-
-                    if (val < (T) 0.0f) {
+                        if (val < (T) 0.0f) {
+                            byte |= 1 << (bitId + 16);
+                            dx[e] += threshold;
+                        } else {
+                            dx[e] -= threshold;
+                        }
+                    } else if (abs >= (T) threshold / (T) 2.0f && val < (T) 0.0f) {
                         byte |= 1 << (bitId + 16);
-                        dx[e] += threshold;
-                    } else {
-                        dx[e] -= threshold;
+                        dx[e] += threshold / 2;
+
+                        retVal++;
                     }
-                } else if (abs >= (T) threshold / (T) 2.0f && val < (T) 0.0f) {
-                    byte |= 1 << (bitId + 16);
-                    dx[e] += threshold / 2;
-
-                    retVal++;
                 }
+
+                dz[byteId] = byte;
             }
-
-            dz[byteId] = byte;
-        }
-
-        return retVal;
+        };
+        return samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, N, 16);
     }
 
     template <typename X, typename Y>

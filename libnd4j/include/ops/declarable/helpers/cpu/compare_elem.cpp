@@ -15,6 +15,7 @@
  ******************************************************************************/
 
 #include <ops/declarable/helpers/compare_elem.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
     namespace ops {
@@ -30,19 +31,25 @@ namespace nd4j {
                 Nd4jLong sum = 0;
 
                 if(isStrictlyIncreasing) {
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
-                    for (Nd4jLong i = 0; i < length - 1; i++) {
-                        auto val0 = input->t<T>(i);
-                        auto val1 = input->t<T>(i + 1);
-                        sum += val0 >= val1 ? -1 : 0;
-                    }
+                    //PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
+                    auto func = PRAGMA_REDUCE_LONG {
+                        for (auto i = start; i < stop; i++) {
+                            auto val0 = input->t<T>(i);
+                            auto val1 = input->t<T>(i + 1);
+                            sum += val0 >= val1 ? -1 : 0;
+                        }
+                    };
+                    sum = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
                 } else {
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
-                    for (Nd4jLong i = 0; i < length - 1; i++) {
-                        auto val0 = input->t<T>(i);
-                        auto val1 = input->t<T>(i + 1);
-                        sum += val0 > val1 ? -1 : 0;
-                    }
+                    //PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
+                    auto func = PRAGMA_REDUCE_LONG {
+                        for (auto i = start; i < stop; i++) {
+                            auto val0 = input->t<T>(i);
+                            auto val1 = input->t<T>(i + 1);
+                            sum += val0 > val1 ? -1 : 0;
+                        }
+                    };
+                    sum = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
                 }
 
                 output = (sum > -1);

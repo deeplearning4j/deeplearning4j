@@ -27,7 +27,7 @@
 #include <vector>
 #include <templatemath.h>
 #include <ops/ops.h>
-#include <ops/special_ops.h>
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif

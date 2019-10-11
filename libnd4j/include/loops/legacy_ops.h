@@ -89,8 +89,6 @@
         (5, TimesOneMinus), \
         (6, Cube), \
         (7, OneMinus), \
-        (8, Col2Im), \
-        (9, Im2col),\
         (11, Reciprocal), \
         (12, Square), \
         (13, CompareAndSetTransform) ,\
@@ -98,7 +96,6 @@
         (17, Ceiling), \
         (18, Floor), \
         (19, ClipByValue) ,\
-        (20, Reverse), \
         (21, Copy)
 
 #define TRANSFORM_ANY_OPS \

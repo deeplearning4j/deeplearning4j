@@ -119,9 +119,12 @@
 #define LAMBDA_AL [&](int64_t _old, int64_t _new) -> int64_t
 #define LAMBDA_AD [&](double _old, double _new) -> double
 
+#define LAMBDA_SUML LAMBDA_AL {return _old + _new; }
+#define LAMBDA_SUMD LAMBDA_AD {return _old + _new; }
+
 // reduction lambda
-#define PRAGMA_REDUCE_LONG  [&] (uint64_t thread_id, int64_t start, int64_t stop, int64_t incremen) mutable -> int64_t
-#define PRAGMA_REDUCE_DOUBLE  [&] (uint64_t thread_id, int64_t start, int64_t stop, int64_t incremen) mutable -> double
+#define PRAGMA_REDUCE_LONG  [&] (uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) mutable -> int64_t
+#define PRAGMA_REDUCE_DOUBLE  [&] (uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) mutable -> double
 
 // paralllel block lambda
 #define PRAGMA_THREADS_DO  [&](uint64_t thread_id, uint64_t numThreads) -> void
