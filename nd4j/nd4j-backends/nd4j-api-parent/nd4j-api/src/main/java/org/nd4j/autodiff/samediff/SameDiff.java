@@ -986,7 +986,7 @@ public class SameDiff extends SDBaseOps {
                 return variablesArrays.containsKey(varName);
             case ARRAY:
                 long tid = Thread.currentThread().getId();
-                return sessions.containsKey(tid) && sessions.get(tid).contains(varName, InferenceSession.OUTER_FRAME, 0, null);
+                return sessions.containsKey(tid) && sessions.get(tid).contains(varName, InferenceSession2.OUTER_FRAME, 0, null);
             case CONSTANT:
                 return constantArrays.containsKey(varName);
             case PLACEHOLDER:
