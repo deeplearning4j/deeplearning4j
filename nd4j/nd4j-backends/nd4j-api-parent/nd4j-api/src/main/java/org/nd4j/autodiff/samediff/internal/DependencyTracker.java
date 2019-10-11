@@ -1,6 +1,7 @@
 package org.nd4j.autodiff.samediff.internal;
 
 import lombok.NonNull;
+import lombok.extern.slf4j.Slf4j;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -11,6 +12,7 @@ import java.util.*;
  * @param <T> For a dependency X -> Y, Y has type T
  * @param <D> For a dependency X -> Y, X has type D
  */
+@Slf4j
 public class DependencyTracker<T, D> {
 
     private Queue<T> zeroDependencyQueue = new LinkedList<>();
@@ -30,7 +32,10 @@ public class DependencyTracker<T, D> {
         zeroDependenciesSet.clear();
         dependencies.clear();
         orDependencies.clear();
+        dependentAliases.clear();
+        dependentAliasesReverse.clear();
         dependeeAliases.clear();
+        dependeeAliasesReverse.clear();
     }
 
     public boolean isEmpty(){
@@ -278,6 +283,7 @@ public class DependencyTracker<T, D> {
      */
     public void addDependentAlias(@NonNull T real, @NonNull T alias){
         Preconditions.checkState(!real.equals(alias), "Cannot create a self-referential alias (an alias of dependent that is itself): real=%s, alias=%s", real, alias);
+        log.info("addDependentAlias(real={}, alias={})", real, alias);
 
         /*
         Handle transitive aliases.
@@ -324,6 +330,7 @@ public class DependencyTracker<T, D> {
     }
 
     public void removeDependentAlias(@NonNull T alias){
+        log.info("removeDependentAlias(alias={})", alias);
         T underlying = dependentAliases.remove(alias);
         if(underlying != null){
             Set<T> s = dependentAliasesReverse.get(underlying);

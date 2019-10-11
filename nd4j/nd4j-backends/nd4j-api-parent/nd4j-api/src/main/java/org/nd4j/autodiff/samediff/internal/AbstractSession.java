@@ -245,7 +245,8 @@ public abstract class AbstractSession<T, O> {
             }
         }
 
-        //Step 2: execute in any order, until we have all required nodeOutputs
+        //Step 2: execute (in any order, but not switching to new frame/iteration until all from current frame/iter are done),
+        // until we have all required nodeOutputs
         /*
         The idea is simple: we start off with a set of "available to execute" variables - just the placeholders and
         constants at this point.
@@ -360,6 +361,9 @@ public abstract class AbstractSession<T, O> {
                 if (variables.contains(varToExec.getVariable())) {  //Check if required output
                     out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
                 }
+
+                FrameIter outFrame = new FrameIter(OUTER_FRAME, 0, null);
+                recordArrayUses(Collections.singletonList(varToExec.getVariable()), outFrame, null, null, null);
             } else if (sameDiff.getVariable(varToExec.getVariable()).isConstant() ||
                     sameDiff.getVariable(varToExec.getVariable()).getVariableType() == VariableType.VARIABLE) {
                 //Variable is constant: do lookup
@@ -372,7 +376,9 @@ public abstract class AbstractSession<T, O> {
                     out.put(varToExec.getVariable(), phArr);
                 }
 
-
+                FrameIter outFrame = new FrameIter(OUTER_FRAME, 0, null);
+                recordArrayUses(Collections.singletonList(varToExec.getVariable()), outFrame, null, null,
+                        Collections.singleton(varToExec.getVariable()));
             } else if (sameDiff.getVariableOutputOp(varToExec.getVariable()) != null) {
                 //Variable is the output of an op -> execute op
                 String opName = sameDiff.getVariables().get(varToExec.getVariable()).getOutputOfOp();
@@ -981,6 +987,11 @@ public abstract class AbstractSession<T, O> {
                 execInputs.get(forVariable).add(inputVar);
             }
         }
+    }
+
+    protected void recordArrayUses(List<String> forVariables, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+                                   Set<String> constAndPhInputs){
+        //No-op by default
     }
 
     protected void onFrameIterTransition(String from, FrameIter parentFrom, String to, FrameIter parentTo){

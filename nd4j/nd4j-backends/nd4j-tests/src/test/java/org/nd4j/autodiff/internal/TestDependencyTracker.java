@@ -141,6 +141,24 @@ public class TestDependencyTracker {
         dl = dt.getDependencies("y");
         assertEquals(Collections.singletonList("x"), dl.getDependencies());
         assertNull(dl.getOrDependencies());
+        dt.clear();
+        assertTrue(dt.isEmpty());
+
+        //Check 3 and 4 levels of transitive dependent aliases
+        //Everything here should be alias of "a"
+        dt.addDependentAlias("a", "b");
+        dt.addDependentAlias("b", "c");
+        dt.addDependentAlias("c", "d");
+        dt.addDependentAlias("d", "e");
+        assertTrue(dt.isDependentAlias("b"));
+        assertTrue(dt.isDependentAlias("c"));
+        assertTrue(dt.isDependentAlias("d"));
+        assertTrue(dt.isDependentAlias("e"));
+        assertEquals("a", dt.dependentAliasGetUnderlying("b"));
+        assertEquals("a", dt.dependentAliasGetUnderlying("c"));
+        assertEquals("a", dt.dependentAliasGetUnderlying("d"));
+        assertEquals("a", dt.dependentAliasGetUnderlying("e"));
+
 
 
         //Add dependency alias after a dependency is already defined
