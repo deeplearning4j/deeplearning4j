@@ -26,7 +26,7 @@ import java.util.*;
  * - Calculation of regularization scores (Score for L1, L2, etc)
  */
 @Slf4j
-public class TrainingSession extends InferenceSession2 {
+public class TrainingSession extends InferenceSession {
 
     protected TrainingConfig config;
     protected Map<String,String> gradVarToVarMap;
