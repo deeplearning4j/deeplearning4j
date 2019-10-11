@@ -189,10 +189,18 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                     DifferentialFunction df = o.getOp();
 
                     Dep opDep;
-                    if(df instanceof Enter || df instanceof Exit || df instanceof NextIteration || //df instanceof Merge ||
-                            df instanceof While){
+                    if(df instanceof Exit || df instanceof NextIteration || //df instanceof Merge ||
+                            df instanceof While) {
                         //TODO enter, exit, nextIteration, etc - these have different frame/iter
                         //Also switch should be OR dependency
+                        throw new UnsupportedOperationException("Not yet implemeneted: " + df.getClass());
+                    }  else if(df instanceof Enter){
+                        //Enter op: forwards input to specified frame, iteration 0
+                        //This is a zero-copy operation
+                        //Note that the enter value should be available for ALL iterations - which means we need a frame/iter dependency, not a
+                        // standard variable dependency
+
+
                         throw new UnsupportedOperationException("Not yet implemeneted: " + df.getClass());
                     } else {
                         //Normal case (standard ops) - and switch/merge cases
@@ -203,7 +211,8 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                             //This is fine, but we need a dependent alias. So, for arrays X -> (identity) -> Y then Y is an
                             // alias of X
 
-                            Array inArr = new Array(o.getInputsToOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
+                            String inName = op.getInputsToOp().get(0);
+                            Array inArr = new Array(inName, arr.getFrame(), arr.getIter(), arr.getParentFrame());
                             arrayUseTracker.addDependentAlias(inArr, arr);
                         } else if(df instanceof Switch) {
                             //Switch: Input to switch op is passed through unchanged (same array, zero copy) to ONE of two possible outputs
@@ -213,14 +222,14 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                             // say that "switch is executed, x can be deallocated"
 
                             //However, we need to add a dependent alias so if opX -> switch -> opZ, and opX has output x,
-                            // and switch has output s, then we should mark s as an alias of x
+                            // and switch has output s1 or s2, then we should mark s1 and s2 as an alias of x
+                            //Mark it for both branches, because we don't necessarily know which will be executed at this point
+                            Array alias0 = new Array(o.getOutputsOfOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
+                            arrayUseTracker.addDependentAlias(arr, alias0);
 
-                            INDArray predicate = op.getOp().getInputArgument(1);
-                            boolean b = predicate.getDouble(0) == 0;
+                            Array alias1 = new Array(o.getOutputsOfOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
+                            arrayUseTracker.addDependentAlias(arr, alias1);
 
-                            String switchOutName = o.getOutputsOfOp().get(b ? 1 : 0);
-                            Array alias = new Array(switchOutName, arr.getFrame(), arr.getIter(), arr.getParentFrame());
-                            arrayUseTracker.addDependentAlias(arr, alias);
                         } else if(df instanceof Merge){
                             //Merge: 2 op inputs, but only one will (usually) be available when merge is executed
                             //The array for whichever is available is passed through unchanged (same array, zero copy)
@@ -245,6 +254,8 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
 
                             Array in = new Array(availableIn, arr.getFrame(), arr.getIter(), arr.getParentFrame());
                             arrayUseTracker.addDependentAlias(in, arr);
+                        } else {
+                            throw new UnsupportedOperationException("Not yet implemeneted: " + df.getClass());
                         }
                     }
 

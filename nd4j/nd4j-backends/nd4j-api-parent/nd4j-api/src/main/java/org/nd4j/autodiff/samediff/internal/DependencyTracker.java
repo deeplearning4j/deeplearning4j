@@ -277,7 +277,7 @@ public class DependencyTracker<T, D> {
      * @param alias
      */
     public void addDependentAlias(@NonNull T real, @NonNull T alias){
-        Preconditions.checkState(!real.equals(alias), "Cannot create an alias of itself: real=%s, alias=%s", real, alias);
+        Preconditions.checkState(!real.equals(alias), "Cannot create a self-referential alias (an alias of dependent that is itself): real=%s, alias=%s", real, alias);
 
         /*
         Handle transitive aliases.
