@@ -72,8 +72,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.controlflow.Select.class,
             org.nd4j.linalg.api.ops.impl.controlflow.Where.class,
             org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy.class,
-            org.nd4j.linalg.api.ops.impl.controlflow.While.class,
-            org.nd4j.linalg.api.ops.impl.controlflow.WhileDerivative.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.LoopCond.class,

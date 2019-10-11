@@ -263,6 +263,8 @@ public abstract class AbstractSession<T, O> {
 
         Map<String, T> out = new HashMap<>();
         int step = 0;
+        String currentFrame = OUTER_FRAME;
+        FrameIter currParentFrame = null;
         while (out.size() < userRequestedUnique.size()) {
             if(availableForExec.size() == 0){
                 int missingCount = userRequestedUnique.size() - out.size();
@@ -291,8 +293,47 @@ public abstract class AbstractSession<T, O> {
                 throw new IllegalStateException(s);
             }
 
-            //Get any variable and execute it's corresponding op
-            VarId varToExec = availableForExec.remove();
+            //Get variable in the current frame/iteration and execute it's corresponding op
+            //If no more ops exist for the current frame/iter, we'll switch to the next frame/iter
+            //The idea is to not mix the order of execution of ops in different frames/iters
+            VarId first = availableForExec.peek();
+            VarId varToExec = null;
+            if(availableForExec.size() == 1 || currentFrame.equals(first.getFrame()) &&
+                    (currParentFrame == null && first.getParentFrame() == null || currParentFrame != null && currParentFrame.equals(first.getParentFrame()))){
+                //First one is within current frame/iteration
+                varToExec = availableForExec.remove();
+            } else {
+                Iterator<VarId> iter = availableForExec.iterator();
+                VarId found = null;
+                while(iter.hasNext()){
+                    VarId v = iter.next();
+                    if(currentFrame.equals(v.getFrame()) &&
+                            (currParentFrame == null && v.getParentFrame() == null || currParentFrame != null && currParentFrame.equals(v.getParentFrame()))){
+                        //Found one in current frame/iter
+                        found = v;
+                        break;
+                    }
+                }
+                if(found == null){
+                    //Scanned all, must be a transition to a new frame
+                    varToExec = availableForExec.remove();
+                }
+            }
+
+            //Determine if we've transition to a new frame
+            if (!currentFrame.equals(varToExec.getFrame()) || (currParentFrame != null && !currParentFrame.equals(varToExec.getParentFrame()))
+                    || (varToExec.getParentFrame() != null && !varToExec.getParentFrame().equals(currParentFrame))){
+                log.info("Detected transition: from ({} - {}) to ({} - {})", currentFrame, currParentFrame,
+                        varToExec.getFrame(), varToExec.getParentFrame());
+
+                onFrameIterTransition(currentFrame, currParentFrame, varToExec.getFrame(), varToExec.getParentFrame());
+
+                currentFrame = varToExec.getFrame();
+                currParentFrame = varToExec.getParentFrame();
+            }
+
+
+
             availableForExecSet.remove(varToExec);
             if (nodeOutputs.containsKey(varToExec)) {
                 //Already processed this one. May occur if execution was triggered by a different output of a multi-output op
@@ -940,6 +981,10 @@ public abstract class AbstractSession<T, O> {
                 execInputs.get(forVariable).add(inputVar);
             }
         }
+    }
+
+    protected void onFrameIterTransition(String from, FrameIter parentFrom, String to, FrameIter parentTo){
+        //No-op by default
     }
 
     protected static VarId lookup(String name, Collection<VarId> varIds, Collection<VarId> varIds2, boolean exceptionOnNotFound){

@@ -34,7 +34,6 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
-import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
@@ -48,6 +47,7 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.io.LineNumberReader;
 import java.util.*;
 
 /**
@@ -189,19 +189,39 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                     DifferentialFunction df = o.getOp();
 
                     Dep opDep;
-                    if(df instanceof Exit || df instanceof NextIteration || //df instanceof Merge ||
-                            df instanceof While) {
-                        //TODO enter, exit, nextIteration, etc - these have different frame/iter
-                        //Also switch should be OR dependency
-                        throw new UnsupportedOperationException("Not yet implemeneted: " + df.getClass());
-                    }  else if(df instanceof Enter){
+                    if(df instanceof Enter) {
                         //Enter op: forwards input to specified frame, iteration 0
                         //This is a zero-copy operation
-                        //Note that the enter value should be available for ALL iterations - which means we need a frame/iter dependency, not a
-                        // standard variable dependency
+                        //Note that the enter value should be available for ALL iterations within the new frame - which means
+                        // we need a frame/iter dependency, not a standard variable dependency
+                        //Also because it's a zero-copy operation, we need a dependent alias for the input array
 
+                        String inName = op.getInputsToOp().get(0);
+                        VarId inVid = lookup(inName, opInputs, allIterInputs, false);
+                        Array inArr = new Array(inName, inVid.getFrame(), inVid.getIteration(), inVid.getParentFrame());
+                        arrayUseTracker.addDependentAlias(inArr, arr);
 
-                        throw new UnsupportedOperationException("Not yet implemeneted: " + df.getClass());
+                        //Frame dependency - Enter output (and input, via alias) required for all iterations
+                        opDep = new FrameDep(outputFrameIter.getFrame(), outputFrameIter.getParentFrame());
+                    } else if(df instanceof Exit) {
+                        //Exit op: forwards input to parent frame (at parent current iteration)
+                        //This is a zero-copy operation, hence we need a dependent alias
+                        String inName = op.getInputsToOp().get(0);
+                        VarId inVid = lookup(inName, opInputs, allIterInputs, false);
+                        Array inArr = new Array(inName, inVid.getFrame(), inVid.getIteration(), inVid.getParentFrame());
+                        arrayUseTracker.addDependentAlias(inArr, arr);
+                        //TODO not 100% sure on the opDep here...
+                        opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
+                    } else if(df instanceof NextIteration){
+                        //NextIteration: same frame, increments iteration
+                        //As per enter/exit etc - NextIteration is a zero-copy op, so we need a dependent alias for this
+
+                        String inName = op.getInputsToOp().get(0);
+                        VarId inVid = lookup(inName, opInputs, allIterInputs, false);
+                        Array inArr = new Array(inName, inVid.getFrame(), inVid.getIteration(), inVid.getParentFrame());
+                        arrayUseTracker.addDependentAlias(inArr, arr);
+
+                        opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
                     } else {
                         //Normal case (standard ops) - and switch/merge cases
                         opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
@@ -254,8 +274,6 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
 
                             Array in = new Array(availableIn, arr.getFrame(), arr.getIter(), arr.getParentFrame());
                             arrayUseTracker.addDependentAlias(in, arr);
-                        } else {
-                            throw new UnsupportedOperationException("Not yet implemeneted: " + df.getClass());
                         }
                     }
 
@@ -273,16 +291,11 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
             OpDep opDep = new OpDep(op.getName(), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
 
             DifferentialFunction df = op.getOp();
-            if(df instanceof Enter || df instanceof Exit || df instanceof NextIteration || df instanceof While){
-                //TODO enter, exit, nextIteration, etc - these have different frame/iter
-                //Also switch should be OR dependency
-                throw new UnsupportedOperationException("Not yet implemented: " + df.getClass());
-            }
-
             /*
             Other control ops here:
             - Switch: nothing special about the inputs, these can be updated as per normal ops
             - Merge: only one was ever added as a dependency, but we can remove both (one just isn't present to be removed)
+            - Enter/Exit/NextIteration: input/output do have different frame/iter, but this should be handled by lookup method already
              */
 
             boolean isMerge = df instanceof Merge;
@@ -730,8 +743,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
         Preconditions.checkNotNull(df, "No differential function found with name \"%s\"", opName);
 
         if(df instanceof LoopCond || df instanceof Enter || df instanceof Exit || df instanceof NextIteration ||
-                df instanceof Merge || df instanceof Switch || df instanceof While ||
-                df instanceof BaseTensorOp){
+                df instanceof Merge || df instanceof Switch || df instanceof BaseTensorOp){
             //Control dependencies and tensor ops (like TensorArray, TensorArrayRead etc) don't need inputs set, execution is a special case
             return sdo;
         }
@@ -1008,6 +1020,13 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
         }
     }
 
+    @Override
+    protected void onFrameIterTransition(String from, FrameIter parentFrom, String to, FrameIter parentTo){
+        log.info("InferenceSession2: Transition from {} (parent={}) to {} (parent={})", from, parentFrom, to, parentTo);
+        //Remove any frame dependencies...
+        //TODO
+    }
+
     @Data
     protected static class Array {
         private String varName;
@@ -1030,7 +1049,6 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
     @Data
     protected abstract static class Dep {
         protected String frame;
-        protected int iter;
         protected FrameIter parentFrame;
     }
 
@@ -1039,6 +1057,7 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
     @EqualsAndHashCode(callSuper = true)
     protected static class OpDep extends Dep {
         protected String opName;
+        protected int iter;
 
         protected OpDep(@NonNull String opName, @NonNull String frame, int iter, FrameIter parentFrame){
             this.opName = opName;
@@ -1048,10 +1067,12 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
         }
     }
 
-    @AllArgsConstructor
     @Data
     @EqualsAndHashCode(callSuper = true)
     protected static class FrameDep extends Dep {
-
+        public FrameDep(@NonNull String frame, FrameIter parentFrame){
+            this.frame = frame;
+            this.parentFrame = parentFrame;
+        }
     }
 }
