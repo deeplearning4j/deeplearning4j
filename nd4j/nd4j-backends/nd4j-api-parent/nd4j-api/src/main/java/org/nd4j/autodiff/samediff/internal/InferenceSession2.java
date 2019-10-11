@@ -188,14 +188,65 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                     SameDiffOp o = sameDiff.getOps().get(opName);
                     DifferentialFunction df = o.getOp();
 
-                    if(df instanceof Enter || df instanceof Exit || df instanceof NextIteration || df instanceof Merge ||
-                            df instanceof Switch || df instanceof While){
+                    Dep opDep;
+                    if(df instanceof Enter || df instanceof Exit || df instanceof NextIteration || //df instanceof Merge ||
+                            df instanceof While){
                         //TODO enter, exit, nextIteration, etc - these have different frame/iter
                         //Also switch should be OR dependency
                         throw new UnsupportedOperationException("Not yet implemeneted: " + df.getClass());
-                    }
+                    } else {
+                        //Normal case (standard ops) - and switch/merge cases
+                        opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
 
-                    OpDep opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
+                        if( df instanceof Identity ) {
+                            //Identity: array is passed through unchanged (same array, zero copy)
+                            //This is fine, but we need a dependent alias. So, for arrays X -> (identity) -> Y then Y is an
+                            // alias of X
+
+                            Array inArr = new Array(o.getInputsToOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
+                            arrayUseTracker.addDependentAlias(inArr, arr);
+                        } else if(df instanceof Switch) {
+                            //Switch: Input to switch op is passed through unchanged (same array, zero copy) to ONE of two possible outputs
+                            //Regardless of which branch the array is forwarded on to, the input array can be closed when the switch op is executed
+                            //However, we need to add a dependee alias: so if we have opX -> switch -> opZ and opX has output array x
+                            // then instead of (x -> switch) dependency, we want (x -> opZ). Otherwise, we would (incorrectly)
+                            // say that "switch is executed, x can be deallocated"
+
+                            //However, we need to add a dependent alias so if opX -> switch -> opZ, and opX has output x,
+                            // and switch has output s, then we should mark s as an alias of x
+
+                            INDArray predicate = op.getOp().getInputArgument(1);
+                            boolean b = predicate.getDouble(0) == 0;
+
+                            String switchOutName = o.getOutputsOfOp().get(b ? 1 : 0);
+                            Array alias = new Array(switchOutName, arr.getFrame(), arr.getIter(), arr.getParentFrame());
+                            arrayUseTracker.addDependentAlias(arr, alias);
+                        } else if(df instanceof Merge){
+                            //Merge: 2 op inputs, but only one will (usually) be available when merge is executed
+                            //The array for whichever is available is passed through unchanged (same array, zero copy)
+                            //As per switch, we need a dependent alias - so if we have (X, Y) -> Merge -> Z
+                            // then Z is just an alias for whichever of X or Y actually got executer
+
+                            //First: work out which is actually available...
+                            String availableIn = null;
+                            for(String s : op.getInputsToOp()){
+                                if(constAndPhInputs != null && constAndPhInputs.contains(s)){
+                                    availableIn = s;
+                                    break;
+                                }
+                                VarId vid = lookup(s, opInputs, allIterInputs, false);
+                                if(vid != null) {
+                                    availableIn = s;
+                                    break;
+                                }
+                            }
+
+                            Preconditions.checkState(availableIn != null, "Could not find any inputs for merge op %s, %s", op.getName(), outputFrameIter);
+
+                            Array in = new Array(availableIn, arr.getFrame(), arr.getIter(), arr.getParentFrame());
+                            arrayUseTracker.addDependentAlias(in, arr);
+                        }
+                    }
 
                     //Add the dependency. This means that "the specified array requires this operation to be executed, before it can be closed/deallocated"
                     arrayUseTracker.addDependency(arr, opDep);
@@ -207,16 +258,24 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
         //Step 2: Update dependencies - remove old dependencies (for just calculated op at given frame/iter)
         List<String> opInVarNames = op.getInputsToOp();
         if(opInVarNames != null){
-            //Remove any old dependencies, now that this op has been deallocated
+            //Remove any old dependencies, now that this op has been executed
             OpDep opDep = new OpDep(op.getName(), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
 
             DifferentialFunction df = op.getOp();
-            if(df instanceof Enter || df instanceof Exit || df instanceof NextIteration || df instanceof Merge ||
-                    df instanceof Switch || df instanceof While){
+            if(df instanceof Enter || df instanceof Exit || df instanceof NextIteration || df instanceof While){
                 //TODO enter, exit, nextIteration, etc - these have different frame/iter
                 //Also switch should be OR dependency
                 throw new UnsupportedOperationException("Not yet implemented: " + df.getClass());
             }
+
+            /*
+            Other control ops here:
+            - Switch: nothing special about the inputs, these can be updated as per normal ops
+            - Merge: only one was ever added as a dependency, but we can remove both (one just isn't present to be removed)
+             */
+
+            boolean isMerge = df instanceof Merge;
+
 
             for( int i=0; i<opInVarNames.size(); i++ ) {
                 String n = opInVarNames.get(i);
@@ -224,7 +283,12 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                 if(constAndPhInputs != null && constAndPhInputs.contains(n)){
                     inVid = newVarId(n, OUTER_FRAME, 0, null);
                 } else {
-                    inVid = lookup(n, opInputs, allIterInputs, true);
+                    inVid = lookup(n, opInputs, allIterInputs, !isMerge);
+                }
+
+                if(isMerge && inVid == null){
+                    //Merge op only has 1 of 2 inputs available usually
+                    continue;
                 }
 
 
@@ -268,13 +332,16 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
             String[] argNames = i.argNames();
             Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in identity op, got %s", argNames);
             VarId vid = newVarId(argNames[0], outputFrameIter);
-            //TODO eventually we'll remove this dup for performance reasons, but no dup complicates checking for "input no longer required"
-            // because it actually *is* still
+
             INDArray orig = nodeOutputs.get(vid);
-            INDArray ret = mmgr.allocate(false, orig.dataType(), orig.shape());
-            ret.assign(orig);
-            i.setInputArgument(0, null);    //Clear reference in case it's closed later
-            return new INDArray[]{ret};
+//            //TODO eventually we'll remove this dup for performance reasons, but no dup complicates checking for "input no longer required"
+//            // because it actually *is* still
+//            INDArray ret = mmgr.allocate(false, orig.dataType(), orig.shape());
+//            ret.assign(orig);
+//            i.setInputArgument(0, null);    //Clear reference in case it's closed later
+//            return new INDArray[]{ret};
+
+            return new INDArray[]{orig};
         } else if(op instanceof Switch) {
             Switch s = (Switch) op;
             String[] argNames = s.argNames();       //Order: input, boolean array

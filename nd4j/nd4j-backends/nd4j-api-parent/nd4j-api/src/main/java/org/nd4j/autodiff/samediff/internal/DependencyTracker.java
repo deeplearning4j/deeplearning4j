@@ -1,7 +1,5 @@
 package org.nd4j.autodiff.samediff.internal;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.NonNull;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.primitives.Pair;
@@ -20,8 +18,11 @@ public class DependencyTracker<T, D> {
     private Map<T, Set<D>> dependencies = new HashMap<>();
     private Map<T, Set<Pair<D,D>>> orDependencies = new HashMap<>();
 
-    private Map<D,D> aliases = new HashMap<>();                  //Key: Dependency; value: "real"/underlying dependency
-    private Map<D,Set<D>> aliasesReverse = new HashMap<>();      //Key: real/underlying dependency; value: all values that alias this real one
+    private Map<T,T> dependentAliases = new HashMap<>();                  //Key: dependent; value: "real"/underlying dependent
+    private Map<T,Set<T>> dependentAliasesReverse = new HashMap<>();      //Key: real/underlying dependent; value: all values that alias this real one
+
+    private Map<D,D> dependeeAliases = new HashMap<>();                  //Key: Dependee; value: "real"/underlying dependee
+    private Map<D,Set<D>> dependeeAliasesReverse = new HashMap<>();      //Key: real/underlying dependee; value: all values that alias this real one
 
 
     public void clear(){
@@ -29,15 +30,26 @@ public class DependencyTracker<T, D> {
         zeroDependenciesSet.clear();
         dependencies.clear();
         orDependencies.clear();
-        aliases.clear();
+        dependeeAliases.clear();
+    }
+
+    public boolean isEmpty(){
+        return zeroDependenciesSet.isEmpty() && zeroDependencyQueue.isEmpty() &&
+                dependencies.isEmpty() && orDependencies.isEmpty() &&
+                dependentAliases.isEmpty() && dependentAliasesReverse.isEmpty() &&
+                dependeeAliases.isEmpty() && dependeeAliasesReverse.isEmpty();
     }
 
     /**
-     * Check whether any dependencies x -> y exist
+     * Check whether any dependencies x -> y exist, for y
      * @param y
      * @return
      */
     public boolean hasDependency(@NonNull T y){
+        //Check if y is an alias, and get the 'real'/underlying value if so
+        if(dependentAliases.containsKey(y))
+            y = dependentAliases.get(y);
+
         Set<D> s1 = dependencies.get(y);
         if(s1 != null && !s1.isEmpty())
             return true;
@@ -52,6 +64,10 @@ public class DependencyTracker<T, D> {
      * @return
      */
     public DependencyList<T,D> getDependencies(@NonNull T y){
+        //Check if y is an alias, and get the 'real'/underlying value if so
+        if(dependentAliases.containsKey(y))
+            y = dependentAliases.get(y);
+
         Set<D> s1 = dependencies.get(y);
         Set<Pair<D,D>> s2 = orDependencies.get(y);
 
@@ -67,12 +83,14 @@ public class DependencyTracker<T, D> {
      * @param x The dependency that is required for Y
      */
     public void addDependency(@NonNull T y, @NonNull D x){
+        //Check for aliases
+        if(dependentAliases.containsKey(y))
+            y = dependentAliases.get(y);
+        if(dependeeAliases.containsKey(x))
+            x = dependeeAliases.get(x);
+
         if(!dependencies.containsKey(y))
             dependencies.put(y, new HashSet<D>());
-
-        //Check for aliases
-        if(aliases.containsKey(x))
-            x = aliases.get(x);
 
         dependencies.get(y).add(x);
     }
@@ -89,8 +107,10 @@ public class DependencyTracker<T, D> {
             return;
 
         //Check for aliases
-        if(aliases.containsKey(x))
-            x = aliases.get(x);
+        if(dependentAliases.containsKey(y))
+            y = dependentAliases.get(y);
+        if(dependeeAliases.containsKey(x))
+            x = dependeeAliases.get(x);
 
 
         Set<D> s = dependencies.get(y);
@@ -114,9 +134,9 @@ public class DependencyTracker<T, D> {
             if(!zeroDependenciesSet.contains(y)){
                 zeroDependenciesSet.add(y);
                 zeroDependencyQueue.add(y);
-                dependencies.remove(y);
-                orDependencies.remove(y);
             }
+            dependencies.remove(y);
+            orDependencies.remove(y);
         }
     }
 
@@ -132,10 +152,12 @@ public class DependencyTracker<T, D> {
             orDependencies.put(y, new HashSet<Pair<D,D>>());
 
         //Check for aliases
-        if(aliases.containsKey(x1))
-            x1 = aliases.get(x1);
-        if(aliases.containsKey(x2))
-            x2 = aliases.get(x2);
+        if(dependentAliases.containsKey(y))
+            y = dependentAliases.get(y);
+        if(dependeeAliases.containsKey(x1))
+            x1 = dependeeAliases.get(x1);
+        if(dependeeAliases.containsKey(x2))
+            x2 = dependeeAliases.get(x2);
 
         orDependencies.get(y).add(new Pair<>(x1, x2));
     }
@@ -176,36 +198,37 @@ public class DependencyTracker<T, D> {
     }
 
     /**
-     * Add an alias - "alias" is the same thing as "real"
+     * For dependencies of the form D -> T, add a dependee alias where D1 == D2, where D1 (the alias) should be treated
+     * the same as D2 (the "real" instance)
      * @param real
      * @param alias
      */
-    public void addAlias(@NonNull D real, @NonNull D alias){
+    public void addDependeeAlias(@NonNull D real, @NonNull D alias){
         Preconditions.checkState(!real.equals(alias), "Cannot create an alias of itself: real=%s, alias=%s", real, alias);
 
         /*
         Handle transitive aliases.
         So:
-        dt.addAlias(x, y);
-        dt.addAlias(y, z);
+        dt.addDependeeAlias(a, b);
+        dt.addDependeeAlias(b, c);
 
         is equivalent to:
 
-        dt.addAlias(x, y);
-        dt.addAlias(x, z);
+        dt.addAlias(a, b);
+        dt.addAlias(a, c);
 
-        Because y is an alias of x
+        Because b is an alias of a
          */
 
 
-        while(aliases.containsKey(real)){
-            real = aliases.get(real);
+        while(dependeeAliases.containsKey(real)){
+            real = dependeeAliases.get(real);
         }
 
-        aliases.put(alias, real);
-        if(!aliasesReverse.containsKey(real))
-            aliasesReverse.put(real, new HashSet<D>());
-        aliasesReverse.get(real).add(alias);
+        dependeeAliases.put(alias, real);
+        if(!dependeeAliasesReverse.containsKey(real))
+            dependeeAliasesReverse.put(real, new HashSet<D>());
+        dependeeAliasesReverse.get(real).add(alias);
     }
 
     /**
@@ -213,8 +236,8 @@ public class DependencyTracker<T, D> {
      * @param x
      * @return
      */
-    public boolean isAlias(D x){
-        return aliases.containsKey(x);
+    public boolean isDependeeAlias(D x){
+        return dependeeAliases.containsKey(x);
     }
 
     /**
@@ -222,15 +245,92 @@ public class DependencyTracker<T, D> {
      * @param x
      * @return
      */
-    public D aliasGetUnderlying(D x){
-        Preconditions.checkState(isAlias(x), "Argument is not registered as an alias: %s", x);
-        return aliases.get(x);
+    public D dependeeAliasGetUnderlying(D x){
+        Preconditions.checkState(isDependeeAlias(x), "Argument is not registered as an alias: %s", x);
+        return dependeeAliases.get(x);
     }
 
-    public void removeAlias(@NonNull D alias){
-        D underlying = aliases.remove(alias);
+    public void removeDependeeAlias(@NonNull D alias){
+        D underlying = dependeeAliases.remove(alias);
         if(underlying != null){
-            aliasesReverse.get(underlying).remove(alias);
+            Set<D> s = dependeeAliasesReverse.get(underlying);
+            s.remove(alias);
+            if(s.isEmpty()){
+                dependeeAliasesReverse.remove(underlying);
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+    /**
+     * For dependencies of the form D -> T, add a dependent alias where T1 == T2, where T1 (the alias) should be treated
+     * the same as T2 (the "real" instance)
+     * @param real
+     * @param alias
+     */
+    public void addDependentAlias(@NonNull T real, @NonNull T alias){
+        Preconditions.checkState(!real.equals(alias), "Cannot create an alias of itself: real=%s, alias=%s", real, alias);
+
+        /*
+        Handle transitive aliases.
+        So:
+        dt.addDependentAlias(x, y);
+        dt.addDependentAlias(y, z);
+
+        is equivalent to:
+
+        dt.addDependentAlias(x, y);
+        dt.addDependentAlias(x, z);
+
+        Because y is an alias of x
+         */
+
+
+        while(dependentAliases.containsKey(real)){
+            real = dependentAliases.get(real);
+        }
+
+        dependentAliases.put(alias, real);
+        if(!dependentAliasesReverse.containsKey(real))
+            dependentAliasesReverse.put(real, new HashSet<T>());
+        dependentAliasesReverse.get(real).add(alias);
+    }
+
+    /**
+     * Returns true if argument x is an alias for y
+     * @param x
+     * @return
+     */
+    public boolean isDependentAlias(T x){
+        return dependentAliases.containsKey(x);
+    }
+
+    /**
+     * If x is an alias of y, get y
+     * @param x
+     * @return
+     */
+    public T dependentAliasGetUnderlying(T x){
+        Preconditions.checkState(isDependentAlias(x), "Argument is not registered as an alias: %s", x);
+        return dependentAliases.get(x);
+    }
+
+    public void removeDependentAlias(@NonNull T alias){
+        T underlying = dependentAliases.remove(alias);
+        if(underlying != null){
+            Set<T> s = dependentAliasesReverse.get(underlying);
+            s.remove(alias);
+            if(s.isEmpty()){
+                dependentAliasesReverse.remove(underlying);
+            }
         }
     }
 }
