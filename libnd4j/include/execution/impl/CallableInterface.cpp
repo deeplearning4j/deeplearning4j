@@ -118,6 +118,46 @@ namespace samediff {
         _starter.notify_one();
     }
 
+    void CallableInterface::fill(int thread_id, int num_threads, int64_t *lptr, FUNC_RL func, int64_t start_x, int64_t stop_x, int64_t inc_x) {
+        _function_rl = std::move(func);
+        _arguments[0] = start_x;
+        _arguments[1] = stop_x;
+        _arguments[2] = inc_x;
+
+        _lptr = lptr;
+
+        _branch = 4;
+        _num_threads = num_threads;
+        _thread_id = thread_id;
+        _finished = false;
+
+        {
+            std::unique_lock<std::mutex> l(_ms);
+            _filled = true;
+        }
+        _starter.notify_one();
+    }
+
+    void CallableInterface::fill(int thread_id, int num_threads, double *dptr, FUNC_RD func, int64_t start_x, int64_t stop_x, int64_t inc_x) {
+        _function_rl = std::move(func);
+        _arguments[0] = start_x;
+        _arguments[1] = stop_x;
+        _arguments[2] = inc_x;
+
+        _dptr = dptr;
+
+        _branch = 5;
+        _num_threads = num_threads;
+        _thread_id = thread_id;
+        _finished = false;
+
+        {
+            std::unique_lock<std::mutex> l(_ms);
+            _filled = true;
+        }
+        _starter.notify_one();
+    }
+
     void CallableInterface::waitForTask() {
         //nd4j_printf("CallableInference::waitForTask()\n","");
         // block until task is available
@@ -161,6 +201,12 @@ namespace samediff {
                 break;
             case 3:
                 _function_3d(_thread_id, _arguments[0], _arguments[1], _arguments[2], _arguments[3], _arguments[4], _arguments[5], _arguments[6], _arguments[7], _arguments[8]);
+                break;
+            case 4:
+                _lptr[0] = _function_rl(_thread_id, _arguments[0], _arguments[1], _arguments[2]);
+                break;
+            case 5:
+                _dptr[0] = _function_rd(_thread_id, _arguments[0], _arguments[1], _arguments[2]);
                 break;
         }
 

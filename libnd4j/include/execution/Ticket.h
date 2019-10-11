@@ -51,6 +51,9 @@ namespace samediff {
         // deprecated one
         void enqueue(int thread_id, CallableWithArguments* callable);
 
+        void enqueue(uint32_t thread_id, uint32_t num_threads, int64_t *lpt, FUNC_RL func, int64_t start_x, int64_t stop_x, int64_t inc_x);
+        void enqueue(uint32_t thread_id, uint32_t num_threads, double *lpt, FUNC_RD func, int64_t start_x, int64_t stop_x, int64_t inc_x);
+
         void enqueue(uint32_t thread_id, uint32_t num_threads, FUNC_DO func);
         void enqueue(uint32_t thread_id, uint32_t num_threads, FUNC_1D func, int64_t start_x, int64_t stop_x, int64_t inc_x);
         void enqueue(uint32_t thread_id, uint32_t num_threads, FUNC_2D func, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y);

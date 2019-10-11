@@ -76,9 +76,13 @@ TEST_F(PlaygroundTests, test_s_2) {
         s = 0;
 
         auto timeStart = std::chrono::system_clock::now();
-        samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
+        //samediff::Threads::parallel_for(func, 0, 8192, 1, 4);
+        PRAGMA_OMP_PARALLEL_THREADS(4) {
+            s++;
+        }
+
         auto timeEnd = std::chrono::system_clock::now();
-        auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+        auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds> (timeEnd - timeStart).count();
         values.emplace_back(outerTime);
     };
     std::sort(values.begin(), values.end());
