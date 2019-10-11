@@ -3235,17 +3235,17 @@ public class SameDiffTests extends BaseNd4jTest {
 
         Map<String, INDArray> firstBranch = Maps.newHashMap();
         firstBranch.put("a", Nd4j.createFromArray(3.0));
-        assertEquals(Nd4j.createFromArray(9.0), sd.exec(firstBranch, "out").get("out"));
+        assertEquals(Nd4j.createFromArray(9.0), sd.output(firstBranch, "out").get("out"));
 
         Map<String, INDArray> secondBranch = Maps.newHashMap();
         secondBranch.put("a", Nd4j.createFromArray(7.0));
-        assertEquals(Nd4j.createFromArray(14.0), sd.exec(secondBranch, "out").get("out"));
+        assertEquals(Nd4j.createFromArray(14.0), sd.output(secondBranch, "out").get("out"));
 
         ByteBuffer bb = sd.asFlatBuffers(false);
         sd = SameDiff.fromFlatBuffers(bb);
 
-        assertEquals(Nd4j.createFromArray(9.0), sd.exec(firstBranch, "out").get("out"));
-        assertEquals(Nd4j.createFromArray(14.0), sd.exec(secondBranch, "out").get("out"));
+        assertEquals(Nd4j.createFromArray(9.0), sd.output(firstBranch, "out").get("out"));
+        assertEquals(Nd4j.createFromArray(14.0), sd.output(secondBranch, "out").get("out"));
     }
 
     @Test
@@ -3268,7 +3268,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
-        assertEquals(Nd4j.createFromArray(10.0), SD.exec(null, "out").get("out"));
+        assertEquals(Nd4j.createFromArray(10.0), SD.output(Collections.emptyMap(), "out").get("out"));
     }
 
     @Test
@@ -3289,7 +3289,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
-        assertEquals(15, SD.exec(null, outName).get(outName).getInt(0));
+        assertEquals(15, SD.output(Collections.emptyMap(), outName).get(outName).getInt(0));
     }
 
     @Test
@@ -3315,7 +3315,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
-        assertEquals(35, SD.exec(null, outName).get(outName).getInt(0));
+        assertEquals(35, SD.output(Collections.emptyMap(), outName).get(outName).getInt(0));
 
     }
 
@@ -3341,7 +3341,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
-        assertEquals(115, SD.exec(null, outName).get(outName).getInt(0));
+        assertEquals(115, SD.output(Collections.emptyMap(), outName).get(outName).getInt(0));
     }
 
     @Test

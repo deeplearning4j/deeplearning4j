@@ -247,9 +247,8 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                             Array alias0 = new Array(o.getOutputsOfOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
                             arrayUseTracker.addDependentAlias(arr, alias0);
 
-                            Array alias1 = new Array(o.getOutputsOfOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
+                            Array alias1 = new Array(o.getOutputsOfOp().get(1), arr.getFrame(), arr.getIter(), arr.getParentFrame());
                             arrayUseTracker.addDependentAlias(arr, alias1);
-
                         } else if(df instanceof Merge){
                             //Merge: 2 op inputs, but only one will (usually) be available when merge is executed
                             //The array for whichever is available is passed through unchanged (same array, zero copy)
@@ -328,7 +327,13 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
         if(arrayUseTracker.hasZeroDependencyItem()){
             List<Array> canDealloc = arrayUseTracker.removeAllZeroDependencyItems();
             for(Array a : canDealloc){
+
+                boolean isAlias = arrayUseTracker.isDependentAlias(a);
                 SDVariable v = sameDiff.getVariable(a.getVarName());
+
+                Variable var = sameDiff.getVariables().get(v.getVarName());
+                SameDiffOp sdop = var.getOutputOfOp() == null ? null : sameDiff.getOps().get(var.getOutputOfOp());
+
                 if(v.getVariableType() == VariableType.ARRAY && !allReqVariables.contains(a.getVarName())){
                     //Can't deallocate placeholders, constants, variables or arrays that the user has requested to be returned
                     log.info("Determined safe to deallocate: {}", a);
@@ -358,13 +363,6 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
             VarId vid = newVarId(argNames[0], outputFrameIter);
 
             INDArray orig = nodeOutputs.get(vid);
-//            //TODO eventually we'll remove this dup for performance reasons, but no dup complicates checking for "input no longer required"
-//            // because it actually *is* still
-//            INDArray ret = mmgr.allocate(false, orig.dataType(), orig.shape());
-//            ret.assign(orig);
-//            i.setInputArgument(0, null);    //Clear reference in case it's closed later
-//            return new INDArray[]{ret};
-
             return new INDArray[]{orig};
         } else if(op instanceof Switch) {
             Switch s = (Switch) op;
