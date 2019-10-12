@@ -307,6 +307,9 @@ public class DependencyTracker<T, D> {
         dependentAliases.put(alias, real);
         if(!dependentAliasesReverse.containsKey(real))
             dependentAliasesReverse.put(real, new HashSet<T>());
+
+        log.info("Post alias resolution, addDependentAlias(real={}, alias={})", real, alias);
+
         dependentAliasesReverse.get(real).add(alias);
     }
 
@@ -327,6 +330,15 @@ public class DependencyTracker<T, D> {
     public T dependentAliasGetUnderlying(T x){
         Preconditions.checkState(isDependentAlias(x), "Argument is not registered as an alias: %s", x);
         return dependentAliases.get(x);
+    }
+
+    /**
+     * Get all aliases of y - i.e., (x1, x2, x3) etc which are aliases of y
+     * @param x
+     * @return
+     */
+    public Set<T> getDependentAliasesReverse(@NonNull T y){
+        return dependentAliasesReverse.get(y);
     }
 
     public void removeDependentAlias(@NonNull T alias){

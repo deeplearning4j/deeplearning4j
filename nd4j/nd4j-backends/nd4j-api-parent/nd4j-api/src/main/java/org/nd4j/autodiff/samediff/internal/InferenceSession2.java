@@ -337,11 +337,25 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
             List<Array> canDealloc = arrayUseTracker.removeAllZeroDependencyItems();
             for(Array a : canDealloc){
 
-                boolean isAlias = arrayUseTracker.isDependentAlias(a);
-                SDVariable v = sameDiff.getVariable(a.getVarName());
+                //It seems like we can close "a". But we can't do that if there is an alias X == a,
+                // where X is an output we need to return to the user
+                Set<Array> s = arrayUseTracker.getDependentAliasesReverse(a);
+                if(s != null){
+                    boolean anyRequired = false;
+                    for(Array arr : s){
+                        if(allReqVariables.contains(arr.getVarName())){
+                            log.info("Not closing \"{}\" because required output \"{}\" is an alias of it", a, arr.getVarName());
+                            anyRequired = true;
+                            break;
+                        }
+                    }
 
-                Variable var = sameDiff.getVariables().get(v.getVarName());
-                SameDiffOp sdop = var.getOutputOfOp() == null ? null : sameDiff.getOps().get(var.getOutputOfOp());
+                    if(anyRequired){
+                        continue;
+                    }
+                }
+
+                SDVariable v = sameDiff.getVariable(a.getVarName());
 
                 if(v.getVariableType() == VariableType.ARRAY && !allReqVariables.contains(a.getVarName())){
                     //Can't deallocate placeholders, constants, variables or arrays that the user has requested to be returned

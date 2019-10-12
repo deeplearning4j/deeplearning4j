@@ -305,17 +305,17 @@ public abstract class AbstractSession<T, O> {
                 varToExec = availableForExec.remove();
             } else {
                 Iterator<VarId> iter = availableForExec.iterator();
-                VarId found = null;
                 while(iter.hasNext()){
                     VarId v = iter.next();
                     if(currentFrame.equals(v.getFrame()) &&
                             (currParentFrame == null && v.getParentFrame() == null || currParentFrame != null && currParentFrame.equals(v.getParentFrame()))){
                         //Found one in current frame/iter
-                        found = v;
+                        varToExec = v;
+                        iter.remove();
                         break;
                     }
                 }
-                if(found == null){
+                if(varToExec == null){
                     //Scanned all, must be a transition to a new frame
                     varToExec = availableForExec.remove();
                 }
@@ -342,6 +342,7 @@ public abstract class AbstractSession<T, O> {
                 if (variables.contains(varToExec.getVariable())) {  //Check if required output
                     out.put(varToExec.getVariable(), nodeOutputs.get(varToExec));
                 }
+                log.info("Available for exec: {}", availableForExec);
                 updateDescendentsForExec(step, varToExec);
                 continue;
             }
@@ -545,6 +546,8 @@ public abstract class AbstractSession<T, O> {
      * @param executedVar Variable that was just executed
      */
     protected void updateDescendentsForExec(int execStep, VarId executedVar) {
+        log.info("updateDescendantsForExec(execStep=" + execStep + ", executedVar=" + executedVar + ")");
+
         String varName = executedVar.getVariable();
         Variable var = sameDiff.getVariables().get(executedVar.getVariable());
         //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available for exec

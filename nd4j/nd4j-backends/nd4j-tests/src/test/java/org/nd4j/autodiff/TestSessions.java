@@ -196,7 +196,7 @@ public class TestSessions extends BaseNd4jTest {
         assertEquals(expFalse, outMap.get(n));
     }
 
-    @Test(timeout = 60000L)
+    @Test(timeout = 20000L)
     public void testSwitchWhile() throws Exception{
 
         /*
