@@ -70,7 +70,7 @@ public class TensorArray extends  BaseTensorOp {
             }
         }
 
-        val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value",iddNode,graph);
+        val arr = TFGraphMapper.getNDArrayFromTensor("value",iddNode,graph);
 
         if (arr != null) {
             int idx = arr.getInt(0);

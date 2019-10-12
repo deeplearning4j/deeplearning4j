@@ -53,7 +53,7 @@ public class Rank extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-//        val name = TFGraphMapper.getInstance().getNodeName(nodeDef.getName());
+//        val name = TFGraphMapper.getNodeName(nodeDef.getName());
 //        val input = initWith.getVariable(name);
 //        val outputVertex = input.getVarName();
 //        if (!initWith.isPlaceHolder(input.getVarName()) && initWith.shapeAlreadyExistsForVarName(outputVertex)) {

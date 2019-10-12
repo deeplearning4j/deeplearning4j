@@ -103,7 +103,7 @@ public class ImportModelDebugger {
         File modelFile = new File("C:\\Temp\\TF_Graphs\\cifar10_gan_85\\tf_model.pb");
         File rootDir = new File("C:\\Temp\\TF_Graphs\\cifar10_gan_85");
 
-        SameDiff sd = TFGraphMapper.getInstance().importGraph(modelFile);
+        SameDiff sd = TFGraphMapper.importGraph(modelFile);
 
         ImportDebugListener l = ImportDebugListener.builder(rootDir)
                 .checkShapesOnly(true)

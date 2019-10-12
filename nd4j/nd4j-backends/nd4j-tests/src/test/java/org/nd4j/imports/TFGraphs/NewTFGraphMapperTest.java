@@ -2,7 +2,7 @@ package org.nd4j.imports.TFGraphs;
 
 import org.junit.Test;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.graphmapper.tf.NewTFGraphMapper;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
 import java.io.File;
@@ -16,7 +16,7 @@ public class NewTFGraphMapperTest {
 
         File f = new File("C:\\DL4J\\Git\\dl4j-test-resources\\src\\main\\resources\\tf_graphs\\examples\\arg_max\\rank2_dim1\\frozen_model.pb");
 
-        SameDiff sd = NewTFGraphMapper.importGraph(f);
+        SameDiff sd = TFGraphMapper.importGraph(f);
 
         System.out.println(sd.summary());
 
@@ -30,7 +30,7 @@ public class NewTFGraphMapperTest {
 
         File f = new File("C:\\DL4J\\Git\\dl4j-test-resources\\src\\main\\resources\\tf_graphs\\examples\\concat\\frozen_model.pb");
 
-        SameDiff sd = NewTFGraphMapper.importGraph(f);
+        SameDiff sd = TFGraphMapper.importGraph(f);
 
         System.out.println(sd.summary());
 

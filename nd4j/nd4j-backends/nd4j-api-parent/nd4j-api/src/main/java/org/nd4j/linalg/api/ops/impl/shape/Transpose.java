@@ -114,7 +114,7 @@ public class Transpose extends DynamicCustomOp {
 
         }
 
-        INDArray permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value", permuteDimsNode, graph);
+        INDArray permuteArrayOp = TFGraphMapper.getNDArrayFromTensor("value", permuteDimsNode, graph);
         if (permuteArrayOp != null) {
             this.permuteDims = permuteArrayOp.data().asInt();
         }

@@ -393,18 +393,6 @@ public class InferenceSession2 extends AbstractSession<INDArray,SameDiffOp> {
                         // we need a frame/iter dependency, not a standard variable dependency
                         //Also because it's a zero-copy operation, we need a dependent alias for the input array
                         String f = ((Enter) df).getFrameName();
-
-                        String inName = o.getInputsToOp().get(0);
-
-                        VarId inVid;
-                        if(constAndPhInputs.contains(inName)){
-                            inVid = new VarId(inName, OUTER_FRAME, 0, null);
-                        } else {
-                            inVid = lookup(inName, opInputs, allIterInputs, false);
-                        }
-
-//                        Array inArr = new Array(inName, inVid.getFrame(), inVid.getIteration(), inVid.getParentFrame());
-//                        arrayUseTracker.addDependentAlias(inArr, arr);
                         Array enterOut = new Array(o.getOutputsOfOp().get(0), f, 0, outputFrameIter);
                         arrayUseTracker.addDependentAlias(arr, enterOut);
 

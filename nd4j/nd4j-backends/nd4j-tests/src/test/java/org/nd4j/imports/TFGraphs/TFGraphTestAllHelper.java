@@ -83,7 +83,7 @@ public class TFGraphTestAllHelper {
         @Override
         public SameDiff apply(File file, String name) {
             try(InputStream is = new BufferedInputStream(new FileInputStream(file))){
-                SameDiff sd = TFGraphMapper.getInstance().importGraph(is);
+                SameDiff sd = TFGraphMapper.importGraph(is);
                 return sd;
             } catch (IOException e){
                 throw new RuntimeException(e);
@@ -388,7 +388,7 @@ public class TFGraphTestAllHelper {
             requiredOutputs = graph.variableMap().keySet();
         }
 
-//        = TFGraphMapper.getInstance().importGraph(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getInputStream());
+//        = TFGraphMapper.importGraph(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getInputStream());
 //        System.out.println(graph.summary());
         Map<String,INDArray> outMap = null;
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {

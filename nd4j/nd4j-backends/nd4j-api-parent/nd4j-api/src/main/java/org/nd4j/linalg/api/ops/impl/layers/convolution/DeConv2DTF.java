@@ -214,7 +214,7 @@ public class DeConv2DTF extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        TFGraphMapper.getInstance().initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
+        TFGraphMapper.initFunctionFromProperties(nodeDef.getOp(), this, attributesForNode, nodeDef, graph);
         addArgs();
     }
 
@@ -240,9 +240,9 @@ public class DeConv2DTF extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){ //inShape, weights, input
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
-        return Collections.singletonList(inputDataTypes.get(0));
+        return Collections.singletonList(inputDataTypes.get(2));
     }
 }

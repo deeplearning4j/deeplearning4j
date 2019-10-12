@@ -160,7 +160,7 @@ public class DeConv3D extends DynamicCustomOp {
         val args = args();
         INDArray arr = sameDiff.getVariable(args[1].getVarName()).getArr();
         if (arr == null) {
-            arr = TFGraphMapper.getInstance().getNDArrayFromTensor(nodeDef.getInput(0), nodeDef, graph);
+            arr = TFGraphMapper.getNDArrayFromTensor(nodeDef.getInput(0), nodeDef, graph);
             val varForOp = initWith.getVariable(args[1].getVarName());
             if (arr != null)
                 initWith.associateArrayWithVariable(arr, varForOp);

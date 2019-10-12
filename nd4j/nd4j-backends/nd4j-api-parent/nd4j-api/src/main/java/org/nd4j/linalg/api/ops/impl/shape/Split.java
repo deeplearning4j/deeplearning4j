@@ -54,7 +54,7 @@ public class Split extends DynamicCustomOp {
         this.numSplit = numSplits;
         addIArgument(numSplits);
 
-        val splitDim = TFGraphMapper.getInstance().getArrayFrom(TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,nodeDef.getInput(0)),graph);
+        val splitDim = TFGraphMapper.getArrayFrom(TFGraphMapper.getNodeWithNameFromGraph(graph,nodeDef.getInput(0)),graph);
         if(splitDim != null) {
             this.splitDim = splitDim.getInt(0);
             addIArgument(splitDim.getInt(0));

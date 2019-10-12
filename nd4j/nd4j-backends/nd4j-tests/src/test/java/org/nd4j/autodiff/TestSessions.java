@@ -212,7 +212,7 @@ public class TestSessions extends BaseNd4jTest {
 
         for( int numIter : new int[]{1,3}) {
             File f = new ClassPathResource("tf_graphs/examples/while1/iter_" + numIter + "/frozen_model.pb").getFile();
-            SameDiff sd = TFGraphMapper.getInstance().importGraph(f);
+            SameDiff sd = TFGraphMapper.importGraph(f);
 
             System.out.println(sd.summary());
 

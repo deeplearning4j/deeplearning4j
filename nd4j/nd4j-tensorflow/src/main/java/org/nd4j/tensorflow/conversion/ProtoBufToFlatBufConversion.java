@@ -56,7 +56,7 @@ public class ProtoBufToFlatBufConversion {
      */
     public static void convert(String inFile, String outFile)
                     throws IOException, org.nd4j.linalg.exception.ND4JIllegalStateException {
-        SameDiff tg = TFGraphMapper.getInstance().importGraph(new File(inFile));
+        SameDiff tg = TFGraphMapper.importGraph(new File(inFile));
         tg.asFlatFile(new File(outFile));
     }
 
@@ -90,7 +90,7 @@ public class ProtoBufToFlatBufConversion {
         };
 
 
-        SameDiff sd = TFGraphMapper.getInstance().importGraph(new File(inFile), m, filter);
+        SameDiff sd = TFGraphMapper.importGraph(new File(inFile), m, filter);
 
 
         SubGraphPredicate p = SubGraphPredicate.withRoot(OpPredicate.nameMatches(".*/dropout/mul")) // .../dropout/mul

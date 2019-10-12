@@ -6321,14 +6321,14 @@ public class SameDiff extends SDBaseOps {
      * @return The imported graph
      */
     public static SameDiff importFrozenTF(File graphFile) {
-        return TFGraphMapper.getInstance().importGraph(graphFile);
+        return TFGraphMapper.importGraph(graphFile);
     }
 
     /**
      * See {@link #importFrozenTF(File)}
      */
     public static SameDiff importFrozenTF(GraphDef graphDef) {
-        return TFGraphMapper.getInstance().importGraph(graphDef);
+        return TFGraphMapper.importGraph(graphDef);
     }
 
 
@@ -6338,7 +6338,7 @@ public class SameDiff extends SDBaseOps {
      * Again, the input can be text or binary.
      */
     public static SameDiff importFrozenTF(InputStream graph) {
-        return TFGraphMapper.getInstance().importGraph(graph);
+        return TFGraphMapper.importGraph(graph);
     }
 
 

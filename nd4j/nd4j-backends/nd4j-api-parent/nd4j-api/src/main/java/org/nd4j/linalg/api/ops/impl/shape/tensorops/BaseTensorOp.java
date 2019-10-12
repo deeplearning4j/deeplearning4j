@@ -47,8 +47,8 @@ public abstract class BaseTensorOp extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val inputOne = nodeDef.getInput(1);
         val varFor = initWith.getVariable(inputOne);
-        val nodeWithIndex = TFGraphMapper.getInstance().getNodeWithNameFromGraph(graph,inputOne);
-        val var = TFGraphMapper.getInstance().getArrayFrom(nodeWithIndex,graph);
+        val nodeWithIndex = TFGraphMapper.getNodeWithNameFromGraph(graph,inputOne);
+        val var = TFGraphMapper.getArrayFrom(nodeWithIndex,graph);
         if(var != null) {
             val idx = var.getInt(0);
             addIArgument(idx);

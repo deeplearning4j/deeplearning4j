@@ -3239,7 +3239,9 @@ public class SameDiffTests extends BaseNd4jTest {
 
         Map<String, INDArray> secondBranch = Maps.newHashMap();
         secondBranch.put("a", Nd4j.createFromArray(7.0));
-        assertEquals(Nd4j.createFromArray(14.0), sd.output(secondBranch, "out").get("out"));
+        System.out.println(sd.summary());
+        INDArray outArr = sd.output(secondBranch, "out").get("out");
+        assertEquals(Nd4j.createFromArray(14.0), outArr);
 
         ByteBuffer bb = sd.asFlatBuffers(false);
         sd = SameDiff.fromFlatBuffers(bb);
