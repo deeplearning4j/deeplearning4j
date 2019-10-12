@@ -53,16 +53,16 @@ public class Rank extends DynamicCustomOp {
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        val name = TFGraphMapper.getInstance().getNodeName(nodeDef.getName());
-        val input = initWith.getVariable(name);
-        val outputVertex = input.getVarName();
-        if (!initWith.isPlaceHolder(input.getVarName()) && initWith.shapeAlreadyExistsForVarName(outputVertex)) {
-            val inputShape = initWith.getShapeForVarName(input.getVarName());
-            val resultLength = Nd4j.scalar(inputShape.length);
-            val thisResultId = outputVertex;
-            initWith.setArrayForVariable(thisResultId, resultLength);
-            initWith.putShapeForVarName(thisResultId, new long[]{1, 1});
-        }
+//        val name = TFGraphMapper.getInstance().getNodeName(nodeDef.getName());
+//        val input = initWith.getVariable(name);
+//        val outputVertex = input.getVarName();
+//        if (!initWith.isPlaceHolder(input.getVarName()) && initWith.shapeAlreadyExistsForVarName(outputVertex)) {
+//            val inputShape = initWith.getShapeForVarName(input.getVarName());
+//            val resultLength = Nd4j.scalar(inputShape.length);
+//            val thisResultId = outputVertex;
+//            initWith.setArrayForVariable(thisResultId, resultLength);
+//            initWith.putShapeForVarName(thisResultId, new long[]{1, 1});
+//        }
     }
 
     @Override

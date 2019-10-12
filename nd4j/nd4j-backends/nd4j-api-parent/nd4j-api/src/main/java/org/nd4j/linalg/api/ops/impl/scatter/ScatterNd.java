@@ -80,8 +80,8 @@ public class ScatterNd extends DynamicCustomOp {
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 2, "Expected exactly 2 input datatypes for %s, got %s", getClass(), inputDataTypes);
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){    //Indices, updates, shape
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected exactly 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
         return Collections.singletonList(inputDataTypes.get(1));
     }
 

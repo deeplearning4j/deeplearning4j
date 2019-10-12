@@ -741,9 +741,9 @@ public class SameDiff extends SDBaseOps {
      * @param function the function to get the inputs for
      * @return the input ids for a given function
      */
-    public String[] getInputsForOp(DifferentialFunction function) {
+    public String[] getInputsForOp(@NonNull DifferentialFunction function) {
         if (!ops.containsKey(function.getOwnName()))
-            throw new ND4JIllegalStateException("Illegal function instance id found " + function.getOwnName());
+            throw new ND4JIllegalStateException("Unknown function instance id found: \"" + function.getOwnName() + "\"");
         List<String> inputs = ops.get(function.getOwnName()).getInputsToOp();
         return inputs == null ? null : inputs.toArray(new String[inputs.size()]);
     }

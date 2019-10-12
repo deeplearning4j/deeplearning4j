@@ -151,6 +151,7 @@ public class Concat extends DynamicCustomOp {
             removeInputArgument(inputArgs[inputArguments().length - 1]);
         }
 
+        //TODO Fix this: https://github.com/eclipse/deeplearning4j/issues/8285
         sameDiff.removeArgFromOp(input,this);
     }
 

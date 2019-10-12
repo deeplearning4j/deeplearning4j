@@ -809,7 +809,7 @@ public abstract class AbstractSession<T, O> {
             }
         }
 
-        //Edge case: if control dependency varX->opY exists, and opY doesn't have any inputs, it also can't be triggeered
+        //Edge case: if control dependency varX->opY exists, and opY doesn't have any inputs, it also can't be triggered
         // (made available for execution) by any of the previous checks. For any ops that DO have inputs, they will
         // be triggered already
         if(controlDepForOps != null){
@@ -826,6 +826,30 @@ public abstract class AbstractSession<T, O> {
                             availableForExec.add(outVarId);
                             availableForExecSet.add(outVarId);
                             log.trace("Marked variable as available for execution: {} - op control dependency variable {} -> op {} exists", outVarId, executedVar.getVariable(), opName);
+                        }
+                    }
+                } else {
+                    //If the control dependency was the LAST input to be made available, then it will be triggered here
+                    List<String> inputs = op.getInputsToOp();
+                    List<String> allReqInputs = new ArrayList<>();
+                    if(inputs != null){
+                        allReqInputs.addAll(inputs);
+                    }
+                    List<String> controlDeps = op.getControlDeps(); //Can't be null/empty here, due to outer if
+                    allReqInputs.addAll(controlDeps);
+                    boolean allAvailable = allInputsAvailable(execStep, allReqInputs.toArray(new String[0]), executedVar);
+
+                    if(allAvailable) {
+                        for (String out : op.getOutputsOfOp()) {
+                            if (!subgraph.contains(out))
+                                continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
+
+                            VarId outVarId = newVarId(out, OUTER_FRAME, 0, null);   //TODO is this correct??
+                            if(!availableForExecSet.contains(outVarId)) {
+                                availableForExec.add(outVarId);
+                                availableForExecSet.add(outVarId);
+                                log.trace("Marked variable as available for execution: {} - op control dependency variable {} -> op {} exists and other inputs available", outVarId, executedVar.getVariable(), opName);
+                            }
                         }
                     }
                 }

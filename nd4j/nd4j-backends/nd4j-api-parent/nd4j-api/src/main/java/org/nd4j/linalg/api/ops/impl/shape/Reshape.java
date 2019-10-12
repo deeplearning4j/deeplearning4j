@@ -70,32 +70,7 @@ public class Reshape extends DynamicCustomOp {
         if (!nodeDef.containsAttr("TShape") && nodeDef.getInputCount() == 1) {
             this.shape = new long[]{};
             return;
-        } else if (nodeDef.getInputCount() > 1) {
-            val shapeNode = nodeDef.getInput(1);
-            NodeDef shapeNodeInGraph = null;
-            for (int i = 0; i < graph.getNodeCount(); i++) {
-                if (graph.getNode(i).getName().equals(shapeNode)) {
-                    shapeNodeInGraph = graph.getNode(i);
-
-                }
-            }
-
-            val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", shapeNodeInGraph, graph);
-            if (arr != null && arr.isEmpty()) {
-                // special case: empty array
-                this.shape = new long[0];
-
-            } else if (arr != null) {
-                this.shape = arr.data().asLong();
-                //all TF is c
-                if (!ArrayUtil.containsAnyNegative(this.shape))
-                    addIArgument(this.shape);
-                else {
-                    arrName = nodeDef.getName();
-                }
-
-            }
-        } else {
+        } else if(nodeDef.getInputCount() == 1){
             val shape = nodeDef.getAttrOrThrow("Tshape");
             if (!shape.hasShape()) {
                 val shapeRet = new long[2];
