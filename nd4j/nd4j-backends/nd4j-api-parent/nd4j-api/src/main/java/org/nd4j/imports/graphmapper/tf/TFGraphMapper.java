@@ -650,7 +650,8 @@ public class TFGraphMapper extends BaseGraphMapper<GraphDef,NodeDef,AttrValue,No
                         }
                     }
 
-                    newInstance.initFromTensorFlow(tfNode, diff, getAttrMap(tfNode), importState.getGraph());
+                    Map<String,AttrValue> m = getAttrMap(tfNode);
+                    newInstance.initFromTensorFlow(tfNode, diff, m, importState.getGraph());
                     mapProperties(newInstance, tfNode, importState.getGraph(), importState.getSameDiff(), newInstance.mappingsForFunction());
                     importState.getSameDiff().putOpForId(newInstance.getOwnName(), newInstance);
                     //ensure we can track node name to function instance later.
