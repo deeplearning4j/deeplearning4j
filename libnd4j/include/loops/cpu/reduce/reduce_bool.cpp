@@ -207,20 +207,33 @@ namespace functions {
         template <typename X, typename Z>
         template <typename OpType>
         Z _CUDA_H ReduceBoolFunction<X, Z>::execScalar(void *vx, Nd4jLong xEws, Nd4jLong length, void *vextraParams) {
-
                 auto x = reinterpret_cast<X *>(vx);
                 auto extraParams = reinterpret_cast<X *>(vextraParams);
-                auto startingVal = OpType::startingValue(x);
+                int maxThreads = nd4j::math::nd4j_min<int>(64, nd4j::Environment::getInstance()->maxThreads());
+                Z intermediate[64];
 
-                if (xEws == 1) {
-                    for (auto i = 0; i < length; i++)
-                        startingVal = OpType::update(startingVal, OpType::op(x[i], extraParams), extraParams);
-                } else {
-                    for (auto i = 0; i < length; i++)
-                            startingVal = OpType::update(startingVal, OpType::op(x[i * xEws], extraParams), extraParams);
-                }
+                PRAGMA_OMP_SIMD
+                for (auto e = 0; e < maxThreads; e++)
+                    intermediate[e] = OpType::startingValue(x);
 
-                return OpType::postProcess(startingVal, length, extraParams);
+                auto func = PRAGMA_THREADS_FOR {
+                    if (xEws == 1) {
+                        for (auto i = start; i < stop; i++)
+                            intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i], extraParams), extraParams);
+                    } else {
+                        for (auto i = start; i < stop; i++)
+                            intermediate[thread_id] = OpType::update(intermediate[thread_id], OpType::op(x[i * xEws], extraParams), extraParams);
+                    }
+                };
+
+                maxThreads = samediff::Threads::parallel_for(func, 0, length, 1, maxThreads);
+
+                // merge results
+                for (int e = 1; e < maxThreads; e++)
+                    intermediate[0] = OpType::update(intermediate[0], intermediate[e], extraParams);
+
+                // return result
+                return OpType::postProcess(intermediate[0], length, extraParams);
             }
 
 

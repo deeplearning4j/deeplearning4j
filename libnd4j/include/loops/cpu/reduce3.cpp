@@ -121,12 +121,13 @@ void Reduce3<X,Z>::execScalar(void *vx, Nd4jLong *xShapeInfo,
     }
 
     // merge step
-    for (int e = 0; e < maxThreads; e++) {
+    for (int e = 0; e < maxThreads; e++)
         OpType::aggregateExtraParams(extraParamsVals, extraParamsLocal + 3 * e);
-    }
+
     for (int e = 0; e < maxThreads; e++)
         startingVal = OpType::update(startingVal, intermediate[e], extraParamsVals);
 
+    // writing out result
     z[0] = OpType::postProcess(startingVal, length, extraParamsVals);
 }
 
