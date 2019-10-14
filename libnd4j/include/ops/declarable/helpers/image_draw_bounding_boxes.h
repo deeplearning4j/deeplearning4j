@@ -17,8 +17,8 @@
 //
 //  @author sgazeos@gmail.com
 //
-#ifndef __FAKE_QUANTIZATION_H_HELPERS__
-#define __FAKE_QUANTIZATION_H_HELPERS__
+#ifndef __IMAGE_DRAW_BOUNDING_BOXES_H_HELPERS__
+#define __IMAGE_DRAW_BOUNDING_BOXES_H_HELPERS__
 #include <op_boilerplate.h>
 #include <NDArray.h>
 
@@ -26,8 +26,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void fakeQuantWithMinMaxVars(NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output);
-    void fakeQuantWithMinMaxVarsPerChannel(LaunchContext* context, NDArray* input, NDArray* min, NDArray* max, int numBits, bool narrowed, NDArray* output);
+    void drawBoundingBoxesFunctor(nd4j::LaunchContext * context, NDArray* images, NDArray* boxes, NDArray* colors, NDArray* output);
+
 }
 }
 }

@@ -20,6 +20,7 @@ import org.nd4j.linalg.api.buffer.DataType
 import org.nd4j.linalg.api.ndarray.INDArray
 import org.nd4j.linalg.factory.Nd4j
 import org.nd4s.Implicits._
+import org.nd4s.NDOrdering
 import org.nd4s.samediff.implicits.Implicits._
 import org.scalatest.{ FlatSpec, Matchers }
 
@@ -205,9 +206,41 @@ class MathTest extends FlatSpec with Matchers {
     implicit val sd = SameDiff.create
 
     val arr = Nd4j.linspace(1, 100, 100).reshape('c', 10L, 10L)
-    val x = sd.`var`(arr)
+    val x = sd.bind(arr)
     val y = new SDVariableWrapper(x)
 
     x.get(SDIndex.point(0)).getArr shouldBe y(0).getArr
+  }
+
+  "SDVariable " should "be indexable in 2d" in {
+    implicit val sd = SameDiff.create
+
+    val arr = Nd4j.linspace(DataType.FLOAT, 1.0, 1.0, 9).reshape(3, 3)
+
+    val x = sd.bind(arr)
+
+    x(0, ---).eval shouldBe x(SDIndex.point(0), SDIndex.all()).eval
+
+    val slice1 = x.get(SDIndex.interval(0, 2), SDIndex.all()).eval
+    val slice2 = x(0 :: 2, ---).eval
+    slice1 shouldBe slice2
+  }
+
+  "SDVariable " should "be indexable in 3d" in {
+    implicit val sd = SameDiff.create
+
+    val arr = Nd4j.linspace(DataType.FLOAT, 1.0, 1.0, 18).reshape(3, 3, 2)
+    val x = sd.bind(arr)
+
+    x.get(SDIndex.all(), SDIndex.all(), SDIndex.all()).eval shouldBe x(---, ---, ---).eval
+    x.get(SDIndex.point(0), SDIndex.all(), SDIndex.all()).eval shouldBe x(0, ---, ---).eval
+    x.get(SDIndex.point(0), SDIndex.point(0), SDIndex.all()).eval shouldBe x(0, 0, ---).eval
+    x.get(SDIndex.point(0), SDIndex.point(0), SDIndex.point(0)).eval shouldBe x(0, 0, 0).eval
+
+    x.get(SDIndex.interval(0, 2), SDIndex.point(0), SDIndex.point(0)).eval shouldBe x(0 :: 2, 0, 0).eval
+    x.get(SDIndex.interval(0, 2), SDIndex.interval(0, 1), SDIndex.interval(0, 2)).eval shouldBe x(0 :: 2,
+                                                                                                  0 :: 1,
+                                                                                                  0 :: 2).eval
+    x.get(SDIndex.interval(0, 2), SDIndex.interval(0, 1), SDIndex.all()).eval shouldBe x(0 :: 2, 0 :: 1, ---).eval
   }
 }

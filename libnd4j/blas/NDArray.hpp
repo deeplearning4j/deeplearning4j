@@ -4071,6 +4071,24 @@ void NDArray::p(const Nd4jLong i, const NDArray& scalar) {
     NDArray::registerPrimaryUse({this}, {&scalar});
 }
 
+////////////////////////////////////////////////////////////////////////
+    void NDArray::p(const Nd4jLong i, const Nd4jLong j, const Nd4jLong k, const Nd4jLong l, const NDArray& scalar) {
+
+        if(!scalar.isScalar())
+            throw std::invalid_argument("NDArray::p method: input array must be scalar!");
+        if (i >= _length)
+            throw std::invalid_argument("NDArray::p(i, NDArray_scalar): input index is out of array length !");
+
+//        void *p = reinterpret_cast<void *>(scalar.getBuffer());
+        Nd4jLong coords[4] = {i, j, k, l};
+        auto xOffset = shape::getOffset(getShapeInfo(), coords);
+
+        NDArray::preparePrimaryUse({this}, {&scalar}, true);
+//        BUILD_SINGLE_PARTIAL_SELECTOR(dataType(), templatedSet<, T>(this->getBuffer(), xOffset, p), LIBND4J_TYPES);
+        BUILD_SINGLE_SELECTOR(scalar.dataType(), templatedSet, (this->getBuffer(), xOffset, scalar.dataType(), scalar.getBuffer()), LIBND4J_TYPES);
+        NDArray::registerPrimaryUse({this}, {&scalar});
+    }
+
 //////////////////////////////////////////////////////////////////////////
 void NDArray::addRowVector(const NDArray *row, NDArray *target) const {
 

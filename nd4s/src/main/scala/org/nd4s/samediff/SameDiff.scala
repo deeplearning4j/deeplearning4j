@@ -44,6 +44,9 @@ class SameDiffWrapper {
   def bind(name: String, dataType: DataType, shape: Array[Long]): SDVariable =
     sd.`var`(name, dataType, shape: _*)
 
+  def bind(data: INDArray): SDVariable =
+    sd.`var`("", data)
+
   def bind(name: String, dataType: DataType, shape: Array[Int]): SDVariable =
     sd.`var`(name, dataType, shape: _*)
 
@@ -51,18 +54,39 @@ class SameDiffWrapper {
     sd.placeHolder(name, dataType, shape: _*)
 }
 
+case class SDIndexWrapper(end: Long) {
+
+  def ::(start: Long): SDIndex =
+    SDIndex.interval(start, end)
+}
+
+case class SDIndexWrapper1(start: Int) {
+
+  def ::(end: Int): SDIndex =
+    SDIndex.interval(start, end)
+}
+
+object --- extends SDIndex {
+  val thisIndex: SDIndex = SDIndex.all()
+}
+
 class SDVariableWrapper {
 
   var thisVariable: SDVariable = null
   var isScalar: Boolean = false
+  val --- : SDIndex = SDIndex.all()
 
   def this(variable: SDVariable) {
     this
     thisVariable = variable
   }
 
+  // Indexing
   def apply(index: Long): SDVariable = thisVariable.get(SDIndex.point(index))
 
+  def apply(index: SDIndex*): SDVariable = thisVariable.get(index: _*)
+
+  // Arithmetic
   def add(other: Double): Unit = thisVariable.add(other)
 
   def *(other: SDVariable): SDVariable =

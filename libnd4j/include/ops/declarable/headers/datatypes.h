@@ -99,6 +99,14 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_cast)
         DECLARE_CUSTOM_OP(cast, 1, 1, false, 0, 1);
         #endif
+        /**
+         * This operation change type of input and modified shape of output to conform with given data type
+         *
+         * all as above op
+         * */
+        #if NOT_EXCLUDED(OP_bitcast)
+                DECLARE_CUSTOM_OP(bitcast, 1, 1, false, 0, 1);
+        #endif
     }
 }
 

@@ -600,6 +600,22 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(adjust_saturation, 1, 1, true, 1, -2);
         #endif
 
+        /**
+         * This operation adjusts image contrast by given factor ( z = (x - mean) * factor + mean )
+         * Input arrays:
+         * 0 - input array with rank >= 3, must have last one dimension equal 3, that is dimension containing channels.
+         *
+         * T arguments:
+         * 0 - contrast factor
+         *
+         */
+        #if NOT_EXCLUDED(OP_adjust_contrast)
+        DECLARE_CONFIGURABLE_OP(adjust_contrast, 1, 1, true, 1, 0);
+        DECLARE_CONFIGURABLE_OP(adjust_contrast_v2, 1, 1, true, 1, 0);
+        #endif
+
+
+
 
         /**
          * This operation rearranges data from depth into blocks of spatial data. This is the reverse transformation
@@ -1229,6 +1245,23 @@ namespace nd4j {
         #endif
 
         /**
+         * draw_bounding_boxes op - modified input image with given colors exept given boxes.
+         *
+         * input params:
+         *    0 - images tensor (4D) with shape {batch, width, height, channels}, where channes is 1 (BW image),
+         * 3 (RGB) or 4 (RGBA)
+         *    1 - boxes tensor (3D) with shape {batch, number_of_boxes, 4} where last dimension encoded as
+         * (y_min, x_min, y_max, x_max), all values in between 0. and 1.
+         *    2 - colours tensor (2D) with shape {number_of_boxes, channels} -- bordering color set (palette)
+         *
+         * output:
+         *    0 - 4D tensor with same shape as images (input 0)
+         */
+        #if NOT_EXCLUDED(OP_draw_bounding_boxes)
+        DECLARE_OP(draw_bounding_boxes, 3, 1, true);
+        #endif
+
+        /**
          * roll - op porting from numpy (https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.roll.html)
          *
          * input params:
@@ -1715,6 +1748,39 @@ namespace nd4j {
         DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vars, 3, 1, true, 0, -2);
         #endif
 
+/**
+         * fake_quant_with_min_max_vals_per_channel - tf.quantization.fake_quant_with_min_max_vars_per_channel
+         *
+         * input params:
+         *    0 - NDArray (input) - at least 2D.
+         *    1 - 1D Tensor - min values (min length equals to last dim of input)
+         *    2 - 1D Tensor - max value (length equals to min)
+         *
+         * int params (optional):
+         *    0 - num_bits (allowed interval [2, 16], default 8)
+         *    1 - narrow_range (default False)
+         *
+         * output:
+         *    0 - NDArray with the same shape as input
+         */
+        #if NOT_EXCLUDED(OP_fake_quant_with_min_max_vars_per_channel)
+                DECLARE_CONFIGURABLE_OP(fake_quant_with_min_max_vars_per_channel, 3, 1, true, 0, -2);
+        #endif
+
+        /**
+         * compare_and_bitpack - compare with greater and pack result with uint8 
+         *
+         * input params:
+         *    0 - NDArray (input)
+         *    1 - 0D Tensor - threshold
+         *
+         *
+         * output:
+         *    0 - NDArray with the same shape as input and type uint8
+         */
+        #if NOT_EXCLUDED(OP_compare_and_bitpack)
+        DECLARE_CUSTOM_OP(compare_and_bitpack, 2, 1, false, 0, 0);
+        #endif
     }
 }
 

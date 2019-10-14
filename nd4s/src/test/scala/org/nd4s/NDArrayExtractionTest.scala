@@ -48,6 +48,42 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
     assert(extracted == expected)
   }
 
+  it should "be able to extract a part of 2d matrix with alternative syntax" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).mkNDArray(ordering)
+
+    val extracted = ndArray(1 :: 3, 0 :: 2)
+
+    val expected =
+      Array(
+        Array(4, 5),
+        Array(7, 8)
+      ).mkNDArray(ordering)
+    assert(extracted == expected)
+  }
+
+  it should "be able to extract a part of 2d matrix with mixed syntax" in {
+    val ndArray =
+      Array(
+        Array(1, 2, 3),
+        Array(4, 5, 6),
+        Array(7, 8, 9)
+      ).mkNDArray(ordering)
+
+    val extracted = ndArray(1 -> 3, 0 :: 2)
+
+    val expected =
+      Array(
+        Array(4, 5),
+        Array(7, 8)
+      ).mkNDArray(ordering)
+    assert(extracted == expected)
+  }
+
   it should "be able to extract a part of 2d matrix with double data" in {
     val ndArray = (5 to 8).map(_.toDouble).mkNDArray(Array(2, 2), NDOrdering.C)
 
@@ -171,6 +207,9 @@ trait NDArrayExtractionTestBase extends FlatSpec { self: OrderingForTest =>
 
     val ellipsised = ndArray(--->)
     assert(ellipsised == ndArray)
+
+    val ellipsised1 = ndArray(---)
+    assert(ellipsised1 == ndArray)
   }
 
   it should "accept partially ellipsis indices" in {
