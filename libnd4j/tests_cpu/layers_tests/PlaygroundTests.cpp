@@ -59,7 +59,8 @@ public:
 };
 
 TEST_F(PlaygroundTests, test_s_1) {
-    ::runLightBenchmarkSuit(true);
+    auto t = ::runLightBenchmarkSuit(true);
+    delete[] t;
 }
 
 TEST_F(PlaygroundTests, test_s_2) {

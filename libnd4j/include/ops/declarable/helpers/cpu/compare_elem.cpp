@@ -27,32 +27,38 @@ namespace nd4j {
                 int elementsPerThread = length / ELEMENT_THRESHOLD;
                 int num_threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
                 num_threads = nd4j::math::nd4j_min<int>(num_threads, omp_get_max_threads());
-
-                Nd4jLong sum = 0;
+                Nd4jLong sumt = 0;
 
                 if(isStrictlyIncreasing) {
                     //PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
                     auto func = PRAGMA_REDUCE_LONG {
+                        Nd4jLong sum = 0;
                         for (auto i = start; i < stop; i++) {
                             auto val0 = input->t<T>(i);
                             auto val1 = input->t<T>(i + 1);
                             sum += val0 >= val1 ? -1 : 0;
                         }
+                        return sum;
                     };
-                    sum = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
+                    sumt = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
                 } else {
                     //PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(+:sum)
                     auto func = PRAGMA_REDUCE_LONG {
+                        Nd4jLong sum = 0;
                         for (auto i = start; i < stop; i++) {
                             auto val0 = input->t<T>(i);
                             auto val1 = input->t<T>(i + 1);
                             sum += val0 > val1 ? -1 : 0;
                         }
+
+                        return sum;
                     };
-                    sum = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
+                    sumt = samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, length - 1);
                 }
 
-                output = (sum > -1);
+                nd4j_printf("Sum: %lld\n", sumt)
+
+                output = (sumt > -1);
 
             }
 

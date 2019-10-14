@@ -526,8 +526,8 @@ TEST_F(NativeOpsTests, Reduce3Test_1) {
                             y.specialBuffer(), y.specialShapeInfo(),
                             exp.buffer(), exp.shapeInfo(),
                             exp.specialBuffer(), exp.specialShapeInfo());
-//    x.printIndexedBuffer("Input");
-//    exp.printIndexedBuffer("Reduce3 Dot");
+    //z.printIndexedBuffer("Z");
+    //exp.printIndexedBuffer("Reduce3 Dot");
     ASSERT_TRUE(exp.equalsTo(z));
 }
 

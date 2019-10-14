@@ -116,7 +116,7 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset);
+                             Nd4jLong *tadOffset, int64_t start, int64_t stop);
 
             /**
              * Execute on the cpu
@@ -140,7 +140,7 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset);
+                             Nd4jLong *tadOffset, int64_t start, int64_t stop);
 
             /**
             * CPU implementation

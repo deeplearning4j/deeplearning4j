@@ -45,8 +45,7 @@ void IndexReduce<X,Y>::exec(const int opNum,
                         void *z, Nd4jLong *zShapeInfo,
                         int *dimension, int dimensionLength,
                         Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
-
-DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
+    DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), INDEX_REDUCE_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////

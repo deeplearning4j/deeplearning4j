@@ -134,7 +134,7 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset) {
+                             Nd4jLong *tadOffset, int64_t start, int64_t stop) {
                 DISPATCH_BY_OPNUM_TT(exec, PARAMS(x,
                                                xShapeInfo,
                                                extraParams,
@@ -143,7 +143,7 @@ namespace functions {
                                                dimension,
                                                dimensionLength,
                                                tadShapeInfo,
-                                               tadOffset),
+                                               tadOffset, start, stop),
                                   REDUCE_FLOAT_OPS);
         }
 
@@ -157,7 +157,7 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset) {
+                             Nd4jLong *tadOffset, int64_t start, int64_t stop) {
 
                 auto x = reinterpret_cast<X *>(vx);
                 auto z = reinterpret_cast<Z *>(vresult);
@@ -203,9 +203,9 @@ namespace functions {
                 }
 
 #ifdef INLINE_LOOPS
-                nd4j::ReductionLoops<X,Z,Z>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+                nd4j::ReductionLoops<X,Z,Z>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
 #else
-                nd4j::ReductionFloatLoops<X,Z>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+                nd4j::ReductionFloatLoops<X,Z>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
 #endif
             }
 

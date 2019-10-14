@@ -130,8 +130,8 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset) {
-                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset), REDUCE_BOOL_OPS);
+                             Nd4jLong *tadOffset, int64_t start, int64_t stop) {
+                DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, dimension, dimensionLength, tadShapeInfo, tadOffset, start, stop), REDUCE_BOOL_OPS);
         }
 
         template <typename X, typename Z>
@@ -144,7 +144,7 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset) {
+                             Nd4jLong *tadOffset, int64_t start, int64_t stop) {
 
                 auto x = reinterpret_cast<X *>(vx);
                 auto z = reinterpret_cast<Z *>(vresult);
@@ -185,9 +185,9 @@ namespace functions {
                 }
 
 #ifdef INLINE_LOOPS
-                nd4j::ReductionLoops<X,Z,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+                nd4j::ReductionLoops<X,Z,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
 #else
-                nd4j::ReductionBoolLoops<X,Z>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams);
+                nd4j::ReductionBoolLoops<X,Z>::template innerloopReduce<OpType>(x, xShapeInfo, z, zShapeInfo,  tadOnlyShapeInfo, tadOffsets, extraParams, start, stop);
 #endif
             }
 

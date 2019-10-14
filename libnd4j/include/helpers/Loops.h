@@ -41,43 +41,43 @@ namespace nd4j {
     public:
 
         template <typename OpType>
-        static FORCEINLINE void loopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, E* extraParams);
+        static FORCEINLINE void loopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, E* extraParams, int64_t start, int64_t stop);
     };
 
     template <typename X, typename Z>
     class ReductionFloatLoops : public ReductionLoops<X,Z,Z> {
     public:
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, Z* extraParams);
+        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, Z* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, Z* extraParams);
+        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, Z* extraParams, int64_t start, int64_t stop);
     };
 
     template <typename X, typename Z>
     class ND4J_EXPORT ReductionBoolLoops : public ReductionLoops<X,Z,X> {
     public:
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
     };
 
     template <typename X, typename Z>
     class ND4J_EXPORT ReductionLongLoops : public ReductionLoops<X,Z,X> {
     public:
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
     };
 
     template <typename X>
     class ND4J_EXPORT ReductionSameLoops : public ReductionLoops<X,X,X> {
     public:
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams);
+        static void innerloopReduce(X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop);
     };
 
 
@@ -106,20 +106,20 @@ namespace nd4j {
     public:
 
         template <typename OpType>
-        static FORCEINLINE void loopReduce3(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams);
+        static FORCEINLINE void loopReduce3(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static FORCEINLINE void loopReduce3All(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets, Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets, Z* extraParams);
+        static FORCEINLINE void loopReduce3All(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets, Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets, Z* extraParams, int64_t start, int64_t stop);
 
-        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams);
+        static void wrapper(const int opNum, X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start, int64_t stop);
 
-        static void wrapperAll(const int opNum, X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets, Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets, Z* extraParams);
-
-        template <typename OpType>
-        static void innerloopReduce3(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams);
+        static void wrapperAll(const int opNum, X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets, Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets, Z* extraParams, int64_t start, int64_t stop);
 
         template <typename OpType>
-        static void innerloopReduce3All(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets, Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets, Z* extraParams);
+        static void innerloopReduce3(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, int* dims, int dimsLen, Z* extraParams, int64_t start, int64_t stop);
+
+        template <typename OpType>
+        static void innerloopReduce3All(X* x, Nd4jLong* xShapeInfo, X* y, Nd4jLong* yShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets, Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets, Z* extraParams, int64_t start, int64_t stop);
     };
 
 
@@ -266,7 +266,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
     void nd4j::ReductionLoops<X, Z, E>::loopReduce(X* x, Nd4jLong* xShapeInfo,
                                                   Z* z, Nd4jLong* zShapeInfo,
                                                   Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets,
-                                                  E* extraParams) {
+                                                  E* extraParams, int64_t start, int64_t stop) {
 
         const LoopKind::Kind kindOfLoop = LoopKind::deduceKindOfLoopTadXZ(xShapeInfo, zShapeInfo, tadShapeInfo);
 
@@ -320,7 +320,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
             //*********************************************//
             case LoopKind::EWS1: {
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -334,7 +334,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
             //*********************************************//
             case LoopKind::EWSNONZERO: {
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -348,7 +348,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
             //*********************************************//
             case LoopKind::RANK1: {
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -362,7 +362,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
             //*********************************************//
             case LoopKind::RANK2: {
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -377,7 +377,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
             //*********************************************//
             case LoopKind::RANK3: {
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -393,7 +393,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
             //*********************************************//
             case LoopKind::RANK4: {
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -410,7 +410,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
             //*********************************************//
             case LoopKind::RANK5: {
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -431,7 +431,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 uint castZShapeInfo[MAX_RANK];
                 const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -449,7 +449,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 uint castTadShapeInfo[MAX_RANK];
                 const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
 
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -471,7 +471,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                 uint castZShapeInfo[MAX_RANK];
                 const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     auto tad = x + tadOffsets[i];
                     auto s = OpType::startingValue(tad);
 
@@ -685,7 +685,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                                                   X* y, Nd4jLong* yShapeInfo,
                                                   Z* z, Nd4jLong* zShapeInfo,
                                                   int* dims, int dimsLen,
-                                                  Z* extraParameters) {
+                                                  Z* extraParameters, int64_t start, int64_t stop) {
 
         // both tads have same shape, however strides and ews may differ
 
@@ -740,7 +740,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::EWS1: {
                 Z extraParams[3];
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     extraParams[0] = param0;
                     extraParams[1] = param1;
                     extraParams[2] = param2;
@@ -760,7 +760,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::EWSNONZERO: {
                 Z extraParams[3];
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     extraParams[0] = param0;
                     extraParams[1] = param1;
                     extraParams[2] = param2;
@@ -780,7 +780,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK1: {
                 Z extraParams[3];
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     extraParams[0] = param0;
                     extraParams[1] = param1;
                     extraParams[2] = param2;
@@ -803,7 +803,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK2: {
                 Z extraParams[3];
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     extraParams[0] = param0;
                     extraParams[1] = param1;
                     extraParams[2] = param2;
@@ -827,7 +827,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK3: {
                 Z extraParams[3];
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     extraParams[0] = param0;
                     extraParams[1] = param1;
                     extraParams[2] = param2;
@@ -853,7 +853,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK4: {
                 Z extraParams[3];
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     extraParams[0] = param0;
                     extraParams[1] = param1;
                     extraParams[2] = param2;
@@ -881,7 +881,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
             //*********************************************//
             case LoopKind::RANK5: {
                 Z extraParams[3];
-                for (auto i = 0; i < zLen; i++) {
+                for (auto i = start; i < stop; i++) {
                     extraParams[0] = param0;
                     extraParams[1] = param1;
                     extraParams[2] = param2;
@@ -915,7 +915,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
 
                 if(shape::haveSameShapeAndStrides(xTadShapeInfo, yTadShapeInfo)) {
                     Z extraParams[3];
-                    for (auto i = 0; i < zLen; i++) {
+                    for (auto i = start; i < stop; i++) {
                         extraParams[0] = param0;
                         extraParams[1] = param1;
                         extraParams[2] = param2;
@@ -937,7 +937,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                     const bool canCastYTad = nd4j::DataTypeUtils::castShapeInfo<uint>(yTadShapeInfo, castYTadShapeInfo);
 
                     Z extraParams[3];
-                    for (auto i = 0; i < zLen; i++) {
+                    for (auto i = start; i < stop; i++) {
                         extraParams[0] = param0;
                         extraParams[1] = param1;
                         extraParams[2] = param2;
@@ -966,7 +966,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                                                      Z* z, Nd4jLong* zShapeInfo,
                                                      Nd4jLong* xTadShapeInfo, Nd4jLong* xTadOffsets,
                                                      Nd4jLong* yTadShapeInfo, Nd4jLong* yTadOffsets,
-                                                     Z* extraParameters) {
+                                                     Z* extraParameters, int64_t start, int64_t stop) {
 
         // both tads have same shape, however strides and ews may differ
 
@@ -1005,12 +1005,12 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         const auto xTad = x + xTadOffsets[ix];
                         const auto yTad = y + yTadOffsets[iy];
                         const auto zInd = ix * numYTads + iy;
-                        auto start = startVal;
+                        auto s = startVal;
 
                         for (uint j = 0; j < tadLen; ++j)
-                            start = OpType::update(start, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
+                            s = OpType::update(s, OpType::op(xTad[j], yTad[j], extraParams), extraParams);
 
-                        z[zInd] = OpType::postProcess(start, tadLen, extraParams);
+                        z[zInd] = OpType::postProcess(s, tadLen, extraParams);
                     }
                 };
             }
@@ -1028,12 +1028,12 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         const auto xTad = x + xTadOffsets[ix];
                         const auto yTad = y + yTadOffsets[iy];
                         const auto zInd = ix * numYTads + iy;
-                        auto start = startVal;
+                        auto s = startVal;
 
                         for (uint j = 0; j < tadLen; ++j)
-                            start = OpType::update(start, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
+                            s = OpType::update(s, OpType::op(xTad[j * xTadEws], yTad[j * yTadEws], extraParams), extraParams);
 
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
+                        z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
                 };
             }
@@ -1051,14 +1051,14 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         const auto xTad = x + xTadOffsets[ix];
                         const auto yTad = y + yTadOffsets[iy];
                         const auto zInd = ix * numYTads + iy;
-                        auto start = startVal;
+                        auto s = startVal;
 
                         for (uint i0 = 0; i0 < tadLen; ++i0) {
                             const auto xTadOffset = i0 * xTadStride[0];
                             const auto yTadOffset = i0 * yTadStride[0];
-                            start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                            s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                         }
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
+                        z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
                 };
             }
@@ -1076,16 +1076,16 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         const auto xTad = x + xTadOffsets[ix];
                         const auto yTad = y + yTadOffsets[iy];
                         const auto zInd = ix * numYTads + iy;
-                        auto start = startVal;
+                        auto s = startVal;
 
                         for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
                             for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
                                 const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1];
                                 const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1];
-                                start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                             }
                         }
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
+                        z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
                 };
             }
@@ -1103,18 +1103,18 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         const auto xTad = x + xTadOffsets[ix];
                         const auto yTad = y + yTadOffsets[iy];
                         const auto zInd = ix * numYTads + iy;
-                        auto start = startVal;
+                        auto s = startVal;
 
                         for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
                             for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
                                 for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
                                     const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2];
                                     const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2];
-                                    start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                    s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                                 }
                             }
                         }
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
+                        z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
                 };
             }
@@ -1132,7 +1132,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         const auto xTad = x + xTadOffsets[ix];
                         const auto yTad = y + yTadOffsets[iy];
                         const auto zInd = ix * numYTads + iy;
-                        auto start = startVal;
+                        auto s = startVal;
 
                         for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
                             for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
@@ -1140,12 +1140,12 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                                     for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
                                         const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3];
                                         const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3];
-                                        start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                        s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                                     }
                                 }
                             }
                         }
-                        z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
+                        z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
                     }
                 };
             }
@@ -1163,7 +1163,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                         const auto xTad = x + xTadOffsets[ix];
                         const auto yTad = y + yTadOffsets[iy];
                         const auto zInd = ix * numYTads + iy;
-                        auto start = startVal;
+                        auto s = startVal;
 
                         for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
                             for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
@@ -1172,7 +1172,7 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                                         for (uint i4 = 0; i4 < tadShape[4]; ++i4) {
                                             const auto xTadOffset = i0 * xTadStride[0] + i1 * xTadStride[1] + i2 * xTadStride[2] + i3 * xTadStride[3] + i4 * xTadStride[4];
                                             const auto yTadOffset = i0 * yTadStride[0] + i1 * yTadStride[1] + i2 * yTadStride[2] + i3 * yTadStride[3] + i4 * yTadStride[4];
-                                            start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                            s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                                         }
                                     }
                                 }
@@ -1200,13 +1200,13 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                             const auto xTad = x + xTadOffsets[ix];
                             const auto yTad = y + yTadOffsets[iy];
                             const auto zInd = ix * numYTads + iy;
-                            auto start = startVal;
+                            auto s = startVal;
 
                             for (uint j = 0; j < tadLen; ++j) {
                                 const auto tadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
-                                start = OpType::update(start, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
+                                s = OpType::update(s, OpType::op(xTad[tadOffset], yTad[tadOffset], extraParams), extraParams);
                             }
-                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
+                            z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
                         }
                     };
                 }
@@ -1224,15 +1224,15 @@ void Loops::loopXYZ(const X* x, const Nd4jLong* xShapeInfo,
                             const auto xTad = x + xTadOffsets[ix];
                             const auto yTad = y + yTadOffsets[iy];
                             const auto zInd = ix * numYTads + iy;
-                            auto start = startVal;
+                            auto s = startVal;
 
                             for (uint j = 0; j < tadLen; ++j) {
                                 const auto xTadOffset = shape::indexOffset(j, xTadShapeInfo, castXTadShapeInfo, canCastXTad);
                                 const auto yTadOffset = shape::indexOffset(j, yTadShapeInfo, castYTadShapeInfo, canCastYTad);
-                                start = OpType::update(start, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
+                                s = OpType::update(s, OpType::op(xTad[xTadOffset], yTad[yTadOffset], extraParams), extraParams);
                             }
 
-                            z[zInd * zEws] = OpType::postProcess(start, tadLen, extraParams);
+                            z[zInd * zEws] = OpType::postProcess(s, tadLen, extraParams);
                         }
                     };
                 }
