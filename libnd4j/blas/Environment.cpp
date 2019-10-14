@@ -24,12 +24,12 @@
 #include <string>
 #include "Environment.h"
 #include <helpers/StringUtils.h>
+#include <thread>
+#include <helpers/logger.h>
 
 #ifdef _OPENMP
 
 #include <omp.h>
-#include <thread>
-#include <helpers/logger.h>
 
 #endif
 
