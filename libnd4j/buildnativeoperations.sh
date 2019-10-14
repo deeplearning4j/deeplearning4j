@@ -291,15 +291,15 @@ case "$OS" in
 
     macosx*)
     # Do something under Mac OS X platform
-    if [ "$CHIP" == "cuda" ]; then
+    #if [ "$CHIP" == "cuda" ]; then
         export CC=clang
         export CXX=clang++
-        PARALLEL="false"
-    else
-        export CC="$(ls -1 /usr/local/bin/gcc-? | head -n 1)"
-        export CXX="$(ls -1 /usr/local/bin/g++-? | head -n 1)"
         PARALLEL="true"
-    fi
+    #else
+    #    export CC="$(ls -1 /usr/local/bin/gcc-? | head -n 1)"
+    #    export CXX="$(ls -1 /usr/local/bin/g++-? | head -n 1)"
+    #    PARALLEL="true"
+    #fi
     export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_MACOSX_RPATH=ON -DAPPLE_BUILD=true"
     ;;
 
