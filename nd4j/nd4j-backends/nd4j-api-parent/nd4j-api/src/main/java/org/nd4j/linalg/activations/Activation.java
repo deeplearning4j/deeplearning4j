@@ -50,9 +50,9 @@ public enum Activation {
             case LEAKYRELU:
                 return new ActivationLReLU();
             case RATIONALTANH:
-                return new ActivationRationalTanh();
+                return new ActivationRationalTanH();
             case RECTIFIEDTANH:
-                return new ActivationRectifiedTanh();
+                return new ActivationRectifiedTanH();
             case RELU:
                 return new ActivationReLU();
             case RELU6:

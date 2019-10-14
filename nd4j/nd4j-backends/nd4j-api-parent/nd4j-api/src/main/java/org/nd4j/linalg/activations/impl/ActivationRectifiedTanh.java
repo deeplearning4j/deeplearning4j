@@ -34,7 +34,7 @@ import org.nd4j.linalg.primitives.Pair;
  */
 @EqualsAndHashCode(callSuper = false)
 @Getter
-public class ActivationRectifiedTanh extends BaseActivationFunction {
+public class ActivationRectifiedTanH extends BaseActivationFunction {
 
     @Override
     public INDArray getActivation(INDArray in, boolean training) {
