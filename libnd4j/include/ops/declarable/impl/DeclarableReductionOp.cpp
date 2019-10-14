@@ -30,11 +30,6 @@ namespace nd4j {
             //
         }
 
-        DeclarableReductionOp::~DeclarableReductionOp()  {
-            //
-        }
-
-
         nd4j::ShapeList* DeclarableReductionOp::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)  {
            // int numDims = INT_ARG(0);
             std::vector<int> dims;

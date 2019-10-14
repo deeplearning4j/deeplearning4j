@@ -35,7 +35,6 @@ namespace nd4j {
             Nd4jStatus validateAndExecute(Context& block) override = 0;
         public:
             BooleanOp(const char *name, int numInputs, bool scalar);
-            ~BooleanOp();
 
             bool evaluate(std::initializer_list<nd4j::NDArray*> args);
             bool evaluate(std::vector<nd4j::NDArray*>& args);

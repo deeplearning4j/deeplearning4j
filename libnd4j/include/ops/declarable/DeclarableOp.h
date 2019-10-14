@@ -126,7 +126,7 @@ namespace nd4j {
             DeclarableOp(const char *name, bool isLogical);
 
             // default testructor
-            ~DeclarableOp();
+            virtual ~DeclarableOp();
 
             // this method returns OpDescriptor, describing this Op instance
             OpDescriptor *getOpDescriptor();

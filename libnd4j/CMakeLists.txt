@@ -18,7 +18,7 @@ endif()
 # -fsanitize=leak
 if (APPLE)
     set(CMAKE_CXX_FLAGS_RELEASE  "-O3 -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else -D__APPLE_OS__=true -D_RELEASE=true")
-    set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true")
+    set(CMAKE_CXX_FLAGS_DEBUG  " -O0 -g -fPIC -std=c++11 -fassociative-math -funsafe-math-optimizations -fmax-errors=2 -D__APPLE_OS__=true -Wno-braced-scalar-init -Wno-delete-non-virtual-dtor -Wno-unused-command-line-argument -Wno-dangling-else ")
 elseif(WIN32)
     set(X86_BUILD true)
     #if (NOT CUDA_BLAS)
