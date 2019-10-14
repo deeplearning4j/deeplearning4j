@@ -96,6 +96,8 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) reduction(+:_nanCount,_infCount,_m
                     double current = input->e<double>(e);
                     _stdDevValue += (info->_meanValue - current) * (info->_meanValue - current); //info->_minValue;
                 }
+
+                return _stdDevValue;
             };
             _stdDevValue = samediff::Threads::parallel_double(func, LAMBDA_AD { return _old + _new; }, 0, input->lengthOf());
 

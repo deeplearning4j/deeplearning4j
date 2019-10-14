@@ -50,6 +50,8 @@
 #include <loops/random.h>
 #include <pointercast.h>
 #include <exceptions/datatype_exception.h>
+#include <array/TadPack.h>
+#include <helpers/ConstantTadHelper.h>
 
 
 #ifdef _OPENMP

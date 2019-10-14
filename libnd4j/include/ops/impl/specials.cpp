@@ -401,7 +401,7 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
 //PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVal))
         auto func = PRAGMA_REDUCE_LONG {
             Nd4jLong retVal = 0L;
-            
+
             for (auto x = start; x < stop; x += increment) {
                 int byte = 0;
                 int byteId = x / 16 + 4;
@@ -437,6 +437,8 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
 
                 dz[byteId] = byte;
             }
+
+            return retVal;
         };
         return samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, N, 16);
     }
