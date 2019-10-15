@@ -8,6 +8,18 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.*;
 
 /**
+ * Object dependency tracker, using object identity (not object equality)
+ *
+ * Dependency are denoted by: X -> Y, which means "object Y depends on X"
+ * In this implementation:<br>
+ * - Dependencies may be satisfied, or not satisfied<br>
+ * - The implementation tracks when the dependency for an object Y are fully satisfied. This occurs when:<br>
+ *     1. No dependencies X->Y exist<br>
+ *     2. All dependencies of the form X->Y have been marked as satisfied, via markSatisfied(x)<br>
+ * - When a dependency is satisfied, any dependent (Ys) are checked to see if all their dependencies are satisfied<br>
+ * - If a dependent has all dependencies satisfied, it is added to the "new all satisfied" queue for processing,
+ *   which can be accessed via {@link #hasNewAllSatisfied()}, {@link #getNewAllSatisfied()} and {@link #getNewAllSatisfiedList()}
+ *
  *
  * @param <T> For a dependency X -> Y, Y has type T
  * @param <D> For a dependency X -> Y, X has type D
@@ -44,11 +56,63 @@ public class IdentityDependencyTracker<T, D> {
 
     public void markSatisfied(@NonNull D x, boolean satisfied){
         if(satisfied){
-            satisfiedDependencies.add(x);
+            boolean alreadySatisfied = satisfiedDependencies.contains(x);
+
+            if (!alreadySatisfied) {
+                satisfiedDependencies.add(x);
+
+                //Check if any Y's exist that have dependencies that are all satisfied, for X -> Y
+                Set<T> s = reverseDependencies.get(x);
+                Set<T> s2 = reverseOrDependencies.get(x);
+
+                Set<T> set;
+                if(s != null && s2 != null){
+                    set = Collections.newSetFromMap(new IdentityHashMap<T, Boolean>());
+                    set.addAll(s);
+                    set.addAll(s2);
+                } else if(s != null){
+                    set = s;
+                } else if(s2 != null){
+                    set = s2;
+                } else {
+                    log.info("No arrays depend on: {}", x);
+                    return;
+                }
+
+                for (T t : set) {
+                    Set<D> required = dependencies.get(t);
+                    Set<Pair<D,D>> requiredOr = orDependencies.get(t);
+                    boolean allSatisfied = true;
+                    if(required != null) {
+                        for (D d : required) {
+                            if (!isSatisfied(d)) {
+                                allSatisfied = false;
+                                break;
+                            }
+                        }
+                    }
+                    if(allSatisfied && requiredOr != null){
+                        for(Pair<D,D> p : requiredOr){
+                            if(!isSatisfied(p.getFirst()) && !isSatisfied(p.getSecond())){
+                                allSatisfied = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (allSatisfied) {
+                        if(!this.allSatisfied.contains(t)){
+                            this.allSatisfied.add(t);
+                            this.allSatisfiedQueue.add(t);
+                        }
+                    }
+                }
+            }
+
         } else {
             satisfiedDependencies.remove(x);
+            throw new UnsupportedOperationException("Not yet implemented: Need to check all satisfied queue and update...");
         }
-        //TODO check all satisfied
     }
 
     /**
@@ -118,10 +182,10 @@ public class IdentityDependencyTracker<T, D> {
         }
 
 
-        Set<Pair<D,D>> s2 = orDependencies.get(y);
-        if(s2 != null) {
+        Set<Pair<D,D>> s3 = orDependencies.get(y);
+        if(s3 != null) {
             boolean removedReverse = false;
-            Iterator<Pair<D,D>> iter = s2.iterator();
+            Iterator<Pair<D,D>> iter = s3.iterator();
             while(iter.hasNext()){
                 Pair<D,D> p = iter.next();
                 if(x.equals(p.getFirst()) || x.equals(p.getSecond())){

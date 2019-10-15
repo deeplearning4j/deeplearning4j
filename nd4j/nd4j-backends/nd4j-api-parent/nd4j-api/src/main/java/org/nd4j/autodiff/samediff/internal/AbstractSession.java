@@ -364,7 +364,7 @@ public abstract class AbstractSession<T, O> {
                 }
 
                 FrameIter outFrame = new FrameIter(OUTER_FRAME, 0, null);
-                recordArrayUses(Collections.singletonList(varToExec.getVariable()), outFrame, null, null, null);
+//                recordArrayUses(Collections.singletonList(varToExec.getVariable()), outFrame, null, null, null);
             } else if (sameDiff.getVariable(varToExec.getVariable()).isConstant() ||
                     sameDiff.getVariable(varToExec.getVariable()).getVariableType() == VariableType.VARIABLE) {
                 //Variable is constant: do lookup
@@ -378,8 +378,8 @@ public abstract class AbstractSession<T, O> {
                 }
 
                 FrameIter outFrame = new FrameIter(OUTER_FRAME, 0, null);
-                recordArrayUses(Collections.singletonList(varToExec.getVariable()), outFrame, null, null,
-                        Collections.singleton(varToExec.getVariable()));
+//                recordArrayUses(Collections.singletonList(varToExec.getVariable()), outFrame, null, null,
+//                        Collections.singleton(varToExec.getVariable()));
             } else if (sameDiff.getVariableOutputOp(varToExec.getVariable()) != null) {
                 //Variable is the output of an op -> execute op
                 String opName = sameDiff.getVariables().get(varToExec.getVariable()).getOutputOfOp();
@@ -1016,10 +1016,10 @@ public abstract class AbstractSession<T, O> {
         }
     }
 
-    protected void recordArrayUses(List<String> forVariables, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                   Set<String> constAndPhInputs){
-        //No-op by default
-    }
+//    protected void recordArrayUses(List<String> forVariables, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+//                                   Set<String> constAndPhInputs){
+//        //No-op by default
+//    }
 
     protected void onFrameIterTransition(String from, FrameIter parentFrom, String to, FrameIter parentTo){
         //No-op by default

@@ -62,7 +62,8 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
     private SessionMemMrg mmgr;
-    private DependencyTracker<Array,Dep> arrayUseTracker = new DependencyTracker<>();       //What needs to happen before the array can be closed?
+//    private DependencyTracker<Array,Dep> arrayUseTracker = new DependencyTracker<>();       //What needs to happen before the array can be closed?
+    private IdentityDependencyTracker<INDArray, Dep> arrayUseTracker = new IdentityDependencyTracker<>();   //What needs to happen before the array can be closed?
 
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
@@ -73,6 +74,8 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
     @Override
     protected Map<String,INDArray> preprocessPlaceholders(Map<String,INDArray> placeholders){
+        arrayUseTracker.clear();
+
         //Handle casting of the input array automatically.
         //The idea here is to avoid unexpected errors if the user (for example) tries to perform inference with a double
         // array for a float placeholder
@@ -110,7 +113,22 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 arr = arr.castTo(dt);
             }
             out.put(e.getKey(), arr);
+
+            //Finally, mark as a placeholder array in the array use tracker, so we never deallocate this array...
+            arrayUseTracker.addDependency(e.getValue(), new PlaceholderDep(e.getKey()));
         }
+
+
+        //We'll also use this method as a "pre execution" hook-in, to mark valiables as something we should never deallocate
+        //TODO we shouldn't be clearing this on every single iteration, in 99.9% of cases variables will be same as last iteration...
+        for(SDVariable v : sameDiff.variables()){
+            if(v.getVariableType() == VariableType.CONSTANT){
+                arrayUseTracker.addDependency(v.getArr(), new ConstantDep(v.getVarName()));
+            } else if(v.getVariableType() == VariableType.VARIABLE){
+                arrayUseTracker.addDependency(v.getArr(), new VariableDep(v.getVarName()));
+            }
+        }
+
 
         return out;
     }
@@ -144,7 +162,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             }
         }
 
-        INDArray[] out = getOutputsHelper(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
+        INDArray[] out = getOutputsHelper(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs, allReqVariables);
 
         //Call listeners
         if(listeners != null && listeners.size() > 0){
@@ -171,327 +189,67 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             }
         }
 
-        /*
-        Check if any arrays can be deallocated.
-        We use array dependency tracking for this
-         */
-
-        //Step 1: Update dependencies - add new dependencies
-        List<String> opOutputs = op.getOutputsOfOp();
-        recordArrayUses(opOutputs, outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
-        /*
-        protected void recordArrayUses(List<String> forVariables, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                   Set<String> constAndPhInputs){
-         */
-//        for( int i=0; i<opOutputs.size(); i++ ){
-//            //Add the dependencies: What has to be executed, before we can close this just calculated array?
-//            String outVarName = opOutputs.get(i);
-//            List<String> thisOutputUsedForOps = sameDiff.getVariables().get(outVarName).getInputsForOp();
-//            if(thisOutputUsedForOps != null){
-//                Array arr = new Array(outVarName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-//                for( String opName : thisOutputUsedForOps ){
-//                    SameDiffOp o = sameDiff.getOps().get(opName);
-//                    DifferentialFunction df = o.getOp();
-//
-//                    Dep opDep;
-//                    if(df instanceof Enter) {
-//                        //Enter op: forwards input to specified frame, iteration 0
-//                        //This is a zero-copy operation
-//                        //Note that the enter value should be available for ALL iterations within the new frame - which means
-//                        // we need a frame/iter dependency, not a standard variable dependency
-//                        //Also because it's a zero-copy operation, we need a dependent alias for the input array
-//
-//                        String inName = op.getInputsToOp().get(0);
-//                        VarId inVid = lookup(inName, opInputs, allIterInputs, false);
-//                        Array inArr = new Array(inName, inVid.getFrame(), inVid.getIteration(), inVid.getParentFrame());
-//                        arrayUseTracker.addDependentAlias(inArr, arr);
-//
-//                        //Frame dependency - Enter output (and input, via alias) required for all iterations
-//                        opDep = new FrameDep(outputFrameIter.getFrame(), outputFrameIter.getParentFrame());
-//                    } else if(df instanceof Exit) {
-//                        //Exit op: forwards input to parent frame (at parent current iteration)
-//                        //This is a zero-copy operation, hence we need a dependent alias
-//                        String inName = op.getInputsToOp().get(0);
-//                        VarId inVid = lookup(inName, opInputs, allIterInputs, false);
-//                        Array inArr = new Array(inName, inVid.getFrame(), inVid.getIteration(), inVid.getParentFrame());
-//                        arrayUseTracker.addDependentAlias(inArr, arr);
-//                        //TODO not 100% sure on the opDep here...
-//                        opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-//                    } else if(df instanceof NextIteration){
-//                        //NextIteration: same frame, increments iteration
-//                        //As per enter/exit etc - NextIteration is a zero-copy op, so we need a dependent alias for this
-//
-//                        String inName = op.getInputsToOp().get(0);
-//                        VarId inVid = lookup(inName, opInputs, allIterInputs, false);
-//                        Array inArr = new Array(inName, inVid.getFrame(), inVid.getIteration(), inVid.getParentFrame());
-//                        arrayUseTracker.addDependentAlias(inArr, arr);
-//
-//                        opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-//                    } else {
-//                        //Normal case (standard ops) - and switch/merge cases
-//                        opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-//
-//                        if( df instanceof Identity ) {
-//                            //Identity: array is passed through unchanged (same array, zero copy)
-//                            //This is fine, but we need a dependent alias. So, for arrays X -> (identity) -> Y then Y is an
-//                            // alias of X
-//
-//                            String inName = op.getInputsToOp().get(0);
-//                            Array inArr = new Array(inName, arr.getFrame(), arr.getIter(), arr.getParentFrame());
-//                            arrayUseTracker.addDependentAlias(inArr, arr);
-//                        } else if(df instanceof Switch) {
-//                            //Switch: Input to switch op is passed through unchanged (same array, zero copy) to ONE of two possible outputs
-//                            //Regardless of which branch the array is forwarded on to, the input array can be closed when the switch op is executed
-//                            //However, we need to add a dependee alias: so if we have opX -> switch -> opZ and opX has output array x
-//                            // then instead of (x -> switch) dependency, we want (x -> opZ). Otherwise, we would (incorrectly)
-//                            // say that "switch is executed, x can be deallocated"
-//
-//                            //However, we need to add a dependent alias so if opX -> switch -> opZ, and opX has output x,
-//                            // and switch has output s1 or s2, then we should mark s1 and s2 as an alias of x
-//                            //Mark it for both branches, because we don't necessarily know which will be executed at this point
-//                            Array alias0 = new Array(o.getOutputsOfOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
-//                            arrayUseTracker.addDependentAlias(arr, alias0);
-//
-//                            Array alias1 = new Array(o.getOutputsOfOp().get(1), arr.getFrame(), arr.getIter(), arr.getParentFrame());
-//                            arrayUseTracker.addDependentAlias(arr, alias1);
-//                        } else if(df instanceof Merge){
-//                            //Merge: 2 op inputs, but only one will (usually) be available when merge is executed
-//                            //The array for whichever is available is passed through unchanged (same array, zero copy)
-//                            //As per switch, we need a dependent alias - so if we have (X, Y) -> Merge -> Z
-//                            // then Z is just an alias for whichever of X or Y actually got executer
-//
-//                            //First: work out which is actually available...
-//                            String availableIn = null;
-//                            for(String s : op.getInputsToOp()){
-//                                if(constAndPhInputs != null && constAndPhInputs.contains(s)){
-//                                    availableIn = s;
-//                                    break;
-//                                }
-//                                VarId vid = lookup(s, opInputs, allIterInputs, false);
-//                                if(vid != null) {
-//                                    availableIn = s;
-//                                    break;
-//                                }
-//                            }
-//
-//                            Preconditions.checkState(availableIn != null, "Could not find any inputs for merge op %s, %s", op.getName(), outputFrameIter);
-//
-//                            Array in = new Array(availableIn, arr.getFrame(), arr.getIter(), arr.getParentFrame());
-//
-//                            Array aliasOut = new Array(o.getOutputsOfOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
-//
-////                            arrayUseTracker.addDependentAlias(in, arr);
-//                            arrayUseTracker.addDependentAlias(in, aliasOut);
-//                        }
-//                    }
-//
-//                    //Add the dependency. This means that "the specified array requires this operation to be executed, before it can be closed/deallocated"
-//                    arrayUseTracker.addDependency(arr, opDep);
-//                    log.info("Added dependency: {} -> {}", opDep, arr);
-//                }
-//            }
-//        }
-
-        //Step 2: Update dependencies - remove old dependencies (for just calculated op at given frame/iter)
-        List<String> opInVarNames = op.getInputsToOp();
-        if(opInVarNames != null){
-            //Remove any old dependencies, now that this op has been executed
-            OpDep opDep = new OpDep(op.getName(), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-
-            DifferentialFunction df = op.getOp();
-            /*
-            Other control ops here:
-            - Switch: nothing special about the inputs, these can be updated as per normal ops
-            - Merge: only one was ever added as a dependency, but we can remove both (one just isn't present to be removed)
-            - Enter/Exit/NextIteration: input/output do have different frame/iter, but this should be handled by lookup method already
-             */
-
-            boolean isMerge = df instanceof Merge;
+        return out;
+    }
 
 
-            for( int i=0; i<opInVarNames.size(); i++ ) {
-                String n = opInVarNames.get(i);
-                VarId inVid;
-                if(constAndPhInputs != null && constAndPhInputs.contains(n)){
-                    inVid = newVarId(n, OUTER_FRAME, 0, null);
-                } else {
-                    inVid = lookup(n, opInputs, allIterInputs, !isMerge);
+    public INDArray[] getOutputsHelper(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+                                       Set<String> constAndPhInputs, Set<String> allReqVariables) {
+        INDArray[] out = doExec(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
+
+        //Record array uses for memory management/deallocation
+        SameDiffOp o = sameDiff.getOps().get(op.getOwnName());
+        List<String> outVarNames = o.getOutputsOfOp();
+        for( int i=0; i<out.length; i++ ){
+            String name = outVarNames.get(i);
+            Variable v = sameDiff.getVariables().get(name);
+            List<String> inputsForOps = v.getInputsForOp();
+            if(inputsForOps != null){
+                for(String opName : inputsForOps){
+                    SameDiffOp forOp = sameDiff.getOps().get(opName);
+
+                    //TODO do switch or merge need special handling also?
+                    if(forOp.getOp() instanceof Enter) {
+                        //Need whole frame dependency
+
+                        throw new UnsupportedOperationException("Not yet implemented: enter ops");
+                    } else {
+                        //All other ops...
+                        Dep d = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
+                        arrayUseTracker.addDependency(out[i], d);       //Op defined by "d" needs to be executed before specified array can be closed
+                    }
                 }
+            }
 
-                if(isMerge && inVid == null){
-                    //Merge op only has 1 of 2 inputs available usually
-                    continue;
-                }
-
-
-                Array arr = new Array(n, inVid.getFrame(), inVid.getIteration(), inVid.getParentFrame());
-
-                //This input array no longer depends on the just executed op - it's one step closer to being able to be deallocated
-                arrayUseTracker.removeDependency(arr, opDep);
-                log.info("Removed dependency: {} -> {}", opDep, arr);
+            if(OUTER_FRAME.equals(outputFrameIter.getFrame()) && allReqVariables.contains(name)){
+                //This variable is an output, record that in the array use tracker, so we don't deallocate it
+                arrayUseTracker.addDependency(out[i], new ReqOutputDep(name));
             }
         }
 
-        //Step 3: Check if we can deallocate any arrays
-        if(arrayUseTracker.hasZeroDependencyItem()){
-            List<Array> canDealloc = arrayUseTracker.removeAllZeroDependencyItems();
-            for(Array a : canDealloc){
+        //Mark current op dependency as satisfied...
+        if(op instanceof Enter){
+            throw new UnsupportedOperationException("Not yet implemented: enter ops");
+        } else {
+            Dep d = new OpDep(op.getOwnName(), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
+            arrayUseTracker.markSatisfied(d, true);
+        }
 
-                //It seems like we can close "a". But we can't do that if there is an alias X == a,
-                // where X is an output we need to return to the user
-                Set<Array> s = arrayUseTracker.getDependentAliasesReverse(a);
-                if(s != null){
-                    boolean anyRequired = false;
-                    for(Array arr : s){
-                        if(allReqVariables.contains(arr.getVarName())){
-                            log.info("Not closing \"{}\" because required output \"{}\" is an alias of it", a, arr.getVarName());
-                            anyRequired = true;
-                            break;
-                        }
-                    }
 
-                    if(anyRequired){
-                        continue;
-                    }
-                }
-
-                SDVariable v = sameDiff.getVariable(a.getVarName());
-
-                if(v.getVariableType() == VariableType.ARRAY && !allReqVariables.contains(a.getVarName())){
-                    //Can't deallocate placeholders, constants, variables or arrays that the user has requested to be returned
-                    log.info("Determined safe to deallocate: {}", a);
-                    VarId vid = a.toVarId();
-                    INDArray arr = nodeOutputs.get(vid);
-                    mmgr.release(arr);
-                    clearOpReferencesFor(v.getVarName());
-                }
+        //Close any no longer required arrays
+        if(arrayUseTracker.hasNewAllSatisfied()){
+            List<INDArray> canClose = arrayUseTracker.getNewAllSatisfiedList();
+            for(INDArray arr : canClose){
+                log.info("Closing array... {}", arr.shapeInfoToString());
+                mmgr.release(arr);
             }
         }
 
         return out;
     }
 
-    @Override
-    protected void recordArrayUses(List<String> forVariables, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                   Set<String> constAndPhInputs){
-
-        for( int i=0; i<forVariables.size(); i++ ){
-            //Add the dependencies: What has to be executed, before we can close this just calculated array?
-            String outVarName = forVariables.get(i);
-            List<String> thisOutputUsedForOps = sameDiff.getVariables().get(outVarName).getInputsForOp();
-            if(thisOutputUsedForOps != null){
-                Array arr = new Array(outVarName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-                for( String opName : thisOutputUsedForOps ){
-                    SameDiffOp o = sameDiff.getOps().get(opName);
-                    DifferentialFunction df = o.getOp();
-
-                    Dep opDep;
-                    if(df instanceof Enter) {
-                        //Enter op: forwards input to specified frame, iteration 0
-                        //This is a zero-copy operation
-                        //Note that the enter value should be available for ALL iterations within the new frame - which means
-                        // we need a frame/iter dependency, not a standard variable dependency
-                        //Also because it's a zero-copy operation, we need a dependent alias for the input array
-                        String f = ((Enter) df).getFrameName();
-                        Array enterOut = new Array(o.getOutputsOfOp().get(0), f, 0, outputFrameIter);
-                        arrayUseTracker.addDependentAlias(arr, enterOut);
-
-                        //Frame dependency - Enter output (and input, via alias) required for all iterations
-                        opDep = new FrameDep(outputFrameIter.getFrame(), outputFrameIter.getParentFrame());
-                    } else if(df instanceof Exit) {
-                        //Exit op: forwards input to parent frame (at parent current iteration)
-                        //This is a zero-copy operation, hence we need a dependent alias
-                        //If arrX has just executed, and structure is arrX -> exit -> arrY, then arrY is alias for arrX
-                        String exitOutFrame = outputFrameIter.getParentFrame().getFrame();
-                        int exitOutIter = outputFrameIter.getParentFrame().getIteration();
-                        Array exitOut = new Array(o.getOutputsOfOp().get(0), exitOutFrame, exitOutIter, outputFrameIter.getParentFrame().getParentFrame());
-                        arrayUseTracker.addDependentAlias(arr, exitOut);
-                        //
-                        opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-//                        opDep = new OpDep(opName, outputFrameIter.getParentFrame().getFrame(), outputFrameIter.getParentFrame().getIteration(), outputFrameIter.getParentFrame().getParentFrame());
-                    } else if(df instanceof NextIteration){
-                        //NextIteration: same frame, increments iteration
-                        //As per enter/exit etc - NextIteration is a zero-copy op, so we need a dependent alias for this
-                        //So if arrX has just executed, and structure is arrX -> nextIteration -> arrY, then arrY is an alias for arrX
-
-                        Array nextIterOut = new Array(o.getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration()+1, outputFrameIter.getParentFrame());
-                        arrayUseTracker.addDependentAlias(arr, nextIterOut);
-
-                        opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-                    } else {
-                        //Normal case (standard ops) - and switch/merge cases
-                        opDep = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-
-                        if( df instanceof Identity ) {
-                            //Identity: array is passed through unchanged (same array, zero copy)
-                            //This is fine, but we need a dependent alias. So, for arrays arrX -> (identity) -> arrY then Y is an
-                            // alias of arrX. Note that arrX is the one that has just executed
-
-                            Array identityOut = new Array(o.getOutputsOfOp().get(0), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-                            arrayUseTracker.addDependentAlias(arr, identityOut);
-                        } else if(df instanceof Switch) {
-                            //Switch: Input to switch op is passed through unchanged (same array, zero copy) to ONE of two possible outputs
-                            //Regardless of which branch the array is forwarded on to, the input array can be closed when the switch op is executed
-                            //However, we need to add a dependee alias: so if we have opX -> switch -> opZ and opX has output array x
-                            // then instead of (x -> switch) dependency, we want (x -> opZ). Otherwise, we would (incorrectly)
-                            // say that "switch is executed, x can be deallocated"
-
-                            //However, we need to add a dependent alias so if opX -> switch -> opZ, and opX has output x,
-                            // and switch has output s1 or s2, then we should mark s1 and s2 as an alias of x
-                            //Mark it for both branches, because we don't necessarily know which will be executed at this point
-                            Array alias0 = new Array(o.getOutputsOfOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
-                            arrayUseTracker.addDependentAlias(arr, alias0);
-
-                            Array alias1 = new Array(o.getOutputsOfOp().get(1), arr.getFrame(), arr.getIter(), arr.getParentFrame());
-                            arrayUseTracker.addDependentAlias(arr, alias1);
-                        } else if(df instanceof Merge){
-                            //Merge: 2 op inputs, but only one will (usually) be available when merge is executed
-                            //The array for whichever is available is passed through unchanged (same array, zero copy)
-                            //As per switch, we need a dependent alias - so if we have (X, Y) -> Merge -> Z
-                            // then Z is just an alias for whichever of X or Y actually got executer
-
-                            //First: work out which is actually available...
-                            String availableIn = null;
-                            for(String s : o.getInputsToOp()){
-                                if(forVariables.contains(s)){
-                                    //Just executed op
-                                    availableIn = s;
-                                    break;
-                                }
-                                if(constAndPhInputs != null && constAndPhInputs.contains(s)){
-                                    availableIn = s;
-                                    break;
-                                }
-                                VarId vid = lookup(s, opInputs, allIterInputs, false);
-                                if(vid != null) {
-                                    availableIn = s;
-                                    break;
-                                }
-                            }
-
-                            Preconditions.checkState(availableIn != null, "Could not find any inputs for merge op %s, %s", o.getName(), outputFrameIter);
-
-                            Array in = new Array(availableIn, arr.getFrame(), arr.getIter(), arr.getParentFrame());
-
-                            Array aliasOut = new Array(o.getOutputsOfOp().get(0), arr.getFrame(), arr.getIter(), arr.getParentFrame());
-
-//                            arrayUseTracker.addDependentAlias(in, arr);
-                            arrayUseTracker.addDependentAlias(in, aliasOut);
-                        }
-                    }
-
-                    //Add the dependency. This means that "the specified array requires this operation to be executed, before it can be closed/deallocated"
-                    arrayUseTracker.addDependency(arr, opDep);
-                    log.info("Added dependency: {} -> {}", opDep, arr);
-                }
-            }
-        }
-
-    }
-
-
-    public INDArray[] getOutputsHelper(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                       Set<String> constAndPhInputs){
+    public INDArray[] doExec(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
+                             Set<String> constAndPhInputs) {
 
         int totalInputs = (opInputs == null ? 0 : opInputs.size()) + (constAndPhInputs == null ? 0 : constAndPhInputs.size())
                 + (allIterInputs == null ? 0 : allIterInputs.size());
@@ -1219,5 +977,33 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         public String toString(){
             return "FrameDep(" + this.frame + (parentFrame == null ? "" : ",parent=" + parentFrame) + ")";
         }
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    @AllArgsConstructor
+    protected static class PlaceholderDep extends Dep {
+        protected String phName;
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    @AllArgsConstructor
+    protected static class VariableDep extends Dep {
+        protected String varName;
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    @AllArgsConstructor
+    protected static class ConstantDep extends Dep {
+        protected String constName;
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    @AllArgsConstructor
+    protected static class ReqOutputDep extends Dep {
+        protected String outputName;
     }
 }
