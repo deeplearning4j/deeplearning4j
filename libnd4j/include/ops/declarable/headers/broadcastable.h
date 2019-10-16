@@ -357,6 +357,28 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_Pow)
         DECLARE_BROADCASTABLE_OP(Pow, 0, 0);
         #endif
+
+        /**
+         * Broadcastable igamma implementation
+         *
+         * igamma(a, x) = gamma(а, x) / Gamma(a) - Gamma distribution function P(a,x)
+         * Gamma(a) = int from 0 to infinity { t ^ {a - 1} e^{-t}dt }
+         * gamma(a, x) = int from 0 to x { t ^ {a - 1} e^{-t}dt }
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_igamma)
+                DECLARE_BROADCASTABLE_OP(igamma, 0, 0);
+        #endif
+        /**
+         * Broadcastable igammac implementation
+         * igammac(a, x) = Gamma(a,x)/Gamma(а) - Gamma distribution function Q(a,x)
+         * Gamma(a) = int from 0 to infinity { t ^ {a - 1} e^{-t}dt }
+         * Gamma(a, x) = int from x to infinity { t ^ {a - 1} e^{-t}dt }
+         * @tparam T
+         */
+        #if NOT_EXCLUDED(OP_igammac)
+                DECLARE_BROADCASTABLE_OP(igammac, 0, 0);
+        #endif
     }
 }
 
