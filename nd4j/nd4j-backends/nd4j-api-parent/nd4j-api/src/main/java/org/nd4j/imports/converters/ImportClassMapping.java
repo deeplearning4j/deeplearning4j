@@ -581,8 +581,14 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.random.impl.ProbablisticMerge.class,
             org.nd4j.linalg.api.ops.random.impl.Range.class,
             org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution.class,
-            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class
-
+            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class,
+            org.nd4j.linalg.api.ops.custom.AdjustContrast.class,
+            org.nd4j.linalg.api.ops.custom.AdjustContrastV2.class,
+            org.nd4j.linalg.api.ops.custom.BitCast.class,
+            org.nd4j.linalg.api.ops.custom.CompareAndBitpack.class,
+            org.nd4j.linalg.api.ops.custom.DivideNoNan.class,
+            org.nd4j.linalg.api.ops.custom.DrawBoundingBoxes.class,
+            org.nd4j.linalg.api.ops.custom.FakeQuantWithMinMaxVarsPerChannel.class
     );
 
     static {

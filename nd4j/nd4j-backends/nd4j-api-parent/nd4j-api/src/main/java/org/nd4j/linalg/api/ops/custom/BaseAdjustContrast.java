@@ -22,8 +22,4 @@ public abstract class BaseAdjustContrast extends DynamicCustomOp {
     public BaseAdjustContrast(SameDiff sameDiff, SDVariable[] vars) {
         super("", sameDiff, vars);
     }
-
-    public BaseAdjustContrast(SameDiff sameDiff, SDVariable in, SDVariable factor, SDVariable out) {
-        super(null, sameDiff, new SDVariable[]{in, factor, out});
-    }
 }
