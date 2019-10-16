@@ -23,4 +23,9 @@ public class CompareAndBitpack extends DynamicCustomOp {
     public String opName() {
         return "compare_and_bitpack";
     }
+
+    @Override
+    public String tensorflowName() {
+        return "CompareAndBitpack";
+    }
 }

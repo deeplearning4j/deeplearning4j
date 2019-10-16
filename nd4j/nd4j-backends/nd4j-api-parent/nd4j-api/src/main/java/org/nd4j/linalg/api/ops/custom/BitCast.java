@@ -24,4 +24,9 @@ public class BitCast extends DynamicCustomOp {
     public String opName() {
         return "bitcast";
     }
+
+    @Override
+    public String tensorflowName() {
+        return "bitcast";
+    }
 }

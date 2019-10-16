@@ -24,4 +24,9 @@ public class DrawBoundingBoxes extends DynamicCustomOp {
     public String opName() {
         return "draw_bounding_boxes";
     }
+
+    @Override
+    public String tensorflowName() {
+        return "draw_bounding_boxes";
+    }
 }
