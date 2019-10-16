@@ -47,7 +47,7 @@ CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 1, 0) {
     NDArray factorT(output->dataType(), block.launchContext()); // = NDArrayFactory::create(factor, block.launchContext());
     factorT.p(0, factor);
     // this is contrast calculation
-    *output = (*input - mean) * factorT + mean;
+    output->assign((*input - mean) * factorT + mean);
 
     return Status::OK();
 }
