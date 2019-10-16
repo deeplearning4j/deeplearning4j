@@ -42,10 +42,6 @@ public abstract class AsyncLearning<O extends Encodable, A, AS extends ActionSpa
     @Getter(AccessLevel.PROTECTED)
     private final TrainingListenerList listeners = new TrainingListenerList();
 
-    public AsyncLearning(AsyncConfiguration conf) {
-        super(conf);
-    }
-
     /**
      * Add a {@link TrainingListener} listener at the end of the listener list.
      *

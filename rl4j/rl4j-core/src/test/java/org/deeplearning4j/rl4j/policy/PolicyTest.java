@@ -127,10 +127,10 @@ public class PolicyTest {
                 .layer(0, new OutputLayer.Builder().nOut(1).lossFunction(LossFunctions.LossFunction.XENT).activation(Activation.SIGMOID).build()).build());
 
         ACPolicy policy = new ACPolicy(new DummyAC(cg));
-        assertNotNull(policy.rd);
+        assertNotNull(policy.rnd);
 
         policy = new ACPolicy(new DummyAC(mln));
-        assertNotNull(policy.rd);
+        assertNotNull(policy.rnd);
 
         INDArray input = Nd4j.create(new double[] {1.0, 0.0}, new long[]{1,2});
         for (int i = 0; i < 100; i++) {

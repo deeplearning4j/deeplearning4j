@@ -87,7 +87,6 @@ public class AsyncLearningTest {
         private final IPolicy<MockEncodable, Integer> policy;
 
         public TestAsyncLearning(AsyncConfiguration conf, IAsyncGlobal asyncGlobal, IPolicy<MockEncodable, Integer> policy) {
-            super(conf);
             this.conf = conf;
             this.asyncGlobal = asyncGlobal;
             this.policy = policy;

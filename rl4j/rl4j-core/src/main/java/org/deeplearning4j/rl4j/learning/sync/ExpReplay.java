@@ -20,9 +20,9 @@ import it.unimi.dsi.fastutil.ints.IntOpenHashSet;
 import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
+import org.nd4j.linalg.api.rng.Random;
 
-import java.util.*;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.ArrayList;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
@@ -36,17 +36,16 @@ import java.util.concurrent.ThreadLocalRandom;
 public class ExpReplay<A> implements IExpReplay<A> {
 
     final private int batchSize;
-    final private Random random;
+    final private Random rnd;
 
     //Implementing this as a circular buffer queue
     private CircularFifoQueue<Transition<A>> storage;
 
-    public ExpReplay(int maxSize, int batchSize, int seed) {
+    public ExpReplay(int maxSize, int batchSize, Random rnd) {
         this.batchSize = batchSize;
-        this.random = new Random(seed);
+        this.rnd = rnd;
         storage = new CircularFifoQueue<>(maxSize);
     }
-
 
     public ArrayList<Transition<A>> getBatch(int size) {
         ArrayList<Transition<A>> batch = new ArrayList<>(size);
@@ -54,12 +53,11 @@ public class ExpReplay<A> implements IExpReplay<A> {
         int actualBatchSize = Math.min(storageSize, size);
 
         int[] actualIndex = new int[actualBatchSize];
-        ThreadLocalRandom r = ThreadLocalRandom.current();
         IntSet set = new IntOpenHashSet();
         for( int i=0; i<actualBatchSize; i++ ){
-            int next = r.nextInt(storageSize);
+            int next = rnd.nextInt(storageSize);
             while(set.contains(next)){
-                next = r.nextInt(storageSize);
+                next = rnd.nextInt(storageSize);
             }
             set.add(next);
             actualIndex[i] = next;

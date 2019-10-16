@@ -31,7 +31,9 @@ import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.ArrayList;
@@ -70,13 +72,18 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
                              int epsilonNbStep) {
+        this(mdp, dqn, conf, epsilonNbStep, Nd4j.getRandomFactory().getNewRandomInstance(conf.getSeed()));
+    }
+
+    public QLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, QLConfiguration conf,
+                             int epsilonNbStep, Random random) {
         super(conf);
         this.configuration = conf;
         this.mdp = mdp;
         qNetwork = dqn;
         targetQNetwork = dqn.clone();
         policy = new DQNPolicy(getQNetwork());
-        egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), epsilonNbStep, getRandom(), conf.getMinEpsilon(),
+        egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), epsilonNbStep, random, conf.getMinEpsilon(),
                 this);
         mdp.getActionSpace().setSeed(conf.getSeed());
 

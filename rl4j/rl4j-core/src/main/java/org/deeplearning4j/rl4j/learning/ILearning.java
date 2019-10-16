@@ -42,7 +42,7 @@ public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> ex
 
     interface LConfiguration {
 
-        int getSeed();
+        Integer getSeed();
 
         int getMaxEpochStep();
 

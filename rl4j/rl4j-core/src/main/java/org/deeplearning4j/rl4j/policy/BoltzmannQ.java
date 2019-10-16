@@ -16,12 +16,11 @@
 
 package org.deeplearning4j.rl4j.policy;
 
-import lombok.AllArgsConstructor;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
-
-import java.util.Random;
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 
 import static org.nd4j.linalg.ops.transforms.Transforms.exp;
 
@@ -31,11 +30,15 @@ import static org.nd4j.linalg.ops.transforms.Transforms.exp;
  * Boltzmann exploration is a stochastic policy wrt to the
  * exponential Q-values as evaluated by the dqn model.
  */
-@AllArgsConstructor
 public class BoltzmannQ<O extends Encodable> extends Policy<O, Integer> {
 
     final private IDQN dqn;
-    final private Random rd = new Random(123);
+    final private Random rnd;
+
+    public BoltzmannQ(IDQN dqn, Random random) {
+        this.dqn = dqn;
+        this.rnd = random;
+    }
 
     public IDQN getNeuralNet() {
         return dqn;
@@ -47,7 +50,7 @@ public class BoltzmannQ<O extends Encodable> extends Policy<O, Integer> {
         INDArray exp = exp(output);
 
         double sum = exp.sum(1).getDouble(0);
-        double picked = rd.nextDouble() * sum;
+        double picked = rnd.nextDouble() * sum;
         for (int i = 0; i < exp.columns(); i++) {
             if (picked < exp.getDouble(i))
                 return i;

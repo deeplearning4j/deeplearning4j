@@ -32,8 +32,8 @@ import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.api.rng.Random;
 
-import java.util.Random;
 import java.util.Stack;
 
 /**
@@ -48,7 +48,7 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
     @Getter
     final protected int threadNumber;
 
-    final private Random random;
+    final private Random rnd;
 
     public AsyncNStepQLearningThreadDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IAsyncGlobal<IDQN> asyncGlobal,
                                              AsyncNStepQLearningDiscrete.AsyncNStepQLConfiguration conf,
@@ -57,13 +57,18 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
         this.conf = conf;
         this.asyncGlobal = asyncGlobal;
         this.threadNumber = threadNumber;
-        mdp.getActionSpace().setSeed(conf.getSeed() + threadNumber);
-        random = new Random(conf.getSeed() + threadNumber);
+        rnd = Nd4j.getRandom();
+
+        Integer seed = conf.getSeed();
+        if(seed != null) {
+            mdp.getActionSpace().setSeed(seed + threadNumber);
+            rnd.setSeed(seed + threadNumber);
+        }
     }
 
     public Policy<O, Integer> getPolicy(IDQN nn) {
         return new EpsGreedy(new DQNPolicy(nn), getMdp(), conf.getUpdateStart(), conf.getEpsilonNbStep(),
-                        random, conf.getMinEpsilon(), this);
+                rnd, conf.getMinEpsilon(), this);
     }
 
 

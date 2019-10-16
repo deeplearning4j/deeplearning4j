@@ -13,6 +13,7 @@ import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.ArrayList;
@@ -27,11 +28,12 @@ public class QLearningDiscreteTest {
         MockObservationSpace observationSpace = new MockObservationSpace();
         MockMDP mdp = new MockMDP(observationSpace);
         MockDQN dqn = new MockDQN();
+        MockRandom random = new MockRandom(new double[] { 0.7309677600860596, 0.8314409852027893, 0.2405363917350769, 0.6063451766967773, 0.6374173760414124, 0.3090505599975586, 0.5504369735717773, 0.11700659990310669 }, null);
         QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 0, 0, 5, 1, 0,
                 0, 1.0, 0, 0, 0, 0, true);
         MockDataManager dataManager = new MockDataManager(false);
         MockExpReplay expReplay = new MockExpReplay();
-        TestQLearningDiscrete sut = new TestQLearningDiscrete(mdp, dqn, conf, dataManager, expReplay, 10);
+        TestQLearningDiscrete sut = new TestQLearningDiscrete(mdp, dqn, conf, dataManager, expReplay, 10, random);
         IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);
         MockHistoryProcessor hp = new MockHistoryProcessor(hpConf);
         sut.setHistoryProcessor(hp);
@@ -130,10 +132,10 @@ public class QLearningDiscreteTest {
     }
 
     public static class TestQLearningDiscrete extends QLearningDiscrete<MockEncodable> {
-        public TestQLearningDiscrete(MDP<MockEncodable, Integer, DiscreteSpace> mdp,IDQN dqn,
+        public TestQLearningDiscrete(MDP<MockEncodable, Integer, DiscreteSpace> mdp, IDQN dqn,
                                      QLConfiguration conf, IDataManager dataManager, MockExpReplay expReplay,
-                                     int epsilonNbStep) {
-            super(mdp, dqn, conf, epsilonNbStep);
+                                     int epsilonNbStep, Random rnd) {
+            super(mdp, dqn, conf, epsilonNbStep, rnd);
             addListener(new DataManagerTrainingListener(dataManager));
             setExpReplay(expReplay);
         }

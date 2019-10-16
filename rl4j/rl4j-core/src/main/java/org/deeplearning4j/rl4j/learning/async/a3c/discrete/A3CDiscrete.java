@@ -26,6 +26,8 @@ import org.deeplearning4j.rl4j.network.ac.IActorCritic;
 import org.deeplearning4j.rl4j.policy.ACPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/23/16.
@@ -48,13 +50,19 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
     final private ACPolicy<O> policy;
 
     public A3CDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IActorCritic iActorCritic, A3CConfiguration conf) {
-        super(conf);
         this.iActorCritic = iActorCritic;
         this.mdp = mdp;
         this.configuration = conf;
-        policy = new ACPolicy<>(iActorCritic, getRandom());
         asyncGlobal = new AsyncGlobal<>(iActorCritic, conf);
-        mdp.getActionSpace().setSeed(conf.getSeed());
+
+        Integer seed = conf.getSeed();
+        Random rnd = Nd4j.getRandom();
+        if(seed != null) {
+            mdp.getActionSpace().setSeed(seed);
+            rnd.setSeed(seed);
+        }
+
+        policy = new ACPolicy<>(iActorCritic, rnd);
     }
 
     protected AsyncThread newThread(int i, int deviceNum) {
@@ -71,7 +79,7 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
     @EqualsAndHashCode(callSuper = false)
     public static class A3CConfiguration implements AsyncConfiguration {
 
-        int seed;
+        Integer seed;
         int maxEpochStep;
         int maxStep;
         int numThread;

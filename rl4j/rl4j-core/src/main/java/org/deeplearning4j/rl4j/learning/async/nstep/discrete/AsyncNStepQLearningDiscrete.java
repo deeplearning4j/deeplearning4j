@@ -43,11 +43,13 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
 
 
     public AsyncNStepQLearningDiscrete(MDP<O, Integer, DiscreteSpace> mdp, IDQN dqn, AsyncNStepQLConfiguration conf) {
-        super(conf);
         this.mdp = mdp;
         this.configuration = conf;
         this.asyncGlobal = new AsyncGlobal<>(dqn, conf);
-        mdp.getActionSpace().setSeed(conf.getSeed());
+        Integer seed = conf.getSeed();
+        if(seed != null) {
+            mdp.getActionSpace().setSeed(seed);
+        }
     }
 
     @Override
@@ -70,7 +72,7 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
     @EqualsAndHashCode(callSuper = false)
     public static class AsyncNStepQLConfiguration implements AsyncConfiguration {
 
-        int seed;
+        Integer seed;
         int maxEpochStep;
         int maxStep;
         int numThread;

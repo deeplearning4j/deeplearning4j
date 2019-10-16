@@ -57,7 +57,7 @@ public class CartpoleNative implements MDP<CartpoleNative.State, Integer, Discre
     private static final double thetaThresholdRadians = 12.0 * 2.0 * Math.PI / 360.0;
     private static final double xThreshold = 2.4;
 
-    private final Random rnd = new Random();
+    private final Random rnd;
 
     @Getter @Setter
     private KinematicsIntegrators kinematicsIntegrator = KinematicsIntegrators.Euler;
@@ -75,6 +75,14 @@ public class CartpoleNative implements MDP<CartpoleNative.State, Integer, Discre
     private DiscreteSpace actionSpace = new DiscreteSpace(NUM_ACTIONS);
     @Getter
     private ObservationSpace<CartpoleNative.State> observationSpace = new ArrayObservationSpace(new int[] { OBSERVATION_NUM_FEATURES });
+
+    public CartpoleNative() {
+        rnd = new Random();
+    }
+
+    public CartpoleNative(int seed) {
+        rnd = new Random(seed);
+    }
 
     @Override
     public State reset() {
