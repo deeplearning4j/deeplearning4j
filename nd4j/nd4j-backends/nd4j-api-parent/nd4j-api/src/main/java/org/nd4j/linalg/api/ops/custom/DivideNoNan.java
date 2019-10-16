@@ -27,6 +27,6 @@ public class DivideNoNan extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "divide_no_nan";
+        return "DivNoNan";
     }
 }

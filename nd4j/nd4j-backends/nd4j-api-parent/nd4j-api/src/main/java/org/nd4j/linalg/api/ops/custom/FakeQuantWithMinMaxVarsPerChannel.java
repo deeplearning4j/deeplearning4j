@@ -31,6 +31,6 @@ public class FakeQuantWithMinMaxVarsPerChannel extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "fake_quant_with_min_max_vars_per_channel";
+        return "FakeQuantWithMinMaxVarsPerChannel";
     }
 }

@@ -25,6 +25,6 @@ public class AdjustContrastV2 extends BaseAdjustContrast {
 
     @Override
     public String tensorflowName() {
-        return "adjust_contrast";
+        return "AdjustContrast";
     }
 }

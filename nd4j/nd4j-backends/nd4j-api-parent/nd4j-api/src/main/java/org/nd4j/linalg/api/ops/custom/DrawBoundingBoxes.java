@@ -27,6 +27,6 @@ public class DrawBoundingBoxes extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "draw_bounding_boxes";
+        return "DrawBoundingBoxes";
     }
 }

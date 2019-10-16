@@ -27,6 +27,6 @@ public class BitCast extends DynamicCustomOp {
 
     @Override
     public String tensorflowName() {
-        return "bitcast";
+        return "Bitcast";
     }
 }
