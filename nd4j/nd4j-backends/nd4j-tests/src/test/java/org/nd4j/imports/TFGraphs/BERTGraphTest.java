@@ -62,7 +62,7 @@ public class BERTGraphTest extends BaseNd4jTest {
     @Test
     public void testBert() throws Exception {
 
-        String url = "https://deeplearning4jblob.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
+        String url = "https://dl4jdata.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
         saveDir.mkdirs();
 
@@ -270,7 +270,7 @@ public class BERTGraphTest extends BaseNd4jTest {
 
     @Test //@Ignore   //AB ignored 08/04/2019 until fixed
     public void testBertTraining() throws Exception {
-        String url = "https://deeplearning4jblob.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
+        String url = "https://dl4jdata.blob.core.windows.net/testresources/bert_mrpc_frozen_v1.zip";
         File saveDir = new File(TFGraphTestZooModels.getBaseModelDir(), ".nd4jtests/bert_mrpc_frozen_v1");
         saveDir.mkdirs();
 
