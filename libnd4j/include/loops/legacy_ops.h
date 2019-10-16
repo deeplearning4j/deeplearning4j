@@ -78,7 +78,9 @@
        (28, LogicalXor) ,\
        (29, LogicalNot) ,\
        (30, LogicalAnd), \
-       (31, DivideNoNan)
+       (31, DivideNoNan), \
+       (32, IGamma), \
+       (33, IGammac)
 
 // these ops return same data type as input
 #define TRANSFORM_SAME_OPS \
@@ -245,7 +247,9 @@
         (43, TruncateMod) ,\
         (44, SquaredReverseSubtract) ,\
         (45, ReversePow), \
-        (46, DivideNoNan)
+        (46, DivideNoNan), \
+        (47, IGamma), \
+        (48, IGammac)
 
 
 
@@ -380,7 +384,9 @@
         (35, AMinPairwise) ,\
         (36, TruncateMod), \
         (37, ReplaceNans), \
-        (38, DivideNoNan)
+        (38, DivideNoNan), \
+        (39, IGamma), \
+        (40, IGammac)
 
 
 

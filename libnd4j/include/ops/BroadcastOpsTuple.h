@@ -49,6 +49,8 @@ namespace nd4j {
         static BroadcastOpsTuple DivideNoNan();
         static BroadcastOpsTuple Multiply();
         static BroadcastOpsTuple Subtract();
+        static BroadcastOpsTuple IGamma();
+        static BroadcastOpsTuple IGammac();
     };
 }
 
