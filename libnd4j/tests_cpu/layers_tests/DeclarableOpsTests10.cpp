@@ -537,6 +537,50 @@ TEST_F(DeclarableOpsTests10, atan2_test6) {
     delete result;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, IGamma_Test1) {
+
+    auto y = NDArrayFactory::create<double>('c', {1, 3, 4}, {1.1 , 2.1 , 3.1 ,4.1 , 5.1 , 6.1 ,7.1 ,8.1 ,9.1 ,10.1,11.1 ,12.1});
+    auto x = NDArrayFactory::create<double>('c', {      4}, {1.2, 2.2, 3.2, 4.2});
+
+    auto exp = NDArrayFactory::create<double>('c', {1,3,4}, {
+               0.659917,     0.61757898,  0.59726304,   0.58478117,
+           0.0066205109,    0.022211598, 0.040677428,  0.059117373,
+        0.0000039433403, 0.000086064574, 0.000436067, 0.0012273735});
+
+    nd4j::ops::igamma op;
+    auto result = op.execute({&y, &x}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto z = result->at(0);
+//    z->printBuffer("OUtput");
+//    exp.printBuffer("EXpect");
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, IGamma_Test2) {
+
+    auto y = NDArrayFactory::create<double>('c', {1, 3, 4}, {1.1 , 2.1 , 3.1 ,4.1 , 5.1 , 6.1 ,
+                                                             7.1 ,8.1 ,9.1 ,10.1,11.1 ,12.1});
+    auto x = NDArrayFactory::create<double>('c', {      4}, {1.2, 2.2, 3.2, 4.2});
+    auto exp = NDArrayFactory::create<double>('c', {1,3,4}, {0.340083, 0.382421, 0.402737, 0.415221,
+                                                             0.993379, 0.977788, 0.959323, 0.940883,
+                                                             0.999996, 0.999914, 0.999564, 0.998773});
+
+    nd4j::ops::igammac op;
+    auto result = op.execute({&y, &x}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto z = result->at(0);
+//    z->printBuffer("OUtput");
+//    exp.printBuffer("EXpect");
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, range_test10) {
