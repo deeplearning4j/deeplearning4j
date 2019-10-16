@@ -351,7 +351,8 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
         if (lookupTable instanceof InMemoryLookupTable) {
             InMemoryLookupTable l = (InMemoryLookupTable) lookupTable;
             INDArray syn0 = l.getSyn0();
-            INDArray weights = syn0.norm2(0).rdivi(1).muli(words);
+            INDArray temp = syn0.norm2(0).rdivi(1).reshape(words.shape());
+            INDArray weights = temp.muli(words);
             INDArray distances = syn0.mulRowVector(weights).sum(1);
             INDArray[] sorted = Nd4j.sortWithIndices(distances, 0, false);
             INDArray sort = sorted[0];
