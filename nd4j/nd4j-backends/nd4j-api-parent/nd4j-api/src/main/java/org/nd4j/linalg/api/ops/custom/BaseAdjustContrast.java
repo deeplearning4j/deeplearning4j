@@ -1,5 +1,7 @@
 package org.nd4j.linalg.api.ops.custom;
 
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -15,5 +17,13 @@ public abstract class BaseAdjustContrast extends DynamicCustomOp {
         outputArguments.add(out);
 
         addTArgument(factor);
+    }
+
+    public BaseAdjustContrast(SameDiff sameDiff, SDVariable[] vars) {
+        super("", sameDiff, vars);
+    }
+
+    public BaseAdjustContrast(SameDiff sameDiff, SDVariable in, SDVariable factor, SDVariable out) {
+        super(null, sameDiff, new SDVariable[]{in, factor, out});
     }
 }

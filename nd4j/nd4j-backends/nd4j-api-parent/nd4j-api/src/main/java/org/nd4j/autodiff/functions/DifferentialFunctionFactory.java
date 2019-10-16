@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
+import org.nd4j.linalg.api.ops.custom.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
@@ -2649,6 +2650,33 @@ public class DifferentialFunctionFactory {
         return new NextIteration(sameDiff, x).outputVariable();
     }
 
+    public SDVariable adjustContrast(SDVariable in, SDVariable factor) {
+        return new AdjustContrast(sameDiff, in, factor).outputVariable();
+    }
+
+    public SDVariable adjustContrastV2(SDVariable in, SDVariable factor) {
+        return new AdjustContrastV2(sameDiff, in, factor).outputVariable();
+    }
+
+    public SDVariable bitCast(SDVariable in, SDVariable dataType) {
+        return new BitCast(sameDiff, in, dataType).outputVariable();
+    }
+
+    public SDVariable compareAndBitpack(SDVariable threshold) {
+        return new CompareAndBitpack(sameDiff, threshold).outputVariable();
+    }
+
+    public SDVariable divideNoNan(SDVariable in1, SDVariable in2) {
+        return new DivideNoNan(sameDiff, in1, in2).outputVariable();
+    }
+
+    public SDVariable drawBoundingBoxes(SDVariable boxes, SDVariable colors) {
+        return new DrawBoundingBoxes(sameDiff, boxes, colors).outputVariable();
+    }
+
+    public SDVariable fakeQuantWithMinMaxVarsPerChannel(SDVariable x, SDVariable min, SDVariable max) {
+        return new FakeQuantWithMinMaxVarsPerChannel(sameDiff,x,min,max).outputVariable();
+    }
 
     public String toString() {
         return "DifferentialFunctionFactory{methodNames=" + methodNames + "}";
