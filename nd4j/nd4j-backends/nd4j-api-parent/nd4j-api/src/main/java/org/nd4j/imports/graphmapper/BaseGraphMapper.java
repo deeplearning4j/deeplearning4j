@@ -347,12 +347,13 @@ public abstract class BaseGraphMapper<GRAPH_TYPE, NODE_TYPE, ATTR_TYPE, TENSOR_T
                 anyUnknown = true;
         }
         if(anyUnknown){
-            Map<String,DataType> dataTypes = diff.calculateOutputDataTypes();
-            for(SDVariable v : diff.variables()){
-                if(v.dataType() == null){
-                    v.setDataType(dataTypes.get(v.getVarName()));
-                }
-            }
+//            Map<String,DataType> dataTypes = diff.calculateOutputDataTypes();
+//            for(SDVariable v : diff.variables()){
+//                if(v.dataType() == null){
+//                    v.setDataType(dataTypes.get(v.getVarName()));
+//                }
+//            }
+            throw new UnsupportedOperationException("To be removed");
         }
 
         //Validate the graph structure

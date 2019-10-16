@@ -76,6 +76,16 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
     protected Map<String,INDArray> preprocessPlaceholders(Map<String,INDArray> placeholders){
         arrayUseTracker.clear();
 
+        //We'll also use this method as a "pre execution" hook-in, to mark valiables as something we should never deallocate
+        //TODO we shouldn't be clearing this on every single iteration, in 99.5% of cases variables will be same as last iteration...
+        for(SDVariable v : sameDiff.variables()){
+            if(v.getVariableType() == VariableType.CONSTANT){
+                arrayUseTracker.addDependency(v.getArr(), new ConstantDep(v.getVarName()));
+            } else if(v.getVariableType() == VariableType.VARIABLE){
+                arrayUseTracker.addDependency(v.getArr(), new VariableDep(v.getVarName()));
+            }
+        }
+
         //Handle casting of the input array automatically.
         //The idea here is to avoid unexpected errors if the user (for example) tries to perform inference with a double
         // array for a float placeholder
@@ -119,17 +129,6 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         }
 
 
-        //We'll also use this method as a "pre execution" hook-in, to mark valiables as something we should never deallocate
-        //TODO we shouldn't be clearing this on every single iteration, in 99.9% of cases variables will be same as last iteration...
-        for(SDVariable v : sameDiff.variables()){
-            if(v.getVariableType() == VariableType.CONSTANT){
-                arrayUseTracker.addDependency(v.getArr(), new ConstantDep(v.getVarName()));
-            } else if(v.getVariableType() == VariableType.VARIABLE){
-                arrayUseTracker.addDependency(v.getArr(), new VariableDep(v.getVarName()));
-            }
-        }
-
-
         return out;
     }
 
@@ -162,9 +161,9 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             }
         }
 
-        INDArray[] out = getOutputsHelper(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs, allReqVariables);
+        INDArray[] out = doExec(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
 
-        //Call listeners
+        //Call listeners, before we (maybe) deallocate input arrays
         if(listeners != null && listeners.size() > 0){
             Map<String, INDArray> namedOuts = null;
 
@@ -189,18 +188,14 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             }
         }
 
-        return out;
-    }
-
-
-    public INDArray[] getOutputsHelper(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-                                       Set<String> constAndPhInputs, Set<String> allReqVariables) {
-        INDArray[] out = doExec(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
 
         //Record array uses for memory management/deallocation
-        SameDiffOp o = sameDiff.getOps().get(op.getOwnName());
+        SameDiffOp o = sameDiff.getOps().get(op.getName());
         List<String> outVarNames = o.getOutputsOfOp();
         for( int i=0; i<out.length; i++ ){
+            if(out[i] == null && o.getOp() instanceof Switch)
+                continue;   //Switch case: we only ever get one of 2 outputs, other is null (branch not executed)
+
             String name = outVarNames.get(i);
             Variable v = sameDiff.getVariables().get(name);
             List<String> inputsForOps = v.getInputsForOp();
@@ -228,10 +223,10 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         }
 
         //Mark current op dependency as satisfied...
-        if(op instanceof Enter){
-            throw new UnsupportedOperationException("Not yet implemented: enter ops");
-        } else {
-            Dep d = new OpDep(op.getOwnName(), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
+        //For enter ops, we need to keep the arrays open until the end of the frame/iteration; enter values can be used for
+        // multiple iterations (and possibly also in a nested loop)
+        if(!(op.getOp() instanceof Enter)){
+            Dep d = new OpDep(op.getName(), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
             arrayUseTracker.markSatisfied(d, true);
         }
 
@@ -851,7 +846,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape();
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
                 INDArray z = op.z();
-                if (z == null || !outputShape.get(0).equals(z.shapeDescriptor()) || isLoop) {
+                if (z == null || z.wasClosed() || !outputShape.get(0).equals(z.shapeDescriptor()) || isLoop) {
                     if (log.isTraceEnabled()) {
                         log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
                                 op.getClass().getSimpleName(), (z == null ? null : Arrays.toString(z.shape())), outputShape.get(0).toString());
@@ -919,8 +914,8 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
     }
 
     @Override
-    protected void onFrameIterTransition(String from, FrameIter parentFrom, String to, FrameIter parentTo){
-        log.info("InferenceSession2: Transition from {} (parent={}) to {} (parent={})", from, parentFrom, to, parentTo);
+    protected void onFrameIterTransition(String fromFrame, int fromIter, FrameIter parentFrom, String toFrame, int toIter, FrameIter parentTo){
+        log.info("InferenceSession2: Transition from {} (parent={}) to {} (parent={})", fromFrame, parentFrom, toFrame, parentTo);
         //Remove any frame dependencies...
         //TODO
     }
@@ -962,6 +957,11 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             this.frame = frame;
             this.iter = iter;
             this.parentFrame = parentFrame;
+        }
+
+        @Override
+        public String toString(){
+            return "OpDep(" + opName + ",frame=" + frame + ",iter=" + iter + (parentFrame == null ? "" : ",parent=" + parentFrame) + ")";
         }
     }
 

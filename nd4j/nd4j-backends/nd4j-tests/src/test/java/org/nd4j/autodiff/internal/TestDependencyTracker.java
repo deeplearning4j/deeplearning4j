@@ -38,11 +38,6 @@ public class TestDependencyTracker {
         assertNull(dl.getDependencies());
         assertNull(dl.getOrDependencies());
 
-        assertTrue(dt.hasZeroDependencyItem());
-        assertEquals("y", dt.removeZeroDependencyItem());
-        assertFalse(dt.hasZeroDependencyItem());
-        assertTrue(dt.isEmpty());
-
 
         //Or dep
         dt.addOrDependency("y", "x1", "x2");
@@ -58,119 +53,18 @@ public class TestDependencyTracker {
         assertNull(dl.getDependencies());
         assertNull(dl.getOrDependencies());
 
-        assertTrue(dt.hasZeroDependencyItem());
-        assertEquals(Collections.singletonList("y"), dt.removeAllZeroDependencyItems());
-        assertFalse(dt.hasZeroDependencyItem());
-
         dt.addOrDependency("y", "x1", "x2");
         dl = dt.getDependencies("y");
         assertNull(dl.getDependencies());
         assertNotNull(dl.getOrDependencies());
         assertEquals(Collections.singletonList(new Pair<>("x1", "x2")), dl.getOrDependencies());
         dt.removeDependency("y", "x2");
-
-        assertTrue(dt.hasZeroDependencyItem());
-        assertEquals("y", dt.removeZeroDependencyItem());
-        assertFalse(dt.hasZeroDependencyItem());
         assertTrue(dt.isEmpty());
-
-
-
-        //Zero dep
-        dt.addZeroDependencyItem("y");
-        dt.addZeroDependencyItem("y");
-        dt.addZeroDependencyItem("y");
-        assertTrue(dt.hasZeroDependencyItem());
-        assertEquals("y", dt.removeZeroDependencyItem());
-        assertFalse(dt.hasZeroDependencyItem());
-
-        dt.addZeroDependencyItem("y");
-        dt.addZeroDependencyItem("y");
-        dt.addZeroDependencyItem("y");
-        assertEquals(Collections.singletonList("y"), dt.removeAllZeroDependencyItems());
-        assertFalse(dt.hasZeroDependencyItem());
-
-
-        dt.addZeroDependencyItem("y");
-        dt.addDependency("y", "x");
-        dt.removeDependency("y", "x");
-        assertTrue(dt.hasZeroDependencyItem());
-        assertEquals(Collections.singletonList("y"), dt.removeAllZeroDependencyItems());
-        assertTrue(dt.isEmpty());
-
-
-
-        //Dependee aliases (i.e., x -> y, with x1 == x2)
-        assertFalse(dt.isDependeeAlias("x"));
-        assertFalse(dt.isDependeeAlias("y"));
-        dt.addDependeeAlias("y", "x");      //x is alias of y
-        assertTrue(dt.isDependeeAlias("x"));
-        assertFalse(dt.isDependeeAlias("y"));
-        dt.addDependeeAlias("x", "z");      //z is alias of x; by extension, z is alias of y
-        assertTrue(dt.isDependeeAlias("z"));
-        assertTrue(dt.isDependeeAlias("x"));
-        assertFalse(dt.isDependeeAlias("y"));
-        assertEquals("y", dt.dependeeAliasGetUnderlying("x"));
-        assertEquals("y", dt.dependeeAliasGetUnderlying("z"));
-        dt.removeDependeeAlias("z");
-        assertFalse(dt.isDependeeAlias("z"));
-        dt.removeDependeeAlias("x");
-        assertTrue(dt.isEmpty());
-
-        //Dependent aliases  (i.e., x -> y, with y1 == y2)
-        dt.addDependentAlias("y", "y2");      //y2 is alias of y
-        assertTrue(dt.isDependentAlias("y2"));
-        assertFalse(dt.isDependentAlias("y"));
-        dt.addDependentAlias("y2", "y3");      //y3 is alias of y2; by extension, y3 is alias of y
-        assertTrue(dt.isDependentAlias("y2"));
-        assertTrue(dt.isDependentAlias("y3"));
-        assertFalse(dt.isDependentAlias("y"));
-        assertEquals("y", dt.dependentAliasGetUnderlying("y2"));
-        assertEquals("y", dt.dependentAliasGetUnderlying("y3"));
-        dt.removeDependentAlias("y3");
-        assertTrue(dt.isDependentAlias("y2"));
-        assertFalse(dt.isDependentAlias("y3"));
-        dt.removeDependentAlias("y2");
-        assertFalse(dt.isDependentAlias("y2"));
-        assertTrue(dt.isEmpty());
-
-
-        //Combination of dependent and dependee aliases
-        dt.addDependeeAlias("x", "x2");
-        dt.addDependentAlias("y", "y2");
-        dt.addDependency("y2", "x2");           //x2 -> y2, but due to aliases equivalent to x -> y
-        assertEquals("y", dt.dependentAliasGetUnderlying("y2"));
-        assertEquals("x", dt.dependeeAliasGetUnderlying("x2"));
-        dl = dt.getDependencies("y");
-        assertEquals(Collections.singletonList("x"), dl.getDependencies());
-        assertNull(dl.getOrDependencies());
-        dt.clear();
-        assertTrue(dt.isEmpty());
-
-        //Check 3 and 4 levels of transitive dependent aliases
-        //Everything here should be alias of "a"
-        dt.addDependentAlias("a", "b");
-        dt.addDependentAlias("b", "c");
-        dt.addDependentAlias("c", "d");
-        dt.addDependentAlias("d", "e");
-        assertTrue(dt.isDependentAlias("b"));
-        assertTrue(dt.isDependentAlias("c"));
-        assertTrue(dt.isDependentAlias("d"));
-        assertTrue(dt.isDependentAlias("e"));
-        assertEquals("a", dt.dependentAliasGetUnderlying("b"));
-        assertEquals("a", dt.dependentAliasGetUnderlying("c"));
-        assertEquals("a", dt.dependentAliasGetUnderlying("d"));
-        assertEquals("a", dt.dependentAliasGetUnderlying("e"));
-
-
-
-        //Add dependency alias after a dependency is already defined
     }
 
 
     @Test
     public void testIdentityDependencyTracker(){
-
         IdentityDependencyTracker<INDArray, String> dt = new IdentityDependencyTracker<>();
         assertTrue(dt.isEmpty());
 
@@ -197,8 +91,6 @@ public class TestDependencyTracker {
         INDArray get = dt.getNewAllSatisfied();
         assertSame(y1, get);
         assertFalse(dt.hasNewAllSatisfied());
-
-
     }
 
 }

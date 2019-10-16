@@ -3800,7 +3800,7 @@ public class SameDiff extends SDBaseOps {
             sessions.clear();
 
             //Recalculate datatypes of outputs, and dynamically update them
-            calculateOutputDataTypes(true);
+            throw new UnsupportedOperationException("Not yet reimplemented");
         }
     }
 
@@ -6263,32 +6263,6 @@ public class SameDiff extends SDBaseOps {
         }
 
         return sb.toString();
-    }
-
-    /**
-     * Calculate data types for the variables in the graph
-     */
-    public Map<String, org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes() {
-        return calculateOutputDataTypes(false);
-    }
-
-    /**
-     * Calculate data types for the variables in the graph
-     */
-    public Map<String, org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(boolean dynamicUpdate) {
-        List<String> allVars = new ArrayList<>(variables.keySet());
-        DataTypesSession session = new DataTypesSession(this, dynamicUpdate);
-        Map<String, org.nd4j.linalg.api.buffer.DataType> phValues = new HashMap<>();
-        for (Variable v : variables.values()) {
-            if (v.getVariable().isPlaceHolder()) {
-                org.nd4j.linalg.api.buffer.DataType dt = v.getVariable().dataType();
-                Preconditions.checkNotNull(dt, "Placeholder variable %s has null datatype", v.getName());
-                phValues.put(v.getName(), dt);
-            }
-        }
-        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues, null,
-                Collections.<String>emptyList(), Collections.<Listener>emptyList(), At.defaultAt(Operation.INFERENCE));
-        return out;
     }
 
     /**

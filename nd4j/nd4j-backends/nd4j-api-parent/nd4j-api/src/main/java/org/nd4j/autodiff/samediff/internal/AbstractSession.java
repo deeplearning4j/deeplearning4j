@@ -16,10 +16,7 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.Getter;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
@@ -34,6 +31,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import java.util.*;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.function.Predicate;
 
 /**
  * Additional functionality to add:
@@ -54,8 +52,10 @@ public abstract class AbstractSession<T, O> {
     protected final Map<VarId, T> nodeOutputs = new HashMap<>();
     @Getter
     protected final Map<VarId, List<T>> tensorArrays = new HashMap<>(); //Stores the outputs for a TensorArray ops
-    protected final Queue<VarId> availableForExec = new LinkedList<>();
-    protected final Set<VarId> availableForExecSet = new HashSet<>();       //Same content as the queue, but used for O(1) contains instead of ordered removal
+//    protected final Queue<VarId> availableForExec = new LinkedList<>();
+//    protected final Set<VarId> availableForExecSet = new HashSet<>();       //Same content as the queue, but used for O(1) contains instead of ordered removal
+    protected final DependencyTracker<ExecStep, ExecStep> dt = new DependencyTracker<>();
+
     /**
      * Contains variables we *might* need to execute in process of getting outputs we want.
      * Variables not in this set are definitely not needed to get the requested output variables, but variables that are
@@ -185,14 +185,13 @@ public abstract class AbstractSession<T, O> {
         placeholderValues = preprocessPlaceholders(placeholderValues);
 
         //Clear state from past
-        availableForExec.clear();
-        availableForExecSet.clear();
+        dt.clear();
         subgraph.clear();
         subgraphOps.clear();
         execInputs.clear();
         execInputsAllIter.clear();
         execConstInputs.clear();
-        nodeOutputs.clear();            //TODO eventually we'll have cache here for later execs... main challenge is detecting in-place array modifications and invalidating old results
+        nodeOutputs.clear();            //TODO eventually we'll have (optional) cache here for later execs... main challenge is detecting in-place array modifications and invalidating old results. And overall memory use...
         tensorArrays.clear();
 
         //Step 1: determine subgraph structure we actually need to execute
@@ -245,6 +244,20 @@ public abstract class AbstractSession<T, O> {
             }
         }
 
+        //Mark the (required) variables, constants and placeholders as available via dependency tracker
+        ExecStep start = new ExecStep(ExecType.EXEC_START, "", null);   //Dummy dependency to trigger the variables and constants
+        for(SDVariable v : sameDiff.variables()){
+            VariableType vt = v.getVariableType();
+            if(vt == VariableType.VARIABLE || vt == VariableType.CONSTANT){
+                ExecType et = vt == VariableType.VARIABLE ? ExecType.VARIABLE : ExecType.CONSTANT;
+                ExecStep es = new ExecStep(et, v.getVarName(), new FrameIter(OUTER_FRAME, 0, null));
+                dt.addDependency(es, start);
+            }
+        }
+        dt.markSatisfied(start, true);
+
+
+
         //Step 2: execute (in any order, but not switching to new frame/iteration until all from current frame/iter are done),
         // until we have all required nodeOutputs
         /*
@@ -265,9 +278,11 @@ public abstract class AbstractSession<T, O> {
         Map<String, T> out = new HashMap<>();
         int step = 0;
         String currentFrame = OUTER_FRAME;
+        final int currentFrameIter = 0;
         FrameIter currParentFrame = null;
+        ExecStepPredicate predicate = new ExecStepPredicate();
         while (out.size() < userRequestedUnique.size()) {
-            if(availableForExec.size() == 0){
+            if(!dt.hasNewAllSatisfied()){
                 int missingCount = userRequestedUnique.size() - out.size();
                 StringBuilder sb = new StringBuilder();
                 sb.append("No variable are available for execution at step ")
@@ -297,180 +312,184 @@ public abstract class AbstractSession<T, O> {
             //Get variable in the current frame/iteration and execute it's corresponding op
             //If no more ops exist for the current frame/iter, we'll switch to the next frame/iter
             //The idea is to not mix the order of execution of ops in different frames/iters
-            VarId first = availableForExec.peek();
-            VarId varToExec = null;
-            if(availableForExec.size() == 1 || currentFrame.equals(first.getFrame()) &&
-                    (currParentFrame == null && first.getParentFrame() == null || currParentFrame != null && currParentFrame.equals(first.getParentFrame()))){
-                //First one is within current frame/iteration
-                varToExec = availableForExec.remove();
-            } else {
-                Iterator<VarId> iter = availableForExec.iterator();
-                while(iter.hasNext()){
-                    VarId v = iter.next();
-                    if(currentFrame.equals(v.getFrame()) &&
-                            (currParentFrame == null && v.getParentFrame() == null || currParentFrame != null && currParentFrame.equals(v.getParentFrame()))){
-                        //Found one in current frame/iter
-                        varToExec = v;
-                        iter.remove();
-                        break;
-                    }
-                }
-                if(varToExec == null){
-                    //Scanned all, must be a transition to a new frame
-                    varToExec = availableForExec.remove();
+            predicate.setCurrentFrame(currentFrame);
+            predicate.setCurrentFrameIter(currentFrameIter);
+            predicate.setCurrParentFrame(currParentFrame);
+
+            ExecStep es = dt.getFirstNewAllSatisfiedMatching(predicate);
+            if(es == null){
+                es = dt.getNewAllSatisfied();
+
+                if(es.getType() == ExecType.OP) {
+                    //Trigger frame/iter transition
+                    FrameIter fi = es.getFrameIter();
+                    onFrameIterTransition(currentFrame, currentFrameIter, currParentFrame,
+                            fi.getFrame(), fi.getIteration(), fi.getParentFrame());
                 }
             }
 
-            //Determine if we've transition to a new frame
-            if (!currentFrame.equals(varToExec.getFrame()) || (currParentFrame != null && !currParentFrame.equals(varToExec.getParentFrame()))
-                    || (varToExec.getParentFrame() != null && !varToExec.getParentFrame().equals(currParentFrame))){
-                log.info("Detected transition: from ({} - {}) to ({} - {})", currentFrame, currParentFrame,
-                        varToExec.getFrame(), varToExec.getParentFrame());
+            log.trace("Beginning execution step {}: {}", step, es);
 
-                onFrameIterTransition(currentFrame, currParentFrame, varToExec.getFrame(), varToExec.getParentFrame());
+            FrameIter outFrameIter;
+            if(es.getType() == ExecType.CONSTANT || es.getType() == ExecType.VARIABLE ) {
+                VarId vid = newVarId(es.getName(), OUTER_FRAME, 0, null );
+                T arr = getConstantOrVariable(es.getName());
+                Preconditions.checkNotNull(arr, "Encountered null placeholder array for constant: %s", vid);
+                nodeOutputs.put(vid, arr);
+                dt.markSatisfied(es, true);
+                outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
+            } else if(es.getType() == ExecType.PLACEHOLDER) {
+                VarId vid = newVarId(es.getName(), OUTER_FRAME, 0, null);
+                nodeOutputs.put(vid, placeholderValues.get(es.getName()));
+                dt.markSatisfied(es, true);
+                outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
+            } else if(es.getType() == ExecType.OP){
+                String opName = es.getName();
+                SameDiffOp op = sameDiff.getOps().get(opName);
+                DifferentialFunction o = op.getOp();
 
-                currentFrame = varToExec.getFrame();
-                currParentFrame = varToExec.getParentFrame();
-            }
 
 
-
-            availableForExecSet.remove(varToExec);
-            if (nodeOutputs.containsKey(varToExec)) {
-                //Already processed this one. May occur if execution was triggered by a different output of a multi-output op
-                //But we'll still update its descendants to ensure they are marked as available
-                if (variables.contains(varToExec.getVariable())) {  //Check if required output
-                    out.put(varToExec.getVariable(), nodeOutputs.get(varToExec));
-                }
-                log.info("Available for exec: {}", availableForExec);
-                updateDescendentsForExec(step, varToExec);
-                continue;
-            }
-
-            //Get inputs to this variable. May be actual op inputs, or just control dependencies
-            Set<VarId> inputsToVar = execInputs.get(varToExec);
-            VarId allIterInputVar = newVarId(varToExec.getVariable(), varToExec.getFrame(), 0, varToExec.getParentFrame());
-            Set<VarId> inputsToVarAllIter = execInputsAllIter.get(allIterInputVar);
-            Set<String> constPhForVar = execConstInputs.get(varToExec.getVariable());
-
-            log.trace("Beginning execution step {}: variable {}", step, varToExec);
-
-            if (sameDiff.getVariable(varToExec.getVariable()).isPlaceHolder()) {
-                //Variable is placeholder: do lookup
-                nodeOutputs.put(varToExec, placeholderValues.get(varToExec.getVariable()));
-                updateDescendentsForExec(step, varToExec); //Check + mark descendants as available for exec
-                if (variables.contains(varToExec.getVariable())) {  //Check if required output
-                    out.put(varToExec.getVariable(), placeholderValues.get(varToExec.getVariable()));
-                }
-
-                FrameIter outFrame = new FrameIter(OUTER_FRAME, 0, null);
-//                recordArrayUses(Collections.singletonList(varToExec.getVariable()), outFrame, null, null, null);
-            } else if (sameDiff.getVariable(varToExec.getVariable()).isConstant() ||
-                    sameDiff.getVariable(varToExec.getVariable()).getVariableType() == VariableType.VARIABLE) {
-                //Variable is constant: do lookup
-                //OR variable is VARIABLE type - i.e., a trainable parameter...
-                T phArr = getConstantOrVariable(varToExec.getVariable());
-                Preconditions.checkNotNull(phArr, "Encountered null placeholder array for constant: %s", varToExec);
-                nodeOutputs.put(varToExec, phArr);
-                updateDescendentsForExec(step, varToExec); //Check + mark descendants as available for exec
-                if (variables.contains(varToExec.getVariable())) {  //Check if required output
-                    out.put(varToExec.getVariable(), phArr);
+                if (o instanceof Enter) {
+                    //Enter op: output is variable in a new (specified) frame, iteration 0.
+                    //Parent is current (input) frame
+                    String outFrame = ((Enter) o).getFrameName();
+                    outFrameIter = new FrameIter(outFrame, 0, es.getFrameIter());
+                } else if (o instanceof Exit) {
+                    //Exit node forwards input to parent frame
+                    String outFrame = es.getFrameIter().getParentFrame().getFrame();
+                    int outIter = es.getFrameIter().getParentFrame().getIteration();
+                    FrameIter outParentFrame = es.getFrameIter().getParentFrame().getParentFrame();
+                    outFrameIter = new FrameIter(outFrame, outIter, outParentFrame);
+                } else if (o instanceof NextIteration) {
+                    //NextIteration op: forwards its single input to its output varible in the current frame, but increments the iteration number
+                    outFrameIter = es.getFrameIter().clone();
+                    outFrameIter.setIteration(outFrameIter.getIteration() + 1);
+                } else {
+                    //Standard ops - output variable has same frame and iteration number as the input(s)
+                    //Also loopCond, merge, while, etc
+                    outFrameIter = es.getFrameIter();
                 }
 
-                FrameIter outFrame = new FrameIter(OUTER_FRAME, 0, null);
-//                recordArrayUses(Collections.singletonList(varToExec.getVariable()), outFrame, null, null,
-//                        Collections.singleton(varToExec.getVariable()));
-            } else if (sameDiff.getVariableOutputOp(varToExec.getVariable()) != null) {
-                //Variable is the output of an op -> execute op
-                String opName = sameDiff.getVariables().get(varToExec.getVariable()).getOutputOfOp();
 
-                //Execute op
-                FrameIter frameIter = varToExec.toFrameIter();
-                O parameterizedOp = getAndParameterizeOp(opName, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, placeholderValues, reqOutputVariablesSet);
-                T[] opOutputValues = getOutputs(parameterizedOp, frameIter, inputsToVar, inputsToVarAllIter, constPhForVar, listeners, at, batch, reqOutputVariablesSet);
+                //Resolve the inputs to this execution step (op) to actual arrays
+                Set<VarId> inputs = null;
+                Set<VarId> allIterInputs = null;
+                Set<String> constAndPhInputs = null;
+                DependencyList<ExecStep, ExecStep> dl = dt.getDependencies(es);
 
-
-                //Post execution: work out what is now available for exec
-                String[] opOutputVarNames = sameDiff.getOpById(opName).outputVariablesNames();
-
-                Preconditions.checkState(opOutputValues.length == opOutputVarNames.length, "Unexpected number of outputs from executed op %s:" +
-                                " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.length,
-                        opOutputVarNames.length, opOutputVarNames);
-
-                for (int i = 0; i < opOutputVarNames.length; i++) {
-                    if (opOutputValues[i] == null && (parameterizedOp instanceof Switch ||
-                            (parameterizedOp instanceof SameDiffOp && ((SameDiffOp) parameterizedOp).getOp() instanceof Switch))) {
-                        //Skip null - for switch op only. Switch op forwards input to only one of its outputs
-                        //All other ops should not
-                        continue;
-                    }
-
-                    Preconditions.checkNotNull(opOutputValues[i], "Encountered null output (output %s) for op %s at execution step %s", i, parameterizedOp.getClass().getSimpleName(), step);
-
-                    VarId outputVarId;
-                    boolean addDummyOutput = false;
-                    if (parameterizedOp instanceof Enter) {
-                        //Enter op: output is variable in a new (specified) frame, iteration 0.
-                        String frame = ((Enter) parameterizedOp).getFrameName();
-                        boolean isConstant = ((Enter) parameterizedOp).isConstant();
-                        FrameIter outParentFrame = varToExec.getParentFrame();
-                        if(isConstant && outParentFrame != null){
-                            //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
-                            //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
-                            // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
-                            outParentFrame = outParentFrame.clone();
-                            FrameIter toZero = outParentFrame;
-                            while(toZero != null){
-                                toZero.setIteration(0);
-                                toZero = toZero.getParentFrame();
+                List<String> inputNames = op.getInputsToOp();
+                if(inputs != null && !inputs.isEmpty()) {
+                    inputs = new HashSet<>();
+                    allIterInputs = new HashSet<>();
+                    constAndPhInputs = new HashSet<>();
+                    List<ExecStep> deps = dl.getDependencies();
+                    if(deps != null && !deps.isEmpty()) {
+                        for(ExecStep dep : deps) {
+                            switch (dep.getType()) {
+                                case OP:
+                                    inputs.add(es.toVarId());
+                                    break;
+                                case VARIABLE:
+                                    inputs.add(new VarId(dep.getName(), OUTER_FRAME, 0, null));
+                                    break;
+                                case CONSTANT:
+                                case PLACEHOLDER:
+                                    constAndPhInputs.add(dep.getName());
+                                    break;
+                                case SWITCH_L:
+                                case SWITCH_R:
+                                default:
+                                    throw new UnsupportedOperationException("Not yet implemented: " + dep.getType());
                             }
                         }
-                        outputVarId = newVarId(opOutputVarNames[i], frame, 0, outParentFrame);
-                        addDummyOutput = true;
-                    } else if (parameterizedOp instanceof Exit) {
-                        //Exit node forwards input to parent frame (which is already reflected in varToExec)
-                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration(), varToExec.getParentFrame());
-                        addDummyOutput = true;
-                    } else if (parameterizedOp instanceof NextIteration) {
-                        //NextIteration op: forwards its single input to its output varible in the current frame, but increments the iteration number
-                        //Note that varToExec has already had its iteration number incremented by 1 (relative to its input) in updateDescendentsForExec... so don't increment here
-                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration(), varToExec.getParentFrame());
-                        addDummyOutput = true;
-                    } else if (parameterizedOp instanceof LoopCond) {
-                        //LoopCond just forwards input to output
-                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration(), varToExec.getParentFrame());
-                        addDummyOutput = true;
-                    } else {
-                        //Standard ops - output variable has same frame and iteration number as the input(s)
-                        outputVarId = newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration(), varToExec.getParentFrame());
-                    }
-
-                    if(addDummyOutput){
-                        //For ops like enter/exit/nextiteration, these don't have a real output for that node
-                        //But, we still want an entry in nodeOutputs, which we also use for checking if an op has already been executed
-                        nodeOutputs.put(newVarId(opOutputVarNames[i], varToExec.getFrame(), varToExec.getIteration(), varToExec.getParentFrame()), null);
-                    }
-
-                    nodeOutputs.put(outputVarId, opOutputValues[i]);
-                    updateDescendentsForExec(step, outputVarId); //Check + mark descendants as available for exec
-
-                    if (variables.contains(opOutputVarNames[i])) {  //Check if required output
-                        out.put(opOutputVarNames[i], opOutputValues[i]);
                     }
                 }
+
+
+
+                O parameterizedOp = getAndParameterizeOp(opName, outFrameIter, inputs, allIterInputs, constAndPhInputs, placeholderValues, reqOutputVariablesSet);
+                T[] opOutputValues = getOutputs(parameterizedOp, outFrameIter, inputs, allIterInputs, constAndPhInputs, listeners, at, batch, reqOutputVariablesSet);
+                List<String> opOutVarNames = op.getOutputsOfOp();
+
+                Preconditions.checkState(opOutputValues.length == opOutVarNames.size(), "Unexpected number of outputs from executed op %s:" +
+                                " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.length,
+                        opOutVarNames.size(), opOutVarNames);
+
+                for( int i=0; i<opOutputValues.length; i++ ){
+                    String n = opOutVarNames.get(i);
+                    VarId vid = new VarId(n, outFrameIter.getFrame(), outFrameIter.getIteration(), outFrameIter.getParentFrame());
+                    nodeOutputs.put(vid, opOutputValues[i]);
+
+                    if(allRequired.contains(n)){
+                        out.put(n, opOutputValues[i]);
+                    }
+                }
+
+                //Post execution: update dependency tracker so we know what is available to execute next
+                if(o instanceof Switch){
+                    throw new IllegalStateException("Not yet implemented: SWITCH op");
+                } else {
+                    dt.markSatisfied(es, true);
+                }
+
             } else {
-                Variable v = sameDiff.getVariables().get(varToExec.getVariable());
-                throw new IllegalStateException("Unable to execute variable " + varToExec + " of type " + v.getVariable().getVariableType());
+                throw new RuntimeException("Unknown ExecStep: " + es);
             }
+
+            updateDescendantDeps(es, outFrameIter);
+
             step++;
         }
 
 
         //TODO under what circumstances should we clear the nodeOutputs map?
-        //TODO when should we close the workspace? (Might want to leave it open if we expect to re-use)
 
         out = postProcessOutput(out);
         return out;
+    }
+
+    protected void updateDescendantDeps(ExecStep justExecuted, FrameIter outFrameIter){
+
+        ExecType t = justExecuted.getType();
+        String n = justExecuted.getName();
+        if(justExecuted.getType() == ExecType.OP){
+            SameDiffOp op = sameDiff.getOps().get(n);
+            List<String> outNames = op.getOutputsOfOp();
+            for(String s : outNames){
+                Variable v = sameDiff.getVariables().get(s);
+                List<String> inputsToOps = v.getInputsForOp();
+                if(inputsToOps != null ){
+                    for(String opName : inputsToOps){
+                        if(subgraph.contains(opName)){
+                            //We've just executed X, and there's dependency X -> Y
+                            //But, there also might be a Z -> Y that we should mark as needed for Y
+
+
+
+                            ExecStep es = new ExecStep(ExecType.OP, opName, outFrameIter);
+
+                        }
+                    }
+                }
+            }
+        } else if( t == ExecType.VARIABLE || t == ExecType.CONSTANT || t == ExecType.PLACEHOLDER ){
+            Variable v = sameDiff.getVariables().get(n);
+            List<String> inputsToOps = v.getInputsForOp();
+            if(inputsToOps != null ){
+                for(String opName : inputsToOps){
+                    if(subgraph.contains(opName)){
+                        ExecStep es = new ExecStep(ExecType.OP, opName, outFrameIter);
+                    }
+                }
+            }
+        } else if(justExecuted.getType() == ExecType.SWITCH_L || justExecuted.getType() == ExecType.SWITCH_R){
+            throw new UnsupportedOperationException("Not yet implemented");
+        } else {
+            throw new UnsupportedOperationException("Not yet implemented");
+        }
+
+
     }
 
     protected void initSubgraph(Set<String> variables) {
@@ -491,14 +510,14 @@ public abstract class AbstractSession<T, O> {
                     // until after execution of some other ops (for example, in conditional operations)
                     numInputs += controlDeps.size();
                 }
-                if (numInputs == 0) {
-                    VarId vid = newVarId(varName, OUTER_FRAME, 0, null);
-                    if(!availableForExecSet.contains(vid)) {
-                        availableForExec.add(vid);
-                        availableForExecSet.add(vid);
-                    }
-                    execInputs.put(vid, new HashSet<VarId>());
-                }
+//                if (numInputs == 0) {
+//                    VarId vid = newVarId(varName, OUTER_FRAME, 0, null);
+//                    if(!availableForExecSet.contains(vid)) {
+//                        availableForExec.add(vid);
+//                        availableForExecSet.add(vid);
+//                    }
+//                    execInputs.put(vid, new HashSet<VarId>());
+//                }
                 subgraph.add(varName);
 
                 if(opName != null){
@@ -536,375 +555,6 @@ public abstract class AbstractSession<T, O> {
                 }
             }
         }
-    }
-
-    /**
-     * This method should be called for a variable once it's array is ready for use.
-     * For example, post op execution, etc
-     *
-     * @param execStep    Current execution step (mainly for debugging)
-     * @param executedVar Variable that was just executed
-     */
-    protected void updateDescendentsForExec(int execStep, VarId executedVar) {
-        log.info("updateDescendantsForExec(execStep=" + execStep + ", executedVar=" + executedVar + ")");
-
-        String varName = executedVar.getVariable();
-        Variable var = sameDiff.getVariables().get(executedVar.getVariable());
-        //Find any ops (or variables with control dependencies) that this is required for execution of and check if now available for exec
-        List<String> l = sameDiff.getVariables().get(executedVar.getVariable()).getInputsForOp();
-        String[] inputForOps = l == null ? null : l.toArray(new String[l.size()]);  //Just executed variable is input to these ops
-        List<String> controlDepForVars = var.getControlDepsForVar();                //Just executed variable is a control dependency for these variables
-        List<String> controlDepForOps = var.getControlDepsForOp();                  //Just executed variable is a control dependency for these ops
-
-
-        SDVariable v = var.getVariable();
-        boolean isConstOrPhInput = v.isPlaceHolder() || v.isConstant();
-
-        //After a variable becomes available, we should look at the ops this is an input to, and check if we can execute this op now...
-        if (inputForOps != null) {
-            for (String opName : inputForOps) {
-
-                DifferentialFunction fn = sameDiff.getOpById(opName);
-                if (fn instanceof Merge) {
-                    //Merge op: available for execution when *any* of its inputs are available. But only mark it for exec once...
-                    List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
-                    Preconditions.checkState(opOutputs.size() == 1, "Expected only 1 output variable for merge op, got %s", opOutputs);
-                    VarId outVarId = newVarId(opOutputs.get(0), executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                    if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable()) && !availableForExecSet.contains(outVarId)) {
-                        availableForExec.add(outVarId);
-                        availableForExecSet.add(outVarId);
-                        log.trace("Marked merge op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
-                    }
-
-                    //Mark that we need the specified input to calculate this output
-                    addToExecInputs(isConstOrPhInput, executedVar, outVarId);
-                    continue;
-                } else if (fn instanceof Enter) {
-                    //Enter node: available for exec when any of its inputs are available for exec
-                    // Note input feeds from one frame to another
-                    List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
-                    Preconditions.checkState(opOutputs.size() == 1, "Expected only 1 output variable for enter op, got %s", opOutputs);
-                    Enter e = (Enter) fn;
-                    boolean isConstant = e.isConstant();
-                    VarId outVarId = newVarId(opOutputs.get(0), e.getFrameName(), 0, executedVar.toFrameIter());     //Note: parent frame of output op is enter var's *current* frame
-
-                    if(isConstant && executedVar.getParentFrame() != null){
-                        //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
-                        //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
-                        // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
-                        outVarId.setParentFrame(outVarId.getParentFrame().clone());
-                        FrameIter fi = outVarId.getParentFrame();
-                        while(fi != null){
-                            fi.setIteration(0);
-                            fi = fi.getParentFrame();
-                        }
-                    }
-
-                    if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable()) && !availableForExecSet.contains(outVarId)) {
-                        availableForExec.add(outVarId);
-                        availableForExecSet.add(outVarId);
-                        log.trace("Marked enter op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
-                    }
-
-                    //Also record the parent frame: we'll need this when we get to the corresponding exit ops
-                    frameParents.put(e.getFrameName(), executedVar.toFrameIter());
-
-                    //Mark that we need the specified input to calculate this output
-                    addToExecInputs(isConstOrPhInput, executedVar, outVarId);
-                    continue;
-                } else if (fn instanceof Exit) {
-                    //Exit node forwards input to parent frame
-                    List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
-                    FrameIter parentFrame = frameParents.get(executedVar.getFrame());
-                    Preconditions.checkNotNull(parentFrame, "Parent frame must not be null for exit op: variable to exec is %s", executedVar);
-
-                    VarId outVarId = new VarId(opOutputs.get(0), parentFrame.getFrame(), parentFrame.getIteration(), executedVar.getParentFrame().getParentFrame());    //Parent frame of output is parent of current parent
-                    if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable()) && !availableForExecSet.contains(outVarId)) {
-                        availableForExec.add(outVarId);
-                        availableForExecSet.add(outVarId);
-                        log.trace("Marked Exit op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
-                    }
-
-                    addToExecInputs(isConstOrPhInput, executedVar, outVarId);
-                    continue;
-                } else if (fn instanceof NextIteration) {
-                    //NextIteration is available for execution when its single input is available
-                    //NextIteration op: forwards its single input to the output of the current frame, but increments the iteration number
-                    List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
-                    Preconditions.checkState(opOutputs.size() == 1, "Expected exactly 1 output for NextIteration op: got %s", opOutputs);
-                    VarId outVarId = newVarId(opOutputs.get(0), executedVar.getFrame(), executedVar.getIteration() + 1, executedVar.getParentFrame());
-
-                    if (!nodeOutputs.containsKey(outVarId) && subgraph.contains(outVarId.getVariable()) && !availableForExecSet.contains(outVarId)) {
-                        availableForExec.add(outVarId);
-                        availableForExecSet.add(outVarId);
-                        log.trace("Marked NextIteration op ({}) variable {} as available for execution: input {} is now available", opName, outVarId, executedVar);
-                    }
-
-                    //Mark that we need the specified input to calculate this output
-                    addToExecInputs(isConstOrPhInput, executedVar, outVarId);
-                    continue;
-                }
-                //Note for LoopCond: just forwards input to output - so basically handle it the same as other ops here
-
-
-                //Can execute this op - and hence get it's output variables - if all inputs (and control deps) are available
-                String[] inputsThisOp = fn.argNames();
-                boolean allInputsAvailable = true;
-                if (inputsThisOp != null) {
-                    allInputsAvailable = allInputsAvailable(execStep, inputsThisOp, executedVar);
-                }
-
-                //Check Op control dependencies
-                List<String> opControlDeps = sameDiff.getOps().get(opName).getControlDeps();
-                if (opControlDeps != null && allInputsAvailable) {
-                    for (String cd : opControlDeps) {
-                        VarId vcd = newVarId(cd, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                        if (!nodeOutputs.containsKey(vcd)) {
-                            allInputsAvailable = false;
-                            break;
-                        }
-                    }
-                }
-
-                List<String> opOutputs = sameDiff.getOps().get(opName).getOutputsOfOp();
-                if (opOutputs != null) {
-
-                    for (String s : opOutputs) {
-                        //The input (for normal ops - not Enter/Exit/NextIteration) have the same frame and iteration number as the just executed var
-                        //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame  (unless variable control dep exists)
-                        //Exception 2 to this: placeholders. As above
-                        SDVariable sdv = sameDiff.getVariable(s);
-                        Variable variable = sameDiff.getVariables().get(s);
-                        VarId outVarId;
-                        if (sdv.isConstant() || sdv.isPlaceHolder()) {
-                            //Constant
-                            if(variable.getControlDeps() == null || var.getControlDeps().isEmpty()){
-                                //Standard case - do a lookup of placeholder/constant
-                                outVarId = newVarId(s, OUTER_FRAME, 0, null);
-                            } else {
-                                //Edge case: control dependency x -> constant exists
-                                //We should look up based on x's frame/iteration
-                                outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                            }
-                        } else {
-                            //Normal (non-constant)
-                            outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                        }
-
-                        //Mark that we need the specified input to calculate this output
-                        addToExecInputs(isConstOrPhInput, executedVar, outVarId);
-
-                        //Check variable control dependencies, for each of the op outputs
-                        if(allInputsAvailable && variable.getControlDeps() != null && !variable.getControlDeps().isEmpty()){
-                            //If one of the op outputs has a control dependency input, make sure this is available
-                            // before executing the op
-                            //For example, if z=add(x,y) and control dependency A->z exists, then don't execute op until A is available
-                            for(String cd : variable.getControlDeps()){
-                                Variable cdVar = sameDiff.getVariables().get(cd);
-                                VarId cdVarId = null;
-                                if (cdVar.getVariable().isConstant() || cdVar.getVariable().isPlaceHolder()) {
-                                    //Constant
-                                    if(variable.getControlDeps() == null || var.getControlDeps().isEmpty()){
-                                        //Standard case - do a lookup of placeholder/constant
-                                        cdVarId = newVarId(cd, OUTER_FRAME, 0, null);
-                                    } else {
-                                        //Edge case: control dependency x -> constant -> thisOutput exists
-                                        //We should look up based on x's frame/iteration
-                                        cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                                    }
-                                } else {
-                                    //Normal (non-constant)
-                                    cdVarId = newVarId(cd, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                                }
-                                allInputsAvailable &= nodeOutputs.containsKey(cdVarId);
-                                if(!allInputsAvailable)
-                                    break;
-                            }
-                        }
-                    }
-
-                    if (allInputsAvailable) {
-                        //Op can be executed -> variables as output are available for exec
-
-                        for (String s : opOutputs) {
-                            if (!subgraph.contains(s))
-                                continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
-                            VarId vid = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                            if(!availableForExecSet.contains(vid)) {
-                                availableForExec.add(vid);
-                                availableForExecSet.add(vid);
-                                log.trace("Marked variable as available for execution: {} - output of op {} ({}) with op inputs {}", vid, opName,
-                                        fn.getClass().getSimpleName(), (inputsThisOp == null ? "<none>" : Arrays.toString(inputsThisOp)));
-                            }
-                        }
-                    }
-                }
-
-            }
-        }
-
-        //Also check variable control dependencies... if control dependency varX->varY exists and varY is a constant/placeholder/variable,
-        // then it's not going to be triggered by the op-based check above
-        if(controlDepForVars != null){
-            for(String s : controlDepForVars){
-                if (!subgraph.contains(s))
-                    continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
-
-                SDVariable depFor = sameDiff.getVariable(s);
-                if(depFor.getVariableType() != VariableType.ARRAY){
-                    //Control dependency executedVar -> s exists, where "s" is not the output of an op
-                    //Even thought this is a constant, we'll inherit the frame and iteration from the control dependency
-                    // otherwise, we lose this frame/iteration information for any downstream variables using the constant within a frame
-                    VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                    if(!availableForExecSet.contains(outVarId)) {
-                        availableForExec.add(outVarId);
-                        availableForExecSet.add(outVarId);
-                        log.trace("Marked variable as available for execution: {} - control dependency {} -> {} exists", outVarId, executedVar.getVariable(), s);
-                    }
-                } else {
-                    //Another edge case: OpX has output varY (with no inputs), and control dependency executedVar -> varY exists
-                    //We should check if OpX is now available for execution...
-                    //Similarly, if we have OpX with inputs, but we're only waiting on a varible control dependency Z -> X
-                    // then we might not get triggered as available for exec above either
-                    String opName = sameDiff.getVariables().get(s).getOutputOfOp();
-                    if(opName != null){
-                        SameDiffOp op = sameDiff.getOps().get(opName);
-                        boolean allInputsAvailable = true;
-                        if(op.getInputsToOp() != null && !op.getInputsToOp().isEmpty()){
-                            List<String> inputList = op.getInputsToOp();
-                            allInputsAvailable = allInputsAvailable(execStep, inputList.toArray(new String[inputList.size()]), executedVar);
-                        }
-
-                        if(allInputsAvailable && op.getControlDeps() != null){
-                            for(String cd : op.getControlDeps()){
-                                VarId vid = newVarId(cd, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());     //Note: is array type, therefore has same frame/iter as parent
-                                allInputsAvailable &= nodeOutputs.containsKey(vid);
-                                if(!allInputsAvailable)
-                                    break;
-                            }
-                        }
-                        if(allInputsAvailable){
-                            for(String opOutput : op.getOutputsOfOp()){
-                                Variable v2 = sameDiff.getVariables().get(opOutput);
-                                if(v2.getControlDeps() != null){
-                                    for(String s2 : v2.getControlDeps()){
-                                        VarId vid = newVarId(s2, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());     //Note: is array type, therefore has same frame/iter as parent
-                                        allInputsAvailable &= nodeOutputs.containsKey(vid);
-                                        if(!allInputsAvailable)
-                                            break;
-                                    }
-                                }
-                            }
-                        }
-
-                        if(allInputsAvailable){
-                            VarId outVarId = newVarId(s, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                            if(!availableForExecSet.contains(outVarId)) {
-                                availableForExec.add(outVarId);
-                                log.trace("Marked variable as available for execution: {} - is output of op {} with no inputs (but has control dependencies)", outVarId, op.getName());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-
-        //Edge case: if control dependency varX->opY exists, and opY doesn't have any inputs, it also can't be triggered
-        // (made available for execution) by any of the previous checks. For any ops that DO have inputs, they will
-        // be triggered already
-        if(controlDepForOps != null){
-            for(String opName : controlDepForOps){
-                SameDiffOp op = sameDiff.getOps().get(opName);
-                if(op.getInputsToOp() == null || op.getInputsToOp().isEmpty()){
-                    for(String out : op.getOutputsOfOp()){
-                        if (!subgraph.contains(out))
-                            continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
-
-                        //TODO is it possible to have both variable and op control dependencies??
-                        VarId outVarId = newVarId(out, OUTER_FRAME, 0, null);
-                        if(!availableForExecSet.contains(outVarId)) {
-                            availableForExec.add(outVarId);
-                            availableForExecSet.add(outVarId);
-                            log.trace("Marked variable as available for execution: {} - op control dependency variable {} -> op {} exists", outVarId, executedVar.getVariable(), opName);
-                        }
-                    }
-                } else {
-                    //If the control dependency was the LAST input to be made available, then it will be triggered here
-                    List<String> inputs = op.getInputsToOp();
-                    List<String> allReqInputs = new ArrayList<>();
-                    if(inputs != null){
-                        allReqInputs.addAll(inputs);
-                    }
-                    List<String> controlDeps = op.getControlDeps(); //Can't be null/empty here, due to outer if
-                    allReqInputs.addAll(controlDeps);
-                    boolean allAvailable = allInputsAvailable(execStep, allReqInputs.toArray(new String[0]), executedVar);
-
-                    if(allAvailable) {
-                        for (String out : op.getOutputsOfOp()) {
-                            if (!subgraph.contains(out))
-                                continue;       //Don't need this variable to calculate requested outputs - so don't mark as available for execution
-
-                            VarId outVarId = newVarId(out, OUTER_FRAME, 0, null);   //TODO is this correct??
-                            if(!availableForExecSet.contains(outVarId)) {
-                                availableForExec.add(outVarId);
-                                availableForExecSet.add(outVarId);
-                                log.trace("Marked variable as available for execution: {} - op control dependency variable {} -> op {} exists and other inputs available", outVarId, executedVar.getVariable(), opName);
-                            }
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    protected boolean allInputsAvailable(int execStep, String[] inputsThisOp, VarId executedVar){
-        for (String in : inputsThisOp) {
-            //The input (for normal ops - not Enter/Exit/NextIteration) have the same frame and iteration number as the just executed var
-            //Exception 1 to this: constants. If variable is a constant, then it's always iteration 0 of the main frame (unless variable control dep exists)
-            //Exception 2 to this: placeholders. As above
-            //TODO Add SameDiff.isConstant(String) method... or SDVariable.isConstant() (or both)
-            SDVariable sdv = sameDiff.getVariable(in);
-            Variable variable = sameDiff.getVariables().get(in);
-            VarId vid;
-            boolean nestedWhile = false;
-            if (sdv.isConstant() || sdv.isPlaceHolder()) {
-                //Constant
-                if(variable.getControlDeps() == null || variable.getControlDeps().isEmpty()){
-                    //Standard case - do a lookup of placeholder/constant
-                    vid = newVarId(in, OUTER_FRAME, 0, null);
-                } else {
-                    //Edge case: control dependency x -> constant exists
-                    //We should look up based on x's frame/iteration
-                    vid = newVarId(in, executedVar.getFrame(), executedVar.getIteration(), executedVar.getParentFrame());
-                }
-            } else {
-                //Normal (non-constant)
-                //Edge case: "Enter" nodes always have iteration 0 by definition. In some TF graphs/loops, the enter node
-                // is used in multiple iterations (like, a constant in a loop condition) - not just the first iteration
-                int iter = executedVar.getIteration();
-                FrameIter parentFrame = executedVar.getParentFrame();
-                if(sdv.getVariableType() == VariableType.ARRAY && sameDiff.getOps().get(variable.getOutputOfOp()).getOp() instanceof Enter){
-                    iter = 0;
-                    Enter e = (Enter)sameDiff.getOps().get(variable.getOutputOfOp()).getOp();
-                    if(e.isConstant()){
-                        //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
-                        //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
-                        // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
-                        parentFrame = parentFrame.clone();
-                        FrameIter toZero = parentFrame;
-                        while(toZero != null){
-                            toZero.setIteration(0);
-                            toZero = toZero.getParentFrame();
-                        }
-                    }
-                }
-                vid = newVarId(in, executedVar.getFrame(), iter, parentFrame);
-            }
-            if (!nodeOutputs.containsKey(vid)) {
-                return false;
-            }
-        }
-        return true;
     }
 
     /**
@@ -1016,12 +666,8 @@ public abstract class AbstractSession<T, O> {
         }
     }
 
-//    protected void recordArrayUses(List<String> forVariables, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
-//                                   Set<String> constAndPhInputs){
-//        //No-op by default
-//    }
 
-    protected void onFrameIterTransition(String from, FrameIter parentFrom, String to, FrameIter parentTo){
+    protected void onFrameIterTransition(String fromFrame, int fromIter, FrameIter parentFrom, String toFrame, int toIter, FrameIter parentTo){
         //No-op by default
     }
 
@@ -1093,4 +739,53 @@ public abstract class AbstractSession<T, O> {
             return new FrameIter(frame, iteration, (parentFrame == null ? null : parentFrame.clone()));
         }
     }
+
+    /**
+     * Note on SWITCH_L and SWITCH_R: This is a bit of a hack to account for the fact that only one of
+     * the branches (left or right) will ever be available; without this, once the switch op is executed, we'll
+     * (incorrectly) conclude that *both* branches can be executed
+     */
+    protected enum ExecType {OP, VARIABLE, CONSTANT, PLACEHOLDER, SWITCH_L, SWITCH_R, EXEC_START};
+
+    @Getter
+    @EqualsAndHashCode
+    protected static class ExecStep {
+        protected final ExecType type;
+        protected final String name;
+        protected final FrameIter frameIter;
+
+        protected ExecStep(@NonNull ExecType execType, @NonNull String name, FrameIter frameIter){
+            this.type = execType;
+            this.name = name;
+            this.frameIter = frameIter;
+        }
+
+        protected VarId toVarId(){
+            return new VarId(name, frameIter.getFrame(), frameIter.getIteration(), frameIter.getParentFrame());
+        }
+
+        @Override
+        public String toString(){
+            return "ExecStep(" + type + ",name=\"" + name + "\"," + frameIter + ")";
+        }
+    }
+
+    @Data
+    @AllArgsConstructor
+    @NoArgsConstructor
+    protected class ExecStepPredicate implements Predicate<ExecStep> {
+
+        protected String currentFrame;
+        protected int currentFrameIter;
+        protected FrameIter currParentFrame;
+
+        @Override
+        public boolean test(ExecStep execStep) {
+            return currentFrame.equals(execStep.getFrameIter().getFrame()) &&
+                    currentFrameIter == execStep.getFrameIter().getIteration() &&
+                    (currParentFrame == null && execStep.getFrameIter().getParentFrame() == null ||
+                            currParentFrame.equals(execStep.getFrameIter().getParentFrame()));
+        }
+    };
+
 }

@@ -3,6 +3,8 @@ package org.nd4j.autodiff.samediff.internal;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.function.Function;
+import org.nd4j.linalg.function.Predicate;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
@@ -244,6 +246,31 @@ public abstract class AbstractDependencyTracker<T, D> {
         List<T> ret = new ArrayList<>(allSatisfiedQueue);
         allSatisfiedQueue.clear();
         return ret;
+    }
+
+    public T getFirstNewAllSatisfiedMatching(@NonNull Predicate<T> predicate){
+        Preconditions.checkState(hasNewAllSatisfied(), "No new/unprocessed dependents that are all satisfied");
+
+        T t = allSatisfiedQueue.peek();
+        if(predicate.test(t)){
+            t = allSatisfiedQueue.remove();
+            allSatisfied.remove(t);
+            return t;
+        }
+
+        if(allSatisfiedQueue.size() > 1){
+            Iterator<T> iter = allSatisfiedQueue.iterator();
+            while(iter.hasNext()){
+                t = iter.next();
+                if(predicate.test(t)){
+                    iter.remove();
+                    allSatisfied.remove(t);
+                    return t;
+                }
+            }
+        }
+
+        return null;    //None match predicate
     }
 
 }
