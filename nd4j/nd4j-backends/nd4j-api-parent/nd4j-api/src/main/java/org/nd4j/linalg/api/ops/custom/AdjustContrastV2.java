@@ -1,0 +1,19 @@
+package org.nd4j.linalg.api.ops.custom;
+
+import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+
+public class AdjustContrastV2 extends BaseAdjustContrast {
+
+    public AdjustContrastV2() {super();}
+
+    public AdjustContrastV2(INDArray in, double factor, INDArray out) {
+        super(in, factor, out);
+    }
+
+    @Override
+    public String opName() {
+        return "adjust_contrast_v2";
+    }
+}
