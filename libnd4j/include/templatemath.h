@@ -731,28 +731,29 @@ namespace nd4j {
         template<typename T>
         math_def inline void nd4j_swap(T &val1, T &val2) {
             T temp = val1; val1=val2; val2=temp;
-		};
+        };
 
-//        template <typename X, typename Z>
-//        math_def inline Z nd4j_gamma(X a) {
-//
-//        }
-		template <typename X, typename Z>
-		math_def inline Z nd4j_igamma(X a, X x) {
-            Z aim = nd4j_pow<X, X, Z>(x, a) / (nd4j_exp<X,Z>(x) * std::tgamma(a));
+        template <typename X, typename Z>
+        math_def inline Z nd4j_gamma(X a) {
+            return (Z)std::tgamma(a);
+        }
+
+        template <typename X, typename Y, typename Z>
+        math_def inline Z nd4j_igamma(X a, Y x) {
+            Z aim = nd4j_pow<X, X, Z>(x, a) / (nd4j_exp<X, Z>(x) * nd4j_gamma<Y, Z>(a));
             auto sum = Z(0.);
             auto denom = Z(1.);
-            for (auto i = 0; Z(1./denom) > Z(1.0e-6); i++) {
+            for (int i = 0; Z(1./denom) > Z(1.0e-12); i++) {
                 denom *= (a + i);
-                sum += nd4j_pow<X, int>(x, i) / denom;
+                sum += nd4j_pow<X, int, Z>(x, i) / denom;
             }
             return aim * sum;
-		}
+        }
 
-		template <typename X, typename Z>
-		math_def inline Z nd4j_igammac(X a, X x) {
-		    return Z(1.) - nd4j_igamma<X, Z>(a, x);
-		}
+        template <typename X, typename Y, typename Z>
+        math_def inline Z nd4j_igammac(X a, Y x) {
+            return Z(1.) - nd4j_igamma<X, Y, Z>(a, x);
+        }
 
 #ifdef __CUDACC__
 		namespace atomics {
