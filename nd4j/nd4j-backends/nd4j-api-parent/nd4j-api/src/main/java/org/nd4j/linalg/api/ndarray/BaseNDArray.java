@@ -4916,6 +4916,8 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public String toString(@NonNull NDArrayStrings options){
+        if(wasClosed())
+            return "<Closed NDArray, dtype=" + dataType() + ", shape=" + Arrays.toString(shape()) + ">";
         if (!isCompressed() && !preventUnpack)
             return options.format(this);
         else if (isCompressed() && compressDebug)
