@@ -2404,10 +2404,10 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String, INDArray> phMap = new HashMap<>();
         phMap.put(fn.getGradPlaceholderName(), grad);
 
-        log.info("--------------- sd.execAndEndResult() ---------------");
-        sd.execAndEndResult();
+        log.info("--------------- out.eval() ---------------");
+        out.eval();
         log.info("--------------- sd.execBackwards() #1 ---------------");
-        sd.execBackwards(phMap);
+        sd.calculateGradients(phMap, "in", "W", "b");
 
         log.info("--------------- sd.execBackwards() #2 ---------------");
         System.out.println(sd.getFunction("grad").summary());

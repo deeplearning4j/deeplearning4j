@@ -50,6 +50,9 @@ public abstract class AbstractDependencyTracker<T, D> {
     public void clear(){
         dependencies.clear();
         orDependencies.clear();
+        reverseDependencies.clear();
+        reverseOrDependencies.clear();
+        satisfiedDependencies.clear();
         allSatisfied.clear();
         allSatisfiedQueue.clear();
     }
@@ -222,9 +225,9 @@ public abstract class AbstractDependencyTracker<T, D> {
             orDependencies.put(y, new HashSet<Pair<D,D>>());
 
         if(!reverseOrDependencies.containsKey(x1))
-            reverseDependencies.put(x1, newTSet());
+            reverseOrDependencies.put(x1, newTSet());
         if(!reverseOrDependencies.containsKey(x2))
-            reverseDependencies.put(x2, newTSet());
+            reverseOrDependencies.put(x2, newTSet());
 
         orDependencies.get(y).add(new Pair<>(x1, x2));
         reverseOrDependencies.get(x1).add(y);

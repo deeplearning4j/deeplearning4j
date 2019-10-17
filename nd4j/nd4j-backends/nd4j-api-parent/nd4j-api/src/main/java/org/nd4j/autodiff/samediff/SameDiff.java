@@ -6336,7 +6336,7 @@ public class SameDiff extends SDBaseOps {
         int start = 1;
 
         // if we already have a name like "op_2", start from trying "op_3"
-        if (base.contains("_")) {
+        if (base.contains("_") && base.matches(".*_\\d+")) {
             // extract number used to generate base
             Matcher num = Pattern.compile("(.*)_(\\d+)").matcher(base);
             // extract argIndex used to generate base

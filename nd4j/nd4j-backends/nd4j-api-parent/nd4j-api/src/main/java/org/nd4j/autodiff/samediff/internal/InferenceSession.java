@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
+import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
@@ -206,8 +207,8 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                     //TODO do switch or merge need special handling also?
                     if(forOp.getOp() instanceof Enter) {
                         //Need whole frame dependency
-
-                        throw new UnsupportedOperationException("Not yet implemented: enter ops");
+                        Dep d = new FrameDep(outputFrameIter.getFrame(), outputFrameIter.getParentFrame());
+                        arrayUseTracker.addDependency(out[i], d);
                     } else {
                         //All other ops...
                         Dep d = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
@@ -329,7 +330,9 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 VarId vid = newVarId(s, outputFrameIter);
                 if (nodeOutputs.containsKey(vid)) {
                     log.trace("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
-                    return new INDArray[]{nodeOutputs.get(vid)};
+                    INDArray arr = nodeOutputs.get(vid);
+                    Preconditions.checkState(arr != null, "Could not find output array for %s", vid);
+                    return new INDArray[]{arr};
                 }
             }
             throw new IllegalStateException("Merge node " + m.getOwnName() + " has no available inputs (all inputs: " + Arrays.toString(in) +
@@ -347,8 +350,14 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         } else if(op instanceof BaseTensorOp) {
             //TensorOps - special cases...
             return getOutputsHelperTensorArrayOps(op, outputFrameIter, opInputs, allIterInputs);
-        } else if(op instanceof GradientBackwardsMarker){
+        } else if(op instanceof GradientBackwardsMarker) {
             return new INDArray[]{Nd4j.scalar(1.0f)};
+        } else if(op instanceof ExternalErrorsFunction){
+            ExternalErrorsFunction fn = (ExternalErrorsFunction)op;
+            String n = fn.getGradPlaceholderName();
+            INDArray arr = nodeOutputs.get(new VarId(n, OUTER_FRAME, 0, null));
+            Preconditions.checkState(arr != null, "Could not find external errors placeholder array: %s", arr);
+            return new INDArray[]{arr.dup()};
         } else if(op instanceof CustomOp){
             CustomOp c = (CustomOp)op;
             Nd4j.getExecutioner().exec(c);

@@ -26,6 +26,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 
 import java.util.*;
@@ -52,8 +53,6 @@ public abstract class AbstractSession<T, O> {
     protected final Map<VarId, T> nodeOutputs = new HashMap<>();
     @Getter
     protected final Map<VarId, List<T>> tensorArrays = new HashMap<>(); //Stores the outputs for a TensorArray ops
-//    protected final Queue<VarId> availableForExec = new LinkedList<>();
-//    protected final Set<VarId> availableForExecSet = new HashSet<>();       //Same content as the queue, but used for O(1) contains instead of ordered removal
     protected final DependencyTracker<ExecStep, ExecStep> dt = new DependencyTracker<>();
 
     /**
@@ -64,40 +63,7 @@ public abstract class AbstractSession<T, O> {
     protected final Set<String> subgraph = new HashSet<>();
 
     protected final Set<String> subgraphOps = new HashSet<>();
-
-    /**
-     * Stores what variables are required to calculate the specific variable. These inputs could be inputs to an op that
-     * calculates the variable's value, or it could be a control dependenci
-     * Keys: variable (in specific frame/iteration) to be executed
-     * Values: inputs to that node (inc. frame and iteration), unordered - needed for execution of op giving variable
-     */
-    protected final Map<VarId, Set<VarId>> execInputs = new HashMap<>();
-
-    /**
-     * As per execInputs map - with the different that the iteration number should be ignored (i.e., always 0)
-     * Reason: Enter nodes - these are executed once
-     * Example: EnterOp(x) -> LoopCondition(less(x,y)): less op requires "X" on all iterations which is the output of the
-     * enter op, which is only executed for iteration 0 in a frame.
-     */
-    protected final Map<VarId, Set<VarId>> execInputsAllIter = new HashMap<>();
-
-    /**
-     * Contains the set set of constant and placeholders inputs
-     * Essentially the same as the execInputs map, but the constants and placeholders are used for calculating all instances
-     * of a variable - i.e., the input (constant/placeholder) applies to all frames and iterations.
-     * Keys: variable (any/all frame/iteration) to be executed
-     * Values: constant or placeholder needed for execution of op giving variable
-     */
-    protected final Map<String, Set<String>> execConstInputs = new HashMap<>();
-    /**
-     * Map for exit ops. This is used to determine where an exit op should exit to.
-     * Values added on enter ops. Note that it's not sufficient to
-     * Key: frame name (for enter/exit nodes).
-     * Value: parent frame name + iteration
-     */
-    @Getter
-    protected final Map<String, FrameIter> frameParents = new HashMap<>();
-
+    protected final Set<String> zeroInputOpsInSubgraph = new HashSet<>();
 
     public AbstractSession(@NonNull SameDiff sameDiff) {
         this.sameDiff = sameDiff;
@@ -188,9 +154,6 @@ public abstract class AbstractSession<T, O> {
         dt.clear();
         subgraph.clear();
         subgraphOps.clear();
-        execInputs.clear();
-        execInputsAllIter.clear();
-        execConstInputs.clear();
         nodeOutputs.clear();            //TODO eventually we'll have (optional) cache here for later execs... main challenge is detecting in-place array modifications and invalidating old results. And overall memory use...
         tensorArrays.clear();
 
@@ -245,6 +208,7 @@ public abstract class AbstractSession<T, O> {
         }
 
         //Mark the (required) variables, constants and placeholders as available via dependency tracker
+        //And also any "zero dependency" ops - i.e., those without any inputs
         ExecStep start = new ExecStep(ExecType.EXEC_START, "", null);   //Dummy dependency to trigger the variables and constants
         for(SDVariable v : sameDiff.variables()){
             VariableType vt = v.getVariableType();
@@ -253,6 +217,14 @@ public abstract class AbstractSession<T, O> {
                 ExecStep es = new ExecStep(et, v.getVarName(), new FrameIter(OUTER_FRAME, 0, null));
                 dt.addDependency(es, start);
             }
+        }
+        for(String s : phNames){
+            ExecStep es = new ExecStep(ExecType.PLACEHOLDER, s, new FrameIter(OUTER_FRAME, 0, null));
+            dt.addDependency(es, start);
+        }
+        for(String s : zeroInputOpsInSubgraph){
+            ExecStep es = new ExecStep(ExecType.OP, s, new FrameIter(OUTER_FRAME, 0, null));
+            dt.addDependency(es, start);
         }
         dt.markSatisfied(start, true);
 
@@ -331,18 +303,26 @@ public abstract class AbstractSession<T, O> {
             log.trace("Beginning execution step {}: {}", step, es);
 
             FrameIter outFrameIter;
+            boolean skipDepUpdate = false;      //Only used for Switch ops, which have slighly different handling...
+            boolean skipMarkSatisfied = false;  //Only for enter ops, because of different frame/iter
             if(es.getType() == ExecType.CONSTANT || es.getType() == ExecType.VARIABLE ) {
                 VarId vid = newVarId(es.getName(), OUTER_FRAME, 0, null );
                 T arr = getConstantOrVariable(es.getName());
                 Preconditions.checkNotNull(arr, "Encountered null placeholder array for constant: %s", vid);
                 nodeOutputs.put(vid, arr);
-                dt.markSatisfied(es, true);
                 outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
+                if(allRequired.contains(es.getName())){
+                    //User requested const/variable as one of the outputs
+                    out.put(es.getName(), arr);
+                }
             } else if(es.getType() == ExecType.PLACEHOLDER) {
                 VarId vid = newVarId(es.getName(), OUTER_FRAME, 0, null);
                 nodeOutputs.put(vid, placeholderValues.get(es.getName()));
-                dt.markSatisfied(es, true);
                 outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
+                if(allRequired.contains(es.getName())){
+                    //User requested const/variable as one of the outputs
+                    out.put(es.getName(), placeholderValues.get(es.getName()));
+                }
             } else if(es.getType() == ExecType.OP){
                 String opName = es.getName();
                 SameDiffOp op = sameDiff.getOps().get(opName);
@@ -379,7 +359,7 @@ public abstract class AbstractSession<T, O> {
                 DependencyList<ExecStep, ExecStep> dl = dt.getDependencies(es);
 
                 List<String> inputNames = op.getInputsToOp();
-                if(inputs != null && !inputs.isEmpty()) {
+                if(inputNames != null && !inputNames.isEmpty()) {
                     inputs = new HashSet<>();
                     allIterInputs = new HashSet<>();
                     constAndPhInputs = new HashSet<>();
@@ -388,7 +368,17 @@ public abstract class AbstractSession<T, O> {
                         for(ExecStep dep : deps) {
                             switch (dep.getType()) {
                                 case OP:
-                                    inputs.add(es.toVarId());
+                                    //The current execution step depends on one output of the op "dep"
+                                    SameDiffOp toExecOp = sameDiff.getOps().get(es.getName());
+                                    List<String> inputsToExecOp = toExecOp.getInputsToOp();
+                                    SameDiffOp inputOp = sameDiff.getOps().get(dep.getName());
+                                    List<String> inputOpOutNames = inputOp.getOutputsOfOp();
+                                    for(String s : inputsToExecOp){
+                                        if(inputOpOutNames.contains(s)){
+                                            VarId vid = new VarId(s, dep.getFrameIter().getFrame(), dep.getFrameIter().getIteration(), dep.getFrameIter().getParentFrame());
+                                            inputs.add(vid);
+                                        }
+                                    }
                                     break;
                                 case VARIABLE:
                                     inputs.add(new VarId(dep.getName(), OUTER_FRAME, 0, null));
@@ -417,6 +407,11 @@ public abstract class AbstractSession<T, O> {
                         opOutVarNames.size(), opOutVarNames);
 
                 for( int i=0; i<opOutputValues.length; i++ ){
+                    if(opOutputValues[i] == null && op.getOp() instanceof Switch){
+                        //Switch op only forwards the input to one of the outputs
+                        continue;
+                    }
+
                     String n = opOutVarNames.get(i);
                     VarId vid = new VarId(n, outFrameIter.getFrame(), outFrameIter.getIteration(), outFrameIter.getParentFrame());
                     nodeOutputs.put(vid, opOutputValues[i]);
@@ -428,16 +423,53 @@ public abstract class AbstractSession<T, O> {
 
                 //Post execution: update dependency tracker so we know what is available to execute next
                 if(o instanceof Switch){
-                    throw new IllegalStateException("Not yet implemented: SWITCH op");
-                } else {
-                    dt.markSatisfied(es, true);
+                    /*
+                    Switch is a special case: only one output/branch is considered to exist post execution.
+                    Unlike every other type of op, only 1 of 2 output arrays is actually executed
+                     */
+                    skipDepUpdate = true;
+                    int nullCount = (opOutputValues[0] == null ? 1 : 0) + (opOutputValues[1] == null ? 1 : 0);
+                    Preconditions.checkState(nullCount == 1,"Expected exactly one output to be present for switch ops, got %s", nullCount);
+                    boolean left = opOutputValues[0] != null;
+                    ExecStep branch;
+                    if(left){
+                        branch = new ExecStep(ExecType.SWITCH_L, es.getName(), es.getFrameIter());
+                    } else {
+                        branch = new ExecStep(ExecType.SWITCH_R, es.getName(), es.getFrameIter());
+                    }
+                    updateDescendantDeps(branch, outFrameIter);
+                } else if(o instanceof Enter){
+                    /*
+                    Enter op: we want to say that the inner frame is executed...
+                     */
+                    skipDepUpdate = true;
+                    skipMarkSatisfied = true;
+                    Enter e = (Enter)o;
+                    FrameIter fi = new FrameIter(e.getFrameName(), 0, es.getFrameIter());
+                    ExecStep exec = new ExecStep(ExecType.OP, es.getName(), fi);
+                    updateDescendantDeps(exec, fi);
+                    dt.markSatisfied(exec, true);
+                } else if(o instanceof NextIteration){
+                    /*
+                    Next iteration: current frame, next iteration is executed
+                     */
+                    skipDepUpdate = true;
+                    skipMarkSatisfied = true;
+                    FrameIter fi = new FrameIter(es.getFrameIter().getFrame(), es.getFrameIter().getIteration()+1, es.getFrameIter().getParentFrame());
+                    ExecStep exec = new ExecStep(ExecType.OP, es.getName(), fi);
+                    updateDescendantDeps(exec, fi);
+                    dt.markSatisfied(exec, true);
                 }
-
             } else {
                 throw new RuntimeException("Unknown ExecStep: " + es);
             }
 
-            updateDescendantDeps(es, outFrameIter);
+            if(!skipDepUpdate) {
+                updateDescendantDeps(es, outFrameIter);
+            }
+            if(!skipMarkSatisfied) {
+                dt.markSatisfied(es, true);
+            }
 
             step++;
         }
@@ -461,14 +493,10 @@ public abstract class AbstractSession<T, O> {
                 List<String> inputsToOps = v.getInputsForOp();
                 if(inputsToOps != null ){
                     for(String opName : inputsToOps){
-                        if(subgraph.contains(opName)){
+                        if(subgraphOps.contains(opName)){
                             //We've just executed X, and there's dependency X -> Y
                             //But, there also might be a Z -> Y that we should mark as needed for Y
-
-
-
-                            ExecStep es = new ExecStep(ExecType.OP, opName, outFrameIter);
-
+                            addDependenciesForOp(opName, outFrameIter);
                         }
                     }
                 }
@@ -478,18 +506,80 @@ public abstract class AbstractSession<T, O> {
             List<String> inputsToOps = v.getInputsForOp();
             if(inputsToOps != null ){
                 for(String opName : inputsToOps){
-                    if(subgraph.contains(opName)){
-                        ExecStep es = new ExecStep(ExecType.OP, opName, outFrameIter);
+                    if(subgraphOps.contains(opName)){
+                        addDependenciesForOp(opName, outFrameIter);
                     }
                 }
             }
         } else if(justExecuted.getType() == ExecType.SWITCH_L || justExecuted.getType() == ExecType.SWITCH_R){
-            throw new UnsupportedOperationException("Not yet implemented");
+            SameDiffOp op = sameDiff.getOps().get(n);
+            List<String> outNames = op.getOutputsOfOp();
+            String branchVarName = (justExecuted.getType() == ExecType.SWITCH_L ? outNames.get(0) : outNames.get(1));
+            Variable v = sameDiff.getVariables().get(branchVarName);
+            List<String> inputsToOps = v.getInputsForOp();
+            if(inputsToOps != null ){
+                for(String opName : inputsToOps){
+                    if(subgraphOps.contains(opName)){
+                        //We've just executed X, and there's dependency X -> Y
+                        //But, there also might be a Z -> Y that we should mark as needed for Y
+                        addDependenciesForOp(opName, outFrameIter);
+                    }
+                }
+            }
         } else {
-            throw new UnsupportedOperationException("Not yet implemented");
+            throw new UnsupportedOperationException("Not yet implemented exec type - execution: " + justExecuted);
+        }
+    }
+
+    /**
+     * Suppose operation X has just been executed.
+     * For X -> someOp, add all dependencies for someOp, i.e., all Z -> someOp
+     * (which includes X, but may not only be X)
+     *
+     * @param opName
+     * @param depFrameIter
+     */
+    protected void addDependenciesForOp(String opName, FrameIter depFrameIter){
+        SameDiffOp op = sameDiff.getOps().get(opName);
+        List<String> inputs = op.getInputsToOp();
+
+        ExecStep es = new ExecStep(ExecType.OP, opName, depFrameIter);
+        if(dt.hasDependency(es)){
+            //Already processed this once. We only add dependencies once per op (for a given frame/iteration)
+            return;
         }
 
+        if(op.getOp() instanceof Merge){
+            //Merge ops are a special case: they can be executed with EITHER ONE of the inputs available - unlike every
+            // other op, we don't need all inputs, just one, before it can be executed
+            Variable v0 = sameDiff.getVariables().get(inputs.get(0));
+            Variable v1 = sameDiff.getVariables().get(inputs.get(1));
 
+            ExecStep or0 = getExecStepForVar(v0.getName(), depFrameIter);
+            ExecStep or1 = getExecStepForVar(v1.getName(), depFrameIter);
+            dt.addOrDependency(es, or0, or1);
+        } else {
+            for (String s : inputs) {
+                ExecStep req = getExecStepForVar(s, depFrameIter);
+                dt.addDependency(es, req);
+            }
+        }
+    }
+
+    protected ExecStep getExecStepForVar(String varName, FrameIter frameIter){
+        Variable v = sameDiff.getVariables().get(varName);
+        VariableType vt = v.getVariable().getVariableType();
+        if (vt == VariableType.VARIABLE) {
+            return new ExecStep(ExecType.VARIABLE, v.getVariable().getVarName(), new FrameIter(OUTER_FRAME, 0, null));
+        } else if (vt == VariableType.PLACEHOLDER) {
+            return new ExecStep(ExecType.PLACEHOLDER, v.getVariable().getVarName(), new FrameIter(OUTER_FRAME, 0, null));
+        } else if (vt == VariableType.CONSTANT) {
+            return new ExecStep(ExecType.CONSTANT, v.getVariable().getVarName(), new FrameIter(OUTER_FRAME, 0, null));
+        } else {
+            //Array type. Must be output of an op
+            String outOfOp = v.getOutputOfOp();
+            return new ExecStep(ExecType.OP, outOfOp, frameIter);
+        }
     }
 
     protected void initSubgraph(Set<String> variables) {
@@ -510,14 +600,9 @@ public abstract class AbstractSession<T, O> {
                     // until after execution of some other ops (for example, in conditional operations)
                     numInputs += controlDeps.size();
                 }
-//                if (numInputs == 0) {
-//                    VarId vid = newVarId(varName, OUTER_FRAME, 0, null);
-//                    if(!availableForExecSet.contains(vid)) {
-//                        availableForExec.add(vid);
-//                        availableForExecSet.add(vid);
-//                    }
-//                    execInputs.put(vid, new HashSet<VarId>());
-//                }
+                if (numInputs == 0 && opName != null) {
+                    zeroInputOpsInSubgraph.add(opName);
+                }
                 subgraph.add(varName);
 
                 if(opName != null){
@@ -606,65 +691,6 @@ public abstract class AbstractSession<T, O> {
      */
     public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
                                    List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables);
-
-    /**
-     * This method is used to record that the specified input is required for calculating the specified output.
-     * While the graph structure itself provides us with the (input vars) -> op -> (output vars) type structure, it
-     * doesn't tell us exactly which array copy (i.e., variable + frame + iteration) to use as which copy of the output
-     * variable (variable + frame + iteration).
-     * <p>
-     * This method is basically used to store information we need to parameterize ops for execution later
-     *
-     * @param isConstOrPh If true: inputVar is either a constant or a placeholder
-     * @param inputVar    Input variable (i.e., the X in (X, ...) -> op -> (forVariable,...))
-     * @param forVariable Output variable (i.e., the Y in (inputVar, ...) -> op -> (Y,...))
-     */
-    protected void addToExecInputs(boolean isConstOrPh, VarId inputVar, VarId forVariable) {
-        if (!subgraph.contains(forVariable.getVariable()))
-            return;     //Not needed to calculate requested outputs, so no need to record it's inputs
-
-        if (isConstOrPh) {
-            //Mark that outVar needs to use placeholder/constant (same regardless of frame/iter)
-            if (!execConstInputs.containsKey(forVariable.getVariable()))
-                execConstInputs.put(forVariable.getVariable(), new HashSet<String>());
-            execConstInputs.get(forVariable.getVariable()).add(inputVar.getVariable());
-        } else {
-            //Mark that outVar needs this specific executedVar (i.e., specific frame/iteration)
-            //However, in the case of enter nodes, they are available for ALL iterations (used in loop conditions, for example)
-            Variable v = sameDiff.getVariables().get(inputVar.getVariable());
-            boolean isEnter = sameDiff.getVariableOutputOp(v.getVariable().getVarName()) instanceof Enter;
-
-            if(isEnter){
-                VarId iter0 = forVariable;
-                if(iter0.getIteration() != 0){
-                    iter0 = newVarId(iter0.getVariable(), iter0.getFrame(), 0, forVariable.getParentFrame());
-                }
-
-                Variable var = sameDiff.getVariables().get(inputVar.getVariable());
-                Enter e = (Enter) sameDiff.getOps().get(var.getOutputOfOp()).getOp();
-                if(e.isConstant()){
-                    //For enter nodes that are constants, we want iteration 0 in all frames in the heirarchy
-                    //For example, const -> Enter(a) -> Enter(b) -> op; in this case, the input to Op (at any frame/iteration) should should
-                    // be the constant value - which is recorded as (frame="a",iter=0,parent=(frame="b",iter=0))
-                    iter0.setParentFrame(iter0.getParentFrame().clone());
-                    FrameIter toZero = iter0.getParentFrame();
-                    while(toZero != null){
-                        toZero.setIteration(0);
-                        toZero = toZero.getParentFrame();
-                    }
-                }
-
-                if(!execInputsAllIter.containsKey(iter0))
-                    execInputsAllIter.put(iter0, new HashSet<VarId>());
-                execInputsAllIter.get(iter0).add(inputVar);
-            } else {
-                //Most variables
-                if (!execInputs.containsKey(forVariable))
-                    execInputs.put(forVariable, new HashSet<VarId>());
-                execInputs.get(forVariable).add(inputVar);
-            }
-        }
-    }
 
 
     protected void onFrameIterTransition(String fromFrame, int fromIter, FrameIter parentFrom, String toFrame, int toIter, FrameIter parentTo){

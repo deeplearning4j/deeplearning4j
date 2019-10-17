@@ -231,7 +231,6 @@ public class TestSessions extends BaseNd4jTest {
             assertEquals(exp, m.get(n));
             assertEquals(exp, m.get(n2));
 
-            Map<String,AbstractSession.FrameIter> frameParents = is.getFrameParents();
             Map<AbstractSession.VarId,INDArray> outputs = is.getNodeOutputs();
             //Some sanity checks on the internal state:
             //Check 1: "while/Less" should be executed numIter+1 times... i.e., numIter times through the loop, plus once to exit

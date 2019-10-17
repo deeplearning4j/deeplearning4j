@@ -74,7 +74,7 @@ public abstract class DifferentialFunction {
 
 
     @Getter
-    @Setter
+//    @Setter
     @JsonIgnore
     private String ownName;
 
@@ -86,6 +86,10 @@ public abstract class DifferentialFunction {
         //Only need instance ID if using function in context of SameDiff, not standard ND4J with INDArray args
         if(sameDiff)
             setInstanceId();
+    }
+
+    public void setOwnName(String name){
+        this.ownName = name;
     }
 
     /**
@@ -659,7 +663,8 @@ public abstract class DifferentialFunction {
             if(sameDiff == null)
                 this.ownName = UUID.randomUUID().toString();
             else {
-                this.ownName = sameDiff.getOpName(opName());
+                String n = sameDiff.getOpName(opName());
+                this.ownName = n;
             }
 
             if(sameDiff != null)
