@@ -278,6 +278,7 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
                 String s = sb.toString();
+                //System.out.println(sameDiff.summary());
                 throw new IllegalStateException(s);
             }
 
@@ -440,21 +441,25 @@ public abstract class AbstractSession<T, O> {
                     }
                     updateDescendantDeps(branch, outFrameIter);
                     dt.markSatisfied(branch, true);
-                } else if(o instanceof Enter){
-                    /*
-                    Enter op: we want to say that the inner frame is executed...
-                     */
+                } else if(o instanceof Enter) {
+                    //Enter op: we want to say that the inner frame is executed...
                     skipDepUpdate = true;
                     skipMarkSatisfied = true;
-                    Enter e = (Enter)o;
+                    Enter e = (Enter) o;
                     FrameIter fi = new FrameIter(e.getFrameName(), 0, es.getFrameIter());
                     ExecStep exec = new ExecStep(ExecType.OP, es.getName(), fi);
                     updateDescendantDeps(exec, fi);
                     dt.markSatisfied(exec, true);
+                } else if(o instanceof Exit){
+                    //Exit op: we want to say that the parent frame is executed...
+                    skipDepUpdate = true;
+                    skipMarkSatisfied = true;
+                    FrameIter fi = es.getFrameIter().getParentFrame();
+                    ExecStep exec = new ExecStep(ExecType.OP, es.getName(), fi);
+                    updateDescendantDeps(exec, fi);
+                    dt.markSatisfied(exec, true);
                 } else if(o instanceof NextIteration){
-                    /*
-                    Next iteration: current frame, next iteration is executed
-                     */
+                    //Next iteration: current frame, next iteration is executed
                     skipDepUpdate = true;
                     skipMarkSatisfied = true;
                     FrameIter fi = new FrameIter(es.getFrameIter().getFrame(), es.getFrameIter().getIteration()+1, es.getFrameIter().getParentFrame());
@@ -596,6 +601,20 @@ public abstract class AbstractSession<T, O> {
                     //Should never happen
                     throw new IllegalStateException("Expected variable \"" + v.getName() + "\" to be an output of operation \"" +
                             outOfOp + "\", but op output variables are: " + opOutputs);
+                }
+            } else if(sdo.getOp() instanceof Enter){
+                Enter e = (Enter) sdo.getOp();
+
+                //For enter ops, "constant=true" enter ops are available for ALL iterations, hence use iter=0
+                //For constant=false, these are only available at iteration 0 - so use *current* iteration, same as all other ops
+                // (which is this case, won't be triggered on iter > 0 - as desired/expected)
+                if(e.isConstant()){
+                    FrameIter fi = frameIter;
+                    if(fi.getIteration() != 0){
+                        fi = fi.clone();
+                        fi.setIteration(0);
+                    }
+                    return new ExecStep(ExecType.OP, outOfOp, fi);
                 }
             }
             return new ExecStep(ExecType.OP, outOfOp, frameIter);
