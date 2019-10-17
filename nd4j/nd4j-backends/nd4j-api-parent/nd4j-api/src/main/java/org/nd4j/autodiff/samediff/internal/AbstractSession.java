@@ -368,6 +368,8 @@ public abstract class AbstractSession<T, O> {
                         for(ExecStep dep : deps) {
                             switch (dep.getType()) {
                                 case OP:
+                                case SWITCH_L:
+                                case SWITCH_R:
                                     //The current execution step depends on one output of the op "dep"
                                     SameDiffOp toExecOp = sameDiff.getOps().get(es.getName());
                                     List<String> inputsToExecOp = toExecOp.getInputsToOp();
@@ -387,8 +389,6 @@ public abstract class AbstractSession<T, O> {
                                 case PLACEHOLDER:
                                     constAndPhInputs.add(dep.getName());
                                     break;
-                                case SWITCH_L:
-                                case SWITCH_R:
                                 default:
                                     throw new UnsupportedOperationException("Not yet implemented: " + dep.getType());
                             }
@@ -428,6 +428,7 @@ public abstract class AbstractSession<T, O> {
                     Unlike every other type of op, only 1 of 2 output arrays is actually executed
                      */
                     skipDepUpdate = true;
+                    skipMarkSatisfied = true;
                     int nullCount = (opOutputValues[0] == null ? 1 : 0) + (opOutputValues[1] == null ? 1 : 0);
                     Preconditions.checkState(nullCount == 1,"Expected exactly one output to be present for switch ops, got %s", nullCount);
                     boolean left = opOutputValues[0] != null;
@@ -438,6 +439,7 @@ public abstract class AbstractSession<T, O> {
                         branch = new ExecStep(ExecType.SWITCH_R, es.getName(), es.getFrameIter());
                     }
                     updateDescendantDeps(branch, outFrameIter);
+                    dt.markSatisfied(branch, true);
                 } else if(o instanceof Enter){
                     /*
                     Enter op: we want to say that the inner frame is executed...
@@ -549,7 +551,7 @@ public abstract class AbstractSession<T, O> {
             return;
         }
 
-        if(op.getOp() instanceof Merge){
+        if(op.getOp() instanceof Merge) {
             //Merge ops are a special case: they can be executed with EITHER ONE of the inputs available - unlike every
             // other op, we don't need all inputs, just one, before it can be executed
             Variable v0 = sameDiff.getVariables().get(inputs.get(0));
@@ -578,6 +580,24 @@ public abstract class AbstractSession<T, O> {
         } else {
             //Array type. Must be output of an op
             String outOfOp = v.getOutputOfOp();
+            SameDiffOp sdo = sameDiff.getOps().get(outOfOp);
+            if(sdo.getOp() instanceof Switch){
+                //For dependency tracking purposes, we track left and right output branches of switch op separately
+                //Otherwise, ops depending both branches will be marked as available if we just rely on "op has been executed"
+                List<String> opOutputs = sdo.getOutputsOfOp();
+                int idx = opOutputs.indexOf(v.getName());
+                if(idx == 0){
+                    //Left branch
+                    return new ExecStep(ExecType.SWITCH_L, outOfOp, frameIter);
+                } else if(idx == 1){
+                    //Right branch
+                    return new ExecStep(ExecType.SWITCH_R, outOfOp, frameIter);
+                } else {
+                    //Should never happen
+                    throw new IllegalStateException("Expected variable \"" + v.getName() + "\" to be an output of operation \"" +
+                            outOfOp + "\", but op output variables are: " + opOutputs);
+                }
+            }
             return new ExecStep(ExecType.OP, outOfOp, frameIter);
         }
     }
