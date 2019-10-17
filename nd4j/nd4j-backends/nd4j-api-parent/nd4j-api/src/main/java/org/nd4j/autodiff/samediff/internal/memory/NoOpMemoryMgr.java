@@ -8,8 +8,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 
-@Slf4j
-public class SimpleSessionMemoryMgr implements SessionMemMrg {
+public class NoOpMemoryMgr implements SessionMemMrg {
 
     @Override
     public INDArray allocate(boolean detached, DataType dataType, long... shape) {
@@ -18,16 +17,12 @@ public class SimpleSessionMemoryMgr implements SessionMemMrg {
 
     @Override
     public INDArray allocate(boolean detached, LongShapeDescriptor descriptor) {
-        log.info("Allocating array");
         return Nd4j.create(descriptor, false);
     }
 
     @Override
     public void release(@NonNull INDArray array) {
-        if(!array.wasClosed() && array.closeable()){
-            array.close();
-            log.info("Closed array (deallocated)");
-        }
+        //No-op, rely on GC to clear arrays
     }
 
     @Override

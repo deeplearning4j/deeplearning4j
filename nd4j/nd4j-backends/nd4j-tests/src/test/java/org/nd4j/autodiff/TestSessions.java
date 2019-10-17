@@ -21,6 +21,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.AbstractSession;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.internal.memory.NoOpMemoryMgr;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -219,6 +220,7 @@ public class TestSessions extends BaseNd4jTest {
             System.out.println("----------------------------------");
             //This particular test/graph doesn't use placeholders
             InferenceSession is = new InferenceSession(sd);
+            is.setMmgr(new NoOpMemoryMgr());    //So arrays aren't deallocated during execution
             String n = "while/Exit";
             String n2 = "while/Exit_1";
 

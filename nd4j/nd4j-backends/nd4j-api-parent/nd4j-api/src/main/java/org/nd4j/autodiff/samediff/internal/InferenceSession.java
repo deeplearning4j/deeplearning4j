@@ -16,10 +16,7 @@
 
 package org.nd4j.autodiff.samediff.internal;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.NonNull;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
@@ -27,7 +24,7 @@ import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
-import org.nd4j.autodiff.samediff.internal.memory.SimpleSessionMemoryMgr;
+import org.nd4j.autodiff.samediff.internal.memory.ArrayCloseMemoryMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -48,7 +45,6 @@ import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.util.ArrayUtil;
 
-import java.io.LineNumberReader;
 import java.util.*;
 
 /**
@@ -62,15 +58,16 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
     private static final String SCOPE_PANIC_MSG = "If required, arrays in workspaces can be detached using INDArray.detach() before being passed to the SameDiff instance.\n" +
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
+    @Getter @Setter
     private SessionMemMrg mmgr;
-//    private DependencyTracker<Array,Dep> arrayUseTracker = new DependencyTracker<>();       //What needs to happen before the array can be closed?
+    @Getter @Setter
     private IdentityDependencyTracker<INDArray, Dep> arrayUseTracker = new IdentityDependencyTracker<>();   //What needs to happen before the array can be closed?
 
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
 
-        mmgr = new SimpleSessionMemoryMgr();
+        mmgr = new ArrayCloseMemoryMgr();
     }
 
     @Override

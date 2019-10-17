@@ -186,11 +186,15 @@ public abstract class AbstractDependencyTracker<T, D> {
         Set<D> s = dependencies.get(y);
         if(s != null) {
             s.remove(x);
+            if(s.isEmpty())
+                dependencies.remove(y);
         }
 
         Set<T> s2 = reverseDependencies.get(x);
         if(s2 != null){
             s2.remove(y);
+            if(s2.isEmpty())
+                reverseDependencies.remove(x);
         }
 
 
@@ -204,13 +208,24 @@ public abstract class AbstractDependencyTracker<T, D> {
                     iter.remove();
 
                     if(!removedReverse) {
-                        reverseOrDependencies.get(p.getFirst()).remove(y);
-                        reverseOrDependencies.get(p.getSecond()).remove(y);
+                        Set<T> set1 = reverseOrDependencies.get(p.getFirst());
+                        Set<T> set2 = reverseOrDependencies.get(p.getSecond());
+
+                        set1.remove(y);
+                        set2.remove(y);
+
+                        if(set1.isEmpty())
+                            reverseOrDependencies.remove(p.getFirst());
+                        if(set2.isEmpty())
+                            reverseOrDependencies.remove(p.getSecond());
+
                         removedReverse = true;
                     }
                 }
             }
         }
+        if(s3 != null && s3.isEmpty())
+            orDependencies.remove(y);
     }
 
     /**

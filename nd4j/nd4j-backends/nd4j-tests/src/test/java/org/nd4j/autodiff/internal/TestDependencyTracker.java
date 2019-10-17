@@ -35,28 +35,28 @@ public class TestDependencyTracker {
         assertFalse(dt.hasDependency("y"));
         assertFalse(dt.hasDependency("x"));
         dl = dt.getDependencies("y");
-        assertNull(dl.getDependencies());
-        assertNull(dl.getOrDependencies());
+        assertTrue(dl.getDependencies() == null || dl.getDependencies().isEmpty());
+        assertTrue(dl.getOrDependencies() == null || dl.getOrDependencies().isEmpty());
 
 
         //Or dep
         dt.addOrDependency("y", "x1", "x2");
         assertTrue(dt.hasDependency("y"));
         dl = dt.getDependencies("y");
-        assertNull(dl.getDependencies());
-        assertNotNull(dl.getOrDependencies());
+        assertTrue(dl.getDependencies() == null || dl.getDependencies().isEmpty());
+        assertTrue(dl.getOrDependencies() != null && !dl.getOrDependencies().isEmpty());
         assertEquals(Collections.singletonList(new Pair<>("x1", "x2")), dl.getOrDependencies());
 
         dt.removeDependency("y", "x1");
         assertFalse(dt.hasDependency("y"));
         dl = dt.getDependencies("y");
-        assertNull(dl.getDependencies());
-        assertNull(dl.getOrDependencies());
+        assertTrue(dl.getDependencies() == null || dl.getDependencies().isEmpty());
+        assertTrue(dl.getOrDependencies() == null || dl.getOrDependencies().isEmpty());
 
         dt.addOrDependency("y", "x1", "x2");
         dl = dt.getDependencies("y");
-        assertNull(dl.getDependencies());
-        assertNotNull(dl.getOrDependencies());
+        assertTrue(dl.getDependencies() == null || dl.getDependencies().isEmpty());
+        assertTrue(dl.getOrDependencies() != null && !dl.getOrDependencies().isEmpty());
         assertEquals(Collections.singletonList(new Pair<>("x1", "x2")), dl.getOrDependencies());
         dt.removeDependency("y", "x2");
         assertTrue(dt.isEmpty());
