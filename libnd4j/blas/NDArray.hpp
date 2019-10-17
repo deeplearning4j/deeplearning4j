@@ -4313,17 +4313,16 @@ Nd4jLong NDArray::getOffset(const Nd4jLong i) const {
     return shape::getIndexOffset(i, _shapeInfo);
 }
 
+////////////////////////////////////////////////////////////////////////
 NDArray NDArray::like() {
-    NDArray res(this->shapeInfo(), this->dataType(), false, this->getContext());
 
-    return res;
+    return NDArray(shapeInfo(), this->dataType(), false, getContext());
 }
 
+////////////////////////////////////////////////////////////////////////
 NDArray NDArray::ulike() {
-    // FIXME: it should be non-memset array
-    NDArray res(this->shapeInfo(), this->dataType(), false, this->getContext());
 
-    return res;
+    return NDArray(this, false, getContext());
 }
 
 ////////////////////////////////////////////////////////////////////////

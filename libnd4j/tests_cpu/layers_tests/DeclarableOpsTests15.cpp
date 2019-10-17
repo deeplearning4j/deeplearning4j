@@ -505,9 +505,9 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_1) {
 }
 
 TEST_F(DeclarableOpsTests15, test_lstmBlock_2) {
-    int seqLen = 32;
-    int bS = 64;
-    int nIn = 32;
+    int seqLen = 8;
+    int bS = 16;
+    int nIn = 8;
 
     auto x0 = NDArrayFactory::create<Nd4jLong>(5);
     auto x1 = NDArrayFactory::create<float>('f', {bS, nIn, seqLen});

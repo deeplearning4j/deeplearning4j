@@ -1858,6 +1858,17 @@ namespace simdOps {
 	};
 
 	template <typename X>
+	class Affine {
+	public:
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
+
+		op_def static X op(X d1, X *params) {
+			return params[0] * d1 + params[1];
+		}
+	};
+
+	template <typename X>
 	class SigmoidDerivative {
 	public:
 		no_op_exec_special_same
@@ -2048,6 +2059,17 @@ namespace simdOps {
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_tanh<X, X>(d1);
+		}
+	};
+
+	template <typename X>
+	class ScaledTanh {
+	public:
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
+
+		op_def static X op(X d1, X *params) {
+			return params[0] * nd4j::math::nd4j_tanh<X, X>(params[1] * d1);
 		}
 	};
 

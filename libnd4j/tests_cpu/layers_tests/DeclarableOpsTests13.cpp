@@ -983,5 +983,952 @@ TEST_F(DeclarableOpsTests13, mergemax_2) {
     ASSERT_EQ(20, status);
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_1) {
+
+    const int sL   = 5;
+    const int bS   = 3;
+    const int nIn  = 3;
+    const int nOut = 3;
+
+    // input arguments
+
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 0;    // forward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = false;  // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;  // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx = 0.003;
+    Wr = 0.006;
+    b = 0.5;
+    hI = 1.;
+    cI = 2.;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    auto expH = NDArrayFactory::create<float>('c', {sL, bS, nOut}, {0.57574,0.57574,0.57574,0.58006,0.58006,0.58006,0.58434,0.58434,0.58434,
+                                                           0.55114,0.55114,0.55114,0.55732,0.55732,0.55732,0.56338,0.56338,0.56338,
+                                                           0.53763,0.53763,0.53763,0.54534,0.54534,0.54534,0.55287,0.55287,0.55287,
+                                                           0.53626,0.53626,0.53626,0.54487,0.54487,0.54487,0.55327,0.55327,0.55327,
+                                                           0.54484,0.54484,0.54484,0.55379,0.55379,0.55379,0.5625 ,0.5625 ,0.5625});
+
+    auto expClast = NDArrayFactory::create<float>('c', {bS, nOut}, {1.1589154,1.1589154,1.1589154,1.1892855,1.1892855,1.1892855,1.219861 ,1.219861 ,1.219861});
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *h  = results->at(0);
+    auto *cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expClast.isSameShape(cL));
+    ASSERT_TRUE(expClast.equalsTo(cL));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_2) {
+
+    const int sL   = 5;
+    const int bS   = 3;
+    const int nIn  = 3;
+    const int nOut = 3;
+
+    // input arguments
+
+    const int dataFormat = 1;       // [bS,sL,nIn]
+    const int directionMode = 0;    // forward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = false;  // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;  // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {bS, sL, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx = 0.003;
+    Wr = 0.006;
+    b = 0.5;
+    hI = 1.;
+    cI = 2.;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    auto expH = NDArrayFactory::create<float>('c', {bS, sL, nOut}, {0.575735, 0.575735, 0.575735, 0.541562, 0.541562, 0.541562, 0.514003, 0.514003, 0.514003, 0.495597, 0.495597, 0.495597, 0.485999, 0.485999, 0.485999,
+                                            0.596965, 0.596965, 0.596965, 0.571978, 0.571978, 0.571978, 0.552888, 0.552888, 0.552888, 0.540606, 0.540606, 0.540606, 0.534764, 0.534764, 0.534764,
+                                            0.61725 , 0.61725 , 0.61725 , 0.599828, 0.599828, 0.599828, 0.587627, 0.587627, 0.587627, 0.580408, 0.580408, 0.580408, 0.577735, 0.577735, 0.577735});
+
+    auto expClast = NDArrayFactory::create<float>('c', {bS, nOut}, {0.996965, 0.996965, 0.996965, 1.146756, 1.146756, 1.146756, 1.301922, 1.301922, 1.301922});
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto *h  = results->at(0);
+    auto *cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expClast.isSameShape(cL));
+    ASSERT_TRUE(expClast.equalsTo(cL));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_3) {
+
+    const int sL   = 5;
+    const int bS   = 2;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 1;    // backward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = false;  // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;  // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL,bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx = 0.003;
+    Wr = 0.006;
+    b = 0.5;
+    hI = 1.;
+    cI = 2.;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {sL, bS, nOut}, {0.493883, 0.493883, 0.493883, 0.510990, 0.510990, 0.510990, 0.534701, 0.534701, 0.534701, 0.549139,
+                                        0.549139, 0.549139, 0.571900, 0.571900, 0.571900, 0.583561, 0.583561, 0.583561, 0.605106, 0.605106,
+                                        0.605106, 0.614114, 0.614114, 0.614114, 0.635354, 0.635354, 0.635354, 0.642045, 0.642045, 0.642045}, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {bS, nOut}, {0.493883, 0.493883, 0.493883, 0.510990, 0.510990, 0.510990}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {bS, nOut}, {1.061274, 1.061274, 1.061274, 1.115888, 1.115888, 1.115888}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+}
+
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_4) {
+
+    const int sL   = 5;
+    const int bS   = 2;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 3;    // bidirectional concat
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = false;  // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;   // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {2,nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {2,nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {2,4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx({0,1, 0,0, 0,0}) = 0.003;
+    Wx({1,2, 0,0, 0,0}) = -0.003;
+    Wr({0,1, 0,0, 0,0}) = 0.006;
+    Wr({1,2, 0,0, 0,0}) = -0.006;
+    b({0,1, 0,0})       = 0.5;
+    b({1,2, 0,0})       = -0.5;
+    hI({0,1, 0,0, 0,0}) = 1;
+    hI({1,2, 0,0, 0,0}) = -1;
+    cI({0,1, 0,0, 0,0}) = 2;
+    cI({1,2, 0,0, 0,0}) = -2;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {sL, bS, 2*nOut}, {0.577661, 0.577661, 0.577661, -0.107642, -0.107642, -0.107642, 0.585289, 0.585289, 0.585289,
+                                        -0.106937, -0.106937, -0.106937, 0.556517, 0.556517, 0.556517, -0.111647, -0.111647, -0.111647,
+                                        0.567274, 0.567274, 0.567274, -0.110214, -0.110214, -0.110214, 0.547395, 0.547395, 0.547395,
+                                        -0.123305, -0.123305, -0.123305, 0.560640, 0.560640, 0.560640, -0.120862, -0.120862, -0.120862,
+                                        0.550714, 0.550714, 0.550714, -0.156223, -0.156223, -0.156223, 0.565308, 0.565308, 0.565308,
+                                        -0.152313, -0.152313, -0.152313, 0.563741, 0.563741, 0.563741, -0.234128, -0.234128, -0.234128,
+                                        0.578676, 0.578676, 0.578676, -0.228917, -0.228917, -0.228917}, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {2,bS, nOut}, {0.563741, 0.563741, 0.563741, 0.578676, 0.578676, 0.578676, -0.107642,
+                                    -0.107642, -0.107642, -0.106937, -0.106937, -0.106937}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {2,bS, nOut}, {1.217757, 1.217757, 1.217757, 1.272398, 1.272398, 1.272398, -0.295768,
+                                    -0.295768, -0.295768, -0.298453, -0.298453, -0.298453}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_5) {
+
+    const int sL   = 5;
+    const int bS   = 2;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+    const int dataFormat = 1;       // [bS,sL,nIn]
+    const int directionMode = 3;    // bidirectional concat
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = false;  // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;   // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {bS, sL, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {2,nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {2,nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {2,4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx({0,1, 0,0, 0,0}) = 0.003;
+    Wx({1,2, 0,0, 0,0}) = -0.003;
+    Wr({0,1, 0,0, 0,0}) = 0.006;
+    Wr({1,2, 0,0, 0,0}) = -0.006;
+    b({0,1, 0,0})       = 0.5;
+    b({1,2, 0,0})       = -0.5;
+    hI({0,1, 0,0, 0,0}) = 1;
+    hI({1,2, 0,0, 0,0}) = -1;
+    cI({0,1, 0,0, 0,0}) = 2;
+    cI({1,2, 0,0, 0,0}) = -2;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {bS, sL, 2*nOut}, {0.577661,  0.577661,  0.577661, -0.107659, -0.107659, -0.107659, 0.548099,  0.548099,  0.548099, -0.113406, -0.113406, -0.113406,
+                                    0.526881,  0.526881,  0.526881, -0.12883 , -0.12883 , -0.12883 , 0.515882,  0.515882,  0.515882, -0.16868 , -0.16868 , -0.16868 ,
+                                    0.51409 ,  0.51409 ,  0.51409 , -0.255185, -0.255185, -0.255185,  0.614599,  0.614599,  0.614599, -0.102739, -0.102739, -0.102739,
+                                    0.599572,  0.599572,  0.599572, -0.105802, -0.105802, -0.105802,0.591089,  0.591089,  0.591089, -0.116681, -0.116681, -0.116681,
+                                    0.588694,  0.588694,  0.588694, -0.149201, -0.149201, -0.149201,0.591492,  0.591492,  0.591492, -0.228917, -0.228917, -0.228917}, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {2,bS, nOut}, {0.51409 ,  0.51409 ,  0.51409 ,   0.591492,  0.591492,  0.591492,
+                                     -0.107659, -0.107659, -0.107659,  -0.102739, -0.102739, -0.102739}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {2,bS, nOut}, {1.07293 ,  1.07293 ,  1.07293,1.346609,  1.346609,  1.346609,
+                                    -0.295811, -0.295811, -0.295811,-0.305394, -0.305394, -0.305394}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    // h->printBuffer();
+    // hL->printBuffer();
+    // cL->printBuffer();
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_6) {
+
+    const int sL   = 5;
+    const int bS   = 2;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 2;    // bidirectional sum
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = false;  // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;   // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {2,nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {2,nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {2,4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx({0,1, 0,0, 0,0}) = 0.003;
+    Wx({1,2, 0,0, 0,0}) = -0.003;
+    Wr({0,1, 0,0, 0,0}) = 0.006;
+    Wr({1,2, 0,0, 0,0}) = -0.006;
+    b({0,1, 0,0})       = 0.5;
+    b({1,2, 0,0})       = -0.5;
+    hI({0,1, 0,0, 0,0}) = 1;
+    hI({1,2, 0,0, 0,0}) = -1;
+    cI({0,1, 0,0, 0,0}) = 2;
+    cI({1,2, 0,0, 0,0}) = -2;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {sL, bS, nOut}, {0.470019, 0.470019, 0.470019, 0.478352, 0.478352, 0.478352, 0.444871, 0.444871, 0.444871, 0.457060,
+                                    0.457060, 0.457060, 0.424090, 0.424090, 0.424090, 0.439778, 0.439778, 0.439778, 0.394491, 0.394491,
+                                    0.394491, 0.412995, 0.412995, 0.412995, 0.329613, 0.329613, 0.329613, 0.349760, 0.349760, 0.349760}, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {2,bS, nOut}, {0.563741, 0.563741, 0.563741, 0.578676, 0.578676, 0.578676, -0.107642,
+                                    -0.107642, -0.107642, -0.106937, -0.106937, -0.106937}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {2,bS, nOut}, {1.217757, 1.217757, 1.217757, 1.272398, 1.272398, 1.272398, -0.295768,
+                                    -0.295768, -0.295768, -0.298453, -0.298453, -0.298453}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_7) {
+    #ifndef HAVE_MKLDNN
+
+    const int sL   = 5;
+    const int bS   = 2;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 0;    // forward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;  // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx = 0.003;
+    Wr = 0.006;
+    b = 0.5;
+    hI = 1.;
+    cI = 2.;
+    Wp = -0.05;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {sL, bS, nOut}, {0.55533 , 0.55533 , 0.55533 , 0.562925, 0.562925, 0.562925, 0.531795, 0.531795, 0.531795, 0.542556,
+                                        0.542556, 0.542556, 0.521466, 0.521466, 0.521466, 0.534638, 0.534638, 0.534638, 0.524805, 0.524805,
+                                        0.524805, 0.539187, 0.539187, 0.539187, 0.538309, 0.538309, 0.538309, 0.552923, 0.552923, 0.552923}, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {bS, nOut}, {0.538309, 0.538309, 0.538309,0.552923, 0.552923, 0.552923}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {bS, nOut}, {1.147089, 1.147089, 1.147089,1.197228, 1.197228, 1.197228}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+    #endif
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_8) {
+    #ifndef HAVE_MKLDNN
+
+    const int sL   = 5;
+    const int bS   = 2;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 1;    // backward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;  // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 1.;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx = 0.003;
+    Wr = 0.006;
+    b = 0.5;
+    hI = 1.;
+    cI = 2.;
+    Wp = -0.05;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {sL, bS, nOut}, {0.436221, 0.436221, 0.436221,0.450573, 0.450573, 0.450573,0.463602, 0.463602, 0.463602, 0.474674, 0.474674, 0.474674,
+                                    0.484039, 0.484039, 0.484039,0.490679, 0.490679, 0.490679, 0.494871, 0.494871, 0.494871,   0.499028, 0.499028, 0.499028,
+                                    0.504649, 0.504649, 0.504649,  0.508719, 0.508719, 0.508719}, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {bS, nOut}, {0.436221, 0.436221, 0.436221, 0.450573, 0.450573, 0.450573}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {bS, nOut}, {0.879804, 0.879804, 0.879804,0.914666, 0.914666, 0.914666}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+    #endif
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_9) {
+    #ifndef HAVE_MKLDNN
+
+    const int sL   = 5;
+    const int bS   = 2;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 3;    // bidirectional concat
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = false;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;  // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;   // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {2,nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {2,nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {2,4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wp('c', {2,3*nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx({0,1, 0,0, 0,0}) = 0.003;
+    Wx({1,2, 0,0, 0,0}) = -0.003;
+    Wr({0,1, 0,0, 0,0}) = 0.006;
+    Wr({1,2, 0,0, 0,0}) = -0.006;
+    b({0,1, 0,0})       = 0.5;
+    b({1,2, 0,0})       = -0.5;
+    hI({0,1, 0,0, 0,0}) = 1;
+    hI({1,2, 0,0, 0,0}) = -1;
+    cI({0,1, 0,0, 0,0}) = 2;
+    cI({1,2, 0,0, 0,0}) = -2;
+    Wp({0,1, 0,0}) = -0.05;
+    Wp({1,2, 0,0}) = 0.05;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {sL, bS, 2*nOut}, { 0.55533 ,  0.55533 ,  0.55533 , -0.104502, -0.104502, -0.104502, 0.562925,  0.562925,  0.562925, -0.103843, -0.103843, -0.103843,
+                                    0.531795,  0.531795,  0.531795, -0.107456, -0.107456, -0.107456,0.542556,  0.542556,  0.542556, -0.106139, -0.106139, -0.106139,
+                                    0.521466,  0.521466,  0.521466, -0.11681 , -0.11681 , -0.11681 , 0.534638,  0.534638,  0.534638, -0.11458 , -0.11458 , -0.11458 ,
+                                    0.524805,  0.524805,  0.524805, -0.145177, -0.145177, -0.145177,0.539187,  0.539187,  0.539187, -0.14157 , -0.14157 , -0.14157 ,
+                                    0.538309,  0.538309,  0.538309, -0.218056, -0.218056, -0.218056,0.552923,  0.552923,  0.552923, -0.213068, -0.213068, -0.213068}, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {2,bS, nOut}, {0.538309,  0.538309,  0.538309, 0.552923,  0.552923,  0.552923, -0.104502, -0.104502, -0.104502,
+                                    -0.103843, -0.103843, -0.103843}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {2,bS, nOut}, {1.147089,  1.147089,  1.147089, 1.197228,  1.197228,  1.197228, -0.289425, -0.289425, -0.289425,
+                                     -0.292174, -0.292174, -0.292174}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+    #endif
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_10) {
+    #ifndef HAVE_MKLDNN
+
+    const int sL   = 6;
+    const int bS   = 5;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 0;    // forward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = true;   // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;  // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray seqLen('c', {bS}, {0,1,2,3,5}, nd4j::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx = 0.003;
+    Wr = 0.006;
+    b = 0.5;
+    hI = 1.;
+    cI = 2.;
+    Wp = -0.05;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {sL, bS, nOut}, {0., 0., 0., 0.562925, 0.562925, 0.562925, 0.570404, 0.570404, 0.570404, 0.57777 , 0.57777 , 0.57777 , 0.585023, 0.585023, 0.585023,
+                                    0., 0., 0., 0., 0., 0., 0.576568, 0.576568, 0.576568, 0.586163, 0.586163, 0.586163, 0.595462, 0.595462, 0.595462, 0., 0., 0., 0., 0.,
+                                    0., 0., 0., 0., 0.611224, 0.611224, 0.611224, 0.621298, 0.621298, 0.621298, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                    0.655858, 0.655858, 0.655858, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.692315, 0.692315, 0.692315, 0., 0., 0., 0., 0., 0.,
+                                    0., 0., 0., 0., 0., 0., 0., 0., 0.}, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {bS, nOut}, {0., 0., 0., 0.562925, 0.562925, 0.562925, 0.576568, 0.576568, 0.576568, 0.611224, 0.611224, 0.611224, 0.692315, 0.692315, 0.692315}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {bS, nOut}, {0., 0., 0., 1.534275, 1.534275, 1.534275, 1.40183, 1.40183, 1.40183, 1.449675, 1.449675, 1.449675, 1.767702, 1.767702, 1.767702}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+    #endif
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_11) {
+    #ifndef HAVE_MKLDNN
+
+    const int sL   = 6;
+    const int bS   = 5;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 1;    // backward
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = true;   // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;   // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;  // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray seqLen('c', {bS}, {0,1,2,3,5}, nd4j::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx = 0.003;
+    Wr = 0.006;
+    b = 0.5;
+    hI = 1.;
+    cI = 2.;
+    Wp = -0.05;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {sL, bS, nOut}, {0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.61209,
+                                    0.61209, 0.61209,0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.652042, 0.652042, 0.652042,  0., 0., 0., 0., 0.,
+                                    0., 0., 0., 0., 0.677708, 0.677708, 0.677708, 0.684177, 0.684177, 0.684177, 0., 0., 0.,0., 0., 0.,0.699627, 0.699627,
+                                    0.699627,0.705371, 0.705371, 0.705371,0.710989, 0.710989, 0.710989, 0., 0., 0., 0.719014, 0.719014, 0.719014, 0.724087,
+                                    0.724087, 0.724087, 0.729084, 0.729084, 0.729084, 0.734004, 0.734004, 0.734004 }, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {bS, nOut}, {0., 0., 0., 0.719014, 0.719014, 0.719014, 0.699627, 0.699627, 0.699627, 0.677708, 0.677708, 0.677708, 0.61209, 0.61209, 0.61209}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {bS, nOut}, {0., 0., 0., 2.092814, 2.092814, 2.092814, 2.08832, 2.08832, 2.08832, 2.009851, 2.009851, 2.009851, 1.646034, 1.646034, 1.646034}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+    #endif
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests13, lstmLayer_12) {
+    #ifndef HAVE_MKLDNN
+
+    const int sL   = 6;
+    const int bS   = 5;
+    const int nIn  = 4;
+    const int nOut = 3;
+
+    // input arguments
+    const int dataFormat = 0;       // [sL,bS,nIn]
+    const int directionMode = 3;    // bidirectional concat
+    const int gateAct = 2;          // sigmoid activation for input (i), forget (f) and output (o) gates
+    const int cellAct = 0;          // tanh activation for cell state
+    const int outAct = 0;           // tanh activation for output
+
+    const bool hasBiases  = true;   // biases array is provided
+    const bool hasSeqLen  = true;  // seqLen array is not provided
+    const auto hasInitH   = true;   // initial output is provided
+    const auto hasInitC   = true;   // initial cell state is provided
+    const auto hasPH      = true;  // peephole connections are absent
+    const auto retFullSeq = true;   // return whole h {h_0, h_1, ... , h_sL-1}, [sL,bS,nOut]
+    const auto retLastH   = true;   // do not return output at last time step
+    const auto retLastC   = true;   // return cells state at last time step
+
+    const double cellClip = 0;       // do not apply clipping
+
+    NDArray x('c', {sL, bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {2,nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {2,nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b('c', {2,4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {2,bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray seqLen('c', {bS}, {0,1,2,3,5}, nd4j::DataType::FLOAT32);
+    NDArray Wp('c', {2,3*nOut}, nd4j::DataType::FLOAT32);
+
+    x.linspace(0.5, 0.5);
+    Wx({0,1, 0,0, 0,0}) = 0.003;
+    Wx({1,2, 0,0, 0,0}) = -0.003;
+    Wr({0,1, 0,0, 0,0}) = 0.006;
+    Wr({1,2, 0,0, 0,0}) = -0.006;
+    b({0,1, 0,0})       = 0.5;
+    b({1,2, 0,0})       = -0.5;
+    hI({0,1, 0,0, 0,0}) = 1;
+    hI({1,2, 0,0, 0,0}) = -1;
+    cI({0,1, 0,0, 0,0}) = 2;
+    cI({1,2, 0,0, 0,0}) = -2;
+    Wp({0,1, 0,0}) = -0.05;
+    Wp({1,2, 0,0}) = 0.05;
+
+    std::initializer_list<double>   tArgs = {cellClip};
+    std::initializer_list<Nd4jLong> iArgs = {dataFormat, directionMode, gateAct, cellAct, outAct};
+    std::initializer_list<bool>     bArgs = {hasBiases, hasSeqLen, hasInitH, hasInitC, hasPH, retFullSeq, retLastH, retLastC};
+
+    NDArray expH('c', {sL, bS, 2*nOut}, {0., 0., 0., 0., 0., 0.,  0.562925, 0.562925, 0.562925, -0.25361 , -0.25361 , -0.25361 ,   0.570404, 0.570404, 0.570404, -0.157103,
+                                        -0.157103, -0.157103, 0.57777 , 0.57777 , 0.57777 , -0.116502, -0.116502, -0.116502,0.585023, 0.585023, 0.585023, -0.100025,
+                                        -0.100025, -0.100025, 0., 0., 0., 0., 0., 0.,0., 0., 0., 0., 0., 0.,   0.576568, 0.576568, 0.576568, -0.223072, -0.223072, -0.223072,
+                                        0.586163, 0.586163, 0.586163, -0.135714, -0.135714, -0.135714,0.595462, 0.595462, 0.595462, -0.094438, -0.094438, -0.094438,
+                                        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.611224, 0.611224, 0.611224, -0.193473, -0.193473, -0.193473,
+                                        0.621298, 0.621298, 0.621298, -0.090626, -0.090626, -0.090626, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                        0., 0., 0., 0., 0., 0., 0.655858, 0.655858, 0.655858, -0.098015, -0.098015, -0.098015, 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.,
+                                        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.692315, 0.692315, 0.692315, -0.143704, -0.143704, -0.143704, 0., 0., 0., 0., 0., 0.,
+                                        0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0., 0.}, nd4j::DataType::FLOAT32);
+
+    NDArray expHL('c', {2,bS, nOut}, {0., 0., 0., 0.562925, 0.562925, 0.562925, 0.576568, 0.576568, 0.576568, 0.611224, 0.611224, 0.611224, 0.692315, 0.692315, 0.692315,
+                                      0., 0., 0.,  -0.25361 , -0.25361 , -0.25361 ,  -0.157103, -0.157103, -0.157103,-0.116502, -0.116502, -0.116502,  -0.100025, -0.100025, -0.100025}, nd4j::DataType::FLOAT32);
+    NDArray expCL('c', {2,bS, nOut}, {0., 0., 0.,1.534275, 1.534275, 1.534275,1.40183 , 1.40183 , 1.40183 ,1.449675, 1.449675, 1.449675,1.767702, 1.767702, 1.767702,
+                                     0., 0., 0.,-0.86636 , -0.86636 , -0.86636 ,-0.470245, -0.470245, -0.470245,-0.341856, -0.341856, -0.341856,-0.294986, -0.294986, -0.294986}, nd4j::DataType::FLOAT32);
+
+    nd4j::ops::lstmLayer op;
+    auto results = op.execute({&x, &Wx, &Wr, &b, &seqLen, &hI, &cI, &Wp}, tArgs, iArgs, bArgs);
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto h  = results->at(0);
+    auto hL = results->at(1);
+    auto cL = results->at(2);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+
+    ASSERT_TRUE(expHL.isSameShape(hL));
+    ASSERT_TRUE(expHL.equalsTo(hL));
+
+    ASSERT_TRUE(expCL.isSameShape(cL));
+    ASSERT_TRUE(expCL.equalsTo(cL));
+
+    delete results;
+    #endif
+}
 
 

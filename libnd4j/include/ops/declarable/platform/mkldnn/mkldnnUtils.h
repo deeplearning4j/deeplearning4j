@@ -63,6 +63,8 @@ namespace nd4j{
             DECLARE_PLATFORM(lrn);
 
             DECLARE_PLATFORM(batchnorm_new);
+
+            DECLARE_PLATFORM(lstmLayer);
         }
     }
 
