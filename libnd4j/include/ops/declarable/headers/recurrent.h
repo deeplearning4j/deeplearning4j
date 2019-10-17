@@ -236,6 +236,7 @@ namespace ops  {
         DECLARE_CUSTOM_OP(lstmLayer, 3, 1, false, 1, 5);
         #endif
 
+
     //////////////////////////////////////////////////////////////////////////
     /**
        * Implementation of operations for Simple Recurrent Unit cell: "Training RNNs as Fast as CNNs" Tao Lei, Yu Zhang, Yoav Artzi
