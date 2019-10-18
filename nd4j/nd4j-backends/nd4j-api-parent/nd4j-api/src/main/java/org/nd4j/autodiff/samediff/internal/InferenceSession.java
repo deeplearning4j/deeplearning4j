@@ -61,7 +61,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
     @Getter @Setter
-    private SessionMemMrg mmgr;
+    private SessionMemMgr mmgr;
     @Getter @Setter
     private IdentityDependencyTracker<INDArray, Dep> arrayUseTracker = new IdentityDependencyTracker<>();   //What needs to happen before the array can be closed?
 

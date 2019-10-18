@@ -198,11 +198,21 @@ public abstract class AbstractSession<T, O> {
                 ExecType et = vt == VariableType.VARIABLE ? ExecType.VARIABLE : ExecType.CONSTANT;
                 ExecStep es = new ExecStep(et, v.getVarName(), new FrameIter(OUTER_FRAME, 0, null));
                 dt.addDependency(es, start);
+
+                Variable var = sameDiff.getVariables().get(v.getVarName());
+                if(var.getControlDeps() != null){
+                    addVarControlDeps(es, var);     //Before this variable can be considered available for use, we need specified op to be executed
+                }
             }
         }
         for(String s : phNames){
             ExecStep es = new ExecStep(ExecType.PLACEHOLDER, s, new FrameIter(OUTER_FRAME, 0, null));
             dt.addDependency(es, start);
+
+            Variable var = sameDiff.getVariables().get(s);
+            if(var.getControlDeps() != null){
+                addVarControlDeps(es, var);     //Before this variable can be considered available for use, we need specified op to be executed
+            }
         }
         for(String s : zeroInputOpsInSubgraph){
             ExecStep es = new ExecStep(ExecType.OP, s, new FrameIter(OUTER_FRAME, 0, null));
@@ -237,31 +247,8 @@ public abstract class AbstractSession<T, O> {
         ExecStepPredicate predicate = new ExecStepPredicate();
         while (out.size() < userRequestedUnique.size()) {
             if(!dt.hasNewAllSatisfied()){
-                int missingCount = userRequestedUnique.size() - out.size();
-                StringBuilder sb = new StringBuilder();
-                sb.append("No variable are available for execution at step ")
-                        .append(step).append(": ").append(missingCount).append(" values remaining");
-                Set<String> missing = new HashSet<>();
-                for(String s : userRequestedUnique){
-                    if(!out.containsKey(s)){
-                        missing.add(s);
-                    }
-                }
-                if(missingCount <= 10){
-                    sb.append(". Missing variables: ");
-                    sb.append(missing);
-                } else {
-                    sb.append(". First 10 missing variables: ");
-                    Iterator<String> iter = missing.iterator();
-                    for( int i=0; i<10 && iter.hasNext(); i++ ){
-                        if(i > 0)
-                            sb.append(",");
-                        sb.append(iter.next());
-                    }
-                }
-                String s = sb.toString();
-//                System.out.println(sameDiff.summary());
-                throw new IllegalStateException(s);
+                //Haven't got all of the outputs the user requested, but there's nothing left that we can execute. Should not happen.
+                execFailed(userRequestedUnique, out, step);
             }
 
             //Get variable in the current frame/iteration and execute it's corresponding op
@@ -445,6 +432,23 @@ public abstract class AbstractSession<T, O> {
                     updateDescendantDeps(exec, fi);
                     dt.markSatisfied(exec, true);
                 }
+
+                /*
+                Edge case for TensorFlow import control dependencies: for some reason, TF allows op control dependencies
+                like /while/x -> SomeConstant - i.e., a constant depending on something inside a scope.
+                This should be handled with an enter op, but TF doesn't always use this :/
+                Note that this is equivalent to marking the control dependency as satisfied on the first iteration
+                TODO double check that this is exactly the same behaviour as TF - otherwise this approach might fail in
+                     some rare cases that rely on the constant/variable not being available
+                 */
+                List<String> cdFor = op.getControlDepFor();
+                if(cdFor != null){
+                    ExecStep cdEs = new ExecStep(ExecType.CONTROL_DEP, opName, null);
+                    if(!dt.isSatisfied(cdEs)){
+                        dt.markSatisfied(cdEs, true);
+                    }
+                }
+
             } else {
                 throw new RuntimeException("Unknown ExecStep: " + es);
             }
@@ -456,6 +460,9 @@ public abstract class AbstractSession<T, O> {
                 dt.markSatisfied(es, true);
             }
 
+
+
+
             step++;
         }
 
@@ -464,6 +471,42 @@ public abstract class AbstractSession<T, O> {
 
         out = postProcessOutput(out);
         return out;
+    }
+
+    protected void addVarControlDeps(ExecStep es, Variable v){
+        List<String> cds = v.getControlDeps();
+        for(String s : cds){
+            ExecStep controlES = new ExecStep(ExecType.CONTROL_DEP, s, null);
+            dt.addDependency(es, controlES);    //Before this variable can be considered available for use, we need specified op to be executed
+        }
+    }
+
+    protected void execFailed(Set<String> userRequestedUnique, Map<String,T> out, int step){
+        int missingCount = userRequestedUnique.size() - out.size();
+        StringBuilder sb = new StringBuilder();
+        sb.append("No variable are available for execution at step ")
+                .append(step).append(": ").append(missingCount).append(" values remaining");
+        Set<String> missing = new HashSet<>();
+        for(String s : userRequestedUnique){
+            if(!out.containsKey(s)){
+                missing.add(s);
+            }
+        }
+        if(missingCount <= 10){
+            sb.append(". Missing variables: ");
+            sb.append(missing);
+        } else {
+            sb.append(". First 10 missing variables: ");
+            Iterator<String> iter = missing.iterator();
+            for( int i=0; i<10 && iter.hasNext(); i++ ){
+                if(i > 0)
+                    sb.append(",");
+                sb.append(iter.next());
+            }
+        }
+        String s = sb.toString();
+//        System.out.println(sameDiff.summary());
+        throw new IllegalStateException(s);
     }
 
     protected void updateDescendantDeps(ExecStep justExecuted, FrameIter outFrameIter){
@@ -478,6 +521,18 @@ public abstract class AbstractSession<T, O> {
                 List<String> inputsToOps = v.getInputsForOp();
                 if(inputsToOps != null ){
                     for(String opName : inputsToOps){
+                        if(subgraphOps.contains(opName)){
+                            //We've just executed X, and there's dependency X -> Y
+                            //But, there also might be a Z -> Y that we should mark as needed for Y
+                            addDependenciesForOp(opName, outFrameIter);
+                        }
+                    }
+                }
+
+                //Also add control dependencies
+                List<String> cdForOps = v.getControlDepsForOp();
+                if(cdForOps != null){
+                    for(String opName : cdForOps){
                         if(subgraphOps.contains(opName)){
                             //We've just executed X, and there's dependency X -> Y
                             //But, there also might be a Z -> Y that we should mark as needed for Y
@@ -802,8 +857,9 @@ public abstract class AbstractSession<T, O> {
      * the switch branches (left or right) will ever be available; without this, once the switch op is executed, we'll
      * (incorrectly) conclude that *both* branches can be executed<br>
      * EXEC_START: Start of execution<br>
+     * CONTROL_DEP: Control dependency for op. Used for TF import, due to its odd "constant depends on op in a frame" behaviour
      */
-    protected enum ExecType {OP, VARIABLE, CONSTANT, PLACEHOLDER, SWITCH_L, SWITCH_R, EXEC_START};
+    protected enum ExecType {OP, VARIABLE, CONSTANT, PLACEHOLDER, SWITCH_L, SWITCH_R, EXEC_START, CONTROL_DEP};
 
     @Getter
     @EqualsAndHashCode
