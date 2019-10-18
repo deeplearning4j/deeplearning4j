@@ -53,6 +53,10 @@ import java.util.*;
  * InferenceSession: Performs inference (forward pass) on a SameDiff instance to get the outputs of the requested nodes.
  * Dynamically (in AbstractSession) calculates the required subgraph to execute to get the required outputs.
  *
+ * Also handles INDArray memory management - i.e., tracking and releasing memory manually, as soon as possible, to
+ * minimize memory use. This is implemented using a {@link SessionMemMgr} instance (for allocations/deallocations) and
+ * also {@link IdentityDependencyTracker} to track where arrays are actually used
+ *
  * @author Alex Black
  */
 @Slf4j
@@ -61,22 +65,28 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
     @Getter @Setter
-    private SessionMemMgr mmgr;
+    private SessionMemMgr mmgr;     //Used for allocating and deallocating memory
+    /**
+     * Array use tracker: What needs to happen before the array can be closed/released?
+     * As the name suggests, the INDArrays are tracked using qbject identity, not equality
+     */
     @Getter @Setter
-    private IdentityDependencyTracker<INDArray, Dep> arrayUseTracker = new IdentityDependencyTracker<>();   //What needs to happen before the array can be closed?
+    private IdentityDependencyTracker<INDArray, Dep> arrayUseTracker = new IdentityDependencyTracker<>();
 
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
 
-        mmgr = new ArrayCloseMemoryMgr();
+        mmgr = new ArrayCloseMemoryMgr();   //TODO replace this with new (planned) array reuse memory manager
     }
 
     @Override
     protected Map<String,INDArray> preprocessPlaceholders(Map<String,INDArray> placeholders){
         arrayUseTracker.clear();
 
-        //We'll also use this method as a "pre execution" hook-in, to mark valiables as something we should never deallocate
+        //We'll also use this method as a "pre execution" hook-in, to mark variables as something we should never deallocate
+        //This occurs by never marking these "ConstantDep" and "VariableDep" instances as satisfied, so there's always
+        // an unsatisfied dependency for them in the array use tracker
         //TODO we shouldn't be clearing this on every single iteration, in 99.5% of cases variables will be same as last iteration...
         for(SDVariable v : sameDiff.variables()){
             if(v.getVariableType() == VariableType.CONSTANT){
@@ -86,13 +96,14 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             }
         }
 
-        //Handle casting of the input array automatically.
-        //The idea here is to avoid unexpected errors if the user (for example) tries to perform inference with a double
-        // array for a float placeholder
         if(placeholders == null || placeholders.isEmpty()){
             return placeholders;
         }
 
+        //Handle casting of the input array automatically.
+        //The idea here is to avoid unexpected errors if the user (for example) tries to perform inference with a double
+        // array for a float placeholder
+        //TODO eventually we might have ops that support multiple input types, and hence won't need this casting
         Map<String,INDArray> out = new HashMap<>();
         for(Map.Entry<String,INDArray> e : placeholders.entrySet()){
             Preconditions.checkState(sameDiff.hasVariable(e.getKey()), "Invalid placeholder passed for execution: " +
@@ -118,16 +129,18 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
 
             //Second: cast the input to the required type
+            //TODO For the casting case, we SHOULD actually deallocate this when we're done with it
             DataType dt = sameDiff.getVariable(e.getKey()).dataType();
             if(arr.dataType() != dt){
-                arr = arr.castTo(dt);
+                INDArray cast = mmgr.allocate(false, dt, arr.shape());
+                cast.assign(arr);
+                arr = cast;
             }
             out.put(e.getKey(), arr);
 
             //Finally, mark as a placeholder array in the array use tracker, so we never deallocate this array...
             arrayUseTracker.addDependency(e.getValue(), new PlaceholderDep(e.getKey()));
         }
-
 
         return out;
     }
@@ -282,17 +295,17 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             Identity i = (Identity) op;
             String[] argNames = i.argNames();
             Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in identity op, got %s", argNames);
-            VarId vid = newVarId(argNames[0], outputFrameIter);
+            VarId vid = outputFrameIter.toVarId(argNames[0]);
 
             INDArray orig = nodeOutputs.get(vid);
             return new INDArray[]{orig};
         } else if(op instanceof Switch) {
             Switch s = (Switch) op;
             String[] argNames = s.argNames();       //Order: input, boolean array
-            VarId vidPredicate = newVarId(argNames[1], outputFrameIter);
+            VarId vidPredicate = outputFrameIter.toVarId(argNames[1]);
             INDArray predicate = this.nodeOutputs.get(vidPredicate);
             Preconditions.checkState(predicate.isScalar() && predicate.dataType() == DataType.BOOL, "Expected boolean predicate: got %ndSInfo", predicate);
-            VarId vid = newVarId(argNames[0], outputFrameIter);
+            VarId vid = outputFrameIter.toVarId(argNames[0]);
             if (predicate.getDouble(0) == 0.0) {
                 return new INDArray[]{this.nodeOutputs.get(vid), null};
             } else {
@@ -348,12 +361,12 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             }
             return new INDArray[]{inArr};
         } else if(op instanceof Merge) {
-            //Merge avairable for forward pass when any of its inputs are available. When multiple are available, behaviour
+            //Merge available for forward pass when any of its inputs are available. When multiple are available, behaviour
             // is undefined
             Merge m = (Merge) op;
             String[] in = sameDiff.getInputsForOp(op);
             for (String s : in) {
-                VarId vid = newVarId(s, outputFrameIter);
+                VarId vid = outputFrameIter.toVarId(s);
                 if (nodeOutputs.containsKey(vid)) {
                     log.trace("Returning input \"{}\" for merge node \"{}\"", m.getOwnName(), s);
                     INDArray arr = nodeOutputs.get(vid);
@@ -368,7 +381,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             LoopCond lc = (LoopCond) op;
             String[] argNames = lc.argNames();
             Preconditions.checkState(argNames.length == 1, "Expected only 1 arg name in LoopCond op, got %s", argNames);
-            VarId vid = newVarId(argNames[0], outputFrameIter);
+            VarId vid = outputFrameIter.toVarId(argNames[0]);
             INDArray arr = nodeOutputs.get(vid);
             Preconditions.checkNotNull(arr, "Input to LoopCond op must not be null");
             Preconditions.checkState(arr.isScalar() && arr.dataType() == DataType.BOOL, "LoopCond input must be a scalar boolean, got %ndShape");
@@ -377,13 +390,16 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             //TensorOps - special cases...
             return getOutputsHelperTensorArrayOps(op, outputFrameIter, opInputs, allIterInputs);
         } else if(op instanceof GradientBackwardsMarker) {
-            return new INDArray[]{Nd4j.scalar(1.0f)};
+            INDArray out = mmgr.allocate(false, DataType.FLOAT).assign(1.0f);
+            return new INDArray[]{out};
         } else if(op instanceof ExternalErrorsFunction){
             ExternalErrorsFunction fn = (ExternalErrorsFunction)op;
             String n = fn.getGradPlaceholderName();
             INDArray arr = nodeOutputs.get(new VarId(n, OUTER_FRAME, 0, null));
             Preconditions.checkState(arr != null, "Could not find external errors placeholder array: %s", arr);
-            return new INDArray[]{arr.dup()};
+            INDArray out = mmgr.allocate(false, arr.dataType(), arr.shape());
+            out.assign(arr);
+            return new INDArray[]{out};
         } else if(op instanceof CustomOp){
             CustomOp c = (CustomOp)op;
             Nd4j.getExecutioner().exec(c);
@@ -397,6 +413,9 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         }
     }
 
+    /**
+     * Forward pass for TensorArray ops
+     */
     public INDArray[] getOutputsHelperTensorArrayOps(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs){
         /*
         TODO: TensorArray memory management note: For now, we'll close any INDArrays stored in the TensorArray at the end of
@@ -406,7 +425,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
         if (op instanceof TensorArray) {
             //Create a TensorArray
-            VarId vid = newVarId(op.outputVariable().getVarName(), outputFrameIter);
+            VarId vid = outputFrameIter.toVarId(op.outputVariable().getVarName());
             Preconditions.checkState(!tensorArrays.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
             tensorArrays.put(vid, new ArrayList<INDArray>());
 
@@ -437,7 +456,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayRead
                 //TODO also TensorArrayWrite, scatter, etc??
                 inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
-                v = newVarId(inTensorArray.getVarName(), v.getParentFrame());
+                v = v.getParentFrame().toVarId(inTensorArray.getVarName());
             }
 
             List<INDArray> list = getTensorArrays().get(v);
@@ -461,7 +480,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayWrite
                 //TODO also TensorArrayScatter, etc??
                 inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
-                tArr = newVarId(inTensorArray.getVarName(), tArr.getParentFrame());
+                tArr = tArr.getParentFrame().toVarId(inTensorArray.getVarName());
             }
 
             //Input 0 is the TensorArray (or dummy variable that represents it) - but sometimes Enter, in TensorArray -> Enter -> TensorARrayRead
@@ -676,8 +695,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         SameDiffOp sdo = sameDiff.getOps().get(opName);
         DifferentialFunction df = sdo.getOp();
 
-        //TODO We should clone these ops - probably - as we don't want them shared between threads/sessions!
-        //But let's only clone them *once* and cache in inference session - not on every exec
+        //TODO Switch to OpContext - and make sure executing like that is thread safe (i.e., array fields in ops are not used etc)
 
         Preconditions.checkNotNull(df, "No differential function found with name \"%s\"", opName);
 
@@ -743,7 +761,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 customOp.setInputArguments(args);
             }
 
-            df.resolvePropertiesFromSameDiffBeforeExecution();
+            df.resolvePropertiesFromSameDiffBeforeExecution();  //TODO This is to be removed
             List<LongShapeDescriptor> outShape = customOp.calculateOutputShape();
             Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
             String[] outNames = df.outputVariablesNames();

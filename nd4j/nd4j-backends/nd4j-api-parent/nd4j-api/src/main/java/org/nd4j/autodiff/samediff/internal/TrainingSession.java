@@ -20,9 +20,9 @@ import org.nd4j.linalg.primitives.AtomicDouble;
 import java.util.*;
 
 /**
- * TrainingSession extends InferenceSession, to add training-specific functionality:
- * - Application of regularization (L1, L2, weight decay etc)
- * - Inline updating of variables
+ * TrainingSession extends InferenceSession, to add training-specific functionality:<br>
+ * - Application of regularization (L1, L2, weight decay etc)<br>
+ * - Inline updating of variables, using updater/optimizer (Adam, Nesterov, SGD, etc)<br>
  * - Calculation of regularization scores (Score for L1, L2, etc)
  */
 @Slf4j
@@ -40,6 +40,18 @@ public class TrainingSession extends InferenceSession {
         super(sameDiff);
     }
 
+    /**
+     * Perform one iteration of training - i.e., do forward and backward passes, and update the parameters
+     * @param config        Training configuration
+     * @param placeholders  Current placeholders
+     * @param paramsToTrain Set of parameters that will be trained
+     * @param updaters      Current updater state
+     * @param batch         Current data/batch (mainly for listeners, should have already been converted to placeholders map)
+     * @param lossVariables Loss variables (names)
+     * @param listeners     Listeners (if any)
+     * @param at            Current epoch, iteration, etc
+     * @return The Loss at the current iteration
+     */
     public Loss trainingIteration(TrainingConfig config, Map<String, INDArray> placeholders, Set<String> paramsToTrain, Map<String, GradientUpdater> updaters,
                                   MultiDataSet batch, List<String> lossVariables, List<Listener> listeners, At at){
         this.config = config;
@@ -104,7 +116,7 @@ public class TrainingSession extends InferenceSession {
     @Override
     public INDArray[] getOutputs(SameDiffOp op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs,
                                  Set<String> constAndPhInputs, List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables) {
-
+        //Get outputs from InferenceSession
         INDArray[] out = super.getOutputs(op, outputFrameIter, opInputs, allIterInputs, constAndPhInputs, listeners, at, batch, allReqVariables);
 
         List<String> outputs = op.getOutputsOfOp();

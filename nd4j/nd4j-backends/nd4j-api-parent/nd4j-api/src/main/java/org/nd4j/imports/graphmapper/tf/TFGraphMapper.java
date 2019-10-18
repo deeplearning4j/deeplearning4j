@@ -125,6 +125,7 @@ public class TFGraphMapper {
 
         //Go through ops in order, and add to the graph
         SameDiff sd = SameDiff.create();
+        Map<String,List<String>> constControlDeps = new HashMap<>();        //Key: constant name. Value: control dependencies
         while(!availableToAdd.isEmpty()){
             NodeDef nd = availableToAdd.remove();
             String name = nd.getName();
@@ -140,6 +141,20 @@ public class TFGraphMapper {
                 TFTensorMapper m = TFTensorMappers.newMapper(tfTensor);
                 INDArray arr = m.toNDArray();
                 sd.constant(name, arr);
+                int inputCount = nd.getInputCount();
+                if(inputCount > 0){
+                    //Very likely control dependency. i.e., "we must execute op X before the constant is really available to be used"
+                    List<String> l = new ArrayList<>(inputCount);
+                    for( int i=0; i<inputCount; i++ ){
+                        String n = nd.getInput(i);
+                        if(!isControlDep(n)){
+                            throw new IllegalStateException("Found non-control dependency input \"" + n + "\" for constant \"" + name + "\"");
+                        }
+                        String n2 = stripControl(n);
+                        l.add(n2);
+                    }
+                    constControlDeps.put(name, l);
+                }
             } else if("Placeholder".equals(opName)){
 
                 Map<String,AttrValue> attrMap = nd.getAttrMap();
@@ -149,6 +164,10 @@ public class TFGraphMapper {
                 org.tensorflow.framework.DataType tfDtype = attrMap.get("dtype").getType();
                 org.nd4j.linalg.api.buffer.DataType dt = convertType(tfDtype);
                 sd.placeHolder(name, dt, shape);
+                int inputCount = nd.getInputCount();
+                if(inputCount > 0){
+                    System.out.println();
+                }
             } else {
                 /*
                 Normal ops. Process in the following order:
@@ -335,6 +354,22 @@ public class TFGraphMapper {
 
             //Finally, remove the just processed op from remainingNodes map:
             remainingNodes.remove(name);
+        }
+
+        //Post process the control dependencies, if any (done after because dependencies may not exist when imported)
+        for(Map.Entry<String, List<String>> e : constControlDeps.entrySet()){
+            String varName = e.getKey();
+            List<String> cdOpNames = e.getValue();
+            sd.getVariables().get(varName).setControlDeps(cdOpNames);
+
+            for(String s : cdOpNames){
+                SameDiffOp sdo = sd.getOps().get(s);
+                if(sdo.getControlDepFor() == null)
+                    sdo.setControlDepFor(new ArrayList<String>());
+                List<String> l = sdo.getControlDepFor();
+                if(!l.contains(s))
+                    l.add(varName);
+            }
         }
 
         //Post process the merge ops - all we are missing is a Variable.getInputsForOp().add(mergeOpName);

@@ -1048,12 +1048,8 @@ public class SameDiff extends SDBaseOps {
                 constantArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr, true));
                 break;
             case ARRAY:
-                // FIXME: remove this before release
-                val session = sessions.get(Thread.currentThread().getId());
-                val varId = session.newVarId(variable.getVarName(), AbstractSession.OUTER_FRAME, 0, null);
-                session.getNodeOutputs().put(varId, arr);
-                //throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
-                break;
+                throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY - arrays for" +
+                        " this type of variable is calculated ");
             case PLACEHOLDER:
                 //Validate placeholder shapes:
                 long[] phShape = variable.placeholderShape();

@@ -21,7 +21,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
-import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
@@ -34,24 +33,40 @@ import org.nd4j.linalg.function.Predicate;
 import java.util.*;
 
 /**
- * Additional functionality to add:
- * - Workspaces support
- * - Proper cache support
+ * AbstractSession is a SameDiff graph execution class that inference and training it built upon
+ * It walks through the graph, dynamically executing operations that can be executed next, but (dynamically) only
+ * executing the subset of the graph that is actually required to get the requested outputs.<br>
+ * Note that most of the implementation complexity comes from dynamic graphs - i.e., nested loops, control ops, etc
  *
  * @param <T> Node output type - for example, INDArray, shape, etc depending on what we're calculating
  * @param <O> Op type
+ * @author Alex Black
  */
 @Slf4j
 public abstract class AbstractSession<T, O> {
 
-    //All execution happens in a frame... this is the name of the main/outer frame
+    /**
+     * All execution in Samediff happens in a frame... this is the name of the main/outer frame - i.e., the "default" frame
+     * Other frames (such as for loops) may be nested within this frame
+     */
     public static final String OUTER_FRAME = "main";
 
     protected final SameDiff sameDiff;
     @Getter
-    protected final Map<VarId, T> nodeOutputs = new HashMap<>();
+    protected final Map<VarId, T> nodeOutputs = new HashMap<>();        //Key: variable (at a given frame + iteration). Value: the calculated output for that variable
     @Getter
-    protected final Map<VarId, List<T>> tensorArrays = new HashMap<>(); //Stores the outputs for a TensorArray ops
+    protected final Map<VarId, List<T>> tensorArrays = new HashMap<>(); //Stores the underlying arrays for TensorArray ops
+    /*
+    The dependency tracker is responsible for determining what ops (at what frame/iteration) can be executed next, given
+    what has been executed so far.
+    For static graphs, such as abstraction would not be necessary; for dynamic graphs (i.e., nested loops, of arbitary
+    number of iterations and depth - and also switch ops which can cause whole subgraphs to not be executed) this is necessary
+    Note: the ExecStep represents one step for execution - some steps are as simple as "execute an op (at the given frame/iter)"
+    It works by adding dependencies (X -> Y - such as "op Y depends on the output of op X") and then marking them as
+    satisfied ("op X has been calculated"). Once all dependencies for an execution step have been satisfied, the execution step
+    is added to a queue - outputs of which can be accessed with dt.getNewAllSatisfied() and dt.getNewAllSatisfiedList(),
+    at which point it is removed from the dependency tracker
+     */
     protected final DependencyTracker<ExecStep, ExecStep> dt = new DependencyTracker<>();
 
     /**
@@ -60,8 +75,15 @@ public abstract class AbstractSession<T, O> {
      * in this set may not be executed depending on the graph structure - i.e., switch ops, etc
      */
     protected final Set<String> subgraph = new HashSet<>();
-
+    /**
+     * As per subgraph set, but for ops instead
+     */
     protected final Set<String> subgraphOps = new HashSet<>();
+
+    /**
+     * Constains the names of ops that don't have any inputs. Kept because normally ops are triggered for execution when
+     * their all their inputs have been calculated; we'll trigger that step manually during execution initialization
+     */
     protected final Set<String> zeroInputOpsInSubgraph = new HashSet<>();
 
     public AbstractSession(@NonNull SameDiff sameDiff) {
@@ -69,7 +91,7 @@ public abstract class AbstractSession<T, O> {
     }
 
     public boolean contains(String variable, String frame, int iteration, FrameIter parentFrameIter){
-        VarId varId = newVarId(variable, frame, iteration, parentFrameIter);
+        VarId varId = new VarId(variable, frame, iteration, parentFrameIter);
         return nodeOutputs.containsKey(varId);
     }
 
@@ -86,7 +108,7 @@ public abstract class AbstractSession<T, O> {
      */
     public T get(String variable, String frame, int iteration, FrameIter parentFrameIter, boolean enforceExistence) {
         //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup etc
-        VarId varId = newVarId(variable, frame, iteration, parentFrameIter);
+        VarId varId = new VarId(variable, frame, iteration, parentFrameIter);
         T out = nodeOutputs.get(varId);
         if(enforceExistence) {
             Preconditions.checkNotNull(out, "No output found for variable %s (frame %s, iteration %s)", variable, frame, iteration);
@@ -94,27 +116,17 @@ public abstract class AbstractSession<T, O> {
         return out;
     }
 
-    public VarId newVarId(String variable, String frame, int iteration, FrameIter parentFrameIter) {
-        //TODO eventually we'll cache and reuse VarId objects here to avoid garbage generation on lookup
-        return new VarId(variable, frame, iteration, parentFrameIter);
-    }
-
-    public VarId newVarId(String variable, FrameIter frameIter) {
-        return newVarId(variable, frameIter.getFrame(), frameIter.getIteration(), frameIter.getParentFrame());
-    }
-
     /**
-     * Get the output of the session - i.e., perform inference/forward pass
+     * Get the output of the session - i.e., perform inference/forward pass and return the autputs for the specified variables
      *
-     * @param variables         Name of the variables we want the arrays/activations for
-     * @param placeholderValues The placeholder values (if any).
-     * @param batch             The batch data, used to call Listener.opExecution
-     * @param requiredActivations  Additional activations that are required.  Won't be outputed, but opExecution will be called.  May be null.
+     * @param variables           Name of the variables we want the arrays/activations for
+     * @param placeholderValues   The placeholder values (if any). May be null.
+     * @param batch               The batch data, used to call Listener.opExecution
+     * @param requiredActivations Additional activations that are required.  Won't be outputed, but opExecution will be called.  May be null.
      * @return The specified variable values, optionally in the specified workspace
      */
     public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues,
             MultiDataSet batch, Collection<String> requiredActivations, List<Listener> listeners, At at) {
-
         Preconditions.checkState(!variables.isEmpty() || !requiredActivations.isEmpty(), "Variables to perform forward pass for must not be empty");
 
         if(requiredActivations == null)
@@ -132,7 +144,7 @@ public abstract class AbstractSession<T, O> {
 
         placeholderValues = preprocessPlaceholders(placeholderValues);
 
-        //Clear state from past
+        //Clear state from past iterations, if any
         dt.clear();
         subgraph.clear();
         subgraphOps.clear();
@@ -142,12 +154,13 @@ public abstract class AbstractSession<T, O> {
         //Step 1: determine subgraph structure we actually need to execute
         //Basic plan: work backwards from the variables we want, based on the graph structure, to work out what
         // we actually need to execute
+        //TODO we'll optimize this and cache the results, only recalculating if the graph structure changes
         Set<String> userRequestedUnique = new HashSet<>(variables);
         Set<String> allRequired = new HashSet<>(requiredActivations);
         allRequired.addAll(variables);
         initSubgraph(allRequired);
 
-        //Step 1a: Check that we have required placeholders
+        //Step 2: Check that we have required placeholders
         List<String> phNames = sameDiff.inputs();
         if(placeholderValues == null || !placeholderValues.keySet().containsAll(phNames)){
             /* We only have a subset of all placeholders
@@ -155,10 +168,11 @@ public abstract class AbstractSession<T, O> {
             A placeholder is required if:
             (a) It's one of the requested outputs
             (b) It's required to calculate any of the ops in the subgraph
+            For example, we might have a label placeholder, and we're doing inference not training
              */
             for(String s : phNames){
                 boolean required = false;
-                if(variables.contains(s)){      //TODO List.contains - O(N)
+                if(variables.contains(s)){
                     required = true;
                 }
                 if(!required){
@@ -175,7 +189,6 @@ public abstract class AbstractSession<T, O> {
                 }
 
                 if(required && (placeholderValues == null || !placeholderValues.containsKey(s))){
-
                     // Some Keras layers (like GRU) do different things depending on whether the model is training.
                     // We provide this value directly.
                     if(s.endsWith("keras_learning_phase")){
@@ -189,7 +202,7 @@ public abstract class AbstractSession<T, O> {
             }
         }
 
-        //Mark the (required) variables, constants and placeholders as available via dependency tracker
+        //Step 3: Mark the (required) variables, constants and placeholders as available via dependency tracker
         //And also any "zero dependency" ops - i.e., those without any inputs
         ExecStep start = new ExecStep(ExecType.EXEC_START, "", null);   //Dummy dependency to trigger the variables and constants
         for(SDVariable v : sameDiff.variables()){
@@ -222,25 +235,27 @@ public abstract class AbstractSession<T, O> {
 
 
 
-        //Step 2: execute (in any order, but not switching to new frame/iteration until all from current frame/iter are done),
-        // until we have all required nodeOutputs
+        //Step 4: execute in any order, but not switching to new frame/iteration until all from current frame/iter ops
+        // are done - until we have all required nodeOutputs
         /*
-        The idea is simple: we start off with a set of "available to execute" variables - just the placeholders and
-        constants at this point.
+        The idea is simple: we start off with a set of "available to execute" variables - just the placeholders,
+        constants and variables (assuming no control dependencies) at the start of execution.
 
         Then, we remove an "available to execute" node and execute it. Execution may be:
-        (a) For constants and placeholders: just looking up the value
-        (b) For variables as outputs of ops: actually executing the op
+        (a) For constants, variable type SDVariables, and placeholders: just look up the value
+        (b) For variables as outputs of ops: actually execute the op
 
         After execution, we look at the graph structure and determine what that now executed/calculated variable is
         an input to. If all inputs are available for the op, we mark all output variables of that op as available for execution.
+        Both parts of this (tracking dependencies, and also what's now available to execute) are handled in the dependency tracker
 
         We stop computation once all the required outputs are available. At this point, subgraph may NOT be empty - for example,
         switch ops may cause entire branches of the graph to be skipped.
          */
 
-        Map<String, T> out = new HashMap<>();
-        int step = 0;
+        Map<String, T> out = new HashMap<>();       //Outputs, returned to the user
+        int step = 0;                               //Number of execution steps
+        //Next 3: current execution frame
         String currentFrame = OUTER_FRAME;
         int currentFrameIter = 0;
         FrameIter currParentFrame = null;
@@ -253,20 +268,21 @@ public abstract class AbstractSession<T, O> {
 
             //Get variable in the current frame/iteration and execute it's corresponding op
             //If no more ops exist for the current frame/iter, we'll switch to the next frame/iter
-            //The idea is to not mix the order of execution of ops in different frames/iters
+            //The idea is to not mix the order of execution of ops in different frames/iters - i.e., finish the current
+            // frame/iter before starting the next one
             predicate.setCurrentFrame(currentFrame);
             predicate.setCurrentFrameIter(currentFrameIter);
             predicate.setCurrParentFrame(currParentFrame);
 
             ExecStep es = dt.getFirstNewAllSatisfiedMatching(predicate);
             if(es == null){
+                //We must have finished the current frame/iter, and are switching to the next one
                 es = dt.getNewAllSatisfied();
 
                 if(es.getType() == ExecType.OP) {
                     //Trigger frame/iter transition
                     FrameIter fi = es.getFrameIter();
-                    onFrameIterTransition(currentFrame, currentFrameIter, currParentFrame,
-                            fi.getFrame(), fi.getIteration(), fi.getParentFrame());
+                    onFrameIterTransition(currentFrame, currentFrameIter, currParentFrame, fi.getFrame(), fi.getIteration(), fi.getParentFrame());
                 }
             }
 
@@ -280,7 +296,7 @@ public abstract class AbstractSession<T, O> {
             boolean skipDepUpdate = false;      //Only used for Switch ops, which have slighly different handling...
             boolean skipMarkSatisfied = false;  //Only for enter ops, because of different frame/iter
             if(es.getType() == ExecType.CONSTANT || es.getType() == ExecType.VARIABLE ) {
-                VarId vid = newVarId(es.getName(), OUTER_FRAME, 0, null );
+                VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null );
                 T arr = getConstantOrVariable(es.getName());
                 Preconditions.checkNotNull(arr, "Encountered null placeholder array for constant: %s", vid);
                 nodeOutputs.put(vid, arr);
@@ -290,19 +306,17 @@ public abstract class AbstractSession<T, O> {
                     out.put(es.getName(), arr);
                 }
             } else if(es.getType() == ExecType.PLACEHOLDER) {
-                VarId vid = newVarId(es.getName(), OUTER_FRAME, 0, null);
+                VarId vid = new VarId(es.getName(), OUTER_FRAME, 0, null);
                 nodeOutputs.put(vid, placeholderValues.get(es.getName()));
                 outFrameIter = new FrameIter(OUTER_FRAME, 0, null);
                 if(allRequired.contains(es.getName())){
-                    //User requested const/variable as one of the outputs
+                    //User requested placeholder value as one of the outputs
                     out.put(es.getName(), placeholderValues.get(es.getName()));
                 }
             } else if(es.getType() == ExecType.OP){
                 String opName = es.getName();
                 SameDiffOp op = sameDiff.getOps().get(opName);
                 DifferentialFunction o = op.getOp();
-
-
 
                 if (o instanceof Enter) {
                     //Enter op: output is variable in a new (specified) frame, iteration 0.
@@ -371,7 +385,9 @@ public abstract class AbstractSession<T, O> {
                 }
 
 
-
+                // Do execution of the op, in 2 steps
+                // (a) "Parameterize" the op - i.e., find and set the arrays on the op, allocate outputs, etc ready for execution
+                // (b) actually execute the operation
                 O parameterizedOp = getAndParameterizeOp(opName, outFrameIter, inputs, allIterInputs, constAndPhInputs, placeholderValues, reqOutputVariablesSet);
                 T[] opOutputValues = getOutputs(parameterizedOp, outFrameIter, inputs, allIterInputs, constAndPhInputs, listeners, at, batch, reqOutputVariablesSet);
                 List<String> opOutVarNames = op.getOutputsOfOp();
@@ -380,6 +396,7 @@ public abstract class AbstractSession<T, O> {
                                 " got %s outputs when %s outputs were expected (%s)", parameterizedOp.getClass().getSimpleName(), opOutputValues.length,
                         opOutVarNames.size(), opOutVarNames);
 
+                //Store the op outputs
                 for( int i=0; i<opOutputValues.length; i++ ){
                     if(opOutputValues[i] == null && op.getOp() instanceof Switch){
                         //Switch op only forwards the input to one of the outputs
@@ -395,11 +412,15 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
 
-                //Post execution: update dependency tracker so we know what is available to execute next
+                //Post execution: update dependency tracker so we know what is available to execute next, given we now
+                // have these new values
                 if(o instanceof Switch){
                     /*
                     Switch is a special case: only one output/branch is considered to exist post execution.
-                    Unlike every other type of op, only 1 of 2 output arrays is actually executed
+                    Unlike every other type of op, only 1 of 2 output arrays is actually executed.
+                    For dependency tracking purposes, this is why we have SWITCH_L and _R execution types.
+                    If we just depended on the op, the dependency tracker would incorrectly conclude that ops relying on
+                    both branches (i.e., including the unavailable one) can now be executed
                      */
                     skipDepUpdate = true;
                     skipMarkSatisfied = true;
@@ -450,9 +471,11 @@ public abstract class AbstractSession<T, O> {
                 }
 
             } else {
+                //Should never happen
                 throw new RuntimeException("Unknown ExecStep: " + es);
             }
 
+            //Standard ops
             if(!skipDepUpdate) {
                 updateDescendantDeps(es, outFrameIter);
             }
@@ -460,27 +483,37 @@ public abstract class AbstractSession<T, O> {
                 dt.markSatisfied(es, true);
             }
 
-
-
-
             step++;
         }
 
+        //TODO we should clear the node outputs map to get rid of the invalid (closed, out of workspace, etc) arrays
 
-        //TODO under what circumstances should we clear the nodeOutputs map? Doesn't matter for memory, because we already close/deallocate though...
-
-        out = postProcessOutput(out);
+        out = postProcessOutput(out);   //Hook-in for subclass sessions, if needed
         return out;
     }
 
+    /**
+     * Add the control dependency from Op -> variable
+     * @param es Execution step for the variable
+     * @param v  Variable
+     */
     protected void addVarControlDeps(ExecStep es, Variable v){
         List<String> cds = v.getControlDeps();
-        for(String s : cds){
-            ExecStep controlES = new ExecStep(ExecType.CONTROL_DEP, s, null);
-            dt.addDependency(es, controlES);    //Before this variable can be considered available for use, we need specified op to be executed
+        if(cds != null) {
+            for (String s : cds) {
+                ExecStep controlES = new ExecStep(ExecType.CONTROL_DEP, s, null);
+                dt.addDependency(es, controlES);    //Before this variable can be considered available for use, we need specified op to be executed
+            }
         }
     }
 
+    /**
+     * Execution failed - can't calculate all requested outputs, and there's nothing left to calculate.
+     * Throws an exception with a useful message
+     * @param userRequestedUnique All outputs that the user requseted
+     * @param out                 Current outputs
+     * @param step                Execution step
+     */
     protected void execFailed(Set<String> userRequestedUnique, Map<String,T> out, int step){
         int missingCount = userRequestedUnique.size() - out.size();
         StringBuilder sb = new StringBuilder();
@@ -509,8 +542,15 @@ public abstract class AbstractSession<T, O> {
         throw new IllegalStateException(s);
     }
 
+    /**
+     * Update the descendant dependencies
+     * So if the graph structure is X -> A, then add all (X,Y,Z,...) -> A to the dependency tracker
+     * This is for a specific frame and iteration, for both sides of the dependency (in and out)
+     *
+     * @param justExecuted The execution step that has just completed
+     * @param outFrameIter The frame/iteration of the output
+     */
     protected void updateDescendantDeps(ExecStep justExecuted, FrameIter outFrameIter){
-
         ExecType t = justExecuted.getType();
         String n = justExecuted.getName();
         if(justExecuted.getType() == ExecType.OP){
@@ -567,7 +607,7 @@ public abstract class AbstractSession<T, O> {
                 }
             }
         } else {
-            throw new UnsupportedOperationException("Not yet implemented exec type - execution: " + justExecuted);
+            throw new UnsupportedOperationException("Unknown or not yet implemented exec type: " + justExecuted);
         }
     }
 
@@ -576,8 +616,8 @@ public abstract class AbstractSession<T, O> {
      * For X -> someOp, add all dependencies for someOp, i.e., all Z -> someOp
      * (which includes X, but may not only be X)
      *
-     * @param opName
-     * @param depFrameIter
+     * @param opName       Name of the op
+     * @param depFrameIter Frame/iteration of the op instance to be executed
      */
     protected void addDependenciesForOp(String opName, FrameIter depFrameIter){
         SameDiffOp op = sameDiff.getOps().get(opName);
@@ -615,6 +655,9 @@ public abstract class AbstractSession<T, O> {
         }
     }
 
+    /**
+     * Get the ExecStep for the given variable, given execution is happening at the specified frame/iteration
+     */
     protected ExecStep getExecStepForVar(String varName, FrameIter frameIter){
         Variable v = sameDiff.getVariables().get(varName);
         VariableType vt = v.getVariable().getVariableType();
@@ -658,11 +701,19 @@ public abstract class AbstractSession<T, O> {
                     }
                     return new ExecStep(ExecType.OP, outOfOp, fi);
                 }
+                //Intentional fall-through to default case
             }
             return new ExecStep(ExecType.OP, outOfOp, frameIter);
         }
     }
 
+    /**
+     * Initialize the subgraph - the subgraph and subgraphOps sets
+     * This works our what ops and variables we might need to execute to get the requested outputs.
+     * In general, this is a subset of the graph.
+     *
+     * @param variables Set of output variables we need
+     */
     protected void initSubgraph(Set<String> variables) {
         //Step 1: determine subgraph structure we actually need to execute
         Queue<String> processingQueue = new LinkedList<>(variables);
@@ -733,6 +784,12 @@ public abstract class AbstractSession<T, O> {
         return placeholders;
     }
 
+    /**
+     * Post process the session output values, if required.
+     * Override if required in session subclasses
+     * @param output Output to be returned to the user
+     * @return Post processed output
+     */
     protected Map<String,T> postProcessOutput(Map<String,T> output){
         return output;
     }
@@ -774,10 +831,25 @@ public abstract class AbstractSession<T, O> {
                                    List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables);
 
 
+    /**
+     * Execution hook for subclass sessions.
+     * Triggered when execution transitions from one frame/iteration to the next frame/iteration
+     *
+     * @param fromFrame  Previous frame
+     * @param fromIter   Previous frame iteration
+     * @param parentFrom Previous parent frame
+     * @param toFrame    New frame
+     * @param toIter     New frame iteration
+     * @param parentTo   New parent frame
+     */
     protected void onFrameIterTransition(String fromFrame, int fromIter, FrameIter parentFrom, String toFrame, int toIter, FrameIter parentTo){
         //No-op by default
     }
 
+    /**
+     * Get the VarId from the specified name. The VarId should be in one or the other of the collections,
+     * and only one VarId with that name should exist
+     */
     protected static VarId lookup(String name, Collection<VarId> varIds, Collection<VarId> varIds2, boolean exceptionOnNotFound){
         VarId vid = varIds == null ? null : lookup(name, varIds, false);
         if(vid == null && varIds2 != null)
@@ -789,7 +861,10 @@ public abstract class AbstractSession<T, O> {
         return vid;
     }
 
-
+    /**
+     * Get the VarId from the specified name. The VarId should be in the collection,
+     * and only one VarId with that name should exist
+     */
     protected static VarId lookup(String name, Collection<VarId> varIds, boolean exceptionOnNotFound){
         for(VarId vid : varIds){
             if(vid.getVariable().equals(name)){
@@ -802,11 +877,12 @@ public abstract class AbstractSession<T, O> {
         return null;
     }
 
-    /*
-    VarId: identifies a variable in a specific frame and frame iteration
-    Used for 2 places:
-    (a) to identify variables that are available for execution
-    (b) to store results
+    /**
+     * VarId: identifies the value of a variable in a specific frame and frame iteration<br>
+     * Note that frames can be nested - which generally represents nested loop situations.<br>
+     * Used for 2 places:<br>
+     * (a) to identify variables that are available for execution<br>
+     * (b) to store results<br>
      */
     @Data
     @AllArgsConstructor
@@ -821,13 +897,17 @@ public abstract class AbstractSession<T, O> {
             return "VarId(\"" + variable + "\",\"" + frame + "\"," + iteration + ",parent=" + parentFrame + ")";
         }
 
+        /**
+         * @return FrameIter corresponding to the VarId
+         */
         public FrameIter toFrameIter() {
             return new FrameIter(frame, iteration, parentFrame);
         }
     }
 
-    /*
-    FrameIter: Identifies frame + iteration. Used mainly for for exit nodes
+    /**
+     * FrameIter: Identifies a frame + iteration (but not a specific op or variable).<br>
+     * Note that frames can be nested - which generally represents nested loop situations.
      */
     @Data
     @AllArgsConstructor
@@ -845,6 +925,10 @@ public abstract class AbstractSession<T, O> {
         public FrameIter clone(){
             return new FrameIter(frame, iteration, (parentFrame == null ? null : parentFrame.clone()));
         }
+
+        public VarId toVarId(String name){
+            return new VarId(name, frame, iteration, parentFrame);
+        }
     }
 
     /**
@@ -861,6 +945,9 @@ public abstract class AbstractSession<T, O> {
      */
     protected enum ExecType {OP, VARIABLE, CONSTANT, PLACEHOLDER, SWITCH_L, SWITCH_R, EXEC_START, CONTROL_DEP};
 
+    /**
+     * ExecStep represents a single execution step, for a single op (or variable/constant etc) at a specific frame/iteration
+     */
     @Getter
     @EqualsAndHashCode
     protected static class ExecStep {
@@ -884,6 +971,9 @@ public abstract class AbstractSession<T, O> {
         }
     }
 
+    /**
+     * Used in getting the next ExecStep that matches the specified (current) frame/iteration
+     */
     @Data
     @AllArgsConstructor
     @NoArgsConstructor
@@ -901,5 +991,4 @@ public abstract class AbstractSession<T, O> {
                             currParentFrame.equals(execStep.getFrameIter().getParentFrame()));
         }
     };
-
 }

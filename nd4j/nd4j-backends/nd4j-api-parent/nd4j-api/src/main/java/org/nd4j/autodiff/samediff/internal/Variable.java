@@ -35,7 +35,7 @@ public class Variable {
     protected List<String> controlDepsForOp;    //if a op control dependency (x -> opY) exists, then "opY" will be in this list
     protected List<String> controlDepsForVar;   //if a variable control dependency (x -> varY) exists, then "varY" will be in this list
     protected String outputOfOp;        //Null for placeholders/constants. For array type SDVariables, the name of the op it's an output of
-    protected List<String> controlDeps;     //Control dependencies: name of variables that must be available before this variable is considered available for execution
+    protected List<String> controlDeps;     //Control dependencies: name of ops that must be available before this variable is considered available for execution
     protected int outputOfOpIdx;        //Index of the output for the op (say, variable is output number 2 of op "outputOfOp")
     protected SDVariable gradient;      //Variable corresponding to the gradient of this variable
     protected int variableIndex = -1;
