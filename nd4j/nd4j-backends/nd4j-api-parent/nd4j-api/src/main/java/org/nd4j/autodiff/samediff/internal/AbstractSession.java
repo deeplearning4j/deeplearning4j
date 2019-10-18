@@ -104,23 +104,6 @@ public abstract class AbstractSession<T, O> {
     }
 
     /**
-     * @deprecated Use {@link #output(List, Map, MultiDataSet, Collection, List, At)}.
-     *
-     * @param training Uses Operation.TRAINING if true, otherwise Operation.INFERENCE
-     */
-    @Deprecated
-    public Map<String, T> output(@NonNull List<String> variables, Map<String, T> placeholderValues,
-            MultiDataSet batch, Collection<String> requiredActivations, boolean training, At at){
-        if(at == null){
-            if(training)
-                at = At.defaultAt(Operation.TRAINING);
-            else
-                at = At.defaultAt(Operation.INFERENCE);
-        }
-        return output(variables, placeholderValues, batch, requiredActivations, Collections.<Listener>emptyList(), at);
-    }
-
-    /**
      * Get the output of the session - i.e., perform inference/forward pass
      *
      * @param variables         Name of the variables we want the arrays/activations for

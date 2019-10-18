@@ -17,6 +17,8 @@
 package org.nd4j.autodiff;
 
 import org.junit.Test;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.AbstractSession;
@@ -74,7 +76,7 @@ public class TestSessions extends BaseNd4jTest {
         m.put("y", y);
 
         Map<String,INDArray> outMap = is.output(Collections.singletonList("out"), m, null,
-                Collections.<String>emptyList(), true, null);
+                Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
 
         assertEquals(1, outMap.size());
         assertEquals(outExp, outMap.get("out"));
@@ -112,7 +114,7 @@ public class TestSessions extends BaseNd4jTest {
 
         System.out.println("----------------------------------");
         Map<String,INDArray> outMap = is.output(Collections.singletonList("d"), m, null,
-                Collections.<String>emptyList(), false, null);
+                Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
 
         assertEquals(1, outMap.size());
         assertEquals(dExp, outMap.get("d"));
@@ -147,7 +149,7 @@ public class TestSessions extends BaseNd4jTest {
 //        String outName = merge.getVarName();
         String outName = outVar.getVarName();
         Map<String,INDArray> outMap = is.output(Collections.singletonList(outName), m, null,
-                Collections.<String>emptyList(), false, null);
+                Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
 
         assertEquals(1, outMap.size());
         INDArray out = outMap.get(outName);
@@ -183,7 +185,7 @@ public class TestSessions extends BaseNd4jTest {
 
         System.out.println("----------------------------------");
         Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(),
-                false, null);
+                null, At.defaultAt(Operation.TRAINING));
         assertEquals(1, outMap.size());
         assertEquals(expTrue, outMap.get(n));
 
@@ -192,7 +194,7 @@ public class TestSessions extends BaseNd4jTest {
         //Check false case:
         bArr.assign(0);
         is = new InferenceSession(sd);
-        outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(), false, null);
+        outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
         assertEquals(1, outMap.size());
         assertEquals(expFalse, outMap.get(n));
     }
@@ -225,7 +227,7 @@ public class TestSessions extends BaseNd4jTest {
             String n2 = "while/Exit_1";
 
             Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null,
-                    Collections.<String>emptyList(), false, null);
+                    Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
             assertEquals(2, m.size());
 
             INDArray exp = Nd4j.scalar((float)numIter);
