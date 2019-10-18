@@ -173,6 +173,19 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
         INDArray[] out = doExec(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
 
+        /*
+        StringBuilder sb = new StringBuilder();
+        sb.append(op.getName()).append(" - ").append(outputFrameIter).append(" outputs: ");
+        List<String> opOutNames = op.getOutputsOfOp();
+        for( int i=0; i<out.length; i++ ){
+            if(i > 0)
+                sb.append(", ");
+            sb.append("(").append(i).append(" - ").append(opOutNames.get(i)).append(" = ").append(
+                    out[i] == null ? null : out[i].getId()).append(")");
+        }
+        System.out.println(sb.toString());
+        */
+
         //Call listeners, before we (maybe) deallocate input arrays
         if(listeners != null && listeners.size() > 0){
             Map<String, INDArray> namedOuts = null;
@@ -217,6 +230,10 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                     if(forOp.getOp() instanceof Enter) {
                         //Need whole frame dependency
                         Dep d = new FrameDep(outputFrameIter.getFrame(), outputFrameIter.getParentFrame());
+                        arrayUseTracker.addDependency(out[i], d);
+                    } else if(forOp.getOp() instanceof NextIteration){
+                        //The array is needed by the NEXT iteration op, not the current one
+                        Dep d = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration()+1, outputFrameIter.getParentFrame());
                         arrayUseTracker.addDependency(out[i], d);
                     } else {
                         //All other ops...
@@ -944,28 +961,9 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
     @Override
     protected void onFrameIterTransition(String fromFrame, int fromIter, FrameIter parentFrom, String toFrame, int toIter, FrameIter parentTo){
-        log.info("InferenceSession2: Transition from {} (parent={}) to {} (parent={})", fromFrame, parentFrom, toFrame, parentTo);
+        log.info("InferenceSession2: Transition from {}, iter={} (parent={}) to {}, iter={} (parent={})", fromFrame, fromIter, parentFrom, toFrame, toIter, parentTo);
         //Remove any frame dependencies...
-        //TODO
-    }
-
-    @Data
-    protected static class Array {
-        private String varName;
-        private String frame;
-        private int iter;
-        private FrameIter parentFrame;
-
-        public Array(@NonNull String varName, @NonNull String frame, int iter, FrameIter parentFrame) {
-            this.varName = varName;
-            this.frame = frame;
-            this.iter = iter;
-            this.parentFrame = parentFrame;
-        }
-
-        protected VarId toVarId(){
-            return new VarId(varName, frame, iter, parentFrame);
-        }
+        //TODO Remove logging, add frame dependency closing
     }
 
     @Data

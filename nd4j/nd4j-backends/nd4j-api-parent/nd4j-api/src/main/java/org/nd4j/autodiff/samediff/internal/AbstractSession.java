@@ -26,13 +26,12 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
-
-import java.util.*;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Predicate;
+
+import java.util.*;
 
 /**
  * Additional functionality to add:
@@ -250,7 +249,7 @@ public abstract class AbstractSession<T, O> {
         Map<String, T> out = new HashMap<>();
         int step = 0;
         String currentFrame = OUTER_FRAME;
-        final int currentFrameIter = 0;
+        int currentFrameIter = 0;
         FrameIter currParentFrame = null;
         ExecStepPredicate predicate = new ExecStepPredicate();
         while (out.size() < userRequestedUnique.size()) {
@@ -278,7 +277,7 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
                 String s = sb.toString();
-                //System.out.println(sameDiff.summary());
+//                System.out.println(sameDiff.summary());
                 throw new IllegalStateException(s);
             }
 
@@ -300,6 +299,10 @@ public abstract class AbstractSession<T, O> {
                             fi.getFrame(), fi.getIteration(), fi.getParentFrame());
                 }
             }
+
+            currentFrame = es.getFrameIter().getFrame();
+            currentFrameIter = es.getFrameIter().getIteration();
+            currParentFrame = es.getFrameIter().getParentFrame();
 
             log.trace("Beginning execution step {}: {}", step, es);
 
@@ -345,7 +348,7 @@ public abstract class AbstractSession<T, O> {
                 } else if (o instanceof NextIteration) {
                     //NextIteration op: forwards its single input to its output varible in the current frame, but increments the iteration number
                     outFrameIter = es.getFrameIter().clone();
-                    outFrameIter.setIteration(outFrameIter.getIteration() + 1);
+                    outFrameIter.setIteration(outFrameIter.getIteration());
                 } else {
                     //Standard ops - output variable has same frame and iteration number as the input(s)
                     //Also loopCond, merge, while, etc
@@ -458,14 +461,6 @@ public abstract class AbstractSession<T, O> {
                     ExecStep exec = new ExecStep(ExecType.OP, es.getName(), fi);
                     updateDescendantDeps(exec, fi);
                     dt.markSatisfied(exec, true);
-                } else if(o instanceof NextIteration){
-                    //Next iteration: current frame, next iteration is executed
-                    skipDepUpdate = true;
-                    skipMarkSatisfied = true;
-                    FrameIter fi = new FrameIter(es.getFrameIter().getFrame(), es.getFrameIter().getIteration()+1, es.getFrameIter().getParentFrame());
-                    ExecStep exec = new ExecStep(ExecType.OP, es.getName(), fi);
-                    updateDescendantDeps(exec, fi);
-                    dt.markSatisfied(exec, true);
                 }
             } else {
                 throw new RuntimeException("Unknown ExecStep: " + es);
@@ -482,7 +477,7 @@ public abstract class AbstractSession<T, O> {
         }
 
 
-        //TODO under what circumstances should we clear the nodeOutputs map?
+        //TODO under what circumstances should we clear the nodeOutputs map? Doesn't matter for memory, because we already close/deallocate though...
 
         out = postProcessOutput(out);
         return out;
@@ -551,7 +546,7 @@ public abstract class AbstractSession<T, O> {
         List<String> inputs = op.getInputsToOp();
 
         ExecStep es = new ExecStep(ExecType.OP, opName, depFrameIter);
-        if(dt.hasDependency(es)){
+        if(!(op.getOp() instanceof NextIteration) && dt.hasDependency(es)){
             //Already processed this once. We only add dependencies once per op (for a given frame/iteration)
             return;
         }
@@ -565,6 +560,15 @@ public abstract class AbstractSession<T, O> {
             ExecStep or0 = getExecStepForVar(v0.getName(), depFrameIter);
             ExecStep or1 = getExecStepForVar(v1.getName(), depFrameIter);
             dt.addOrDependency(es, or0, or1);
+        } else if(op.getOp() instanceof NextIteration ){
+            //For NextIteration, dependencies should be of the form X(iter) -> NextIter(iter+1)
+            FrameIter fi = depFrameIter.clone();
+            fi.setIteration(fi.getIteration() + 1);
+            es = new ExecStep(ExecType.OP, opName, fi);
+            for (String s : inputs) {
+                ExecStep req = getExecStepForVar(s, depFrameIter);
+                dt.addDependency(es, req);
+            }
         } else {
             for (String s : inputs) {
                 ExecStep req = getExecStepForVar(s, depFrameIter);
