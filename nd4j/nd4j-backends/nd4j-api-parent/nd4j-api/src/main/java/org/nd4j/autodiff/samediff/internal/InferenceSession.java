@@ -33,6 +33,8 @@ import org.nd4j.linalg.api.ops.*;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
+import org.nd4j.linalg.api.ops.impl.shape.Concat;
+import org.nd4j.linalg.api.ops.impl.shape.Stack;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.*;
 import org.nd4j.linalg.api.ops.impl.transforms.gradient.GradientBackwardsMarker;
 import org.nd4j.linalg.api.ops.impl.transforms.same.Identity;
@@ -142,6 +144,16 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         for(String s : output.keySet()){
             if(sameDiff.getVariable(s).getVariableType() == VariableType.ARRAY){
                 clearOpReferencesFor(s);
+            }
+        }
+
+        //Also mark "end of execution" for array dependency tracker. Mainly used for TensorArray arrays at present.
+        //TODO Optimize for reduced memory for some TensorArray operations - i.e., close/deallocate earlier
+        arrayUseTracker.markSatisfied(new ExecDoneDep(), true);
+        if(arrayUseTracker.hasNewAllSatisfied()){
+            List<INDArray> l = arrayUseTracker.getNewAllSatisfiedList();
+            for(INDArray arr : l){
+                mmgr.release(arr);
             }
         }
 
@@ -369,6 +381,12 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
     }
 
     public INDArray[] getOutputsHelperTensorArrayOps(DifferentialFunction op, FrameIter outputFrameIter, Set<VarId> opInputs, Set<VarId> allIterInputs){
+        /*
+        TODO: TensorArray memory management note: For now, we'll close any INDArrays stored in the TensorArray at the end of
+        graph execution. This uses more memory than necessary for an earlier close strategy, but simplifies memory management.
+        This should be revisited and optimized later
+         */
+
         if (op instanceof TensorArray) {
             //Create a TensorArray
             VarId vid = newVarId(op.outputVariable().getVarName(), outputFrameIter);
@@ -376,10 +394,9 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             tensorArrays.put(vid, new ArrayList<INDArray>());
 
             // Note that TensorArray has 2 outputs - a 'dummy' SDVariable that represents it, and a second output (return a scalar 0.0)
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                //TODO Proper workspace support will be added to SameDiff later
-                return new INDArray[]{Nd4j.scalar(true), Nd4j.scalar(0.0f)};
-            }
+            INDArray dummy = mmgr.allocate(false, DataType.BOOL).assign(true);
+            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
+            return new INDArray[]{dummy, scalar};
         } else if (op instanceof TensorArrayRead) {
             //Do lookup and return
             //Input 0 is the TensorArray (or dummy variable that represents it). Sometimes (for import) this can be like (TensorArray -> Enter -> TensorArrayRead)
@@ -414,7 +431,6 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             return new INDArray[]{out};
         } else if (op instanceof TensorArrayWrite) {
             //TensorArrayWrite - also has a scalar 0.0 that it returns...
-
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             //Work out the varid (frame/iteration) of the tensor array:
             VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
@@ -455,11 +471,13 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             }
             l.set(idx, arr);
 
+            //Add a dependency
+            Dep d = new ExecDoneDep();
+            arrayUseTracker.addDependency(arr, d);
+
             //Return dummy array
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                //TODO Proper workspace support will be added to SameDiff later
-                return new INDArray[]{Nd4j.scalar(0.0f)};
-            }
+            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
+            return new INDArray[]{scalar};
         } else if (op instanceof TensorArraySize) {
             //Index 0 is the TensorArray (or dummy variable that represents it)
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
@@ -470,10 +488,9 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             }
             List<INDArray> l = tensorArrays.get(tArr);
             Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                //TODO Proper workspace support will be added to SameDiff later
-                return new INDArray[]{Nd4j.scalar(DataType.INT, l.size())};
-            }
+
+            INDArray scalar = mmgr.allocate(false, DataType.INT).assign(l.size());
+            return new INDArray[]{scalar};
         } else if (op instanceof TensorArrayConcat) {
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
@@ -481,12 +498,13 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
             }
             List<INDArray> l = tensorArrays.get(tArr);
-            //TODO - empty checks. But is size 0 OK?
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                //TODO Proper workspace support will be added to SameDiff later
-                INDArray concat = Nd4j.concat(0, l.toArray(new INDArray[l.size()]));
-                return new INDArray[]{concat};
-            }
+
+            Concat c = new Concat(0, l.toArray(new INDArray[0]));
+            List<LongShapeDescriptor> shape = c.calculateOutputShape();
+            INDArray out = mmgr.allocate(false, shape.get(0));
+            c.setOutputArgument(0, out);
+            Nd4j.exec(c);
+            return new INDArray[]{out};
         } else if (op instanceof TensorArrayGather) {
             //Input 0: the TensorArray
             //Input 1: the indices (1d integer vector)
@@ -508,7 +526,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             int[] idxArrInt = idxArr.toIntVector();
 
             //Edge case: -1 means "all"
-            ArrayList<INDArray> newList = new ArrayList<>();
+            List<INDArray> newList = new ArrayList<>();
             if(idxArrInt.length == 1 && idxArrInt[0] == -1){
                 newList.addAll(l);
             } else {
@@ -517,11 +535,13 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                     newList.add(l.get(id));
                 }
             }
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                //TODO Proper workspace support will be added to SameDiff later
-                INDArray out = Nd4j.pile(newList);
-                return new INDArray[]{out};
-            }
+
+            Stack s = new Stack(newList.toArray(new INDArray[0]), null, 0);
+            List<LongShapeDescriptor> shape = s.calculateOutputShape();
+            INDArray out = mmgr.allocate(false, shape.get(0));
+            s.setOutputArgument(0, out);
+            Nd4j.exec(s);
+            return new INDArray[]{out};
         } else if (op instanceof TensorArrayScatter) {
             //Scatter values from a rank (N+1)d tensor into specific indices of the TensorArray
             //Input 0: the TensorArray
@@ -566,13 +586,14 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                     get = get.reshape();
                 }
                 l.set(outIdx, get);
+
+                //Add dependency for values array until end of execution
+                arrayUseTracker.addDependency(get, new ExecDoneDep());
             }
 
             //Return dummy array
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                //TODO Proper workspace support will be added to SameDiff later
-                return new INDArray[]{Nd4j.scalar(0.0f)};
-            }
+            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
+            return new INDArray[]{scalar};
         } else if (op instanceof TensorArraySplit) {
             //Split values from a rank (N+1)d tensor into sequential indices of the TensorArray
             //For example, orig=[8,2] sizearray with split (4,4) means TensorArray[0] = orig[0:4,:] and TensorArray[1] = orig[4:8,:]
@@ -610,12 +631,14 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 INDArray sub = splitArr.get(idx).dup();
                 l.set(i, sub);
                 soFar += sizes[i];
+
+                //Add dependency for values array until end of execution
+                arrayUseTracker.addDependency(sub, new ExecDoneDep());
             }
+
             //Return dummy array
-            try(MemoryWorkspace ws = Nd4j.getMemoryManager().scopeOutOfWorkspaces()) {
-                //TODO Proper workspace support will be added to SameDiff later
-                return new INDArray[]{Nd4j.scalar(0.0f)};
-            }
+            INDArray scalar = mmgr.allocate(false, DataType.FLOAT).assign(0.0);
+            return new INDArray[]{scalar};
         } else {
             throw new IllegalStateException("Execution support not yet implemented for: " + op.getClass().getName());
         }
@@ -1011,5 +1034,12 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
     @AllArgsConstructor
     protected static class ReqOutputDep extends Dep {
         protected String outputName;
+    }
+
+    @Data
+    @EqualsAndHashCode(callSuper = true)
+    @NoArgsConstructor
+    protected static class ExecDoneDep extends Dep {
+
     }
 }

@@ -26,7 +26,7 @@ public class ArrayCloseMemoryMgr implements SessionMemMrg {
     public void release(@NonNull INDArray array) {
         if(!array.wasClosed() && array.closeable()){
             array.close();
-            log.info("Closed array (deallocated)");
+            log.info("Closed array (deallocated) - id={}", array.getId());
         }
     }
 
