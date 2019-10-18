@@ -17,12 +17,6 @@
 package org.nd4j.imports.graphmapper.tf;
 
 import lombok.NonNull;
-import org.nd4j.imports.tensorflow.TFImportOverride;
-import org.nd4j.imports.tensorflow.TFOpImportFilter;
-import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
-import org.nd4j.shade.protobuf.Message;
-import org.nd4j.shade.guava.primitives.Floats;
-import org.nd4j.shade.guava.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.autodiff.functions.DifferentialFunction;
@@ -35,20 +29,17 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.imports.converters.DifferentialFunctionClassHolder;
 import org.nd4j.imports.descriptors.properties.AttributeAdapter;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.descriptors.tensorflow.TensorflowDescriptorParser;
-import org.nd4j.imports.graphmapper.BaseGraphMapper;
-import org.nd4j.imports.graphmapper.ImportState;
-import org.nd4j.imports.graphmapper.OpImportFilter;
-import org.nd4j.imports.graphmapper.OpImportOverride;
 import org.nd4j.imports.graphmapper.tf.tensors.TFTensorMapper;
 import org.nd4j.imports.graphmapper.tf.tensors.TFTensorMappers;
+import org.nd4j.imports.tensorflow.TFImportOverride;
+import org.nd4j.imports.tensorflow.TFOpImportFilter;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
+import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
+import org.nd4j.shade.guava.primitives.Floats;
+import org.nd4j.shade.guava.primitives.Ints;
 import org.tensorflow.framework.*;
-import org.tensorflow.framework.DataType;
 
 import java.io.*;
-import java.nio.ByteBuffer;
 import java.util.*;
 
 /**
