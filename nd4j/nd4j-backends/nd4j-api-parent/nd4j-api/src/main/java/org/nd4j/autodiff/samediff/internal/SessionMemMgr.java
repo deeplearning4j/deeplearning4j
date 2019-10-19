@@ -34,6 +34,16 @@ public interface SessionMemMgr extends Closeable {
     INDArray allocate(boolean detached, LongShapeDescriptor descriptor);
 
     /**
+     * Allocate an uninitialized array with the same datatype and shape as the specified array
+     */
+    INDArray ulike(INDArray arr);
+
+    /**
+     * Duplicate the specified array, to an array that is managed/allocated by the session memory manager
+     */
+    INDArray dup(INDArray arr);
+
+    /**
      * Release the array. All arrays allocated via one of the allocate methods should be returned here once they are no
      * longer used, and all references to them should be cleared.
      * After calling release, anything could occur to the array - deallocated, workspace closed, reused, etc.

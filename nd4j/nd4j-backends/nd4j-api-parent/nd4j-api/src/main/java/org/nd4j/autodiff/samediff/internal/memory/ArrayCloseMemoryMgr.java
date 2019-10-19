@@ -16,7 +16,7 @@ import org.nd4j.linalg.factory.Nd4j;
  * @author Alex Black
  */
 @Slf4j
-public class ArrayCloseMemoryMgr implements SessionMemMgr {
+public class ArrayCloseMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
 
     @Override
     public INDArray allocate(boolean detached, DataType dataType, long... shape) {

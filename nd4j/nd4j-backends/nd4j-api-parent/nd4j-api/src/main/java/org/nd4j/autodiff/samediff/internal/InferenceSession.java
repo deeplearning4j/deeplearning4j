@@ -50,12 +50,16 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.util.*;
 
 /**
- * InferenceSession: Performs inference (forward pass) on a SameDiff instance to get the outputs of the requested nodes.
- * Dynamically (in AbstractSession) calculates the required subgraph to execute to get the required outputs.
- *
- * Also handles INDArray memory management - i.e., tracking and releasing memory manually, as soon as possible, to
- * minimize memory use. This is implemented using a {@link SessionMemMgr} instance (for allocations/deallocations) and
- * also {@link IdentityDependencyTracker} to track where arrays are actually used
+ * InferenceSession: Performs inference (forward pass) on a SameDiff instance to get the outputs of the requested nodes.<br>
+ * Dynamically (in AbstractSession) calculates the required subgraph to execute to get the required outputs.<br>
+ * Note that while AbstractSession handles the graph structure component, InferenceSession handles only op execution
+ * and memory management<br>
+ * <br>
+ * For INDArray memory management - i.e., tracking and releasing memory manually, as soon as possible, to
+ * minimize memory use - this is implemented using a {@link SessionMemMgr} instance (for allocations/deallocations) and
+ * also {@link IdentityDependencyTracker} to track where arrays are actually used. The IdentityDependencyTracker tells
+ * us when the array is no longer needed (i.e., has been "fully consumed" by ops depending on it) accounting for the
+ * fact that some operations, such as identity, enter, exit, etc, are "zero copy" for performance reasons.
  *
  * @author Alex Black
  */
@@ -131,15 +135,18 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             //Second: cast the input to the required type
             //TODO For the casting case, we SHOULD actually deallocate this when we're done with it
             DataType dt = sameDiff.getVariable(e.getKey()).dataType();
-            if(arr.dataType() != dt){
+            if(arr.dataType() == dt){
+                //Mark as a placeholder array in the array use tracker, so we never deallocate this array...
+                arrayUseTracker.addDependency(e.getValue(), new PlaceholderDep(e.getKey()));
+            } else {
                 INDArray cast = mmgr.allocate(false, dt, arr.shape());
                 cast.assign(arr);
                 arr = cast;
+                //This array CAN be deallocated once consumed, because of the cast
+                //TODO we can likely close this sooner
+                arrayUseTracker.addDependency(arr, new ExecDoneDep());
             }
             out.put(e.getKey(), arr);
-
-            //Finally, mark as a placeholder array in the array use tracker, so we never deallocate this array...
-            arrayUseTracker.addDependency(e.getValue(), new PlaceholderDep(e.getKey()));
         }
 
         return out;
@@ -251,13 +258,19 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
                     //TODO do switch or merge need special handling also?
                     if(forOp.getOp() instanceof Enter) {
-                        //Need whole frame dependency
-                        Dep d = new FrameDep(outputFrameIter.getFrame(), outputFrameIter.getParentFrame());
+                        //Need to keep this array around for the entire duration of the frame, including any nested frames
+                        //Can't mark it as no longer needed until we get back to the current frame
+                        Dep d = new ReturnToFrameDep(outputFrameIter.getFrame(), outputFrameIter.getParentFrame());
                         arrayUseTracker.addDependency(out[i], d);
-                    } else if(forOp.getOp() instanceof NextIteration){
+                    } else if(forOp.getOp() instanceof NextIteration) {
                         //The array is needed by the NEXT iteration op, not the current one
-                        Dep d = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration()+1, outputFrameIter.getParentFrame());
+                        Dep d = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration() + 1, outputFrameIter.getParentFrame());
                         arrayUseTracker.addDependency(out[i], d);
+                    } else if(forOp.getOp() instanceof Exit){
+                        //The array is needed at the EXIT frame (i.e., parent frame), not the inner/just executed one
+                        FrameIter fi = outputFrameIter.getParentFrame();
+                        Dep d = new OpDep(opName, fi.getFrame(), fi.getIteration(), fi.getParentFrame());
+                        arrayUseTracker.addDependency(out[i], d);       //Op defined by "d" needs to be executed before specified array can be closed
                     } else {
                         //All other ops...
                         Dep d = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
@@ -269,9 +282,9 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             if(OUTER_FRAME.equals(outputFrameIter.getFrame()) && allReqVariables.contains(name)){
                 //This variable is an output, record that in the array use tracker, so we don't deallocate it
                 arrayUseTracker.addDependency(out[i], new ReqOutputDep(name));
-            } else if(inputsForOps == null || inputsForOps.isEmpty()){
+            } else if((inputsForOps == null || inputsForOps.isEmpty()) && !arrayUseTracker.hasDependency(out[i])){
                 //This particular array is not actually needed anywhere, so we can deallocate in immediately
-                //Possibly only a control dependency
+                //Possibly only a control dependency, or only one of the outputs of a multi-output op is used
                 log.info("Found array id {} (output of {}) not required anywhere, deallocating", out[i].getId(), o.getName());
                 mmgr.release(out[i]);
             }
@@ -631,7 +644,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             INDArrayIndex[] idx = ArrayUtil.nTimes(valuesArr.rank(), NDArrayIndex.all(), INDArrayIndex.class);
             for (int i = 0; i < idxs.length; i++) {
                 idx[0] = NDArrayIndex.point(i);
-                INDArray get = valuesArr.get(idx).dup();
+                INDArray get = mmgr.dup(valuesArr.get(idx));
                 int outIdx = idxs[i];
                 if(valuesArr.rank() == 1 && get.rank() > 0){
                     get = get.reshape();
@@ -679,7 +692,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             int soFar = 0;
             for (int i = 0; i < sizes.length; i++) {
                 idx[0] = NDArrayIndex.interval(soFar, soFar + sizes[i]);
-                INDArray sub = splitArr.get(idx).dup();
+                INDArray sub = mmgr.dup(splitArr.get(idx));
                 l.set(i, sub);
                 soFar += sizes[i];
 
@@ -854,7 +867,8 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 INDArray z = op.z();
                 if (z == null || !op.x().equalShapes(z) || isLoop) {
                     //Note: edge case: [x,y].sum(empty) = [x,y] for TF import compatibility.
-                    op.setZ(op.x().ulike());
+                    z = mmgr.allocate(false, op.x().dataType(), op.x().shape());
+                    op.setZ(z);
                 }
             } else {
                 List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape();
@@ -930,18 +944,17 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
     @Override
     protected void onFrameIterTransition(String fromFrame, int fromIter, FrameIter parentFrom, String toFrame, int toIter, FrameIter parentTo){
         log.info("InferenceSession2: Transition from {}, iter={} (parent={}) to {}, iter={} (parent={})", fromFrame, fromIter, parentFrom, toFrame, toIter, parentTo);
-        //Remove any frame dependencies...
-        //TODO Remove logging, add frame dependency closing
-        //Dependencies for enter ops: these depend on frame close
+        //Dependencies for enter ops: these depend on the return to the parent frame - only that that point can we be sure
+        // that those arrays are no longer needed
         if(!fromFrame.equals(toFrame) && parentFrom != null && parentFrom.getFrame().equals(toFrame)){
             //This is a transition from a given frame back to its parent frame - i.e., exit current frame
-            Dep d = new FrameDep(fromFrame, parentFrom);
+            Dep d = new ReturnToFrameDep(toFrame, parentTo);
             arrayUseTracker.markSatisfied(d, true);
         }
     }
 
     @Data
-    protected abstract static class Dep {
+    public abstract static class Dep {
         protected String frame;
         protected FrameIter parentFrame;
     }
@@ -949,7 +962,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
     @AllArgsConstructor
     @Data
     @EqualsAndHashCode(callSuper = true)
-    protected static class OpDep extends Dep {
+    public static class OpDep extends Dep {
         protected String opName;
         protected int iter;
 
@@ -966,52 +979,59 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         }
     }
 
+    /**
+     * Represents any frame transition, where X -> Y, where Y == X.parent
+     * This is used for deallocating arrays used in enters - which may be needed for the entire duration
+     * of an inner frame - and should only be closed when we exit that frame.
+     * Now, *usually* frames are nested, but occasionally (mainly TF import) we will have execution in different
+     * frames like: main, X, Y, main, where there are enters for both of (main->X) and (main->Y)
+     */
     @Data
     @EqualsAndHashCode(callSuper = true)
-    protected static class FrameDep extends Dep {
-        public FrameDep(@NonNull String frame, FrameIter parentFrame){
+    public static class ReturnToFrameDep extends Dep {
+        public ReturnToFrameDep(@NonNull String frame, FrameIter parentFrame){
             this.frame = frame;
             this.parentFrame = parentFrame;
         }
 
         @Override
         public String toString(){
-            return "FrameDep(" + this.frame + (parentFrame == null ? "" : ",parent=" + parentFrame) + ")";
+            return "ReturnToFrameDep(" + this.frame + (parentFrame == null ? "" : ",parent=" + parentFrame) + ")";
         }
     }
 
     @Data
     @EqualsAndHashCode(callSuper = true)
     @AllArgsConstructor
-    protected static class PlaceholderDep extends Dep {
+    public static class PlaceholderDep extends Dep {
         protected String phName;
     }
 
     @Data
     @EqualsAndHashCode(callSuper = true)
     @AllArgsConstructor
-    protected static class VariableDep extends Dep {
+    public static class VariableDep extends Dep {
         protected String varName;
     }
 
     @Data
     @EqualsAndHashCode(callSuper = true)
     @AllArgsConstructor
-    protected static class ConstantDep extends Dep {
+    public static class ConstantDep extends Dep {
         protected String constName;
     }
 
     @Data
     @EqualsAndHashCode(callSuper = true)
     @AllArgsConstructor
-    protected static class ReqOutputDep extends Dep {
+    public static class ReqOutputDep extends Dep {
         protected String outputName;
     }
 
     @Data
     @EqualsAndHashCode(callSuper = true)
     @NoArgsConstructor
-    protected static class ExecDoneDep extends Dep {
+    public static class ExecDoneDep extends Dep {
 
     }
 }

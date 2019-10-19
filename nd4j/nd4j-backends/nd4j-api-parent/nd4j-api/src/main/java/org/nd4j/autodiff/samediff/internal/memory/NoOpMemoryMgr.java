@@ -17,7 +17,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  * @author Alex Black
  */
-public class NoOpMemoryMgr implements SessionMemMgr {
+public class NoOpMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
 
     @Override
     public INDArray allocate(boolean detached, DataType dataType, long... shape) {

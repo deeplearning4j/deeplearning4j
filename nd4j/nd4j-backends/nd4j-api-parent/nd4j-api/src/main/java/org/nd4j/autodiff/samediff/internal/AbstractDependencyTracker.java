@@ -3,7 +3,6 @@ package org.nd4j.autodiff.samediff.internal;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.base.Preconditions;
-import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.function.Predicate;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -28,7 +27,6 @@ import java.util.*;
  */
 @Slf4j
 public abstract class AbstractDependencyTracker<T, D> {
-
     private final Map<T, Set<D>> dependencies;
     private final Map<T, Set<Pair<D,D>>> orDependencies;
     private final Map<D, Set<T>> reverseDependencies = new HashMap<>();

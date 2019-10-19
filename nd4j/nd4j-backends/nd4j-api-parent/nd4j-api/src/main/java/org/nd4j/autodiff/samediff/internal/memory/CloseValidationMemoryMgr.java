@@ -2,21 +2,30 @@ package org.nd4j.autodiff.samediff.internal.memory;
 
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.autodiff.samediff.SDVariable;
+import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
+import org.nd4j.autodiff.samediff.internal.DependencyList;
+import org.nd4j.autodiff.samediff.internal.IdentityDependencyTracker;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 
 @Slf4j
-public class CloseValidationMemoryMgr implements SessionMemMgr {
+public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
 
+    private final SameDiff sd;
     private final SessionMemMgr underlying;
     private final Map<INDArray, Boolean> released = new IdentityHashMap<>();
 
-    public CloseValidationMemoryMgr(SessionMemMgr underlying){
+    public CloseValidationMemoryMgr(SameDiff sd, SessionMemMgr underlying){
+        this.sd = sd;
         this.underlying = underlying;
     }
 
@@ -50,8 +59,16 @@ public class CloseValidationMemoryMgr implements SessionMemMgr {
     }
 
     public void assertAllReleasedExcept(@NonNull Collection<INDArray> except){
+        Set<INDArray> allVarPhConst = null;
+
         for(INDArray arr : except){
             if(!released.containsKey(arr)){
+                //Check if constant, variable or placeholder - maybe user requested that out
+                if(allVarPhConst == null)
+                    allVarPhConst = identitySetAllConstPhVar();
+                if(allVarPhConst.contains(arr))
+                    continue;   //OK - output is a constant, variable or placeholder, hence it's fine it's not allocated by the memory manager
+
                 throw new IllegalStateException("Array " + arr.getId() + " was not originally allocated by the memory manager");
             }
 
@@ -66,6 +83,8 @@ public class CloseValidationMemoryMgr implements SessionMemMgr {
 
         int numNotClosed = 0;
         Set<INDArray> notReleased = Collections.newSetFromMap(new IdentityHashMap<INDArray, Boolean>());
+        InferenceSession is = sd.getSessions().get(Thread.currentThread().getId());
+        IdentityDependencyTracker<INDArray, InferenceSession.Dep> arrayUseTracker = is.getArrayUseTracker();
         for(Map.Entry<INDArray, Boolean> e : released.entrySet()){
             INDArray a = e.getKey();
             if(!exceptSet.contains(a)){
@@ -74,6 +93,23 @@ public class CloseValidationMemoryMgr implements SessionMemMgr {
                     notReleased.add(a);
                     numNotClosed++;
                     log.info("Not released: array id {}", a.getId());
+                    DependencyList<INDArray, InferenceSession.Dep> list = arrayUseTracker.getDependencies(a);
+                    List<InferenceSession.Dep> l = list.getDependencies();
+                    List<Pair<InferenceSession.Dep, InferenceSession.Dep>> l2 = list.getOrDependencies();
+                    if(l != null){
+                        for(InferenceSession.Dep d : l){
+                            if(!arrayUseTracker.isSatisfied(d)){
+                                log.info("  Not satisfied: {}", d);
+                            }
+                        }
+                    }
+                    if(l2 != null){
+                        for(Pair<InferenceSession.Dep, InferenceSession.Dep> d : l2){
+                            if(!arrayUseTracker.isSatisfied(d.getFirst()) && !arrayUseTracker.isSatisfied(d.getSecond())){
+                                log.info("   Not satisfied: {}", d);
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -81,5 +117,15 @@ public class CloseValidationMemoryMgr implements SessionMemMgr {
         if (numNotClosed > 0) {
             throw new IllegalStateException(numNotClosed + " arrays were not released but should have been");
         }
+    }
+
+    protected Set<INDArray> identitySetAllConstPhVar(){
+        Set<INDArray> set = Collections.newSetFromMap(new IdentityHashMap<INDArray,Boolean>());
+        for(SDVariable v : sd.variables()){
+            if(v.getVariableType() == VariableType.VARIABLE || v.getVariableType() == VariableType.CONSTANT || v.getVariableType() == VariableType.PLACEHOLDER){
+                set.add(v.getArr());
+            }
+        }
+        return set;
     }
 }
