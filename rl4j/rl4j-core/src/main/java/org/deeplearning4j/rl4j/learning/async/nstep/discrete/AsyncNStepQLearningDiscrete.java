@@ -27,6 +27,7 @@ import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 8/5/16.
@@ -48,7 +49,7 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
         this.asyncGlobal = new AsyncGlobal<>(dqn, conf);
         Integer seed = conf.getSeed();
         if(seed != null) {
-            mdp.getActionSpace().setSeed(seed);
+            Nd4j.getRandom().setSeed(seed);
         }
     }
 

@@ -5,9 +5,10 @@ import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
+import java.util.ArrayList;
+
 public class MockHistoryProcessor implements IHistoryProcessor {
 
-    public int recordCallCount = 0;
     public int addCallCount = 0;
     public int startMonitorCallCount = 0;
     public int stopMonitorCallCount = 0;
@@ -15,10 +16,13 @@ public class MockHistoryProcessor implements IHistoryProcessor {
     private final Configuration config;
     private final CircularFifoQueue<INDArray> history;
 
+    public final ArrayList<INDArray> recordCalls;
+
     public MockHistoryProcessor(Configuration config) {
 
         this.config = config;
         history = new CircularFifoQueue<>(config.getHistoryLength());
+        recordCalls = new ArrayList<INDArray>();
     }
 
     @Override
@@ -37,7 +41,7 @@ public class MockHistoryProcessor implements IHistoryProcessor {
 
     @Override
     public void record(INDArray image) {
-        ++recordCallCount;
+        recordCalls.add(image);
     }
 
     @Override

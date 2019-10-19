@@ -67,8 +67,6 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
 
         O obs = mdp.reset();
 
-        O nextO = obs;
-
         int step = 0;
         double reward = 0;
 
@@ -77,11 +75,12 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
         int requiredFrame = isHistoryProcessor ? skipFrame * (hp.getConf().getHistoryLength() - 1) : 0;
 
-        while (step < requiredFrame) {
-            INDArray input = Learning.getInput(mdp, obs);
+        INDArray input = Learning.getInput(mdp, obs);
+        if (isHistoryProcessor)
+            hp.record(input);
 
-            if (isHistoryProcessor)
-                hp.record(input);
+
+        while (step < requiredFrame && !mdp.isDone()) {
 
             A action = mdp.getActionSpace().noOp(); //by convention should be the NO_OP
             if (step % skipFrame == 0 && isHistoryProcessor)
@@ -89,13 +88,17 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
 
             StepReply<O> stepReply = mdp.step(action);
             reward += stepReply.getReward();
-            nextO = stepReply.getObservation();
+            obs = stepReply.getObservation();
+
+            input = Learning.getInput(mdp, obs);
+            if (isHistoryProcessor)
+                hp.record(input);
 
             step++;
 
         }
 
-        return new InitMdp(step, nextO, reward);
+        return new InitMdp(step, obs, reward);
 
     }
 

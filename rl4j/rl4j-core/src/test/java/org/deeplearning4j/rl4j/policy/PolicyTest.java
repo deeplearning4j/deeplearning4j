@@ -22,7 +22,15 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
+import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
+import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.QLearningDiscreteTest;
+import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.ac.IActorCritic;
+import org.deeplearning4j.rl4j.space.DiscreteSpace;
+import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.support.*;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -31,6 +39,8 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -152,5 +162,76 @@ public class PolicyTest {
         assertTrue(count[1] < 30);
         assertTrue(count[2] < 40);
         assertTrue(count[3] < 50);
+    }
+
+    @Test
+    public void refacPolicyPlay() {
+        // Arrange
+        MockObservationSpace observationSpace = new MockObservationSpace();
+        MockDQN dqn = new MockDQN();
+        MockRandom random = new MockRandom(new double[] {
+                0.7309677600860596,
+                0.8314409852027893,
+                0.2405363917350769,
+                0.6063451766967773,
+                0.6374173760414124,
+                0.3090505599975586,
+                0.5504369735717773,
+                0.11700659990310669
+            },
+            new int[] { 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 });
+        MockMDP mdp = new MockMDP(observationSpace, 30);
+        mdp.getActionSpace().setRandom(random);
+        QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 0, 0, 5, 1, 0,
+                0, 1.0, 0, 0, 0, 0, true);
+        MockNeuralNet nnMock = new MockNeuralNet();
+        MockRefacPolicy sut = new MockRefacPolicy(nnMock);
+        IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);
+        MockHistoryProcessor hp = new MockHistoryProcessor(hpConf);
+
+        // Act
+        double totalReward = sut.play(mdp, hp);
+
+        // Assert
+        assertEquals(1, nnMock.resetCallCount);
+        assertEquals(465.0, totalReward, 0.0001);
+
+        // HistoryProcessor
+        assertEquals(27, hp.addCallCount);
+        assertEquals(31, hp.recordCalls.size());
+        for(int i=0; i <= 30; ++i) {
+            assertEquals((double)i, hp.recordCalls.get(i).getDouble(0), 0.0001);
+        }
+
+        // MDP
+        assertEquals(1, mdp.resetCount);
+        assertEquals(30, mdp.actions.size());
+        for(int i = 0; i < mdp.actions.size(); ++i) {
+            assertEquals(0, (int)mdp.actions.get(i));
+        }
+
+        // DQN
+        assertEquals(0, dqn.fitParams.size());
+        assertEquals(0, dqn.outputParams.size());
+    }
+
+    public static class MockRefacPolicy extends Policy<MockEncodable, Integer> {
+
+        private NeuralNet neuralNet;
+
+        public MockRefacPolicy(NeuralNet neuralNet) {
+
+            this.neuralNet = neuralNet;
+        }
+
+        @Override
+        public NeuralNet getNeuralNet() {
+            return neuralNet;
+        }
+
+        @Override
+        public Integer nextAction(INDArray input) {
+            return (int)input.getDouble(0);
+        }
     }
 }

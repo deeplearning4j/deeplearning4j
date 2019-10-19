@@ -58,7 +58,6 @@ public abstract class A3CDiscrete<O extends Encodable> extends AsyncLearning<O, 
         Integer seed = conf.getSeed();
         Random rnd = Nd4j.getRandom();
         if(seed != null) {
-            mdp.getActionSpace().setSeed(seed);
             rnd.setSeed(seed);
         }
 

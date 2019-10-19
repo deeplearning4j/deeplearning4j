@@ -11,14 +11,22 @@ import java.util.List;
 public class MockMDP implements MDP<MockEncodable, Integer, DiscreteSpace> {
 
     private final DiscreteSpace actionSpace;
+    private final int stepsUntilDone;
     private int currentObsValue = 0;
     private final ObservationSpace observationSpace;
 
     public final List<Integer> actions = new ArrayList<>();
+    private int step = 0;
+    public int resetCount = 0;
 
-    public MockMDP(ObservationSpace observationSpace) {
+    public MockMDP(ObservationSpace observationSpace, int stepsUntilDone) {
+        this.stepsUntilDone = stepsUntilDone;
         actionSpace = new DiscreteSpace(5);
         this.observationSpace = observationSpace;
+    }
+
+    public MockMDP(ObservationSpace observationSpace) {
+        this(observationSpace, Integer.MAX_VALUE);
     }
 
     @Override
@@ -33,7 +41,9 @@ public class MockMDP implements MDP<MockEncodable, Integer, DiscreteSpace> {
 
     @Override
     public MockEncodable reset() {
+        ++resetCount;
         currentObsValue = 0;
+        step = 0;
         return new MockEncodable(currentObsValue++);
     }
 
@@ -45,12 +55,13 @@ public class MockMDP implements MDP<MockEncodable, Integer, DiscreteSpace> {
     @Override
     public StepReply<MockEncodable> step(Integer action) {
         actions.add(action);
+        ++step;
         return new StepReply<>(new MockEncodable(currentObsValue), (double) currentObsValue++, isDone(), null);
     }
 
     @Override
     public boolean isDone() {
-        return false;
+        return step >= stepsUntilDone;
     }
 
     @Override
