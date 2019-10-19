@@ -70,7 +70,7 @@ public class ExpandDims extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val targetNode = TFGraphMapper.getNodeWithNameFromGraph(graph, nodeDef.getInput(1));
-        val dimArr = TFGraphMapper.getNDArrayFromTensor("value", targetNode, graph);
+        val dimArr = TFGraphMapper.getNDArrayFromTensor(targetNode);
 
         if (dimArr != null) {
             int axis = dimArr.data().asInt()[0];

@@ -198,7 +198,7 @@ public class DeConv2D extends DynamicCustomOp {
         val args = args();
         INDArray arr = sameDiff.getVariable(args[1].getVarName()).getArr();
         if (arr == null) {
-            arr = TFGraphMapper.getNDArrayFromTensor(nodeDef.getInput(0), nodeDef, graph);
+            arr = TFGraphMapper.getNDArrayFromTensor(nodeDef);
             // TODO: arguable. it might be easier to permute weights once
             //arr = (arr.permute(3, 2, 0, 1).dup('c'));
             val varForOp = initWith.getVariable(args[1].getVarName());

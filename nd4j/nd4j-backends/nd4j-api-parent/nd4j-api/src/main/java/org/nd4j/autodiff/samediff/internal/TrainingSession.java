@@ -24,6 +24,8 @@ import java.util.*;
  * - Application of regularization (L1, L2, weight decay etc)<br>
  * - Inline updating of variables, using updater/optimizer (Adam, Nesterov, SGD, etc)<br>
  * - Calculation of regularization scores (Score for L1, L2, etc)
+ *
+ * @author Alex Black
  */
 @Slf4j
 public class TrainingSession extends InferenceSession {
