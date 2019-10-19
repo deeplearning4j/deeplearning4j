@@ -62,6 +62,76 @@ public class TestDependencyTracker {
         assertTrue(dt.isEmpty());
     }
 
+    @Test
+    public void testSatisfiedBeforeAdd(){
+        DependencyTracker<String,String> dt = new DependencyTracker<>();
+
+        //Check different order of adding dependencies: i.e., mark X as satisfied, then add x -> y dependency
+        // and check that y is added to satisfied list...
+        dt.markSatisfied("x", true);
+        dt.addDependency("y", "x");
+        assertTrue(dt.hasNewAllSatisfied());
+        assertEquals("y", dt.getNewAllSatisfied());
+
+        //Same as above - x satisfied, add x->y, then add z->y
+        //y should go from satisfied to not satisfied
+        dt.clear();
+        assertTrue(dt.isEmpty());
+        dt.markSatisfied("x", true);
+        dt.addDependency("y", "x");
+        assertTrue(dt.hasNewAllSatisfied());
+        dt.addDependency("y", "z");
+        assertFalse(dt.hasNewAllSatisfied());
+
+
+        //x satisfied, then or(x,y) -> z added
+        dt.markSatisfied("x", true);
+        dt.addOrDependency("z", "x", "y");
+        assertTrue(dt.hasNewAllSatisfied());
+        assertEquals("z", dt.getNewAllSatisfied());
+
+
+        //x satisfied, then or(x,y) -> z added, then or(a,b)->z added (should be unsatisfied)
+        dt.clear();
+        assertTrue(dt.isEmpty());
+        dt.markSatisfied("x", true);
+        dt.addOrDependency("z", "x", "y");
+        assertTrue(dt.hasNewAllSatisfied());
+        dt.addOrDependency("z", "a", "b");
+        assertFalse(dt.hasNewAllSatisfied());
+    }
+
+    @Test
+    public void testMarkUnsatisfied(){
+
+        DependencyTracker<String,String> dt = new DependencyTracker<>();
+        dt.addDependency("y", "x");
+        dt.markSatisfied("x", true);
+        assertTrue(dt.hasNewAllSatisfied());
+
+        dt.markSatisfied("x", false);
+        assertFalse(dt.hasNewAllSatisfied());
+        dt.markSatisfied("x", true);
+        assertTrue(dt.hasNewAllSatisfied());
+        assertEquals("y", dt.getNewAllSatisfied());
+        assertFalse(dt.hasNewAllSatisfied());
+
+
+        //Same for OR dependencies
+        dt.clear();
+        assertTrue(dt.isEmpty());
+        dt.addOrDependency("z", "x", "y");
+        dt.markSatisfied("x", true);
+        assertTrue(dt.hasNewAllSatisfied());
+
+        dt.markSatisfied("x", false);
+        assertFalse(dt.hasNewAllSatisfied());
+        dt.markSatisfied("x", true);
+        assertTrue(dt.hasNewAllSatisfied());
+        assertEquals("z", dt.getNewAllSatisfied());
+        assertFalse(dt.hasNewAllSatisfied());
+    }
+
 
     @Test
     public void testIdentityDependencyTracker(){

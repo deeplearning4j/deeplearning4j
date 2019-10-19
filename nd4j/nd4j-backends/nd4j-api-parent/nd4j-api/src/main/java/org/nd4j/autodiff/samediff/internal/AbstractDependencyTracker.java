@@ -121,7 +121,27 @@ public abstract class AbstractDependencyTracker<T, D> {
 
         } else {
             satisfiedDependencies.remove(x);
-            throw new UnsupportedOperationException("Not yet implemented: Need to check all satisfied queue and update...");
+            if(!allSatisfied.isEmpty()){
+
+                Set<T> reverse = reverseDependencies.get(x);
+                if(reverse != null) {
+                    for (T y : reverse) {
+                        if(allSatisfied.contains(y)){
+                            allSatisfied.remove(y);
+                            allSatisfiedQueue.remove(y);
+                        }
+                    }
+                }
+                Set<T> orReverse = reverseOrDependencies.get(x);
+                if(orReverse != null){
+                    for(T y : orReverse){
+                        if(allSatisfied.contains(y) && !isAllSatisfied(y)){
+                            allSatisfied.remove(y);
+                            allSatisfiedQueue.remove(y);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -168,6 +188,47 @@ public abstract class AbstractDependencyTracker<T, D> {
 
         dependencies.get(y).add(x);
         reverseDependencies.get(x).add(y);
+
+        checkAndUpdateIfAllSatisfied(y);
+    }
+
+    protected void checkAndUpdateIfAllSatisfied(@NonNull T y){
+        boolean allSat = isAllSatisfied(y);
+        if(allSat){
+            //Case where "x is satisfied" happened before x->y added
+            if(!allSatisfied.contains(y)){
+                allSatisfied.add(y);
+                allSatisfiedQueue.add(y);
+            }
+        } else if(allSatisfied.contains(y)){
+            //Not satisfied, but is in the queue -> needs to be removed
+            allSatisfied.remove(y);
+            allSatisfiedQueue.remove(y);
+        }
+    }
+
+    protected boolean isAllSatisfied(@NonNull T y){
+        Set<D> set1 = dependencies.get(y);
+
+        boolean allSatisfied = true;
+        if(set1 != null){
+            for(D d : set1){
+                allSatisfied = isSatisfied(d);
+                if(!allSatisfied)
+                    break;
+            }
+        }
+        if(allSatisfied){
+            Set<Pair<D,D>> set2 = orDependencies.get(y);
+            if(set2 != null){
+                for(Pair<D,D> p : set2){
+                    allSatisfied = isSatisfied(p.getFirst()) || isSatisfied(p.getSecond());
+                    if(!allSatisfied)
+                        break;
+                }
+            }
+        }
+        return allSatisfied;
     }
 
 
@@ -245,6 +306,8 @@ public abstract class AbstractDependencyTracker<T, D> {
         orDependencies.get(y).add(new Pair<>(x1, x2));
         reverseOrDependencies.get(x1).add(y);
         reverseOrDependencies.get(x2).add(y);
+
+        checkAndUpdateIfAllSatisfied(y);
     }
 
 
