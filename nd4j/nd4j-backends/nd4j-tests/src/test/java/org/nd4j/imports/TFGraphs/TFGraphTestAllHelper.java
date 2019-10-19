@@ -31,7 +31,11 @@ import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
+import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
+import org.nd4j.autodiff.samediff.internal.memory.ArrayCloseMemoryMgr;
+import org.nd4j.autodiff.samediff.internal.memory.CloseValidationMemoryMgr;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.TFGraphs.listener.OpExecOrderListener;
@@ -388,11 +392,20 @@ public class TFGraphTestAllHelper {
             requiredOutputs = graph.variableMap().keySet();
         }
 
-//        = TFGraphMapper.importGraph(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getInputStream());
-//        System.out.println(graph.summary());
         Map<String,INDArray> outMap = null;
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
+            //Set memory manager - check that all arrays (other than the ones we requested as output)
+            CloseValidationMemoryMgr mmgr = new CloseValidationMemoryMgr(new ArrayCloseMemoryMgr());
+            long tid = Thread.currentThread().getId();
+            if(!graph.getSessions().containsKey(tid))
+                graph.getSessions().put(tid, new InferenceSession(graph));
+            //Execute
+            graph.getSessions().get(tid).setMmgr(mmgr);
             outMap = graph.output(inputs, new ArrayList<>(requiredOutputs));
+
+            //Check that all arrays were released
+            mmgr.assertAllReleasedExcept(outMap.values());
+            graph.getSessions().clear();
         } else if (executeWith.equals(ExecuteWith.LIBND4J)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));
@@ -403,7 +416,6 @@ public class TFGraphTestAllHelper {
             val executioner = new NativeGraphExecutioner();
             val results = executioner.executeGraph(graph, configuration);
 
-            //graph.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/non2d_1.fb"));
         } else if (executeWith.equals(ExecuteWith.JUST_PRINT)) {
             for (String input : inputs.keySet()) {
                 graph.associateArrayWithVariable(inputs.get(input), graph.variableMap().get(input));

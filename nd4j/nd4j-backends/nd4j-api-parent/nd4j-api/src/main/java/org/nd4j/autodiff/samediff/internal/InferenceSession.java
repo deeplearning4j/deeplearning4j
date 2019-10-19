@@ -402,11 +402,11 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             return new INDArray[]{out};
         } else if(op instanceof CustomOp){
             CustomOp c = (CustomOp)op;
-            Nd4j.getExecutioner().exec(c);
+            Nd4j.exec(c);
             return c.outputArguments();
         } else if(op instanceof Op) {
             Op o = (Op) op;
-            Nd4j.getExecutioner().exec(o);
+            Nd4j.exec(o);
             return new INDArray[]{o.z()};
         } else {
             throw new UnsupportedOperationException("Execution not yet implemented for: " + op.getClass().getName());
@@ -761,6 +761,11 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 customOp.setInputArguments(args);
             }
 
+            if(df instanceof Identity){
+                //We don't need to allocate an output array for Identity, we pass through the input array without copying
+                return sdo;
+            }
+
             df.resolvePropertiesFromSameDiffBeforeExecution();  //TODO This is to be removed
             List<LongShapeDescriptor> outShape = customOp.calculateOutputShape();
             Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
@@ -912,6 +917,12 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         log.info("InferenceSession2: Transition from {}, iter={} (parent={}) to {}, iter={} (parent={})", fromFrame, fromIter, parentFrom, toFrame, toIter, parentTo);
         //Remove any frame dependencies...
         //TODO Remove logging, add frame dependency closing
+        //Dependencies for enter ops: these depend on frame close
+        if(!fromFrame.equals(toFrame) && parentFrom != null && parentFrom.getFrame().equals(toFrame)){
+            //This is a transition from a given frame back to its parent frame - i.e., exit current frame
+            Dep d = new FrameDep(fromFrame, parentFrom);
+            arrayUseTracker.markSatisfied(d, true);
+        }
     }
 
     @Data
