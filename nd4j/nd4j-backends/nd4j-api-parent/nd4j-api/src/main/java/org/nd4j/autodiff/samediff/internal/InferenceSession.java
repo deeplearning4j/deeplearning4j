@@ -160,6 +160,18 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             }
         }
 
+        //For any queued (not yet processed) ops - mark them as satisfied, so we can deallocate any arrays
+        // that are waiting on them
+        if(dt.hasNewAllSatisfied()){
+            List<ExecStep> execSteps = dt.getNewAllSatisfiedList();
+            for(ExecStep es : execSteps){
+                if(es.getType() == ExecType.OP){
+                    OpDep od = new OpDep(es.getName(), es.getFrameIter().getFrame(), es.getFrameIter().getIteration(), es.getFrameIter().getParentFrame());
+                    arrayUseTracker.markSatisfied(od, true);
+                }
+            }
+        }
+
         //Also mark "end of execution" for array dependency tracker. Mainly used for TensorArray arrays at present.
         //TODO Optimize for reduced memory for some TensorArray operations - i.e., close/deallocate earlier
         arrayUseTracker.markSatisfied(new ExecDoneDep(), true);
@@ -186,7 +198,6 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
         INDArray[] out = doExec(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
 
-        /*
         StringBuilder sb = new StringBuilder();
         sb.append(op.getName()).append(" - ").append(outputFrameIter).append(" outputs: ");
         List<String> opOutNames = op.getOutputsOfOp();
@@ -197,7 +208,6 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                     out[i] == null ? null : out[i].getId()).append(")");
         }
         System.out.println(sb.toString());
-        */
 
         //Call listeners, before we (maybe) deallocate input arrays
         if(listeners != null && listeners.size() > 0){
@@ -259,6 +269,11 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             if(OUTER_FRAME.equals(outputFrameIter.getFrame()) && allReqVariables.contains(name)){
                 //This variable is an output, record that in the array use tracker, so we don't deallocate it
                 arrayUseTracker.addDependency(out[i], new ReqOutputDep(name));
+            } else if(inputsForOps == null || inputsForOps.isEmpty()){
+                //This particular array is not actually needed anywhere, so we can deallocate in immediately
+                //Possibly only a control dependency
+                log.info("Found array id {} (output of {}) not required anywhere, deallocating", out[i].getId(), o.getName());
+                mmgr.release(out[i]);
             }
         }
 
