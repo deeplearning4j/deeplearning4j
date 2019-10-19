@@ -379,4 +379,11 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
         //Always 1 for legacy/base ops
         return 1;
     }
+
+    @Override
+    public void clearArrays(){
+        x = null;
+        y = null;
+        z = null;
+    }
 }

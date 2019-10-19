@@ -154,18 +154,6 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
     @Override
     protected Map<String,INDArray> postProcessOutput(Map<String,INDArray> output){
-        /*
-        Clear op array references. Why? Consider the following graph:
-        X -> Y -> Z, where X is a placeholder, variable or constant
-        On first call, user requests output Y, and stores it in a reference in user code.
-        On second call, user requests Z. Y is deallocated internally (memory reuse), but the user still has a reference to it
-        Then then tries to use Y and can't (exception - closed/released etc)
-         */
-        for(String s : output.keySet()){
-            if(sameDiff.getVariable(s).getVariableType() == VariableType.ARRAY){
-                clearOpReferencesFor(s);
-            }
-        }
 
         //For any queued (not yet processed) ops - mark them as satisfied, so we can deallocate any arrays
         // that are waiting on them
@@ -204,6 +192,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         }
 
         INDArray[] out = doExec(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
+        op.getOp().clearArrays();
 
         StringBuilder sb = new StringBuilder();
         sb.append(op.getName()).append(" - ").append(outputFrameIter).append(" outputs: ");
@@ -303,7 +292,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         if(arrayUseTracker.hasNewAllSatisfied()){
             List<INDArray> canClose = arrayUseTracker.getNewAllSatisfiedList();
             for(INDArray arr : canClose){
-                log.info("Closing array... {}", arr.shapeInfoToString());
+                log.info("Closing array... id={}, {}", arr.getId(), arr.shapeInfoToString());
                 mmgr.release(arr);
             }
         }
@@ -902,42 +891,6 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             VarId inVarId = lookup(n, opInputs, allIterInputs, false);
             Preconditions.checkState(inVarId != null,"Could not find array for variable %s", sdv.getVarName());
             return nodeOutputs.get(inVarId);
-        }
-    }
-
-    protected void clearOpReferencesFor(@NonNull String varName){
-        Variable v = sameDiff.getVariables().get(varName);
-
-        //Clear op outputs
-        String outOfOp = v.getOutputOfOp();
-        SameDiffOp op = sameDiff.getOps().get(outOfOp);
-        int idx = op.getOutputsOfOp().indexOf(varName);
-        if(op.getOp() instanceof DynamicCustomOp){
-            DynamicCustomOp dco = (DynamicCustomOp)op.getOp();
-            dco.setOutputArgument(idx, null);
-        } else {
-            Op o = (Op)op.getOp();
-            o.setZ(null);
-        }
-
-        //Clear op inputs
-        List<String> inTo = v.getInputsForOp();
-        if(inTo != null && !inTo.isEmpty()){
-            for(String opName : inTo){
-                SameDiffOp o = sameDiff.getOps().get(opName);
-                int inIdx = o.getInputsToOp().indexOf(varName);
-                if(o.getOp() instanceof DynamicCustomOp){
-                    DynamicCustomOp dco = (DynamicCustomOp)o.getOp();
-                    dco.setInputArgument(inIdx, null);
-                } else {
-                    Op op2 = (Op)o.getOp();
-                    if(inIdx == 0){
-                        op2.setX(null);
-                    } else {
-                        op2.setY(null);
-                    }
-                }
-            }
         }
     }
 

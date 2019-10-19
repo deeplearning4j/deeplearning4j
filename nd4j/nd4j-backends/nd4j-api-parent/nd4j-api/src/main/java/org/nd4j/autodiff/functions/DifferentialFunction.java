@@ -845,4 +845,8 @@ public abstract class DifferentialFunction {
 
     public int getNumOutputs(){return -1;}
 
+    /**
+     * Clear the input and output INDArrays, if any are set
+     */
+    public abstract void clearArrays();
 }

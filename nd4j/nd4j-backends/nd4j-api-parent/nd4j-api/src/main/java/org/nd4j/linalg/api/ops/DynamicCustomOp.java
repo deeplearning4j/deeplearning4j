@@ -263,7 +263,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public INDArray[] outputArguments() {
         if (!outputArguments.isEmpty()) {
-            return outputArguments.toArray(new INDArray[outputArguments.size()]);
+            return outputArguments.toArray(new INDArray[0]);
         }
         return new INDArray[0];
     }
@@ -271,7 +271,7 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public INDArray[] inputArguments() {
         if (!inputArguments.isEmpty())
-            return inputArguments.toArray(new INDArray[inputArguments.size()]);
+            return inputArguments.toArray(new INDArray[0]);
         return new INDArray[0];
 
     }
@@ -613,6 +613,12 @@ public class DynamicCustomOp extends DifferentialFunction implements CustomOp {
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
 
+    }
+
+    @Override
+    public void clearArrays(){
+        inputArguments.clear();
+        outputArguments.clear();
     }
 
     protected static INDArray[] wrapOrNull(INDArray in){
