@@ -39,7 +39,7 @@ public class QLearningDiscreteTest {
             },
             new int[] { 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 });
         MockMDP mdp = new MockMDP(observationSpace);
-        mdp.getActionSpace().setRandom(random);
+
         QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 0, 0, 5, 1, 0,
                 0, 1.0, 0, 0, 0, 0, true);
         MockDataManager dataManager = new MockDataManager(false);
@@ -103,11 +103,11 @@ public class QLearningDiscreteTest {
         }
 
         // MDP calls
-        assertArrayEquals(new Integer[] { 0, 0, 0, 0, 0, 0, 0, 0, 1 ,1, 4, 4, 2, 2, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 }, mdp.actions.toArray());
+        assertArrayEquals(new Integer[] { 0, 0, 0, 0, 0, 0, 0, 0, 0 , 0, 4, 4, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 4, 4 }, mdp.actions.toArray());
 
         // ExpReplay calls
         double[] expectedTrRewards = new double[] { 9.0, 21.0, 25.0, 29.0, 33.0, 37.0, 41.0, 45.0 };
-        int[] expectedTrActions = new int[] { 1, 4, 2, 4, 4, 4, 4, 4 };
+        int[] expectedTrActions = new int[] { 0, 4, 3, 4, 4, 4, 4, 4 };
         double[] expectedTrNextObservation = new double[] { 2.0, 4.0, 6.0, -100.0, 9.0, 11.0, 13.0, 15.0 };
         double[][] expectedTrObservations = new double[][] {
                 new double[] { 0.0, 2.0, 4.0, 6.0, -100.0 },

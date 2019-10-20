@@ -61,6 +61,7 @@ public class AsyncNStepQLearningThreadDiscrete<O extends Encodable> extends Asyn
 
         Integer seed = conf.getSeed();
         if(seed != null) {
+            mdp.getActionSpace().setSeed(seed + threadNumber);
             rnd.setSeed(seed + threadNumber);
         }
     }

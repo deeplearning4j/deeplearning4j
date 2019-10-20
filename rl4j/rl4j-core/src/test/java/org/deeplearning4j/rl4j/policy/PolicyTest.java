@@ -181,7 +181,7 @@ public class PolicyTest {
             },
             new int[] { 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 });
         MockMDP mdp = new MockMDP(observationSpace, 30);
-        mdp.getActionSpace().setRandom(random);
+
         QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 0, 0, 5, 1, 0,
                 0, 1.0, 0, 0, 0, 0, true);
         MockNeuralNet nnMock = new MockNeuralNet();

@@ -49,7 +49,7 @@ public abstract class AsyncNStepQLearningDiscrete<O extends Encodable>
         this.asyncGlobal = new AsyncGlobal<>(dqn, conf);
         Integer seed = conf.getSeed();
         if(seed != null) {
-            Nd4j.getRandom().setSeed(seed);
+            mdp.getActionSpace().setSeed(seed);
         }
     }
 
