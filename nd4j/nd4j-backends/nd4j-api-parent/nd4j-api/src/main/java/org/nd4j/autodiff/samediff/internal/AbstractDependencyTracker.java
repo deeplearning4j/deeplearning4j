@@ -1,5 +1,6 @@
 package org.nd4j.autodiff.samediff.internal;
 
+import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.base.Preconditions;
@@ -27,7 +28,9 @@ import java.util.*;
  */
 @Slf4j
 public abstract class AbstractDependencyTracker<T, D> {
+    @Getter
     private final Map<T, Set<D>> dependencies;
+    @Getter
     private final Map<T, Set<Pair<D,D>>> orDependencies;
     private final Map<D, Set<T>> reverseDependencies = new HashMap<>();
     private final Map<D, Set<T>> reverseOrDependencies = new HashMap<>();
