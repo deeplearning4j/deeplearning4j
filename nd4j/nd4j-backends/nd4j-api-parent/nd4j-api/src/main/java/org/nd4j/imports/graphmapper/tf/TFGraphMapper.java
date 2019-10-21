@@ -168,6 +168,7 @@ public class TFGraphMapper {
         int nNodes = tfGraph.getNodeCount();
 
         //First, add any constants, placeholders, and zero-input ops
+        SameDiff sd = SameDiff.create();
         for (int i = 0; i < nNodes; i++) {
             NodeDef nd = tfGraph.getNode(i);
             String op = nd.getOp();
@@ -195,186 +196,220 @@ public class TFGraphMapper {
         Map<String, String> mergeOpsPostProcess = new HashMap<>();
 
         //Go through ops in order, and add to the graph
-        SameDiff sd = SameDiff.create();
         Map<String, List<String>> constControlDeps = new HashMap<>();        //Key: constant name. Value: control dependencies
         while (!availableToAdd.isEmpty()) {
             NodeDef nd = availableToAdd.remove();
             String name = nd.getName();
             String opName = nd.getOp();
             int nIn = nd.getInputCount();
-            log.info("Adding operation to graph: {} (name={})", opName, name);
 
             availableToAddSet.remove(name);
 
-            if ("Const".equals(opName)) {
-                //Get array, create a constant
-                TensorProto tfTensor = nd.getAttrOrThrow("value").getTensor();
-                TFTensorMapper m = TFTensorMappers.newMapper(tfTensor);
-                INDArray arr = m.toNDArray();
-                sd.constant(name, arr);
-                int inputCount = nd.getInputCount();
-                if (inputCount > 0) {
-                    //Very likely control dependency. i.e., "we must execute op X before the constant is really available to be used"
-                    List<String> l = new ArrayList<>(inputCount);
-                    for (int i = 0; i < inputCount; i++) {
-                        String n = nd.getInput(i);
-                        if (!isControlDep(n)) {
-                            throw new IllegalStateException("Found non-control dependency input \"" + n + "\" for constant \"" + name + "\"");
-                        }
-                        String n2 = stripControl(n);
-                        l.add(n2);
-                    }
-                    constControlDeps.put(name, l);
-                }
-            } else if ("Placeholder".equals(opName) || "PlaceholderWithDefault".equals(opName)) {
-                //TODO support the "WithDefault" array
+            log.info("Adding operation to graph: {} (name={})", opName, name);
 
-                Map<String, AttrValue> attrMap = nd.getAttrMap();
-                boolean shapeAvailable = attrMap.containsKey("shape");
-                long[] shape;
-                if (shapeAvailable) {
-                    TensorShapeProto shapeProto = attrMap.get("shape").getShape();
-                    shape = shapeFromShapeProto(shapeProto);
-                } else {
-                    //Some placeholders don't have any shape restrictions - i.e., accept anything...
-                    shape = null;
-                }
-
-
-                org.tensorflow.framework.DataType tfDtype = attrMap.get("dtype").getType();
-                org.nd4j.linalg.api.buffer.DataType dt = convertType(tfDtype);
-                sd.placeHolder(name, dt, shape);
-                int inputCount = nd.getInputCount();
+            boolean skipCase = false;
+            if(opFilter != null && opFilter.skipOp(nd, sd, nd.getAttrMap(), tfGraph)){
+                log.debug("Skipping op {} of type {} due to op filter", name, opName);
+                //Don't continue at this point - we still need to process what this feeds into...
+                skipCase = true;
             } else {
-                /*
-                Normal ops. Process in the following order:
-                1. Create the op instance
-                2. Add op to graph
-                3. Import from TF (to set attributes)
-                4. Calculate output dtypes
-                5. Create and add output variables to graph
-
-                Note: one constraint on this order is that some ops import modify the graph structure.
-                Notable example: concat op - it removes the axis op and converts the value to an iArg
-                https://github.com/eclipse/deeplearning4j/issues/8285
-                 */
-                DifferentialFunction dfInstance = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
-                Preconditions.checkState(dfInstance != null, "Could not find class for TF Ops: {}", opName);
-
-                DifferentialFunction df;
-                try {
-                    df = dfInstance.getClass().newInstance();
-                } catch (Throwable t) {
-                    //Should never happen because function was already created via no-arg constructor earlier
-                    throw new RuntimeException(t);
-                }
-                df.setSameDiff(sd);
-                df.setOwnName(name);
-
-                //Process inputs
-                List<String> inNames = new ArrayList<>(nIn);
-                List<String> controlDeps = null;
-                for (int i = 0; i < nIn; i++) {
-                    String origInName = nd.getInput(i);
-                    String inName = stripControl(origInName);
-                    boolean isControlDep = isControlDep(origInName);
-                    if (isControlDep) {
-                        if (controlDeps == null)
-                            controlDeps = new ArrayList<>();
-                        controlDeps.add(inName);
-                    }
-
-                    if (!isControlDep) {
-                        inNames.add(inName);
-                    }
-
-                    //Update Variable.inputsForOp for all variables that feed into this op
-                    // Such variables must have already been created, given we process in order
-                    Variable v = sd.getVariables().get(inName);
-
-                    if (v == null && df instanceof Merge) {
-                        //Edge case for import - we allow merge ops to be added before both inputs are available
-                        //This is to break the cycles in loops, otherwise we can't process anything in order
-                        mergeOpsPostProcess.put(df.getOwnName(), inName);
-                        continue;
-                    }
-
-                    if (!isControlDep && (v.getInputsForOp() == null || !v.getInputsForOp().contains(name))) {
-                        //May already be present - for example, add(x,x)
-                        if (v.getInputsForOp() == null)
-                            v.setInputsForOp(new ArrayList<String>());
-                        v.getInputsForOp().add(name);
-                    } else if (isControlDep) {
-                        if (v.getControlDepsForOp() == null)
-                            v.setControlDepsForOp(new ArrayList<String>());
-                        if (!v.getControlDepsForOp().contains(name)) {
-                            v.getControlDepsForOp().add(name);
+                if (importOverride == null || !importOverride.containsKey(name)) {
+                    //Standard case
+                    if ("Const".equals(opName)) {
+                        //Get array, create a constant
+                        TensorProto tfTensor = nd.getAttrOrThrow("value").getTensor();
+                        TFTensorMapper m = TFTensorMappers.newMapper(tfTensor);
+                        INDArray arr = m.toNDArray();
+                        sd.constant(name, arr);
+                        int inputCount = nd.getInputCount();
+                        if (inputCount > 0) {
+                            //Very likely control dependency. i.e., "we must execute op X before the constant is really available to be used"
+                            List<String> l = new ArrayList<>(inputCount);
+                            for (int i = 0; i < inputCount; i++) {
+                                String n = nd.getInput(i);
+                                if (!isControlDep(n)) {
+                                    throw new IllegalStateException("Found non-control dependency input \"" + n + "\" for constant \"" + name + "\"");
+                                }
+                                String n2 = stripControl(n);
+                                l.add(n2);
+                            }
+                            constControlDeps.put(name, l);
                         }
+                    } else if ("Placeholder".equals(opName) || "PlaceholderWithDefault".equals(opName)) {
+                        //TODO support the "WithDefault" array
+
+                        Map<String, AttrValue> attrMap = nd.getAttrMap();
+                        boolean shapeAvailable = attrMap.containsKey("shape");
+                        long[] shape;
+                        if (shapeAvailable) {
+                            TensorShapeProto shapeProto = attrMap.get("shape").getShape();
+                            shape = shapeFromShapeProto(shapeProto);
+                        } else {
+                            //Some placeholders don't have any shape restrictions - i.e., accept anything...
+                            shape = null;
+                        }
+
+
+                        org.tensorflow.framework.DataType tfDtype = attrMap.get("dtype").getType();
+                        org.nd4j.linalg.api.buffer.DataType dt = convertType(tfDtype);
+                        sd.placeHolder(name, dt, shape);
+                    } else {
+                        /*
+                        Normal ops. Process in the following order:
+                        1. Create the op instance
+                        2. Add op to graph
+                        3. Import from TF (to set attributes)
+                        4. Calculate output dtypes
+                        5. Create and add output variables to graph
+
+                        Note: one constraint on this order is that some ops import modify the graph structure.
+                        Notable example: concat op - it removes the axis op and converts the value to an iArg
+                        https://github.com/eclipse/deeplearning4j/issues/8285
+                         */
+                        DifferentialFunction dfInstance = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
+                        Preconditions.checkState(dfInstance != null, "Could not find class for TF Ops: {}", opName);
+
+                        DifferentialFunction df;
+                        try {
+                            df = dfInstance.getClass().newInstance();
+                        } catch (Throwable t) {
+                            //Should never happen because function was already created via no-arg constructor earlier
+                            throw new RuntimeException(t);
+                        }
+                        df.setSameDiff(sd);
+                        df.setOwnName(name);
+
+                        //Process inputs
+                        List<String> inNames = new ArrayList<>(nIn);
+                        List<String> controlDeps = null;
+                        for (int i = 0; i < nIn; i++) {
+                            String origInName = nd.getInput(i);
+                            String inName = stripControl(origInName);
+                            boolean isControlDep = isControlDep(origInName);
+                            if (isControlDep) {
+                                if (controlDeps == null)
+                                    controlDeps = new ArrayList<>();
+                                controlDeps.add(inName);
+                            }
+
+                            if (!isControlDep) {
+                                inNames.add(inName);
+                            }
+
+                            //Update Variable.inputsForOp for all variables that feed into this op
+                            // Such variables must have already been created, given we process in order
+                            Variable v = sd.getVariables().get(inName);
+
+                            if (v == null && df instanceof Merge) {
+                                //Edge case for import - we allow merge ops to be added before both inputs are available
+                                //This is to break the cycles in loops, otherwise we can't process anything in order
+                                mergeOpsPostProcess.put(df.getOwnName(), inName);
+                                continue;
+                            }
+
+                            if (!isControlDep && (v.getInputsForOp() == null || !v.getInputsForOp().contains(name))) {
+                                //May already be present - for example, add(x,x)
+                                if (v.getInputsForOp() == null)
+                                    v.setInputsForOp(new ArrayList<String>());
+                                v.getInputsForOp().add(name);
+                            } else if (isControlDep) {
+                                if (v.getControlDepsForOp() == null)
+                                    v.setControlDepsForOp(new ArrayList<String>());
+                                if (!v.getControlDepsForOp().contains(name)) {
+                                    v.getControlDepsForOp().add(name);
+                                }
+                            }
+                        }
+
+                        //Create SameDiffOp instance and add to graph
+                        SameDiffOp op = SameDiffOp.builder()
+                                .name(name)
+                                .op(df)
+                                .inputsToOp(inNames)
+                                //.outputsOfOp(outNames)    //We'll set this later
+                                .controlDeps(controlDeps)
+                                .build();
+                        sd.getOps().put(name, op);
+
+
+                        Map<String, AttrValue> attrMap = nd.getAttrMap();
+                        df.initFromTensorFlow(nd, sd, attrMap, tfGraph);            //TODO REMOVE TFGRAPH ENTIRELY FROM THIS CALL - it encourages hacky and really brittle stuff like input array to attribute conversion
+
+                        //DType calculate for output variables (set/correct if necessary)
+                        List<String> newInNames = sd.getOps().get(name).getInputsToOp();        //Just in case import has modified this, like for concat case
+                        List<org.nd4j.linalg.api.buffer.DataType> newInDtypes = new ArrayList<>(newInNames.size());
+                        if (df instanceof Merge) {
+                            //Merge op: as noted elsewhere, we allow merge to be processed when only one of the inputs is available
+                            // to break cycles for loops
+                            //We know that Merge op has the restriction of the same datatype for both inputs, so we'll
+                            SDVariable v1 = sd.getVariable(newInNames.get(0));
+                            SDVariable v2 = sd.getVariable(newInNames.get(1));
+                            org.nd4j.linalg.api.buffer.DataType dt1 = (v1 == null ? v2.dataType() : v1.dataType());
+                            org.nd4j.linalg.api.buffer.DataType dt2 = (v2 == null ? v1.dataType() : v2.dataType());
+                            newInDtypes.add(dt1);
+                            newInDtypes.add(dt2);
+                        } else {
+                            for (String s : newInNames) {
+                                SDVariable v = sd.getVariable(s);
+                                newInDtypes.add(v.dataType());
+                            }
+                        }
+
+                        List<org.nd4j.linalg.api.buffer.DataType> outDTypes = df.calculateOutputDataTypes(newInDtypes);
+                        SDVariable[] outSDVars = new SDVariable[outDTypes.size()];
+                        Variable[] outVars = new Variable[outDTypes.size()];
+                        List<String> outNames = new ArrayList<>(outDTypes.size());
+
+                        //Create output variables and add to graph
+                        for (int i = 0; i < outDTypes.size(); i++) {
+                            org.nd4j.linalg.api.buffer.DataType dt = outDTypes.get(i);
+                            String varName = name + (i == 0 ? "" : ":" + i);
+                            outSDVars[i] = sd.var(varName, VariableType.ARRAY, null, dt, (long[]) null);
+                            outNames.add(varName);
+
+                            outVars[i] = Variable.builder()
+                                    .name(varName)
+                                    .variable(outSDVars[i])
+                                    .inputsForOp(null)          //This is updated incrementally as other ops are added
+                                    .controlDepsForOp(null)     //Control deps are handled later
+                                    .controlDepsForVar(null)
+                                    .outputOfOp(name)
+                                    .outputOfOpIdx(i)
+                                    .build();
+
+                            sd.getVariables().put(varName, outVars[i]);
+                            log.info("Added variable to graph: {} (output of op {})", varName, name);
+                        }
+                        sd.getOps().get(name).setOutputsOfOp(outNames);
+
+                        log.info("Imported op: {} (name={})", opName, name);
                     }
-                }
-
-                //Create SameDiffOp instance and add to graph
-                SameDiffOp op = SameDiffOp.builder()
-                        .name(name)
-                        .op(df)
-                        .inputsToOp(inNames)
-                        //.outputsOfOp(outNames)    //We'll set this later
-                        .controlDeps(controlDeps)
-                        .build();
-                sd.getOps().put(name, op);
-
-
-                Map<String, AttrValue> attrMap = nd.getAttrMap();
-                df.initFromTensorFlow(nd, sd, attrMap, tfGraph);            //TODO REMOVE TFGRAPH ENTIRELY FROM THIS CALL - it encourages hacky and really brittle stuff like input array to attribute conversion
-
-                //DType calculate for output variables (set/correct if necessary)
-                List<String> newInNames = sd.getOps().get(name).getInputsToOp();        //Just in case import has modified this, like for concat case
-                List<org.nd4j.linalg.api.buffer.DataType> newInDtypes = new ArrayList<>(newInNames.size());
-                if (df instanceof Merge) {
-                    //Merge op: as noted elsewhere, we allow merge to be processed when only one of the inputs is available
-                    // to break cycles for loops
-                    //We know that Merge op has the restriction of the same datatype for both inputs, so we'll
-                    SDVariable v1 = sd.getVariable(newInNames.get(0));
-                    SDVariable v2 = sd.getVariable(newInNames.get(1));
-                    org.nd4j.linalg.api.buffer.DataType dt1 = (v1 == null ? v2.dataType() : v1.dataType());
-                    org.nd4j.linalg.api.buffer.DataType dt2 = (v2 == null ? v1.dataType() : v2.dataType());
-                    newInDtypes.add(dt1);
-                    newInDtypes.add(dt2);
                 } else {
-                    for (String s : newInNames) {
-                        SDVariable v = sd.getVariable(s);
-                        newInDtypes.add(v.dataType());
+                    //Import override case
+                    TFImportOverride o = importOverride.get(name);
+
+                    log.debug("Importing op {} using override {}", opName, importOverride);
+
+                    //First, get inputs:
+                    List<SDVariable> inputs = new ArrayList<>(nIn);
+                    List<SDVariable> controlDeps = null;
+                    for (int i = 0; i < nIn; i++) {
+                        String inName = nd.getInput(i);
+                        boolean controlDep = isControlDep(inName);
+
+                        SDVariable v = sd.getVariable(name);
+
+                        if (controlDep) {
+                            if (controlDeps == null)
+                                controlDeps = new ArrayList<>();
+                            controlDeps.add(v);
+                        } else {
+                            inputs.add(v);
+                        }
+
+                        o.initFromTensorFlow(inputs, controlDeps, nd, sd, nd.getAttrMap(), tfGraph);
                     }
                 }
-
-                List<org.nd4j.linalg.api.buffer.DataType> outDTypes = df.calculateOutputDataTypes(newInDtypes);
-                SDVariable[] outSDVars = new SDVariable[outDTypes.size()];
-                Variable[] outVars = new Variable[outDTypes.size()];
-                List<String> outNames = new ArrayList<>(outDTypes.size());
-
-                //Create output variables and add to graph
-                for (int i = 0; i < outDTypes.size(); i++) {
-                    org.nd4j.linalg.api.buffer.DataType dt = outDTypes.get(i);
-                    String varName = name + (i == 0 ? "" : ":" + i);
-                    outSDVars[i] = sd.var(varName, VariableType.ARRAY, null, dt, (long[]) null);
-                    outNames.add(varName);
-
-                    outVars[i] = Variable.builder()
-                            .name(varName)
-                            .variable(outSDVars[i])
-                            .inputsForOp(null)          //This is updated incrementally as other ops are added
-                            .controlDepsForOp(null)     //Control deps are handled later
-                            .controlDepsForVar(null)
-                            .outputOfOp(name)
-                            .outputOfOpIdx(i)
-                            .build();
-
-                    sd.getVariables().put(varName, outVars[i]);
-                    log.info("Added variable to graph: {} (output of op {})", varName, name);
-                }
-                sd.getOps().get(name).setOutputsOfOp(outNames);
-
-                log.info("Imported op: {} (name={})", opName, name);
             }
 
 
@@ -401,10 +436,10 @@ public class TFGraphMapper {
                         String s = nextOpDef.getInput(i);
                         String inName = stripControl(nextOpDef.getInput(i));
 
-                        log.info("Input: {}, {}", s, inName);
+//                        log.info("Input: {}, {}", s, inName);
 
-                        if (!sd.hasVariable(inName)) {
-                            log.info("Not found: {} for op {}", inName, nextOpDef.getName());
+                        if (!sd.hasVariable(inName) && !skipCase) {
+//                            log.info("Not found: {} for op {}", inName, nextOpDef.getName());
                             allAlreadyInGraph = false;
                             break;
                         } else if (!isControlDep(s)) {
@@ -457,7 +492,7 @@ public class TFGraphMapper {
             v.getInputsForOp().add(e.getKey());
         }
 
-        Preconditions.checkState(remainingNodes.isEmpty(), "Unprocessed nodes: %s", remainingNodes.keySet());
+        Preconditions.checkState(remainingNodes.isEmpty(), "%s Unprocessed nodes: %s", remainingNodes.size(), remainingNodes.keySet());
 
         return sd;
     }

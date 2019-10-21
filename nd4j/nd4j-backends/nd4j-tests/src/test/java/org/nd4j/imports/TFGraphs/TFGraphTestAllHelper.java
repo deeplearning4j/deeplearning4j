@@ -395,7 +395,7 @@ public class TFGraphTestAllHelper {
         Map<String,INDArray> outMap = null;
         if (executeWith.equals(ExecuteWith.SAMEDIFF)) {
             //Set memory manager - check that all arrays (other than the ones we requested as output)
-            CloseValidationMemoryMgr mmgr = new CloseValidationMemoryMgr(new ArrayCloseMemoryMgr());
+            CloseValidationMemoryMgr mmgr = new CloseValidationMemoryMgr(graph, new ArrayCloseMemoryMgr());
             long tid = Thread.currentThread().getId();
             if(!graph.getSessions().containsKey(tid))
                 graph.getSessions().put(tid, new InferenceSession(graph));
