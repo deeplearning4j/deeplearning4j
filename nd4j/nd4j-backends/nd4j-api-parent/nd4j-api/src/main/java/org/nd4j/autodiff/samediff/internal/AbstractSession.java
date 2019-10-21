@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.function.Predicate;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 
@@ -570,7 +571,8 @@ public abstract class AbstractSession<T, O> {
                     }
                 }
 
-                //Also add control dependencies
+
+                //Also add control dependencies (variable)
                 List<String> cdForOps = v.getControlDepsForOp();
                 if(cdForOps != null){
                     for(String opName : cdForOps){
@@ -623,6 +625,8 @@ public abstract class AbstractSession<T, O> {
     protected void addDependenciesForOp(String opName, FrameIter depFrameIter){
         SameDiffOp op = sameDiff.getOps().get(opName);
         List<String> inputs = op.getInputsToOp();
+        List<String> cdOps = op.getControlDeps();
+        List<String> cdVars = op.getVarControlDeps();
 
         ExecStep es = new ExecStep(ExecType.OP, opName, depFrameIter);
         if(!(op.getOp() instanceof NextIteration) && dt.hasDependency(es)){
@@ -652,6 +656,19 @@ public abstract class AbstractSession<T, O> {
             for (String s : inputs) {
                 ExecStep req = getExecStepForVar(s, depFrameIter);
                 dt.addDependency(es, req);
+            }
+        }
+
+        if(cdOps != null){
+            for(String s : cdOps){
+                ExecStep req = getExecStepForVar(s, depFrameIter);
+                dt.addDependency(es, req);
+            }
+        }
+
+        if(cdVars != null ){
+            for(String s : cdVars){
+
             }
         }
     }
@@ -695,13 +712,37 @@ public abstract class AbstractSession<T, O> {
                 //For constant=false, these are only available at iteration 0 - so use *current* iteration, same as all other ops
                 // (which is this case, won't be triggered on iter > 0 - as desired/expected)
                 if(e.isConstant()){
-                    FrameIter fi = frameIter;
-                    if(fi.getIteration() != 0){
-                        fi = fi.clone();
-                        fi.setIteration(0);
+                    FrameIter fi = frameIter.clone();
+                    fi.setIteration(0);
+
+                    //Nested constant enter case: Iteration 0 all the way down...
+                    String inVarName = sdo.getInputsToOp().get(0);
+                    FrameIter parentFrame = fi.getParentFrame();
+                    while(parentFrame != null){
+                        Variable var = sameDiff.getVariables().get(inVarName);
+                        if(var.getOutputOfOp() != null){
+                            String opName = var.getOutputOfOp();
+                            SameDiffOp sdo2 = sameDiff.getOps().get(opName);
+                            if(sdo2.getOp() instanceof Enter){
+                                Enter e2 = (Enter) sdo.getOp();
+                                if(e2.isConstant()){
+                                    parentFrame.setIteration(0);
+                                    parentFrame = parentFrame.getParentFrame();
+                                    inVarName = sdo2.getInputsToOp().get(0);
+                                } else {
+                                    break;
+                                }
+                            } else {
+                                break;
+                            }
+                        } else {
+                            break;
+                        }
                     }
+
                     return new ExecStep(ExecType.OP, outOfOp, fi);
                 }
+
                 //Intentional fall-through to default case
             }
             return new ExecStep(ExecType.OP, outOfOp, frameIter);

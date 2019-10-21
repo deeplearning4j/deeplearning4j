@@ -19,6 +19,7 @@ package org.nd4j.imports.graphmapper.tf;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
+import org.apache.commons.io.IOUtils;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
@@ -37,9 +38,13 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Merge;
 import org.nd4j.shade.guava.primitives.Floats;
 import org.nd4j.shade.guava.primitives.Ints;
+import org.nd4j.shade.protobuf.InvalidProtocolBufferException;
+import org.nd4j.shade.protobuf.Message;
+import org.nd4j.shade.protobuf.TextFormat;
 import org.tensorflow.framework.*;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 /**
@@ -88,7 +93,29 @@ public class TFGraphMapper {
     }
 
     /**
-     * Import a frozen TensorFlow protobuf (.pb) file via an input tseam, with optional overrides
+     * Import a frozen TensorFlow protobuf file in text format (.pb.txt) file via an input stream, with optional overrides
+     *
+     * @param is             Stream for a frozen TensorFlow model pb file to import
+     * @param importOverride Optional import override for specific ops, keyed by op name
+     * @param opFilter       Optional filter - ops to exclude/ignore
+     * @return Imported graph
+     */
+    public static SameDiff importGraphTxt(@NonNull InputStream is, Map<String, TFImportOverride> importOverride, TFOpImportFilter opFilter) {
+        GraphDef tfGraph;
+        try {
+            Message.Builder builder = GraphDef.newBuilder();
+            String content = IOUtils.toString(is, StandardCharsets.UTF_8);
+            TextFormat.getParser().merge(content, builder);
+            tfGraph = (GraphDef) builder.build();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        return importGraph(tfGraph, importOverride, opFilter);
+    }
+
+    /**
+     * Import a frozen TensorFlow protobuf (.pb) file via an input stream, with optional overrides
      *
      * @param is             Stream for a frozen TensorFlow model pb file to import
      * @param importOverride Optional import override for specific ops, keyed by op name

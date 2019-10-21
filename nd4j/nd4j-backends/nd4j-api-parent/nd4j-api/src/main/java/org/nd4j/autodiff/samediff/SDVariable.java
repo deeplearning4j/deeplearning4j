@@ -21,6 +21,7 @@ import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.autodiff.samediff.internal.Variable;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.NoOpNameFoundException;
@@ -1522,26 +1523,59 @@ public class SDVariable implements Serializable {
 
     /**
      * Add a control dependency for this variable on the specified variable.<br>
-     * Control depnedencies can be used to enforce the execution order.
+     * Control dependencies can be used to enforce the execution order.
      * For example, if a control dependency X->Y exists, then Y will only be executed after X is executed - even
      * if Y wouldn't normally depend on the result/values of X.
      *
      * @param controlDependency Control dependency to add for this variable
      */
     public void addControlDependency(SDVariable controlDependency){
-        String cdN = controlDependency.getVarName();
-        String n = this.getVarName();
-        Variable v = sameDiff.getVariables().get(n);
-        if(v.getControlDeps() == null)
-            v.setControlDeps(new ArrayList<String>());
-        if(!v.getControlDeps().contains(cdN))
-            v.getControlDeps().add(cdN);
+        Variable vThis = sameDiff.getVariables().get(getVarName());
+        Variable vCD = sameDiff.getVariables().get(controlDependency.getVarName());
 
-        Variable v2 = sameDiff.getVariables().get(cdN);
-        if(v2.getControlDepsForVar() == null)
-            v2.setControlDepsForVar(new ArrayList<String>());
-        if(!v2.getControlDepsForVar().contains(n))
-            v2.getControlDepsForVar().add(n);
+        //If possible: add control dependency on ops
+        if(vThis.getOutputOfOp() != null && vCD.getOutputOfOp() != null ){
+            //Op -> Op case
+            SameDiffOp oThis = sameDiff.getOps().get(vThis.getOutputOfOp());
+            SameDiffOp oCD = sameDiff.getOps().get(vCD.getOutputOfOp());
+
+            if(oThis.getControlDeps() == null)
+                oThis.setControlDeps(new ArrayList<String>());
+            if(!oThis.getControlDeps().contains(oCD.getName()))
+                oThis.getControlDeps().add(oCD.getName());
+
+            if(oCD.getControlDepFor() == null)
+                oCD.setControlDepFor(new ArrayList<String>());
+            if(!oCD.getControlDepFor().contains(oThis.getName()))
+                oCD.getControlDepFor().add(oThis.getName());
+        } else {
+            if(vThis.getOutputOfOp() != null){
+                //const/ph -> op case
+                SameDiffOp oThis = sameDiff.getOps().get(vThis.getOutputOfOp());
+
+                if(oThis.getVarControlDeps() == null)
+                    oThis.setVarControlDeps(new ArrayList<String>());
+
+                if(!oThis.getVarControlDeps().contains(vCD.getName()))
+                    oThis.getVarControlDeps().add(vCD.getName());
+
+                if(vCD.getControlDepsForOp() == null)
+                    vCD.setControlDepsForOp(new ArrayList<String>());
+                if(!vCD.getControlDepsForOp().contains(oThis.getName()))
+                    vCD.getControlDepsForOp().add(oThis.getName());
+            } else {
+                //const/ph -> const/ph case
+                if(vThis.getControlDeps() == null)
+                    vThis.setControlDeps(new ArrayList<String>());
+                if(!vThis.getControlDeps().contains(vCD.getName()))
+                    vThis.getControlDeps().add(vCD.getName());
+
+                if(vCD.getControlDepsForVar() == null)
+                    vCD.setControlDepsForVar(new ArrayList<String>());
+                if(!vCD.getControlDepsForVar().contains(vThis.getName()))
+                    vCD.getControlDepsForVar().add(vThis.getName());
+            }
+        }
     }
 
     /**
