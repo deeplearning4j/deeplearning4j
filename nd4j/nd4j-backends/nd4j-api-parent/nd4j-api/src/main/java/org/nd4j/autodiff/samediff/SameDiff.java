@@ -3796,7 +3796,53 @@ public class SameDiff extends SDBaseOps {
             sessions.clear();
 
             //Recalculate datatypes of outputs, and dynamically update them
-            throw new UnsupportedOperationException("Not yet reimplemented");
+            Set<String> allSeenOps = new HashSet<>();
+            Queue<String> queueOps = new LinkedList<>();
+
+            for(String s : dataTypeMap.keySet()){
+                Variable v = variables.get(s);
+                v.getVariable().setDataType(dataTypeMap.get(s));
+                List<String> inToOp = v.getInputsForOp();
+                if(inToOp != null){
+                    for(String op : inToOp) {
+                        if (!allSeenOps.contains(op)) {
+                            allSeenOps.add(op);
+                            queueOps.add(op);
+                        }
+                    }
+                }
+            }
+
+            while(!queueOps.isEmpty()){
+                String op = queueOps.remove();
+                SameDiffOp o = ops.get(op);
+                List<String> inVars = o.getInputsToOp();
+                List<DataType> inDTypes = new ArrayList<>();
+                if(inVars != null) {
+                    for (String s : inVars) {
+                        SDVariable v = variables.get(s).getVariable();
+                        inDTypes.add(v.dataType());
+                    }
+                }
+                List<DataType> outDtypes = o.getOp().calculateOutputDataTypes(inDTypes);
+                List<String> outVars = o.getOutputsOfOp();
+                for( int i=0; i<outVars.size(); i++ ){
+                    String varName = outVars.get(i);
+                    Variable var = variables.get(varName);
+                    SDVariable v = var.getVariable();
+                    v.setDataType(outDtypes.get(i));
+
+                    //Also update queue
+                    if(var.getInputsForOp() != null){
+                        for(String opName : var.getInputsForOp()){
+                            if(!allSeenOps.contains(opName)){
+                                allSeenOps.add(opName);
+                                queueOps.add(opName);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
