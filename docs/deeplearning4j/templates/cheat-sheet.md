@@ -40,7 +40,7 @@ The goal of this page is to summarize Deeplearning4j's capabilities so that you 
     - [Constraints](#config-constraints)
 - [Data Classes](#data)
   - [Iterators](#data-iter)
-    - [Iterators - Build-In (Deeplearning4j-Provided Data)](#data-iter-builtin)
+    - [Iterators - Built-In (Deeplearning4j-Provided Data)](#data-iter-builtin)
     - [Iterators - User Provided Data](#data-iter-user)
     - [Iterators - Adapter and Utility Iterators](#data-iter-util)
   - [Reading Raw Data: DataVec RecordReaders](#data-datavec)
@@ -426,7 +426,7 @@ DataSetIterator is an abstraction that Deeplearning4j uses to iterate over minib
 
 MultiDataSetIterator is similar to DataSetIterator, but returns MultiDataSet objects, which can have as many input and output arrays as required for the network.
 
-#### <a name="data-iter-builtin">Iterators - Build-In (Deeplearning4j-Provided Data)</a>
+#### <a name="data-iter-builtin">Iterators - Built-In (Deeplearning4j-Provided Data)</a>
 
 `org.deeplearning4j.datasets.iterator.impl`
 
