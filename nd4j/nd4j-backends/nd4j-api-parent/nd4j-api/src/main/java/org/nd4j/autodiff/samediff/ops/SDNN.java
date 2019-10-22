@@ -90,10 +90,10 @@ public class SDNN extends SDOps {
     }
 
     /**
-     * @see #biasAdd(String, SDVariable, SDVariable)
+     * @see #biasAdd(String, SDVariable, SDVariable, boolean)
      */
-    public SDVariable biasAdd(SDVariable input, SDVariable bias) {
-        return biasAdd(null, input, bias);
+    public SDVariable biasAdd(SDVariable input, SDVariable bias, boolean nchw) {
+        return biasAdd(null, input, bias, nchw);
     }
 
     /**
@@ -102,12 +102,14 @@ public class SDNN extends SDOps {
      * @param name  Name of the output variable
      * @param input 4d input variable
      * @param bias  1d bias
+     * @param nchw  The format - nchw=true means [minibatch, channels, height, width] format; nchw=false - [minibatch, height, width, channels].
+     *              Unused for 2d inputs
      * @return Output variable
      */
-    public SDVariable biasAdd(String name, SDVariable input, SDVariable bias) {
+    public SDVariable biasAdd(String name, SDVariable input, SDVariable bias, boolean nchw) {
         validateFloatingPoint("biasAdd", "input", input);
         validateFloatingPoint("biasAdd", "bias", bias);
-        SDVariable ret = f().biasAdd(input, bias);
+        SDVariable ret = f().biasAdd(input, bias, nchw);
         return updateVariableNameAndReference(ret, name);
     }
 

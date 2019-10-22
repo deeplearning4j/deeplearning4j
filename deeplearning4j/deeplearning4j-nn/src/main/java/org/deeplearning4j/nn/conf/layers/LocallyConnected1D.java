@@ -145,7 +145,7 @@ public class LocallyConnected1D extends SameDiffLayer {
         val weightsShape = new long[] {outputSize, featureDim, nOut};
         params.addWeightParam(ConvolutionParamInitializer.WEIGHT_KEY, weightsShape);
         if (hasBias) {
-            val biasShape = new long[] {1, nOut};
+            val biasShape = new long[] {nOut};
             params.addBiasParam(ConvolutionParamInitializer.BIAS_KEY, biasShape);
         }
     }
@@ -200,7 +200,7 @@ public class LocallyConnected1D extends SameDiffLayer {
 
         if (hasBias) {
             SDVariable b = paramTable.get(ConvolutionParamInitializer.BIAS_KEY);
-            SDVariable biasAddedResult = sameDiff.nn().biasAdd(result, b);
+            SDVariable biasAddedResult = sameDiff.nn().biasAdd(result, b, true);
             return activation.asSameDiff("out", sameDiff, biasAddedResult);
         } else {
             return activation.asSameDiff("out", sameDiff, result);
