@@ -39,14 +39,20 @@ public abstract class AbstractDependencyTracker<T, D> {
     private final Set<T> allSatisfied;
     private final Queue<T> allSatisfiedQueue = new LinkedList<>();
 
-    protected abstract Map<T, ?> newTMap();
 
-    protected abstract Set<T> newTSet();
     protected AbstractDependencyTracker(){
         dependencies = (Map<T, Set<D>>) newTMap();
         orDependencies = (Map<T, Set<Pair<D,D>>>) newTMap();
         allSatisfied = newTSet();
     }
+
+    protected abstract Map<T, ?> newTMap();
+
+    protected abstract Set<T> newTSet();
+
+    protected abstract String toStringT(T t);
+
+    protected abstract String toStringD(D d);
 
     public void clear(){
         dependencies.clear();
@@ -204,6 +210,26 @@ public abstract class AbstractDependencyTracker<T, D> {
                 allSatisfiedQueue.add(y);
             }
         } else if(allSatisfied.contains(y)){
+            if(!allSatisfiedQueue.contains(y)){
+                StringBuilder sb = new StringBuilder();
+                sb.append("Dependent object \"").append(toStringT(y)).append("\" was previously processed after all dependencies")
+                        .append(" were marked satisfied, but is now additional dependencies have been added.\n");
+                DependencyList<T,D> dl = getDependencies(y);
+                if(dl.getDependencies() != null){
+                    sb.append("Dependencies:\n");
+                    for(D d : dl.getDependencies()){
+                        sb.append(d).append(" - ").append(isSatisfied(d) ? "Satisfied" : "Not satisfied").append("\n");
+                    }
+                }
+                if(dl.getOrDependencies() != null){
+                    sb.append("Or dependencies:\n");
+                    for(Pair<D,D> p : dl.getOrDependencies()){
+                        sb.append(p).append(" - satisfied=(").append(isSatisfied(p.getFirst())).append(",").append(isSatisfied(p.getSecond())).append(")");
+                    }
+                }
+                throw new IllegalStateException(sb.toString());
+            }
+
             //Not satisfied, but is in the queue -> needs to be removed
             allSatisfied.remove(y);
             allSatisfiedQueue.remove(y);

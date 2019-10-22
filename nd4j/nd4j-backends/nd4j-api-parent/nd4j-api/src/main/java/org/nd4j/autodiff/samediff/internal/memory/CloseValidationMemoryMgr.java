@@ -47,6 +47,23 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
     public void release(INDArray array) {
         Preconditions.checkState(released.containsKey(array), "Attempting to release an array that was not allocated by" +
                 " this memory manager: id=%s", array.getId());
+        if(released.get(array)){
+            //Already released
+            InferenceSession is = sd.getSessions().get(Thread.currentThread().getId());
+            IdentityDependencyTracker<INDArray, InferenceSession.Dep> arrayUseTracker = is.getArrayUseTracker();
+            DependencyList<INDArray, InferenceSession.Dep> dl = arrayUseTracker.getDependencies(array);
+            System.out.println(dl);
+            if(dl.getDependencies() != null){
+                for(InferenceSession.Dep d : dl.getDependencies()){
+                    System.out.println(d + ": " + arrayUseTracker.isSatisfied(d));
+                }
+            }
+            if(dl.getOrDependencies() != null){
+                for(Pair<InferenceSession.Dep, InferenceSession.Dep> p : dl.getOrDependencies() ){
+                    System.out.println(p + " - (" + arrayUseTracker.isSatisfied(p.getFirst()) + "," + arrayUseTracker.isSatisfied(p.getSecond()));
+                }
+            }
+        }
         Preconditions.checkState(!released.get(array), "Attempting to release an array that was already deallocated by" +
                 " an earlier release call to this memory manager: id=%s", array.getId());
         log.info("Released array: id = {}", array.getId());
@@ -115,6 +132,7 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
         }
 
         if (numNotClosed > 0) {
+            System.out.println(sd.summary());
             throw new IllegalStateException(numNotClosed + " arrays were not released but should have been");
         }
     }

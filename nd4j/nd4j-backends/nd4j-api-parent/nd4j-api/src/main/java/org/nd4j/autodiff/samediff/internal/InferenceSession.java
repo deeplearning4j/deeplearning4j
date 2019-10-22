@@ -68,6 +68,8 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
     private static final String SCOPE_PANIC_MSG = "If required, arrays in workspaces can be detached using INDArray.detach() before being passed to the SameDiff instance.\n" +
             "Alternatively, arrays defined in a workspace must be replaced after the workspace has been closed.";
 
+    protected static final String KERAS_TRAIN_TEST = "keras_learning_phase";
+
     @Getter @Setter
     private SessionMemMgr mmgr;     //Used for allocating and deallocating memory
     /**
@@ -85,7 +87,7 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
     }
 
     @Override
-    protected Map<String,INDArray> preprocessPlaceholders(Map<String,INDArray> placeholders){
+    protected Map<String,INDArray> preprocessPlaceholders(Map<String,INDArray> placeholders, At at){
         arrayUseTracker.clear();
 
         //We'll also use this method as a "pre execution" hook-in, to mark variables as something we should never deallocate
@@ -99,6 +101,23 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
                 arrayUseTracker.addDependency(v.getArr(), new VariableDep(v.getVarName()));
             }
         }
+
+        //Workaround for some TF/Keras based models that require explicit train/test as a placeholder
+        boolean kerasWorkaround = false;
+        List<String> phs = sameDiff.inputs();
+        if(phs != null && !phs.isEmpty()) {
+            for(String s : phs) {
+                if (s.endsWith(KERAS_TRAIN_TEST) && !placeholders.containsKey(s)) {
+                    // The behaviour of some Keras layers (like GRU) differs depending on whether the model is training.
+                    // We provide this value directly, unless the user has provided this manually
+                    INDArray scalar = mmgr.allocate(false, DataType.BOOL).assign(at.operation().isTrainingPhase());
+                    placeholders = new HashMap<>(placeholders); //Array might be singleton, or otherwise unmodifiable
+                    placeholders.put(s, scalar);
+                    kerasWorkaround = true;
+                }
+            }
+        }
+
 
         if(placeholders == null || placeholders.isEmpty()){
             return placeholders;
@@ -133,9 +152,11 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
 
             //Second: cast the input to the required type
-            //TODO For the casting case, we SHOULD actually deallocate this when we're done with it
+            //TODO For the casting case, we SHOULD actually deallocate this when we're done with it, which is usually sooner than "exec done"
             DataType dt = sameDiff.getVariable(e.getKey()).dataType();
-            if(arr.dataType() == dt){
+            if(kerasWorkaround && e.getKey().endsWith(KERAS_TRAIN_TEST)) {
+                arrayUseTracker.addDependency(arr, new ExecDoneDep());
+            } else if(arr.dataType() == dt){
                 //Mark as a placeholder array in the array use tracker, so we never deallocate this array...
                 arrayUseTracker.addDependency(e.getValue(), new PlaceholderDep(e.getKey()));
             } else {
@@ -243,14 +264,31 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
             List<String> inputsForOps = v.getInputsForOp();
             if(inputsForOps != null){
                 for(String opName : inputsForOps){
+                    //Only add dependencies if we actually need the op this feeds into, otherwise the dependency
+                    // will will never be marked as satisfied
+                    if(!subgraphOps.contains(opName))
+                        continue;
+
                     SameDiffOp forOp = sameDiff.getOps().get(opName);
 
                     //TODO do switch or merge need special handling also?
                     if(forOp.getOp() instanceof Enter) {
-                        //Need to keep this array around for the entire duration of the frame, including any nested frames
-                        //Can't mark it as no longer needed until we get back to the current frame
-                        Dep d = new ReturnToFrameDep(outputFrameIter.getFrame(), outputFrameIter.getParentFrame());
-                        arrayUseTracker.addDependency(out[i], d);
+                        Enter e = (Enter)forOp.getOp();
+                        if(e.isConstant()) {
+                        /*
+                        Contant enter case: Need to keep this array around for the entire duration of the frame, including
+                        any nested frames, and all iterations.
+                        Unfortunately, we don't know exactly when we're done with a frame for good
+                        This isn't a great solution, but other possibilities (frame close, trying to detect all exit ops,
+                        detecting return to parent frame, etc all fail in certain circumstances, such as due to control dependencies
+                        on variables).
+                         */
+                            Dep d = new ExecDoneDep();
+                            arrayUseTracker.addDependency(out[i], d);
+                        } else {
+                            Dep d = new OpDep(opName, e.getFrameName(), 0, outputFrameIter);
+                            arrayUseTracker.addDependency(out[i], d);       //Op defined by "d" needs to be executed before specified array can be closed
+                        }
                     } else if(forOp.getOp() instanceof NextIteration) {
                         //The array is needed by the NEXT iteration op, not the current one
                         Dep d = new OpDep(opName, outputFrameIter.getFrame(), outputFrameIter.getIteration() + 1, outputFrameIter.getParentFrame());
@@ -280,12 +318,8 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         }
 
         //Mark current op dependency as satisfied...
-        //For enter ops, we need to keep the arrays open until the end of the frame/iteration; enter values can be used for
-        // multiple iterations (and possibly also in a nested loop)
-        if(!(op.getOp() instanceof Enter)){
-            Dep d = new OpDep(op.getName(), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
-            arrayUseTracker.markSatisfied(d, true);
-        }
+        Dep d = new OpDep(op.getName(), outputFrameIter.getFrame(), outputFrameIter.getIteration(), outputFrameIter.getParentFrame());
+        arrayUseTracker.markSatisfied(d, true);
 
 
         //Close any no longer required arrays
@@ -896,14 +930,14 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
 
     @Override
     protected void onFrameIterTransition(String fromFrame, int fromIter, FrameIter parentFrom, String toFrame, int toIter, FrameIter parentTo){
-        log.info("InferenceSession2: Transition from {}, iter={} (parent={}) to {}, iter={} (parent={})", fromFrame, fromIter, parentFrom, toFrame, toIter, parentTo);
-        //Dependencies for enter ops: these depend on the return to the parent frame - only that that point can we be sure
-        // that those arrays are no longer needed
-        if(!fromFrame.equals(toFrame) && parentFrom != null && parentFrom.getFrame().equals(toFrame)){
-            //This is a transition from a given frame back to its parent frame - i.e., exit current frame
-            Dep d = new ReturnToFrameDep(toFrame, parentTo);
-            arrayUseTracker.markSatisfied(d, true);
-        }
+//        log.info("InferenceSession2: Transition from {}, iter={} (parent={}) to {}, iter={} (parent={})", fromFrame, fromIter, parentFrom, toFrame, toIter, parentTo);
+//        //Dependencies for enter ops: these depend on the return to the parent frame - only that that point can we be sure
+//        // that those arrays are no longer needed
+//        if(!fromFrame.equals(toFrame) && parentFrom != null && parentFrom.getFrame().equals(toFrame)){
+//            //This is a transition from a given frame back to its parent frame - i.e., exit current frame
+//            Dep d = new ReturnToFrameDep(toFrame, parentTo);
+//            arrayUseTracker.markSatisfied(d, true);
+//        }
     }
 
     @Data

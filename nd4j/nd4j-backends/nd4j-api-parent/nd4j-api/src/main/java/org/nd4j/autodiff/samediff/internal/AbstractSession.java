@@ -25,6 +25,7 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.base.Preconditions;
+import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.*;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
@@ -144,7 +145,7 @@ public abstract class AbstractSession<T, O> {
 
         Set<String> reqOutputVariablesSet = new HashSet<>(variables);
 
-        placeholderValues = preprocessPlaceholders(placeholderValues);
+        placeholderValues = preprocessPlaceholders(placeholderValues, at);
 
         //Clear state from past iterations, if any
         dt.clear();
@@ -191,15 +192,9 @@ public abstract class AbstractSession<T, O> {
                 }
 
                 if(required && (placeholderValues == null || !placeholderValues.containsKey(s))){
-                    // Some Keras layers (like GRU) do different things depending on whether the model is training.
-                    // We provide this value directly.
-                    if(s.endsWith("keras_learning_phase")){
-                        placeholderValues.put(s, (T) Nd4j.scalar(at.operation().isTrainingPhase()));
-                    } else {
-                        throw new IllegalStateException(
-                                "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
-                                        " but a placeholder value was not provided");
-                    }
+                    throw new IllegalStateException(
+                            "An input placeholder \"" + s + "\" is required to calculate the requested outputs," +
+                                    " but a placeholder value was not provided");
                 }
             }
         }
@@ -822,7 +817,7 @@ public abstract class AbstractSession<T, O> {
      * @param placeholders Placeholders to preprocess.
      * @return Preprocessed placeholders
      */
-    protected Map<String,T> preprocessPlaceholders(Map<String,T> placeholders){
+    protected Map<String,T> preprocessPlaceholders(Map<String,T> placeholders, At at){
         return placeholders;
     }
 

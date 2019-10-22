@@ -24,4 +24,14 @@ public class DependencyTracker<T, D> extends AbstractDependencyTracker<T,D> {
     protected Set<T> newTSet() {
         return new HashSet<>();
     }
+
+    @Override
+    protected String toStringT(T t) {
+        return t.toString();
+    }
+
+    @Override
+    protected String toStringD(D d) {
+        return d.toString();
+    }
 }
