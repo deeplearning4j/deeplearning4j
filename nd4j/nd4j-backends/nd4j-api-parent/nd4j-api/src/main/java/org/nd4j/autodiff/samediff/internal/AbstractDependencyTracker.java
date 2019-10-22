@@ -10,9 +10,9 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.*;
 
 /**
- * Object dependency tracker, using object identity (not object equality)
- *
- * Dependency are denoted by: X -> Y, which means "object Y depends on X"
+ * Object dependency tracker.
+ * <br>
+ * Dependency are denoted by: X -> Y, which means "Y depends on X"<br>
  * In this implementation:<br>
  * - Dependencies may be satisfied, or not satisfied<br>
  * - The implementation tracks when the dependency for an object Y are fully satisfied. This occurs when:<br>
@@ -20,8 +20,12 @@ import java.util.*;
  *     2. All dependencies of the form X->Y have been marked as satisfied, via markSatisfied(x)<br>
  * - When a dependency is satisfied, any dependent (Ys) are checked to see if all their dependencies are satisfied<br>
  * - If a dependent has all dependencies satisfied, it is added to the "new all satisfied" queue for processing,
- *   which can be accessed via {@link #hasNewAllSatisfied()}, {@link #getNewAllSatisfied()} and {@link #getNewAllSatisfiedList()}
- *
+ *   which can be accessed via {@link #hasNewAllSatisfied()}, {@link #getNewAllSatisfied()} and {@link #getNewAllSatisfiedList()}<br>
+ * <br>
+ * Note: Two types of dependencies exist<br>
+ * 1. Standard dependencies - i.e., "Y depends on X"<br>
+ * 2. "Or" dependencies - i.e., "Y depends on (A or B)".<br>
+ * For Or dependencies of the form "(A or B) -> Y", Y will be marked as "all dependencies satisfied" if either A or B is marked as satisfied.
  *
  * @param <T> For a dependency X -> Y, Y has type T
  * @param <D> For a dependency X -> Y, X has type D
@@ -29,15 +33,15 @@ import java.util.*;
 @Slf4j
 public abstract class AbstractDependencyTracker<T, D> {
     @Getter
-    private final Map<T, Set<D>> dependencies;
+    private final Map<T, Set<D>> dependencies;                              //Key: the dependent. Value: all things that the key depends on
     @Getter
-    private final Map<T, Set<Pair<D,D>>> orDependencies;
-    private final Map<D, Set<T>> reverseDependencies = new HashMap<>();
+    private final Map<T, Set<Pair<D,D>>> orDependencies;                    //Key: the dependent. Value: the set of OR dependencies
+    private final Map<D, Set<T>> reverseDependencies = new HashMap<>();     //Key: the dependee. Value: The set of all dependents that depend on this value
     private final Map<D, Set<T>> reverseOrDependencies = new HashMap<>();
-    private final Set<D> satisfiedDependencies = new HashSet<>();         //Mark the dependency as satisfied. If not in set: assumed to not be satisfied
+    private final Set<D> satisfiedDependencies = new HashSet<>();           //Mark the dependency as satisfied. If not in set: assumed to not be satisfied
 
-    private final Set<T> allSatisfied;
-    private final Queue<T> allSatisfiedQueue = new LinkedList<>();
+    private final Set<T> allSatisfied;                                      //Set of all dependent values (Ys) that have all dependencies satisfied
+    private final Queue<T> allSatisfiedQueue = new LinkedList<>();          //Queue for *new* "all satisfied" values. Values are removed using the "new all satisfied" methods
 
 
     protected AbstractDependencyTracker(){
@@ -46,14 +50,29 @@ public abstract class AbstractDependencyTracker<T, D> {
         allSatisfied = newTSet();
     }
 
+    /**
+     * @return A new map where the dependents (i.e., Y in "X -> Y") are the key
+     */
     protected abstract Map<T, ?> newTMap();
 
+    /**
+     * @return A new set where the dependents (i.e., Y in "X -> Y") are the key
+     */
     protected abstract Set<T> newTSet();
 
+    /**
+     * @return A String representation of the dependent object
+     */
     protected abstract String toStringT(T t);
 
+    /**
+     * @return A String representation of the dependee object
+     */
     protected abstract String toStringD(D d);
 
+    /**
+     * Clear all internal state for the dependency tracker
+     */
     public void clear(){
         dependencies.clear();
         orDependencies.clear();
@@ -64,15 +83,29 @@ public abstract class AbstractDependencyTracker<T, D> {
         allSatisfiedQueue.clear();
     }
 
+    /**
+     * @return True if no dependencies have been defined
+     */
     public boolean isEmpty(){
         return dependencies.isEmpty() && orDependencies.isEmpty() &&
                 allSatisfiedQueue.isEmpty();
     }
 
+    /**
+     * @return True if the dependency has been marked as satisfied using {@link #markSatisfied(Object, boolean)}
+     */
     public boolean isSatisfied(@NonNull D x){
         return satisfiedDependencies.contains(x);
     }
 
+    /**
+     * Mark the specified value as satisfied.
+     * For example, if two dependencies have been previously added (X -> Y) and (X -> A) then after the markSatisfied(X, true)
+     * call, both of these dependencies are considered satisfied.
+     *
+     * @param x         Value to mark
+     * @param satisfied Whether to mark as satisfied (true) or unsatisfied (false)
+     */
     public void markSatisfied(@NonNull D x, boolean satisfied){
         if(satisfied){
             boolean alreadySatisfied = satisfiedDependencies.contains(x);
@@ -94,7 +127,9 @@ public abstract class AbstractDependencyTracker<T, D> {
                 } else if(s2 != null){
                     set = s2;
                 } else {
-                    log.info("No values depend on: {}", x);     //TODO Remove debugging
+                    if(log.isTraceEnabled()){
+                        log.trace("No values depend on: {}", toStringD(x));
+                    }
                     return;
                 }
 
@@ -155,9 +190,10 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     /**
-     * Check whether any dependencies x -> y exist, for y
-     * @param y
-     * @return
+     * Check whether any dependencies x -> y exist, for y (i.e., anything previously added by {@link #addDependency(Object, Object)}
+     * or {@link #addOrDependency(Object, Object, Object)}
+     * @param y Dependent to check
+     * @return True if Y depends on any values
      */
     public boolean hasDependency(@NonNull T y){
         Set<D> s1 = dependencies.get(y);
@@ -170,8 +206,8 @@ public abstract class AbstractDependencyTracker<T, D> {
 
     /**
      * Get all dependencies x, for x -> y, and (x1 or x2) -> y
-     * @param y
-     * @return
+     * @param y Dependent to get dependencies for
+     * @return List of dependencies
      */
     public DependencyList<T,D> getDependencies(@NonNull T y){
         Set<D> s1 = dependencies.get(y);
@@ -185,8 +221,8 @@ public abstract class AbstractDependencyTracker<T, D> {
 
     /**
      * Add a dependency: y depends on x, as in x -> y
-     * @param y
-     * @param x The dependency that is required for Y
+     * @param y The dependent
+     * @param x The dependee that is required for Y
      */
     public void addDependency(@NonNull T y, @NonNull D x){
         if(!dependencies.containsKey(y))
@@ -264,8 +300,8 @@ public abstract class AbstractDependencyTracker<T, D> {
     /**
      * Remove a dependency (x -> y)
      *
-     * @param y
-     * @param x The dependency that is no longer required for Y
+     * @param y The dependent that currently requires X
+     * @param x The dependee that is no longer required for Y
      */
     public void removeDependency(@NonNull T y, @NonNull D x){
         if(!dependencies.containsKey(y) && !orDependencies.containsKey(y))
@@ -317,11 +353,13 @@ public abstract class AbstractDependencyTracker<T, D> {
     }
 
     /**
-     * Add an "Or" dependency: y requires either x1 OR x2
+     * Add an "Or" dependency: Y requires either x1 OR x2 - i.e., (x1 or x2) -> Y<br>
+     * If either x1 or x2 (or both) are marked satisfied via {@link #markSatisfied(Object, boolean)} then the
+     * dependency is considered satisfied
      *
-     * @param y
-     * @param x1
-     * @param x2
+     * @param y  Dependent
+     * @param x1 Dependee 1
+     * @param x2 Dependee 2
      */
     public void addOrDependency(@NonNull T y, @NonNull D x1, @NonNull D x2){
         if(!orDependencies.containsKey(y))
@@ -339,16 +377,29 @@ public abstract class AbstractDependencyTracker<T, D> {
         checkAndUpdateIfAllSatisfied(y);
     }
 
-
+    /**
+     * @return True if there are any new/unprocessed "all satisfied dependents" (Ys in X->Y)
+     */
     public boolean hasNewAllSatisfied(){
         return !allSatisfiedQueue.isEmpty();
     }
 
-    public T getNewAllSatisfied(){
+    /**
+     * Returns the next new dependent (Y in X->Y) that has all dependees (Xs) marked as satisfied via {@link #markSatisfied(Object, boolean)}
+     * Throws an exception if {@link #hasNewAllSatisfied()} returns false.<br>
+     * Note that once a value has been retrieved from here, no new dependencies of the form (X -> Y) can be added for this value;
+     * the value is considered "processed" at this point.
+     *
+     * @return The next new "all satisfied dependent"
+     */
+    public T getNewAllSatisfied() {
         Preconditions.checkState(hasNewAllSatisfied(), "No new/unprocessed dependents that are all satisfied");
         return allSatisfiedQueue.remove();
     }
 
+    /**
+     * @return As per {@link #getNewAllSatisfied()} but returns all values
+     */
     public List<T> getNewAllSatisfiedList(){
         Preconditions.checkState(hasNewAllSatisfied(), "No new/unprocessed dependents that are all satisfied");
         List<T> ret = new ArrayList<>(allSatisfiedQueue);
@@ -356,6 +407,13 @@ public abstract class AbstractDependencyTracker<T, D> {
         return ret;
     }
 
+    /**
+     * As per {@link #getNewAllSatisfied()} but instead of returning the first dependee, it returns the first that matches
+     * the provided predicate. If no value matches the predicate, null is returned
+     *
+     * @param predicate Predicate gor checking
+     * @return The first value matching the predicate, or null if no values match the predicate
+     */
     public T getFirstNewAllSatisfiedMatching(@NonNull Predicate<T> predicate){
         Preconditions.checkState(hasNewAllSatisfied(), "No new/unprocessed dependents that are all satisfied");
 
@@ -380,5 +438,4 @@ public abstract class AbstractDependencyTracker<T, D> {
 
         return null;    //None match predicate
     }
-
 }

@@ -17,6 +17,20 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.*;
 
+/**
+ * A {@link SessionMemMgr} that wraps an existing memory manager, to ensure that:<br>
+ * - All arrays that are supposed to be closed, have been closed<br>
+ * - Arrays are only passed to the close method exactly one<br>
+ * - Arrays that are passed to the close method were originally allocated by the session memory manager<br>
+ * <br>
+ * How to use:<br>
+ * 1. Perform an inference or training iteration, as normal<br>
+ * 2. Call {@link #assertAllReleasedExcept(Collection)} with the output arrays<br>
+ *
+ * NOTE: This is intended for debugging and testing only
+ *
+ * @author Alex Black
+ */
 @Slf4j
 public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements SessionMemMgr {
 
@@ -75,6 +89,11 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
         underlying.close();
     }
 
+    /**
+     * Check that all arrays have been released (after an inference call) except for the specified arrays.
+     *
+     * @param except Arrays that should not have been closed (usually network outputs)
+     */
     public void assertAllReleasedExcept(@NonNull Collection<INDArray> except){
         Set<INDArray> allVarPhConst = null;
 
