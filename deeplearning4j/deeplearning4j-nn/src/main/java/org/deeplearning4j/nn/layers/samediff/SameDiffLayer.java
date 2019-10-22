@@ -110,7 +110,9 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             sameDiff.clearPlaceholders(true);
             sameDiff.clearOpInputs();
 
-            return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
+            INDArray ret = workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
+            result.close();
+            return ret;
         }
     }
 
@@ -122,6 +124,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         Gradient g = new DefaultGradient();
 
         INDArray dLdIn;
+        boolean noCloseEps = false;
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
             if(sameDiff == null){
                 doInit();
@@ -152,25 +155,24 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
             List<String> requiredGrads = new ArrayList<>(paramTable.size() + 1);
             requiredGrads.add(sameDiff.grad(INPUT_KEY).getVarName());
-            for(String s : paramTable.keySet()){
-                requiredGrads.add(sameDiff.grad(s).getVarName());
-            }
+            requiredGrads.addAll(paramTable.keySet());
 
-            sameDiff.execBackwards(phMap, requiredGrads);
+            Map<String,INDArray> m = sameDiff.calculateGradients(phMap, requiredGrads);
             for(String s : paramTable.keySet() ){
-                INDArray sdGrad = sameDiff.grad(s).getArr();
+                INDArray sdGrad = m.get(s);
                 INDArray dl4jGrad = gradTable.get(s);
                 dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
                 g.gradientForVariable().put(s, dl4jGrad);
+                sdGrad.close();
             }
 
-            SDVariable v = sameDiff.grad(INPUT_KEY);
-            dLdIn = v.getArr();
+            dLdIn = m.get(INPUT_KEY);
 
-            if(dLdIn == null && fn.getGradPlaceholderName().equals(v.getVarName())){
+            if(dLdIn == null && fn.getGradPlaceholderName().equals(INPUT_KEY)){
                 //Edge case with lambda layers like identity: SameDiff doesn't store the placeholders
                 // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
                 dLdIn = epsilon;
+                noCloseEps = true;
             }
         }
 
@@ -178,7 +180,10 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         sameDiff.clearPlaceholders(true);
         sameDiff.clearOpInputs();
 
-        return new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
+        Pair<Gradient, INDArray> ret = new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
+        if(!noCloseEps)
+            dLdIn.close();
+        return ret;
     }
 
     /**Returns the parameters of the neural network as a flattened row vector

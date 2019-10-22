@@ -67,7 +67,12 @@ public class TrainingSession extends InferenceSession {
             Preconditions.checkState(v.getVariableType() == VariableType.VARIABLE, "Can only train VARIABLE type variable - \"%s\" has type %s",
                     s, v.getVariableType());
             SDVariable grad = sameDiff.getVariable(s).getGradient();
-            Preconditions.checkState(grad != null, "No gradient is defined for variable \"%s\"", s);
+            if(grad == null){
+                //In some cases, a variable won't actually impact the loss value, and hence won't have a gradient associated with it
+                //For example: floatVar -> cast to integer -> cast to float -> sum -> loss
+                //In this case, the gradient of floatVar isn't defined (due to no floating point connection to the loss)
+                continue;
+            }
 
             requiredActivations.add(grad.getVarName());
 

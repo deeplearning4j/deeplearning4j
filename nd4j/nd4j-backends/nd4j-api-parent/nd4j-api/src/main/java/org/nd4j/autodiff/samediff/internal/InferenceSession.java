@@ -928,18 +928,6 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         }
     }
 
-    @Override
-    protected void onFrameIterTransition(String fromFrame, int fromIter, FrameIter parentFrom, String toFrame, int toIter, FrameIter parentTo){
-//        log.info("InferenceSession2: Transition from {}, iter={} (parent={}) to {}, iter={} (parent={})", fromFrame, fromIter, parentFrom, toFrame, toIter, parentTo);
-//        //Dependencies for enter ops: these depend on the return to the parent frame - only that that point can we be sure
-//        // that those arrays are no longer needed
-//        if(!fromFrame.equals(toFrame) && parentFrom != null && parentFrom.getFrame().equals(toFrame)){
-//            //This is a transition from a given frame back to its parent frame - i.e., exit current frame
-//            Dep d = new ReturnToFrameDep(toFrame, parentTo);
-//            arrayUseTracker.markSatisfied(d, true);
-//        }
-    }
-
     @Data
     public abstract static class Dep {
         protected String frame;
@@ -963,27 +951,6 @@ public class InferenceSession extends AbstractSession<INDArray,SameDiffOp> {
         @Override
         public String toString(){
             return "OpDep(" + opName + ",frame=" + frame + ",iter=" + iter + (parentFrame == null ? "" : ",parent=" + parentFrame) + ")";
-        }
-    }
-
-    /**
-     * Represents any frame transition, where X -> Y, where Y == X.parent
-     * This is used for deallocating arrays used in enters - which may be needed for the entire duration
-     * of an inner frame - and should only be closed when we exit that frame.
-     * Now, *usually* frames are nested, but occasionally (mainly TF import) we will have execution in different
-     * frames like: main, X, Y, main, where there are enters for both of (main->X) and (main->Y)
-     */
-    @Data
-    @EqualsAndHashCode(callSuper = true)
-    public static class ReturnToFrameDep extends Dep {
-        public ReturnToFrameDep(@NonNull String frame, FrameIter parentFrame){
-            this.frame = frame;
-            this.parentFrame = parentFrame;
-        }
-
-        @Override
-        public String toString(){
-            return "ReturnToFrameDep(" + this.frame + (parentFrame == null ? "" : ",parent=" + parentFrame) + ")";
         }
     }
 

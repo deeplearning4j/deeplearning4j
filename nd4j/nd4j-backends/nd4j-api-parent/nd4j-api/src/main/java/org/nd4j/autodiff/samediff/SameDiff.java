@@ -4514,6 +4514,7 @@ public class SameDiff extends SDBaseOps {
 
         List<String> gradVarNames = new ArrayList<>(variables.size());
         for(String s : variables){
+            Preconditions.checkState(this.variables.containsKey(s), "No variable with name \"%s\" exists in the SameDiff instance", s);
             SDVariable v = getVariable(s).getGradient();
             if(v != null){
                 //In a few cases (like loss not depending on trainable parameters) we won't have gradient array for parameter variable

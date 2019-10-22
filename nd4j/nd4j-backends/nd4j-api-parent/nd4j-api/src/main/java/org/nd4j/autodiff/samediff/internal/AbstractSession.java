@@ -275,12 +275,6 @@ public abstract class AbstractSession<T, O> {
             if(es == null){
                 //We must have finished the current frame/iter, and are switching to the next one
                 es = dt.getNewAllSatisfied();
-
-                if(es.getType() == ExecType.OP) {
-                    //Trigger frame/iter transition
-                    FrameIter fi = es.getFrameIter();
-                    onFrameIterTransition(currentFrame, currentFrameIter, currParentFrame, fi.getFrame(), fi.getIteration(), fi.getParentFrame());
-                }
             }
 
             currentFrame = es.getFrameIter().getFrame();
@@ -866,22 +860,6 @@ public abstract class AbstractSession<T, O> {
      */
     public abstract T[] getOutputs(O op, FrameIter outputFrameIter, Set<VarId> inputs, Set<VarId> allIterInputs, Set<String> constAndPhInputs,
                                    List<Listener> listeners, At at, MultiDataSet batch, Set<String> allReqVariables);
-
-
-    /**
-     * Execution hook for subclass sessions.
-     * Triggered when execution transitions from one frame/iteration to the next frame/iteration
-     *
-     * @param fromFrame  Previous frame
-     * @param fromIter   Previous frame iteration
-     * @param parentFrom Previous parent frame
-     * @param toFrame    New frame
-     * @param toIter     New frame iteration
-     * @param parentTo   New parent frame
-     */
-    protected void onFrameIterTransition(String fromFrame, int fromIter, FrameIter parentFrom, String toFrame, int toIter, FrameIter parentTo){
-        //No-op by default
-    }
 
     /**
      * Get the VarId from the specified name. The VarId should be in one or the other of the collections,

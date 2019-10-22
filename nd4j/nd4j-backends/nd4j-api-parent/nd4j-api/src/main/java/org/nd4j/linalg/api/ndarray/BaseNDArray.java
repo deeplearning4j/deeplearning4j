@@ -143,7 +143,6 @@ public abstract class BaseNDArray implements INDArray, Iterable {
     }
 
     public BaseNDArray() {
-
     }
 
     @Override

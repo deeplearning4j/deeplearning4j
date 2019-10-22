@@ -172,8 +172,8 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 Map<String,INDArray> placeholders = new HashMap<>();
                 placeholders.put("input", f);
                 placeholders.put("label", l);
-                sd.exec(placeholders, lossMse.getVarName());
-                INDArray outSd = a1.getArr();
+                Map<String,INDArray> map = sd.output(placeholders, lossMse.getVarName(), a1.getVarName());
+                INDArray outSd = map.get(a1.getVarName());
                 INDArray outDl4j = net.output(f);
 
                 assertEquals(testName, outDl4j, outSd);
@@ -187,7 +187,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 //Check score
                 double scoreDl4j = net.score();
-                double scoreSd = lossMse.getArr().getDouble(0) + sd.calcRegularizationScore();
+                double scoreSd = map.get(lossMse.getVarName()).getDouble(0) + sd.calcRegularizationScore();
                 assertEquals(testName, scoreDl4j, scoreSd, 1e-6);
 
                 double lossRegScoreSD = sd.calcRegularizationScore();
