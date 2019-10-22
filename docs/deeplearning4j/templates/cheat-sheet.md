@@ -802,7 +802,7 @@ TransformProcess tp = new TransformProcess.Builder(schema)
 JavaRDD<List<Writable>> processedData = SparkTransformExecutor.execute(parsedInputData, tp);
 ```
 
-We recommend having a look at the [DataVec examples](https://github.com/eclipse/dl4j-examples/tree/master/datavec-examples/src/main/java/org/datavec/transform) before creating more complex transformations.
+We recommend having a look at the [DataVec examples](https://github.com/eclipse/deeplearning4j-examples/tree/master/datavec-examples/src/main/java/org/datavec/transform) before creating more complex transformations.
 
 ### Evaluation
 
