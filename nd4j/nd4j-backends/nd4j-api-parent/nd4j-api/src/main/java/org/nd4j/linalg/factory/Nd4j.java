@@ -5709,7 +5709,7 @@ public class Nd4j {
             shapeInfo[e] = array.shape(e);
 
         val shapeOf = Shape.shapeOf(shapeInfo);
-        val _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+        DataType _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
         if (Shape.isEmpty(shapeInfo)) {
             if(Shape.rank(shapeInfo) == 0) {
                 return Nd4j.empty();
@@ -5816,6 +5816,18 @@ public class Nd4j {
                     b.put(e, sb.get(e));
 
                 return Nd4j.create(b, shapeOf);
+            case BFLOAT16:
+            case UINT16:
+                INDArray arr = Nd4j.createUninitialized(_dtype, shapeOf);
+                ByteBuffer obb = bb.order(_order);
+                int pos = obb.position();
+                byte[] bArr = new byte[obb.limit() - pos];
+
+                for (int e = 0; e < bArr.length; e++) {
+                    bArr[e] = obb.get(e + pos);
+                }
+                arr.data().asNio().put(bArr);
+                return arr;
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
         }
