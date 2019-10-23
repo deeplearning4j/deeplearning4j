@@ -3993,6 +3993,8 @@ public class SameDiff extends SDBaseOps {
                 break;
             }
         }
+
+        variables.get(varName).getInputsForOp().remove(function.getOwnName());
     }
 
     /**
@@ -6007,9 +6009,7 @@ public class SameDiff extends SDBaseOps {
                     v.setInputsForOp(new ArrayList<String>());
                 }
                 if (!v.getInputsForOp().contains(df.getOwnName())) {
-                    v.getInputsForOp(
-
-                    ).add(df.getOwnName());
+                    v.getInputsForOp().add(df.getOwnName());
                 }
             }
 

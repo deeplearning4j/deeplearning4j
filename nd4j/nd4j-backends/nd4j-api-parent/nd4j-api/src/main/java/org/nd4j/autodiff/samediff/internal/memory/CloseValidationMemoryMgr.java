@@ -80,7 +80,7 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
         }
         Preconditions.checkState(!released.get(array), "Attempting to release an array that was already deallocated by" +
                 " an earlier release call to this memory manager: id=%s", array.getId());
-        log.info("Released array: id = {}", array.getId());
+        log.trace("Released array: id = {}", array.getId());
         released.put(array, true);
     }
 

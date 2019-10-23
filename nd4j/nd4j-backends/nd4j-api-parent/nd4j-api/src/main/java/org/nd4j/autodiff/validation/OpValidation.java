@@ -325,6 +325,11 @@ public class OpValidation {
         Map<String,Variable> varsBefore = original.getVariables();
         Map<String,Variable> varsAfter = deserialized.getVariables();
         Preconditions.checkState(varsBefore.keySet().equals(varsAfter.keySet()), "Variable keysets do not match: %s vs %s", varsBefore.keySet(), varsAfter.keySet());
+
+//        System.out.println(original.summary());
+//        System.out.println("\n\n\n\n");
+//        System.out.println(deserialized.summary());
+
         for(String s : varsBefore.keySet()){
             Variable vB = varsBefore.get(s);
             Variable vA = varsAfter.get(s);
@@ -332,21 +337,17 @@ public class OpValidation {
             Preconditions.checkState(vB.getVariable().getVariableType() == vA.getVariable().getVariableType(),
                     "Variable types do not match: %s - %s vs %s", s, vB.getVariable().getVariableType(), vA.getVariable().getVariableType());
 
-            Preconditions.checkState((vB.getInputsForOp() == null) == (vA.getInputsForOp() == null), "Input to ops differ: %s vs. %s", vB.getInputsForOp(), vA.getInputsForOp());
-            Preconditions.checkState(vB.getInputsForOp() == null || vB.getInputsForOp().equals(vA.getInputsForOp()), "Inputs differ: %s vs. %s", vB.getInputsForOp(), vA.getInputsForOp());
+            equalConsideringNull(vB.getInputsForOp(), vA.getInputsForOp(), "%s - Input to ops differ: %s vs. %s", s, vB.getInputsForOp(), vA.getInputsForOp());
 
-            Preconditions.checkState((vB.getOutputOfOp() == null && vA.getOutputOfOp() == null) || vB.getOutputOfOp().equals(vA.getOutputOfOp()), "Output of op differ: %s vs. %s", vB.getOutputOfOp(), vA.getOutputOfOp());
+            Preconditions.checkState((vB.getOutputOfOp() == null && vA.getOutputOfOp() == null) || vB.getOutputOfOp().equals(vA.getOutputOfOp()), "%s - Output of op differ: %s vs. %s", s, vB.getOutputOfOp(), vA.getOutputOfOp());
 
-            Preconditions.checkState((vB.getControlDeps() == null) == (vA.getControlDeps() == null), "Control dependencies differ: %s vs. %s", vB.getControlDeps(), vA.getControlDeps());
-            Preconditions.checkState(vB.getControlDeps() == null || vB.getControlDeps().equals(vA.getControlDeps()), "Control dependencies differ: %s vs. %s", vB.getControlDeps(), vA.getControlDeps());
+            equalConsideringNull(vB.getControlDeps(), vA.getControlDeps(), "%s - Control dependencies differ: %s vs. %s", s, vB.getControlDeps(), vA.getControlDeps());
 
-            Preconditions.checkState((vB.getControlDepsForOp() == null) == (vA.getControlDepsForOp() == null), "Control dependencies for ops differ: %s vs. %s", vB.getControlDepsForOp(), vA.getControlDepsForOp());
-            Preconditions.checkState(vB.getControlDepsForOp() == null || vB.getControlDepsForOp().equals(vA.getControlDepsForOp()), "Control dependencies for ops differ: %s vs. %s", vB.getControlDepsForOp(), vA.getControlDepsForOp());
+            equalConsideringNull(vB.getControlDepsForOp(), vA.getControlDepsForOp(), "%s - Control dependencies for ops differ: %s vs. %s", s, vB.getControlDepsForOp(), vA.getControlDepsForOp());
 
-            Preconditions.checkState((vB.getControlDepsForVar() == null) == (vA.getControlDepsForVar() == null), "Control dependencies for vars differ: %s vs. %s", vB.getControlDepsForVar(), vA.getControlDepsForVar());
-            Preconditions.checkState(vB.getControlDepsForVar() == null || vB.getControlDepsForVar().equals(vA.getControlDepsForVar()), "Control dependencies for vars differ: %s vs. %s", vB.getControlDepsForVar(), vA.getControlDepsForVar());
+            equalConsideringNull(vB.getControlDepsForVar(), vA.getControlDepsForVar(), "%s - Control dependencies for vars differ: %s vs. %s", s, vB.getControlDepsForVar(), vA.getControlDepsForVar());
 
-            Preconditions.checkState(vB.getOutputOfOpIdx() == vA.getOutputOfOpIdx(), "Output of op index differs: %s vs. %s", vB.getOutputOfOpIdx(), vA.getOutputOfOpIdx());
+            Preconditions.checkState(vB.getOutputOfOpIdx() == vA.getOutputOfOpIdx(), "%s - Output of op index differs: %s vs. %s", s, vB.getOutputOfOpIdx(), vA.getOutputOfOpIdx());
 //            Preconditions.checkState(vB.getVariableIndex() == vA.getVariableIndex(), "Var index differs: %s vs. %s", vB.getVariableIndex(), vA.getVariableIndex());
         }
 
@@ -404,6 +405,16 @@ public class OpValidation {
                 Preconditions.checkState(err == null, "Variable result (%s) failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", s, orig, deser, orig, deser, err);
             }
         }
+    }
+
+    protected static void equalConsideringNull(List<String> l1, List<String> l2, String msg, Object... args){
+        //Consider null and length 0 list to be equal (semantically they mean the same thing)
+        boolean empty1 = l1 == null || l1.isEmpty();
+        boolean empty2 = l2 == null || l2.isEmpty();
+        if(empty1 && empty2){
+            return;
+        }
+        Preconditions.checkState(l1 == null || l1.equals(l2), msg, args);
     }
 
     /**
