@@ -5356,7 +5356,7 @@ public class SameDiff extends SDBaseOps {
                 0,
                 0,
                 -1,
-                0, 0, 0, 0, 0, 0);
+                0, 0, 0, 0, 0, 0, 0, 0, 0);
 
         return flatNode;
     }
@@ -5957,7 +5957,37 @@ public class SameDiff extends SDBaseOps {
                 }
                 inputNames[i] = varIn.getVarName();
             }
-            sd.ops.get(df.getOwnName()).setInputsToOp(Arrays.asList(inputNames));
+            SameDiffOp op = sd.ops.get(df.getOwnName());
+            op.setInputsToOp(Arrays.asList(inputNames));
+
+            //Reconstruct control dependencies
+            if (fn.controlDepsLength() > 0) {
+                int l = fn.controlDepsLength();
+                List<String> list = new ArrayList<>(l);
+                for( int i=0; i<l; i++ ){
+                    list.add(fn.controlDeps(i));
+                }
+                op.setControlDeps(list);
+            }
+
+            if (fn.varControlDepsLength() > 0) {
+                int l = fn.varControlDepsLength();
+                List<String> list = new ArrayList<>(l);
+                for( int i=0; i<l; i++ ){
+                    list.add(fn.varControlDeps(i));
+                }
+                op.setVarControlDeps(list);
+            }
+
+            if (fn.controlDepForLength() > 0) {
+                int l = fn.controlDepForLength();
+                List<String> list = new ArrayList<>(l);
+                for( int i=0; i<l; i++ ){
+                    list.add(fn.controlDepFor(i));
+                }
+                op.setControlDepFor(list);
+            }
+
 
             //Record that input variables are input to this op
             for (String inName : inputNames) {

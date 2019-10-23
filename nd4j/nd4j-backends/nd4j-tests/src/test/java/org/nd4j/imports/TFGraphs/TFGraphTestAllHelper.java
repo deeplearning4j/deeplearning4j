@@ -33,10 +33,10 @@ import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.autodiff.samediff.internal.memory.ArrayCloseMemoryMgr;
 import org.nd4j.autodiff.samediff.internal.memory.CloseValidationMemoryMgr;
 import org.nd4j.autodiff.validation.OpValidation;
+import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.TFGraphs.listener.OpExecOrderListener;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
@@ -65,6 +65,7 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 
 import java.io.*;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -284,6 +285,12 @@ public class TFGraphTestAllHelper {
             log.info("\n\tTEST {} PASSED with {} arrays compared...", modelName, predictions.keySet().size());
             log.info("\n========================================================\n");
         }
+
+        //Serialize and deserialize, check equality:
+        ByteBuffer serialized = graph.asFlatBuffers(true);
+        Preconditions.checkNotNull(serialized, "Serialization failed? Null output");
+        OpValidation.checkDeserializedEquality(graph, serialized, new TestCase(graph).testName(modelName).placeholderValues(inputs));
+
 
         Nd4j.EPS_THRESHOLD = 1e-5;
     }

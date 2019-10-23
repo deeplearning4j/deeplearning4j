@@ -35,7 +35,10 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_OUTPUTNAMES = 34,
     VT_OPNAME = 36,
     VT_OUTPUTTYPES = 38,
-    VT_SCALAR = 40
+    VT_SCALAR = 40,
+    VT_CONTROLDEPS = 42,
+    VT_VARCONTROLDEPS = 44,
+    VT_CONTROLDEPFOR = 46
   };
   int32_t id() const {
     return GetField<int32_t>(VT_ID, 0);
@@ -94,6 +97,15 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   const FlatArray *scalar() const {
     return GetPointer<const FlatArray *>(VT_SCALAR);
   }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPS);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *varControlDeps() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_VARCONTROLDEPS);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDepFor() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPFOR);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyField<int32_t>(verifier, VT_ID) &&
@@ -132,6 +144,15 @@ struct FlatNode FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyVector(outputTypes()) &&
            VerifyOffset(verifier, VT_SCALAR) &&
            verifier.VerifyTable(scalar()) &&
+           VerifyOffset(verifier, VT_CONTROLDEPS) &&
+           verifier.VerifyVector(controlDeps()) &&
+           verifier.VerifyVectorOfStrings(controlDeps()) &&
+           VerifyOffset(verifier, VT_VARCONTROLDEPS) &&
+           verifier.VerifyVector(varControlDeps()) &&
+           verifier.VerifyVectorOfStrings(varControlDeps()) &&
+           VerifyOffset(verifier, VT_CONTROLDEPFOR) &&
+           verifier.VerifyVector(controlDepFor()) &&
+           verifier.VerifyVectorOfStrings(controlDepFor()) &&
            verifier.EndTable();
   }
 };
@@ -196,6 +217,15 @@ struct FlatNodeBuilder {
   void add_scalar(flatbuffers::Offset<FlatArray> scalar) {
     fbb_.AddOffset(FlatNode::VT_SCALAR, scalar);
   }
+  void add_controlDeps(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps) {
+    fbb_.AddOffset(FlatNode::VT_CONTROLDEPS, controlDeps);
+  }
+  void add_varControlDeps(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> varControlDeps) {
+    fbb_.AddOffset(FlatNode::VT_VARCONTROLDEPS, varControlDeps);
+  }
+  void add_controlDepFor(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepFor) {
+    fbb_.AddOffset(FlatNode::VT_CONTROLDEPFOR, controlDepFor);
+  }
   explicit FlatNodeBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -228,9 +258,15 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNode(
     flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> outputNames = 0,
     flatbuffers::Offset<flatbuffers::String> opName = 0,
     flatbuffers::Offset<flatbuffers::Vector<int8_t>> outputTypes = 0,
-    flatbuffers::Offset<FlatArray> scalar = 0) {
+    flatbuffers::Offset<FlatArray> scalar = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> varControlDeps = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepFor = 0) {
   FlatNodeBuilder builder_(_fbb);
   builder_.add_opNum(opNum);
+  builder_.add_controlDepFor(controlDepFor);
+  builder_.add_varControlDeps(varControlDeps);
+  builder_.add_controlDeps(controlDeps);
   builder_.add_scalar(scalar);
   builder_.add_outputTypes(outputTypes);
   builder_.add_opName(opName);
@@ -272,7 +308,10 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
     const std::vector<flatbuffers::Offset<flatbuffers::String>> *outputNames = nullptr,
     const char *opName = nullptr,
     const std::vector<int8_t> *outputTypes = nullptr,
-    flatbuffers::Offset<FlatArray> scalar = 0) {
+    flatbuffers::Offset<FlatArray> scalar = 0,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *varControlDeps = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepFor = nullptr) {
   return nd4j::graph::CreateFlatNode(
       _fbb,
       id,
@@ -293,7 +332,10 @@ inline flatbuffers::Offset<FlatNode> CreateFlatNodeDirect(
       outputNames ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*outputNames) : 0,
       opName ? _fbb.CreateString(opName) : 0,
       outputTypes ? _fbb.CreateVector<int8_t>(*outputTypes) : 0,
-      scalar);
+      scalar,
+      controlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDeps) : 0,
+      varControlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*varControlDeps) : 0,
+      controlDepFor ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepFor) : 0);
 }
 
 inline const nd4j::graph::FlatNode *GetFlatNode(const void *buf) {
