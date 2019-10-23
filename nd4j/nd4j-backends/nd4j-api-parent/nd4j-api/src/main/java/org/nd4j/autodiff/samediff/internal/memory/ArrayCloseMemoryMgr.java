@@ -30,7 +30,7 @@ public class ArrayCloseMemoryMgr extends AbstractMemoryMgr implements SessionMem
 
     @Override
     public void release(@NonNull INDArray array) {
-        if(!array.wasClosed() && array.closeable()){
+        if (!array.wasClosed() && array.closeable()) {
             array.close();
             log.trace("Closed array (deallocated) - id={}", array.getId());
         }
@@ -40,5 +40,4 @@ public class ArrayCloseMemoryMgr extends AbstractMemoryMgr implements SessionMem
     public void close() {
         //No-op
     }
-
 }

@@ -31,11 +31,12 @@ import java.util.*;
 public class TrainingSession extends InferenceSession {
 
     protected TrainingConfig config;
-    protected Map<String,String> gradVarToVarMap;
+    protected Map<String, String> gradVarToVarMap;
     protected Map<String, GradientUpdater> updaters;
-    protected Map<String,Integer> lossVarsToLossIdx;
+    protected Map<String, Integer> lossVarsToLossIdx;
     protected double[] currIterLoss;
     protected Map<Class<?>, AtomicDouble> currIterRegLoss;
+    protected List<Listener> listeners;
 
 
     public TrainingSession(SameDiff sameDiff) {
@@ -44,6 +45,7 @@ public class TrainingSession extends InferenceSession {
 
     /**
      * Perform one iteration of training - i.e., do forward and backward passes, and update the parameters
+     *
      * @param config        Training configuration
      * @param placeholders  Current placeholders
      * @param paramsToTrain Set of parameters that will be trained
@@ -55,19 +57,32 @@ public class TrainingSession extends InferenceSession {
      * @return The Loss at the current iteration
      */
     public Loss trainingIteration(TrainingConfig config, Map<String, INDArray> placeholders, Set<String> paramsToTrain, Map<String, GradientUpdater> updaters,
-                                  MultiDataSet batch, List<String> lossVariables, List<Listener> listeners, At at){
+                                  MultiDataSet batch, List<String> lossVariables, List<Listener> listeners, At at) {
         this.config = config;
         this.updaters = updaters;
 
+        //Preprocess listeners, get the relevant ones
+        if (listeners == null) {
+            this.listeners = null;
+        } else {
+            List<Listener> filtered = new ArrayList<>();
+            for (Listener l : listeners) {
+                if (l.isActive(at.operation())) {
+                    filtered.add(l);
+                }
+            }
+            this.listeners = filtered.isEmpty() ? null : filtered;
+        }
+
         List<String> requiredActivations = new ArrayList<>();
         gradVarToVarMap = new HashMap<>();       //Key: gradient variable. Value: variable that the key is gradient for
-        for(String s : paramsToTrain){
+        for (String s : paramsToTrain) {
             Preconditions.checkState(sameDiff.hasVariable(s), "SameDiff instance does not have a variable with name \"%s\"", s);
             SDVariable v = sameDiff.getVariable(s);
             Preconditions.checkState(v.getVariableType() == VariableType.VARIABLE, "Can only train VARIABLE type variable - \"%s\" has type %s",
                     s, v.getVariableType());
             SDVariable grad = sameDiff.getVariable(s).getGradient();
-            if(grad == null){
+            if (grad == null) {
                 //In some cases, a variable won't actually impact the loss value, and hence won't have a gradient associated with it
                 //For example: floatVar -> cast to integer -> cast to float -> sum -> loss
                 //In this case, the gradient of floatVar isn't defined (due to no floating point connection to the loss)
@@ -84,13 +99,13 @@ public class TrainingSession extends InferenceSession {
         List<String> lossVars;
         currIterLoss = new double[lossVariables.size()];
         currIterRegLoss = new HashMap<>();
-        for( int i=0; i<lossVariables.size(); i++ ){
+        for (int i = 0; i < lossVariables.size(); i++) {
             lossVarsToLossIdx.put(lossVariables.get(i), i);
         }
 
         //Do training iteration
         List<String> outputVars = new ArrayList<>(gradVarToVarMap.keySet());    //TODO this should be empty, and grads calculated in requiredActivations
-        Map<String,INDArray> m = output(outputVars, placeholders, batch, requiredActivations, listeners, at );
+        Map<String, INDArray> m = output(outputVars, placeholders, batch, requiredActivations, listeners, at);
 
 
         double[] finalLoss = new double[currIterLoss.length + currIterRegLoss.size()];
@@ -108,10 +123,10 @@ public class TrainingSession extends InferenceSession {
             lossVars = lossVariables;
         }
 
-        Loss loss = new Loss(lossVariables, finalLoss);
+        Loss loss = new Loss(lossVars, finalLoss);
         if (listeners != null) {
             for (Listener l : listeners) {
-                if(l.isActive(Operation.TRAINING)) {
+                if (l.isActive(Operation.TRAINING)) {
                     l.iterationDone(sameDiff, at, batch, loss);
                 }
             }
@@ -128,9 +143,9 @@ public class TrainingSession extends InferenceSession {
 
         List<String> outputs = op.getOutputsOfOp();
         int outIdx = 0;
-        for(String s : outputs){
+        for (String s : outputs) {
             //If this is a loss variable - record it
-            if(lossVarsToLossIdx.containsKey(s)){
+            if (lossVarsToLossIdx.containsKey(s)) {
                 int lossIdx = lossVarsToLossIdx.get(s);
                 INDArray arr = out[outIdx];
                 double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
@@ -138,12 +153,12 @@ public class TrainingSession extends InferenceSession {
             }
 
             //If this is a gradient variable - apply the updater and update the parameter array in-line
-            if(gradVarToVarMap.containsKey(s)){
+            if (gradVarToVarMap.containsKey(s)) {
                 String varName = gradVarToVarMap.get(s);
-                log.info("Calculated gradient for variable \"{}\": (grad var name: \"{}\")", varName, s);
+                //log.info("Calculated gradient for variable \"{}\": (grad var name: \"{}\")", varName, s);
 
                 Variable gradVar = sameDiff.getVariables().get(s);
-                if(gradVar.getInputsForOp() != null && gradVar.getInputsForOp().isEmpty()){
+                if (gradVar.getInputsForOp() != null && gradVar.getInputsForOp().isEmpty()) {
                     //Should be rare, and we should handle this by tracking dependencies, and only update when safe
                     // (i.e., dependency tracking)
                     throw new IllegalStateException("Op depends on gradient variable: " + s + " for variable " + varName);
@@ -156,20 +171,19 @@ public class TrainingSession extends InferenceSession {
                 INDArray gradArr = out[outIdx];
                 INDArray paramArr = var.getVariable().getArr();
 
-                //TODO Parameter sharing case - this is *probably* actually safe, as backprop will add gradients
-                // in this case. i.e., gradient for x, dL/dx, is only available after all components have been added
-                // as x.gradient is updated to account for all uses, during backprop
-                // Put another way: gradient variable representing dL/dx must account for all uses of x - and hence accounts
-                // for gradient accumulation - already
-                List<String> inputsToOps = var.getInputsForOp();
-                //Preconditions.checkState(inputsToOps.size() == 2, "FIXME: Possible parameter sharing detected (not handled yet)");
-
                 //Pre-updater regularization (L1, L2)
                 List<Regularization> r = config.getRegularization();
-                if(r != null && r.size() > 0){
+                if (r != null && r.size() > 0) {
                     double lr = config.getUpdater().hasLearningRate() ? config.getUpdater().getLearningRate(at.iteration(), at.epoch()) : 1.0;
                     for (Regularization reg : r) {
                         if (reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER) {
+                            if (this.listeners != null) {
+                                double score = reg.score(paramArr, at.iteration(), at.epoch());
+                                if (!currIterRegLoss.containsKey(reg.getClass())) {
+                                    currIterRegLoss.put(reg.getClass(), new AtomicDouble());
+                                }
+                                currIterRegLoss.get(reg.getClass()).addAndGet(score);
+                            }
                             reg.apply(paramArr, gradArr, lr, at.iteration(), at.epoch());
                         }
                     }
@@ -182,16 +196,14 @@ public class TrainingSession extends InferenceSession {
                     double lr = config.getUpdater().hasLearningRate() ? config.getUpdater().getLearningRate(at.iteration(), at.epoch()) : 1.0;
                     for (Regularization reg : r) {
                         if (reg.applyStep() == Regularization.ApplyStep.POST_UPDATER) {
-                            reg.apply(paramArr, gradArr, lr, at.iteration(), at.epoch());
-                            /*
-                            if (hasListeners) {
-                                double score = reg.score(param, iterCount, epochCount);
-                                if (!regScore.containsKey(reg.getClass())) {
-                                    regScore.put(reg.getClass(), new AtomicDouble());
+                            if (this.listeners != null) {
+                                double score = reg.score(paramArr, at.iteration(), at.epoch());
+                                if (!currIterRegLoss.containsKey(reg.getClass())) {
+                                    currIterRegLoss.put(reg.getClass(), new AtomicDouble());
                                 }
-                                regScore.get(reg.getClass()).addAndGet(score);
+                                currIterRegLoss.get(reg.getClass()).addAndGet(score);
                             }
-                             */
+                            reg.apply(paramArr, gradArr, lr, at.iteration(), at.epoch());
                         }
                     }
                 }
@@ -209,7 +221,7 @@ public class TrainingSession extends InferenceSession {
                 } else {
                     paramArr.addi(gradArr);
                 }
-                log.info("Applied updater to gradient and updated variable: {}", varName);
+                log.trace("Applied updater to gradient and updated variable: {}", varName);
             }
 
             outIdx++;

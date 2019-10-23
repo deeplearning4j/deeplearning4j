@@ -154,7 +154,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             }
 
             List<String> requiredGrads = new ArrayList<>(paramTable.size() + 1);
-            requiredGrads.add(sameDiff.grad(INPUT_KEY).getVarName());
+            requiredGrads.add(INPUT_KEY);
             requiredGrads.addAll(paramTable.keySet());
 
             Map<String,INDArray> m = sameDiff.calculateGradients(phMap, requiredGrads);

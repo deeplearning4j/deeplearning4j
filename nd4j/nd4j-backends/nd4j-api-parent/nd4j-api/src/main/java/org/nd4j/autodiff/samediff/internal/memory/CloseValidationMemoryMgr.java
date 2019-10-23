@@ -20,13 +20,13 @@ import java.util.*;
 /**
  * A {@link SessionMemMgr} that wraps an existing memory manager, to ensure that:<br>
  * - All arrays that are supposed to be closed, have been closed<br>
- * - Arrays are only passed to the close method exactly one<br>
+ * - Arrays are only passed to the close method exactly one (unless they are requested outputs)<br>
  * - Arrays that are passed to the close method were originally allocated by the session memory manager<br>
  * <br>
  * How to use:<br>
  * 1. Perform an inference or training iteration, as normal<br>
  * 2. Call {@link #assertAllReleasedExcept(Collection)} with the output arrays<br>
- *
+ * <p>
  * NOTE: This is intended for debugging and testing only
  *
  * @author Alex Black
@@ -38,7 +38,7 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
     private final SessionMemMgr underlying;
     private final Map<INDArray, Boolean> released = new IdentityHashMap<>();
 
-    public CloseValidationMemoryMgr(SameDiff sd, SessionMemMgr underlying){
+    public CloseValidationMemoryMgr(SameDiff sd, SessionMemMgr underlying) {
         this.sd = sd;
         this.underlying = underlying;
     }
@@ -61,19 +61,19 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
     public void release(INDArray array) {
         Preconditions.checkState(released.containsKey(array), "Attempting to release an array that was not allocated by" +
                 " this memory manager: id=%s", array.getId());
-        if(released.get(array)){
+        if (released.get(array)) {
             //Already released
             InferenceSession is = sd.getSessions().get(Thread.currentThread().getId());
             IdentityDependencyTracker<INDArray, InferenceSession.Dep> arrayUseTracker = is.getArrayUseTracker();
             DependencyList<INDArray, InferenceSession.Dep> dl = arrayUseTracker.getDependencies(array);
             System.out.println(dl);
-            if(dl.getDependencies() != null){
-                for(InferenceSession.Dep d : dl.getDependencies()){
+            if (dl.getDependencies() != null) {
+                for (InferenceSession.Dep d : dl.getDependencies()) {
                     System.out.println(d + ": " + arrayUseTracker.isSatisfied(d));
                 }
             }
-            if(dl.getOrDependencies() != null){
-                for(Pair<InferenceSession.Dep, InferenceSession.Dep> p : dl.getOrDependencies() ){
+            if (dl.getOrDependencies() != null) {
+                for (Pair<InferenceSession.Dep, InferenceSession.Dep> p : dl.getOrDependencies()) {
                     System.out.println(p + " - (" + arrayUseTracker.isSatisfied(p.getFirst()) + "," + arrayUseTracker.isSatisfied(p.getSecond()));
                 }
             }
@@ -94,22 +94,22 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
      *
      * @param except Arrays that should not have been closed (usually network outputs)
      */
-    public void assertAllReleasedExcept(@NonNull Collection<INDArray> except){
+    public void assertAllReleasedExcept(@NonNull Collection<INDArray> except) {
         Set<INDArray> allVarPhConst = null;
 
-        for(INDArray arr : except){
-            if(!released.containsKey(arr)){
+        for (INDArray arr : except) {
+            if (!released.containsKey(arr)) {
                 //Check if constant, variable or placeholder - maybe user requested that out
-                if(allVarPhConst == null)
+                if (allVarPhConst == null)
                     allVarPhConst = identitySetAllConstPhVar();
-                if(allVarPhConst.contains(arr))
+                if (allVarPhConst.contains(arr))
                     continue;   //OK - output is a constant, variable or placeholder, hence it's fine it's not allocated by the memory manager
 
                 throw new IllegalStateException("Array " + arr.getId() + " was not originally allocated by the memory manager");
             }
 
             boolean released = this.released.get(arr);
-            if(released){
+            if (released) {
                 throw new IllegalStateException("Specified output array (id=" + arr.getId() + ") should not have been deallocated but was");
             }
         }
@@ -121,27 +121,27 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
         Set<INDArray> notReleased = Collections.newSetFromMap(new IdentityHashMap<INDArray, Boolean>());
         InferenceSession is = sd.getSessions().get(Thread.currentThread().getId());
         IdentityDependencyTracker<INDArray, InferenceSession.Dep> arrayUseTracker = is.getArrayUseTracker();
-        for(Map.Entry<INDArray, Boolean> e : released.entrySet()){
+        for (Map.Entry<INDArray, Boolean> e : released.entrySet()) {
             INDArray a = e.getKey();
-            if(!exceptSet.contains(a)){
+            if (!exceptSet.contains(a)) {
                 boolean b = e.getValue();
-                if(!b){
+                if (!b) {
                     notReleased.add(a);
                     numNotClosed++;
                     log.info("Not released: array id {}", a.getId());
                     DependencyList<INDArray, InferenceSession.Dep> list = arrayUseTracker.getDependencies(a);
                     List<InferenceSession.Dep> l = list.getDependencies();
                     List<Pair<InferenceSession.Dep, InferenceSession.Dep>> l2 = list.getOrDependencies();
-                    if(l != null){
-                        for(InferenceSession.Dep d : l){
-                            if(!arrayUseTracker.isSatisfied(d)){
+                    if (l != null) {
+                        for (InferenceSession.Dep d : l) {
+                            if (!arrayUseTracker.isSatisfied(d)) {
                                 log.info("  Not satisfied: {}", d);
                             }
                         }
                     }
-                    if(l2 != null){
-                        for(Pair<InferenceSession.Dep, InferenceSession.Dep> d : l2){
-                            if(!arrayUseTracker.isSatisfied(d.getFirst()) && !arrayUseTracker.isSatisfied(d.getSecond())){
+                    if (l2 != null) {
+                        for (Pair<InferenceSession.Dep, InferenceSession.Dep> d : l2) {
+                            if (!arrayUseTracker.isSatisfied(d.getFirst()) && !arrayUseTracker.isSatisfied(d.getSecond())) {
                                 log.info("   Not satisfied: {}", d);
                             }
                         }
@@ -156,10 +156,10 @@ public class CloseValidationMemoryMgr extends AbstractMemoryMgr implements Sessi
         }
     }
 
-    protected Set<INDArray> identitySetAllConstPhVar(){
-        Set<INDArray> set = Collections.newSetFromMap(new IdentityHashMap<INDArray,Boolean>());
-        for(SDVariable v : sd.variables()){
-            if(v.getVariableType() == VariableType.VARIABLE || v.getVariableType() == VariableType.CONSTANT || v.getVariableType() == VariableType.PLACEHOLDER){
+    protected Set<INDArray> identitySetAllConstPhVar() {
+        Set<INDArray> set = Collections.newSetFromMap(new IdentityHashMap<INDArray, Boolean>());
+        for (SDVariable v : sd.variables()) {
+            if (v.getVariableType() == VariableType.VARIABLE || v.getVariableType() == VariableType.CONSTANT || v.getVariableType() == VariableType.PLACEHOLDER) {
                 set.add(v.getArr());
             }
         }

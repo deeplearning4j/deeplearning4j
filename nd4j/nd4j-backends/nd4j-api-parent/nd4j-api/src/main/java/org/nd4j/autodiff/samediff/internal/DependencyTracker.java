@@ -8,6 +8,7 @@ import org.nd4j.linalg.primitives.Pair;
 import java.util.*;
 
 /**
+ * Dependenci tracker. See {@link AbstractDependencyTracker} for details
  *
  * @param <T> For a dependency X -> Y, Y has type T
  * @param <D> For a dependency X -> Y, X has type D

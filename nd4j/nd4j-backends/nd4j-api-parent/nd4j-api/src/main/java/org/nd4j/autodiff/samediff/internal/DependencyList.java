@@ -6,10 +6,15 @@ import org.nd4j.linalg.primitives.Pair;
 
 import java.util.List;
 
+/**
+ * A list of dependencies, used in {@link AbstractDependencyTracker}
+ *
+ * @author Alex Black
+ */
 @Data
 @AllArgsConstructor
-public class DependencyList<T,D> {
+public class DependencyList<T, D> {
     private T dependencyFor;
     private List<D> dependencies;
-    private List<Pair<D,D>> orDependencies;
+    private List<Pair<D, D>> orDependencies;
 }
