@@ -6059,16 +6059,6 @@ public class SameDiff extends SDBaseOps {
             }
         }
 
-        //Now that ops are done, set variable indices:
-        for(Variable v : sd.variables.values()){
-            if(v.getOutputOfOp() != null){
-                String op = v.getOutputOfOp();
-                SameDiffOp o = sd.ops.get(op);
-                int idx = o.getOutputsOfOp().indexOf(v.getName());
-                v.setOutputOfOpIdx(idx);
-            }
-        }
-
         //Reconstruct loss variables
         if (fg.lossVariablesLength() > 0) {
             for (int i = 0; i < fg.lossVariablesLength(); i++) {

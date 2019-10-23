@@ -346,9 +346,6 @@ public class OpValidation {
             equalConsideringNull(vB.getControlDepsForOp(), vA.getControlDepsForOp(), "%s - Control dependencies for ops differ: %s vs. %s", s, vB.getControlDepsForOp(), vA.getControlDepsForOp());
 
             equalConsideringNull(vB.getControlDepsForVar(), vA.getControlDepsForVar(), "%s - Control dependencies for vars differ: %s vs. %s", s, vB.getControlDepsForVar(), vA.getControlDepsForVar());
-
-            Preconditions.checkState(vB.getOutputOfOpIdx() == vA.getOutputOfOpIdx(), "%s - Output of op index differs: %s vs. %s", s, vB.getOutputOfOpIdx(), vA.getOutputOfOpIdx());
-//            Preconditions.checkState(vB.getVariableIndex() == vA.getVariableIndex(), "Var index differs: %s vs. %s", vB.getVariableIndex(), vA.getVariableIndex());
         }
 
         //Check loss variables:

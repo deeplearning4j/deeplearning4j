@@ -374,7 +374,6 @@ public class TFGraphMapper {
                                     .controlDepsForOp(null)     //Control deps are handled later
                                     .controlDepsForVar(null)
                                     .outputOfOp(name)
-                                    .outputOfOpIdx(i)
                                     .build();
 
                             sd.getVariables().put(varName, outVars[i]);
