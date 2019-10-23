@@ -18,6 +18,9 @@ package org.deeplearning4j.clustering.kdtree;
 
 import lombok.val;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.custom.KnnMinDistance;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.primitives.Pair;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -28,79 +31,103 @@ import java.util.List;
  */
 public class HyperRect implements Serializable {
 
-    private List<Interval> points;
+    //private List<Interval> points;
+    private float[] lowerEnds;
+    private float[] higherEnds;
+    private INDArray lowerEndsIND;
+    private INDArray higherEndsIND;
 
-    public HyperRect(List<Interval> points) {
-        //this.points = points;
-        this.points = new ArrayList<>(points.size());
-        for (int i = 0; i < points.size(); ++i) {
-            Interval newInterval = new Interval(points.get(i).lower, points.get(i).higher);
-            this.points.add(newInterval);
-        }
+    public HyperRect(float[] lowerEndsIn, float[] higherEndsIn) {
+        this.lowerEnds = new float[lowerEndsIn.length];
+        this.higherEnds = new float[lowerEndsIn.length];
+        System.arraycopy(lowerEndsIn, 0 , this.lowerEnds, 0, lowerEndsIn.length);
+        System.arraycopy(higherEndsIn, 0 , this.higherEnds, 0, higherEndsIn.length);
+        lowerEndsIND = Nd4j.createFromArray(lowerEnds);
+        higherEndsIND = Nd4j.createFromArray(higherEnds);
+    }
+
+    public HyperRect(float[] point) {
+        this(point, point);
+    }
+
+    public HyperRect(Pair<float[], float[]> ends) {
+        this(ends.getFirst(), ends.getSecond());
     }
 
 
     public void enlargeTo(INDArray point) {
-        for (int i = 0; i < points.size(); i++)
-            points.get(i).enlarge(point.getDouble(i));
+        float[] pointAsArray = point.toFloatVector();
+        for (int i = 0; i < lowerEnds.length; i++) {
+            float p = pointAsArray[i];
+            if (lowerEnds[i] > p)
+                lowerEnds[i] = p;
+            else if (higherEnds[i] < p)
+                higherEnds[i] = p;
+        }
     }
 
-
-    public static List<Interval> point(INDArray vector) {
-        List<Interval> ret = new ArrayList<>();
+    public static Pair<float[],float[]> point(INDArray vector) {
+        Pair<float[],float[]> ret = new Pair<>();
+        float[] curr = new float[(int)vector.length()];
         for (int i = 0; i < vector.length(); i++) {
-            double curr = vector.getDouble(i);
-            ret.add(new Interval(curr, curr));
+            curr[i] = vector.getFloat(i);
         }
+        ret.setFirst(curr);
+        ret.setSecond(curr);
         return ret;
     }
 
 
-    public List<Boolean> contains(INDArray hPoint) {
+    /*public List<Boolean> contains(INDArray hPoint) {
         List<Boolean> ret = new ArrayList<>();
-        for (int i = 0; i < hPoint.length(); i++)
-            ret.add(points.get(i).contains(hPoint.getDouble(i)));
-        return ret;
-    }
-
-    public double minDistance(INDArray hPoint) {
-        double ret = 0.0;
         for (int i = 0; i < hPoint.length(); i++) {
-            double p = hPoint.getDouble(i);
-            Interval interval = points.get(i);
-            if (!interval.contains(p)) {
-                if (p < interval.lower)
-                    ret += Math.pow((p - interval.lower), 2);
-                else
-                    ret += Math.pow((p - interval.higher), 2);
-            }
+            ret.add(lowerEnds[i] <= hPoint.getDouble(i) &&
+                    higherEnds[i] >= hPoint.getDouble(i));
         }
-
-        ret = Math.pow(ret, 0.5);
         return ret;
+    }*/
+
+    public double minDistance(INDArray hPoint, INDArray output) {
+        Nd4j.exec(new KnnMinDistance(hPoint, lowerEndsIND, higherEndsIND, output));
+        return output.getFloat(0);
+
+        /*double ret = 0.0;
+        double[] pointAsArray = hPoint.toDoubleVector();
+        for (int i = 0; i < pointAsArray.length; i++) {
+           double p = pointAsArray[i];
+           if (!(lowerEnds[i] <= p || higherEnds[i] <= p)) {
+              if (p < lowerEnds[i])
+                 ret += Math.pow((p - lowerEnds[i]), 2);
+              else
+                 ret += Math.pow((p - higherEnds[i]), 2);
+           }
+        }
+        ret = Math.pow(ret, 0.5);
+        return ret;*/
     }
 
     public HyperRect getUpper(INDArray hPoint, int desc) {
-        Interval interval = points.get(desc);
-        double d = hPoint.getDouble(desc);
-        if (interval.higher < d)
+        //Interval interval = points.get(desc);
+        float higher = higherEnds[desc];
+        float d = hPoint.getFloat(desc);
+        if (higher < d)
             return null;
-        HyperRect ret = new HyperRect(new ArrayList<>(points));
-        Interval i2 = ret.points.get(desc);
-        if (i2.lower < d)
-            i2.lower = d;
+        HyperRect ret = new HyperRect(lowerEnds,higherEnds);
+        if (ret.lowerEnds[desc] < d)
+            ret.lowerEnds[desc] = d;
         return ret;
     }
 
     public HyperRect getLower(INDArray hPoint, int desc) {
-        Interval interval = points.get(desc);
-        double d = hPoint.getDouble(desc);
-        if (interval.lower > d)
+        //Interval interval = points.get(desc);
+        float lower = lowerEnds[desc];
+        float d = hPoint.getFloat(desc);
+        if (lower > d)
             return null;
-        HyperRect ret = new HyperRect(new ArrayList<>(points));
-        Interval i2 = ret.points.get(desc);
-        if (i2.higher > d)
-            i2.higher = d;
+        HyperRect ret = new HyperRect(lowerEnds,higherEnds);
+        //Interval i2 = ret.points.get(desc);
+        if (ret.higherEnds[desc] > d)
+            ret.higherEnds[desc] = d;
         return ret;
     }
 
@@ -108,33 +135,10 @@ public class HyperRect implements Serializable {
     public String toString() {
         String retVal = "";
         retVal +=  "[";
-        for (val point : points) {
-            retVal +=  "("  + point.lower + " - " + point.higher + ") ";
+        for (int i = 0; i < lowerEnds.length; ++i) {
+            retVal +=  "("  + lowerEnds[i] + " - " + higherEnds[i] + ") ";
         }
         retVal +=  "]";
         return retVal;
     }
-
-    public static class Interval {
-        private double lower, higher;
-
-        public Interval(double lower, double higher) {
-            this.lower = lower;
-            this.higher = higher;
-        }
-
-        public boolean contains(double point) {
-            return lower <= point || point <= higher;
-
-        }
-
-        public void enlarge(double p) {
-            if (lower > p)
-                lower = p;
-            else if (higher < p)
-                higher = p;
-        }
-
-    }
-
 }

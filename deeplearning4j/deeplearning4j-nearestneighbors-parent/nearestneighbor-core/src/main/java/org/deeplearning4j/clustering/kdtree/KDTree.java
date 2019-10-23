@@ -56,7 +56,7 @@ public class KDTree implements Serializable {
 
         if (root == null) {
             root = new KDNode(point);
-            rect = new HyperRect(HyperRect.point(point));
+            rect = new HyperRect(/*HyperRect.point(point)*/ point.toFloatVector());
         } else {
             int disc = 0;
             KDNode node = root;
@@ -125,15 +125,21 @@ public class KDTree implements Serializable {
         return node.getPoint();
     }
 
+    // Share this data for recursive calls of "knn"
+    private float currentDistance;
+    private INDArray currentPoint;
+    private INDArray minDistance = Nd4j.scalar(0.f);
 
 
-    public List<Pair<Double, INDArray>> knn(INDArray point, double distance) {
-        List<Pair<Double, INDArray>> best = new ArrayList<>();
-        knn(root, point, rect, distance, best, 0);
-        Collections.sort(best, new Comparator<Pair<Double, INDArray>>() {
+    public List<Pair<Float, INDArray>> knn(INDArray point, float distance) {
+        List<Pair<Float, INDArray>> best = new ArrayList<>();
+        currentDistance = distance;
+        currentPoint = point;
+        knn(root, rect, best, 0);
+        Collections.sort(best, new Comparator<Pair<Float, INDArray>>() {
             @Override
-            public int compare(Pair<Double, INDArray> o1, Pair<Double, INDArray> o2) {
-                return Double.compare(o1.getKey(), o2.getKey());
+            public int compare(Pair<Float, INDArray> o1, Pair<Float, INDArray> o2) {
+                return Float.compare(o1.getKey(), o2.getKey());
             }
         });
 
@@ -141,22 +147,21 @@ public class KDTree implements Serializable {
     }
 
 
-    private void knn(KDNode node, INDArray point, HyperRect rect, double dist, List<Pair<Double, INDArray>> best,
-                    int _disc) {
-        if (node == null || rect == null || rect.minDistance(point) > dist)
+    private void knn(KDNode node, HyperRect rect, List<Pair<Float, INDArray>> best, int _disc) {
+        if (node == null || rect == null || rect.minDistance(currentPoint, minDistance) > currentDistance)
             return;
         int _discNext = (_disc + 1) % dims;
-        double distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(point,node.point)).getFinalResult()
-                .doubleValue();
+        float distance = Nd4j.getExecutioner().execAndReturn(new EuclideanDistance(currentPoint,node.point, minDistance)).getFinalResult()
+                .floatValue();
 
-        if (distance <= dist) {
+        if (distance <= currentDistance) {
             best.add(Pair.of(distance, node.getPoint()));
         }
 
         HyperRect lower = rect.getLower(node.point, _disc);
         HyperRect upper = rect.getUpper(node.point, _disc);
-        knn(node.getLeft(), point, lower, dist, best, _discNext);
-        knn(node.getRight(), point, upper, dist, best, _discNext);
+        knn(node.getLeft(), lower, best, _discNext);
+        knn(node.getRight(), upper, best, _discNext);
     }
 
     /**
@@ -171,7 +176,7 @@ public class KDTree implements Serializable {
 
     private Pair<Double, INDArray> nn(KDNode node, INDArray point, HyperRect rect, double dist, INDArray best,
                     int _disc) {
-        if (node == null || rect.minDistance(point) > dist)
+        if (node == null || rect.minDistance(point, minDistance) > dist)
             return Pair.of(Double.POSITIVE_INFINITY, null);
 
         int _discNext = (_disc + 1) % dims;

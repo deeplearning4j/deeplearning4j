@@ -810,7 +810,7 @@ public class CustomOpsTests extends BaseNd4jTest {
     @Test
     public void testAdjustContrast() {
         INDArray in = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4*4*3).reshape(4,4,3);
-        INDArray out = Nd4j.zeros(4,4,3);
+        INDArray out = Nd4j.zeros(DataType.DOUBLE,4, 4, 3);
 
         INDArray expected = Nd4j.createFromArray(new double[]{-21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
                 2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
@@ -919,5 +919,16 @@ public class CustomOpsTests extends BaseNd4jTest {
         Nd4j.exec(new FakeQuantWithMinMaxVarsPerChannel(x,min,max,output));
 
         assertEquals(expected, output);
+    }
+
+    @Test
+    public void testKnnMinDistance() {
+        INDArray point = Nd4j.rand(DataType.FLOAT, 1, 20);
+        INDArray lowest = Nd4j.rand(DataType.FLOAT, 1, 20);
+        INDArray highest = Nd4j.rand(DataType.FLOAT, 1, 20);
+        INDArray distance = Nd4j.scalar(0.f);
+
+        Nd4j.exec(new KnnMinDistance(point, lowest, highest, distance));
+        System.out.println(distance);
     }
 }
