@@ -5852,7 +5852,7 @@ public class SameDiff extends SDBaseOps {
             vars.add(fg.variables(i));
         }
 
-        FlatConfiguration conf = fg.configuration();
+//        FlatConfiguration conf = fg.configuration();
 
         /* Reconstruct the graph
         We'll do the reconstruction manually here, rather than using sd.var(...), so that we have more control
@@ -6015,6 +6015,16 @@ public class SameDiff extends SDBaseOps {
                 if (!variablesByNodeAndOutNum.containsKey(p)) {
                     variablesByNodeAndOutNum.put(p, sd.getVariable(varNames[i]));
                 }
+            }
+        }
+
+        //Now that ops are done, set variable indices:
+        for(Variable v : sd.variables.values()){
+            if(v.getOutputOfOp() != null){
+                String op = v.getOutputOfOp();
+                SameDiffOp o = sd.ops.get(op);
+                int idx = o.getOutputsOfOp().indexOf(v.getName());
+                v.setOutputOfOpIdx(idx);
             }
         }
 

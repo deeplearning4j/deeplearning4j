@@ -5708,15 +5708,22 @@ public class Nd4j {
         for (int e = 0; e < shapeInfo.length; e++)
             shapeInfo[e] = array.shape(e);
 
-        if (Shape.isEmpty(shapeInfo))
-            return Nd4j.empty();
+        val shapeOf = Shape.shapeOf(shapeInfo);
+        val _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+        if (Shape.isEmpty(shapeInfo)) {
+            if(Shape.rank(shapeInfo) == 0) {
+                return Nd4j.empty();
+            } else {
+                return Nd4j.create(_dtype, shapeOf);
+            }
+        }
 
         char ordering = shapeInfo[shapeInfo.length - 1] == 99 ? 'c' : 'f';
 
-        val shapeOf = Shape.shapeOf(shapeInfo);
+
         val stridesOf = Shape.stridesOf(shapeInfo);
 
-        val _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+
         val _order = FlatBuffersMapper.getOrderFromByte(order);
         val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
 
