@@ -205,7 +205,7 @@ public class TFGraphMapper {
 
             availableToAddSet.remove(name);
 
-            log.info("Adding operation to graph: {} (name={})", opName, name);
+            log.trace("Adding operation to graph: {} (name={})", opName, name);
 
             boolean skipCase = false;
             if(opFilter != null && opFilter.skipOp(nd, sd, nd.getAttrMap(), tfGraph)){
@@ -378,11 +378,11 @@ public class TFGraphMapper {
                                     .build();
 
                             sd.getVariables().put(varName, outVars[i]);
-                            log.info("Added variable to graph: {} (output of op {})", varName, name);
+                            log.trace("Added variable to graph: {} (output of op {})", varName, name);
                         }
                         sd.getOps().get(name).setOutputsOfOp(outNames);
 
-                        log.info("Imported op: {} (name={})", opName, name);
+                        log.trace("Imported op: {} (name={})", opName, name);
                     }
                 } else {
                     //Import override case
@@ -458,7 +458,7 @@ public class TFGraphMapper {
                             //Avoid processing same op multiple times, for repeated inputs to one op, etc
                             availableToAdd.add(nextOpDef);
                             availableToAddSet.add(nextOp);
-                            log.info("Added to processing queue: {} (name={})", nextOpDef.getOp(), nextOp);
+                            log.trace("Added to processing queue: {} (name={})", nextOpDef.getOp(), nextOp);
                         }
                     }
                 }

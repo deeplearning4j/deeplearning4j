@@ -111,7 +111,11 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             sameDiff.clearOpInputs();
 
             INDArray ret = workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
-            result.close();
+            if(!result.isAttached()) {
+                //May be attached in rare edge case - for identity, or if gradients are passed through from output to input
+                // unchaned, as in identity, add scalar, etc
+                result.close();
+            }
             return ret;
         }
     }
