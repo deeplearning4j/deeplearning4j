@@ -659,7 +659,8 @@ public abstract class DifferentialFunction {
             if(sameDiff == null)
                 this.ownName = UUID.randomUUID().toString();
             else {
-                this.ownName = sameDiff.getOpName(opName());
+                String n = sameDiff.getOpName(opName());
+                this.ownName = n;
             }
 
             if(sameDiff != null)
@@ -696,29 +697,10 @@ public abstract class DifferentialFunction {
     }
 
     @JsonIgnore
-    private INDArray getX() {
-        INDArray ret =  sameDiff.getArrForVarName(args()[0].getVarName());
-        return ret;
+    public INDArray getInputArgument(int index){
+        //Subclasses should implement this
+        throw new UnsupportedOperationException("Not implemented");
     }
-
-    @JsonIgnore
-    private INDArray getY() {
-        if(args().length > 1) {
-            INDArray ret =  sameDiff.getArrForVarName(args()[1].getVarName());
-            return ret;
-        }
-        return null;
-    }
-
-    @JsonIgnore
-    private INDArray getZ() {
-        if(isInPlace())
-            return getX();
-        SDVariable opId = outputVariables()[0];
-        INDArray ret = opId.getArr();
-        return ret;
-    }
-
 
 
 
@@ -860,4 +842,8 @@ public abstract class DifferentialFunction {
 
     public int getNumOutputs(){return -1;}
 
+    /**
+     * Clear the input and output INDArrays, if any are set
+     */
+    public abstract void clearArrays();
 }

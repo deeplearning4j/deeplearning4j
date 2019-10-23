@@ -982,8 +982,8 @@ public class DifferentialFunctionFactory {
         return new CumProdBp(sameDiff(), in, grad, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable biasAdd(SDVariable input, SDVariable bias) {
-        return new BiasAdd(sameDiff(), input, bias).outputVariable();
+    public SDVariable biasAdd(SDVariable input, SDVariable bias, boolean nchw) {
+        return new BiasAdd(sameDiff(), input, bias, nchw).outputVariable();
     }
 
     public SDVariable[] biasAddBp(SDVariable input, SDVariable bias, SDVariable grad) {

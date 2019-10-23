@@ -345,10 +345,64 @@ nd4j.graph.FlatNode.prototype.scalar = function(obj) {
 };
 
 /**
+ * @param {number} index
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array}
+ */
+nd4j.graph.FlatNode.prototype.controlDeps = function(index, optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 42);
+  return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatNode.prototype.controlDepsLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 42);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param {number} index
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array}
+ */
+nd4j.graph.FlatNode.prototype.varControlDeps = function(index, optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 44);
+  return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatNode.prototype.varControlDepsLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 44);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
+ * @param {number} index
+ * @param {flatbuffers.Encoding=} optionalEncoding
+ * @returns {string|Uint8Array}
+ */
+nd4j.graph.FlatNode.prototype.controlDepFor = function(index, optionalEncoding) {
+  var offset = this.bb.__offset(this.bb_pos, 46);
+  return offset ? this.bb.__string(this.bb.__vector(this.bb_pos + offset) + index * 4, optionalEncoding) : null;
+};
+
+/**
+ * @returns {number}
+ */
+nd4j.graph.FlatNode.prototype.controlDepForLength = function() {
+  var offset = this.bb.__offset(this.bb_pos, 46);
+  return offset ? this.bb.__vector_len(this.bb_pos + offset) : 0;
+};
+
+/**
  * @param {flatbuffers.Builder} builder
  */
 nd4j.graph.FlatNode.startFlatNode = function(builder) {
-  builder.startObject(19);
+  builder.startObject(22);
 };
 
 /**
@@ -711,6 +765,93 @@ nd4j.graph.FlatNode.startOutputTypesVector = function(builder, numElems) {
  */
 nd4j.graph.FlatNode.addScalar = function(builder, scalarOffset) {
   builder.addFieldOffset(18, scalarOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} controlDepsOffset
+ */
+nd4j.graph.FlatNode.addControlDeps = function(builder, controlDepsOffset) {
+  builder.addFieldOffset(19, controlDepsOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatNode.createControlDepsVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatNode.startControlDepsVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} varControlDepsOffset
+ */
+nd4j.graph.FlatNode.addVarControlDeps = function(builder, varControlDepsOffset) {
+  builder.addFieldOffset(20, varControlDepsOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatNode.createVarControlDepsVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatNode.startVarControlDepsVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {flatbuffers.Offset} controlDepForOffset
+ */
+nd4j.graph.FlatNode.addControlDepFor = function(builder, controlDepForOffset) {
+  builder.addFieldOffset(21, controlDepForOffset, 0);
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {Array.<flatbuffers.Offset>} data
+ * @returns {flatbuffers.Offset}
+ */
+nd4j.graph.FlatNode.createControlDepForVector = function(builder, data) {
+  builder.startVector(4, data.length, 4);
+  for (var i = data.length - 1; i >= 0; i--) {
+    builder.addOffset(data[i]);
+  }
+  return builder.endVector();
+};
+
+/**
+ * @param {flatbuffers.Builder} builder
+ * @param {number} numElems
+ */
+nd4j.graph.FlatNode.startControlDepForVector = function(builder, numElems) {
+  builder.startVector(4, numElems, 4);
 };
 
 /**

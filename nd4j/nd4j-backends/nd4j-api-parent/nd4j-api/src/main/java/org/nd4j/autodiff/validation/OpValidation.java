@@ -190,11 +190,13 @@ public class OpValidation {
         //Check forward pass:
         if (testCase.fwdTestFns() != null && testCase.fwdTestFns().size() > 0) {
             SameDiff sd = testCase.sameDiff();
+
+            //Collect variables we need outputs for...
+            Set<String> reqVars = testCase.fwdTestFns().keySet();
+
+            Map<String,INDArray> out;
             try {
-                if(testCase.placeholderValues() != null){
-                    sd.resolveVariablesWith(testCase.placeholderValues());
-                }
-                sd.exec(null, sd.outputs());
+                out = sd.output(testCase.placeholderValues(), new ArrayList<>(reqVars));
             } catch (Exception e) {
                 throw new RuntimeException("Error during forward pass testing" + testCase.testNameErrMsg(), e);
             }
@@ -206,7 +208,7 @@ public class OpValidation {
                             e.getKey() + "\" but SameDiff instance does not have a variable for this name" + testCase.testNameErrMsg());
                 }
 
-                INDArray actual = v.getArr();
+                INDArray actual = out.get(v.getVarName());
                 if (actual == null) {
                     throw new IllegalStateException("Null INDArray after forward pass for variable \"" + e.getKey() + "\"");
                 }
@@ -291,6 +293,12 @@ public class OpValidation {
             Preconditions.checkState((orig.getControlDeps() == null) == (des.getControlDeps() == null), "Control dependencies differ: %s vs. %s", orig.getControlDeps(), des.getControlDeps());
             Preconditions.checkState(orig.getControlDeps() == null || orig.getControlDeps().equals(des.getControlDeps()), "Control dependencies differ: %s vs. %s", orig.getControlDeps(), des.getControlDeps());
 
+            Preconditions.checkState((orig.getVarControlDeps() == null) == (des.getVarControlDeps() == null), "Op variable control dependencies differ: %s vs. %s", orig.getVarControlDeps(), des.getVarControlDeps());
+            Preconditions.checkState(orig.getVarControlDeps() == null || orig.getVarControlDeps().equals(des.getVarControlDeps()), "Op variable control dependencies differ: %s vs. %s", orig.getControlDeps(), des.getControlDeps());
+
+            Preconditions.checkState((orig.getControlDepFor() == null) == (des.getControlDepFor() == null), "Op control dependencies for list differ: %s vs. %s", orig.getControlDepFor(), des.getControlDepFor());
+            Preconditions.checkState(orig.getControlDepFor() == null || orig.getControlDepFor().equals(des.getControlDepFor()), "Op variable control dependencies differ: %s vs. %s", orig.getControlDepFor(), des.getControlDepFor());
+
             Preconditions.checkState(orig.getOp().getClass() == des.getOp().getClass(), "Classes differ: %s v. %s", orig.getOp().getClass(), des.getOp().getClass());
         }
 
@@ -317,6 +325,11 @@ public class OpValidation {
         Map<String,Variable> varsBefore = original.getVariables();
         Map<String,Variable> varsAfter = deserialized.getVariables();
         Preconditions.checkState(varsBefore.keySet().equals(varsAfter.keySet()), "Variable keysets do not match: %s vs %s", varsBefore.keySet(), varsAfter.keySet());
+
+//        System.out.println(original.summary());
+//        System.out.println("\n\n\n\n");
+//        System.out.println(deserialized.summary());
+
         for(String s : varsBefore.keySet()){
             Variable vB = varsBefore.get(s);
             Variable vA = varsAfter.get(s);
@@ -324,13 +337,15 @@ public class OpValidation {
             Preconditions.checkState(vB.getVariable().getVariableType() == vA.getVariable().getVariableType(),
                     "Variable types do not match: %s - %s vs %s", s, vB.getVariable().getVariableType(), vA.getVariable().getVariableType());
 
-            Preconditions.checkState((vB.getInputsForOp() == null) == (vA.getInputsForOp() == null), "Input to ops differ: %s vs. %s", vB.getInputsForOp(), vA.getInputsForOp());
-            Preconditions.checkState(vB.getInputsForOp() == null || vB.getInputsForOp().equals(vA.getInputsForOp()), "Inputs differ: %s vs. %s", vB.getInputsForOp(), vA.getInputsForOp());
+            equalConsideringNull(vB.getInputsForOp(), vA.getInputsForOp(), "%s - Input to ops differ: %s vs. %s", s, vB.getInputsForOp(), vA.getInputsForOp());
 
-            Preconditions.checkState((vB.getOutputOfOp() == null && vA.getOutputOfOp() == null) || vB.getOutputOfOp().equals(vA.getOutputOfOp()), "Output of op differ: %s vs. %s", vB.getOutputOfOp(), vA.getOutputOfOp());
+            Preconditions.checkState((vB.getOutputOfOp() == null && vA.getOutputOfOp() == null) || vB.getOutputOfOp().equals(vA.getOutputOfOp()), "%s - Output of op differ: %s vs. %s", s, vB.getOutputOfOp(), vA.getOutputOfOp());
 
-            Preconditions.checkState((vB.getControlDeps() == null) == (vA.getControlDeps() == null), "Control dependencies differ: %s vs. %s", vB.getControlDeps(), vA.getControlDeps());
-            Preconditions.checkState(vB.getControlDeps() == null || vB.getControlDeps().equals(vA.getControlDeps()), "Control dependencies differ: %s vs. %s", vB.getControlDeps(), vA.getControlDeps());
+            equalConsideringNull(vB.getControlDeps(), vA.getControlDeps(), "%s - Control dependencies differ: %s vs. %s", s, vB.getControlDeps(), vA.getControlDeps());
+
+            equalConsideringNull(vB.getControlDepsForOp(), vA.getControlDepsForOp(), "%s - Control dependencies for ops differ: %s vs. %s", s, vB.getControlDepsForOp(), vA.getControlDepsForOp());
+
+            equalConsideringNull(vB.getControlDepsForVar(), vA.getControlDepsForVar(), "%s - Control dependencies for vars differ: %s vs. %s", s, vB.getControlDepsForVar(), vA.getControlDepsForVar());
         }
 
         //Check loss variables:
@@ -343,49 +358,60 @@ public class OpValidation {
                     lossVarBefore, lossVarAfter);
         }
 
+        if(tc.fwdTestFns() != null && !tc.fwdTestFns().isEmpty()) {
+            //Finally: check execution/output
+            Map<String,INDArray> outOrig = original.outputAll(tc.placeholderValues());
+            Map<String,INDArray> outDe = deserialized.outputAll(tc.placeholderValues());
+            Preconditions.checkState(outOrig.keySet().equals(outDe.keySet()), "Keysets for execution after deserialization does not match key set for original model");
 
-        //Finally: check execution/output
-        Map<String,INDArray> outOrig = original.outputAll(tc.placeholderValues());
-        Map<String,INDArray> outDe = deserialized.outputAll(tc.placeholderValues());
-        Preconditions.checkState(outOrig.keySet().equals(outDe.keySet()), "Keysets for execution after deserialization does not match key set for original model");
+            for (String s : outOrig.keySet()) {
+                INDArray orig = outOrig.get(s);
+                INDArray deser = outDe.get(s);
 
-        for(String s : outOrig.keySet()){
-            INDArray orig = outOrig.get(s);
-            INDArray deser = outDe.get(s);
-
-            Function<INDArray,String> f = tc.fwdTestFns().get(s);
-            String err = null;
-            if(f != null){
-                err = f.apply(deser);
-            } else {
-                if(!orig.equals(deser)){
-                    //Edge case: check for NaNs in original and deserialized... might be legitimate test (like replaceNaNs op)
-                    long count = orig.dataType().isNumerical() ? Nd4j.getExecutioner().execAndReturn(new MatchCondition(orig, Conditions.isNan())).getFinalResult().longValue() : -1;
-                    if(orig.dataType().isNumerical() && count > 0 && orig.equalShapes(deser)){
-                        long count2 = Nd4j.getExecutioner().execAndReturn(new MatchCondition(deser, Conditions.isNan())).getFinalResult().longValue();
-                        if(count != count2){
-                            err = "INDArray equality failed";
-                        } else {
-                            //TODO is there a better way to do this?
-                            NdIndexIterator iter = new NdIndexIterator(orig.shape());
-                            while(iter.hasNext()){
-                                long[] i = iter.next();
-                                double d1 = orig.getDouble(i);
-                                double d2 = deser.getDouble(i);
-                                if((Double.isNaN(d1) != Double.isNaN(d2)) || (Double.isInfinite(d1) != Double.isInfinite(d2)) || Math.abs(d1 - d2) > 1e-5 ){
-                                    err = "INDArray equality failed";
-                                    break;
+                Function<INDArray, String> f = tc.fwdTestFns().get(s);
+                String err = null;
+                if (f != null) {
+                    err = f.apply(deser);
+                } else {
+                    if (!orig.equals(deser)) {
+                        //Edge case: check for NaNs in original and deserialized... might be legitimate test (like replaceNaNs op)
+                        long count = orig.dataType().isNumerical() ? Nd4j.getExecutioner().execAndReturn(new MatchCondition(orig, Conditions.isNan())).getFinalResult().longValue() : -1;
+                        if (orig.dataType().isNumerical() && count > 0 && orig.equalShapes(deser)) {
+                            long count2 = Nd4j.getExecutioner().execAndReturn(new MatchCondition(deser, Conditions.isNan())).getFinalResult().longValue();
+                            if (count != count2) {
+                                err = "INDArray equality failed";
+                            } else {
+                                //TODO is there a better way to do this?
+                                NdIndexIterator iter = new NdIndexIterator(orig.shape());
+                                while (iter.hasNext()) {
+                                    long[] i = iter.next();
+                                    double d1 = orig.getDouble(i);
+                                    double d2 = deser.getDouble(i);
+                                    if ((Double.isNaN(d1) != Double.isNaN(d2)) || (Double.isInfinite(d1) != Double.isInfinite(d2)) || Math.abs(d1 - d2) > 1e-5) {
+                                        err = "INDArray equality failed";
+                                        break;
+                                    }
                                 }
                             }
+                        } else {
+                            err = "INDArray equality failed";
                         }
-                    } else {
-                        err = "INDArray equality failed";
                     }
                 }
-            }
 
-            Preconditions.checkState(err == null, "Variable result (%s) failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", s, orig, deser, orig, deser, err);
+                Preconditions.checkState(err == null, "Variable result (%s) failed check - \"%ndSInfo\" vs \"%ndSInfo\" - %nd10 vs %nd10\nError:%s", s, orig, deser, orig, deser, err);
+            }
         }
+    }
+
+    protected static void equalConsideringNull(List<String> l1, List<String> l2, String msg, Object... args){
+        //Consider null and length 0 list to be equal (semantically they mean the same thing)
+        boolean empty1 = l1 == null || l1.isEmpty();
+        boolean empty2 = l2 == null || l2.isEmpty();
+        if(empty1 && empty2){
+            return;
+        }
+        Preconditions.checkState(l1 == null || l1.equals(l2), msg, args);
     }
 
     /**

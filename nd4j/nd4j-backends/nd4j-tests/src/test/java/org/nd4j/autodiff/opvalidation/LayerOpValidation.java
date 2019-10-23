@@ -123,27 +123,24 @@ public class LayerOpValidation extends BaseOpValidation {
     public void testBiasAdd() {
         Nd4j.getRandom().setSeed(12345);
 
-        for (boolean rank1Bias : new boolean[]{false, true}) {
+        SameDiff sameDiff = SameDiff.create();
+        INDArray input = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(new long[]{2, 4});
+        INDArray b = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).divi(4);
 
-            SameDiff sameDiff = SameDiff.create();
-            INDArray input = Nd4j.linspace(1, 8, 8, DataType.DOUBLE).reshape(new long[]{2, 4});
-            INDArray b = Nd4j.linspace(1, 4, 4, DataType.DOUBLE).reshape(rank1Bias ? new long[]{4} : new long[]{1, 4}).divi(4);
+        SDVariable sdInput = sameDiff.var("input", input);
+        SDVariable sdBias = sameDiff.var("bias", b);
 
-            SDVariable sdInput = sameDiff.var("input", input);
-            SDVariable sdBias = sameDiff.var("bias", b);
+        SDVariable res = sameDiff.nn().biasAdd(sdInput, sdBias, true);
+        SDVariable loss = sameDiff.standardDeviation(res, true);
 
-            SDVariable res = sameDiff.nn().biasAdd(sdInput, sdBias);
-            SDVariable loss = sameDiff.standardDeviation(res, true);
+        INDArray exp = input.addRowVector(b);
 
-            INDArray exp = input.addRowVector(b);
+        TestCase tc = new TestCase(sameDiff)
+                .gradientCheck(true)
+                .expectedOutput(res.getVarName(), exp);
 
-            TestCase tc = new TestCase(sameDiff)
-                    .gradientCheck(true)
-                    .expectedOutput(res.getVarName(), exp);
-
-            String err = OpValidation.validate(tc);
-            assertNull(err);
-        }
+        String err = OpValidation.validate(tc);
+        assertNull(err);
     }
 
     @Test

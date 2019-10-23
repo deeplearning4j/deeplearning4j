@@ -30,8 +30,10 @@ import java.util.List;
 @Builder
 public class SameDiffOp {
     protected String name;
-    protected DifferentialFunction op;	//Actual op (note: should be mutable: i.e., cloneable, no arrays set)
-    protected List<String> inputsToOp;		//Name of SDVariables as input
-    protected List<String> outputsOfOp;	    //Name of SDVariables as output
-    protected List<String> controlDeps;	    //Name of SDVariables as control dependencies (not data inputs, but need to be available before exec)
+    protected DifferentialFunction op;          //Actual op (note: should be mutable: i.e., cloneable, no arrays set)
+    protected List<String> inputsToOp;          //Name of SDVariables as input
+    protected List<String> outputsOfOp;         //Name of SDVariables as output
+    protected List<String> controlDeps;         //Name of SDVariables as control dependencies (not data inputs, but need to be available before exec)
+    protected List<String> varControlDeps;      //Variables (constants, placeholders, etc) that are control dependencies for this op
+    protected List<String> controlDepFor;       //Name of the variables that this op is a control dependency for
 }

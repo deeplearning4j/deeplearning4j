@@ -74,7 +74,7 @@ public class InTopK extends DynamicCustomOp {
         }
         Preconditions.checkState(kNode != null, "Could not find 'k' parameter node for op: %s", thisName);
 
-        INDArray arr = TFGraphMapper.getInstance().getNDArrayFromTensor(inputName, kNode, graph);
+        INDArray arr = TFGraphMapper.getNDArrayFromTensor(kNode);
         this.k = arr.getInt(0);
         addIArgument(k);
     }

@@ -134,6 +134,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         Gradient g = new DefaultGradient();
 
         INDArray[] dLdIns;
+        boolean[] noClose = new boolean[getNumInputArrays()];
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
             if(sameDiff == null){
                 doInit();
@@ -167,20 +168,21 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
 
             //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
             //TODO Find a more efficient solution for this
+            List<String> required = new ArrayList<>(inputNames.size());     //Ensure that the input placeholder gradients are calculated
             for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
                 INDArray arr = e.getValue();
                 sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
             }
 
-            List<String> required = new ArrayList<>(inputNames.size());     //Ensure that the input placeholder gradients are calculated
-            for(String s : inputNames){
-                required.add(sameDiff.getVariable(s).gradient().getVarName());
-            }
-            sameDiff.execBackwards(phMap, required);
+            required.addAll(paramTable.keySet());
+            required.addAll(inputNames);
+
+            Map<String,INDArray> gradsMap = sameDiff.calculateGradients(phMap, required);
             for(String s : paramTable.keySet() ){
-                INDArray sdGrad = sameDiff.grad(s).getArr();
+                INDArray sdGrad = gradsMap.get(s);
                 INDArray dl4jGrad = gradTable.get(s);
                 dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
+                sdGrad.close(); //TODO optimize this
                 g.gradientForVariable().put(s, dl4jGrad);
             }
 
@@ -195,13 +197,18 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                     //Edge case with lambda vertices like identity: SameDiff doesn't store the placeholders
                     // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
                     dLdIns[j] = epsilon;
+                    noClose[j] = true;
                 }
             }
         }
 
         //TODO optimize
         for( int i=0; i<dLdIns.length; i++ ){
+            INDArray before = dLdIns[i];
             dLdIns[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIns[i]);
+            if(!noClose[i]){
+                before.close();
+            }
         }
 
         //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere

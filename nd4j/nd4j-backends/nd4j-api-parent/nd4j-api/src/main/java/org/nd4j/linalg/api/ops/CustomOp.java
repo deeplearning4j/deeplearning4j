@@ -119,4 +119,9 @@ public interface CustomOp {
      * otherwise throws an {@link org.nd4j.linalg.exception.ND4JIllegalStateException}
      */
     void assertValidForExecution();
+
+    /**
+     * Clear the input and output INDArrays, if any are set
+     */
+    void clearArrays();
 }

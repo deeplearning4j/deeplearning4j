@@ -37,6 +37,10 @@ table FlatVariable {
 
     device:int; // default is -1, which means _auto_
 	variabletype:VarType;
+	
+	controlDeps:[string];
+	controlDepForOp:[string];
+	controlDepsForVar:[string];
 }
 
 root_type FlatVariable;

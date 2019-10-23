@@ -114,7 +114,7 @@ public class MergeVertex extends BaseGraphVertex {
         }
 
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeBorrowed(ArrayType.ACTIVATIONS)){
-            return Nd4j.hstack(in);
+            return Nd4j.concat(1, in);
         }
     }
 

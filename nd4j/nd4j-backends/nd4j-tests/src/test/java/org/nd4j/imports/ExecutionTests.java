@@ -75,7 +75,8 @@ public class ExecutionTests extends BaseNd4jTest {
 
         Nd4j.create(1);
 
-        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream());
+        val tg = TFGraphMapper.importGraphTxt(new ClassPathResource("tf_graphs/reduce_dim.pb.txt").getInputStream(), null, null);
+        System.out.println(tg.summary());
 
         Map<String,INDArray> result_0 = tg.exec(Collections.emptyMap(), tg.outputs());
         val exp_0 = Nd4j.create(DataType.FLOAT, 3).assign(3.0);

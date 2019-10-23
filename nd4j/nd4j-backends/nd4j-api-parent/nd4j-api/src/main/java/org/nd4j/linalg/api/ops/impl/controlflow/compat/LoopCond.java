@@ -32,9 +32,11 @@ import java.util.List;
 import java.util.Map;
 
 public class LoopCond extends BaseCompatOp {
+    public static final String OP_NAME = "loop_cond";
+
     @Override
     public String opName() {
-        return "loop_cond";
+        return OP_NAME;
     }
 
     @Override

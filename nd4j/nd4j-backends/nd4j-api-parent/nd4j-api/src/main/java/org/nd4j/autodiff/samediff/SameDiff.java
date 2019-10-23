@@ -16,58 +16,16 @@
 
 package org.nd4j.autodiff.samediff;
 
-import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
-
 import com.google.flatbuffers.FlatBufferBuilder;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.DataOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.IdentityHashMap;
-import java.util.LinkedHashMap;
-import java.util.LinkedHashSet;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Queue;
-import java.util.Set;
-import java.util.Stack;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.NonNull;
-import lombok.Setter;
+import lombok.*;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.ArrayUtils;
 import org.nd4j.autodiff.execution.conf.ExecutorConfiguration;
 import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.functions.DifferentialFunctionFactory;
-import org.nd4j.autodiff.listeners.At;
-import org.nd4j.autodiff.listeners.Listener;
-import org.nd4j.autodiff.listeners.ListenerResponse;
-import org.nd4j.autodiff.listeners.Loss;
-import org.nd4j.autodiff.listeners.Operation;
+import org.nd4j.autodiff.listeners.*;
 import org.nd4j.autodiff.listeners.impl.HistoryListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.listeners.records.LossCurve;
@@ -75,34 +33,14 @@ import org.nd4j.autodiff.samediff.config.BatchOutputConfig;
 import org.nd4j.autodiff.samediff.config.EvaluationConfig;
 import org.nd4j.autodiff.samediff.config.FitConfig;
 import org.nd4j.autodiff.samediff.config.OutputConfig;
-import org.nd4j.autodiff.samediff.internal.AbstractSession;
-import org.nd4j.autodiff.samediff.internal.DataTypesSession;
-import org.nd4j.autodiff.samediff.internal.InferenceSession;
-import org.nd4j.autodiff.samediff.internal.SameDiffOp;
-import org.nd4j.autodiff.samediff.internal.Variable;
-import org.nd4j.autodiff.samediff.ops.SDBaseOps;
-import org.nd4j.autodiff.samediff.ops.SDBitwise;
-import org.nd4j.autodiff.samediff.ops.SDCNN;
-import org.nd4j.autodiff.samediff.ops.SDImage;
-import org.nd4j.autodiff.samediff.ops.SDLoss;
-import org.nd4j.autodiff.samediff.ops.SDMath;
-import org.nd4j.autodiff.samediff.ops.SDNN;
-import org.nd4j.autodiff.samediff.ops.SDRNN;
-import org.nd4j.autodiff.samediff.ops.SDRandom;
+import org.nd4j.autodiff.samediff.internal.*;
+import org.nd4j.autodiff.samediff.ops.*;
 import org.nd4j.autodiff.samediff.serde.FlatBuffersMapper;
 import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.classification.Evaluation;
 import org.nd4j.evaluation.classification.ROC;
-import org.nd4j.graph.ExecutionMode;
-import org.nd4j.graph.FlatArray;
-import org.nd4j.graph.FlatConfiguration;
-import org.nd4j.graph.FlatGraph;
-import org.nd4j.graph.FlatNode;
-import org.nd4j.graph.FlatVariable;
-import org.nd4j.graph.IntPair;
-import org.nd4j.graph.OpType;
-import org.nd4j.graph.UpdaterState;
+import org.nd4j.graph.*;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -112,8 +50,6 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
-import org.nd4j.linalg.api.ops.impl.controlflow.If;
-import org.nd4j.linalg.api.ops.impl.controlflow.While;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Switch;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.api.ops.impl.shape.tensorops.TensorArray;
@@ -136,7 +72,6 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.GradientUpdater;
 import org.nd4j.linalg.learning.regularization.Regularization;
 import org.nd4j.linalg.primitives.AtomicBoolean;
-import org.nd4j.linalg.primitives.AtomicDouble;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.nd4j.linalg.util.DeviceLocalNDArray;
@@ -151,6 +86,17 @@ import org.nd4j.weightinit.impl.ConstantInitScheme;
 import org.nd4j.weightinit.impl.NDArraySupplierInitScheme;
 import org.nd4j.weightinit.impl.ZeroInitScheme;
 import org.tensorflow.framework.GraphDef;
+
+import java.io.*;
+import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static org.nd4j.autodiff.util.TrainingUtils.stackOutputs;
 
 /**
  * SameDiff is the entrypoint for ND4J's automatic differentiation functionality.
@@ -683,7 +629,7 @@ public class SameDiff extends SDBaseOps {
         for (val var : variables()) {
             SDVariable clone = var.clone(this);
             SDVariable newVar = sameDiff.var(clone);
-            if (var.getArr() != null && var.getVariableType() != VariableType.ARRAY) {      //ARRAY type = "activations" - are overwritten anyway
+            if (var.getVariableType() != VariableType.ARRAY && var.getArr() != null ) {      //ARRAY type = "activations" - are overwritten anyway
                 sameDiff.associateArrayWithVariable(var.getArr(), newVar);
             }
 
@@ -795,9 +741,9 @@ public class SameDiff extends SDBaseOps {
      * @param function the function to get the inputs for
      * @return the input ids for a given function
      */
-    public String[] getInputsForOp(DifferentialFunction function) {
+    public String[] getInputsForOp(@NonNull DifferentialFunction function) {
         if (!ops.containsKey(function.getOwnName()))
-            throw new ND4JIllegalStateException("Illegal function instance id found " + function.getOwnName());
+            throw new ND4JIllegalStateException("Unknown function instance id found: \"" + function.getOwnName() + "\"");
         List<String> inputs = ops.get(function.getOwnName()).getInputsToOp();
         return inputs == null ? null : inputs.toArray(new String[inputs.size()]);
     }
@@ -1102,12 +1048,8 @@ public class SameDiff extends SDBaseOps {
                 constantArrays.put(variable.getVarName(), new DeviceLocalNDArray(arr, true));
                 break;
             case ARRAY:
-                // FIXME: remove this before release
-                val session = sessions.get(Thread.currentThread().getId());
-                val varId = session.newVarId(variable.getVarName(), AbstractSession.OUTER_FRAME, 0, null);
-                session.getNodeOutputs().put(varId, arr);
-                //throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY");
-                break;
+                throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY - arrays for" +
+                        " this type of variable is calculated ");
             case PLACEHOLDER:
                 //Validate placeholder shapes:
                 long[] phShape = variable.placeholderShape();
@@ -2152,11 +2094,32 @@ public class SameDiff extends SDBaseOps {
             requiredVars.addAll(l.requiredVariables(this).trainingVariables());
         }
 
-        ArrayList<Listener> listenersWitHistory = new ArrayList<>(listeners);
+        List<Listener> listenersWitHistory = new ArrayList<>(listeners);
+        for(Listener l : this.listeners){
+            if(!listenersWitHistory.contains(l))
+                listenersWitHistory.add(l);
+        }
         listenersWitHistory.add(history);
 
-        for (int i = 0; i < numEpochs; i++) {
 
+        SameDiff gradInstance = getFunction("grad");
+        if(gradInstance == null){
+            createGradFunction();
+            gradInstance = getFunction("grad");
+        }
+        TrainingSession ts = new TrainingSession(gradInstance);
+        gradInstance.setTrainingConfig(trainingConfig);     //In case any listeners want to use it
+
+        Set<String> paramsToTrain = new LinkedHashSet<>();
+        for(Variable v : variables.values()){
+            if(v.getVariable().getVariableType() == VariableType.VARIABLE){
+                //TODO not all variable type are needed - i.e., variable that doesn't impact loss should be skipped
+                paramsToTrain.add(v.getName());
+            }
+        }
+
+        Loss lastLoss = null;
+        for (int i = 0; i < numEpochs; i++) {
             if (incrementEpochCount && hasListeners) {
                 at.setEpoch(trainingConfig.getEpochCount());
                 for (Listener l : activeListeners) {
@@ -2200,146 +2163,29 @@ public class SameDiff extends SDBaseOps {
                 Preconditions.checkState(placeholders.size() > 0, "No placeholder variables were set for training");
                 resolveVariablesWith(placeholders);
 
-                //Calculate gradients:
-                execBackwards(placeholders, at.operation(), ds, requiredVars, activeListeners);
-
-
-                //Apply updater:
+                //Call TrainingSession to perform training
                 if (!initializedTraining)
                     initializeTraining();
 
-                Map<Class<?>, AtomicDouble> regScore = null;        //Holds regularization scores for later reporting to listeners
-                if (hasListeners) {
-                    regScore = new HashMap<>();
-                }
+                lastLoss = ts.trainingIteration(
+                        trainingConfig,
+                        placeholders,
+                        paramsToTrain,
+                        updaterMap,
+                        ds,
+                        getLossVariables(),
+                        listenersWitHistory,
+                        at);
 
-                int iteration = trainingConfig.getIterationCount();
-                int e = trainingConfig.getEpochCount();
-                for (Variable v : variables.values()) {
-                    //Only update trainable params - float type parameters (variable type vars)
-                    SDVariable sdv = v.getVariable();
-                    if (sdv.getVariableType() != VariableType.VARIABLE || !sdv.dataType().isFPType())
-                        continue;
-
-
-                    INDArray param = sdv.getArr();
-                    SDVariable gradVar = sdv.getGradient();
-                    if (gradVar == null) {
-                        //Not all trainable parameters have gradients defined.
-                        //Consider graph: in1->loss1; in2->loss2, where we optimize only loss1.
-                        //No gradient will be present for in2, because in2 doesn't impact loss1 at all
-                        continue;
-                    }
-                    INDArray grad = gradVar.getArr();
-                    //Note: don't need to divide by minibatch - that should be handled in loss function and hence loss function gradients,
-                    // which should flow through to here
-
-                    //Pre-apply regularization (L1, L2)
-                    List<Regularization> r = trainingConfig.getRegularization();
-                    int iterCount = trainingConfig.getIterationCount();
-                    int epochCount = trainingConfig.getEpochCount();
-                    double lr = trainingConfig.getUpdater().hasLearningRate() ? trainingConfig.getUpdater().getLearningRate(iteration, epochCount) : 1.0;
-                    if (r != null && r.size() > 0) {
-                        for (Regularization reg : r) {
-                            if (reg.applyStep() == Regularization.ApplyStep.BEFORE_UPDATER) {
-                                reg.apply(param, grad, lr, iterCount, epochCount);
-                            }
-                        }
-                    }
-
-                    //Apply updater. Note that we need to reshape to [1,length] for updater
-                    INDArray reshapedView = Shape.newShapeNoCopy(grad, new long[]{1, grad.length()}, grad.ordering() == 'f');       //TODO make sure we always reshape in same order!
-                    Preconditions.checkState(reshapedView != null, "Error reshaping array for parameter \"%s\": array is a view?", sdv);
-                    GradientUpdater u = updaterMap.get(sdv.getVarName());
-                    try {
-                        u.applyUpdater(reshapedView, iteration, e);
-                    } catch (Throwable t) {
-                        throw new RuntimeException("Error applying updater " + u.getClass().getSimpleName() + " to parameter \"" + sdv.getVarName()
-                                + "\": either parameter size is inconsistent between iterations, or \"" + sdv.getVarName() + "\" should not be a trainable parameter?", t);
-                    }
-
-                    //Post-apply regularization (weight decay)
-                    if (r != null && r.size() > 0) {
-                        for (Regularization reg : r) {
-                            if (reg.applyStep() == Regularization.ApplyStep.POST_UPDATER) {
-                                reg.apply(param, grad, lr, iterCount, epochCount);
-                                if (hasListeners) {
-                                    double score = reg.score(param, iterCount, epochCount);
-                                    if (!regScore.containsKey(reg.getClass())) {
-                                        regScore.put(reg.getClass(), new AtomicDouble());
-                                    }
-                                    regScore.get(reg.getClass()).addAndGet(score);
-                                }
-                            }
-                        }
-                    }
-
-                    if (hasListeners) {
-                        for (Listener l : activeListeners) {
-                            if (l.isActive(at.operation()))
-                                l.preUpdate(this, at, v, reshapedView);
-                        }
-                    }
-
-
-                    if (trainingConfig.isMinimize()) {
-                        param.subi(grad);
-                    } else {
-                        param.addi(grad);
-                    }
-                }
-
-                double[] d = new double[lossVariables.size() + regScore.size()];
-                List<String> lossVars;
-                if (regScore.size() > 0) {
-                    lossVars = new ArrayList<>(lossVariables.size() + regScore.size());
-                    lossVars.addAll(lossVariables);
-                    int s = regScore.size();
-                    //Collect regularization losses
-                    for (Map.Entry<Class<?>, AtomicDouble> entry : regScore.entrySet()) {
-                        lossVars.add(entry.getKey().getSimpleName());
-                        d[s] = entry.getValue().get();
-                    }
-                } else {
-                    lossVars = lossVariables;
-                }
-
-                //Collect the losses...
-                SameDiff gradFn = sameDiffFunctionInstances.get(GRAD_FN_KEY);
-                int count = 0;
-                for (String s : lossVariables) {
-                    INDArray arr = gradFn.getArrForVarName(s);
-                    double l = arr.isScalar() ? arr.getDouble(0) : arr.sumNumber().doubleValue();
-                    d[count++] = l;
-                }
-
-                Loss loss = new Loss(lossVars, d);
-
-                if (lossNames == null) {
-                    lossNames = lossVars;
-                } else {
-                    Preconditions.checkState(lossNames.equals(lossVars),
-                            "Loss names mismatch, expected: %s, got: %s", lossNames, lossVars);
-                }
 
                 if (lossSums == null) {
-                    lossSums = d;
+                    lossSums = lastLoss.getLosses().clone();
                 } else {
-                    Preconditions.checkState(lossNames.equals(lossVars),
-                            "Loss size mismatch, expected: %s, got: %s", lossSums.length, d.length);
-
                     for (int j = 0; j < lossSums.length; j++) {
-                        lossSums[j] += d[j];
+                        lossSums[j] += lastLoss.getLosses()[j];
                     }
                 }
                 lossCount++;
-
-                if (hasListeners) {
-                    for (Listener l : activeListeners) {
-                        l.iterationDone(this, at, ds, loss);
-                    }
-
-                }
 
                 trainingConfig.incrementIterationCount();
             }
@@ -2347,6 +2193,8 @@ public class SameDiff extends SDBaseOps {
             long epochTime = System.currentTimeMillis() - epochStartTime;
 
             if (incrementEpochCount) {
+                lossNames = lastLoss.getLossNames();
+
                 for (int j = 0; j < lossSums.length; j++)
                     lossSums[j] /= lossCount;
 
@@ -2356,14 +2204,13 @@ public class SameDiff extends SDBaseOps {
                     lossCurve = new LossCurve(lossSums, lossNames);
             }
 
+
             if (incrementEpochCount) {
                 if (hasListeners) {
-
                     boolean doStop = false;
                     Listener stopped = null;
 
                     for (Listener l : activeListeners) {
-
                         ListenerResponse res = l.epochEnd(this, at, lossCurve, epochTime);
 
                         if (res == ListenerResponse.STOP && (i < numEpochs - 1)) {
@@ -2431,7 +2278,6 @@ public class SameDiff extends SDBaseOps {
 
                 trainingConfig.incrementEpochCount();
             }
-
             if (i < numEpochs - 1) {
                 iter.reset();
             }
@@ -2507,7 +2353,9 @@ public class SameDiff extends SDBaseOps {
                 INDArray arr = v.getVariable().getArr();
                 long stateSize = trainingConfig.getUpdater().stateSize(arr.length());
                 INDArray view = stateSize == 0 ? null : Nd4j.createUninitialized(arr.dataType(), 1, stateSize);
-                updaterMap.put(v.getName(), trainingConfig.getUpdater().instantiate(view, true));
+                GradientUpdater gu = trainingConfig.getUpdater().instantiate(view, false);
+                gu.setStateViewArray(view, arr.shape(), arr.ordering(), true);
+                updaterMap.put(v.getName(), gu);
             }
 
             initializedTraining = true;
@@ -3862,7 +3710,8 @@ public class SameDiff extends SDBaseOps {
                     long thisSize = trainingConfig.getUpdater().stateSize(arr.length());
                     if (thisSize > 0) {
                         INDArray stateArr = Nd4j.create(arr.dataType(), 1, thisSize);
-                        GradientUpdater u = trainingConfig.getUpdater().instantiate(stateArr, true);
+                        GradientUpdater u = trainingConfig.getUpdater().instantiate(stateArr, false);
+                        u.setStateViewArray(stateArr, arr.shape(), arr.ordering(), true);                       //TODO eventually this should be 1 call...
                         updaterMap.put(v.getVarName(), u);
                     } else {
                         GradientUpdater u = trainingConfig.getUpdater().instantiate((INDArray) null, true);
@@ -3946,7 +3795,53 @@ public class SameDiff extends SDBaseOps {
             sessions.clear();
 
             //Recalculate datatypes of outputs, and dynamically update them
-            calculateOutputDataTypes(true);
+            Set<String> allSeenOps = new HashSet<>();
+            Queue<String> queueOps = new LinkedList<>();
+
+            for(String s : dataTypeMap.keySet()){
+                Variable v = variables.get(s);
+                v.getVariable().setDataType(dataTypeMap.get(s));
+                List<String> inToOp = v.getInputsForOp();
+                if(inToOp != null){
+                    for(String op : inToOp) {
+                        if (!allSeenOps.contains(op)) {
+                            allSeenOps.add(op);
+                            queueOps.add(op);
+                        }
+                    }
+                }
+            }
+
+            while(!queueOps.isEmpty()){
+                String op = queueOps.remove();
+                SameDiffOp o = ops.get(op);
+                List<String> inVars = o.getInputsToOp();
+                List<DataType> inDTypes = new ArrayList<>();
+                if(inVars != null) {
+                    for (String s : inVars) {
+                        SDVariable v = variables.get(s).getVariable();
+                        inDTypes.add(v.dataType());
+                    }
+                }
+                List<DataType> outDtypes = o.getOp().calculateOutputDataTypes(inDTypes);
+                List<String> outVars = o.getOutputsOfOp();
+                for( int i=0; i<outVars.size(); i++ ){
+                    String varName = outVars.get(i);
+                    Variable var = variables.get(varName);
+                    SDVariable v = var.getVariable();
+                    v.setDataType(outDtypes.get(i));
+
+                    //Also update queue
+                    if(var.getInputsForOp() != null){
+                        for(String opName : var.getInputsForOp()){
+                            if(!allSeenOps.contains(opName)){
+                                allSeenOps.add(opName);
+                                queueOps.add(opName);
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -4097,6 +3992,8 @@ public class SameDiff extends SDBaseOps {
                 break;
             }
         }
+
+        variables.get(varName).getInputsForOp().remove(function.getOwnName());
     }
 
     /**
@@ -4476,11 +4373,7 @@ public class SameDiff extends SDBaseOps {
         else if (function instanceof BaseOp) {
             SDVariable[] ret = new SDVariable[1];
             SDVariable checkGet = getVariable(baseName);
-            char ordering = 'c';
             SDVariable[] args = function.args();
-            if (args != null && args.length > 0 && function.args()[0].getArr() != null) { //Args may be null or length 0 for some ops, like eye
-                ordering = function.args()[0].getArr().ordering();
-            }
             if (checkGet == null) {
                 //Note: output of an op is ARRAY type - activations, not a trainable parameter. Thus has no weight init scheme
                 org.nd4j.linalg.api.buffer.DataType dataType = outputDataTypes.get(0);
@@ -4528,45 +4421,6 @@ public class SameDiff extends SDBaseOps {
      */
     public SameDiff getFunction(String functionName) {
         return sameDiffFunctionInstances.get(functionName);
-    }
-
-
-    /**
-     * @deprecated Use {@link SDBaseOps#whileLoop(String[], String, SDVariable[], SameDiffSingleLambda, SameDiffLambda)}
-     */
-    @Deprecated
-    public While whileStatement(SameDiffConditional sameDiffConditional,
-                                SameDiffFunctionDefinition conditionBody,
-                                SameDiffFunctionDefinition loopBody
-            , SDVariable[] inputVars) {
-        return While.builder()
-                .inputVars(inputVars)
-                .condition(conditionBody)
-                .predicate(sameDiffConditional)
-                .trueBody(loopBody)
-                .parent(this)
-                .blockName("while-" + UUID.randomUUID().toString())
-                .build();
-    }
-
-    /**
-     * @deprecated Use {@link SDBaseOps#ifCond(String, String, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda, SameDiffNoArgSingleLambda)}
-     */
-    @Deprecated
-    public If ifStatement(SameDiffConditional conditional,
-                          SameDiffFunctionDefinition conditionBody,
-                          SameDiffFunctionDefinition trueBody,
-                          SameDiffFunctionDefinition falseBody
-            , SDVariable[] inputVars) {
-        return If.builder()
-                .conditionBody(conditionBody)
-                .falseBody(falseBody)
-                .trueBody(trueBody)
-                .predicate(conditional)
-                .inputVars(inputVars)
-                .parent(this)
-                .blockName("if-" + UUID.randomUUID().toString())
-                .build();
     }
 
     /**
@@ -4649,6 +4503,51 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
+     * See {@link #calculateGradients(Map, Collection)}
+     */
+    public Map<String, INDArray> calculateGradients(Map<String, INDArray> placeholderVals, @NonNull String... variables) {
+        Preconditions.checkArgument(variables.length > 0, "No variables were specified");
+        return calculateGradients(placeholderVals, Arrays.asList(variables));
+    }
+
+    /**
+     * Calculate and return the gradients for the specified variables
+     *
+     * @param placeholderVals Placeholders. May be null
+     * @param variables       Names of the variables that you want the gradient arrays for
+     * @return Gradients as a map, keyed by the variable name
+     */
+    public Map<String, INDArray> calculateGradients(Map<String, INDArray> placeholderVals, @NonNull Collection<String> variables) {
+        Preconditions.checkArgument(!variables.isEmpty(), "No variables were specified");
+        if (getFunction(GRAD_FN_KEY) == null) {
+            createGradFunction();
+        }
+
+        List<String> gradVarNames = new ArrayList<>(variables.size());
+        for (String s : variables) {
+            Preconditions.checkState(this.variables.containsKey(s), "No variable with name \"%s\" exists in the SameDiff instance", s);
+            SDVariable v = getVariable(s).getGradient();
+            if (v != null) {
+                //In a few cases (like loss not depending on trainable parameters) we won't have gradient array for parameter variable
+                gradVarNames.add(v.getVarName());
+            }
+        }
+
+        //Key is gradient variable name
+        Map<String, INDArray> grads = getFunction(GRAD_FN_KEY).output(placeholderVals, gradVarNames);
+
+        Map<String, INDArray> out = new HashMap<>();
+        for (String s : variables) {
+            if (getVariable(s).getGradient() != null) {
+                String gradVar = getVariable(s).getGradient().getVarName();
+                out.put(s, grads.get(gradVar));
+            }
+        }
+
+        return out;
+    }
+
+    /**
      * Create (if required) and then calculate the variable gradients (backward pass) for this graph.<br>
      * After execution, the gradient arrays can be accessed using {@code myVariable.getGradient().getArr()}<br>
      * <b>Note</b>: This method by default calculates VARIABLE type SDVariable gradients only (as well as any other
@@ -4660,6 +4559,7 @@ public class SameDiff extends SDBaseOps {
      *
      * @param placeholders Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      */
+    @Deprecated
     public void execBackwards(Map<String, INDArray> placeholders, Operation op) {
         execBackwards(placeholders, op, null, Collections.<String>emptyList(), Collections.<Listener>emptyList());
     }
@@ -4669,10 +4569,12 @@ public class SameDiff extends SDBaseOps {
      * <p>
      * Uses {@link Operation#INFERENCE}.
      */
+    @Deprecated
     public void execBackwards(Map<String, INDArray> placeholders) {
         execBackwards(placeholders, Operation.INFERENCE);
     }
 
+    @Deprecated
     protected void execBackwards(Map<String, INDArray> placeholders, Operation op, MultiDataSet batch, Collection<String> requiredActivations, List<Listener> activeListeners) {
         if (getFunction(GRAD_FN_KEY) == null) {
             createGradFunction();
@@ -4709,6 +4611,7 @@ public class SameDiff extends SDBaseOps {
     /**
      * See {@link #execBackwards(Map, List, Operation)}
      */
+    @Deprecated
     public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, Operation op, String... variableGradNamesList) {
         return execBackwards(placeholders, Arrays.asList(variableGradNamesList), op, null, Collections.<String>emptyList(), Collections.<Listener>emptyList());
     }
@@ -4718,6 +4621,7 @@ public class SameDiff extends SDBaseOps {
      * <p>
      * Uses {@link Operation#INFERENCE}.
      */
+    @Deprecated
     public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, String... variableGradNamesList) {
         return execBackwards(placeholders, Operation.INFERENCE, variableGradNamesList);
     }
@@ -4730,6 +4634,7 @@ public class SameDiff extends SDBaseOps {
      * @param placeholders          Values for the placeholder variables in the graph. For graphs without placeholders, use null or an empty map
      * @param variableGradNamesList Names of the gradient variables to calculate
      */
+    @Deprecated
     public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, List<String> variableGradNamesList, Operation operation) {
         return execBackwards(placeholders, variableGradNamesList, operation, null, Collections.<String>emptyList(), Collections.<Listener>emptyList());
     }
@@ -4739,10 +4644,12 @@ public class SameDiff extends SDBaseOps {
      * <p>
      * Uses {@link Operation#INFERENCE}.
      */
+    @Deprecated
     public Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, List<String> variableGradNamesList) {
         return execBackwards(placeholders, variableGradNamesList, Operation.INFERENCE);
     }
 
+    @Deprecated
     protected Map<String, INDArray> execBackwards(Map<String, INDArray> placeholders, List<String> variableGradNamesList, Operation operation,
                                                   MultiDataSet batch, Collection<String> requiredActivations, List<Listener> activeListeners) {
         if (getFunction(GRAD_FN_KEY) == null) {
@@ -5462,7 +5369,7 @@ public class SameDiff extends SDBaseOps {
                 0,
                 0,
                 -1,
-                0, 0, 0, 0, 0, 0);
+                0, 0, 0, 0, 0, 0, 0, 0, 0);
 
         return flatNode;
     }
@@ -5538,7 +5445,7 @@ public class SameDiff extends SDBaseOps {
         val idxForOps = new IdentityHashMap<DifferentialFunction, Integer>();
         List<SDVariable> allVars = variables();
         for (SDVariable variable : allVars) {
-            INDArray arr = variable.getArr();
+            INDArray arr = variable.getVariableType() == VariableType.ARRAY ? null : variable.getArr();
             log.trace("Exporting variable: [{}]", variable.getVarName());
 
             //If variable is the output of some op - let's use the ONE index for exporting, and properly track the output
@@ -5582,7 +5489,26 @@ public class SameDiff extends SDBaseOps {
                 shape = FlatVariable.createShapeVector(bufferBuilder, shp);
             }
 
-            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), shape, array, -1, varType);
+            int controlDeps = 0;
+            int controlDepsForOp = 0;
+            int controlDepsForVar = 0;
+            Variable v = variables.get(varName);
+
+            int[] cds = FlatBuffersMapper.mapOrNull(v.getControlDeps(), bufferBuilder);
+            if(cds != null)
+                controlDeps = FlatVariable.createControlDepsVector(bufferBuilder, cds);
+
+            int[] cdsForOp = FlatBuffersMapper.mapOrNull(v.getControlDepsForOp(), bufferBuilder);
+            if(cdsForOp != null)
+                controlDepsForOp = FlatVariable.createControlDepForOpVector(bufferBuilder, cdsForOp);
+
+            int[] cdsForVar = FlatBuffersMapper.mapOrNull(v.getControlDepsForVar(), bufferBuilder);
+            if(cdsForVar != null)
+                controlDepsForVar = FlatVariable.createControlDepsForVarVector(bufferBuilder, cdsForVar);
+
+
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), shape,
+                    array, -1, varType, controlDeps, controlDepsForOp, controlDepsForVar);
             flatVariables.add(flatVariable);
         }
 
@@ -5591,43 +5517,6 @@ public class SameDiff extends SDBaseOps {
             DifferentialFunction func = op.getOp();
             Integer fnId = idxForOps.get(func);
             flatNodes.add(FlatBuffersMapper.asFlatNode(this, func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
-        }
-
-        // we're dumping scopes now
-        for (Map.Entry<String, SameDiff> scope : sameDiffFunctionInstances.entrySet()) {
-            if (scope.getKey().equalsIgnoreCase(GRAD_FN_KEY)) {
-                //Skip the gradient function for export
-                continue;
-            }
-
-            flatNodes.add(asFlatNode(scope.getKey(), scope.getValue(), bufferBuilder));
-            val currVarList = new ArrayList<SDVariable>(scope.getValue().variables());
-            // converting all ops from node
-            for (val node : scope.getValue().variables()) {
-                INDArray arr = node.getArr();
-                if (arr == null) {
-                    continue;
-                }
-
-                int name = bufferBuilder.createString(node.getVarName());
-                int array = arr.toFlatArray(bufferBuilder);
-                int id = IntPair.createIntPair(bufferBuilder, ++idx, 0);
-
-                val pair = parseVariable(node.getVarName());
-                reverseMap.put(pair.getFirst(), idx);
-
-                log.trace("Adding [{}] as [{}]", pair.getFirst(), idx);
-
-                byte varType = (byte) node.getVariableType().ordinal();
-                int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(arr.dataType()), 0, array, -1, varType);
-                flatVariables.add(flatVariable);
-            }
-
-            //add functions
-            for (SameDiffOp op : scope.getValue().ops.values()) {
-                DifferentialFunction func = op.getOp();
-                flatNodes.add(FlatBuffersMapper.asFlatNode(this, func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter, null));
-            }
         }
 
         int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatOffsets));
@@ -5958,7 +5847,7 @@ public class SameDiff extends SDBaseOps {
             vars.add(fg.variables(i));
         }
 
-        FlatConfiguration conf = fg.configuration();
+//        FlatConfiguration conf = fg.configuration();
 
         /* Reconstruct the graph
         We'll do the reconstruction manually here, rather than using sd.var(...), so that we have more control
@@ -5995,6 +5884,35 @@ public class SameDiff extends SDBaseOps {
             SDVariable var = new SDVariable(n, vt, sd, shape, dtype, null);
             sd.variables.put(n, Variable.builder().name(n).variable(var).build());
             sd.variableNameToShape.put(n, shape);
+            Variable v2 = sd.variables.get(n);
+
+            //Reconstruct control dependencies
+            if(v.controlDepsLength() > 0){
+                int num = v.controlDepsLength();
+                List<String> l = new ArrayList<>(num);
+                for( int i=0; i<num; i++ ){
+                    l.add(v.controlDeps(i));
+                }
+                v2.setControlDeps(l);
+            }
+            if(v.controlDepForOpLength() > 0){
+                int num = v.controlDepForOpLength();
+                List<String> l = new ArrayList<>(num);
+                for( int i=0; i<num; i++ ){
+                    l.add(v.controlDepForOp(i));
+                }
+                v2.setControlDepsForOp(l);
+            }
+
+            if(v.controlDepsForVarLength() > 0){
+                int num = v.controlDepsForVarLength();
+                List<String> l = new ArrayList<>(num);
+                for( int i=0; i<num; i++ ){
+                    l.add(v.controlDepsForVar(i));
+                }
+                v2.setControlDepsForVar(l);
+            }
+
 
 
             FlatArray fa = v.ndarray();
@@ -6063,7 +5981,37 @@ public class SameDiff extends SDBaseOps {
                 }
                 inputNames[i] = varIn.getVarName();
             }
-            sd.ops.get(df.getOwnName()).setInputsToOp(Arrays.asList(inputNames));
+            SameDiffOp op = sd.ops.get(df.getOwnName());
+            op.setInputsToOp(Arrays.asList(inputNames));
+
+            //Reconstruct control dependencies
+            if (fn.controlDepsLength() > 0) {
+                int l = fn.controlDepsLength();
+                List<String> list = new ArrayList<>(l);
+                for( int i=0; i<l; i++ ){
+                    list.add(fn.controlDeps(i));
+                }
+                op.setControlDeps(list);
+            }
+
+            if (fn.varControlDepsLength() > 0) {
+                int l = fn.varControlDepsLength();
+                List<String> list = new ArrayList<>(l);
+                for( int i=0; i<l; i++ ){
+                    list.add(fn.varControlDeps(i));
+                }
+                op.setVarControlDeps(list);
+            }
+
+            if (fn.controlDepForLength() > 0) {
+                int l = fn.controlDepForLength();
+                List<String> list = new ArrayList<>(l);
+                for( int i=0; i<l; i++ ){
+                    list.add(fn.controlDepFor(i));
+                }
+                op.setControlDepFor(list);
+            }
+
 
             //Record that input variables are input to this op
             for (String inName : inputNames) {
@@ -6072,9 +6020,7 @@ public class SameDiff extends SDBaseOps {
                     v.setInputsForOp(new ArrayList<String>());
                 }
                 if (!v.getInputsForOp().contains(df.getOwnName())) {
-                    v.getInputsForOp(
-
-                    ).add(df.getOwnName());
+                    v.getInputsForOp().add(df.getOwnName());
                 }
             }
 
@@ -6415,32 +6361,6 @@ public class SameDiff extends SDBaseOps {
     }
 
     /**
-     * Calculate data types for the variables in the graph
-     */
-    public Map<String, org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes() {
-        return calculateOutputDataTypes(false);
-    }
-
-    /**
-     * Calculate data types for the variables in the graph
-     */
-    public Map<String, org.nd4j.linalg.api.buffer.DataType> calculateOutputDataTypes(boolean dynamicUpdate) {
-        List<String> allVars = new ArrayList<>(variables.keySet());
-        DataTypesSession session = new DataTypesSession(this, dynamicUpdate);
-        Map<String, org.nd4j.linalg.api.buffer.DataType> phValues = new HashMap<>();
-        for (Variable v : variables.values()) {
-            if (v.getVariable().isPlaceHolder()) {
-                org.nd4j.linalg.api.buffer.DataType dt = v.getVariable().dataType();
-                Preconditions.checkNotNull(dt, "Placeholder variable %s has null datatype", v.getName());
-                phValues.put(v.getName(), dt);
-            }
-        }
-        Map<String, org.nd4j.linalg.api.buffer.DataType> out = session.output(allVars, phValues, null,
-                Collections.<String>emptyList(), Collections.<Listener>emptyList(), At.defaultAt(Operation.INFERENCE));
-        return out;
-    }
-
-    /**
      * For internal use only.
      * Creates a new discinct block name from baseName.
      * Block names are used by If and While
@@ -6470,14 +6390,14 @@ public class SameDiff extends SDBaseOps {
      * @return The imported graph
      */
     public static SameDiff importFrozenTF(File graphFile) {
-        return TFGraphMapper.getInstance().importGraph(graphFile);
+        return TFGraphMapper.importGraph(graphFile);
     }
 
     /**
      * See {@link #importFrozenTF(File)}
      */
     public static SameDiff importFrozenTF(GraphDef graphDef) {
-        return TFGraphMapper.getInstance().importGraph(graphDef);
+        return TFGraphMapper.importGraph(graphDef);
     }
 
 
@@ -6487,7 +6407,7 @@ public class SameDiff extends SDBaseOps {
      * Again, the input can be text or binary.
      */
     public static SameDiff importFrozenTF(InputStream graph) {
-        return TFGraphMapper.getInstance().importGraph(graph);
+        return TFGraphMapper.importGraph(graph);
     }
 
 
@@ -6511,7 +6431,7 @@ public class SameDiff extends SDBaseOps {
         int start = 1;
 
         // if we already have a name like "op_2", start from trying "op_3"
-        if (base.contains("_")) {
+        if (base.contains("_") && base.matches(".*_\\d+")) {
             // extract number used to generate base
             Matcher num = Pattern.compile("(.*)_(\\d+)").matcher(base);
             // extract argIndex used to generate base

@@ -24,6 +24,7 @@ import onnx.Onnx;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -200,48 +201,17 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
 
     @Override
     public void setX(INDArray x) {
-        if (x == null) {
-            if (args() != null && args().length >= 1) {
-                SDVariable firstArg = args()[0];
-                if (firstArg.getArr() != null)
-                    this.x = firstArg.getArr();
-            } else
-                throw new ND4JIllegalStateException("Unable to set null array for x. Also unable to infer from differential function arguments");
-        } else
-            this.x = x;
+        this.x = x;
     }
 
     @Override
     public void setZ(INDArray z) {
-        if (z == null) {
-            SDVariable getResult = sameDiff.getVariable(zVertexId);
-            if (getResult != null) {
-                if (getResult.getArr() != null)
-                    this.z = getResult.getArr();
-                else if(sameDiff.getShapeForVarName(getResult.getVarName()) != null) {
-                    val shape = sameDiff.getShapeForVarName(getResult.getVarName());
-                    sameDiff.setArrayForVariable(getResult.getVarName(),getResult.getWeightInitScheme().create(getResult.dataType(), shape));
-                }
-                else
-                    throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
-
-            } else
-                throw new ND4JIllegalStateException("Unable to set null array for z. Also unable to infer from differential function arguments");
-        } else
-            this.z = z;
+        this.z = z;
     }
 
     @Override
     public void setY(INDArray y) {
-        if (y == null) {
-            if (args() != null && args().length > 1) {
-                SDVariable firstArg = args()[1];
-                if (firstArg.getArr() != null)
-                    this.y = firstArg.getArr();
-            } else
-                throw new ND4JIllegalStateException("Unable to set null array for y. Also unable to infer from differential function arguments");
-        } else
-            this.y = y;
+        this.y = y;
     }
 
     @Override
@@ -263,6 +233,12 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     @Override
     public INDArray z() {
         return z;
+    }
+
+    @Override
+    public INDArray getInputArgument(int index){
+        Preconditions.checkState(index >= 0 && index < 2, "Input argument index must be 0 or 1, got %s", index);
+        return index == 0 ? x : y;
     }
 
     @Override
@@ -402,5 +378,12 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
     public int getNumOutputs(){
         //Always 1 for legacy/base ops
         return 1;
+    }
+
+    @Override
+    public void clearArrays(){
+        x = null;
+        y = null;
+        z = null;
     }
 }

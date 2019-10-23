@@ -24,6 +24,7 @@ import lombok.Getter;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -319,6 +320,7 @@ public class History {
      * Gets the training evaluations ran during the last epoch
      */
     public EvaluationRecord finalTrainingEvaluations(){
+        Preconditions.checkState(!trainingHistory.isEmpty(), "Cannot get final training evaluation - history is empty");
         return trainingHistory.get(trainingHistory.size() - 1);
     }
 
@@ -326,6 +328,7 @@ public class History {
      * Gets the validation evaluations ran during the last epoch
      */
     public EvaluationRecord finalValidationEvaluations(){
+        Preconditions.checkState(!validationHistory.isEmpty(), "Cannot get final validation evaluation - history is empty");
         return validationHistory.get(validationHistory.size() - 1);
     }
 

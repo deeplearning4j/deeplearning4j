@@ -23,7 +23,6 @@ import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.TrainingConfig;
 import org.nd4j.autodiff.samediff.transform.*;
-import org.nd4j.base.Preconditions;
 import org.nd4j.graph.ui.LogFileWriter;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.imports.tensorflow.TFImportOverride;
@@ -35,7 +34,6 @@ import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.resources.Downloader;
 import org.nd4j.util.ArchiveUtils;
 
@@ -109,7 +107,7 @@ public class BERTGraphTest extends BaseNd4jTest {
         //Skip the "IteratorV2" op - we don't want or need this
         TFOpImportFilter filter = (nodeDef, initWith, attributesForNode, graph) -> { return "IteratorV2".equals(nodeDef.getName()); };
 
-        SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
+        SameDiff sd = TFGraphMapper.importGraph(f, m, filter);
 
         /*
         Modify the network to remove hard-coded dropout operations for inference.
@@ -317,7 +315,7 @@ public class BERTGraphTest extends BaseNd4jTest {
         //Skip the "IteratorV2" op - we don't want or need this
         TFOpImportFilter filter = (nodeDef, initWith, attributesForNode, graph) -> { return "IteratorV2".equals(nodeDef.getName()); };
 
-        SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
+        SameDiff sd = TFGraphMapper.importGraph(f, m, filter);
 
         /*
         Set<String> floatConstants = new HashSet<>(Arrays.asList(
@@ -431,7 +429,7 @@ public class BERTGraphTest extends BaseNd4jTest {
             return "IteratorV2".equals(nodeDef.getName());
         };
 
-        SameDiff sd = TFGraphMapper.getInstance().importGraph(f, m, filter);
+        SameDiff sd = TFGraphMapper.importGraph(f, m, filter);
 
         LogFileWriter w = new LogFileWriter(new File("C:/Temp/BERT_UI.bin"));
         long bytesWritten = w.writeGraphStructure(sd);

@@ -244,10 +244,10 @@ public class ShapeOpValidation extends BaseOpValidation {
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
                 SDVariable stdev = sd.standardDeviation("out", expand, true);
 
-                INDArray out = sd.execAndEndResult();
+                Map<String,INDArray> m = sd.outputAll(null);
                 INDArray expOut = in.getArr().std(true);
 
-                assertArrayEquals(expExpandShape, expand.getArr().shape());
+                assertArrayEquals(expExpandShape, m.get(expand.getVarName()).shape());
                 INDArray expExpand = inArr.dup('c').reshape(expExpandShape);
 
                 String msg = "expandDim=" + i + ", source=" + p.getSecond();
@@ -304,9 +304,9 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 INDArray exp = inArr.dup('c').reshape('c', expShapePostSqueeze);
 
-                sd.execAndEndResult();
+                Map<String,INDArray> m = sd.outputAll(null);
 
-                INDArray squeezed = squeeze.getArr();
+                INDArray squeezed = m.get(squeeze.getVarName());
 //                assertArrayEquals(expShapePostSqueeze, squeezed.shape());
 
                 INDArray out = sd.execAndEndResult();
@@ -546,7 +546,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                             .testName(msg);
                     String error = OpValidation.validate(tc, true);
                     if(error != null){
-                        failed.add(msg);
+                        failed.add(msg + " - " + error);
                     }
                 }
             }
@@ -712,9 +712,9 @@ public class ShapeOpValidation extends BaseOpValidation {
                     String msg = "Unstacked shape = " + Arrays.toString(shape) + ", stacked shape = " + Arrays.toString(stackedShape)
                             + ", axis=" + axis + ", numInputs=" + numInputs;
 
-                    sd.execAndEndResult();
+                    Map<String,INDArray> m = sd.outputAll(null);
                     for (SDVariable v : unstacked) {
-                        assertArrayEquals(msg, shape, v.getArr().shape());
+                        assertArrayEquals(msg, shape, m.get(v.getVarName()).shape());
                     }
 
                     TestCase tc = new TestCase(sd).testName(msg);

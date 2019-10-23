@@ -5708,15 +5708,22 @@ public class Nd4j {
         for (int e = 0; e < shapeInfo.length; e++)
             shapeInfo[e] = array.shape(e);
 
-        if (Shape.isEmpty(shapeInfo))
-            return Nd4j.empty();
+        val shapeOf = Shape.shapeOf(shapeInfo);
+        DataType _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+        if (Shape.isEmpty(shapeInfo)) {
+            if(Shape.rank(shapeInfo) == 0) {
+                return Nd4j.empty();
+            } else {
+                return Nd4j.create(_dtype, shapeOf);
+            }
+        }
 
         char ordering = shapeInfo[shapeInfo.length - 1] == 99 ? 'c' : 'f';
 
-        val shapeOf = Shape.shapeOf(shapeInfo);
+
         val stridesOf = Shape.stridesOf(shapeInfo);
 
-        val _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+
         val _order = FlatBuffersMapper.getOrderFromByte(order);
         val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
 
@@ -5809,6 +5816,18 @@ public class Nd4j {
                     b.put(e, sb.get(e));
 
                 return Nd4j.create(b, shapeOf);
+            case BFLOAT16:
+            case UINT16:
+                INDArray arr = Nd4j.createUninitialized(_dtype, shapeOf);
+                ByteBuffer obb = bb.order(_order);
+                int pos = obb.position();
+                byte[] bArr = new byte[obb.limit() - pos];
+
+                for (int e = 0; e < bArr.length; e++) {
+                    bArr[e] = obb.get(e + pos);
+                }
+                arr.data().asNio().put(bArr);
+                return arr;
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
         }

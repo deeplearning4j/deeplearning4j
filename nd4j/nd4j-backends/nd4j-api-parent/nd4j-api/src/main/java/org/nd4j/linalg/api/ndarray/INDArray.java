@@ -2814,4 +2814,10 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @see org.nd4j.linalg.api.ndarray.BaseNDArray#toString(long, boolean, int)
      */
     String toStringFull();
+
+    /**
+     * A unique ID for the INDArray object instance. Does not account for views.
+     * @return INDArray unique ID
+     */
+    long getId();
 }
