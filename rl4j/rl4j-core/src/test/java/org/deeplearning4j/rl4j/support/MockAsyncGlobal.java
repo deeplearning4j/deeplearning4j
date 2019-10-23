@@ -1,5 +1,6 @@
 package org.deeplearning4j.rl4j.support;
 
+import lombok.Getter;
 import lombok.Setter;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.learning.async.IAsyncGlobal;
@@ -9,8 +10,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class MockAsyncGlobal implements IAsyncGlobal {
 
+    private final NeuralNet current;
+
     public boolean hasBeenStarted = false;
     public boolean hasBeenTerminated = false;
+
+    public int enqueueCallCount = 0;
 
     @Setter
     private int maxLoops;
@@ -19,8 +24,13 @@ public class MockAsyncGlobal implements IAsyncGlobal {
     private int currentLoop = 0;
 
     public MockAsyncGlobal() {
+        this(null);
+    }
+
+    public MockAsyncGlobal(NeuralNet current) {
         maxLoops = Integer.MAX_VALUE;
         numLoopsStopRunning = Integer.MAX_VALUE;
+        this.current = current;
     }
 
     @Override
@@ -50,16 +60,16 @@ public class MockAsyncGlobal implements IAsyncGlobal {
 
     @Override
     public NeuralNet getCurrent() {
-        return null;
+        return current;
     }
 
     @Override
     public NeuralNet getTarget() {
-        return null;
+        return current;
     }
 
     @Override
     public void enqueue(Gradient[] gradient, Integer nstep) {
-
+        ++enqueueCallCount;
     }
 }

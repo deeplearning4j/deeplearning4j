@@ -68,10 +68,10 @@ public class AsyncLearningTest {
 
 
     public static class TestContext {
-        public final MockAsyncConfiguration conf = new MockAsyncConfiguration(1, 1);
+        MockAsyncConfiguration config = new MockAsyncConfiguration(1, 11, 0, 0, 0, 0,0, 0, 0, 0);
         public final MockAsyncGlobal asyncGlobal = new MockAsyncGlobal();
         public final MockPolicy policy = new MockPolicy();
-        public final TestAsyncLearning sut = new TestAsyncLearning(conf, asyncGlobal, policy);
+        public final TestAsyncLearning sut = new TestAsyncLearning(config, asyncGlobal, policy);
         public final MockTrainingListener listener = new MockTrainingListener();
 
         public TestContext() {
