@@ -360,13 +360,12 @@ public class OpValidation {
                     lossVarBefore, lossVarAfter);
         }
 
-
-        //Finally: check execution/output
-        Map<String,INDArray> outOrig = original.outputAll(tc.placeholderValues());
-        Map<String,INDArray> outDe = deserialized.outputAll(tc.placeholderValues());
-        Preconditions.checkState(outOrig.keySet().equals(outDe.keySet()), "Keysets for execution after deserialization does not match key set for original model");
-
         if(tc.fwdTestFns() != null && !tc.fwdTestFns().isEmpty()) {
+            //Finally: check execution/output
+            Map<String,INDArray> outOrig = original.outputAll(tc.placeholderValues());
+            Map<String,INDArray> outDe = deserialized.outputAll(tc.placeholderValues());
+            Preconditions.checkState(outOrig.keySet().equals(outDe.keySet()), "Keysets for execution after deserialization does not match key set for original model");
+
             for (String s : outOrig.keySet()) {
                 INDArray orig = outOrig.get(s);
                 INDArray deser = outDe.get(s);

@@ -5476,7 +5476,26 @@ public class SameDiff extends SDBaseOps {
                 shape = FlatVariable.createShapeVector(bufferBuilder, shp);
             }
 
-            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), shape, array, -1, varType);
+            int controlDeps = 0;
+            int controlDepsForOp = 0;
+            int controlDepsForVar = 0;
+            Variable v = variables.get(varName);
+
+            int[] cds = FlatBuffersMapper.mapOrNull(v.getControlDeps(), bufferBuilder);
+            if(cds != null)
+                controlDeps = FlatVariable.createControlDepsVector(bufferBuilder, cds);
+
+            int[] cdsForOp = FlatBuffersMapper.mapOrNull(v.getControlDepsForOp(), bufferBuilder);
+            if(cdsForOp != null)
+                controlDepsForOp = FlatVariable.createControlDepForOpVector(bufferBuilder, cdsForOp);
+
+            int[] cdsForVar = FlatBuffersMapper.mapOrNull(v.getControlDepsForVar(), bufferBuilder);
+            if(cdsForVar != null)
+                controlDepsForVar = FlatVariable.createControlDepsForVarVector(bufferBuilder, cdsForVar);
+
+
+            int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(variable.dataType()), shape,
+                    array, -1, varType, controlDeps, controlDepsForOp, controlDepsForVar);
             flatVariables.add(flatVariable);
         }
 
@@ -5485,43 +5504,6 @@ public class SameDiff extends SDBaseOps {
             DifferentialFunction func = op.getOp();
             Integer fnId = idxForOps.get(func);
             flatNodes.add(FlatBuffersMapper.asFlatNode(this, func, bufferBuilder, variableList, reverseMap, forwardMap, framesMap, idCounter, fnId));
-        }
-
-        // we're dumping scopes now
-        for (Map.Entry<String, SameDiff> scope : sameDiffFunctionInstances.entrySet()) {
-            if (scope.getKey().equalsIgnoreCase(GRAD_FN_KEY)) {
-                //Skip the gradient function for export
-                continue;
-            }
-
-            flatNodes.add(asFlatNode(scope.getKey(), scope.getValue(), bufferBuilder));
-            val currVarList = new ArrayList<SDVariable>(scope.getValue().variables());
-            // converting all ops from node
-            for (val node : scope.getValue().variables()) {
-                INDArray arr = node.getArr();
-                if (arr == null) {
-                    continue;
-                }
-
-                int name = bufferBuilder.createString(node.getVarName());
-                int array = arr.toFlatArray(bufferBuilder);
-                int id = IntPair.createIntPair(bufferBuilder, ++idx, 0);
-
-                val pair = parseVariable(node.getVarName());
-                reverseMap.put(pair.getFirst(), idx);
-
-                log.trace("Adding [{}] as [{}]", pair.getFirst(), idx);
-
-                byte varType = (byte) node.getVariableType().ordinal();
-                int flatVariable = FlatVariable.createFlatVariable(bufferBuilder, id, name, FlatBuffersMapper.getDataTypeAsByte(arr.dataType()), 0, array, -1, varType);
-                flatVariables.add(flatVariable);
-            }
-
-            //add functions
-            for (SameDiffOp op : scope.getValue().ops.values()) {
-                DifferentialFunction func = op.getOp();
-                flatNodes.add(FlatBuffersMapper.asFlatNode(this, func, bufferBuilder, currVarList, reverseMap, forwardMap, framesMap, idCounter, null));
-            }
         }
 
         int outputsOffset = FlatGraph.createVariablesVector(bufferBuilder, Ints.toArray(flatOffsets));
@@ -5889,6 +5871,35 @@ public class SameDiff extends SDBaseOps {
             SDVariable var = new SDVariable(n, vt, sd, shape, dtype, null);
             sd.variables.put(n, Variable.builder().name(n).variable(var).build());
             sd.variableNameToShape.put(n, shape);
+            Variable v2 = sd.variables.get(n);
+
+            //Reconstruct control dependencies
+            if(v.controlDepsLength() > 0){
+                int num = v.controlDepsLength();
+                List<String> l = new ArrayList<>(num);
+                for( int i=0; i<num; i++ ){
+                    l.add(v.controlDeps(i));
+                }
+                v2.setControlDeps(l);
+            }
+            if(v.controlDepForOpLength() > 0){
+                int num = v.controlDepForOpLength();
+                List<String> l = new ArrayList<>(num);
+                for( int i=0; i<num; i++ ){
+                    l.add(v.controlDepForOp(i));
+                }
+                v2.setControlDepsForOp(l);
+            }
+
+            if(v.controlDepsForVarLength() > 0){
+                int num = v.controlDepsForVarLength();
+                List<String> l = new ArrayList<>(num);
+                for( int i=0; i<num; i++ ){
+                    l.add(v.controlDepsForVar(i));
+                }
+                v2.setControlDepsForVar(l);
+            }
+
 
 
             FlatArray fa = v.ndarray();

@@ -860,13 +860,13 @@ public class FlatBuffersMapper {
         int varCds = 0;
         int[] varCdsArr = mapOrNull(sdo.getVarControlDeps(), bufferBuilder);
         if(varCdsArr != null){
-            opCds = FlatNode.createVarControlDepsVector(bufferBuilder, varCdsArr);
+            varCds = FlatNode.createVarControlDepsVector(bufferBuilder, varCdsArr);
         }
 
         int cdsFor = 0;
         int[] cdsForArr = mapOrNull(sdo.getControlDepFor(), bufferBuilder);
         if(cdsForArr != null){
-            opCds = FlatNode.createControlDepForVector(bufferBuilder, cdsForArr);
+            cdsFor = FlatNode.createControlDepForVector(bufferBuilder, cdsForArr);
         }
 
 
@@ -899,7 +899,7 @@ public class FlatBuffersMapper {
         return flatNode;
     }
 
-    private static int[] mapOrNull(List<String> list, FlatBufferBuilder fbb){
+    public static int[] mapOrNull(List<String> list, FlatBufferBuilder fbb){
         if(list == null)
             return null;
         int[] out = new int[list.size()];
