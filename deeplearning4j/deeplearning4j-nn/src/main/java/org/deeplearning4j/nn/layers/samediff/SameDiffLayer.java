@@ -111,7 +111,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             sameDiff.clearOpInputs();
 
             INDArray ret = workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
-            if(!result.isAttached()) {
+            if(!result.isAttached() && result.closeable()) {
                 //May be attached in rare edge case - for identity, or if gradients are passed through from output to input
                 // unchaned, as in identity, add scalar, etc
                 result.close();
@@ -185,8 +185,10 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         sameDiff.clearOpInputs();
 
         Pair<Gradient, INDArray> ret = new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
-        if(!noCloseEps)
+        if(!noCloseEps && !dLdIn.isAttached() && dLdIn.closeable()) {
+            //Edge case: identity etc - might just pass gradient array through unchanged
             dLdIn.close();
+        }
         return ret;
     }
 
