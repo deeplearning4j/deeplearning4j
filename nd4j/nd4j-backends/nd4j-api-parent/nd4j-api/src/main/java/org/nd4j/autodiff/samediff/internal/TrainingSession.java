@@ -1,6 +1,5 @@
 package org.nd4j.autodiff.samediff.internal;
 
-import com.sun.prism.paint.Gradient;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.listeners.At;
 import org.nd4j.autodiff.listeners.Listener;
