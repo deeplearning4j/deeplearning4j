@@ -180,7 +180,7 @@ public class PolicyTest {
                 0.11700659990310669
             },
             new int[] { 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4, 1, 2, 3, 4 });
-        MockMDP mdp = new MockMDP(observationSpace, 30);
+        MockMDP mdp = new MockMDP(observationSpace, 30, random);
 
         QLearning.QLConfiguration conf = new QLearning.QLConfiguration(0, 0, 0, 5, 1, 0,
                 0, 1.0, 0, 0, 0, 0, true);

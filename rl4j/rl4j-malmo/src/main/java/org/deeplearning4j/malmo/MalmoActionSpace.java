@@ -45,12 +45,4 @@ public abstract class MalmoActionSpace extends DiscreteSpace {
     public Integer noOp() {
         return -1;
     }
-
-    /**
-     * Sets the seed used for random generation of actions
-     * @param seed random number generator seed
-     */
-    public void setRandomSeed(long seed) {
-        rd.setSeed(seed);
-    }
 }

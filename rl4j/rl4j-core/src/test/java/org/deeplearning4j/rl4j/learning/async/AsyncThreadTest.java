@@ -133,7 +133,7 @@ public class AsyncThreadTest {
         public final MockNeuralNet neuralNet = new MockNeuralNet();
         public final MockObservationSpace observationSpace = new MockObservationSpace();
         public final MockMDP mdp = new MockMDP(observationSpace);
-        public final MockAsyncConfiguration config = new MockAsyncConfiguration(5, 10, 0, 0, 0, 0,0, 0, 0, 0);
+        public final MockAsyncConfiguration config = new MockAsyncConfiguration(5, 10, 0, 0, 10, 0, 0, 0, 0, 0);
         public final TrainingListenerList listeners = new TrainingListenerList();
         public final MockTrainingListener listener = new MockTrainingListener();
         private final IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);

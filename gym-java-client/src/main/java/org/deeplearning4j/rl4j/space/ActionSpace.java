@@ -26,11 +26,9 @@ package org.deeplearning4j.rl4j.space;
 public interface ActionSpace<A> {
 
     /**
-     * @return A randomly uniformly sampled action,
+     * @return A random action,
      */
     A randomAction();
-
-    void setSeed(int seed);
 
     Object encode(A action);
 

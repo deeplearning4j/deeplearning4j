@@ -86,8 +86,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), epsilonNbStep, random, conf.getMinEpsilon(),
                 this);
 
-        mdp.getActionSpace().setSeed(conf.getSeed());
-
         tdTargetAlgorithm = conf.isDoubleDQN()
                 ? new DoubleDQN(this, conf.getGamma(), conf.getErrorClamp())
                 : new StandardDQN(this, conf.getGamma(), conf.getErrorClamp());

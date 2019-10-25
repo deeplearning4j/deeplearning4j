@@ -2,8 +2,10 @@ package org.deeplearning4j.rl4j.support;
 
 import org.deeplearning4j.gym.StepReply;
 import org.deeplearning4j.rl4j.mdp.MDP;
+import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.ObservationSpace;
+import org.nd4j.linalg.api.rng.Random;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,14 +21,22 @@ public class MockMDP implements MDP<MockEncodable, Integer, DiscreteSpace> {
     private int step = 0;
     public int resetCount = 0;
 
-    public MockMDP(ObservationSpace observationSpace, int stepsUntilDone) {
+    public MockMDP(ObservationSpace observationSpace, int stepsUntilDone, DiscreteSpace actionSpace) {
         this.stepsUntilDone = stepsUntilDone;
-        actionSpace = new DiscreteSpace(5);
+        this.actionSpace = actionSpace;
         this.observationSpace = observationSpace;
     }
 
+    public MockMDP(ObservationSpace observationSpace, int stepsUntilDone, Random rnd) {
+        this(observationSpace, stepsUntilDone, new DiscreteSpace(5, rnd));
+    }
+
     public MockMDP(ObservationSpace observationSpace) {
-        this(observationSpace, Integer.MAX_VALUE);
+        this(observationSpace, Integer.MAX_VALUE, new DiscreteSpace(5));
+    }
+
+    public MockMDP(ObservationSpace observationSpace, Random rnd) {
+        this(observationSpace, Integer.MAX_VALUE, new DiscreteSpace(5, rnd));
     }
 
     @Override

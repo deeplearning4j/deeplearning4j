@@ -17,8 +17,8 @@
 package org.deeplearning4j.rl4j.space;
 
 import lombok.Getter;
-
-import java.util.Random;
+import org.nd4j.linalg.api.rng.Random;
+import org.nd4j.linalg.factory.Nd4j;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) on 7/8/16.
@@ -33,19 +33,19 @@ public class DiscreteSpace implements ActionSpace<Integer> {
     //size of the space also defined as the number of different actions
     @Getter
     final protected int size;
-    protected Random rd;
+    protected final Random rnd;
 
     public DiscreteSpace(int size) {
+        this(size, Nd4j.getRandom());
+    }
+
+    public DiscreteSpace(int size, Random rnd) {
         this.size = size;
-        rd = new Random();
+        this.rnd = rnd;
     }
 
     public Integer randomAction() {
-        return rd.nextInt(size);
-    }
-
-    public void setSeed(int seed) {
-        rd = new Random(seed);
+        return rnd.nextInt(size);
     }
 
     public Object encode(Integer a) {
