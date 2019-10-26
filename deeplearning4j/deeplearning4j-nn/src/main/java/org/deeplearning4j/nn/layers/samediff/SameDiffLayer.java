@@ -302,7 +302,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             fn = sameDiff.f().externalErrors(layerOutput);
             fn.outputVariable();
 
-            this.outputKey = outputVar.getVarName();
+            this.outputKey = outputVar.name();
         }
     }
 

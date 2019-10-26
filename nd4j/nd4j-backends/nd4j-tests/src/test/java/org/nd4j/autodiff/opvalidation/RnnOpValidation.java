@@ -76,11 +76,11 @@ public class RnnOpValidation extends BaseOpValidation {
         LSTMCellOutputs v = sd.rnn().lstmCell(x, cLast, yLast, weights, conf);  //Output order: i, c, f, o, z, h, y
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v.getAllOutputs()){
-            toExec.add(sdv.getVarName());
+            toExec.add(sdv.name());
         }
 
         //Test forward pass:
-        Map<String,INDArray> m = sd.exec(null, toExec);
+        Map<String,INDArray> m = sd.output(null, toExec);
 
         //Weights and bias order: [i, f, z, o]
 
@@ -179,11 +179,11 @@ public class RnnOpValidation extends BaseOpValidation {
         LSTMCellOutputs v = sd.rnn().lstmCell(x, cLast, yLast, weights, conf);  //Output order: i, c, f, o, z, h, y
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v.getAllOutputs()){
-            toExec.add(sdv.getVarName());
+            toExec.add(sdv.name());
         }
 
         //Test forward pass:
-        Map<String,INDArray> m = sd.exec(null, toExec);
+        Map<String,INDArray> m = sd.output(null, toExec);
 
         INDArray out0 = Nd4j.create(new float[]{0.27817473f, 0.53092605f}, new int[]{1,2});     //Input mod gate
         INDArray out1 = Nd4j.create(new float[]{-0.18100877f, 0.19417824f}, new int[]{1,2});    //CS (pre tanh)
@@ -233,11 +233,11 @@ public class RnnOpValidation extends BaseOpValidation {
         List<SDVariable> v = sd.rnn().gru("gru", x, hLast, weights).getAllOutputs();
         List<String> toExec = new ArrayList<>();
         for(SDVariable sdv : v){
-            toExec.add(sdv.getVarName());
+            toExec.add(sdv.name());
         }
 
         //Test forward pass:
-        Map<String,INDArray> m = sd.exec(null, toExec);
+        Map<String,INDArray> m = sd.output(null, toExec);
 
         //Weights and bias order: [r, u], [c]
 

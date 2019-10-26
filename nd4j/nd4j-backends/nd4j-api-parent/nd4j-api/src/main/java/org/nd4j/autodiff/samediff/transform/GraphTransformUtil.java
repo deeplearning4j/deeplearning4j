@@ -69,8 +69,8 @@ public class GraphTransformUtil {
             // we want to end up with (x -> A -> z)
             List<DifferentialFunction> allSubGraphFns = sg.allFunctionsInSubgraph();
             for (int i = 0; i < oldOutputs.size(); i++) {
-                String oldOutVarName = oldOutputs.get(i).getVarName();
-                String newOutVarName = newOutputs.get(i).getVarName();
+                String oldOutVarName = oldOutputs.get(i).name();
+                String newOutVarName = newOutputs.get(i).name();
                 Preconditions.checkState(!oldOutVarName.equals(newOutVarName), "Reusing old variables not yet implemented");
 
                 //Update inputs for ops: if X->opA, and now Y->opA, then X.inputsForOps contains "opA"; Y.inputsForOps should be updated
@@ -133,7 +133,7 @@ public class GraphTransformUtil {
             //Step 2: Update input variables: if X -> (subgraph) exists, then X.inputsForOp needs to be updated
             List<SDVariable> inputs = sg.inputs();
             for (SDVariable v : inputs) {
-                Variable var = sd.getVariables().get(v.getVarName());
+                Variable var = sd.getVariables().get(v.name());
                 if (var.getInputsForOp() != null) {
                     List<String> newInputsForOp = new ArrayList<>(var.getInputsForOp());
                     for (String opName : var.getInputsForOp()) {
@@ -160,7 +160,7 @@ public class GraphTransformUtil {
                 SDVariable[] outputs = df.outputVariables();
                 if (outputs != null) {
                     for (SDVariable v : outputs) {
-                        vars.remove(v.getVarName());
+                        vars.remove(v.name());
                     }
                 }
             }

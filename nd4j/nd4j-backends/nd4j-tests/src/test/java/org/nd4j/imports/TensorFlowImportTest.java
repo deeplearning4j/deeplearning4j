@@ -106,7 +106,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         //g.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/mnist.fb"), ExecutorConfiguration.builder().outputMode(OutputMode.VARIABLE_SPACE).build());
 
-        g.execAndEndResult();
+        g.outputAll(null);
     }
 
 
@@ -129,7 +129,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val graph = TFGraphMapper.importGraph(new ClassPathResource("/tf_graphs/argmax.pb.txt").getInputStream());
 
         log.info(graph.asFlatPrint());
-        val result = graph.execAndEndResult();
+        val result = graph.outputAll(null).get(graph.outputs().get(0));
 
         val exp = Nd4j.createFromArray(new long[]{2, 2, 2});
 
@@ -222,7 +222,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         graph.var("Placeholder", p0);
         graph.var("Placeholder_1", p1);
 
-        val res = graph.execAndEndResult();
+        val res = graph.outputAll(null).get(graph.outputs().get(0));
 
 
 
@@ -341,7 +341,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val constIn = tg.getVariable("StridedSlice/input");
         assertNotNull(constIn);
 
-        val arr = tg.getArrForVarName(constIn.getVarName());
+        val arr = tg.getArrForVarName(constIn.name());
         assertEquals(139.5, arr.sumNumber().doubleValue(), 1e-5);
 
 
@@ -651,9 +651,8 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         INDArray input = Nd4j.linspace(1,40,40, DataType.FLOAT).reshape(10,4);
         INDArray expectedOutput = Nd4j.linspace(1,40,40, DataType.FLOAT).reshape(10,4).addRowVector(Nd4j.linspace(1,4,4, DataType.FLOAT));
-        INDArray actual =  graph.execSingle(Collections.singletonMap("input",input), graph.outputs().get(0));
+        INDArray actual =  graph.outputSingle(Collections.singletonMap("input",input), graph.outputs().get(0));
         assertEquals(input,graph.getVariable("input").getArr());
-        assertArrayEquals(input.shape(),graph.getShapeForVarName(graph.getVariable("input").getVarName()));
         assertEquals(expectedOutput,actual);
     }
 
@@ -665,13 +664,13 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         val variables = new HashMap<String, SDVariable>();
         for (val var : tg.variables()) {
-            variables.put(var.getVarName(), var);
+            variables.put(var.name(), var);
         }
 
         val functions = new HashMap<String, DifferentialFunction>();
         for (val func: tg.ops()) {
             val ownName = func.getOwnName();
-            String outName = func.outputVariables()[0].getVarName();
+            String outName = func.outputVariables()[0].name();
 
             assertTrue("Missing ownName: [" + ownName +"]",variables.containsKey(ownName));
             assertEquals(ownName, outName);
@@ -704,7 +703,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         tg.asFlatFile(new File("../../../libnd4j/tests_cpu/resources/simpleif_0.fb"));
 
         //log.info("{}", tg.asFlatPrint());
-        val array = tg.execAndEndResult();
+        val array = tg.outputAll(null).get(tg.outputs().get(0));
         val exp = Nd4j.create(2, 2).assign(1);
         assertNotNull(array);
         assertEquals(exp, array);
@@ -723,7 +722,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         //log.info("{}", tg.asFlatPrint());
 
 
-        val array = tg.execAndEndResult();
+        val array = tg.outputAll(null).get(tg.outputs().get(0));
         val exp = Nd4j.create(2, 2).assign(1);
         assertNotNull(array);
         assertEquals(exp, array);
@@ -741,7 +740,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         //log.info("{}", tg.asFlatPrint());
 /*
-        val array = tg.execAndEndResult();
+        val array = tg.outputAll(null).get(tg.outputs().get(0));
         val exp = Nd4j.create(2, 2).assign(2);
         assertNotNull(array);
         assertEquals(exp, array);*/
@@ -759,7 +758,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         //log.info("{}", tg.asFlatPrint());
 
-        val array = tg.execAndEndResult();
+        val array = tg.outputAll(null).get(tg.outputs().get(0));
         val exp = Nd4j.create(2, 2).assign(4);
         assertNotNull(array);
         assertEquals(exp, array);
@@ -780,7 +779,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         //log.info("{}", tg.asFlatPrint());
 
-        val array = tg.execAndEndResult();
+        INDArray array = tg.outputAll(null).get(tg.outputs().get(0));
         val exp = Nd4j.create(2, 2).assign(-1);
         assertNotNull(array);
         assertEquals(exp, array);
@@ -800,7 +799,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         //log.info("{}", tg.asFlatPrint());
 
-        val array = tg.execAndEndResult();
+        val array = tg.outputAll(null).get(tg.outputs().get(0));
         val exp = Nd4j.create(2, 2).assign(-3);
         assertNotNull(array);
         assertEquals(exp, array);
@@ -822,7 +821,8 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         //log.info("{}", tg.asFlatPrint());
 
-        val array = tg.execAndEndResult();
+        Map<String,INDArray> m = tg.outputAll(null);
+        val array = m.get(tg.outputs().get(0));
         //val array = tg.getVariable("output").getArr();
         val exp = Nd4j.create(2, 2).assign(15.0);
         assertNotNull(array);
@@ -968,7 +968,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         assertNotNull(tg);
 
         val input_matrix = Nd4j.ones(3, 2);
-        val array = tg.execSingle(Collections.singletonMap("input_matrix", input_matrix), tg.outputs().get(0));
+        val array = tg.outputSingle(Collections.singletonMap("input_matrix", input_matrix), tg.outputs().get(0));
 
         val exp = Nd4j.create(new float[] {1, 1, 2, 2, 3, 3}, new int[]{3, 2});
 
@@ -982,7 +982,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         val input_matrix = Nd4j.ones(3, 2);
 
-        val array = tg.exec(Collections.singletonMap("input_matrix", input_matrix), tg.outputs().get(0));
+        val array = tg.output(Collections.singletonMap("input_matrix", input_matrix), tg.outputs().get(0)).get(tg.outputs().get(0));
 
         val exp = Nd4j.create(new float[] {2, 2}, new int[]{2});
 
@@ -997,7 +997,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/tensor_array_unstack.pb.txt").getInputStream());
         assertNotNull(tg);
 
-        val array = tg.execSingle(Collections.emptyMap(), tg.outputs().get(0));
+        val array = tg.outputSingle(Collections.emptyMap(), tg.outputs().get(0));
 
         val exp = Nd4j.create(new float[] {5, 6, 7, 8}, new int[]{4});
 
@@ -1011,7 +1011,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
 
         val input_matrix = Nd4j.linspace(1, 10, 10, DataType.FLOAT).reshape(5, 2);
         log.info("Graph: {}", tg.asFlatPrint());
-        val array = tg.execSingle(Collections.singletonMap("input_matrix", input_matrix), tg.outputs().get(0));
+        val array = tg.outputSingle(Collections.singletonMap("input_matrix", input_matrix), tg.outputs().get(0));
 
         val exp = Nd4j.create(new float[] {3,6,  9,12,  15,18,  21,24,  27,30}, new int[]{5, 2});
 
@@ -1023,7 +1023,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/losses/log_loss_rank2_axis1_SUM_OVER_BATCH_SIZE/frozen_model.pb").getInputStream());
 
-        tg.execAndEndResult();
+        tg.outputAll(null);
     }
 
     @Test
@@ -1040,7 +1040,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         for (int e = 0; e < 1000; e++){
             val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/reduce_any/rank0/frozen_model.pb").getInputStream());
 
-            Map<String,INDArray> result = tg.exec(Collections.emptyMap(), tg.outputs());
+            Map<String,INDArray> result = tg.output(Collections.emptyMap(), tg.outputs());
 
             assertNotNull(result);
             assertTrue(result.size() > 0);
@@ -1052,7 +1052,7 @@ public class TensorFlowImportTest extends BaseNd4jTest {
         Nd4j.create(1);
         val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/transforms/logicalxor_3,4_3,4/frozen_model.pb").getInputStream());
 
-        tg.execAndEndResult();
+        tg.outputAll(null);
     }
 
     @Test

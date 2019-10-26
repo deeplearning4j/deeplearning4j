@@ -118,7 +118,7 @@ public class MaxOut extends BaseTransformOp {
         if(arg() == null)
             throw new ND4JIllegalStateException("No arg found for op!");
 
-        val arr = sameDiff.getArrForVarName(arg().getVarName());
+        val arr = sameDiff.getArrForVarName(arg().name());
         if(arr == null)
             return Collections.emptyList();
 

@@ -59,10 +59,6 @@ public class SDVariable implements Serializable {
     @Setter
     protected VariableType variableType;
 
-    @Getter
-    @Setter
-    protected WeightInitScheme weightInitScheme;
-
     @Setter(AccessLevel.NONE)
     protected long[] shape;
 
@@ -75,9 +71,7 @@ public class SDVariable implements Serializable {
     // autogen_tag::sdvars::start
 
 
-    public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType, WeightInitScheme weightInitScheme){
-        Preconditions.checkState(weightInitScheme == null || varType == VariableType.VARIABLE, "Weight initalization schemes can only be applied to VARIABLE type" +
-                " SDVariables - variable \"%s\" is of type %s but was provided a weight initialization scheme %s", varName, varType, weightInitScheme);
+    public SDVariable(@NonNull String varName, @NonNull VariableType varType, @NonNull SameDiff sameDiff, long[] shape, DataType dataType){
         Preconditions.checkState(dataType != DataType.UNKNOWN, "Unknown datatype is not allowed for SDVariables (variable name: %s)", varName);
 
         varName = sameDiff.generateNewVarName(varName, 0, true);
@@ -86,8 +80,23 @@ public class SDVariable implements Serializable {
         this.varName = varName;
         this.variableType = varType;
         this.dataType = dataType;
-        this.weightInitScheme = weightInitScheme;
         this.shape = shape;
+    }
+
+    /**
+     * Get the name of the SDVariable
+     * @return Name of the variable
+     */
+    public String name(){
+        return varName;
+    }
+
+    /**
+     * @deprecated Use {@link #name()}
+     */
+    @Deprecated
+    public String getVarName(){
+        return name();
     }
 
     /**
@@ -100,30 +109,6 @@ public class SDVariable implements Serializable {
 
     public boolean isConstant(){
         return variableType == VariableType.CONSTANT;
-    }
-
-    /**
-     * Allocate and return a  new array
-     * based on the vertex id and weight initialization.
-     * @return the allocated array
-     */
-    public INDArray storeAndAllocateNewArray() {
-        Preconditions.checkState(variableType == VariableType.VARIABLE, "Unable to allocate and store array for variable of type %s: only" +
-                " VARIABLE type variables can be initialized using this method", variableType);
-
-        if(!sameDiff.arrayAlreadyExistsForVarName(varName)){
-            long[] shape = getShape();
-            INDArray arr = getWeightInitScheme().create(dataType(), shape);
-            sameDiff.associateArrayWithVariable(arr, this);
-            if(log.isTraceEnabled()){
-                log.trace("Generated and stored new array for variable \"{}\": shape {}", getVarName(), Arrays.toString(arr.shape()));
-            }
-            return arr;
-        }
-
-        //Variable type SDVariables: shape should never change (i.e., these are params in the net!)
-        INDArray ret = getArr();
-        return ret;
     }
 
     /**
@@ -155,30 +140,14 @@ public class SDVariable implements Serializable {
     public INDArray getArr(boolean enforceExistence){
         if(sameDiff.arrayAlreadyExistsForVarName(getVarName()))
             return sameDiff.getArrForVarName(getVarName());
-
         if(variableType == VariableType.ARRAY){
             throw new UnsupportedOperationException("Cannot get array for ARRAY type SDVariable - use SDVariable.exec or SameDiff.output instead");
         }
-
-        //initialize value if it's actually a scalar constant (zero or 1 typically...)
-        if(variableType == VariableType.VARIABLE && weightInitScheme != null && shape != null){
-            INDArray arr = weightInitScheme.create(dataType, shape);
-            sameDiff.associateArrayWithVariable(arr, this);
-            if(log.isTraceEnabled()){
-                log.trace("getArr() for variable \"{}\" allocated new array: shape {}", getVarName(), Arrays.toString(getShape()));
-            }
-            return arr;
-        } else if(sameDiff.getShapeForVarName(getVarName()) == null) {
-            if (enforceExistence) {
-                throw new IllegalStateException("Cannot get array for SDVariable \"" + getVarName() + "\": no array has" +
-                        " been defined, and array shape cannot be calculated");
-            }
-            if(log.isTraceEnabled()){
-                log.trace("SDVariable.getArr(): could not get array for variable {}: shape is null", getVarName());
-            }
-            return null;
+        INDArray ret = sameDiff.getArrForVarName(getVarName());
+        if(enforceExistence && ret == null){
+            throw new IllegalStateException("No array exists for variable \"" + name() + "\"");
         }
-        return sameDiff.getArrForVarName(getVarName());
+        return ret;
     }
 
 
@@ -215,21 +184,13 @@ public class SDVariable implements Serializable {
      * @return Shape of the variable
      */
     public long[] getShape() {
-        if (variableType == VariableType.PLACEHOLDER && getArr() == null) {
-            if (shape != null)
+        if (variableType == VariableType.PLACEHOLDER ) {
                 return shape;
-            else
-                return new long[0];
+        } else if(variableType == VariableType.VARIABLE || variableType == VariableType.CONSTANT){
+            return getArr().shape();
         }
 
-        long[] initialShape =  sameDiff.getShapeForVarName(getVarName());
-        if(initialShape == null && variableType != VariableType.ARRAY) {
-            val arr = getArr();
-            if(arr != null)
-                return arr.shape();
-        }
-
-        return initialShape;
+        return null;
     }
 
     public void setShape(long... shape){
@@ -1488,8 +1449,8 @@ public class SDVariable implements Serializable {
      * @return
      */
     public INDArray eval() {
-        sameDiff.exec(null, getVarName());
-        return getArr();
+        Map<String,INDArray> m = sameDiff.output((Map<String,INDArray>)null, name());
+        return m.get(name());
     }
 
 
@@ -1498,8 +1459,8 @@ public class SDVariable implements Serializable {
      * @return
      */
     public INDArray eval(Map<String, INDArray> placeholders) {
-        sameDiff.exec(placeholders, getVarName());
-        return getArr();
+        Map<String,INDArray> m = sameDiff.output(placeholders, name());
+        return m.get(name());
     }
 
 
@@ -1519,7 +1480,7 @@ public class SDVariable implements Serializable {
      */
     public void addControlDependency(SDVariable controlDependency){
         Variable vThis = sameDiff.getVariables().get(getVarName());
-        Variable vCD = sameDiff.getVariables().get(controlDependency.getVarName());
+        Variable vCD = sameDiff.getVariables().get(controlDependency.name());
 
         //If possible: add control dependency on ops
         if(vThis.getOutputOfOp() != null && vCD.getOutputOfOp() != null ){
@@ -1729,7 +1690,6 @@ public class SDVariable implements Serializable {
         SDVariable v = new SDVariable();
         v.varName = varName;
         v.variableType = variableType;
-        v.weightInitScheme = weightInitScheme;
         v.shape = shape == null ? null : shape.clone();
         v.dataType = dataType;
         v.sameDiff = sd;

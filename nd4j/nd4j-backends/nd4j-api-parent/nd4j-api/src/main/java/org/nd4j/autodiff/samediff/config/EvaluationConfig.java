@@ -81,7 +81,7 @@ public class EvaluationConfig {
      * See {@link #evaluate(String, int, IEvaluation[])}
      */
     public EvaluationConfig evaluate(@NonNull SDVariable variable, int labelIndex, @NonNull IEvaluation... evaluations){
-        return evaluate(variable.getVarName(), labelIndex, evaluations);
+        return evaluate(variable.name(), labelIndex, evaluations);
     }
 
     /**
@@ -106,7 +106,7 @@ public class EvaluationConfig {
      * See {@link #evaluate(String, IEvaluation[])}
      */
     public EvaluationConfig evaluate(@NonNull SDVariable variable, @NonNull IEvaluation... evaluations){
-        return evaluate(variable.getVarName(), evaluations);
+        return evaluate(variable.name(), evaluations);
     }
 
     /**
@@ -129,7 +129,7 @@ public class EvaluationConfig {
      * See {@link #labelIndex(String, int)}
      */
     public EvaluationConfig labelIndex(@NonNull SDVariable variable, int labelIndex){
-        return labelIndex(variable.getVarName(), labelIndex);
+        return labelIndex(variable.name(), labelIndex);
     }
 
     /**

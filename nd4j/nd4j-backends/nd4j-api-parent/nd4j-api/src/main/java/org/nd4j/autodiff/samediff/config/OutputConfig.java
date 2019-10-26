@@ -75,7 +75,7 @@ public class OutputConfig {
     public OutputConfig output(@NonNull SDVariable... outputs) {
         String[] outNames = new String[outputs.length];
         for (int i = 0; i < outputs.length; i++) {
-            outNames[i] = outputs[i].getVarName();
+            outNames[i] = outputs[i].name();
         }
 
         return output(outNames);

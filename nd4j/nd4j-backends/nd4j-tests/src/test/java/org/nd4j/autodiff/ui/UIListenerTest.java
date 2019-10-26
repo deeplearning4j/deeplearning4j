@@ -63,7 +63,7 @@ public class UIListenerTest {
         Map<String, INDArray> m = new HashMap<>();
         iter.reset();
         m.put("in", iter.next().getFeatures());
-        INDArray out = sd.execSingle(m, "softmax");
+        INDArray out = sd.outputSingle(m, "softmax");
         assertNotNull(out);
         assertArrayEquals(new long[]{150, 3}, out.shape());
     }

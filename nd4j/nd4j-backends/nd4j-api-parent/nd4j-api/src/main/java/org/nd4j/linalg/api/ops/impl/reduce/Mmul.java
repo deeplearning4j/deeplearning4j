@@ -193,12 +193,6 @@ public class Mmul extends DynamicCustomOp {
                 .transposeA(isTransposeA).transposeB(isTransposeB)
                 .build();
         this.mt = mMulTranspose;
-        val args = args();
-        for(val arg : args) {
-            if(sameDiff.isPlaceHolder(arg.getVarName()) || arg.getShape() == null) {
-                sameDiff.addPropertyToResolve(this,arg.getVarName());
-            }
-        }
         iArguments.clear();
         addIArgument(ArrayUtil.fromBoolean(mt.isTransposeA()), ArrayUtil.fromBoolean(mt.isTransposeB()));
     }

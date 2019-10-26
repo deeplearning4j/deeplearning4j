@@ -62,7 +62,7 @@ public class SubGraph {
         //But suppose same subgraph, but connection y -> a exists; then Y must be an output, because it's used somewhere else
         List<SDVariable> filteredOutputs = new ArrayList<>(allOutputs.size());
         for(SDVariable v : allOutputs){
-            Variable var = sameDiff.getVariables().get(v.getVarName());
+            Variable var = sameDiff.getVariables().get(v.name());
             List<String> inputsFor = var.getInputsForOp();
             boolean allInSubgraph = true;
             if(inputsFor != null){

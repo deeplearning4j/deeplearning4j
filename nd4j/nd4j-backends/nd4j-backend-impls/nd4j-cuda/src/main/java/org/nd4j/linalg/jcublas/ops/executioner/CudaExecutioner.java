@@ -1890,14 +1890,6 @@ public class CudaExecutioner extends DefaultOpExecutioner {
     @SuppressWarnings("unchecked")
     public void printEnvironmentInformation() {
         super.printEnvironmentInformation();
-
-        Properties env = getEnvironmentInformation();
-
-        List<Map<String, Object>> devicesList = (List<Map<String, Object>>) env.get(Nd4jEnvironment.CUDA_DEVICE_INFORMATION_KEY);
-        for (Map<String, Object> dev : devicesList) {
-            log.info("Device Name: [{}]; CC: [{}.{}]; Total/free memory: [{}]", dev.get(Nd4jEnvironment.CUDA_DEVICE_NAME_KEY),
-                    dev.get(Nd4jEnvironment.CUDA_DEVICE_MAJOR_VERSION_KEY), dev.get(Nd4jEnvironment.CUDA_DEVICE_MINOR_VERSION_KEY), dev.get(Nd4jEnvironment.CUDA_TOTAL_MEMORY_KEY));
-        }
     }
 
     @Override

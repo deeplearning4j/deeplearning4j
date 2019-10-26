@@ -5212,6 +5212,8 @@ public class Nd4j {
                     }
                 }
             }
+
+            backend.logBackendInit();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -5625,19 +5627,38 @@ public class Nd4j {
      * @return an ndarray created from the in memory
      * numpy pointer
      */
-
     @SuppressWarnings("WeakerAccess")
     public static INDArray createFromNpyPointer(Pointer pointer) {
         return INSTANCE.createFromNpyPointer(pointer);
     }
 
     /**
-     * Create from a given Numpy .npy file.
+     * Create an INDArray from a given Numpy .npy file.
+     *
+     * @param path Path to the .npy file to read
+     * @return the created ndarray
+     */
+    public static INDArray readNpy(@NonNull String path){
+        return readNpy(new File(path));
+    }
+
+    /**
+     * Create an INDArray from a given Numpy .npy file.
      *
      * @param file the file to create the ndarray from
      * @return the created ndarray
      */
-    public static INDArray createFromNpyFile(File file) {
+    public static INDArray readNpy(@NonNull File file){
+        return createFromNpyFile(file);
+    }
+
+    /**
+     * Create an INDArray from a given Numpy .npy file.
+     *
+     * @param file the file to create the ndarray from
+     * @return the created ndarray
+     */
+    public static INDArray createFromNpyFile(@NonNull File file) {
         if (!file.exists())
             throw new IllegalArgumentException("File [" + file.getAbsolutePath() + "] doesn't exist");
 
@@ -5654,7 +5675,7 @@ public class Nd4j {
      * @return the loaded ndarray
      */
     @SuppressWarnings("unused")
-    public static INDArray createNpyFromInputStream(InputStream is) throws IOException {
+    public static INDArray createNpyFromInputStream(@NonNull InputStream is) throws IOException {
         byte[] content = IOUtils.toByteArray(is);
         return createNpyFromByteArray(content);
     }
@@ -5668,7 +5689,7 @@ public class Nd4j {
      * @param input the input byte array with the npy format
      * @return the equivalent {@link INDArray}
      */
-    public static INDArray createNpyFromByteArray(byte[] input) {
+    public static INDArray createNpyFromByteArray(@NonNull byte[] input) {
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(input.length);
         byteBuffer.put(input);
         byteBuffer.rewind();

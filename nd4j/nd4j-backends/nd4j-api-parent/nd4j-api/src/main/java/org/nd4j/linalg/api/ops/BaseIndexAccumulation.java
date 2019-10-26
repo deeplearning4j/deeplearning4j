@@ -53,11 +53,8 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             sameDiff.addArgsFor(new SDVariable[]{i_v},this);
-            if(Shape.isPlaceholderShape(i_v.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v.getVarName());
-            }
 
-            this.xVertexId = i_v.getVarName();
+            this.xVertexId = i_v.name();
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -75,17 +72,9 @@ public abstract class BaseIndexAccumulation extends BaseOp implements IndexAccum
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
-            this.xVertexId = i_v.getVarName();
-            this.yVertexId = i_v2.getVarName();
+            this.xVertexId = i_v.name();
+            this.yVertexId = i_v2.name();
             sameDiff.addArgsFor(new SDVariable[]{i_v,i_v2},this);
-
-            if(Shape.isPlaceholderShape(i_v.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v.getVarName());
-            }
-
-            if(Shape.isPlaceholderShape(i_v2.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v2.getVarName());
-            }
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }

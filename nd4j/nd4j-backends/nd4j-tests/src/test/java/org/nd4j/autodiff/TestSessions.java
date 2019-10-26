@@ -146,8 +146,8 @@ public class TestSessions extends BaseNd4jTest {
 
         System.out.println("----------------------------------");
         InferenceSession is = new InferenceSession(sd);
-//        String outName = merge.getVarName();
-        String outName = outVar.getVarName();
+//        String outName = merge.name();
+        String outName = outVar.name();
         Map<String,INDArray> outMap = is.output(Collections.singletonList(outName), m, null,
                 Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
 
@@ -181,7 +181,7 @@ public class TestSessions extends BaseNd4jTest {
         m.put("b", bArr);
 
         InferenceSession is = new InferenceSession(sd);
-        String n = merge.getVarName();
+        String n = merge.name();
 
         System.out.println("----------------------------------");
         Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(),

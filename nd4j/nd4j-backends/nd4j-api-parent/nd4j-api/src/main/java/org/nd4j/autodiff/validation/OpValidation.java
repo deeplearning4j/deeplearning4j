@@ -208,7 +208,7 @@ public class OpValidation {
                             e.getKey() + "\" but SameDiff instance does not have a variable for this name" + testCase.testNameErrMsg());
                 }
 
-                INDArray actual = out.get(v.getVarName());
+                INDArray actual = out.get(v.name());
                 if (actual == null) {
                     throw new IllegalStateException("Null INDArray after forward pass for variable \"" + e.getKey() + "\"");
                 }
@@ -271,8 +271,8 @@ public class OpValidation {
         for( int i=0; i<vars.size(); i++ ){
             SDVariable vO = vars.get(i);
             SDVariable vD = varsDe.get(i);
-            Preconditions.checkState(vO.getVarName().equals(vD.getVarName()), "Names should be equal for variable %s: expected %s vs %s",
-                    i, vO.getVarName(), vD.getVarName());
+            Preconditions.checkState(vO.name().equals(vD.name()), "Names should be equal for variable %s: expected %s vs %s",
+                    i, vO.name(), vD.name());
         }
 
         //Check ops:

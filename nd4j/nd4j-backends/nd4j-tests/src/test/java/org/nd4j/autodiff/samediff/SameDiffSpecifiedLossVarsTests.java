@@ -108,14 +108,14 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
                 sd.fit(ds);
             }
 
-            for(String s : new String[]{"w", "b", badd.getVarName(), add.getVarName(), "l1", "l2"}){
+            for(String s : new String[]{"w", "b", badd.name(), add.name(), "l1", "l2"}){
                 SDVariable gradVar = sd.getVariable(s).gradient();
                 assertNotNull(s, gradVar);
             }
             //Unused:
             assertFalse(shape.hasGradient());
             try{ assertNull(shape.gradient()); } catch (IllegalStateException e){ assertTrue(e.getMessage().contains("only floating point variables")); }
-            for(String s : new String[]{unused1.getVarName(), unused2.getVarName(), unused3.getVarName()}){
+            for(String s : new String[]{unused1.name(), unused2.name(), unused3.name()}){
                 assertNull(sd.getVariable(s).gradient());
             }
         }
@@ -151,20 +151,20 @@ public class SameDiffSpecifiedLossVarsTests extends BaseNd4jTest {
         sd.setLossVariables("loss1");
         sd.createGradFunction();
         for(SDVariable v : new SDVariable[]{ph1, w1, b1, mmul1, badd1, loss1}){
-            assertNotNull(v.getVarName(), v.gradient());
+            assertNotNull(v.name(), v.gradient());
         }
         for(SDVariable v : new SDVariable[]{ph2, w2, b2, mmul2, badd2, loss2}){
-            assertNull(v.getVarName(), v.gradient());
+            assertNull(v.name(), v.gradient());
         }
 
         //Now, set to other loss function
         sd.setLossVariables("loss2");
         sd.createGradFunction();
         for(SDVariable v : new SDVariable[]{ph1, w1, b1, mmul1, badd1, loss1}){
-            assertNull(v.getVarName(), v.gradient());
+            assertNull(v.name(), v.gradient());
         }
         for(SDVariable v : new SDVariable[]{ph2, w2, b2, mmul2, badd2, loss2}){
-            assertNotNull(v.getVarName(), v.gradient());
+            assertNotNull(v.name(), v.gradient());
         }
 
         //Train the first side of the graph. The other side should remain unmodified!

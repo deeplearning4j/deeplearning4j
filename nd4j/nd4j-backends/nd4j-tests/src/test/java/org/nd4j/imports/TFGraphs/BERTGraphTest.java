@@ -174,7 +174,7 @@ public class BERTGraphTest extends BaseNd4jTest {
                 //Find pre-dropout input variable:
                 SDVariable newOut = null;
                 for(SDVariable v : inputs){
-                    if(v.getVarName().endsWith("/BiasAdd") || v.getVarName().endsWith("/Softmax") || v.getVarName().endsWith("/add_1") || v.getVarName().endsWith("/Tanh")){
+                    if(v.name().endsWith("/BiasAdd") || v.name().endsWith("/Softmax") || v.name().endsWith("/add_1") || v.name().endsWith("/Tanh")){
                         newOut = v;
                         break;
                     }
@@ -249,7 +249,7 @@ public class BERTGraphTest extends BaseNd4jTest {
         placeholderValues.put("IteratorGetNext:1", mask);
         placeholderValues.put("IteratorGetNext:4", segmentIdxs);
 
-        Map<String, INDArray> out = sd.exec(placeholderValues, "loss/Softmax");
+        Map<String, INDArray> out = sd.output(placeholderValues, "loss/Softmax");
         INDArray softmax = out.get("loss/Softmax");
 //        System.out.println("OUTPUT - Softmax");
 //        System.out.println(softmax);
@@ -335,8 +335,8 @@ public class BERTGraphTest extends BaseNd4jTest {
 
         //For training, convert weights and biases from constants to variables:
         for(SDVariable v : sd.variables()){
-            if(v.isConstant() && v.dataType().isFPType() && !v.getArr().isScalar() && !floatConstants.contains(v.getVarName())){    //Skip scalars - trainable params
-                log.info("Converting to variable: {} - dtype: {} - shape: {}", v.getVarName(), v.dataType(), Arrays.toString(v.getArr().shape()));
+            if(v.isConstant() && v.dataType().isFPType() && !v.getArr().isScalar() && !floatConstants.contains(v.name())){    //Skip scalars - trainable params
+                log.info("Converting to variable: {} - dtype: {} - shape: {}", v.name(), v.dataType(), Arrays.toString(v.getArr().shape()));
                 v.convertToVariable();
             }
         }
@@ -393,14 +393,14 @@ public class BERTGraphTest extends BaseNd4jTest {
         placeholderValues.put("IteratorGetNext:4", segmentIdxs);
         placeholderValues.put("label", labelArr);
 
-        INDArray lossArr = sd.exec(placeholderValues, "loss").get("loss");
+        INDArray lossArr = sd.output(placeholderValues, "loss").get("loss");
         assertTrue(lossArr.isScalar());
         double scoreBefore = lossArr.getDouble(0);
         for( int i=0; i<5; i++ ){
             sd.fit(mds);
         }
 
-        lossArr = sd.exec(placeholderValues, "loss").get("loss");
+        lossArr = sd.output(placeholderValues, "loss").get("loss");
         assertTrue(lossArr.isScalar());
         double scoreAfter = lossArr.getDouble(0);
 

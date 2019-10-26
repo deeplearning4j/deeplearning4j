@@ -91,7 +91,7 @@ public class EvaluationRecord {
      * @param param The target param/variable
      */
     public List<IEvaluation> evaluations(SDVariable param) {
-        return evaluations(param.getVarName());
+        return evaluations(param.name());
     }
 
     /**
@@ -105,7 +105,7 @@ public class EvaluationRecord {
      * Get the evaluation for param at the specified index
      */
     public IEvaluation evaluation(SDVariable param, int index) {
-        return evaluation(param.getVarName(), index);
+        return evaluation(param.name(), index);
     }
 
     /**
@@ -132,7 +132,7 @@ public class EvaluationRecord {
      * @param param The target param/variable
      */
     public <T extends IEvaluation> T evaluation(SDVariable param) {
-        return evaluation(param.getVarName());
+        return evaluation(param.name());
     }
 
     /**
@@ -174,7 +174,7 @@ public class EvaluationRecord {
      * @param evalClass The type of evaluation to look for
      */
     public <T extends IEvaluation<T>> T evaluation(SDVariable param, Class<T> evalClass) {
-        return evaluation(param.getVarName(), evalClass);
+        return evaluation(param.name(), evalClass);
     }
 
     /**
@@ -209,7 +209,7 @@ public class EvaluationRecord {
      * @param metric The metric to calculate
      */
     public double getValue(SDVariable param, IMetric metric) {
-        return getValue(param.getVarName(), metric);
+        return getValue(param.name(), metric);
     }
 
     /**
@@ -235,7 +235,7 @@ public class EvaluationRecord {
      * @param metric The metric to calculate
      */
     public double getValue(SDVariable param, int index, IMetric metric) {
-        return getValue(param.getVarName(), index, metric);
+        return getValue(param.name(), index, metric);
     }
 
 }

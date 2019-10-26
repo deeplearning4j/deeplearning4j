@@ -33,18 +33,18 @@ public class NameScopeTests extends BaseNd4jTest {
         SDVariable v = sd.var("x");
         try(NameScope ns = sd.withNameScope("nameScope")){
             SDVariable v2 = sd.var("x2");
-            assertEquals("nameScope/x2", v2.getVarName());
+            assertEquals("nameScope/x2", v2.name());
             assertTrue(sd.getVariables().containsKey("nameScope/x2"));
             assertEquals("nameScope", sd.currentNameScope());
 
             SDVariable v3 = sd.var("x");
-            assertEquals("nameScope/x", v3.getVarName());
+            assertEquals("nameScope/x", v3.name());
             assertTrue(sd.getVariables().containsKey("nameScope/x"));
 
             try(NameScope ns2 = sd.withNameScope("scope2")){
                 assertEquals("nameScope/scope2", sd.currentNameScope());
                 SDVariable v4 = sd.var("x");
-                assertEquals("nameScope/scope2/x", v4.getVarName());
+                assertEquals("nameScope/scope2/x", v4.name());
                 assertTrue(sd.getVariables().containsKey("nameScope/scope2/x"));
             }
 
@@ -76,19 +76,19 @@ public class NameScopeTests extends BaseNd4jTest {
         }
         SDVariable a = sd.var("a", DataType.FLOAT, 1);
 
-        assertEquals("x", x.getVarName());
-        assertEquals("s1/y", y.getVarName());
-        assertEquals("s1/s2/z", z.getVarName());
-        assertEquals("a", a.getVarName());
+        assertEquals("x", x.name());
+        assertEquals("s1/y", y.name());
+        assertEquals("s1/s2/z", z.name());
+        assertEquals("a", a.name());
 
-        assertTrue(add.getVarName(), add.getVarName().startsWith("s1/"));
-        assertEquals("s1/addxy", addWithName.getVarName());
+        assertTrue(add.name(), add.name().startsWith("s1/"));
+        assertEquals("s1/addxy", addWithName.name());
 
-        assertTrue(merge.getVarName(), merge.getVarName().startsWith("s1/s2/"));
-        assertEquals("s1/s2/mmax", mergeWithName.getVarName());
+        assertTrue(merge.name(), merge.name().startsWith("s1/s2/"));
+        assertEquals("s1/s2/mmax", mergeWithName.name());
 
         Set<String> allowedVarNames = new HashSet<>(Arrays.asList("x", "s1/y", "s1/s2/z", "a",
-                add.getVarName(), addWithName.getVarName(), merge.getVarName(), mergeWithName.getVarName()));
+                add.name(), addWithName.name(), merge.name(), mergeWithName.name()));
         Set<String> allowedOpNames = new HashSet<>();
 
         //Check op names:
@@ -102,8 +102,8 @@ public class NameScopeTests extends BaseNd4jTest {
 
         //Check fields - Variable, SDOp, etc
         for(Variable v : sd.getVariables().values()){
-            assertTrue(v.getVariable().getVarName(), allowedVarNames.contains(v.getVariable().getVarName()));
-            assertEquals(v.getName(), v.getVariable().getVarName());
+            assertTrue(v.getVariable().name(), allowedVarNames.contains(v.getVariable().name()));
+            assertEquals(v.getName(), v.getVariable().name());
             if(v.getInputsForOp() != null){
                 for(String s : v.getInputsForOp()){
                     assertTrue(s, allowedOpNames.contains(s));

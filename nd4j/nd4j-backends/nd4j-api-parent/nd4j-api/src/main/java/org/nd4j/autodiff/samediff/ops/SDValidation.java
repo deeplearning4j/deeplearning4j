@@ -37,7 +37,7 @@ public class SDValidation {
         if (v == null)
             return;
         if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
-            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.getVarName() + "\" with non-numerical data type " + v.dataType());
+            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.name() + "\" with non-numerical data type " + v.dataType());
     }
 
     /**
@@ -52,7 +52,7 @@ public class SDValidation {
             return;
         if (v.dataType() == DataType.BOOL || v.dataType() == DataType.UTF8)
             throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an numerical type type; got variable \"" +
-                    v.getVarName() + "\" with non-integer data type " + v.dataType());
+                    v.name() + "\" with non-integer data type " + v.dataType());
     }
 
     /**
@@ -65,8 +65,8 @@ public class SDValidation {
      */
     protected static void validateNumerical(String opName, SDVariable v1, SDVariable v2) {
         if (v1.dataType() == DataType.BOOL || v1.dataType() == DataType.UTF8 || v2.dataType() == DataType.BOOL || v2.dataType() == DataType.UTF8)
-            throw new IllegalStateException("Cannot perform operation \"" + opName + "\" on variables  \"" + v1.getVarName() + "\" and \"" +
-                    v2.getVarName() + "\" if one or both variables are non-numerical: " + v1.dataType() + " and " + v2.dataType());
+            throw new IllegalStateException("Cannot perform operation \"" + opName + "\" on variables  \"" + v1.name() + "\" and \"" +
+                    v2.name() + "\" if one or both variables are non-numerical: " + v1.dataType() + " and " + v2.dataType());
     }
 
     /**
@@ -79,7 +79,7 @@ public class SDValidation {
         if (v == null)
             return;
         if (!v.dataType().isIntType())
-            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.getVarName() + "\" with non-integer data type " + v.dataType());
+            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.name() + "\" with non-integer data type " + v.dataType());
     }
 
     /**
@@ -94,7 +94,7 @@ public class SDValidation {
             return;
         if (!v.dataType().isIntType())
             throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an integer type; got variable \"" +
-                    v.getVarName() + "\" with non-integer data type " + v.dataType());
+                    v.name() + "\" with non-integer data type " + v.dataType());
     }
 
     /**
@@ -107,7 +107,7 @@ public class SDValidation {
         if (v == null)
             return;
         if (!v.dataType().isFPType())
-            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.getVarName() + "\" with non-floating point data type " + v.dataType());
+            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.name() + "\" with non-floating point data type " + v.dataType());
     }
 
     /**
@@ -122,7 +122,7 @@ public class SDValidation {
             return;
         if (!v.dataType().isFPType())
             throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an floating point type; got variable \"" +
-                    v.getVarName() + "\" with non-floating point data type " + v.dataType());
+                    v.name() + "\" with non-floating point data type " + v.dataType());
     }
 
     /**
@@ -135,7 +135,7 @@ public class SDValidation {
         if (v == null)
             return;
         if (v.dataType() != DataType.BOOL)
-            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.getVarName() + "\" with non-boolean point data type " + v.dataType());
+            throw new IllegalStateException("Cannot apply operation \"" + opName + "\" to variable \"" + v.name() + "\" with non-boolean point data type " + v.dataType());
     }
 
     /**
@@ -150,7 +150,7 @@ public class SDValidation {
             return;
         if (v.dataType() != DataType.BOOL)
             throw new IllegalStateException("Input \"" + inputName + "\" for operation \"" + opName + "\" must be an boolean variable; got variable \"" +
-                    v.getVarName() + "\" with non-boolean data type " + v.dataType());
+                    v.name() + "\" with non-boolean data type " + v.dataType());
     }
 
     /**
@@ -162,8 +162,8 @@ public class SDValidation {
      */
     protected static void validateBool(String opName, SDVariable v1, SDVariable v2) {
         if (v1.dataType() != DataType.BOOL || v2.dataType() != DataType.BOOL)
-            throw new IllegalStateException("Cannot perform operation \"" + opName + "\" on variables  \"" + v1.getVarName() + "\" and \"" +
-                    v2.getVarName() + "\" if one or both variables are non-boolean: " + v1.dataType() + " and " + v2.dataType());
+            throw new IllegalStateException("Cannot perform operation \"" + opName + "\" on variables  \"" + v1.name() + "\" and \"" +
+                    v2.name() + "\" if one or both variables are non-boolean: " + v1.dataType() + " and " + v2.dataType());
     }
 
     /**
@@ -190,7 +190,7 @@ public class SDValidation {
                     String[] names = new String[vars.length];
                     DataType[] dtypes = new DataType[vars.length];
                     for (int j = 0; j < vars.length; j++) {
-                        names[j] = vars[j].getVarName();
+                        names[j] = vars[j].name();
                         dtypes[j] = vars[j].dataType();
                     }
                     throw new IllegalStateException("Cannot perform operation \"" + opName + "\" to variables with different datatypes:" +

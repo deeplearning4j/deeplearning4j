@@ -43,11 +43,8 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
     public BaseRandomOp(SameDiff sameDiff, SDVariable i_v) {
         Preconditions.checkNotNull(i_v, "Input variable can't be null with this constructor");
         this.sameDiff = sameDiff;
-        this.xVertexId = i_v.getVarName();
+        this.xVertexId = i_v.name();
         sameDiff.addArgsFor(new String[]{xVertexId},this);
-        if(Shape.isPlaceholderShape(i_v.getShape())) {
-            sameDiff.addPropertyToResolve(this,i_v.getVarName());
-        }
     }
 
     public BaseRandomOp(SameDiff sd, long[] shape){
@@ -73,11 +70,7 @@ public abstract class BaseRandomOp extends BaseOp implements RandomOp {
         if(shape != null){
             return Collections.singletonList(LongShapeDescriptor.fromShape(shape, Nd4j.defaultFloatingPointType()));
         } else {
-            List<LongShapeDescriptor> ret = new ArrayList<>(1);
-            val shape = sameDiff.getShapeForVarName(args()[0].getVarName());
-            if (shape != null)
-                ret.add(LongShapeDescriptor.fromShape(shape, Shape.pickPairwiseDataType(args()[0].dataType(), Nd4j.dataType())));
-            return ret;
+            return Collections.singletonList(LongShapeDescriptor.fromShape(shape, Shape.pickPairwiseDataType(args()[0].dataType(), Nd4j.dataType())));
         }
     }
 

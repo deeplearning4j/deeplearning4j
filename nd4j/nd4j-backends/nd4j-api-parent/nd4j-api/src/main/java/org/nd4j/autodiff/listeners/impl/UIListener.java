@@ -226,7 +226,7 @@ public class UIListener extends BaseListener {
                 List<SDVariable> sdVars = sd.variables();
                 List<String> varNames = new ArrayList<>(sdVars.size());
                 for(SDVariable v : sdVars){
-                    varNames.add(v.getVarName());
+                    varNames.add(v.name());
                 }
 
                 if(varNames.size() != vars.size() || !varNames.containsAll(vars)){

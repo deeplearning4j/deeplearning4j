@@ -158,10 +158,10 @@ public class DeConv3D extends DynamicCustomOp {
         val paddingMode = aPadding.getS().toStringUtf8();
 
         val args = args();
-        INDArray arr = sameDiff.getVariable(args[1].getVarName()).getArr();
+        INDArray arr = sameDiff.getVariable(args[1].name()).getArr();
         if (arr == null) {
             arr = TFGraphMapper.getNDArrayFromTensor(nodeDef);
-            val varForOp = initWith.getVariable(args[1].getVarName());
+            val varForOp = initWith.getVariable(args[1].name());
             if (arr != null)
                 initWith.associateArrayWithVariable(arr, varForOp);
         }

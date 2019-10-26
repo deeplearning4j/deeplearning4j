@@ -16,12 +16,7 @@
 
 package org.nd4j.autodiff.samediff;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
@@ -151,7 +146,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         sd.associateArrayWithVariable(Nd4j.create(new double[]{1, 2, 3, 4, 5, 6}, new long[]{2, 3}), input);
 
-        sd.execAndEndResult();
+        sd.outputAll(null);
 
         nodeA.isPlaceHolder();
     }
@@ -184,10 +179,10 @@ public class SameDiffTests extends BaseNd4jTest {
         sd.associateArrayWithVariable(inputArr, input);
         sd.associateArrayWithVariable(labelArr, label);
 
-        INDArray result = sd.execAndEndResult();
+        INDArray result = avgMSE.eval();
         assertEquals(1, result.length());
 
-        sd.execBackwards(Collections.emptyMap());
+        sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
     }
 
     @Test
@@ -208,10 +203,8 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.sum(x, 1); //[1,4].sum(1) == [1]
 
-        sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
-
         INDArray exp = Nd4j.scalar(arr.sumNumber().floatValue()).reshape(1);
-        INDArray resultArr = result.getArr();
+        INDArray resultArr = result.eval();
         assertEquals(exp, resultArr);
     }
 
@@ -226,7 +219,7 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String, INDArray> m = new HashMap<>();
         m.put("x", x);
         m.put("y", y);
-        INDArray out = sameDiff.exec(m, Collections.singletonList(output.getVarName())).get(output.getVarName());
+        INDArray out = sameDiff.output(m, Collections.singletonList(output.name())).get(output.name());
         INDArray outputAssertion = x.add(y);
         assertEquals(outputAssertion, out);
     }
@@ -243,10 +236,9 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable sdTargets = sameDiff.var("targets", targets);
 
         SDVariable res = sameDiff.loss().weightedCrossEntropyWithLogits(sdTargets, sdInputs, sdWeights);
-        sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
 
-        INDArray resultArray = res.getArr();
-        assertArrayEquals(new long[]{1, 5}, res.getShape());
+        INDArray resultArray = res.eval();
+        assertArrayEquals(new long[]{1, 5}, resultArray.shape());
     }
 
     @Test
@@ -270,7 +262,7 @@ public class SameDiffTests extends BaseNd4jTest {
         sd.associateArrayWithVariable(inputArr, input);
         sd.associateArrayWithVariable(labelArr, label);
 
-        INDArray result = sd.execAndEndResult();
+        INDArray result = score.eval();
         assertNotNull(result);                          //*** Fails Here - Null output ***
         assertEquals(1, result.length());
     }
@@ -284,8 +276,8 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable result = sameDiff.math().cosineSimilarity(x, y, 1);
         SDVariable addResult = result.add(result);
         SDVariable finalReshape = sameDiff.reshape(addResult, 1, 2);
-        sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
-        assertArrayEquals(new long[]{1, 2}, finalReshape.getShape());
+        Map<String,INDArray> out = sameDiff.output(Collections.emptyMap(), finalReshape.name());
+        assertArrayEquals(new long[]{1, 2}, out.get(finalReshape.name()).shape());
     }
 
     @Test
@@ -297,7 +289,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable result = sameDiff.mmul(x, y);
         SDVariable otherResult = result.add(result);
         Map<String,INDArray> m = sameDiff.outputAll(null);
-        assertArrayEquals(new long[]{2, 2}, m.get(result.getVarName()).shape());
+        assertArrayEquals(new long[]{2, 2}, m.get(result.name()).shape());
     }
 
 
@@ -308,7 +300,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable x = sameDiff.var("x", arr);
         SDVariable sigmoid = sameDiff.nn().sigmoid("s", x);
         INDArray assertion = Transforms.sigmoid(arr);
-        INDArray eval = sameDiff.exec(Collections.singletonMap("x", arr), Collections.singletonList("s")).get("s");
+        INDArray eval = sameDiff.output(Collections.singletonMap("x", arr), Collections.singletonList("s")).get("s");
         assertEquals(assertion, eval);
     }
 
@@ -318,8 +310,8 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable var = sameDiff.var("one", Nd4j.scalar(1.0));
         SDVariable variable2 = sameDiff.var("two", Nd4j.scalar(1.0));
         val sum = var.add(variable2);
-        sum.eval();
-        assertArrayEquals(new long[0], sum.getShape());
+        INDArray out = sum.eval();
+        assertArrayEquals(new long[0], out.shape());
     }
 
 
@@ -330,8 +322,8 @@ public class SameDiffTests extends BaseNd4jTest {
 
         SDVariable firstVar = first.var("one", new long[]{2, 2});
         SDVariable secondVar = second.var(firstVar);
-        assertTrue(firstVar.getArr() == secondVar.getArr());
-        assertEquals(firstVar.getVarName(), secondVar.getVarName());
+        assertEquals(firstVar.getArr(), secondVar.getArr());
+        assertEquals(firstVar.name(), secondVar.name());
     }
 
 
@@ -344,8 +336,8 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable secondVar = second.var(firstVar);
         assumeNotNull(firstVar.getArr());
 
-        assertTrue(firstVar.getArr() == secondVar.getArr());
-        assertEquals(firstVar.getVarName(), secondVar.getVarName());
+        assertEquals(firstVar.getArr(), secondVar.getArr());
+        assertEquals(firstVar.name(), secondVar.name());
     }
 
 
@@ -370,7 +362,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable x = sameDiff.var("x", arr);
         SDVariable s = x.mul("s", x);
         INDArray assertion = arr.mul(arr);
-        INDArray eval = sameDiff.exec(Collections.singletonMap("x", arr), Collections.singletonList("s")).get("s");
+        INDArray eval = sameDiff.output(Collections.singletonMap("x", arr), Collections.singletonList("s")).get("s");
         assertEquals(assertion, eval);
     }
 
@@ -387,7 +379,7 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String, INDArray> vars = new HashMap<>();
         vars.put("x", arr);
         vars.put("y", yArr);
-        INDArray eval = sameDiff.exec(vars, Collections.singletonList(sigmoid.getVarName())).get(sigmoid.getVarName());
+        INDArray eval = sameDiff.output(vars, Collections.singletonList(sigmoid.name())).get(sigmoid.name());
         assertEquals(assertion, eval);
     }
 
@@ -414,7 +406,7 @@ public class SameDiffTests extends BaseNd4jTest {
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable x = sameDiff.var("x", inputs.get("x"));
                 SDVariable y = sameDiff.var("y", inputs.get("y"));
-                return new SDVariable[]{x.div(y)};
+                return new SDVariable[]{x.div("out", y)};
             }
         }, xAndY);
 
@@ -423,14 +415,14 @@ public class SameDiffTests extends BaseNd4jTest {
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable x = sameDiff.var("x", inputs.get("x"));
                 SDVariable y = sameDiff.var("y", inputs.get("y"));
-                return new SDVariable[]{x.rdiv(y)};
+                return new SDVariable[]{x.rdiv("out", y)};
             }
         }, xAndY);
 
         INDArray assertionForDiv = Nd4j.valueArrayOf(4, 4.0);
         INDArray assertionForRDiv = Nd4j.valueArrayOf(4, 0.25);
-        assertEquals(assertionForDiv, sameDiff.getFunction("div").execAndEndResult());
-        assertEquals(assertionForRDiv, sameDiff.getFunction("rdiv").execAndEndResult());
+        assertEquals(assertionForDiv, sameDiff.getFunction("div").outputSingle(null, "out"));
+        assertEquals(assertionForRDiv, sameDiff.getFunction("rdiv").outputSingle(null, "out"));
 
     }
 
@@ -445,12 +437,12 @@ public class SameDiffTests extends BaseNd4jTest {
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
                 SDVariable x = sameDiff.var("x", inputs.get("x"));
-                return new SDVariable[]{sameDiff.math().neg(x)};
+                return new SDVariable[]{sameDiff.math().neg("out", x)};
             }
         }, xAndY);
 
         INDArray assertionForDiv = Nd4j.valueArrayOf(4, -1);
-        assertEquals(assertionForDiv, sameDiff.getFunction("neg").execAndEndResult());
+        assertEquals(assertionForDiv, sameDiff.getFunction("neg").outputSingle(null, "out"));
 
     }
 
@@ -471,7 +463,7 @@ public class SameDiffTests extends BaseNd4jTest {
         }, inputs);
 
         INDArray assertion = sumInput.sum(1);
-        INDArray out = sameDiff.getFunction("sum").exec(Collections.emptyMap(), Collections.singletonList("sum"))
+        INDArray out = sameDiff.getFunction("sum").output(Collections.emptyMap(), Collections.singletonList("sum"))
                 .get("sum");
         assertEquals(assertion, out);
     }
@@ -484,7 +476,7 @@ public class SameDiffTests extends BaseNd4jTest {
          */
         SameDiff sameDiff = SameDiff.create();
         SDVariable sdVariable = sameDiff.var("one", Nd4j.scalar(1.0));
-        assumeNotNull(sameDiff.getVariable(sdVariable.getVarName()));
+        assumeNotNull(sameDiff.getVariable(sdVariable.name()));
     }
 
 
@@ -500,7 +492,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SameDiff sameDiff = SameDiff.create();
         SDVariable sdVariable = sameDiff.var("one", Nd4j.scalar(1.0));
         SDVariable add = sdVariable.add(1.0);
-        assertEquals(sameDiff.getVariable(add.getVarName()), add);
+        assertEquals(sameDiff.getVariable(add.name()), add);
     }
 
 
@@ -508,17 +500,8 @@ public class SameDiffTests extends BaseNd4jTest {
     public void testUpdateVariable() {
         SameDiff sameDiff = SameDiff.create();
         SDVariable one = sameDiff.one("one", new long[]{1, 1});
-        sameDiff.updateVariableName(one.getVarName(), "one-diff");
-        assertEquals(one.getArr(), sameDiff.getVariable("one-diff").getArr());
-    }
-
-
-    @Test(expected = IllegalStateException.class)
-    public void testPlaceHolderWithFullShape() {
-        val sd = SameDiff.create();
-        val placeholder = sd.placeHolder("somevar", DataType.FLOAT, 2, 2);
-        assertTrue(sd.isPlaceHolder(placeholder.getVarName()));
-        sd.resolveVariablesWith(Collections.singletonMap(placeholder.getVarName(), Nd4j.linspace(1, 4, 4)));
+        one.rename("one-diff");
+        assertEquals(one.eval(), sameDiff.getVariable("one-diff").eval());
     }
 
 
@@ -554,8 +537,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable left = sameDiff.var("arr", arr);
         SDVariable right = sameDiff.var("row", row);
         SDVariable test = left.add(right);
-        sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
-        assertEquals(assertion, test.getArr());
+        assertEquals(assertion, test.eval());
     }
 
 
@@ -604,7 +586,7 @@ public class SameDiffTests extends BaseNd4jTest {
             sd.associateArrayWithVariable(w, sd.getVariable("W"));
             sd.associateArrayWithVariable(b, sd.getVariable("b"));
 
-            INDArray outArr = sd.execAndEndResult();
+            INDArray outArr = out.eval();
 
             assertArrayEquals(new long[]{minibatch, nOut}, outArr.shape());
         }
@@ -644,7 +626,7 @@ public class SameDiffTests extends BaseNd4jTest {
         sd.associateArrayWithVariable(weightsArr, weights);
         sd.associateArrayWithVariable(biasArr, bias);
 
-        INDArray result = sd.execAndEndResult();
+        INDArray result = avgMSE.eval();
     }
 
 
@@ -662,7 +644,7 @@ public class SameDiffTests extends BaseNd4jTest {
             INDArray inArr = Nd4j.create(10, 9, 8);
             sd.associateArrayWithVariable(inArr, in);
 
-            INDArray out = sd.execAndEndResult();     //Exception here, dim0=-1 case only
+            INDArray out = mean2.eval();
 
             long[] shape = out.shape();
             assertArrayEquals(msg, new long[]{10}, shape);
@@ -677,10 +659,10 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable in = sd.var("in", new long[]{10, 9, 8});
         SDVariable mean1 = sd.mean(in, 2);      //[10,9] out
         SDVariable mean2 = sd.mean(mean1, 1);   //[10] out
-        Map<String,INDArray> m = sd.output((Map<String,INDArray>)null, mean1.getVarName(), mean2.getVarName());
+        Map<String,INDArray> m = sd.output((Map<String,INDArray>)null, mean1.name(), mean2.name());
 
-        INDArray m1 = m.get(mean1.getVarName());
-        INDArray m2 = m.get(mean2.getVarName());
+        INDArray m1 = m.get(mean1.name());
+        INDArray m2 = m.get(mean2.name());
 
         assertArrayEquals(new long[]{10, 9}, m1.shape());
         assertArrayEquals(new long[]{10}, m2.shape());
@@ -693,20 +675,20 @@ public class SameDiffTests extends BaseNd4jTest {
         SameDiff sd2 = SameDiff.create();
         SDVariable in2 = sd2.var("in", new long[]{10, 9, 8});
         SDVariable meanA = sd2.mean(in2, 0);      //[9,8] out
-        sd2.exec(null, sd2.outputs());
-        assertArrayEquals(new long[]{9, 8}, meanA.getShape());
+        Map<String,INDArray> out = sd2.outputAll(null);
+        assertArrayEquals(new long[]{9, 8}, out.get(meanA.name()).shape());
 
         SDVariable meanB = sd2.mean(meanA, 0);   //[8] out
         Map<String,INDArray> m = sd2.outputAll(null);
-        assertArrayEquals(new long[]{8}, m.get(meanB.getVarName()).shape());
+        assertArrayEquals(new long[]{8}, m.get(meanB.name()).shape());
 
-        assertArrayEquals(meanA.getShape(), m.get(meanA.getVarName()).shape());
-        assertArrayEquals(meanB.getShape(), m.get(meanB.getVarName()).shape());
+        assertArrayEquals(new long[]{9, 8}, m.get(meanA.name()).shape());
+        assertArrayEquals(new long[]{8}, m.get(meanB.name()).shape());
 
         m = sd2.outputAll(null);
 
-        INDArray mA = m.get(meanA.getVarName());
-        INDArray mB = m.get(meanB.getVarName());
+        INDArray mA = m.get(meanA.name());
+        INDArray mB = m.get(meanB.name());
 
         assertArrayEquals(new long[]{9, 8}, mA.shape());
         assertArrayEquals(new long[]{8}, mB.shape());
@@ -723,9 +705,9 @@ public class SameDiffTests extends BaseNd4jTest {
         val s = in2.add(5.0);
 
         Map<String,INDArray> map = sd.outputAll(null);
-        log.info("Result M: {}", map.get(m.getVarName()));
-        log.info("Result F: {}", map.get(f.getVarName()));
-        log.info("Result S: {}", map.get(s.getVarName()));
+        log.info("Result M: {}", map.get(m.name()));
+        log.info("Result F: {}", map.get(f.name()));
+        log.info("Result S: {}", map.get(s.name()));
     }
 
     @Test
@@ -774,8 +756,8 @@ public class SameDiffTests extends BaseNd4jTest {
         val input2 = sd.var("input2", vector);
         val output = sd
                 .mmul("output", input1, input2, MMulTranspose.builder().transposeA(true).transposeB(false).build());
-        output.eval();
-        assertArrayEquals(new long[]{3, 1}, output.getShape());
+        INDArray out = output.eval();
+        assertArrayEquals(new long[]{3, 1}, out.shape());
     }
 
     @Test
@@ -807,10 +789,8 @@ public class SameDiffTests extends BaseNd4jTest {
         SameDiff sameDiff = SameDiff.create();
         SDVariable twoByTwo = sameDiff.var("initial", Nd4j.linspace(1, 4, 4, DataType.FLOAT).reshape(2, 2));
         SDVariable sum = sameDiff.sum(twoByTwo, Integer.MAX_VALUE);
-        sameDiff.execBackwards(Collections.emptyMap());
-        SameDiff grad = sameDiff.getFunction("grad");
-        SDVariable gradArr = sameDiff.grad(twoByTwo.getVarName());
-        assertEquals(Nd4j.ones(DataType.FLOAT, 2, 2), gradArr.getArr());
+        Map<String,INDArray> grads = sameDiff.calculateGradients(Collections.emptyMap(), sameDiff.getVariables().keySet());
+        assertEquals(Nd4j.ones(DataType.FLOAT, 2, 2), grads.get(twoByTwo.name()));
     }
 
 
@@ -830,7 +810,7 @@ public class SameDiffTests extends BaseNd4jTest {
         }, params);
 
         SameDiff logisticGraph = sameDiff.getFunction("rsubop");
-        INDArray output = logisticGraph.exec(params, Collections.singletonList("rsub")).get("rsub");
+        INDArray output = logisticGraph.output(params, Collections.singletonList("rsub")).get("rsub");
         assertEquals(Nd4j.ones(4).muli(-1), output);
     }
 
@@ -863,7 +843,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SameDiff logisticGraph = sameDiffOuter.getFunction("oneminuspredictions");
         Map<String, INDArray> inputsSubset = new HashMap<>();
         inputsSubset.put("y", inputs.get("y"));
-        INDArray output = logisticGraph.exec(inputsSubset, Collections.singletonList("rsub")).get("rsub");
+        INDArray output = logisticGraph.output(inputsSubset, Collections.singletonList("rsub")).get("rsub");
         INDArray assertion = Nd4j.create(new double[]{0, 0, 1, 0}, new int[]{4, 1});
         assertEquals(assertion, output);
 
@@ -921,7 +901,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SameDiff sameDiff = SameDiff.create();
         SDVariable twoByTwo = sameDiff.var("first", Nd4j.linspace(1, 4, 4).reshape('c', 2, 2));
         SDVariable add = twoByTwo.add(1.0);
-        INDArray test = sameDiff.execAndEndResult();
+        INDArray test = add.eval();
         INDArray assertion = Nd4j.linspace(1, 4, 4).reshape('c', 2, 2).add(1.0);
         assertEquals(assertion, test);
     }
@@ -934,8 +914,8 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable sdVariable = sameDiff.var("ones", ones);
         SDVariable result = sdVariable.add(1.0);
         SDVariable total = sameDiff.sum(result, Integer.MAX_VALUE);
-        sameDiff.execAndEndResult();
-        assertEquals(56, total.getArr().getDouble(0), 1e-1);
+        INDArray out = total.eval();
+        assertEquals(56, out.getDouble(0), 1e-1);
     }
 
 
@@ -963,9 +943,9 @@ public class SameDiffTests extends BaseNd4jTest {
 
         Map<String,INDArray> m = sd.outputAll(Collections.emptyMap());
 
-        assertEquals(expMmul, m.get(mmul.getVarName()));
-        assertEquals(expZ, m.get(z.getVarName()));
-        assertEquals(expOut, m.get(out.getVarName()));
+        assertEquals(expMmul, m.get(mmul.name()));
+        assertEquals(expZ, m.get(z.name()));
+        assertEquals(expOut, m.get(out.name()));
     }
 
     @Test
@@ -1099,7 +1079,7 @@ public class SameDiffTests extends BaseNd4jTest {
                 0.0, 1);
         out = sd.nn().tanh("out", out);
 
-        INDArray outArr = sd.execAndEndResult();
+        INDArray outArr = out.eval();
         assertArrayEquals(new long[]{1, 10}, outArr.shape());
 
     }
@@ -1121,10 +1101,10 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable out = sd.cnn().localResponseNormalization(sdInput, lrn);
         SDVariable sdOut = sd.math().tanh("out", out);
 
-        Map<String,INDArray> map = sd.output(Collections.emptyMap(), "out", out.getVarName());
+        Map<String,INDArray> map = sd.output(Collections.emptyMap(), "out", out.name());
 
         for (int i = 0; i < 4; i++) {
-            assertEquals(1, map.get(out.getVarName()).get(all(), NDArrayIndex.point(i), all(), all()).getInt(0));
+            assertEquals(1, map.get(out.name()).get(all(), NDArrayIndex.point(i), all(), all()).getInt(0));
         }
 
     }
@@ -1147,8 +1127,8 @@ public class SameDiffTests extends BaseNd4jTest {
 
         Map<String,INDArray> m = sd.outputAll(null);
 
-        INDArray meanArray = m.get(mean.getVarName());
-        INDArray varArray = m.get(variance.getVarName());
+        INDArray meanArray = m.get(mean.name());
+        INDArray varArray = m.get(variance.name());
 
         assertEquals(meanArray.getDouble(0), 2.5, 1e-5);
         assertEquals(varArray.getDouble(0), 1.25, 1e-5);
@@ -1176,8 +1156,8 @@ public class SameDiffTests extends BaseNd4jTest {
 
         Map<String,INDArray> m = sd.outputAll(null);
 
-        INDArray meanArray = m.get(normMean.getVarName());
-        INDArray varArray = m.get(normVariance.getVarName());
+        INDArray meanArray = m.get(normMean.name());
+        INDArray varArray = m.get(normVariance.name());
 
         assertEquals(meanArray.getDouble(0, 0), 1, 1e-5);
         assertEquals(meanArray.getDouble(0, 1), 2, 1e-5);
@@ -1217,7 +1197,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable out = sd.cnn().depthWiseConv2d(in, dW, b, c);
         out = sd.math().tanh("out", out);
 
-        INDArray outArr = sd.execAndEndResult();
+        INDArray outArr = out.eval();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
         val outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, depthWise * nIn, 27, 27}, outShape);
@@ -1233,11 +1213,11 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable v = sd.var("in", arr);
         SDVariable mean = sd.mean("mean", v);
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = mean.eval();
         assertEquals(out, arr.mean(Integer.MAX_VALUE));
 
-        sd.execBackwards(Collections.emptyMap());
-        INDArray dLdIn = sd.grad("in").getArr();
+        Map<String,INDArray> m = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
+        INDArray dLdIn = m.get("in");
 
         //If L = mean(in)
         //then dL/dIn = 1/N
@@ -1255,11 +1235,11 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable v = sd.var("in", arr);
         SDVariable mean = sd.sum("sum", v);
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = mean.eval();
         assertEquals(out, arr.sum(Integer.MAX_VALUE));
 
-        sd.execBackwards(Collections.emptyMap());
-        INDArray dLdIn = sd.grad("in").getArr();
+        Map<String,INDArray> m = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
+        INDArray dLdIn = m.get("in");
 
         //If L = sum(in)
         //then dL/dIn = 1
@@ -1278,10 +1258,10 @@ public class SameDiffTests extends BaseNd4jTest {
             SDVariable v = sd.var("in", arr);
             SDVariable stdev = sd.standardDeviation("stdev", v, biasCorrected);
 
-            INDArray out = sd.execAndEndResult();
+            INDArray out = stdev.eval();
             assertEquals(out, arr.std(biasCorrected, Integer.MAX_VALUE));
 
-            sd.execBackwards(Collections.emptyMap());
+            Map<String,INDArray> g = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
             INDArray dLdIn = sd.grad("in").getArr();
 
             //If L = stdev(in)
@@ -1308,11 +1288,11 @@ public class SameDiffTests extends BaseNd4jTest {
             SDVariable v = sd.var("in", arr);
             SDVariable var = sd.variance("var", v, biasCorrected);
 
-            INDArray out = sd.execAndEndResult();
+            INDArray out = var.eval();
             assertEquals(out, arr.var(biasCorrected, Integer.MAX_VALUE));
 
-            sd.execBackwards(Collections.emptyMap());
-            INDArray dLdIn = sd.grad("in").getArr();
+            Map<String,INDArray> g = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
+            INDArray dLdIn = g.get("in");
 
             //If L = var(in)
             //then dL/dIn = 2/(N-1) * (in-mean)
@@ -1336,17 +1316,17 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable v = sd.var("in", arr);
         SDVariable min = sd.min("min", v);
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = min.eval();
         assertEquals(out, arr.min(Integer.MAX_VALUE));
 
-        sd.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> g = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
         INDArray dLdIn = sd.grad("in").getArr();
 
         //If L = min(in)
         //then dL/dIn = 1 if in_i == min(in) or 0 otherwise
 
         //Note that we don't have an "IsMin" op, so use IsMax(neg(in)) which is equivalent
-        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.neg()))[0].castTo(Nd4j.defaultFloatingPointType());
+        INDArray exp = Nd4j.exec(new IsMax(arr.neg()))[0].castTo(Nd4j.defaultFloatingPointType());
 
         assertEquals(exp, dLdIn);
     }
@@ -1361,16 +1341,16 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable v = sd.var("in", arr);
         SDVariable min = sd.max("max", v);
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = min.eval();
         assertEquals(out, arr.max(Integer.MAX_VALUE));
 
-        sd.execBackwards(Collections.emptyMap());
+        sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
         INDArray dLdIn = sd.grad("in").getArr();
 
         //If L = max(in)
         //then dL/dIn = 1 if in_i == max(in) or 0 otherwise
 
-        INDArray exp = Nd4j.getExecutioner().exec(new IsMax(arr.dup()))[0].castTo(DataType.DOUBLE);
+        INDArray exp = Nd4j.exec(new IsMax(arr.dup()))[0].castTo(DataType.DOUBLE);
 
         assertEquals(exp, dLdIn);
     }
@@ -1386,10 +1366,10 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable prod = sd.prod("prod", v);
 
         double p = arr.prodNumber().doubleValue();
-        INDArray out = sd.execAndEndResult();
+        INDArray out = prod.eval();
         assertEquals(out, arr.prod(Integer.MAX_VALUE));
 
-        sd.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> g = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
         INDArray dLdIn = sd.grad("in").getArr();
 
         //If L = prod(in)
@@ -1415,8 +1395,7 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray expOut = in.getArr().sub(label.getArr());
         expOut.muli(expOut);
 
-        System.out.println("About to exec");
-        INDArray out = sd.execAndEndResult();   //JVM crash
+        INDArray out = sqDiff.eval();
 
         assertEquals(out, expOut);
     }
@@ -1429,7 +1408,7 @@ public class SameDiffTests extends BaseNd4jTest {
             SDVariable in = sd.var("in", Nd4j.create(2, 3));
             SDVariable expanded = sd.f().expandDims(in, i);
 
-            INDArray out = sd.execAndEndResult();
+            INDArray out = expanded.eval();
             switch (i) {
                 case 0:
                     assertArrayEquals(new long[]{1, 2, 3}, out.shape());
@@ -1452,11 +1431,11 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable var0 = sd.var("in", DataType.DOUBLE, new long[]{3, 4});
         SDVariable out = sd.zerosLike("out", var0);
 
-        INDArray out1 = sd.execAndEndResult();
+        INDArray out1 = out.eval();
         assertEquals(Nd4j.zeros(3, 4), out1);
 
         sd.associateArrayWithVariable(Nd4j.create(3, 4), var0);
-        INDArray out2 = sd.execAndEndResult();
+        INDArray out2 = out.eval();
         assertEquals(Nd4j.zeros(DataType.DOUBLE, 3, 4), out2);
     }
 
@@ -1466,11 +1445,11 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable var0 = sd.var("in", new long[]{3, 4});
         SDVariable out = sd.onesLike("out", var0);
 
-        INDArray out1 = sd.execAndEndResult();
+        INDArray out1 = out.eval();
         assertEquals(Nd4j.ones(3, 4), out1);
 
         sd.associateArrayWithVariable(Nd4j.create(3, 4), var0);
-        INDArray out2 = sd.execAndEndResult();
+        INDArray out2 = out.eval();
         assertEquals(Nd4j.ones(3, 4), out2);
     }
 
@@ -1482,12 +1461,12 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable ones = sd.onesLike("ones", var0);
         SDVariable out = sd.sum("oun", ones);
 
-        INDArray outArr = sd.execAndEndResult();
+        INDArray outArr = out.eval();
         assertEquals(Nd4j.scalar(12.0), outArr);
 
-        sd.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> m = sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
 
-        assertEquals(Nd4j.create(3, 4), sd.grad("in").getArr());
+        assertEquals(Nd4j.create(3, 4), m.get("in"));
     }
 
 
@@ -1498,7 +1477,7 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray a = Nd4j.rand(new long[]{3, 4, 5});
         INDArray b = Nd4j.rand(new long[]{3, 4, 5});
 
-        INDArray expOut = Nd4j.getExecutioner().exec(new ManhattanDistance(a, b, 0));
+        INDArray expOut = Nd4j.exec(new ManhattanDistance(a, b, 0));
 
         val expShape = new long[]{4, 5};
 
@@ -1526,7 +1505,7 @@ public class SameDiffTests extends BaseNd4jTest {
         double maxSum = max.sumNumber().doubleValue();
         double jd = 1.0 - minSum / maxSum;
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = jaccard.eval();
         assertEquals(1, out.length());
 
         assertEquals(jd, out.getDouble(0), 1e-6);
@@ -1574,36 +1553,36 @@ public class SameDiffTests extends BaseNd4jTest {
                 case 4:
                     t = sd.gte(in1, in2);
                     expOut = Nd4j.create(DataType.BOOL, ia.shape());
-                    Nd4j.getExecutioner().exec(new GreaterThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut}));
+                    Nd4j.exec(new GreaterThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut}));
                     break;
                 case 5:
                     t = sd.lte(in1, in2);
                     expOut = Nd4j.create(DataType.BOOL, ia.shape());
-                    Nd4j.getExecutioner().exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut}));
+                    Nd4j.exec(new LessThanOrEqual(new INDArray[]{ia, ib}, new INDArray[]{expOut}));
                     break;
                 case 6:
-                    ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
-                    ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
+                    ia = Nd4j.exec(new BernoulliDistribution(ia, 0.5));
+                    ib = Nd4j.exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.math().or(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     expOut = Transforms.or(ia, ib);
                     break;
                 case 7:
                     t = sd.max(in1, in2);
-                    expOut = Nd4j.getExecutioner().exec(new Max(ia, ib, ia.dup()))[0];
+                    expOut = Nd4j.exec(new Max(ia, ib, ia.dup()))[0];
                     break;
                 case 8:
                     t = sd.min(in1, in2);
-                    expOut = Nd4j.getExecutioner().exec(new Min(ia, ib, ia.dup()))[0];
+                    expOut = Nd4j.exec(new Min(ia, ib, ia.dup()))[0];
                     break;
                 case 9:
-                    ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
-                    ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
+                    ia = Nd4j.exec(new BernoulliDistribution(ia, 0.5));
+                    ib = Nd4j.exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.math().and(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     expOut = Transforms.and(ia, ib);
                     break;
                 case 10:
-                    ia = Nd4j.getExecutioner().exec(new BernoulliDistribution(ia, 0.5));
-                    ib = Nd4j.getExecutioner().exec(new BernoulliDistribution(ib, 0.5));
+                    ia = Nd4j.exec(new BernoulliDistribution(ia, 0.5));
+                    ib = Nd4j.exec(new BernoulliDistribution(ib, 0.5));
                     t = sd.math().xor(in1.castTo(DataType.BOOL), in2.castTo(DataType.BOOL));
                     expOut = Transforms.xor(ia, ib);
                     break;
@@ -1612,7 +1591,7 @@ public class SameDiffTests extends BaseNd4jTest {
             }
 
             log.info("Executing: " + i);
-            INDArray out = sd.execAndEndResult();
+            INDArray out = t.eval();
 
             assertEquals(expOut, out);
         }
@@ -1640,22 +1619,22 @@ public class SameDiffTests extends BaseNd4jTest {
             switch (i) {
                 case 0:
                     t = sd.math().isNonDecreasing(in1);
-                    Nd4j.getExecutioner().exec(new IsNonDecreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    Nd4j.exec(new IsNonDecreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
                     break;
                 case 1:
                     t = sd.math().isStrictlyIncreasing(in1);
-                    Nd4j.getExecutioner().exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    Nd4j.exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
                     break;
                 case 2:
                     t = sd.isNumericTensor(in1);
-                    Nd4j.getExecutioner().exec(new IsNumericTensor(new INDArray[]{ia}, new INDArray[]{expOut}));
+                    Nd4j.exec(new IsNumericTensor(new INDArray[]{ia}, new INDArray[]{expOut}));
                     break;
                 default:
                     throw new RuntimeException();
             }
 
             log.info("Executing: " + i);
-            INDArray out = sd.execAndEndResult();
+            INDArray out = t.eval();
 
             assertEquals(expOut, out);
         }
@@ -1674,7 +1653,7 @@ public class SameDiffTests extends BaseNd4jTest {
                 SDVariable in = sd.var("in", inArr);
                 SDVariable expand = sd.f().expandDims(in, i);
 
-                INDArray out = sd.execAndEndResult();
+                INDArray out = expand.eval();
 
                 INDArray expOut;
                 switch (i) {
@@ -1715,7 +1694,7 @@ public class SameDiffTests extends BaseNd4jTest {
                 SDVariable in = sd.var("in", inArr);
                 SDVariable squeeze = sd.f().squeeze(in, i);
 
-                INDArray out = sd.execAndEndResult();
+                INDArray out = squeeze.eval();
 
                 INDArray expOut;
                 switch (i) {
@@ -1754,7 +1733,7 @@ public class SameDiffTests extends BaseNd4jTest {
                 SDVariable expand = sd.expandDims(in, i);
                 SDVariable squeeze = sd.squeeze(expand, i);
 
-                INDArray out = sd.execAndEndResult();
+                INDArray out = squeeze.eval();
 
                 String msg = "expand/Squeeze=" + i + ", source=" + p.getSecond();
 
@@ -1782,7 +1761,7 @@ public class SameDiffTests extends BaseNd4jTest {
                 SDVariable squeeze = sd.squeeze(in, i);
                 SDVariable expand = sd.expandDims(squeeze, i);
 
-                INDArray out = sd.execAndEndResult();
+                INDArray out = expand.eval();
 
                 String msg = "expand/Squeeze=" + i + ", source=" + p.getSecond();
 
@@ -1801,8 +1780,8 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable labelsVar = sd.constant("labels", labels);
         SDVariable predictionsVar = sd.constant("predictions", pred);
         SDVariable weightsVar = sd.constant("weights", weights);
-        sd.math().confusionMatrix("cm", labelsVar, predictionsVar, numClasses, weightsVar);
-        INDArray out = sd.execAndEndResult();
+        SDVariable cm = sd.math().confusionMatrix("cm", labelsVar, predictionsVar, numClasses, weightsVar);
+        INDArray out = cm.eval();
 
         INDArray exp = Nd4j.create(new float[][]{{0, 0, 0, 0, 0}, {0, 0, 10, 0, 0}, {0, 0, 100, 0, 0},
                 {0, 0, 0, 0, 0}, {0, 0, 0, 0, 1000}}).castTo(DataType.INT);
@@ -1821,7 +1800,7 @@ public class SameDiffTests extends BaseNd4jTest {
             SDVariable in = sd.var("in", inArr);
             SDVariable argmax = sd.argmax("argmax", in, dim);
 
-            INDArray out = sd.execAndEndResult();
+            INDArray out = argmax.eval();
 
             INDArray exp = Nd4j.argMax(inArr, dim);
 
@@ -1841,7 +1820,7 @@ public class SameDiffTests extends BaseNd4jTest {
             SDVariable in = sd.var("in", inArr);
             SDVariable argmin = sd.argmin("argmin", in, dim);
 
-            INDArray out = sd.execAndEndResult();
+            INDArray out = argmin.eval();
 
             INDArray exp = Nd4j.argMax(inArr.neg(), dim);   //argmin(x) == argmax(-x)
 
@@ -2004,7 +1983,7 @@ public class SameDiffTests extends BaseNd4jTest {
         System.out.println(in);
 
         INDArray exp = Nd4j.pullRows(in, 1, new int[]{0, 1, 5});  //Along dimension 1 -> equiv to "indexes for axis 0"
-        INDArray act = sd.execAndEndResult();
+        INDArray act = gather.eval();
 
         assertEquals(exp, act);
     }
@@ -2022,7 +2001,7 @@ public class SameDiffTests extends BaseNd4jTest {
                 .addOutputs(out)
                 .build();
 
-        Nd4j.getExecutioner().exec(op);
+        Nd4j.exec(op);
 
         System.out.println(out);
 
@@ -2058,10 +2037,9 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray expNaN = Nd4j.create(new boolean[]{false, false});
         SDVariable isnan = sd.math().isNaN(in);
 
-        sd.exec(Collections.emptyMap(), sd.outputs());
-        assertEquals(expFinite, finite.getArr());
-        assertEquals(expInfinite, infinite.getArr());
-        assertEquals(expNaN, isnan.getArr());
+        assertEquals(expFinite, finite.eval());
+        assertEquals(expInfinite, infinite.eval());
+        assertEquals(expNaN, isnan.eval());
 
     }
 
@@ -2155,7 +2133,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable write0 = tensorArray.write(var2, 0, var1);
         SDVariable write1 = tensorArray.write(write0, 1, var2);
         SDVariable result = tensorArray.stack(write1);
-        sd.exec(null, result.getVarName());
+        sd.output((Map<String,INDArray>)null, result.name());
         assertEquals(Nd4j.pile(arr1, arr2), result.eval());
     }
 
@@ -2256,12 +2234,12 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable sum = in.sum(1);
         INDArray exp = in.getArr().sum(1).reshape(3);
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = sum.eval();
         assertEquals(exp, out);
 
         //Now, replace with minibatch 5:
         in.setArray(Nd4j.linspace(1, 20, 20).reshape(5, 4));
-        INDArray out2 = sd.execAndEndResult();
+        INDArray out2 = sum.eval();
         assertArrayEquals(new long[]{5}, out2.shape());
 
         exp = in.getArr().sum(1).reshape(5);
@@ -2276,12 +2254,12 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable sum = in.argmax(1);
         INDArray exp = in.getArr().argMax(1).reshape(3);
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = sum.eval();
         assertEquals(exp, out);
 
         //Now, replace with minibatch 5:
         in.setArray(Nd4j.linspace(1, 20, 20).reshape(5, 4));
-        INDArray out2 = sd.execAndEndResult();
+        INDArray out2 = sum.eval();
         assertArrayEquals(new long[]{5}, out2.shape());
 
         exp = in.getArr().argMax(1).reshape(5);
@@ -2300,12 +2278,11 @@ public class SameDiffTests extends BaseNd4jTest {
         gradMap.put("out", externalGrad);
         ExternalErrorsFunction fn = sd.f().externalErrors(out);
 
-        sd.execAndEndResult();
         Map<String, INDArray> m = new HashMap<>();
         m.put("out-grad", externalGrad);
-        sd.execBackwards(m);
+        Map<String, INDArray> grads = sd.calculateGradients(m, sd.getVariables().keySet());
 
-        INDArray gradVar = var.getGradient().getArr();
+        INDArray gradVar = grads.get(var.name());
 
         assertEquals(externalGrad.mul(0.5), gradVar);
 
@@ -2313,7 +2290,7 @@ public class SameDiffTests extends BaseNd4jTest {
         externalGrad = Nd4j.linspace(1, 12, 12).reshape(3, 4).muli(10);
 
         m.put("out-grad", externalGrad);
-        sd.execBackwards(m);
+        grads = sd.calculateGradients(m, sd.getVariables().keySet());
 
         gradVar = var.getGradient().getArr();
 
@@ -2332,26 +2309,26 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable out = sd.mmul(in, w);
         SDVariable loss = out.std("out", true);
 
-        INDArray outArr = sd.execAndEndResult().dup();
+        INDArray outArr = loss.eval();
 //        sd.execBackwards(Collections.emptyMap());
-        Map<String,INDArray> grads = sd.calculateGradients(null, in.getVarName(), w.getVarName(), out.getVarName());
+        Map<String,INDArray> grads = sd.calculateGradients(null, in.name(), w.name(), out.name());
 
         Map<String, INDArray> origGrad = new HashMap<>();
-        origGrad.put("in", grads.get(in.getVarName()).dup());
-        origGrad.put("w", grads.get(w.getVarName()).dup());
-        origGrad.put("out", grads.get(out.getVarName()).dup());
+        origGrad.put("in", grads.get(in.name()).dup());
+        origGrad.put("w", grads.get(w.name()).dup());
+        origGrad.put("out", grads.get(out.name()).dup());
 
         in.getArr().assign(Nd4j.rand(in.getArr().shape()));
-        INDArray outArr2 = sd.execAndEndResult();
+        INDArray outArr2 = loss.eval();
 //        sd.execBackwards(Collections.emptyMap());
-        grads = sd.calculateGradients(null, in.getVarName(), w.getVarName(), out.getVarName());
+        grads = sd.calculateGradients(null, in.name(), w.name(), out.name());
 
         assertNotEquals(outArr, outArr2);
 
         //Ensure gradients are also changed:
-        assertNotEquals(origGrad.get("in"), grads.get(in.getVarName()));
-        assertNotEquals(origGrad.get("w"), grads.get(w.getVarName()));
-        assertNotEquals(origGrad.get("out"), grads.get(out.getVarName()));
+        assertNotEquals(origGrad.get("in"), grads.get(in.name()));
+        assertNotEquals(origGrad.get("w"), grads.get(w.name()));
+        assertNotEquals(origGrad.get("out"), grads.get(out.name()));
     }
 
     @Test
@@ -2361,25 +2338,25 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable out = in.mul(2.0);
         SDVariable loss = out.std("out", true);
 
-        INDArray outArr = sd.execAndEndResult().dup();
-        Map<String,INDArray> grads = sd.calculateGradients(null, in.getVarName(), out.getVarName());
+        INDArray outArr = loss.eval();
+        Map<String,INDArray> grads = sd.calculateGradients(null, in.name(), out.name());
 
         Map<String, INDArray> origGrad = new HashMap<>();
-        origGrad.put("in", grads.get(in.getVarName()).dup());
-        origGrad.put("out", grads.get(out.getVarName()).dup());
+        origGrad.put("in", grads.get(in.name()).dup());
+        origGrad.put("out", grads.get(out.name()).dup());
 
         double stdBefore = in.getArr().stdNumber().doubleValue();
         in.getArr().assign(Nd4j.rand(in.getArr().shape()));
         double stdAfter = in.getArr().stdNumber().doubleValue();
         System.out.println("Before vs. after: " + stdBefore + ", " + stdAfter);
-        INDArray outArr2 = sd.execAndEndResult();
-        grads = sd.calculateGradients(null, in.getVarName(), out.getVarName());
+        INDArray outArr2 = loss.eval();
+        grads = sd.calculateGradients(null, in.name(), out.name());
 
         assertNotEquals(outArr, outArr2);
 
         //Ensure gradients are also changed:
-        assertNotEquals(origGrad.get("in"), grads.get(in.getVarName()));
-        assertNotEquals(origGrad.get("out"), grads.get(out.getVarName()));
+        assertNotEquals(origGrad.get("in"), grads.get(in.name()));
+        assertNotEquals(origGrad.get("out"), grads.get(out.name()));
     }
 
     @Test
@@ -2416,8 +2393,8 @@ public class SameDiffTests extends BaseNd4jTest {
         grad = Nd4j.linspace(1, 8, 8).reshape(2, 4);
         phMap.put(fn.getGradPlaceholderName(), grad);
 
-        sd.execBackwards(phMap);
-        INDArray inGrad = in.getGradient().getArr();
+        Map<String,INDArray> grads = sd.calculateGradients(phMap, sd.getVariables().keySet());
+        INDArray inGrad = grads.get(in.name());
         assertArrayEquals(new long[]{2, 5}, inGrad.shape());
     }
 
@@ -2473,7 +2450,7 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String, INDArray> placeholders = new HashMap<>();
         placeholders.put("x", x);
         placeholders.put("y", y);
-        Map<String,INDArray> grads = sd.calculateGradients(placeholders, xSd.getVarName(), ySd.getVarName());
+        Map<String,INDArray> grads = sd.calculateGradients(placeholders, xSd.name(), ySd.name());
         INDArray xGradientEnforced = grads.get("x");
         assertNotNull(xGradientEnforced);
     }
@@ -2537,6 +2514,7 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray inArr = Nd4j.rand(DataType.FLOAT, 1, 3);
         in.setArray(inArr);
         INDArray inArr2 = Nd4j.rand(DataType.FLOAT, 3, 4);
+        in2.setArray(inArr2);
 
         TrainingConfig c = TrainingConfig.builder()
                 .updater(new Adam(0.1))
@@ -2732,12 +2710,12 @@ public class SameDiffTests extends BaseNd4jTest {
         SameDiff sd = SameDiff.create();
         SDVariable linspace = sd.linspace("at", DataType.DOUBLE, 1, 15, 15);
         SDVariable a = sd.reshape("a", linspace, 3, 5);
-        SDVariable b = sd.one("b", DataType.DOUBLE, 3, 5);
+        SDVariable b = sd.var("b", Nd4j.ones(DataType.DOUBLE, 3, 5));
 
         SDVariable out = a.mul(b);
+        out.markAsLoss();
         out.eval();
 
-        sd.execBackwards(null, "a");
         out.eval();
         sd.grad("a").eval();
 
@@ -2752,12 +2730,12 @@ public class SameDiffTests extends BaseNd4jTest {
     public void testNonScalarOutput2() {
         SameDiff sd = SameDiff.create();
         SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);
-        SDVariable b = sd.one("b", DataType.DOUBLE, 3, 5);
+        SDVariable b = sd.var("b", Nd4j.ones(DataType.DOUBLE, 3, 5));
 
         SDVariable out = a.mul(b).mean(1);
+        out.markAsLoss();
         out.eval();
 
-        sd.execBackwards(null, Lists.asList("a", new String[]{}));
         //System.out.println(out.eval());
         INDArray actGrad = sd.grad("a").eval();
 
@@ -2772,15 +2750,16 @@ public class SameDiffTests extends BaseNd4jTest {
     public void testNonScalarOutput3() {
         SameDiff sd = SameDiff.create();
         SDVariable a = sd.reshape("a", sd.linspace("at", DataType.DOUBLE, 1, 15, 15), 3, 5);
-        SDVariable b = sd.one("b", DataType.DOUBLE, 3, 5);//.add(3);
+        SDVariable b = sd.var("b", Nd4j.ones(DataType.DOUBLE, 3, 5));//.add(3);
 
         SDVariable out = a.mul(b).mean(0, 1);
+        out.markAsLoss();
 
         out.eval();
 
-        sd.execBackwards(null, "a");
+        Map<String,INDArray> g = sd.calculateGradients(null, "a");
         //System.out.println(out.eval());
-        INDArray gradAct = sd.grad("a").eval();
+        INDArray gradAct = g.get("a");
         INDArray expGrad = Nd4j.valueArrayOf(new long[]{3, 5}, 1.0 / 12, DataType.DOUBLE);
 
         String err = OpValidation.validate(new TestCase(sd).gradientCheck(true));
@@ -2798,7 +2777,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         Map<String, INDArray> m = new HashMap<>();
         m.put("b", Nd4j.rand(DataType.DOUBLE, 4, 5));
-        sd.execBackwards(m, "a", "b");
+        Map<String,INDArray> g = sd.calculateGradients(m, "a", "b");
 
         b.setArray(m.get("b"));
 
@@ -2820,7 +2799,7 @@ public class SameDiffTests extends BaseNd4jTest {
         final SDVariable out = a.mmul(b).add(c.mmul(d)).sum();
         out.markAsLoss();
 
-        sd.execBackwards(null);
+        Map<String,INDArray> g = sd.calculateGradients(null, sd.getVariables().keySet());
     }
 
     @Test
@@ -2832,7 +2811,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         a.add(b.add(c)).sum().markAsLoss();
 
-        sd.execBackwards(Collections.singletonMap("c", Nd4j.rand(4, 4)));
+        sd.calculateGradients(Collections.singletonMap("c", Nd4j.rand(4, 4)), sd.getVariables().keySet());
         assertNotNull(sd.grad("a"));
         assertNull(sd.grad("b"));
         assertNull(sd.grad("c"));
@@ -2908,16 +2887,16 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable v2 = sd.var("y", Nd4j.rand(DataType.FLOAT, 4, 5));
         SDVariable v3 = v1.mmul("oldName", v2);
 
-        INDArray out = sd.execSingle(null, "oldName");
+        INDArray out = sd.outputSingle(null, "oldName");
 
         SDVariable renamed = v3.rename("newName");
         assertTrue(v3 == renamed);
-        assertEquals("newName", renamed.getVarName());
+        assertEquals("newName", renamed.name());
 
         assertNull(sd.getVariable("oldName"));
         assertNotNull(sd.getVariable("newName"));
 
-        INDArray out2 = sd.execSingle(null, "newName");
+        INDArray out2 = sd.outputSingle(null, "newName");
 
         assertEquals(out, out2);
     }
@@ -2931,7 +2910,7 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable v3 = v1.mmul("oldName", v2);
         SDVariable v4 = v3.std("out", false);
 
-        INDArray out = sd.execSingle(Collections.singletonMap("x", Nd4j.rand(DataType.FLOAT, 3, 4)), "out");
+        INDArray out = sd.outputSingle(Collections.singletonMap("x", Nd4j.rand(DataType.FLOAT, 3, 4)), "out");
 
         sd.setTrainingConfig(TrainingConfig.builder()
                 .updater(new Adam(1e-3))
@@ -3029,7 +3008,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         INDArray inputArr = Nd4j.rand(DataType.FLOAT, minibatch, nIn);
 
-        Map<String, INDArray> m = sd.exec(Collections.singletonMap("in", inputArr), "softmax");
+        Map<String, INDArray> m = sd.output(Collections.singletonMap("in", inputArr), "softmax");
         assertEquals(1, m.size());
         assertTrue(m.containsKey("softmax"));
 
@@ -3039,7 +3018,7 @@ public class SameDiffTests extends BaseNd4jTest {
         Map<String, INDArray> allPh = new HashMap<>();
         allPh.put("in", inputArr);
         allPh.put("label", labelUnused);
-        m = sd.exec(allPh, "softmax");
+        m = sd.output(allPh, "softmax");
         assertEquals(1, m.size());
         assertTrue(m.containsKey("softmax"));
         INDArray out2 = m.get("softmax");
@@ -3069,7 +3048,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         INDArray inputArr = Nd4j.rand(DataType.FLOAT, minibatch, nIn);
 
-        Map<String, INDArray> m = sd.exec(Collections.singletonMap("in", inputArr), "softmax");
+        Map<String, INDArray> m = sd.output(Collections.singletonMap("in", inputArr), "softmax");
         assertEquals(1, m.size());
         assertTrue(m.containsKey("softmax"));
 
@@ -3080,7 +3059,7 @@ public class SameDiffTests extends BaseNd4jTest {
         allPh.put("in", inputArr);
         allPh.put("label", labelUnused);
         allPh.put("in2", Nd4j.scalar(1.0f));
-        m = sd.exec(allPh, "softmax");
+        m = sd.output(allPh, "softmax");
         assertEquals(1, m.size());
         assertTrue(m.containsKey("softmax"));
         INDArray out2 = m.get("softmax");
@@ -3104,7 +3083,7 @@ public class SameDiffTests extends BaseNd4jTest {
         assertEquals(DataType.FLOAT, tanh.dataType());
         assertEquals(DataType.FLOAT, stdev.dataType());
 
-        Map<String, INDArray> out = sd.exec(null, "x", "y", "z", "tanh", "stdev");
+        Map<String, INDArray> out = sd.output((Map<String,INDArray>)null, "x", "y", "z", "tanh", "stdev");
         for (Map.Entry<String, INDArray> e : out.entrySet()) {
             assertEquals(e.getKey(), DataType.FLOAT, e.getValue().dataType());
         }
@@ -3123,7 +3102,7 @@ public class SameDiffTests extends BaseNd4jTest {
         assertEquals(DataType.DOUBLE, tanh.dataType());
         assertEquals(DataType.DOUBLE, stdev.dataType());
 
-        out = sd.exec(null, "x", "y", "z", "tanh", "stdev");
+        out = sd.output((Map<String,INDArray>)null, "x", "y", "z", "tanh", "stdev");
         for (Map.Entry<String, INDArray> e : out.entrySet()) {
             assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
         }
@@ -3152,7 +3131,7 @@ public class SameDiffTests extends BaseNd4jTest {
 
         Map<String, INDArray> ph = Collections.singletonMap("x", Nd4j.rand(DataType.FLOAT, 3, 4));
 
-        Map<String, INDArray> out = sd.exec(ph, "x", "y", "xD", "yD", "a", "r");
+        Map<String, INDArray> out = sd.output(ph, "x", "y", "xD", "yD", "a", "r");
         for (Map.Entry<String, INDArray> e : out.entrySet()) {
             if (e.getKey().equals("x") || e.getKey().equals("y")) {
                 assertEquals(e.getKey(), DataType.FLOAT, e.getValue().dataType());
@@ -3175,7 +3154,7 @@ public class SameDiffTests extends BaseNd4jTest {
         assertEquals(DataType.DOUBLE, add.dataType());
         assertEquals(DataType.DOUBLE, relu.dataType());
 
-        out = sd.exec(ph, "x", "y", "xD", "yD", "a", "r");
+        out = sd.output(ph, "x", "y", "xD", "yD", "a", "r");
         for (Map.Entry<String, INDArray> e : out.entrySet()) {
             assertEquals(e.getKey(), DataType.DOUBLE, e.getValue().dataType());
         }
@@ -3210,9 +3189,9 @@ public class SameDiffTests extends BaseNd4jTest {
                 assertNotNull(w.gradient());
                 assertNotNull(b.gradient());
 
-                sd.execBackwards(Collections.singletonMap("in", in));
-                assertNotNull(ph.gradient().getArr());
-                assertNotNull(w.gradient().getArr());
+                Map<String,INDArray> m = sd.calculateGradients(Collections.singletonMap("in", in), ph.name(), w.name());
+                assertNotNull(m.get(ph.name()));
+                assertNotNull(m.get(w.name()));
             } else {
                 sd.createGradFunction();
                 assertNull(ph.gradient());
@@ -3287,7 +3266,7 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray out = sum[1].eval();
         assertEquals(15, out.getInt(0));
 
-        String outName = sum[1].getVarName();
+        String outName = sum[1].name();
 
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
@@ -3313,7 +3292,7 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray out = sum[1].eval();
         assertEquals(35, out.getInt(0));
 
-        String outName = sum[1].getVarName();
+        String outName = sum[1].name();
 
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
@@ -3339,7 +3318,7 @@ public class SameDiffTests extends BaseNd4jTest {
         INDArray out = sum[1].eval();
         assertEquals(115, out.getInt(0));
 
-        String outName = sum[1].getVarName();
+        String outName = sum[1].name();
 
         SD = SameDiff.fromFlatBuffers(SD.asFlatBuffers(false));
 
@@ -3422,5 +3401,29 @@ public class SameDiffTests extends BaseNd4jTest {
 
         String err = OpValidation.validate(tc);
         assertNull(err);
+    }
+
+    @Test
+    public void testSameDiffSeedReproducibilityVarInit() {
+
+        SameDiff sd0 = SameDiff.create();
+        SameDiff sd1 = SameDiff.create();
+        Nd4j.getRandom().setSeed(12345);
+        SDVariable rand0 = sd0.var("random", new UniformInitScheme('c', 3), DataType.FLOAT, 3, 1);
+
+        Nd4j.getRandom().setSeed(12345);
+        SDVariable rand1 = sd1.var("random", new UniformInitScheme('c', 3), DataType.FLOAT, 3, 1);
+
+
+        Nd4j.getRandom().setSeed(0);
+        System.out.println(rand0.eval());
+
+        Nd4j.getRandom().setSeed(0);
+        System.out.println(rand1.eval());
+
+        INDArray a0 = rand0.eval();
+        Nd4j.getRandom().setSeed(0);
+        INDArray a1 = rand1.eval();
+        assertEquals(a0, a1);
     }
 }

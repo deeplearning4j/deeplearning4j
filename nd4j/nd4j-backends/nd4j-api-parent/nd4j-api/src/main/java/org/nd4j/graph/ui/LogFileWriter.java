@@ -487,11 +487,15 @@ public class LogFileWriter {
 
         //Create outputs list:
         List<String> outputs = sd.outputs();
-        int[] outputListStrOffsets = new int[outputs.size()];
-        for (int i = 0; i < outputListStrOffsets.length; i++) {
-            outputListStrOffsets[i] = fbb.createString(outputs.get(i));
+        int outputsOffset = 0;
+        if(outputs != null && !outputs.isEmpty()) {
+            int[] outputListStrOffsets = new int[outputs.size()];
+            for (int i = 0; i < outputListStrOffsets.length; i++) {
+                outputListStrOffsets[i] = fbb.createString(outputs.get(i));
+            }
+            outputsOffset = UIGraphStructure.createInputsVector(fbb, outputListStrOffsets);
         }
-        int outputsOffset = UIGraphStructure.createInputsVector(fbb, outputListStrOffsets);
+
 
         //Create variables list
         Map<String,Variable> varMap = sd.getVariables();

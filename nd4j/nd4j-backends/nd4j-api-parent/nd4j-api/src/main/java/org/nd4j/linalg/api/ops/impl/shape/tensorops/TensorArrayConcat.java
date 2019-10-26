@@ -72,7 +72,7 @@ public class TensorArrayConcat extends BaseTensorOp {
     public List<DataType> calculateOutputDataTypes(java.util.List<org.nd4j.linalg.api.buffer.DataType> inputDataType){
         //Same output type as the TensorArray - which is defined by input 0
         SDVariable tArr = arg(0);
-        TensorArray t3 = (TensorArray) sameDiff.getVariableOutputOp(tArr.getVarName());
+        TensorArray t3 = (TensorArray) sameDiff.getVariableOutputOp(tArr.name());
         org.nd4j.linalg.api.buffer.DataType dt = t3.getTensorArrayDataType();
         return Collections.singletonList(dt);
     }

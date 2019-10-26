@@ -130,10 +130,7 @@ public class Concat extends DynamicCustomOp {
 
         val variable = initWith.getVariable(input);
         // concat dimension is only possible
-        if (variable != null && variable.getArr() == null) {
-            sameDiff.addPropertyToResolve(this, input);
-
-        } else if (variable != null) {
+        if (variable != null) {
             val arr = variable.getArr();
             if (arr.length() == 1) {
                 concatDimension = arr.getInt(0);

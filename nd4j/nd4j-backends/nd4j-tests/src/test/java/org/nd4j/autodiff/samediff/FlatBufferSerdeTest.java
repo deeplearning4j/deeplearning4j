@@ -173,7 +173,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 }
 
                 if(execFirst){
-                    sd.exec(Collections.singletonMap("in", arr), Collections.singletonList(x.getVarName()));
+                    sd.output(Collections.singletonMap("in", arr), Collections.singletonList(x.name()));
                 }
 
                 File f = testDir.newFile();
@@ -186,7 +186,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 List<SDVariable> varsRestored = restored.variables();
                 assertEquals(varsOrig.size(), varsRestored.size());
                 for (int j = 0; j < varsOrig.size(); j++) {
-                    assertEquals(varsOrig.get(j).getVarName(), varsRestored.get(j).getVarName());
+                    assertEquals(varsOrig.get(j).name(), varsRestored.get(j).name());
                 }
 
                 DifferentialFunction[] fOrig = sd.ops();
@@ -200,10 +200,10 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 assertEquals(sd.getLossVariables(), restored.getLossVariables());
 
 
-                Map<String,INDArray> m = sd.exec(Collections.singletonMap("in", arr), Collections.singletonList(x.getVarName()));
-                INDArray outOrig = m.get(x.getVarName());
-                Map<String,INDArray> m2 = restored.exec(Collections.singletonMap("in", arr), Collections.singletonList(x.getVarName()));
-                INDArray outRestored = m2.get(x.getVarName());
+                Map<String,INDArray> m = sd.output(Collections.singletonMap("in", arr), Collections.singletonList(x.name()));
+                INDArray outOrig = m.get(x.name());
+                Map<String,INDArray> m2 = restored.output(Collections.singletonMap("in", arr), Collections.singletonList(x.name()));
+                INDArray outRestored = m2.get(x.name());
 
                 assertEquals(String.valueOf(i), outOrig, outRestored);
 
@@ -320,7 +320,7 @@ public class FlatBufferSerdeTest extends BaseNd4jTest {
                 if(v.isPlaceHolder() || v.getVariableType() == VariableType.ARRAY)
                     continue;
 
-                SDVariable v2 = sd2.getVariable(v.getVarName());
+                SDVariable v2 = sd2.getVariable(v.name());
 
                 INDArray a1 = v.getArr();
                 INDArray a2 = v2.getArr();

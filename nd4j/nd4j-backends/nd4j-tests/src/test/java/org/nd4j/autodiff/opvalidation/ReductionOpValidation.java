@@ -117,8 +117,8 @@ public class ReductionOpValidation extends BaseOpValidation {
             SDVariable loss = nonZero.add(zero).castTo(DataType.DOUBLE).std(true);
 
             String error = OpValidation.validate(new TestCase(sd)
-                    .expectedOutput(nonZero.getVarName(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 4.0))
-                    .expectedOutput(zero.getVarName(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 0.0))
+                    .expectedOutput(nonZero.name(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 4.0))
+                    .expectedOutput(zero.name(), Nd4j.scalar(DataType.LONG, i == 0 ? 2.0 : 0.0))
                     .gradientCheck(false)
             );
             if (error != null)
@@ -148,7 +148,7 @@ public class ReductionOpValidation extends BaseOpValidation {
             SDVariable zeroFraction = sd.math().zeroFraction(input);
 
             String error = OpValidation.validate(new TestCase(sd)
-                    .expectedOutput(zeroFraction.getVarName(), Nd4j.scalar(i == 0 ? 0.5f : 0.0f))
+                    .expectedOutput(zeroFraction.name(), Nd4j.scalar(i == 0 ? 0.5f : 0.0f))
                     .gradientCheck(i != 0)
             );
             if (error != null)
@@ -429,7 +429,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 tc.gradientCheck(gradientCheckable);
                 if(exp != null){
-                    tc.expectedOutput(loss.getVarName(), exp);
+                    tc.expectedOutput(loss.name(), exp);
                 }
 
                 String error = OpValidation.validate(tc);
@@ -996,7 +996,7 @@ public class ReductionOpValidation extends BaseOpValidation {
 
                 String msg = name + " - dims=" + Arrays.toString(reduceDims);
 
-                INDArray out = sd.execAndEndResult();
+                INDArray out = reduced.eval();
 
                 log.info(msg + " - expected shape: " + Arrays.toString(expShape) + ", out=" + Arrays.toString(out.shape())
                         + ", outExp=" + Arrays.toString(expOut.shape()));
@@ -1069,10 +1069,10 @@ public class ReductionOpValidation extends BaseOpValidation {
             sd.associateArrayWithVariable(inputArr, input);
             sd.associateArrayWithVariable(labelArr, label);
 
-            INDArray result = sd.execAndEndResult();
+            INDArray result = loss.eval();
             assertEquals(1, result.length());
 
-            sd.execBackwards(Collections.emptyMap());
+            sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
         }
     }
 

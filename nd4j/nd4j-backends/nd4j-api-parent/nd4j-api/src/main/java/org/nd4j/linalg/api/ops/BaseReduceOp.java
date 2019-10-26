@@ -61,7 +61,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             this.keepDims = keepDims;
-            this.xVertexId = i_v.getVarName();
+            this.xVertexId = i_v.name();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
         } else {
             throw new IllegalArgumentException("Input not null variable.");
@@ -81,8 +81,8 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
             this.dimensions = dimensions;
 
-            this.xVertexId = i_v.getVarName();
-            this.yVertexId = i_v2.getVarName();
+            this.xVertexId = i_v.name();
+            this.yVertexId = i_v2.name();
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.keepDims = keepDims;

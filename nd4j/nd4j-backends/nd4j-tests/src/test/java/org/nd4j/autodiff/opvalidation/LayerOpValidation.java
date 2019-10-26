@@ -79,7 +79,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
-                .expectedOutput(res.getVarName(), exp);
+                .expectedOutput(res.name(), exp);
 
         System.out.println(sameDiff.summary());
         System.out.println("============================");
@@ -112,7 +112,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
-                .expectedOutput(res.getVarName(), exp);
+                .expectedOutput(res.name(), exp);
 
 
         String err = OpValidation.validate(tc);
@@ -137,7 +137,7 @@ public class LayerOpValidation extends BaseOpValidation {
 
         TestCase tc = new TestCase(sameDiff)
                 .gradientCheck(true)
-                .expectedOutput(res.getVarName(), exp);
+                .expectedOutput(res.name(), exp);
 
         String err = OpValidation.validate(tc);
         assertNull(err);
@@ -591,7 +591,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable out = sd.cnn().sconv2d(vars, c);
         out = sd.nn().tanh("out", out);
 
-        INDArray outArr = sd.execAndEndResult();
+        INDArray outArr = out.eval();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
         val outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, depthWise * nIn, 27, 27}, outShape);
@@ -637,7 +637,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable out = sd.cnn().sconv2d(vars, c);
         out = sd.nn().tanh("out", out);
 
-        INDArray outArr = sd.execAndEndResult();
+        INDArray outArr = out.eval();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (8-2+0)/1+1 = 7
         val outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, nOut, 7, 7}, outShape);
@@ -688,7 +688,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable out = sd.cnn().deconv2d(vars, deconv);
         out = sd.nn().tanh("out", out);
 
-        INDArray outArr = sd.execAndEndResult();
+        INDArray outArr = out.eval();
         //Expected output size: out = (in + k + 2*p)/ s - 1 = (8 + 2+0)/1 - 1 = 9
         val outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, nOut, 9, 9}, outShape);
@@ -736,7 +736,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable out = sd.cnn().conv2d("conv", vars, c);
         out = sd.nn().tanh("out", out);
 
-        INDArray outArr = sd.execAndEndResult();
+        INDArray outArr = out.eval();
         //Expected output size: out = (in - k + 2*p)/s + 1 = (28-2+0)/1+1 = 27
         val outShape = outArr.shape();
         assertArrayEquals(new long[]{mb, nOut, 27, 27}, outShape);
@@ -770,7 +770,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable outPool = sd.cnn().maxPooling2d(in, pooling2DConfig);
         SDVariable out = sd.nn().tanh("out", outPool);
 
-        INDArray outArr = sd.execAndEndResult();
+        INDArray outArr = out.eval();
         val outShape = outArr.shape();
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
         assertArrayEquals(new long[]{mb, nIn, 7, 7}, outShape);
@@ -828,7 +828,7 @@ public class LayerOpValidation extends BaseOpValidation {
         SDVariable outPool = sd.cnn().avgPooling2d(in, pooling2DConfig);
         SDVariable out = sd.nn().tanh("out", outPool);
 
-        INDArray outArr = sd.execAndEndResult();
+        INDArray outArr = out.eval();
         val outShape = outArr.shape();
         // oH = (iH - (kH + (kH-1)*(dH-1)) + 2*pH)/sH + 1;
         assertArrayEquals(new long[]{mb, nIn, 7, 7}, outShape);
@@ -996,7 +996,7 @@ public class LayerOpValidation extends BaseOpValidation {
                 }
         );
 
-        TestCase tc = new TestCase(sd).gradientCheck(false).expectedOutput(res.getVarName(), expected);
+        TestCase tc = new TestCase(sd).gradientCheck(false).expectedOutput(res.name(), expected);
         String err = OpValidation.validate(tc);
 
         assertNull(err);

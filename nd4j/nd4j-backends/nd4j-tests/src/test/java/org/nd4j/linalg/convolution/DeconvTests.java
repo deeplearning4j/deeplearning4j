@@ -1,0 +1,93 @@
+package org.nd4j.linalg.convolution;
+
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
+import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.CustomOp;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.ops.transforms.Transforms;
+import org.nd4j.resources.Resources;
+
+import java.io.File;
+import java.util.*;
+
+import static org.junit.Assert.*;
+
+public class DeconvTests extends BaseNd4jTest {
+
+    @Rule
+    public TemporaryFolder testDir = new TemporaryFolder();
+
+    public DeconvTests(Nd4jBackend backend) {
+        super(backend);
+    }
+
+    @Override
+    public char ordering() {
+        return 'c';
+    }
+
+    @Test
+    public void compareKeras() throws Exception {
+        File f = testDir.newFolder();
+        Resources.copyDirectory("keras/deconv", f);
+
+        File[] files = f.listFiles();
+
+        Set<String> tests = new HashSet<>();
+        for(File file : files){
+            String n = file.getName();
+            if(!n.startsWith("mb"))
+                continue;
+
+            int idx = n.lastIndexOf('_');
+            String name = n.substring(0, idx);
+            tests.add(name);
+        }
+
+        List<String> l = new ArrayList<>(tests);
+        Collections.sort(l);
+        assertFalse(l.isEmpty());
+
+        for(String s : l){
+            String s2 = s.replaceAll("[a-zA-Z]", "");
+            String[] nums = s2.split("_");
+            int mb = Integer.parseInt(nums[0]);
+            int k = Integer.parseInt(nums[1]);
+            int size = Integer.parseInt(nums[2]);
+            int stride = Integer.parseInt(nums[3]);
+            boolean same = s.contains("same");
+            int d = Integer.parseInt(nums[5]);
+            boolean nchw = s.contains("nchw");
+
+            INDArray w = Nd4j.readNpy(new File(f, s + "_W.npy"));
+            INDArray b = Nd4j.readNpy(new File(f, s + "_b.npy"));
+            INDArray in = Nd4j.readNpy(new File(f, s + "_in.npy")).castTo(DataType.FLOAT);
+            INDArray expOut = Nd4j.readNpy(new File(f, s + "_out.npy"));
+
+            CustomOp op = DynamicCustomOp.builder("deconv2d")
+                    .addInputs(in, w, b)
+                    .addIntegerArguments(
+                            k, k,
+                            stride, stride,
+                            0, 0,   //padding
+                            d, d,
+                            same ? 1 : 0,
+                            nchw ? 0 : 1)
+                    .callInplace(false)
+                    .build();
+            INDArray out = Nd4j.create(op.calculateOutputShape().get(0));
+            out.assign(Double.NaN);
+            op.addOutputArgument(out);
+            Nd4j.exec(op);
+
+            boolean eq = expOut.equalsWithEps(out, 1e-4);
+            assertTrue(eq);
+        }
+    }
+}

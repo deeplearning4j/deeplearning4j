@@ -86,10 +86,10 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 SDVariable label = sd.placeHolder("label", DataType.DOUBLE, -1, 3);
 
                 SDVariable w0 = sd.var("w0", new XavierInitScheme('c', 4, 10), DataType.DOUBLE, 4, 10);
-                SDVariable b0 = sd.zero("b0", 1, 10);
+                SDVariable b0 = sd.var("b0", Nd4j.create(DataType.DOUBLE, 1, 10));
 
                 SDVariable w1 = sd.var("w1", new XavierInitScheme('c', 10, 3), DataType.DOUBLE, 10, 3);
-                SDVariable b1 = sd.zero("b1", 1, 3);
+                SDVariable b1 = sd.var("b1", Nd4j.create(DataType.DOUBLE,  1, 3));
 
                 SDVariable z0 = in.mmul(w0).add(b0);
                 SDVariable a0 = sd.nn().tanh(z0);
@@ -172,8 +172,8 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
                 Map<String,INDArray> placeholders = new HashMap<>();
                 placeholders.put("input", f);
                 placeholders.put("label", l);
-                Map<String,INDArray> map = sd.output(placeholders, lossMse.getVarName(), a1.getVarName());
-                INDArray outSd = map.get(a1.getVarName());
+                Map<String,INDArray> map = sd.output(placeholders, lossMse.name(), a1.name());
+                INDArray outSd = map.get(a1.name());
                 INDArray outDl4j = net.output(f);
 
                 assertEquals(testName, outDl4j, outSd);
@@ -187,7 +187,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 //Check score
                 double scoreDl4j = net.score();
-                double scoreSd = map.get(lossMse.getVarName()).getDouble(0) + sd.calcRegularizationScore();
+                double scoreSd = map.get(lossMse.name()).getDouble(0) + sd.calcRegularizationScore();
                 assertEquals(testName, scoreDl4j, scoreSd, 1e-6);
 
                 double lossRegScoreSD = sd.calcRegularizationScore();
@@ -197,15 +197,15 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 //Check gradients (before updater applied)
                 Map<String,INDArray> grads = net.gradient().gradientForVariable();
-                sd.execBackwards(placeholders);
+                Map<String,INDArray> gm = sd.calculateGradients(placeholders, b1.name(), w1.name(), b0.name(), w0.name());
 
                 //Note that the SameDiff gradients don't include the L1/L2 terms at present just from execBackwards()... these are added in fitting only
                 //We can check correctness though with training param checks later
                 if(l1Val == 0 && l2Val == 0 && wdVal == 0) {
-                    assertEquals(testName, grads.get("1_b"), b1.getGradient().getArr());
-                    assertEquals(testName, grads.get("1_W"), w1.getGradient().getArr());
-                    assertEquals(testName, grads.get("0_b"), b0.getGradient().getArr());
-                    assertEquals(testName, grads.get("0_W"), w0.getGradient().getArr());
+                    assertEquals(testName, grads.get("1_b"), gm.get(b1.name()));
+                    assertEquals(testName, grads.get("1_W"), gm.get(w1.name()));
+                    assertEquals(testName, grads.get("0_b"), gm.get(b0.name()));
+                    assertEquals(testName, grads.get("0_W"), gm.get(w0.name()));
                 }
 
 

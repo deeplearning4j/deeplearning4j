@@ -192,7 +192,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
                 String name = inputs.get(j);
                 dLdIns[j] = sameDiff.grad(name).getArr();
 
-                String gradName = sameDiff.grad(inputNames.get(j)).getVarName();
+                String gradName = sameDiff.grad(inputNames.get(j)).name();
                 if(dLdIns[j] == null && fnName.equals(gradName)){
                     //Edge case with lambda vertices like identity: SameDiff doesn't store the placeholders
                     // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
@@ -271,7 +271,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             fn = sameDiff.f().externalErrors(layerOutput);
             fn.outputVariable();
 
-            this.outputKey = outputVar.getVarName();
+            this.outputKey = outputVar.name();
         }
     }
 

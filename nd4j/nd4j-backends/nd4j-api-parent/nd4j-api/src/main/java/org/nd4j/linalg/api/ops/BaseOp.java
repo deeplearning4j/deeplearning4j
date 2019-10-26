@@ -247,7 +247,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
             val outputNames = sameDiff.getOutputsForOp(this);
             //no need to dynamically create if already exists
             if(outputNames != null) {
-                zVertexId = sameDiff.getVariable(outputNames[0]).getVarName();
+                zVertexId = sameDiff.getVariable(outputNames[0]).name();
 
 
                 return new SDVariable[]{sameDiff.getVariable(outputNames[0])};
@@ -261,7 +261,7 @@ public abstract class BaseOp extends DifferentialFunction implements Op {
                     return newVars;
                 }
 
-                sameDiff.setArrayForVariable(newVars[0].getVarName(),inputArr);
+                sameDiff.setArrayForVariable(newVars[0].name(),inputArr);
                 z = inputArr;
                 if(sameDiff.getOutputsForOp(this) == null)
                     sameDiff.addOutgoingFor(newVars,this);

@@ -204,10 +204,10 @@ public abstract class AbstractSession<T, O> {
             VariableType vt = v.getVariableType();
             if (vt == VariableType.VARIABLE || vt == VariableType.CONSTANT) {
                 ExecType et = vt == VariableType.VARIABLE ? ExecType.VARIABLE : ExecType.CONSTANT;
-                ExecStep es = new ExecStep(et, v.getVarName(), new FrameIter(OUTER_FRAME, 0, null));
+                ExecStep es = new ExecStep(et, v.name(), new FrameIter(OUTER_FRAME, 0, null));
                 dt.addDependency(es, start);
 
-                Variable var = sameDiff.getVariables().get(v.getVarName());
+                Variable var = sameDiff.getVariables().get(v.name());
                 if (var.getControlDeps() != null) {
                     addVarControlDeps(es, var);     //Before this variable can be considered available for use, we need specified op to be executed
                 }
@@ -668,11 +668,11 @@ public abstract class AbstractSession<T, O> {
         Variable v = sameDiff.getVariables().get(varName);
         VariableType vt = v.getVariable().getVariableType();
         if (vt == VariableType.VARIABLE) {
-            return new ExecStep(ExecType.VARIABLE, v.getVariable().getVarName(), new FrameIter(OUTER_FRAME, 0, null));
+            return new ExecStep(ExecType.VARIABLE, v.getVariable().name(), new FrameIter(OUTER_FRAME, 0, null));
         } else if (vt == VariableType.PLACEHOLDER) {
-            return new ExecStep(ExecType.PLACEHOLDER, v.getVariable().getVarName(), new FrameIter(OUTER_FRAME, 0, null));
+            return new ExecStep(ExecType.PLACEHOLDER, v.getVariable().name(), new FrameIter(OUTER_FRAME, 0, null));
         } else if (vt == VariableType.CONSTANT) {
-            return new ExecStep(ExecType.CONSTANT, v.getVariable().getVarName(), new FrameIter(OUTER_FRAME, 0, null));
+            return new ExecStep(ExecType.CONSTANT, v.getVariable().name(), new FrameIter(OUTER_FRAME, 0, null));
         } else {
             //Array type. Must be output of an op
             String outOfOp = v.getOutputOfOp();

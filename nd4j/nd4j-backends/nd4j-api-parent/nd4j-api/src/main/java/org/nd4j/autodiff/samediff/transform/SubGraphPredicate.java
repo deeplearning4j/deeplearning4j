@@ -77,7 +77,7 @@ public class SubGraphPredicate extends OpPredicate {
                 }
 
                 SDVariable in = inputs[inNum];
-                DifferentialFunction df = sameDiff.getVariableOutputOp(in.getVarName());
+                DifferentialFunction df = sameDiff.getVariableOutputOp(in.name());
                 if (df == null || !e.getValue().matches(sameDiff, df)) {
                     return false;
                 }
@@ -103,7 +103,7 @@ public class SubGraphPredicate extends OpPredicate {
             for(Map.Entry<Integer,OpPredicate> entry : opInputSubgraphPredicates.entrySet()){
                 OpPredicate p2 = entry.getValue();
                 SDVariable arg = rootFn.arg(entry.getKey());
-                DifferentialFunction df = sd.getVariableOutputOp(arg.getVarName());
+                DifferentialFunction df = sd.getVariableOutputOp(arg.name());
                 if(df != null){
                     childNodes.add(df);
 

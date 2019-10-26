@@ -98,9 +98,9 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
         //TODO we shouldn't be clearing this on every single iteration, in 99.5% of cases variables will be same as last iteration...
         for (SDVariable v : sameDiff.variables()) {
             if (v.getVariableType() == VariableType.CONSTANT) {
-                arrayUseTracker.addDependency(v.getArr(), new ConstantDep(v.getVarName()));
+                arrayUseTracker.addDependency(v.getArr(), new ConstantDep(v.name()));
             } else if (v.getVariableType() == VariableType.VARIABLE) {
-                arrayUseTracker.addDependency(v.getArr(), new VariableDep(v.getVarName()));
+                arrayUseTracker.addDependency(v.getArr(), new VariableDep(v.name()));
             }
         }
 
@@ -484,7 +484,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
 
         if (op instanceof TensorArray) {
             //Create a TensorArray
-            VarId vid = outputFrameIter.toVarId(op.outputVariable().getVarName());
+            VarId vid = outputFrameIter.toVarId(op.outputVariable().name());
             Preconditions.checkState(!tensorArrays.containsKey(vid), "TensorArray already exists for %s when executing TensorArrayV3", vid);
             tensorArrays.put(vid, new ArrayList<INDArray>());
 
@@ -504,18 +504,18 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
 
             //Work out the frame/iteration:
-            VarId v = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            VarId v = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (v == null && allIterInputs != null) {
-                v = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                v = lookup(inTensorArray.name(), allIterInputs, false);
             }
 
-            Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.getVarName());
+            Preconditions.checkState(v != null, "Could not find input %s", inTensorArray.name());
 
-            while (sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter) {
+            while (sameDiff.getVariableOutputOp(inTensorArray.name()) instanceof Enter) {
                 //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayRead
                 //TODO also TensorArrayWrite, scatter, etc??
-                inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
-                v = v.getParentFrame().toVarId(inTensorArray.getVarName());
+                inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.name()).arg();
+                v = v.getParentFrame().toVarId(inTensorArray.name());
             }
 
             List<INDArray> list = getTensorArrays().get(v);
@@ -528,31 +528,31 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             //TensorArrayWrite - also has a scalar 0.0 that it returns...
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             //Work out the varid (frame/iteration) of the tensor array:
-            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (tArr == null && allIterInputs != null) {
-                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                tArr = lookup(inTensorArray.name(), allIterInputs, false);
             }
 
-            Preconditions.checkState(tArr != null, "Could not find input %s", inTensorArray.getVarName());
+            Preconditions.checkState(tArr != null, "Could not find input %s", inTensorArray.name());
 
-            while (sameDiff.getVariableOutputOp(inTensorArray.getVarName()) instanceof Enter) {
+            while (sameDiff.getVariableOutputOp(inTensorArray.name()) instanceof Enter) {
                 //Handle the Enter case: this is like TensorArray -> Enter -> TensorArrayWrite
                 //TODO also TensorArrayScatter, etc??
-                inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.getVarName()).arg();
-                tArr = tArr.getParentFrame().toVarId(inTensorArray.getVarName());
+                inTensorArray = sameDiff.getVariableOutputOp(inTensorArray.name()).arg();
+                tArr = tArr.getParentFrame().toVarId(inTensorArray.name());
             }
 
             //Input 0 is the TensorArray (or dummy variable that represents it) - but sometimes Enter, in TensorArray -> Enter -> TensorARrayRead
             //Input 1 is the index
             //Input 2 is the value to write
 
-            String idxName = op.arg(1).getVarName();
+            String idxName = op.arg(1).name();
             SDVariable idxSDV = sameDiff.getVariable(idxName);
             INDArray idxArr = getArray(idxSDV, opInputs, allIterInputs);
             Preconditions.checkState(idxArr.isScalar(), "Index variable ID for TensorArrayWrite should be a scalar, got %ndShape", idxArr);
             int idx = idxArr.getInt(0);
 
-            String inName = op.arg(2).getVarName();
+            String inName = op.arg(2).name();
             SDVariable inSDV = sameDiff.getVariable(inName);
             INDArray arr = getArray(inSDV, opInputs, allIterInputs);
             Preconditions.checkState(arr != null, "Could not find array for %s", inName);
@@ -577,9 +577,9 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             //Index 0 is the TensorArray (or dummy variable that represents it)
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
             //Work out the varid (frame/iteration) of the tensor array:
-            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (tArr == null && allIterInputs != null) {
-                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                tArr = lookup(inTensorArray.name(), allIterInputs, false);
             }
             List<INDArray> l = tensorArrays.get(tArr);
             Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
@@ -588,9 +588,9 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             return new INDArray[]{scalar};
         } else if (op instanceof TensorArrayConcat) {
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (tArr == null && allIterInputs != null) {
-                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                tArr = lookup(inTensorArray.name(), allIterInputs, false);
             }
             List<INDArray> l = tensorArrays.get(tArr);
 
@@ -605,14 +605,14 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             //Input 1: the indices (1d integer vector)
 
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (tArr == null && allIterInputs != null) {
-                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                tArr = lookup(inTensorArray.name(), allIterInputs, false);
             }
             List<INDArray> l = tensorArrays.get(tArr);
             Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
 
-            String indicesName = op.arg(1).getVarName();
+            String indicesName = op.arg(1).name();
             SDVariable indicesSDV = sameDiff.getVariable(indicesName);
             INDArray idxArr = getArray(indicesSDV, opInputs, allIterInputs);
             Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayGather should be a vector, got %ndShape for %s", idxArr, indicesName);
@@ -644,22 +644,22 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             //Input 2: The values to scatter
 
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-            TensorArray ta = (TensorArray) sameDiff.getVariableOutputOp(inTensorArray.getVarName());
-            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            TensorArray ta = (TensorArray) sameDiff.getVariableOutputOp(inTensorArray.name());
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (tArr == null && allIterInputs != null) {
-                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                tArr = lookup(inTensorArray.name(), allIterInputs, false);
             }
             List<INDArray> l = tensorArrays.get(tArr);
             Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
 
-            String indicesName = op.arg(1).getVarName();
+            String indicesName = op.arg(1).name();
             SDVariable indicesSDV = sameDiff.getVariable(indicesName);
             INDArray idxArr = getArray(indicesSDV, opInputs, allIterInputs);
             Preconditions.checkState(idxArr.isVector(), "Indices variable for TensorArrayScatter should be a vector, got %ndShape for %s", idxArr, indicesName);
             Preconditions.checkState(idxArr.dataType().isIntType(), "Indices variable for TensorArrayScatter should be an integer type, got %s for array %s", idxArr.dataType(), indicesName);
             int[] idxs = idxArr.toIntVector();
 
-            String valuesName = op.arg(2).getVarName();
+            String valuesName = op.arg(2).name();
             SDVariable valuesSDV = sameDiff.getVariable(valuesName);
             INDArray valuesArr = getArray(valuesSDV, opInputs, allIterInputs);
 
@@ -697,18 +697,18 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
             //Input 2: the size of each split (1d integer vector)
 
             SDVariable inTensorArray = op.arg(0);   //Dummy variable representing the tensor array
-            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.getVarName(), opInputs, false));
+            VarId tArr = (opInputs == null ? null : lookup(inTensorArray.name(), opInputs, false));
             if (tArr == null && allIterInputs != null) {
-                tArr = lookup(inTensorArray.getVarName(), allIterInputs, false);
+                tArr = lookup(inTensorArray.name(), allIterInputs, false);
             }
             List<INDArray> l = tensorArrays.get(tArr);
             Preconditions.checkState(l != null, "Could not find TensorArray: %s", tArr);
 
-            String splitName = op.arg(1).getVarName();
+            String splitName = op.arg(1).name();
             INDArray splitArr = getArray(sameDiff.getVariable(splitName), opInputs, allIterInputs);
 
 
-            String sizeName = op.arg(2).getVarName();
+            String sizeName = op.arg(2).name();
             SDVariable sizeSDV = sameDiff.getVariable(sizeName);
             INDArray sizeArr = getArray(sizeSDV, opInputs, allIterInputs);
             Preconditions.checkState(sizeArr.isVector(), "Indices variable for TensorArraySplit should be a vector, got %ndShape for %s", sizeArr, sizeName);
@@ -803,7 +803,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
                     VarId vid = lookup(s, opInputs, allIterInputs, true);
                     args[i] = nodeOutputs.get(vid);
                 }
-                Preconditions.checkNotNull(args[i], "Could not parameterize op %s: array %s (variable %s) is null", opName, i, v.getVarName());
+                Preconditions.checkNotNull(args[i], "Could not parameterize op %s: array %s (variable %s) is null", opName, i, v.name());
                 i++;
             }
         }
@@ -825,7 +825,6 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
                 return sdo;
             }
 
-            df.resolvePropertiesFromSameDiffBeforeExecution();  //TODO This is to be removed
             List<LongShapeDescriptor> outShape = customOp.calculateOutputShape();
             Preconditions.checkState(outShape != null && outShape.size() > 0, "Failed to calculate output shapes for op %s (%s) - no shapes were returned by calculateOutputShape()", customOp.opName(), customOp.getOwnName());
             String[] outNames = df.outputVariablesNames();
@@ -918,7 +917,6 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
                     op.setZ(z);
                 }
             }
-            df.resolvePropertiesFromSameDiffBeforeExecution();
         }
 
         return sdo;
@@ -926,12 +924,12 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
 
 
     protected INDArray getArray(SDVariable sdv, Collection<VarId> opInputs, Collection<VarId> allIterInputs) {
-        String n = sdv.getVarName();
+        String n = sdv.name();
         if (sdv.getVariableType() == VariableType.CONSTANT || sdv.getVariableType() == VariableType.VARIABLE) {
             return getConstantOrVariable(n);
         } else {
             VarId inVarId = lookup(n, opInputs, allIterInputs, false);
-            Preconditions.checkState(inVarId != null, "Could not find array for variable %s", sdv.getVarName());
+            Preconditions.checkState(inVarId != null, "Could not find array for variable %s", sdv.name());
             return nodeOutputs.get(inVarId);
         }
     }

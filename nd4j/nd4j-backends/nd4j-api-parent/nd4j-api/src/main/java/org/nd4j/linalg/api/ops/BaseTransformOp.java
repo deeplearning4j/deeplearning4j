@@ -56,16 +56,9 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.sameDiff = sameDiff;
             this.inPlace = inPlace;
-            this.xVertexId = i_v1.getVarName();
-            this.yVertexId = i_v2.getVarName();
+            this.xVertexId = i_v1.name();
+            this.yVertexId = i_v2.name();
             sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
-            if(Shape.isPlaceholderShape(i_v1.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v1.getVarName());
-            }
-
-            if(Shape.isPlaceholderShape(i_v2.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v2.getVarName());
-            }
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
@@ -87,18 +80,9 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
             f().validateDifferentialFunctionsameDiff(i_v1);
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.sameDiff = sameDiff;
-            this.xVertexId = i_v1.getVarName();
-            this.yVertexId = i_v2.getVarName();
+            this.xVertexId = i_v1.name();
+            this.yVertexId = i_v2.name();
             sameDiff.addArgsFor(new SDVariable[]{i_v1,i_v2},this);
-
-            if(Shape.isPlaceholderShape(i_v1.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v1.getVarName());
-            }
-
-            if(Shape.isPlaceholderShape(i_v2.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v2.getVarName());
-            }
-
         } else {
             throw new IllegalArgumentException("Input not null variables.");
         }
@@ -130,14 +114,8 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
         if (i_v != null) {
             f().validateDifferentialFunctionsameDiff(i_v);
-            this.xVertexId = i_v.getVarName();
+            this.xVertexId = i_v.name();
             sameDiff.addArgsFor(new SDVariable[]{i_v},this);
-
-            if(Shape.isPlaceholderShape(i_v.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v.getVarName());
-            }
-
-
         } else {
             throw new IllegalArgumentException("Input must not null variable.");
         }

@@ -71,9 +71,9 @@ public class CheckNumerics extends DynamicCustomOp {
         SDVariable msg = initWith.constant(name + "/message", Nd4j.scalar(str));
         List<String> newInputs = new ArrayList<>(2);
         newInputs.addAll(initWith.getOps().get(name).getInputsToOp());
-        newInputs.add(msg.getVarName());
+        newInputs.add(msg.name());
         initWith.getOps().get(name).setInputsToOp(newInputs);
-        initWith.getVariables().get(msg.getVarName()).setInputsForOp(Collections.singletonList(getOwnName()));    }
+        initWith.getVariables().get(msg.name()).setInputsForOp(Collections.singletonList(getOwnName()));    }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){

@@ -88,9 +88,9 @@ public class TrainingSession extends InferenceSession {
                 continue;
             }
 
-            requiredActivations.add(grad.getVarName());
+            requiredActivations.add(grad.name());
 
-            gradVarToVarMap.put(grad.getVarName(), s);
+            gradVarToVarMap.put(grad.name(), s);
         }
 
         //Set up losses

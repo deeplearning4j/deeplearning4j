@@ -128,7 +128,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 //Using stdev here: mean/sum would backprop the same gradient for each input...
                 SDVariable stdev = sd.standardDeviation("out", reshape, true);
 
-                INDArray out = sd.execAndEndResult();
+                INDArray out = stdev.eval();
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
 
                 String msg = "toShape=" + Arrays.toString(toShape) + ", order=" + order;
@@ -247,7 +247,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 Map<String,INDArray> m = sd.outputAll(null);
                 INDArray expOut = in.getArr().std(true);
 
-                assertArrayEquals(expExpandShape, m.get(expand.getVarName()).shape());
+                assertArrayEquals(expExpandShape, m.get(expand.name()).shape());
                 INDArray expExpand = inArr.dup('c').reshape(expExpandShape);
 
                 String msg = "expandDim=" + i + ", source=" + p.getSecond();
@@ -256,7 +256,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                 TestCase tc = new TestCase(sd);
                 tc.testName(msg)
                         .expectedOutput("out", expOut)
-                        .expectedOutput(expand.getVarName(), expExpand);
+                        .expectedOutput(expand.name(), expExpand);
 
                 String error = OpValidation.validate(tc);
                 if(error != null){
@@ -306,17 +306,17 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                 Map<String,INDArray> m = sd.outputAll(null);
 
-                INDArray squeezed = m.get(squeeze.getVarName());
+                INDArray squeezed = m.get(squeeze.name());
 //                assertArrayEquals(expShapePostSqueeze, squeezed.shape());
 
-                INDArray out = sd.execAndEndResult();
+                INDArray out = m.get(stdev.name());
                 INDArray expOut = in.getArr().std(true, Integer.MAX_VALUE);
                 assertEquals(expOut, out);
 
                 String msg = "squeezeDim=" + i + ", source=" + p.getSecond();
                 TestCase tc = new TestCase(sd)
                         .testName(msg)
-                        .expected(squeeze.getVarName(), exp)
+                        .expected(squeeze.name(), exp)
                         .expectedOutput("out", expOut);
 
 
@@ -618,7 +618,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                     SDVariable stack = sd.stack(axis, in);
 
-                    INDArray out = sd.execAndEndResult();
+                    INDArray out = stack.eval();
                     assertArrayEquals(expOutShape, out.shape());
 
                     if (ArrayUtil.prodLong(shape) == 1) {
@@ -714,7 +714,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
                     Map<String,INDArray> m = sd.outputAll(null);
                     for (SDVariable v : unstacked) {
-                        assertArrayEquals(msg, shape, m.get(v.getVarName()).shape());
+                        assertArrayEquals(msg, shape, m.get(v.name()).shape());
                     }
 
                     TestCase tc = new TestCase(sd).testName(msg);
@@ -884,7 +884,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray exp = arr.dup('c').reshape('c', 4,3);
 
         String err = OpValidation.validate(new TestCase(sameDiff)
-                .expectedOutput(result1.getVarName(), exp));
+                .expectedOutput(result1.name(), exp));
 
         assertNull(err);
     }
@@ -920,7 +920,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable result = sameDiff.transpose(x);
         SDVariable loss = sameDiff.standardDeviation(result, true);
 
-        String err = OpValidation.validate(new TestCase(sameDiff).expectedOutput(result.getVarName(), arr.transpose()));
+        String err = OpValidation.validate(new TestCase(sameDiff).expectedOutput(result.name(), arr.transpose()));
         assertNull(err);
     }
 
@@ -1022,17 +1022,16 @@ public class ShapeOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         INDArray ia = Nd4j.create(new double[]{1,2,3});
         SDVariable in = sd.var(ia);
-        SDVariable constant = sd.constant(in, 3);
-        SDVariable loss = constant.std(true);
+        SDVariable loss = in.std(true);
 
-        assertNull(OpValidation.validate(new TestCase(sd).expected(constant, ia)));
+        assertNull(OpValidation.validate(new TestCase(sd).expected(in, ia)));
 
         //Case 1: shape is provided + scalar
 
         sd = SameDiff.create();
         ia = Nd4j.scalar(3.0);
         in = sd.var(ia);
-        constant = sd.constant(in, 3,4,5);
+        SDVariable constant = sd.constant(Nd4j.create(DataType.FLOAT, 3,4,5));
         INDArray exp = Nd4j.valueArrayOf(new long[]{3,4,5}, 3.0);
         loss = constant.std(true);
 
@@ -1149,7 +1148,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         SDVariable loss = sameDiff.standardDeviation(result, true);
         String err = OpValidation.validate(new TestCase(sameDiff)
-                .expected(result.getVarName(), expected)
+                .expected(result.name(), expected)
                 .gradientCheck(false));
         assertNull(err);
     }
@@ -1172,7 +1171,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray outExp = Nd4j.scalar(d);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(md.getVarName(), outExp));
+                .expected(md.name(), outExp));
         assertNull(err);
     }
 
@@ -1196,7 +1195,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray outExp = Nd4j.scalar(d);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(md.getVarName(), outExp));
+                .expected(md.name(), outExp));
         assertNull(err);
     }
 
@@ -1227,7 +1226,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray outExp = Nd4j.scalar(d);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(md.getVarName(), outExp));
+                .expected(md.name(), outExp));
         assertNull(err);
     }
 
@@ -1247,7 +1246,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         //System.out.println(d);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expected(md.getVarName(), Nd4j.scalar(d)));
+                .expected(md.name(), Nd4j.scalar(d)));
         assertNull(err);
     }
 
@@ -1332,7 +1331,7 @@ public class ShapeOpValidation extends BaseOpValidation {
                     .testName(op)
                     .expected(sm, exp)
                     .gradientCheck(true)
-                    .gradCheckSkipVariables(segments.getVarName());
+                    .gradCheckSkipVariables(segments.name());
 
             String err = OpValidation.validate(tc);
             if(err != null)
@@ -1383,7 +1382,7 @@ public class ShapeOpValidation extends BaseOpValidation {
 
         String err = OpValidation.validate(new TestCase(sameDiff)
                 .expected(result1, expected)
-                .gradCheckSkipVariables(lengths.getVarName()));
+                .gradCheckSkipVariables(lengths.name()));
         assertNull(err);
 
         // Test with dynamic maxlen
@@ -1591,8 +1590,8 @@ public class ShapeOpValidation extends BaseOpValidation {
         INDArray arr = Transforms.sigmoid(Nd4j.linspace(1, 6, 6).reshape(2, 3));
         SDVariable x = sameDiff.var("x", arr);
         SDVariable result = sameDiff.permute(x, 1, 0);
-        sameDiff.execAll(null);
-        assertArrayEquals(new long[]{3, 2}, result.getShape());
+        Map<String,INDArray> m = sameDiff.outputAll(null);
+        assertArrayEquals(new long[]{3, 2}, m.get(result.name()).shape());
 
     }
 
@@ -1629,10 +1628,10 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable slice_full = sd.slice(in, new int[]{0, 0}, new int[]{3, 4});
         SDVariable subPart = sd.slice(in, new int[]{1, 2}, new int[]{2, 2});
 
-        sd.exec(Collections.emptyMap(), sd.outputs());
+        Map<String,INDArray> m = sd.outputAll(Collections.emptyMap());
 
-        assertEquals(inArr, slice_full.getArr());
-        assertEquals(inArr.get(interval(1, 3), interval(2, 4)), subPart.getArr());
+        assertEquals(inArr, m.get(slice_full.name()));
+        assertEquals(inArr.get(interval(1, 3), interval(2, 4)), m.get(subPart.name()));
     }
 
 
@@ -1645,10 +1644,10 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable slice_full = sd.slice(in, new int[]{0, 0, 0}, new int[]{3, 4, 5});
         SDVariable subPart = sd.slice(in, new int[]{1, 2, 3}, new int[]{2, 2, 1});
 
-        sd.exec(Collections.emptyMap(), sd.outputs());
+        Map<String,INDArray> m = sd.outputAll(null);
 
-        assertEquals(inArr, slice_full.getArr());
-        assertEquals(inArr.get(interval(1, 3), interval(2, 4), interval(3, 4)), subPart.getArr());
+        assertEquals(inArr, m.get(slice_full.name()));
+        assertEquals(inArr.get(interval(1, 3), interval(2, 4), interval(3, 4)), m.get(subPart.name()));
     }
 
     @Test
@@ -1661,7 +1660,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable subPart = sd.stridedSlice(in, new int[]{1, 2}, new int[]{3, 4}, new int[]{1, 1});
         // SDVariable subPart2 = sd.stridedSlice(in, new int[]{0, 0}, new int[]{4, 5}, new int[]{2, 2});
 
-        sd.execAll(null);
+        sd.outputAll(null);
 
         assertEquals(inArr, slice_full.getArr());
         assertEquals(inArr.get(interval(1, 3), interval(2, 4)), subPart.getArr());
@@ -1678,7 +1677,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable slice1 = sd.stridedSlice(in, new int[]{-999, 0}, new int[]{2, 4}, new int[]{1, 1}, 1 << 1, 0, 0, 0, 0);
         SDVariable slice2 = sd.stridedSlice(in, new int[]{1, 0}, new int[]{-999, 4}, new int[]{1, 1}, 0, 1, 0, 0, 0);
 
-        sd.execAll(null);
+        sd.outputAll(null);
 
         assertEquals(inArr.get(NDArrayIndex.interval(0, 2), NDArrayIndex.all()), slice1.getArr());
         assertEquals(inArr.get(NDArrayIndex.interval(1, 3), NDArrayIndex.all()), slice2.getArr());
@@ -1695,7 +1694,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         //[1:3,...,1:4] -> [1:3,:,1:4]
         SDVariable slice2 = sd.stridedSlice(in, new int[]{1, 1}, new int[]{3, 4}, new int[]{1, 1}, 0, 0, 1 << 1, 0, 0);
 
-        sd.execAll(Collections.emptyMap());
+        sd.outputAll(Collections.emptyMap());
 
         assertEquals(inArr.get(interval(1, 3), all(), all()), slice.getArr());
         assertEquals(inArr.get(interval(1, 3), all(), all()), slice2.getArr());
@@ -1708,7 +1707,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable in = sd.var("in", inArr);
         SDVariable slice = sd.stridedSlice(in, new int[]{-999, 0, 0, 0}, new int[]{-999, 3, 4, 5}, new int[]{-999, 1, 1, 1}, 0, 0, 0, 1, 0);
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = slice.eval();
 
         assertArrayEquals(new long[]{1, 3, 4, 5}, out.shape());
         assertEquals(inArr, out.get(point(0), all(), all(), all()));
@@ -1720,7 +1719,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable in = sd.var("in", inArr);
         SDVariable slice = sd.stridedSlice(in, new int[]{1, 1, -999, 1}, new int[]{3, 3, -999, 4}, new int[]{1, 1, -999, 1}, 0, 0, 0, 1 << 2, 0);
-        INDArray out = sd.execAndEndResult();
+        INDArray out = slice.eval();
 
         assertArrayEquals(new long[]{2, 2, 1, 3}, slice.getArr().shape());
     }
@@ -1735,7 +1734,7 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable slice2 = sd.stridedSlice(in, new int[]{2, 0, 0}, new int[]{-999, 4, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1);
         SDVariable slice3 = sd.stridedSlice(in, new int[]{1, 2, 1}, new int[]{-999, -999, 5}, new int[]{1, 1, 1}, 0, 0, 0, 0, 1 | 1 << 1);
 
-        sd.execAll(null);
+        sd.outputAll(null);
 
         assertEquals(inArr.get(point(0), all(), all()), slice.getArr());
         assertEquals(inArr.get(point(2), all(), all()), slice2.getArr());
@@ -1880,8 +1879,8 @@ public class ShapeOpValidation extends BaseOpValidation {
 
 
 //            log.info(sd.summary());
-            sd.exec(Collections.emptyMap(), Lists.newArrayList(s));
-            sd.execBackwards(Collections.emptyMap());
+            sd.output(Collections.emptyMap(), Lists.newArrayList(s));
+            sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
         }
     }
 
@@ -2405,8 +2404,8 @@ public class ShapeOpValidation extends BaseOpValidation {
         SDVariable gathered = sd.gather(input, indices, 1);
         SDVariable loss = gathered.std(true);
 
-        sd.exec(null, gathered.getVarName());
-        sd.setLossVariables(gathered.getVarName());
+        sd.output((Map<String,INDArray>)null, gathered.name());
+        sd.setLossVariables(gathered.name());
 
         String err = OpValidation.validate(new TestCase(sd)
                 .gradCheckEpsilon(1e-3)

@@ -176,8 +176,10 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int outDepth = (int) weights.size(1);
 
         if (input.size(1) != inDepth && input.size(3) == inDepth) {
+            //TODO AB 2019/10/25 this is an ugly "pseudo-NHWC support" hack that needs to be removed ASAD
+            //https://github.com/eclipse/deeplearning4j/issues/8315
             input = input.permute(0, 3, 1, 2);
-        } else if (input.size(1) != inDepth && input.size(3) != inDepth) {
+        } else if (input.size(1) != inDepth ) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
                 layerName = "(not named)";

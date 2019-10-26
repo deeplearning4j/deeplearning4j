@@ -20,6 +20,7 @@ import java.util.Properties;
 import lombok.Getter;
 import org.bytedeco.javacpp.Loader;
 import org.nd4j.config.ND4JEnvironmentVars;
+import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
@@ -101,7 +102,12 @@ public class NativeOpsHolder {
             }
             //deviceNativeOps.setOmpNumThreads(4);
 
-            log.info("Number of threads used for OpenMP: {}", deviceNativeOps.ompGetMaxThreads());
+            String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
+            boolean logInit = Boolean.parseBoolean(logInitProperty);
+
+            if(logInit) {
+                log.info("Number of threads used for OpenMP: {}", deviceNativeOps.ompGetMaxThreads());
+            }
         } catch (Exception | Error e) {
             throw new RuntimeException(
                             "ND4J is probably missing dependencies. For more information, please refer to: http://nd4j.org/getstarted.html",

@@ -810,8 +810,6 @@ public class TFGraphMapper {
                             on.setValueFor(currentField, tensor.getFloat(0));
                         }
                     }
-                } else {
-                    on.getSameDiff().addPropertyToResolve(on, entry.getKey());
                 }
             }
         }

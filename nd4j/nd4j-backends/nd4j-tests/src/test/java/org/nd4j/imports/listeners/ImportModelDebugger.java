@@ -118,7 +118,7 @@ public class ImportModelDebugger {
 
         List<String> outputs = sd.outputs();
 
-        sd.exec(ph, outputs);
+        sd.output(ph, outputs);
     }
 
 

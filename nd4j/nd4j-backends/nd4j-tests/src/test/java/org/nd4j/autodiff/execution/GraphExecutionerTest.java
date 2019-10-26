@@ -118,7 +118,7 @@ public class GraphExecutionerTest extends BaseNd4jTest {
         SDVariable result = sdVariable.add(scalarOne);
         SDVariable total = sameDiff.sum(result,Integer.MAX_VALUE);
 
-        log.info("TOTAL: {}; Id: {}", total.getVarName(), total);
+        log.info("TOTAL: {}; Id: {}", total.name(), total);
 
         INDArray[] resB = executionerB.executeGraph(sameDiff, configVarSpace);
 

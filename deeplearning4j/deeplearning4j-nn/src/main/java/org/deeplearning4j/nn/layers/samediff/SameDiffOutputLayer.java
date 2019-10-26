@@ -112,7 +112,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 phMap.put(LABELS_KEY, labels);
             }
 
-            String s = activations ? layerConf().activationsVertexName() : outputVar.getVarName();
+            String s = activations ? layerConf().activationsVertexName() : outputVar.name();
 
             INDArray out = sameDiff.outputSingle(phMap, s);
 
@@ -160,31 +160,35 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             }
 
             List<String> gradVarNames = new ArrayList<>();
-            for(String s : paramTable.keySet()){
-                gradVarNames.add(sameDiff.getVariable(s).getGradient().getVarName());
-            }
-            gradVarNames.add(sameDiff.grad(INPUT_KEY).getVarName());
+            gradVarNames.addAll(paramTable.keySet());
+            gradVarNames.add(INPUT_KEY);
 
             Map<String,INDArray> phMap = new HashMap<>();
             phMap.put(INPUT_KEY, input);
             phMap.put(LABELS_KEY, labels);
 
-            sameDiff.execBackwards(phMap, gradVarNames);
+            Map<String,INDArray> grads = sameDiff.calculateGradients(phMap, gradVarNames);
             for(String s : paramTable.keySet() ){
-                INDArray sdGrad = sameDiff.grad(s).getArr();
+                INDArray sdGrad = grads.get(s);
                 INDArray dl4jGrad = gradTable.get(s);
                 dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
                 g.gradientForVariable().put(s, dl4jGrad);
+                if(sdGrad.closeable()){
+                    sdGrad.close();
+                }
             }
 
-            dLdIn = sameDiff.grad(INPUT_KEY).getArr();
+            dLdIn = grads.get(INPUT_KEY);
         }
 
         //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
         sameDiff.clearPlaceholders(true);
         sameDiff.clearOpInputs();
 
-        return new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
+        Pair<Gradient,INDArray> p = new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
+        if(dLdIn.closeable())
+            dLdIn.close();
+        return p;
     }
 
     /**Returns the parameters of the neural network as a flattened row vector
@@ -297,7 +301,7 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
                 sameDiff.associateArrayWithVariable(arr, sameDiff.getVariable(e.getKey()));
             }
 
-            this.outputKey = layerOutput.getVarName();
+            this.outputKey = layerOutput.name();
         }
     }
 
