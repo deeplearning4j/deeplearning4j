@@ -305,50 +305,50 @@ namespace nd4j {
         };
 
 
-        void getMKLDNNMemoryDescBatchNorm(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
-                                          mkldnn::memory::desc* batchnorm_src_md, mkldnn::memory::desc* batchnorm_diff_src_md, mkldnn::memory::desc* batchnorm_dst_md,
-                                          mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md, int axis) {
-            const Nd4jLong* shape = src->getShapeInfo();
-            Nd4jLong rank = shape[0];
-            Nd4jLong dim1 = axis; // MKL-DNN supports only 1 axis, which has to be the "channel" one
-            Nd4jLong dim2 = axis >= 2 ? 1 : 2;
-            Nd4jLong dim3 = axis >= 3 ? 2 : 3;
-            mkldnn::memory::dims batchnorm_src_tz = { (int)shape[1], (int)shape[dim1 + 1], rank > 2 ? (int)shape[dim2 + 1] : 1, rank > 3 ? (int)shape[dim3 + 1] : 1};
+        // void getMKLDNNMemoryDescBatchNorm(const NDArray* src, const NDArray* diff_src, const NDArray* dst,
+        //                                   mkldnn::memory::desc* batchnorm_src_md, mkldnn::memory::desc* batchnorm_diff_src_md, mkldnn::memory::desc* batchnorm_dst_md,
+        //                                   mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_dst_md, int axis) {
+        //     const Nd4jLong* shape = src->getShapeInfo();
+        //     Nd4jLong rank = shape[0];
+        //     Nd4jLong dim1 = axis; // MKL-DNN supports only 1 axis, which has to be the "channel" one
+        //     Nd4jLong dim2 = axis >= 2 ? 1 : 2;
+        //     Nd4jLong dim3 = axis >= 3 ? 2 : 3;
+        //     mkldnn::memory::dims batchnorm_src_tz = { (int)shape[1], (int)shape[dim1 + 1], rank > 2 ? (int)shape[dim2 + 1] : 1, rank > 3 ? (int)shape[dim3 + 1] : 1};
 
-            auto type = mkldnn::memory::data_type::f32;
-            auto format = mkldnn::memory::format_tag::nchw;
-            auto supposed_to_be_any_format = mkldnn::memory::format_tag::nChw8c; // doesn't work with "any"
+        //     auto type = mkldnn::memory::data_type::f32;
+        //     auto format = mkldnn::memory::format_tag::nchw;
+        //     auto supposed_to_be_any_format = mkldnn::memory::format_tag::nChw8c; // doesn't work with "any"
 
-            if (src != nullptr && src->getBuffer() != nullptr && batchnorm_src_md != nullptr) {
-                *batchnorm_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
-                *user_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
-                user_src_md->data.format_kind = mkldnn_blocked; // overrides format
-                user_src_md->data.format_desc.blocking.strides[0] = src->stridesOf()[0];
-                user_src_md->data.format_desc.blocking.strides[1] = src->stridesOf()[dim1];
-                user_src_md->data.format_desc.blocking.strides[2] = rank > 2 ? src->stridesOf()[dim2] : 1;
-                user_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? src->stridesOf()[dim3] : 1;
-            }
+        //     if (src != nullptr && src->getBuffer() != nullptr && batchnorm_src_md != nullptr) {
+        //         *batchnorm_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
+        //         *user_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
+        //         user_src_md->data.format_kind = mkldnn_blocked; // overrides format
+        //         user_src_md->data.format_desc.blocking.strides[0] = src->stridesOf()[0];
+        //         user_src_md->data.format_desc.blocking.strides[1] = src->stridesOf()[dim1];
+        //         user_src_md->data.format_desc.blocking.strides[2] = rank > 2 ? src->stridesOf()[dim2] : 1;
+        //         user_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? src->stridesOf()[dim3] : 1;
+        //     }
 
-            if (diff_src != nullptr && diff_src->getBuffer() != nullptr && batchnorm_diff_src_md != nullptr) {
-                *batchnorm_diff_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
-                *user_diff_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
-                user_diff_src_md->data.format_kind = mkldnn_blocked; // overrides format
-                user_diff_src_md->data.format_desc.blocking.strides[0] = diff_src->stridesOf()[0];
-                user_diff_src_md->data.format_desc.blocking.strides[1] = diff_src->stridesOf()[dim1];
-                user_diff_src_md->data.format_desc.blocking.strides[2] = rank > 2 ? diff_src->stridesOf()[dim2] : 1;
-                user_diff_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
-            }
+        //     if (diff_src != nullptr && diff_src->getBuffer() != nullptr && batchnorm_diff_src_md != nullptr) {
+        //         *batchnorm_diff_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
+        //         *user_diff_src_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
+        //         user_diff_src_md->data.format_kind = mkldnn_blocked; // overrides format
+        //         user_diff_src_md->data.format_desc.blocking.strides[0] = diff_src->stridesOf()[0];
+        //         user_diff_src_md->data.format_desc.blocking.strides[1] = diff_src->stridesOf()[dim1];
+        //         user_diff_src_md->data.format_desc.blocking.strides[2] = rank > 2 ? diff_src->stridesOf()[dim2] : 1;
+        //         user_diff_src_md->data.format_desc.blocking.strides[3] = rank > 3 ? diff_src->stridesOf()[dim3] : 1;
+        //     }
 
-            if (dst != nullptr && dst->getBuffer() != nullptr && batchnorm_dst_md != nullptr) {
-                *batchnorm_dst_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
-                *user_dst_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
-                user_dst_md->data.format_kind = mkldnn_blocked; // overrides format
-                user_dst_md->data.format_desc.blocking.strides[0] = dst->stridesOf()[0];
-                user_dst_md->data.format_desc.blocking.strides[1] = dst->stridesOf()[dim1];
-                user_dst_md->data.format_desc.blocking.strides[2] = rank > 2 ? dst->stridesOf()[dim2] : 1;
-                user_dst_md->data.format_desc.blocking.strides[3] = rank > 3 ? dst->stridesOf()[dim3] : 1;
-            }
-        };
+        //     if (dst != nullptr && dst->getBuffer() != nullptr && batchnorm_dst_md != nullptr) {
+        //         *batchnorm_dst_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, supposed_to_be_any_format);
+        //         *user_dst_md = mkldnn::memory::desc({ batchnorm_src_tz }, type, format);
+        //         user_dst_md->data.format_kind = mkldnn_blocked; // overrides format
+        //         user_dst_md->data.format_desc.blocking.strides[0] = dst->stridesOf()[0];
+        //         user_dst_md->data.format_desc.blocking.strides[1] = dst->stridesOf()[dim1];
+        //         user_dst_md->data.format_desc.blocking.strides[2] = rank > 2 ? dst->stridesOf()[dim2] : 1;
+        //         user_dst_md->data.format_desc.blocking.strides[3] = rank > 3 ? dst->stridesOf()[dim3] : 1;
+        //     }
+        // };
 
 
         void getMKLDNNMemoryDescLrn(const NDArray* src, const NDArray* diff_src, const NDArray* dst,

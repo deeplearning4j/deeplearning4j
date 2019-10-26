@@ -64,7 +64,7 @@ TEST_F(MklDnnTests, helpers_includer) {
     nd4j::ops::platforms::PLATFORM_maxpool3dnew_bp maxpool3d_bp;
 
     nd4j::ops::platforms::PLATFORM_lrn lrn;
-    nd4j::ops::platforms::PLATFORM_batchnorm_new batchnorm;
+    nd4j::ops::platforms::PLATFORM_batchnorm batchnorm;
 
     printer({&conv2d, &conv2d_bp, &conv3d, &conv3d_bp, &avgpool2d, &avgpool2d_bp, &maxpool2d, &maxpool2d_bp, &avgpool3d, &avgpool3d_bp, &maxpool3d, &maxpool3d_bp, &lrn, &batchnorm});
 #endif

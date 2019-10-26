@@ -413,7 +413,7 @@ namespace nd4j {
             return ctx;
         };
 
-        nd4j::ops::batchnorm_new batchnorm;
+        nd4j::ops::batchnorm batchnorm;
         DeclarableBenchmark benchmark(batchnorm, "batchnorm");
         output += helper.runOperationSuit(&benchmark, generator, batch, "Batch Normalization");
 
@@ -1822,7 +1822,7 @@ namespace nd4j {
         std::string result;
 
         long start = nowMs();
-        
+
         // set 1
         nd4j_printf("Running FullBenchmarkSuite.fastScalarBenchmark\n", "");
         result += fastScalarBenchmark();

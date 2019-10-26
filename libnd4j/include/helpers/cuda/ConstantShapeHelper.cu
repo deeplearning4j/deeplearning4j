@@ -102,6 +102,10 @@ namespace nd4j {
         return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();
     }
 
+    Nd4jLong* ConstantShapeHelper::createShapeInfo(const nd4j::DataType dataType, const Nd4jLong* shapeInfo) {
+        return ConstantShapeHelper::createShapeInfo(dataType, shape::order(shapeInfo), shape::rank(shapeInfo), shape::shapeOf(const_cast<Nd4jLong*>(shapeInfo)));
+    }
+
     Nd4jLong* ConstantShapeHelper::emptyShapeInfo(const nd4j::DataType dataType) {
         auto descriptor = ShapeDescriptor::emptyDescriptor(dataType);
         return bufferForShapeInfo(descriptor).primaryAsT<Nd4jLong>();

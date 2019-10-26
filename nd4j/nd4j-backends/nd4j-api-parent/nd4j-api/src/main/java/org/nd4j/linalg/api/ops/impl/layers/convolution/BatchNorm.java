@@ -142,7 +142,7 @@ public class BatchNorm extends DynamicCustomOp {
 
     @Override
     public String opName() {
-        return "batchnorm_new";
+        return "batchnorm";
     }
 
     @Override
