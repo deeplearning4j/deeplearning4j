@@ -21,6 +21,7 @@ import lombok.val;
 import org.apache.commons.math3.exception.NumberIsTooLargeException;
 import org.apache.commons.math3.exception.OutOfRangeException;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Svd;
 import org.nd4j.linalg.api.ops.random.impl.GaussianDistribution;
 import org.nd4j.linalg.api.rng.distribution.BaseDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -231,21 +232,20 @@ public class OrthogonalDistribution extends BaseDistribution {
         val flatShape = new long[]{numRows, numCols};
         val flatRng =  Nd4j.getExecutioner().exec(new GaussianDistribution(Nd4j.createUninitialized(dtype, flatShape, Nd4j.order()), 0.0, 1.0), random);
 
-        long m = flatRng.rows();
-        long n = flatRng.columns();
+        val m = flatRng.rows();
+        val n = flatRng.columns();
 
         val s = Nd4j.create(dtype, m < n ? m : n);
-        val u = m < n ? Nd4j.create(dtype, m, n) : Nd4j.create(dtype, m, m);
+        val u = Nd4j.create(dtype, m, m);
         val v = Nd4j.create(dtype, new long[] {n, n}, 'f');
 
-        Nd4j.getBlasWrapper().lapack().gesvd(flatRng, s, u, v);
+        Nd4j.exec(new Svd(flatRng, true, s, u, v));
 
-        // FIXME: int cast
         if (gains == null) {
-            if (u.rows() == numRows && u.columns() == numCols) {
-                return v.get(NDArrayIndex.interval(0, numRows), NDArrayIndex.interval(0, numCols)).mul(gain).reshape(shape);
-            } else {
+            if (u.rows() >= numRows && u.columns() >= numCols) {
                 return u.get(NDArrayIndex.interval(0, numRows), NDArrayIndex.interval(0, numCols)).mul(gain).reshape(shape);
+            } else {
+                return v.get(NDArrayIndex.interval(0, numRows), NDArrayIndex.interval(0, numCols)).mul(gain).reshape(shape);
             }
         } else {
             throw new UnsupportedOperationException();

@@ -47,6 +47,20 @@ public class Svd extends DynamicCustomOp {
 
     public Svd(){ }
 
+    public Svd(INDArray input, boolean full_matrices, INDArray s, INDArray u, INDArray v) {
+        inputArguments.add(input);
+        fullUV = full_matrices;
+        computeUv = true;
+        switchNum = DEFAULT_SWITCHNUM;
+
+
+        outputArguments.add(s);
+        outputArguments.add(u);
+        outputArguments.add(v);
+
+        addIArgument(ArrayUtil.fromBoolean(fullUV), ArrayUtil.fromBoolean(computeUv), switchNum);
+    }
+
     public Svd(SameDiff sd, SDVariable input, boolean fullUV, boolean computeUv){
         this(sd, input, fullUV, computeUv, DEFAULT_SWITCHNUM);
     }
