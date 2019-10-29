@@ -8,7 +8,7 @@ pip install pydatavec
 
 ## Examples
 
-Examples are in the [dl4j-examples repo](www.github.com/eclipse/deeplearning4j-examples)
+Examples are in the [dl4j-examples repo](https://www.github.com/eclipse/deeplearning4j-examples)
 
 Clone dl4j-examples:
 
