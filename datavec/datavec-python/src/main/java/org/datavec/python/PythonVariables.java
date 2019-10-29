@@ -32,7 +32,7 @@ import java.util.*;
  */
 
 @Data
-public class PythonVariables implements Serializable{
+public class PythonVariables implements Serializable {
 
     public enum Type{
         BOOL,
@@ -41,23 +41,29 @@ public class PythonVariables implements Serializable{
         FLOAT,
         NDARRAY,
         LIST,
-        FILE
+        FILE,
+        DICT
 
     }
 
-    private Map<String, String> strVars = new HashMap<String, String>();
-    private Map<String, Long> intVars = new HashMap<String, Long>();
-    private Map<String, Double> floatVars = new HashMap<String, Double>();
-    private Map<String, Boolean> boolVars = new HashMap<String, Boolean>();
-    private Map<String, NumpyArray> ndVars = new HashMap<String, NumpyArray>();
-    private Map<String, Object[]> listVars = new HashMap<String, Object[]>();
-    private Map<String, String> fileVars = new HashMap<String, String>();
+    private Map<String, String> strVariables = new LinkedHashMap<>();
+    private Map<String, Long> intVariables = new LinkedHashMap<>();
+    private Map<String, Double> floatVariables = new LinkedHashMap<>();
+    private Map<String, Boolean> boolVariables = new LinkedHashMap<>();
+    private Map<String, NumpyArray> ndVars = new LinkedHashMap<>();
+    private Map<String, Object[]> listVariables = new LinkedHashMap<>();
+    private Map<String, String> fileVariables = new LinkedHashMap<>();
+    private Map<String,Map<?,?>> dictVariables = new LinkedHashMap<>();
+    private Map<String, Type> vars = new LinkedHashMap<>();
+    private Map<Type, Map> maps = new LinkedHashMap<>();
 
-    private Map<String, Type> vars = new HashMap<String, Type>();
 
-    private Map<Type, Map> maps = new HashMap<Type, Map>();
-
-
+    /**
+     * Returns a copy of the variable
+     * schema in this array without the values
+     * @return an empty variables clone
+     * with no values
+     */
     public PythonVariables copySchema(){
         PythonVariables ret = new PythonVariables();
         for (String varName: getVariables()){
@@ -66,15 +72,30 @@ public class PythonVariables implements Serializable{
         }
         return ret;
     }
-    public PythonVariables(){
-        maps.put(Type.BOOL, boolVars);
-        maps.put(Type.STR, strVars);
-        maps.put(Type.INT, intVars);
-        maps.put(Type.FLOAT, floatVars);
-        maps.put(Type.NDARRAY, ndVars);
-        maps.put(Type.LIST, listVars);
-        maps.put(Type.FILE, fileVars);
 
+    /**
+     *
+     */
+    public PythonVariables() {
+        maps.put(Type.BOOL, boolVariables);
+        maps.put(Type.STR, strVariables);
+        maps.put(Type.INT, intVariables);
+        maps.put(Type.FLOAT, floatVariables);
+        maps.put(Type.NDARRAY, ndVars);
+        maps.put(Type.LIST, listVariables);
+        maps.put(Type.FILE, fileVariables);
+        maps.put(Type.DICT, dictVariables);
+
+    }
+
+
+
+    /**
+     *
+     * @return true if there are no variables.
+     */
+    public boolean isEmpty() {
+        return getVariables().length < 1;
     }
 
 
@@ -105,6 +126,9 @@ public class PythonVariables implements Serializable{
                 break;
             case FILE:
                 addFile(name);
+                break;
+            case DICT:
+                addDict(name);
         }
     }
 
@@ -113,125 +137,250 @@ public class PythonVariables implements Serializable{
      * @param name name of the variable
      * @param type type of the variable
      * @param value value of the variable (must be instance of expected type)
-     * @throws Exception
      */
-    public void add (String name, Type type, Object value) throws Exception{
+    public void add(String name, Type type, Object value) {
         add(name, type);
         setValue(name, value);
     }
 
+
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     */
+    public void addDict(String name) {
+        vars.put(name, Type.DICT);
+        dictVariables.put(name,null);
+    }
+
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     */
     public void addBool(String name){
         vars.put(name, Type.BOOL);
-        boolVars.put(name, null);
+        boolVariables.put(name, null);
     }
 
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     */
     public void addStr(String name){
         vars.put(name, Type.STR);
-        strVars.put(name, null);
+        strVariables.put(name, null);
     }
 
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     */
     public void addInt(String name){
         vars.put(name, Type.INT);
-        intVars.put(name, null);
+        intVariables.put(name, null);
     }
 
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     */
     public void addFloat(String name){
         vars.put(name, Type.FLOAT);
-        floatVars.put(name, null);
+        floatVariables.put(name, null);
     }
 
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     */
     public void addNDArray(String name){
         vars.put(name, Type.NDARRAY);
         ndVars.put(name, null);
     }
 
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     */
     public void addList(String name){
         vars.put(name, Type.LIST);
-        listVars.put(name, null);
+        listVariables.put(name, null);
     }
 
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     */
     public void addFile(String name){
         vars.put(name, Type.FILE);
-        fileVars.put(name, null);
+        fileVariables.put(name, null);
     }
-    public void addBool(String name, boolean value){
+
+    /**
+     * Add a boolean variable to
+     * the set of variables
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addBool(String name, boolean value) {
         vars.put(name, Type.BOOL);
-        boolVars.put(name, value);
+        boolVariables.put(name, value);
     }
 
-    public void addStr(String name, String value){
+    /**
+     * Add a string variable to
+     * the set of variables
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addStr(String name, String value) {
         vars.put(name, Type.STR);
-        strVars.put(name, value);
+        strVariables.put(name, value);
     }
 
-    public void addInt(String name, int value){
+    /**
+     * Add an int variable to
+     * the set of variables
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addInt(String name, int value) {
         vars.put(name, Type.INT);
-        intVars.put(name, (long)value);
+        intVariables.put(name, (long)value);
     }
 
-    public void addInt(String name, long value){
+    /**
+     * Add a long variable to
+     * the set of variables
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addInt(String name, long value) {
         vars.put(name, Type.INT);
-        intVars.put(name, value);
+        intVariables.put(name, value);
     }
 
-    public void addFloat(String name, double value){
+    /**
+     * Add a double variable to
+     * the set of variables
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addFloat(String name, double value) {
         vars.put(name, Type.FLOAT);
-        floatVars.put(name, value);
+        floatVariables.put(name, value);
     }
 
-    public void addFloat(String name, float value){
+    /**
+     * Add a float variable to
+     * the set of variables
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addFloat(String name, float value) {
         vars.put(name, Type.FLOAT);
-        floatVars.put(name, (double)value);
+        floatVariables.put(name, (double)value);
     }
 
-    public void addNDArray(String name, NumpyArray value){
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addNDArray(String name, NumpyArray value) {
         vars.put(name, Type.NDARRAY);
         ndVars.put(name, value);
     }
 
-    public void addNDArray(String name, INDArray value){
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addNDArray(String name, INDArray value) {
         vars.put(name, Type.NDARRAY);
         ndVars.put(name, new NumpyArray(value));
     }
 
-    public void addList(String name, Object[] value){
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addList(String name, Object[] value) {
         vars.put(name, Type.LIST);
-        listVars.put(name, value);
+        listVariables.put(name, value);
     }
 
-    public void addFile(String name, String value){
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addFile(String name, String value) {
         vars.put(name, Type.FILE);
-        fileVars.put(name, value);
+        fileVariables.put(name, value);
     }
 
+
+    /**
+     * Add a null variable to
+     * the set of variables
+     * to describe the type but no value
+     * @param name the field to add
+     * @param value the value to add
+     */
+    public void addDict(String name, Map value) {
+        vars.put(name, Type.DICT);
+        dictVariables.put(name, value);
+    }
     /**
      *
      * @param name name of the variable
      * @param value new value for the variable
-     * @throws Exception
      */
     public void setValue(String name, Object value) {
         Type type = vars.get(name);
         if (type == Type.BOOL){
-            boolVars.put(name, (Boolean)value);
+            boolVariables.put(name, (Boolean)value);
         }
         else if (type == Type.INT){
-            if (value instanceof Long){
-                intVars.put(name, ((Long)value));
-            }
-            else if (value instanceof Integer){
-                intVars.put(name, ((Integer)value).longValue());
-
-            }
+            Number number = (Number) value;
+            intVariables.put(name, number.longValue());
         }
         else if (type == Type.FLOAT){
-            floatVars.put(name, (Double)value);
+            Number number = (Number) value;
+            floatVariables.put(name, number.doubleValue());
         }
         else if (type == Type.NDARRAY){
             if (value instanceof  NumpyArray){
                 ndVars.put(name, (NumpyArray)value);
             }
-            else if (value instanceof  INDArray){
+            else if (value instanceof  INDArray) {
                 ndVars.put(name, new NumpyArray((INDArray) value));
             }
             else{
@@ -239,83 +388,132 @@ public class PythonVariables implements Serializable{
             }
         }
         else if (type == Type.LIST){
-            listVars.put(name, (Object[]) value);
+            if (value instanceof List){
+                value = ((List) value).toArray();
+            }
+            listVariables.put(name, (Object[]) value);
+        }
+        else if(type == Type.DICT) {
+            dictVariables.put(name,(Map<?,?>) value);
         }
         else if (type == Type.FILE){
-            fileVars.put(name, (String)value);
+            fileVariables.put(name, (String)value);
         }
         else{
-            strVars.put(name, (String)value);
+            strVariables.put(name, (String)value);
         }
     }
 
-    public Object getValue(String name){
+    /**
+     * Do a general object lookup.
+     * The look up will happen relative to the {@link Type}
+     * of variable is described in the
+     * @param name the name of the variable to get
+     * @return teh value for the variable with the given name
+     */
+    public Object getValue(String name) {
         Type type = vars.get(name);
         Map map = maps.get(type);
         return map.get(name);
     }
 
+
+    /**
+     * Returns a boolean variable with the given name.
+     * @param name the variable name to get the value for
+     * @return the retrieved boolean value
+     */
+    public boolean getBooleanValue(String name) {
+        return boolVariables.get(name);
+    }
+
+    /**
+     *
+     * @param name the variable name
+     * @return the dictionary value
+     */
+    public Map<?,?> getDictValue(String name) {
+        return dictVariables.get(name);
+    }
+
+    /**
+     /**
+     *
+     * @param name the variable name
+     * @return the string value
+     */
     public String getStrValue(String name){
-        return strVars.get(name);
+        return strVariables.get(name);
     }
 
-    public long getIntValue(String name){
-        return intVars.get(name);
+    /**
+     *
+     * @param name the variable name
+     * @return the long value
+     */
+    public Long getIntValue(String name){
+        return intVariables.get(name);
     }
 
-    public double getFloatValue(String name){
-        return floatVars.get(name);
+    /**
+     *
+     * @param name the variable name
+     * @return the float value
+     */
+    public Double getFloatValue(String name){
+        return floatVariables.get(name);
     }
 
+    /**
+     *
+     * @param name the variable name
+     * @return the numpy array value
+     */
     public NumpyArray getNDArrayValue(String name){
         return ndVars.get(name);
     }
 
+    /**
+     *
+     * @param name the variable name
+     * @return the list value as an object array
+     */
     public Object[] getListValue(String name){
-        return listVars.get(name);
+        return listVariables.get(name);
     }
 
+    /**
+     *
+     * @param name the variable name
+     * @return the value of the given file name
+     */
     public String getFileValue(String name){
-        return fileVars.get(name);
+        return fileVariables.get(name);
     }
 
+    /**
+     * Returns the type for the given variable name
+     * @param name the name of the variable to get the type for
+     * @return the type for the given variable
+     */
     public Type getType(String name){
         return vars.get(name);
     }
 
+    /**
+     * Get all the variables present as a string array
+     * @return the variable names for this variable sset
+     */
     public String[] getVariables() {
         String[] strArr = new String[vars.size()];
         return vars.keySet().toArray(strArr);
     }
 
 
-    public Map<String, Boolean> getBoolVariables(){
-        return boolVars;
-    }
-    public Map<String, String> getStrVariables(){
-        return strVars;
-    }
-
-    public Map<String, Long> getIntVariables(){
-        return intVars;
-    }
-
-    public Map<String, Double> getFloatVariables(){
-        return floatVars;
-    }
-
-    public Map<String, NumpyArray> getNDArrayVariables(){
-        return ndVars;
-    }
-
-    public Map<String, Object[]> getListVariables(){
-        return listVars;
-    }
-
-    public Map<String, String> getFileVariables(){
-        return fileVars;
-    }
-
+    /**
+     * This variables set as its json representation (an array of json objects)
+     * @return the json array output
+     */
     public JSONArray toJSON(){
         JSONArray arr = new JSONArray();
         for (String varName: getVariables()){
@@ -328,9 +526,31 @@ public class PythonVariables implements Serializable{
         return arr;
     }
 
+    /**
+     * Create a schema from a map.
+     * This is an empty PythonVariables
+     * that just contains names and types with no values
+     * @param inputTypes the input types to convert
+     * @return the schema from the given map
+     */
+    public static PythonVariables schemaFromMap(Map<String,String> inputTypes) {
+        PythonVariables ret = new PythonVariables();
+        for(Map.Entry<String,String> entry : inputTypes.entrySet()) {
+            ret.add(entry.getKey(), Type.valueOf(entry.getValue()));
+        }
+
+        return ret;
+    }
+
+    /**
+     * Get the python variable state relative to the
+     * input json array
+     * @param jsonArray the input json array
+     * @return the python variables based on the input json array
+     */
     public static PythonVariables fromJSON(JSONArray jsonArray){
         PythonVariables pyvars = new PythonVariables();
-        for (int i=0; i<jsonArray.size(); i++){
+        for (int i = 0; i < jsonArray.size(); i++) {
             JSONObject input = (JSONObject) jsonArray.get(i);
             String varName = (String)input.get("name");
             String varType = (String)input.get("type");
@@ -354,6 +574,9 @@ public class PythonVariables implements Serializable{
             }
             else if (varType.equals("NDARRAY")){
                 pyvars.addNDArray(varName);
+            }
+            else if(varType.equals("DICT")) {
+                pyvars.addDict(varName);
             }
         }
 

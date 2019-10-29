@@ -294,6 +294,8 @@
 
         <python.version>3.7.3</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
+        <numpy.version>1.16.4</numpy.version>
+        <numpy.javacpp.version>${numpy.version}-${javacpp-presets.version}</numpy.javacpp.version>
 
         <openblas.version>0.3.6</openblas.version>
         <mkl.version>2019.4</mkl.version>

@@ -20,29 +20,32 @@ import org.datavec.api.transform.TransformProcess;
 import org.datavec.api.transform.condition.Condition;
 import org.datavec.api.transform.filter.ConditionFilter;
 import org.datavec.api.transform.filter.Filter;
-import org.datavec.api.writable.*;
 import org.datavec.api.transform.schema.Schema;
-import org.junit.Ignore;
+import org.datavec.local.transforms.LocalTransformExecutor;
+
+import org.datavec.api.writable.*;
 import org.junit.Test;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
-
+import javax.annotation.concurrent.NotThreadSafe;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
-@Ignore("AB 2019/05/21 - Fine locally, timeouts on CI - Issue #7657 and #7771")
+import static junit.framework.TestCase.assertTrue;
+import static org.datavec.api.transform.schema.Schema.Builder;
+import static org.junit.Assert.*;
+
+@NotThreadSafe
 public class TestPythonTransformProcess {
 
-    @Test(timeout = 60000L)
+
+    @Test()
     public void testStringConcat() throws Exception{
-        Schema.Builder schemaBuilder = new Schema.Builder();
+        Builder schemaBuilder = new Builder();
         schemaBuilder
                 .addColumnString("col1")
                 .addColumnString("col2");
@@ -54,10 +57,12 @@ public class TestPythonTransformProcess {
         String pythonCode = "col3 = col1 + col2";
 
         TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
-                new PythonTransform(pythonCode, finalSchema)
+                PythonTransform.builder().code(pythonCode)
+                        .outputSchema(finalSchema)
+                        .build()
         ).build();
 
-        List<Writable> inputs = Arrays.asList((Writable) new Text("Hello "), new Text("World!"));
+        List<Writable> inputs = Arrays.asList((Writable)new Text("Hello "), new Text("World!"));
 
         List<Writable> outputs = tp.execute(inputs);
         assertEquals((outputs.get(0)).toString(), "Hello ");
@@ -68,7 +73,7 @@ public class TestPythonTransformProcess {
 
     @Test(timeout = 60000L)
     public void testMixedTypes() throws Exception{
-        Schema.Builder schemaBuilder = new Schema.Builder();
+        Builder schemaBuilder = new Builder();
         schemaBuilder
                 .addColumnInteger("col1")
                 .addColumnFloat("col2")
@@ -83,11 +88,12 @@ public class TestPythonTransformProcess {
         String pythonCode = "col5  = (int(col3) + col1 + int(col2)) * int(col4)";
 
         TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
-                new PythonTransform(pythonCode, finalSchema)
-        ).build();
+                PythonTransform.builder().code(pythonCode)
+                        .outputSchema(finalSchema)
+                        .inputSchema(initialSchema)
+                        .build()        ).build();
 
-        List<Writable> inputs = Arrays.asList((Writable)
-        new IntWritable(10),
+        List<Writable> inputs = Arrays.asList((Writable)new IntWritable(10),
                 new FloatWritable(3.5f),
                 new Text("5"),
                 new DoubleWritable(2.0)
@@ -105,7 +111,7 @@ public class TestPythonTransformProcess {
 
         INDArray expectedOutput = arr1.add(arr2);
 
-        Schema.Builder schemaBuilder = new Schema.Builder();
+        Builder schemaBuilder = new Builder();
         schemaBuilder
                 .addColumnNDArray("col1", shape)
                 .addColumnNDArray("col2", shape);
@@ -116,12 +122,14 @@ public class TestPythonTransformProcess {
 
         String pythonCode = "col3 = col1 + col2";
         TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
-                new PythonTransform(pythonCode, finalSchema)
-        ).build();
+                PythonTransform.builder().code(pythonCode)
+                        .outputSchema(finalSchema)
+                        .build()        ).build();
 
         List<Writable> inputs = Arrays.asList(
-                (Writable) new NDArrayWritable(arr1),
-                 new NDArrayWritable(arr2)
+                (Writable)
+                new NDArrayWritable(arr1),
+                new NDArrayWritable(arr2)
         );
 
         List<Writable> outputs = tp.execute(inputs);
@@ -139,7 +147,7 @@ public class TestPythonTransformProcess {
 
         INDArray expectedOutput = arr1.add(arr2);
 
-        Schema.Builder schemaBuilder = new Schema.Builder();
+        Builder schemaBuilder = new Builder();
         schemaBuilder
                 .addColumnNDArray("col1", shape)
                 .addColumnNDArray("col2", shape);
@@ -150,11 +158,13 @@ public class TestPythonTransformProcess {
 
         String pythonCode = "col3 = col1 + col2";
         TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
-                new PythonTransform(pythonCode, finalSchema)
-        ).build();
+                PythonTransform.builder().code(pythonCode)
+                        .outputSchema(finalSchema)
+                        .build()        ).build();
 
         List<Writable> inputs = Arrays.asList(
-                (Writable) new NDArrayWritable(arr1),
+                (Writable)
+                new NDArrayWritable(arr1),
                 new NDArrayWritable(arr2)
         );
 
@@ -172,7 +182,7 @@ public class TestPythonTransformProcess {
         INDArray arr2 = Nd4j.rand(DataType.DOUBLE, shape);
         INDArray expectedOutput = arr1.add(arr2.castTo(DataType.DOUBLE));
 
-        Schema.Builder schemaBuilder = new Schema.Builder();
+        Builder schemaBuilder = new Builder();
         schemaBuilder
                 .addColumnNDArray("col1", shape)
                 .addColumnNDArray("col2", shape);
@@ -183,11 +193,14 @@ public class TestPythonTransformProcess {
 
         String pythonCode = "col3 = col1 + col2";
         TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
-                new PythonTransform(pythonCode, finalSchema)
+                PythonTransform.builder().code(pythonCode)
+                        .outputSchema(finalSchema)
+                        .build()
         ).build();
 
         List<Writable> inputs = Arrays.asList(
-                (Writable) new NDArrayWritable(arr1),
+                (Writable)
+                new NDArrayWritable(arr1),
                 new NDArrayWritable(arr2)
         );
 
@@ -199,8 +212,8 @@ public class TestPythonTransformProcess {
     }
 
     @Test(timeout = 60000L)
-    public void testPythonFilter(){
-        Schema schema = new Schema.Builder().addColumnInteger("column").build();
+    public void testPythonFilter() {
+        Schema schema = new Builder().addColumnInteger("column").build();
 
         Condition condition = new PythonCondition(
                 "f = lambda: column < 0"
@@ -210,17 +223,17 @@ public class TestPythonTransformProcess {
 
         Filter filter = new ConditionFilter(condition);
 
-        assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(10))));
-        assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(1))));
-        assertFalse(filter.removeExample(Collections.singletonList((Writable) new IntWritable(0))));
-        assertTrue(filter.removeExample(Collections.singletonList((Writable) new IntWritable(-1))));
-        assertTrue(filter.removeExample(Collections.singletonList((Writable) new IntWritable(-10))));
+        assertFalse(filter.removeExample(Collections.singletonList(new IntWritable(10))));
+        assertFalse(filter.removeExample(Collections.singletonList(new IntWritable(1))));
+        assertFalse(filter.removeExample(Collections.singletonList(new IntWritable(0))));
+        assertTrue(filter.removeExample(Collections.singletonList(new IntWritable(-1))));
+        assertTrue(filter.removeExample(Collections.singletonList(new IntWritable(-10))));
 
     }
 
     @Test(timeout = 60000L)
     public void testPythonFilterAndTransform() throws Exception{
-        Schema.Builder schemaBuilder = new Schema.Builder();
+        Builder schemaBuilder = new Builder();
         schemaBuilder
                 .addColumnInteger("col1")
                 .addColumnFloat("col2")
@@ -241,33 +254,85 @@ public class TestPythonTransformProcess {
 
         String pythonCode = "col6 = str(col1 + col2)";
         TransformProcess tp = new TransformProcess.Builder(initialSchema).transform(
-                new PythonTransform(
-                        pythonCode,
-                        finalSchema
-                )
+                PythonTransform.builder().code(pythonCode)
+                        .outputSchema(finalSchema)
+                        .build()
         ).filter(
                 filter
         ).build();
 
         List<List<Writable>> inputs = new ArrayList<>();
         inputs.add(
-                Arrays.asList((Writable) new IntWritable(5),
+                Arrays.asList(
+                        (Writable)
+                        new IntWritable(5),
                         new FloatWritable(3.0f),
                         new Text("abcd"),
                         new DoubleWritable(2.1))
         );
         inputs.add(
-                Arrays.asList((Writable) new IntWritable(-3),
+                Arrays.asList(
+                        (Writable)
+                        new IntWritable(-3),
                         new FloatWritable(3.0f),
                         new Text("abcd"),
                         new DoubleWritable(2.1))
         );
         inputs.add(
-                Arrays.asList((Writable) new IntWritable(5),
+                Arrays.asList(
+                        (Writable)
+                        new IntWritable(5),
                         new FloatWritable(11.2f),
                         new Text("abcd"),
                         new DoubleWritable(2.1))
         );
 
+        LocalTransformExecutor.execute(inputs,tp);
     }
+
+
+    @Test
+    public void testPythonTransformNoOutputSpecified() throws Exception {
+        PythonTransform pythonTransform = PythonTransform.builder()
+                .code("a += 2; b = 'hello world'")
+                .returnAllInputs(true)
+                .build();
+        List<List<Writable>> inputs = new ArrayList<>();
+        inputs.add(Arrays.asList((Writable)new IntWritable(1)));
+        Schema inputSchema = new Builder()
+                .addColumnInteger("a")
+                .build();
+
+        TransformProcess tp = new TransformProcess.Builder(inputSchema)
+                .transform(pythonTransform)
+                .build();
+        List<List<Writable>> execute = LocalTransformExecutor.execute(inputs, tp);
+        assertEquals(3,execute.get(0).get(0).toInt());
+        assertEquals("hello world",execute.get(0).get(1).toString());
+
+    }
+
+    @Test
+    public void testNumpyTransform() throws Exception {
+        PythonTransform pythonTransform = PythonTransform.builder()
+                .code("a += 2; b = 'hello world'")
+                .returnAllInputs(true)
+                .build();
+
+        List<List<Writable>> inputs = new ArrayList<>();
+        inputs.add(Arrays.asList((Writable) new NDArrayWritable(Nd4j.scalar(1).reshape(1,1))));
+        Schema inputSchema = new Builder()
+                .addColumnNDArray("a",new long[]{1,1})
+                .build();
+
+        TransformProcess tp = new TransformProcess.Builder(inputSchema)
+                .transform(pythonTransform)
+                .build();
+        List<List<Writable>> execute = LocalTransformExecutor.execute(inputs, tp);
+        assertFalse(execute.isEmpty());
+        assertNotNull(execute.get(0));
+        assertNotNull(execute.get(0).get(0));
+        assertEquals("hello world",execute.get(0).get(0).toString());
+    }
+
 }
