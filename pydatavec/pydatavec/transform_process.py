@@ -47,11 +47,12 @@ def _dict_to_jmap(d, JMap):
 
 class TransformProcess(object):
 
-    def __init__(self, schema):
+    def __init__(self, schema, inplace=True):
         self.schema = schema
         self.final_schema = schema.copy()
         self.steps = []
         self.executors = {}
+        self.inplace = inplace
 
     def add_step(self, step, *args):
         self.steps.append((step,) + args)
@@ -70,34 +71,38 @@ class TransformProcess(object):
             self.add_step("removeColumns", *columns)
             for c in columns:
                 del self.final_schema.columns[c]
+        if not self.inplace:
+            return self
 
     def remove_columns_except(self, *columns):
         if len(columns) == 1:
             columns = columns[0]
             if type(columns) in (list, tuple):
                 self.add_step("removeAllColumnsExceptFor", *columns)
-                todel = []
+                to_del = []
                 for c in self.final_schema.columns:
                     if c not in columns:
-                        todel.append(c)
-                for c in todel:
+                        to_del.append(c)
+                for c in to_del:
                     del self.final_schema.columns[c]
             else:
                 self.add_step("removeAllColumnsExceptFor", columns)
-                todel = []
+                to_del = []
                 for c in self.final_schema.columns:
                     if c != columns:
-                        todel.append(c)
-                for c in todel:
+                        to_del.append(c)
+                for c in to_del:
                     del self.final_schema.columns[c]
         else:
             self.add_step("removeAllColumnsExceptFor", *columns)
-            todel = []
+            to_del = []
             for c in self.final_schema.columns:
                 if c not in columns:
-                    todel.append(c)
-            for c in todel:
+                    to_del.append(c)
+            for c in to_del:
                 del self.final_schema.columns[c]
+        if not self.inplace:
+            return self
 
     def filter(self, condition):
         col_name = condition.column
@@ -112,6 +117,8 @@ class TransformProcess(object):
             code = code.format(col_type, _dq(col_name),
                                condition.name, condition.value)
         self.add_step("exec", code)
+        if not self.inplace:
+            return self
 
     def replace(self, column, value, condition):
         # there are 2 columns involved
@@ -131,6 +138,8 @@ class TransformProcess(object):
             code = code.format(_dq(column), column1_type, value, column2_type, _dq(
                 column2), condition.name, condition.value)
         self.add_step("exec", code)
+        if not self.inplace:
+            return self
 
     def rename_column(self, column, new_name):
         new_d = OrderedDict()
@@ -142,11 +151,15 @@ class TransformProcess(object):
                 new_d[k] = old_d[k]
         self.final_schema.columns = new_d
         self.add_step("renameColumn", column, new_name)
+        if not self.inplace:
+            return self
 
     def string_to_time(self, column, format="YYY-MM-DD HH:mm:ss.SSS", time_zone="UTC"):
         self.final_schema.columns[column][0] = "DateTime"
         self.add_step("exec", "stringToTimeTransform({}, {}, {})".format(
             _dq(column), _dq(format), "DateTimeZone." + time_zone))
+        if not self.inplace:
+            return self
 
     def derive_column_from_time(self, source_column, new_column, field):
         code = 'transform(DeriveColumnsFromTimeTransformBuilder({}).addIntegerDerivedColumn({}, DateTimeFieldType.{}()).build())'
@@ -154,6 +167,8 @@ class TransformProcess(object):
             new_column), _to_camel(field))
         self.add_step("exec", code)
         self.final_schema.add_column("integer", new_column)
+        if not self.inplace:
+            return self
 
     def categorical_to_integer(self, column):
         if self.final_schema.columns[column][0] != 'categorical':
@@ -161,12 +176,16 @@ class TransformProcess(object):
                             ' transform on column \"{}\" because it is not a categorcal column.'.format(column))
         self.final_schema.columns[column][0] = 'integer'
         self.add_step('categoricalToInteger', column)
+        if not self.inplace:
+            return self
 
     def append_string(self, column, string):
         if self.final_schema.columns[column][0] != 'string':
             raise Exception(
                 'Can not apply append_string transform to column {} because it is not a string column'.format(column))
         self.add_step('appendStringColumnTransform', column, string)
+        if not self.inplace:
+            return self
 
     def lower(self, column):
         if self.final_schema.columns[column][0] != 'string':
@@ -174,6 +193,8 @@ class TransformProcess(object):
                 'Can not apply lower transform to column {} because it is not a string column'.format(column))
         self.add_step(
             'exec', 'transform(ChangeCaseStringTransform({}, ChangeCaseStringTransformCaseType.LOWER))'.format(_dq(column)))
+        if not self.inplace:
+            return self
 
     def upper(self, column):
         if self.final_schema.columns[column][0] != 'string':
@@ -181,6 +202,8 @@ class TransformProcess(object):
                 'Can not apply lower transform to column {} because it is not a string column'.format(column))
         self.add_step(
             'exec', 'transform(ChangeCaseStringTransform({}, ChangeCaseStringTransformCaseType.UPPER))'.format(_dq(column)))
+        if not self.inplace:
+            return self
 
     def concat(self, columns, new_column=None, delimiter=','):
         for column in columns:
@@ -196,6 +219,8 @@ class TransformProcess(object):
         self.final_schema.add_string_column(new_column)
         self.add_step('exec', 'transform(ConcatenateStringColumns({}, {}, Arrays.asList({})))'.format(
             _dq(new_column), _dq(delimiter), ', '.join(columns)))
+        if not self.inplace:
+            return self
 
     def remove_white_spaces(self, column):
         if self.final_schema.columns[column][0] != 'string':
@@ -203,6 +228,8 @@ class TransformProcess(object):
                 'Can not apply remove_white_spaces transform to column {} because it is not a string column'.format(column))
         self.add_step(
             'exec', 'transform(RemoveWhiteSpaceTransform({}))'.format(_dq(column)))
+        if not self.inplace:
+            return self
 
     def replace_empty_string(self, column, value):
         if self.final_schema.columns[column][0] != 'string':
@@ -210,6 +237,8 @@ class TransformProcess(object):
                 'Can not apply replace_empty_string transform to column {} because it is not a string column'.format(column))
         self.add_step('exec', 'transform(ReplaceEmptyStringTransform({}, {}))'.format(
             _dq(column), _dq(value)))
+        if not self.inplace:
+            return self
 
     def replace_string(self, column, *args):
         if self.final_schema.columns[column][0] != 'string':
@@ -228,6 +257,8 @@ class TransformProcess(object):
                 'Invalid argument. Possible signatures are replace(str, str, str) and replace(str, dict)')
         self.add_step('exec', 'transform(ReplaceStringTransform({}, _dict_to_jmap({}, JMap)))'.format(
             _dq(column), str(args)))
+        if not self.inplace:
+            return self
 
     def map_string(self, column, mapping):
         if self.final_schema.columns[column][0] != 'string':
@@ -235,6 +266,8 @@ class TransformProcess(object):
                 'Can not apply replace_string transform to column {} because it is not a string column'.format(column))
         self.add_step('exec', 'transform(StringMapTransform({}, _dict_to_jmap({}, JMap)))'.format(
             _dq(column), str(mapping)))
+        if not self.inplace:
+            return self
 
     def one_hot(self, column):
         if self.final_schema.columns[column][0] != 'categorical':
@@ -251,6 +284,8 @@ class TransformProcess(object):
                 new_schema[k] = self.final_schema.columns[k]
         self.final_schema.columns = new_schema
         self.add_step('categoricalToOneHot', column)
+        if not self.inplace:
+            return self
 
     def reduce(self, key, *args, **kwargs):
         # possible signatures:
@@ -328,6 +363,8 @@ class TransformProcess(object):
                 new_type = reduction_to_type.get(reduction, old_type)
                 new_schema[k] = [new_type, new_name]
         self.final_schema.columns = new_schema
+        if not self.inplace:
+            return self
 
     def serialize(self):
         config = {'steps': self.steps, 'schema': self.schema.serialize()}
