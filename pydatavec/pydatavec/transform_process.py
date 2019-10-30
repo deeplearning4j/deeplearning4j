@@ -426,7 +426,8 @@ class TransformProcess(object):
             if executor == 'spark':
                 from .java_classes import spark_available
                 if not spark_available:
-                    warnings.warn('Spark not available. Running local executor instead.')
+                    warnings.warn(
+                        'Spark not available. Running local executor instead.')
                     from .executors import LocalExecutor
                     executor = LocalExecutor()
                     self.executors['local'] = executor
