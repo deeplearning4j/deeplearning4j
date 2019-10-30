@@ -16,6 +16,7 @@
 
 
 import os
+import logging
 
 _JVM_RUNNING = False
 
@@ -76,7 +77,7 @@ class SparkExecutor(object):
             while(os.path.isdir(path)):
                 tempid += 1
                 path = 'temp_' + str(tempid)
-            print('Converting pyspark RDD to JavaRDD...')
+            logging.info('Converting pyspark RDD to JavaRDD...')
             source.saveAsTextFile(path)
             string_data = self.spark_context.textFile(path)
         else:

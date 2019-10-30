@@ -19,6 +19,7 @@ from collections import OrderedDict
 from .conditions import *
 from .schema import Schema
 import warnings
+import logging
 
 
 def _dq(x):
@@ -412,7 +413,7 @@ class TransformProcess(object):
         for step in self.steps:
             if step[0] == "exec":
                 code = step[1]
-                print(code)
+                logging.info(code)
                 exec("builder." + code)
             else:
                 f = getattr(builder, step[0])
