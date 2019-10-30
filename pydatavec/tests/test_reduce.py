@@ -63,7 +63,8 @@ def test_reduce_3():
 
 
 def test_reduce_4():
-    reductions = ['first', 'last', 'append', 'prepend', 'count', 'count_unique']
+    reductions = ['first', 'last', 'append',
+                  'prepend', 'count', 'count_unique']
     for red in reductions:
         schema = Schema()
         schema.add_string_column('col1')
@@ -76,7 +77,8 @@ def test_reduce_4():
 
 
 def test_reduce_5():
-    reductions = ['first', 'last', 'append', 'prepend', 'count', 'count_unique']
+    reductions = ['first', 'last', 'append',
+                  'prepend', 'count', 'count_unique']
     for red1 in reductions:
         for red2 in reductions:
             schema = Schema()
@@ -90,7 +92,8 @@ def test_reduce_5():
 
 
 def test_reduce_6():
-    reductions = ['first', 'last', 'append', 'prepend', 'count', 'count_unique']
+    reductions = ['first', 'last', 'append',
+                  'prepend', 'count', 'count_unique']
     for red1 in reductions:
         for red2 in reductions:
             schema = Schema()
@@ -105,4 +108,4 @@ def test_reduce_6():
 
 
 if __name__ == '__main__':
-        pytest.main([__file__])
+    pytest.main([__file__])

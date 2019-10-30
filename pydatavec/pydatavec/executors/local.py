@@ -17,7 +17,6 @@
 import os
 
 
-
 class Writable(object):
 
     def __init__(self, j_w):
@@ -77,4 +76,3 @@ class LocalExecutor(object):
             data.add(rr.next())
         processed_data = LocalTransformExecutor.execute(data, tp)
         return Writable(processed_data)
-
