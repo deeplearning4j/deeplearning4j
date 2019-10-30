@@ -49,7 +49,16 @@ namespace nd4j {
         DECLARE_CUSTOM_OP(random_exponential, 1, 1, true, 1, 0);
         #endif
 
+        #if NOT_EXCLUDED(OP_random_crop)
         DECLARE_CUSTOM_OP(random_crop, 2, 1, false, 0, 0);
+        #endif
+
+        /**
+         * random_gamma op.
+         */
+        #if NOT_EXCLUDED(OP_random_gamma)
+        DECLARE_CUSTOM_OP(random_gamma, 2, 1, false, 0, 0);
+        #endif
     }
 }
 
