@@ -89,7 +89,8 @@ public class NDArrayScalarOpTransform extends BaseColumnTransform {
                 a.divi(scalar);
                 break;
             case Modulus:
-                throw new UnsupportedOperationException(mathOp + " is not supported for NDArrayWritable");
+                a.fmodi(scalar);
+                break;
             case ReverseSubtract:
                 a.rsubi(scalar);
                 break;
