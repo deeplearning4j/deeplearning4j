@@ -59,6 +59,13 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_random_gamma)
         DECLARE_CUSTOM_OP(random_gamma, 2, 1, false, 0, 0);
         #endif
+
+        /**
+         * random_poisson op.
+         */
+        #if NOT_EXCLUDED(OP_random_poisson)
+        DECLARE_CUSTOM_OP(random_poisson, 2, 1, false, 0, 0);
+        #endif
     }
 }
 
