@@ -65,11 +65,10 @@ public class Upsampling1D extends Upsampling2D {
         INDArray originalInput = input;
         input = input.castTo(dataType).reshape(input.size(0), input.size(1), input.size(2), 1);
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inDepth = (int) input.size(1);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        long miniBatch = input.size(0);
+        long inDepth = input.size(1);
+        long inH = input.size(2);
+        long inW = input.size(3);
 
 
         INDArray outEpsilon = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), miniBatch * inDepth * inH * inW);

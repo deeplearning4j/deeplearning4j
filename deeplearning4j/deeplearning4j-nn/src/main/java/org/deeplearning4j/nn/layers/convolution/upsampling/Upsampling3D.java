@@ -68,22 +68,21 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         assertInputSet(true);
 
         boolean ncdhw = layerConf().getDataFormat() == org.deeplearning4j.nn.conf.layers.Convolution3D.DataFormat.NCDHW;
-        // FIXME: int cast
         // Assumes NCDHW order
-        int miniBatch = (int) input.size(0);
-        int inChannels, inD, inH, inW;
+        long miniBatch = input.size(0);
+        long inChannels, inD, inH, inW;
         int[] intArgs;
         if(ncdhw){
-            inChannels = (int) input.size(1);
-            inD = (int) input.size(2);
-            inH = (int) input.size(3);
-            inW = (int) input.size(4);
+            inChannels = input.size(1);
+            inD = input.size(2);
+            inH = input.size(3);
+            inW = input.size(4);
             intArgs = new int[] {1}; // 1 is channels first
         } else {
-            inD = (int) input.size(1);
-            inH = (int) input.size(2);
-            inW = (int) input.size(3);
-            inChannels = (int) input.size(4);
+            inD = input.size(1);
+            inH = input.size(2);
+            inW = input.size(3);
+            inChannels = input.size(4);
             intArgs = new int[] {0}; // 0 is channels last
         }
 
@@ -134,9 +133,8 @@ public class Upsampling3D extends AbstractLayer<org.deeplearning4j.nn.conf.layer
         }
 
         boolean ncdhw = layerConf().getDataFormat() == org.deeplearning4j.nn.conf.layers.Convolution3D.DataFormat.NCDHW;
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inChannels, inD, inH, inW;
+        long miniBatch = input.size(0);
+        long inChannels, inD, inH, inW;
         int[] intArgs;
         int[] size = getSize();
         if(ncdhw){

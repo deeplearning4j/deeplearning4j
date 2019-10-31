@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.deeplearning4j.nn.api.Model;
 import org.nd4j.linalg.api.buffer.DataType;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.function.Consumer;
 import org.nd4j.linalg.lossfunctions.impl.LossBinaryXENT;
 import org.nd4j.linalg.primitives.Pair;
@@ -293,7 +294,8 @@ public class GradientCheckUtil {
                     ss = n;
                 }
 
-                // FIXME: int cast
+                if (ss > Integer.MAX_VALUE)
+                    throw new ND4JArraySizeException();
                 stepSizeForParam.put(paramNames.get(i), (int) ss);
             }
         }

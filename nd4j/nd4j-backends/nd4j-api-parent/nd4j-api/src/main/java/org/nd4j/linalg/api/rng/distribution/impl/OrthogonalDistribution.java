@@ -222,7 +222,7 @@ public class OrthogonalDistribution extends BaseDistribution {
 
     @Override
     public INDArray sample(long[] shape){
-        int numRows = 1;
+        long numRows = 1;
         for (int i = 0; i < shape.length - 1; i++)
             numRows *= shape[i];
         long numCols = shape[shape.length - 1];

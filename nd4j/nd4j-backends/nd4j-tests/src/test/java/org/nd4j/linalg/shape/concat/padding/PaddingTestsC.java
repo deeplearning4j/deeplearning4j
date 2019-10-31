@@ -100,9 +100,8 @@ public class PaddingTestsC extends BaseNd4jTest {
         val h = linspaced.size(2);
         val w = linspaced.size(3);
 
-        // FIXME: int cast
-        int outWidth = Convolution.outSize((int) h, kh, sy, ph, 1, true);
-        int outHeight = Convolution.outSize((int) w, kw, sx, pw, 1, true);
+        long outWidth = Convolution.outSize(h, kh, sy, ph, 1, true);
+        long outHeight = Convolution.outSize(w, kw, sx, pw, 1, true);
         INDArray padded = Nd4j.pad(linspaced, new int[][] {{0, 0}, {0, 0}, {ph, ph + sy - 1}, {pw, pw + sx - 1}});
         System.out.println(padded);
     }

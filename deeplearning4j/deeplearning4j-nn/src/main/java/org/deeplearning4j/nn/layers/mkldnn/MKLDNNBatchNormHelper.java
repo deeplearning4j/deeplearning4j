@@ -56,7 +56,7 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
+    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, long[] shape, INDArray gamma,
                                                      INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr workspaceMgr) {
         //2019-02-14: Backprop disabled pending fixes. https://github.com/deeplearning4j/deeplearning4j/issues/7166
         //Also no MKL-DNN implemented for backprop anyway
@@ -82,7 +82,7 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
     }
 
     @Override
-    public INDArray preOutput(INDArray x, boolean training, int[] shape, INDArray gamma, INDArray beta, INDArray mean, INDArray var,
+    public INDArray preOutput(INDArray x, boolean training, long[] shape, INDArray gamma, INDArray beta, INDArray mean, INDArray var,
                               double decay, double eps, LayerWorkspaceMgr workspaceMgr) {
         if(x.dataType() != DataType.FLOAT)
             return null;    //MKL-DNN only supports float

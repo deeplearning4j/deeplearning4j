@@ -18,6 +18,7 @@ package org.nd4j.linalg.util;
 
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.tools.BTools;
 import org.nd4j.tools.InfoLine;
 import org.nd4j.tools.InfoValues;
@@ -178,7 +179,9 @@ public class DataSetUtils {
 		InfoValues iv;
 		//
 		double j_Dbl = -1;
-		// FIXME: int cast
+		if (in_INDA.rows() > Integer.MAX_VALUE) {
+			throw new ND4JArraySizeException();
+		}
 		int i_CharsCount = BTools.getIndexCharsCount( (int) in_INDA.rows() - 1 );
 		//
 		oinfo = "";
@@ -219,7 +222,8 @@ public class DataSetUtils {
 			c_I = 0;
 			//
 			if ( ot_INDA != null ) {
-				// FIXME: int cast
+				if (ot_INDA.columns() - 1 > Integer.MAX_VALUE)
+					throw new ND4JArraySizeException();
 				for ( int j = (int) ot_INDA.columns() - 1; j >= 0; j-- ) {
 					//
 					if ( c_I > c_End_I ) break;
@@ -346,7 +350,8 @@ public class DataSetUtils {
 		InfoValues iv;
 		//
 		double j_Dbl = -1;
-		// FIXME: int cast
+		if (INDA.rows() - 1 > Integer.MAX_VALUE)
+			throw new ND4JArraySizeException();
 		int i_CharsCount = BTools.getIndexCharsCount( (int) INDA.rows() - 1 );
 		//
 		if ( !turned ) { //= standard
@@ -366,7 +371,8 @@ public class DataSetUtils {
 				iv.vsL.add( BTools.getSInt( i, i_CharsCount ) );
 				//
 				int c_I = 0;
-				// FIXME: int cast
+				if (INDA.columns() - 1 > Integer.MAX_VALUE)
+					throw new ND4JArraySizeException();
 				for ( int j =  (int) INDA.columns() - 1; j >= 0; j-- ) {
 					//
 					if ( c_I > c_End_I ) break;

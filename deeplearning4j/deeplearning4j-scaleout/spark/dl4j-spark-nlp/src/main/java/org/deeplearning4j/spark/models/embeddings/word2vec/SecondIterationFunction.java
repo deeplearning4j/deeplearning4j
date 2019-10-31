@@ -222,7 +222,6 @@ public class SecondIterationFunction implements FlatMapFunction<Iterator<Tuple2<
                 else {
                     nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
-                    // FIXME: int cast
                     int idx = (int) Math.abs((int) (nextRandom.get() >> 16) % negativeHolder.getTable().length());
 
                     target = negativeHolder.getTable().getInt(idx);

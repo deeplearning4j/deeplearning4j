@@ -36,6 +36,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.strict.SigmoidDerivative;
 import org.nd4j.linalg.api.ops.impl.transforms.strict.TanhDerivative;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
@@ -340,7 +341,8 @@ public class BackPropMLPTest extends BaseDL4JTest {
 
     public static float[] asFloat(INDArray arr) {
         long len = arr.length();
-        // FIXME: int cast
+        if (len > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         float[] f = new float[(int) len];
         NdIndexIterator iterator = new NdIndexIterator('c', arr.shape());
         for (int i = 0; i < len; i++) {

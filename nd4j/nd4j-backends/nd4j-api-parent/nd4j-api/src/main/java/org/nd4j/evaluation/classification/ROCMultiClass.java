@@ -208,7 +208,6 @@ public class ROCMultiClass extends BaseEvaluation<ROCMultiClass> {
         if(labels2d.dataType() != predictions2d.dataType())
             labels2d = labels2d.castTo(predictions2d.dataType());
 
-        // FIXME: int cast
         int n = (int) labels2d.size(1);
         if (underlying == null) {
             underlying = new ROC[n];

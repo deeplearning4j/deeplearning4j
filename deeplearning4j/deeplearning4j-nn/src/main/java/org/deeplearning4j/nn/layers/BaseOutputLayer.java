@@ -229,7 +229,6 @@ public abstract class BaseOutputLayer<LayerConfT extends org.deeplearning4j.nn.c
      */
     @Override
     public int numLabels() {
-        // FIXME: int cast
         return (int) labels.size(1);
     }
 

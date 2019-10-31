@@ -33,10 +33,6 @@ import java.util.List;
 
 public abstract class BaseTransformFloatOp extends BaseTransformOp implements TransformFloatOp {
 
-    public BaseTransformFloatOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
     public BaseTransformFloatOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }

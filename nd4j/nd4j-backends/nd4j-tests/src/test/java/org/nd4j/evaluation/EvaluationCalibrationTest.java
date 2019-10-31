@@ -161,7 +161,6 @@ public class EvaluationCalibrationTest extends BaseNd4jTest {
         ec.eval(labels, arr);
 
         int[] expLabelCounts = labels.sum(0).data().asInt();
-        // FIXME: int cast
         int[] expPredictionCount = new int[(int) labels.size(1)];
         INDArray argmax = Nd4j.argMax(arr, 1);
         for (int i = 0; i < argmax.length(); i++) {

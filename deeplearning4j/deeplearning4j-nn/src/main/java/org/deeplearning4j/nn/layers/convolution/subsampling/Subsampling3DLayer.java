@@ -71,9 +71,8 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
 
         boolean isNCDHW = layerConf().getDataFormat() == Convolution3D.DataFormat.NCDHW;
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inChannels = (int) (isNCDHW ? input.size(1) : input.size(4));
+        long miniBatch = input.size(0);
+        long inChannels = isNCDHW ? input.size(1) : input.size(4);
         int inD = (int) (isNCDHW ? input.size(2) : input.size(1));
         int inH = (int) (isNCDHW ? input.size(3) : input.size(2));
         int inW = (int) (isNCDHW ? input.size(4) : input.size(3));
@@ -148,9 +147,8 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             }
         }
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inChannels = (int) (isNCDHW ? input.size(1) : input.size(4));
+        long miniBatch = input.size(0);
+        long inChannels = isNCDHW ? input.size(1) : input.size(4);
         int inD = (int) (isNCDHW ? input.size(2) : input.size(1));
         int inH = (int) (isNCDHW ? input.size(3) : input.size(2));
         int inW = (int) (isNCDHW ? input.size(4) : input.size(3));
@@ -170,9 +168,9 @@ public class Subsampling3DLayer extends AbstractLayer<org.deeplearning4j.nn.conf
             outSize = Convolution3DUtils.get3DOutputSize(
                     input, kernel, strides, pad, convolutionMode, dilation, isNCDHW);
         }
-        int outD = outSize[0];
-        int outH = outSize[1];
-        int outW = outSize[2];
+        long outD = outSize[0];
+        long outH = outSize[1];
+        long outW = outSize[2];
 
         String opName = layerConf().getPoolingType() == PoolingType.MAX ? "maxpool3dnew" : "avgpool3dnew";
 

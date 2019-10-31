@@ -72,13 +72,11 @@ public class TestDataSetIterator implements DataSetIterator {
 
     @Override
     public int inputColumns() {
-        // FIXME: int cast
         return (int)list.get(0).getFeatures().columns();
     }
 
     @Override
     public int totalOutcomes() {
-        // FIXME: int cast
         return (int) list.get(0).getLabels().columns();
     }
 

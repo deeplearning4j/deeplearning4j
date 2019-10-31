@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.conf.layers.Layer;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 
 import java.util.ArrayList;
@@ -108,7 +109,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         }
 
         //Between last decoder layer and parameters for p(x|z):
-        // FIXME: int cast
+        if (nIn > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         val nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
         val lastDecLayerSize = decoderLayerSizes[decoderLayerSizes.length - 1];
         paramCount += (lastDecLayerSize + 1) * nDistributionParams;
@@ -294,7 +296,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         }
 
         //Finally, p(x|z):
-        // FIXME: int cast
+        if (nIn > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
         int pxzWeightCount = decoderLayerSizes[decoderLayerSizes.length - 1] * nDistributionParams;
         INDArray pxzWeightView =
@@ -402,7 +405,8 @@ public class VariationalAutoencoderParamInitializer extends DefaultParamInitiali
         }
 
         //Finally, p(x|z):
-        // FIXME: int cast
+        if (nIn > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int nDistributionParams = layer.getOutputDistribution().distributionInputSize((int) nIn);
         int pxzWeightCount = decoderLayerSizes[decoderLayerSizes.length - 1] * nDistributionParams;
         INDArray pxzWeightView =

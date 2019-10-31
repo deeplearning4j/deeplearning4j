@@ -366,7 +366,6 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         DataSet ds = mdsToDataSet(mds);
 
         if (totalOutcomes == -1) {
-            // FIXME: int cast
             inputColumns = (int) ds.getFeatures().size(1);
             totalOutcomes = ds.getLabels() == null ? -1 : (int) ds.getLabels().size(1);
         }
@@ -394,7 +393,6 @@ public class SequenceRecordReaderDataSetIterator implements DataSetIterator {
         stored = next();
         useStored = true;
 
-        // FIXME: int cast
         inputColumns = (int) stored.getFeatures().size(1);
         totalOutcomes = (int) stored.getLabels().size(1);
     }

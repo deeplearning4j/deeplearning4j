@@ -26,6 +26,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.compression.CompressedDataBuffer;
 import org.nd4j.linalg.compression.CompressionDescriptor;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -91,7 +92,8 @@ public class BinarySerde {
         if (type != DataType.COMPRESSED) {
             ByteBuffer slice = byteBuffer.slice();
             //wrap the data buffer for the last bit
-            // FIXME: int cast
+            if (Shape.length(shapeBuff) > Integer.MAX_VALUE)
+                throw new ND4JArraySizeException();
             DataBuffer buff = Nd4j.createBuffer(slice, type, (int) Shape.length(shapeBuff));
             //advance past the data
             int position = byteBuffer.position() + (buff.getElementSize() * (int) buff.length());

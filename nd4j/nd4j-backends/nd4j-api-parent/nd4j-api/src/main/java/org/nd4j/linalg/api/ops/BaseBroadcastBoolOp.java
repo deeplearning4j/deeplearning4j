@@ -102,16 +102,6 @@ public abstract class BaseBroadcastBoolOp extends BaseOp implements BroadcastOp 
 
     public BaseBroadcastBoolOp(SameDiff sameDiff,
                                SDVariable i_v,
-                               int[] shape,
-                               boolean inPlace,
-                               int[] dimension,
-                               Object[] extraArgs) {
-        // FIXME: int cast
-        this(sameDiff, i_v, ArrayUtil.toLongArray(shape), inPlace, dimension, extraArgs);
-    }
-
-    public BaseBroadcastBoolOp(SameDiff sameDiff,
-                               SDVariable i_v,
                                long[] shape,
                                boolean inPlace,
                                int[] dimension,

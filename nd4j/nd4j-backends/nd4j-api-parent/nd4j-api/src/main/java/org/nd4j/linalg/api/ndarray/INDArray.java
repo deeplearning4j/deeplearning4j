@@ -871,6 +871,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
      */
+    INDArray repmat(long... shape);
+
+    @Deprecated
     INDArray repmat(int... shape);
 
     /**

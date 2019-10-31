@@ -159,9 +159,8 @@ public class Convolution {
     public static INDArray im2col(INDArray img, int kh, int kw, int sy, int sx, int ph, int pw, int dh, int dw, boolean isSameMode) {
         Nd4j.getCompressor().autoDecompress(img);
         //Input: NCHW format
-        // FIXME: int cast
-        int outH = outputSize((int) img.size(2), kh, sy, ph, dh, isSameMode);
-        int outW = outputSize((int) img.size(3), kw, sx, pw, dw, isSameMode);
+        long outH = outputSize(img.size(2), kh, sy, ph, dh, isSameMode);
+        long outW = outputSize(img.size(3), kw, sx, pw, dw, isSameMode);
 
         //[miniBatch,depth,kH,kW,outH,outW]
         INDArray out = Nd4j.create(new long[]{img.size(0), img.size(1), kh, kw, outH, outW}, 'c');
@@ -277,9 +276,8 @@ public class Convolution {
 
             output = Nd4j.createUninitialized(img.dataType(), new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
         } else {
-            // FIXME: int cast
-            int oH = ((int) img.size(2) - (kh + (kh - 1) * (1 - 1)) + 2 * ph) / sy + 1;
-            int oW = ((int) img.size(3) - (kw + (kw - 1) * (1 - 1)) + 2 * pw) / sx + 1;
+            long oH = (img.size(2) - (kh + (kh - 1) * (1 - 1)) + 2 * ph) / sy + 1;
+            long oW = (img.size(3) - (kw + (kw - 1) * (1 - 1)) + 2 * pw) / sx + 1;
 
             output = Nd4j.createUninitialized(img.dataType(), new long[]{img.size(0), img.size(1), kh, kw, oH, oW}, 'c');
         }
@@ -314,7 +312,7 @@ public class Convolution {
      * @return
      */
     @Deprecated
-    public static int outSize(int size, int k, int s, int p, int dilation, boolean coverAll) {
+    public static long outSize(long size, long k, long s, long p, int dilation, boolean coverAll) {
         k = effectiveKernelSize(k, dilation);
 
         if (coverAll)
@@ -323,7 +321,7 @@ public class Convolution {
             return (size + p * 2 - k) / s + 1;
     }
 
-    public static int outputSize(int size, int k, int s, int p, int dilation, boolean isSameMode) {
+    public static long outputSize(long size, long k, long s, long p, int dilation, boolean isSameMode) {
         k = effectiveKernelSize(k, dilation);
 
         if (isSameMode) {
@@ -333,7 +331,7 @@ public class Convolution {
         }
     }
 
-    public static int effectiveKernelSize(int kernel, int dilation) {
+    public static long effectiveKernelSize(long kernel, int dilation) {
         return kernel + (kernel - 1) * (dilation - 1);
     }
 

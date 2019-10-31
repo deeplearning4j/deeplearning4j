@@ -358,7 +358,6 @@ public class BasicModelUtils<T extends SequenceElement> implements ModelUtils<T>
             INDArray sort = sorted[0];
             List<String> ret = new ArrayList<>();
 
-            // FIXME: int cast
             if (top > sort.length())
                 top = (int) sort.length();
             //there will be a redundant word

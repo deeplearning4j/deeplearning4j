@@ -82,12 +82,12 @@ public class Subsampling1DLayer extends SubsamplingLayer {
         }
         InputType.InputTypeRecurrent r = (InputType.InputTypeRecurrent) inputType;
         long inputTsLength = r.getTimeSeriesLength();
-        int outLength;
+        long outLength;
         if (inputTsLength < 0) {
             //Probably: user did InputType.recurrent(x) without specifying sequence length
             outLength = -1;
         } else {
-            outLength = Convolution1DUtils.getOutputSize((int) inputTsLength, kernelSize[0], stride[0], padding[0],
+            outLength = Convolution1DUtils.getOutputSize(inputTsLength, kernelSize[0], stride[0], padding[0],
                             convolutionMode, dilation[0]);
         }
         return InputType.recurrent(r.getSize(), outLength);

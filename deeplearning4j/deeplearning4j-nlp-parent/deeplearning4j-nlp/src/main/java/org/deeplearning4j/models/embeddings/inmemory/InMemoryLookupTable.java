@@ -104,7 +104,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
     }
 
     protected void initAdaGrad() {
-        int[] shape = new int[] {vocab.numWords() + 1, vectorLength};
+        long[] shape = new long[] {vocab.numWords() + 1, vectorLength};
         int length = ArrayUtil.prod(shape);
         adaGrad = new AdaGrad(shape, lr.get());
         adaGrad.setStateViewArray(Nd4j.zeros(shape).reshape(1, length), shape, Nd4j.order(), true);
@@ -124,8 +124,7 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
         if (adaGrad == null)
             initAdaGrad();
 
-        // FIXME: int cast
-        return adaGrad.getGradient(gradient, column, ArrayUtil.toInts(syn0.shape()));
+        return adaGrad.getGradient(gradient, column, syn0.shape());
     }
 
     @Override
@@ -370,7 +369,6 @@ public class InMemoryLookupTable<T extends SequenceElement> implements WeightLoo
                 else {
                     nextRandom.set(nextRandom.get() * 25214903917L + 11);
 
-                    // FIXME: int cast
                     int idx = (int) Math.abs((int) (nextRandom.get() >> 16) % table.length());
 
                     target = table.getInt(idx);

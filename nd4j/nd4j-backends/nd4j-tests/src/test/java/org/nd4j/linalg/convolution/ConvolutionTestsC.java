@@ -55,7 +55,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
 
     @Test
     public void testConvOutWidthAndHeight() {
-        int outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
+        long outSize = Convolution.outSize(2, 1, 1, 2, 1, false);
         assertEquals(6, outSize);
     }
 
@@ -415,14 +415,13 @@ public class ConvolutionTestsC extends BaseNd4jTest {
         int outH = (int)Math.ceil(input.size(2)/(double)s[0]);
         int outW = (int)Math.ceil(input.size(3)/(double)s[1]);
 
-        // FIXME: int cast
-        int totalPadH = (outH-1)*s[0] + k[0] - (int) input.size(2);
-        int totalPadW = (outW-1)*s[1] + k[1] - (int) input.size(3);
+        long totalPadH = (outH-1)*s[0] + k[0] - input.size(2);
+        long totalPadW = (outW-1)*s[1] + k[1] - input.size(3);
 
-        int topPad = totalPadH/2;
-        int bottomPad = totalPadH - topPad;
-        int leftPad = totalPadW/2;
-        int rightPad = totalPadW - leftPad;
+        long topPad = totalPadH/2;
+        long bottomPad = totalPadH - topPad;
+        long leftPad = totalPadW/2;
+        long rightPad = totalPadW - leftPad;
 
         INDArray outGrad = Nd4j.create(input.shape());
 
@@ -432,10 +431,10 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                     for( int x=0; x<outW; x++){
 
                         //First: work out the *original* position for this kernel...
-                        int kTLy = y*s[0] - topPad;
-                        int kTLx = x*s[1] - leftPad;
+                        long kTLy = y*s[0] - topPad;
+                        long kTLx = x*s[1] - leftPad;
 
-                        int[] maxPos = {kTLy,kTLx};
+                        long[] maxPos = {kTLy,kTLx};
                         double max = -Double.MAX_VALUE;
                         for( int kY=0; kY<k[0]; kY++){
                             for( int kX=0; kX<k[1]; kX++){
@@ -446,7 +445,7 @@ public class ConvolutionTestsC extends BaseNd4jTest {
                                 double v = input.getDouble(m, d, kTLy + kY, kTLx + kX);
                                 if(v > max){
                                     max = v;
-                                    maxPos = new int[]{kTLy + kY, kTLx + kX};
+                                    maxPos = new long[]{kTLy + kY, kTLx + kX};
                                 }
                             }
                         }

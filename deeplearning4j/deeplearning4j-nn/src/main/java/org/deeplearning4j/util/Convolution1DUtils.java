@@ -29,6 +29,7 @@ import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -62,10 +63,9 @@ public class Convolution1DUtils {
      * @param dilation        Kernel dilation
      * @return Output size (width)
      */
-    public static int getOutputSize(int inH, int kernel, int strides, int padding,
+    public static long getOutputSize(long inH, int kernel, int strides, int padding,
                                     ConvolutionMode convolutionMode, int dilation) {
-        // FIXME: int cast
-        int eKernel = effectiveKernelSize(kernel, dilation);
+        long eKernel = effectiveKernelSize(kernel, dilation);
         if (convolutionMode == ConvolutionMode.Same) {
             return (int) Math.ceil(inH / ((double) strides));
         }
@@ -85,7 +85,8 @@ public class Convolution1DUtils {
      */
     public static int getOutputSize(INDArray inputData, int kernel, int strides, int padding,
                                     ConvolutionMode convolutionMode, int dilation) {
-        // FIXME: int cast
+        if (inputData.size(2) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int inH = (int) inputData.size(2);
         int eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);

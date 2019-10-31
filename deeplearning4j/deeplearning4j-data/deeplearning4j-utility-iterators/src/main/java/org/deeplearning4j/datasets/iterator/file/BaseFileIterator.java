@@ -134,7 +134,7 @@ public abstract class BaseFileIterator<T, P> implements Iterator<T> {
         List<T> remainder = new ArrayList<>();
         int soFar = 0;
         for (T t : toMerge) {
-            int size = sizeOf(t);
+            long size = sizeOf(t);
 
             if (soFar + size <= batchSize) {
                 correctNum.add(t);
@@ -190,7 +190,7 @@ public abstract class BaseFileIterator<T, P> implements Iterator<T> {
 
     protected abstract T load(File f);
 
-    protected abstract int sizeOf(T of);
+    protected abstract long sizeOf(T of);
 
     protected abstract List<T> split(T toSplit);
 

@@ -108,11 +108,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         if(epsilon.dataType() != dataType)
             epsilon = epsilon.castTo(dataType);
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inDepth = (int) input.size(1);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        int inH = (int)input.size(2);
+        int inW = (int)input.size(3);
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
@@ -158,9 +155,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //subsampling doesn't have weights and thus gradients are not calculated for this layer
         //only scale and reshape epsilon
-        // FIXME: int cast
-        int inputHeight = (int) input().size(-2);
-        int inputWidth = (int) input().size(-1);
         Gradient retGradient = new DefaultGradient();
 
 
@@ -231,11 +225,10 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         INDArray input = this.input.castTo(dataType);
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inDepth = (int) input.size(1);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        long miniBatch = input.size(0);
+        long inDepth = input.size(1);
+        int inH = (int)input.size(2);
+        int inW = (int)input.size(3);
 
         int[] kernel = layerConf().getKernelSize();
         int[] strides = layerConf().getStride();
@@ -250,8 +243,8 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
             pad = layerConf().getPadding();
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
-        int outH = outSize[0];
-        int outW = outSize[1];
+        long outH = outSize[0];
+        long outW = outSize[1];
 
 
         if (helper != null && (helperCountFail == 0 || !layerConf().isCudnnAllowFallback())) {
@@ -277,9 +270,6 @@ public class SubsamplingLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
                 return ret;
             }
         }
-
-
-
 
         INDArray output = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), new long[]{miniBatch, inDepth, outH, outW}, 'c');
         DynamicCustomOp.DynamicCustomOpsBuilder b;

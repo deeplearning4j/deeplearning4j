@@ -25,6 +25,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.DefaultOpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpExecutionerUtil;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.profiler.OpProfiler;
@@ -129,7 +130,10 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
-        // FIXME: int cast
+        if (C.rows() > Integer.MAX_VALUE || C.columns() > Integer.MAX_VALUE ||
+            A.size(0) > Integer.MAX_VALUE || B.size(0) > Integer.MAX_VALUE || C.size(0) > Integer.MAX_VALUE) {
+            throw new ND4JArraySizeException();
+        }
 
         if (A.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, B, C);
@@ -163,7 +167,11 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, C);
 
-        // FIXME: int cast
+        if (C.rows() > Integer.MAX_VALUE ||
+                A.size(0) > Integer.MAX_VALUE ||
+                C.size(0) > Integer.MAX_VALUE) {
+            throw new ND4JArraySizeException();
+        }
 
         if (A.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, C);
@@ -198,7 +206,10 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
-        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE ||
+            A.size(0) > Integer.MAX_VALUE || B.size(0) > Integer.MAX_VALUE || C.size(0) > Integer.MAX_VALUE) {
+            throw new ND4JArraySizeException();
+        }
 
         if (A.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, B, C);
@@ -234,7 +245,10 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B, C);
 
-        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE ||
+            A.size(0) > Integer.MAX_VALUE || B.size(0) > Integer.MAX_VALUE) {
+            throw new ND4JArraySizeException();
+        }
 
         if (A.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, B, C);
@@ -269,7 +283,10 @@ public abstract class BaseLevel3 extends BaseLevel implements Level3 {
         if (Nd4j.getExecutioner().getProfilingMode() == OpExecutioner.ProfilingMode.ALL)
             OpProfiler.getInstance().processBlasCall(false, A, B);
 
-        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE ||
+            A.size(0) > Integer.MAX_VALUE || B.size(0) > Integer.MAX_VALUE) {
+            throw new ND4JArraySizeException();
+        }
 
         if (A.data().dataType() == DataType.DOUBLE) {
             DefaultOpExecutioner.validateDataType(DataType.DOUBLE, A, B);

@@ -850,7 +850,9 @@ public class JcublasLapack extends BaseLapack {
         if (A.ordering() == 'c')
             a = A.dup('f');
 
-        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE) {
+            throw new RuntimeException("Rows overflow");
+        }
         int M = (int) A.rows();
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)
@@ -925,7 +927,10 @@ public class JcublasLapack extends BaseLapack {
         if (A.ordering() == 'c')
             a = A.dup('f');
 
-        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE) {
+            throw new RuntimeException("Rows overflow");
+        }
+
         int M = (int) A.rows();
 
         if (Nd4j.getExecutioner() instanceof GridExecutioner)

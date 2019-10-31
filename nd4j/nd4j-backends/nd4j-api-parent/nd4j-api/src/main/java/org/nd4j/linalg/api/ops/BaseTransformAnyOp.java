@@ -49,10 +49,6 @@ public abstract class BaseTransformAnyOp extends BaseTransformOp implements Tran
         super(sameDiff, i_v1, i_v2, extraArgs);
     }
 
-    public BaseTransformAnyOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
     public BaseTransformAnyOp(SameDiff sameDiff, SDVariable i_v, boolean inPlace) {
         super(sameDiff, i_v, inPlace);
     }

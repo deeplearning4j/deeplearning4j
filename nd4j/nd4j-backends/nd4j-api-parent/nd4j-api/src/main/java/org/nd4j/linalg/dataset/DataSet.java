@@ -584,7 +584,6 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
      */
     @Override
     public int numInputs() {
-        // FIXME: int cast
         return (int) getFeatures().size(1);
     }
 
@@ -1134,13 +1133,11 @@ public class DataSet implements org.nd4j.linalg.dataset.api.DataSet {
 
     @Override
     public int numOutcomes() {
-        // FIXME: int cast
         return (int) getLabels().size(1);
     }
 
     @Override
     public int numExamples() {
-        // FIXME: int cast
         if (getFeatures() != null)
             return (int) getFeatures().size(0);
         else if (getLabels() != null)

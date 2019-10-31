@@ -106,8 +106,6 @@ public class BooleanIndexing {
         MatchCondition op = new MatchCondition(n, condition, dimension);
         INDArray arr = Nd4j.getExecutioner().exec(op);
 
-        // FIXME: int cast
-
         boolean[] result = new boolean[(int) arr.length()];
 
         for (int i = 0; i < arr.length(); i++) {

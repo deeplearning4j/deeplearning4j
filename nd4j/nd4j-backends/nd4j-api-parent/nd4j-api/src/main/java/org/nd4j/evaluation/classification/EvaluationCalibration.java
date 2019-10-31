@@ -368,7 +368,6 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
             return -1;
         }
 
-        // FIXME: int cast
         return (int) rDiagBinTotalCount.size(1);
     }
 
@@ -394,7 +393,6 @@ public class EvaluationCalibration extends BaseEvaluation<EvaluationCalibration>
                 double[] mpb = meanPredictionBins;
                 double[] fp = fracPositives;
 
-                // FIXME: int cast
                 meanPredictionBins = new double[(int) (totalCountBins.length() - numZeroBins)];
                 fracPositives = new double[meanPredictionBins.length];
                 int j = 0;

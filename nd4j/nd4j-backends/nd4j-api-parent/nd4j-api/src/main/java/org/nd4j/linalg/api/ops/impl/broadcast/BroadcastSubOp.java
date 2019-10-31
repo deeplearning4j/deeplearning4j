@@ -52,7 +52,7 @@ public class BroadcastSubOp extends BaseBroadcastOp {
         super(sameDiff, i_v, dimension, inPlace);
     }
 
-    public BroadcastSubOp(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
+    public BroadcastSubOp(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, dimension, extraArgs);
     }
 

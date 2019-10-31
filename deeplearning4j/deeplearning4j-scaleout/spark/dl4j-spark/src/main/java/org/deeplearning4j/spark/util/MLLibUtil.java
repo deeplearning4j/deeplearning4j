@@ -31,6 +31,7 @@ import org.datavec.api.split.InputStreamInputSplit;
 import org.datavec.api.writable.Writable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.FeatureUtil;
 import scala.Tuple2;
@@ -122,7 +123,8 @@ public class MLLibUtil {
         if (!arr.isVector()) {
             throw new IllegalArgumentException("passed in array must be a vector");
         }
-        // FIXME: int cast
+        if (arr.length() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         double[] ret = new double[(int) arr.length()];
         for (int i = 0; i < arr.length(); i++) {
             ret[i] = arr.getDouble(i);

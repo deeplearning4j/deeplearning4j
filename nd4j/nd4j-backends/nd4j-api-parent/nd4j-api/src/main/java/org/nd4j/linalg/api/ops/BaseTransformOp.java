@@ -98,15 +98,6 @@ public abstract class BaseTransformOp extends BaseOp implements TransformOp {
 
     public BaseTransformOp(SameDiff sameDiff,
                            SDVariable i_v,
-                           int[] shape,
-                           boolean inPlace,
-                           Object[] extraArgs) {
-        // FIXME: int cast !
-        this(sameDiff, i_v, ArrayUtil.toLongArray(shape), inPlace, extraArgs);
-    }
-
-    public BaseTransformOp(SameDiff sameDiff,
-                           SDVariable i_v,
                            long[] shape,
                            boolean inPlace,
                            Object[] extraArgs) {

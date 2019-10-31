@@ -37,10 +37,6 @@ public class ASinh extends BaseTransformStrictOp {
         super(sameDiff, i_v, inPlace);
     }
 
-    public ASinh(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, Object[] extraArgs) {
-        super(sameDiff, i_v, shape, inPlace, extraArgs);
-    }
-
     public ASinh(SameDiff sameDiff, SDVariable i_v) {
         super(sameDiff, i_v, false);
     }

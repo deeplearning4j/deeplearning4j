@@ -73,8 +73,7 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
                 next = iterator.next();
             }
 
-            // FIXME: int cast
-            int nExamples = (int) next.getFeatures(0).size(0);
+            long nExamples = next.getFeatures(0).size(0);
             if (countSoFar + nExamples <= batchSize) {
                 //Add the entire MultiDataSet as-is
                 list.add(next);
@@ -140,7 +139,7 @@ public class IteratorMultiDataSetIterator implements MultiDataSetIterator {
         return out;
     }
 
-    private static INDArray getRange(INDArray arr, int exampleFrom, int exampleToExclusive) {
+    private static INDArray getRange(INDArray arr, long exampleFrom, long exampleToExclusive) {
         if (arr == null)
             return null;
 

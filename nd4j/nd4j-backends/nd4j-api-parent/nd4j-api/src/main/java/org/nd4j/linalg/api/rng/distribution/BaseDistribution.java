@@ -229,7 +229,6 @@ public abstract class BaseDistribution implements Distribution {
         if (sampleSize <= 0) {
             throw new NotStrictlyPositiveException(LocalizedFormats.NUMBER_OF_SAMPLES, sampleSize);
         }
-        // FIXME: int cast
         double[] out = new double[(int) sampleSize];
         for (int i = 0; i < sampleSize; i++) {
             out[i] = sample();

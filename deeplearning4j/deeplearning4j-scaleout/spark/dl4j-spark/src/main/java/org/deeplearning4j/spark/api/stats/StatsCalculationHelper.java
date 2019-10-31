@@ -39,7 +39,7 @@ public class StatsCalculationHelper {
     private long initialModelAfter;
     private long lastDataSetBefore;
     private long lastProcessBefore;
-    private int totalExampleCount;
+    private long totalExampleCount;
     private List<EventStats> dataSetGetTimes = new ArrayList<>();
     private List<EventStats> processMiniBatchTimes = new ArrayList<>();
 
@@ -65,7 +65,7 @@ public class StatsCalculationHelper {
         lastDataSetBefore = timeSource.currentTimeMillis();
     }
 
-    public void logNextDataSetAfter(int numExamples) {
+    public void logNextDataSetAfter(long numExamples) {
         long now = timeSource.currentTimeMillis();
         long duration = now - lastDataSetBefore;
         dataSetGetTimes.add(new BaseEventStats(lastDataSetBefore, duration));

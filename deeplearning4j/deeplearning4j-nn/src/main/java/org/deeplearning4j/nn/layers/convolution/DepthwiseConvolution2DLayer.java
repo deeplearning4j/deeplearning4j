@@ -32,6 +32,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
@@ -75,12 +76,11 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
         INDArray input = this.input.castTo(dataType);   //No-op if correct type
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        long miniBatch = input.size(0);
+        int inH = (int)input.size(2);
+        int inW = (int)input.size(3);
 
-        int inDepth = (int) depthWiseWeights.size(2);
+        long inDepth = depthWiseWeights.size(2);
         int kH = (int) depthWiseWeights.size(0);
         int kW = (int) depthWiseWeights.size(1);
 
@@ -169,10 +169,9 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
 
         INDArray input = this.input.castTo(dataType);   //no-op if correct dtype
 
-        // FIXME: int cast
-        int inDepth = (int) depthWiseWeights.size(2);
-        int depthMultiplier = (int) depthWiseWeights.size(3);
-        int outDepth = depthMultiplier * inDepth;
+        long inDepth = depthWiseWeights.size(2);
+        long depthMultiplier = depthWiseWeights.size(3);
+        long outDepth = depthMultiplier * inDepth;
 
         if (input.size(1) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
@@ -197,7 +196,9 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation);
 
-            // FIXME: int cast
+            if (input.size(2) > Integer.MAX_VALUE || input.size(3) > Integer.MAX_VALUE) {
+                throw new ND4JArraySizeException();
+            }
             pad = ConvolutionUtils.getSameModeTopLeftPadding(
                     outSize, new int[]{(int) input.size(2), (int) input.size(3)}, kernel, strides, dilation);
         } else {
@@ -205,8 +206,8 @@ public class DepthwiseConvolution2DLayer extends ConvolutionLayer {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, pad, convolutionMode, dilation);
         }
 
-        int outH = outSize[0];
-        int outW = outSize[1];
+        long outH = outSize[0];
+        long outW = outSize[1];
 
         val miniBatch = input.size(0);
         INDArray output = workspaceMgr.create(

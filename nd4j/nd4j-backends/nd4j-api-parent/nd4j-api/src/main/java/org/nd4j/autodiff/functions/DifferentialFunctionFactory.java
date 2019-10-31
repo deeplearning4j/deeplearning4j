@@ -2619,7 +2619,6 @@ public class DifferentialFunctionFactory {
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
 
-        // FIXME: int cast!
         return tile(func, ArrayUtil.toInts(input.getShape()));
     }
 

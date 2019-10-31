@@ -95,7 +95,6 @@ public class IteratorDataSetIterator implements DataSetIterator {
             //Set columns etc for later use
             DataSet temp = list.get(0);
 
-            // FIXME: int cast
             inputColumns = (int) temp.getFeatures().size(1);
             totalOutcomes = temp.getLabels() == null ? 0 : (int) temp.getLabels().size(1); //May be null for layerwise pretraining
         }

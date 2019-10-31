@@ -171,9 +171,8 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
                     + " " + layerId());
         }
 
-        // FIXME: int cast
-        int inDepth = (int) weights.size(0);
-        int outDepth = (int) weights.size(1);
+        long inDepth = weights.size(0);
+        long outDepth = weights.size(1);
 
         if (input.size(1) != inDepth && input.size(3) == inDepth) {
             //TODO AB 2019/10/25 this is an ugly "pseudo-NHWC support" hack that needs to be removed ASAD
@@ -199,7 +198,6 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
         int[] pad;
         int[] outSize;
         if (convolutionMode == ConvolutionMode.Same) {
-            // FIXME: int cast
             outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int) input.size(2), (int) input.size(3)}, kernel,
                     strides, dilation );
@@ -208,8 +206,8 @@ public class Deconvolution2DLayer extends ConvolutionLayer {
             outSize = ConvolutionUtils.getDeconvolutionOutputSize(input, kernel, strides, pad, convolutionMode, dilation); //Also performs validation
         }
 
-        int outH = outSize[0];
-        int outW = outSize[1];
+        long outH = outSize[0];
+        long outW = outSize[1];
 
 
         val miniBatch = input.size(0);

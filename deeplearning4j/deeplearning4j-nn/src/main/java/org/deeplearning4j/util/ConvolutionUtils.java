@@ -36,6 +36,8 @@ import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
+import org.nd4j.linalg.factory.NDArrayFactory;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.util.Arrays;
@@ -73,7 +75,8 @@ public class ConvolutionUtils {
     public static int[] getDeconvolutionOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                                    ConvolutionMode convolutionMode, int[] dilation) {
 
-        // FIXME: int cast
+        if (inputData.size(2) > Integer.MAX_VALUE || inputData.size(3) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int hIn = (int) inputData.size(2);
         int wIn = (int) inputData.size(3);
         int[] eKernel = effectiveKernelSize(kernel, dilation);
@@ -104,7 +107,8 @@ public class ConvolutionUtils {
      */
     public static int[] getOutputSize(INDArray inputData, int[] kernel, int[] strides, int[] padding,
                                       ConvolutionMode convolutionMode, int[] dilation) {
-        // FIXME: int cast
+        if (inputData.size(2) > Integer.MAX_VALUE || inputData.size(3) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int inH = (int) inputData.size(2);
         int inW = (int) inputData.size(3);
 
@@ -499,7 +503,7 @@ public class ConvolutionUtils {
         }
     }
 
-    public static INDArray reshape2dTo4d(INDArray in2d, int[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+    public static INDArray reshape2dTo4d(INDArray in2d, long[] toShape, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if(in2d.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         if (toShape.length != 4)
@@ -513,7 +517,7 @@ public class ConvolutionUtils {
         return workspaceMgr.leverageTo(type, out.permute(0, 3, 1, 2));
     }
 
-    public static INDArray reshape2dTo5d(Convolution3D.DataFormat format, INDArray in2d, int n, int d, int h, int w, int ch, LayerWorkspaceMgr workspaceMgr, ArrayType type){
+    public static INDArray reshape2dTo5d(Convolution3D.DataFormat format, INDArray in2d, long n, long d, long h, long w, long ch, LayerWorkspaceMgr workspaceMgr, ArrayType type){
         if(in2d.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
 
@@ -580,14 +584,21 @@ public class ConvolutionUtils {
         int inW;
         int inDepth;
 
-        // FIXME: int cast
         if (inputType instanceof InputType.InputTypeConvolutional) {
             InputType.InputTypeConvolutional conv = (InputType.InputTypeConvolutional) inputType;
+            if (conv.getHeight() > Integer.MAX_VALUE || conv.getWidth() > Integer.MAX_VALUE ||
+                conv.getChannels() > Integer.MAX_VALUE){
+                throw new ND4JArraySizeException();
+            }
             inH = (int) conv.getHeight();
             inW = (int) conv.getWidth();
             inDepth = (int) conv.getChannels();
         } else if (inputType instanceof InputType.InputTypeConvolutionalFlat) {
             InputType.InputTypeConvolutionalFlat conv = (InputType.InputTypeConvolutionalFlat) inputType;
+            if (conv.getHeight() > Integer.MAX_VALUE || conv.getWidth() > Integer.MAX_VALUE ||
+                conv.getDepth() > Integer.MAX_VALUE) {
+                throw new ND4JArraySizeException();
+            }
             inH = (int) conv.getHeight();
             inW = (int) conv.getWidth();
             inDepth = (int) conv.getDepth();

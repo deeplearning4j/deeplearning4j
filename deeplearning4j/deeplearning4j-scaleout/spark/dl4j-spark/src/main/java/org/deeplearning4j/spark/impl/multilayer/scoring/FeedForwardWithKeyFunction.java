@@ -105,7 +105,6 @@ public class FeedForwardWithKeyFunction<K>
             fMaskList.add(t2._2()._2());
             keyList.add(t2._1());
 
-            // FIXME: int cast
             origSizeList.add((int) t2._2()._1().size(0));
             tupleCount++;
         }

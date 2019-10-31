@@ -19,6 +19,7 @@ package org.deeplearning4j.spark.iterator;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.DataSetPreProcessor;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 
 import java.util.Collection;
 import java.util.Iterator;
@@ -31,8 +32,8 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
     protected Collection<T> dataSetStreams;
     protected DataSetPreProcessor preprocessor;
     protected Iterator<T> iter;
-    protected int totalOutcomes = -1;
-    protected int inputColumns = -1;
+    protected long totalOutcomes = -1;
+    protected long inputColumns = -1;
     protected int batch = -1;
     protected DataSet preloadedDataSet;
     protected int cursor = 0;
@@ -112,7 +113,9 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
     private void preloadDataSet() {
         preloadedDataSet = load(iter.next());
 
-        // FIXME: int cast
+        if (preloadedDataSet.getLabels().size(1) > Integer.MAX_VALUE ||
+            preloadedDataSet.getFeatures().size(1) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         totalOutcomes = (int) preloadedDataSet.getLabels().size(1);
         inputColumns = (int) preloadedDataSet.getFeatures().size(1);
     }

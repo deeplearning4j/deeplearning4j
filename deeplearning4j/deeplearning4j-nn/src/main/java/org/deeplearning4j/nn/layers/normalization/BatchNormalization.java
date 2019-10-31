@@ -152,10 +152,9 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 eps = epsilon;
             }
 
-            // FIXME: int cast
             Pair<Gradient,INDArray> ret = null;
             try {
-                ret = helper.backpropGradient(in, eps, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
+                ret = helper.backpropGradient(in, eps, shape, gamma, dGammaView, dBetaView,
                         layerConf.getEps(), workspaceMgr);
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
@@ -438,7 +437,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             //Note that cudnn does not support dense (2d) batch norm case as of v7.1
             double decay = layerConf.getDecay();
 
-            // FIXME: int cast
             INDArray ret = null;
             try {
                 if(globalVarView == null){
@@ -448,7 +446,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     globalVarView.muli(globalVarView);
                 }
 
-                ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
+                ret = helper.preOutput(in, training == TrainingMode.TRAIN, shape, gamma, beta, globalMeanView,
                         globalVarView, decay, layerConf.getEps(), workspaceMgr);
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging

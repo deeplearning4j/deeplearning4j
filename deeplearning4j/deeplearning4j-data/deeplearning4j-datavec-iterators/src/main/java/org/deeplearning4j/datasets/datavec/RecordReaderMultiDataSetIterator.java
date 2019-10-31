@@ -286,8 +286,8 @@ public class RecordReaderMultiDataSetIterator implements MultiDataSetIterator, S
                 for (INDArray w : exampleData) {
                     val n = w.size(0);
 
-                    // FIXME: int cast
-                    minExamples = (int) Math.min(minExamples, n);
+                    if (Math.min(minExamples, n) < Integer.MAX_VALUE)
+                        minExamples = (int) Math.min(minExamples, n);
                 }
             }
         }

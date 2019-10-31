@@ -29,6 +29,7 @@ import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.random.impl.Range;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.primitives.AtomicDouble;
@@ -921,8 +922,8 @@ public abstract class BaseNDArrayFactory implements NDArrayFactory {
 
         int arrOffset = 0;
 
-        // FIXME: int cast
-
+        if (ret.tensorsAlongDimension(dimension) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         INDArray[] retAlongDimensionArrays = new INDArray[(int) ret.tensorsAlongDimension(dimension)];
         for (int i = 0; i < retAlongDimensionArrays.length; i++)
             retAlongDimensionArrays[i] = ret.tensorAlongDimension(i, dimension);

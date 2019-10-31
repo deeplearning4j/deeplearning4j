@@ -79,6 +79,7 @@ import org.nd4j.linalg.dataset.api.DataSetUtil;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -3329,7 +3330,6 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         //In 99+% of cases, the input and labels dimension 0 size should be identical
         //The only real exceptions: space to batch, and batch to space layers
         //In those cases, we should base it on the labels size, as this impacts gradient calculation
-        // FIXME: int cast
         return labels == null || labels[0] == null ? (int) inputs[0].size(0) : (int)labels[0].size(0);
     }
 
@@ -3653,7 +3653,8 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
             if (endTimeIdx > timeSeriesLength)
                 endTimeIdx = timeSeriesLength;
 
-            // FIXME: int cast
+            if (startTimeIdx > Integer.MAX_VALUE)
+                throw new ND4JArraySizeException();
             List<INDArray[]> list = getSubsetsForTbptt((int) startTimeIdx, endTimeIdx, inputs, labels, featureMasks, labelMasks);
 
             setInputs(list.get(0));
@@ -3799,9 +3800,10 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         }
                     }
 
-                    // FIXME: int cast
+                    if (minibatchSize > Integer.MAX_VALUE)
+                        throw new ND4JArraySizeException();
                     Pair<INDArray, MaskState> outPair =
-                            current.feedForwardMaskArrays(inputMasks, maskState, (int) minibatchSize);
+                            current.feedForwardMaskArrays(inputMasks, maskState, (int)minibatchSize);
                     map.put(topologicalOrder[i], outPair);
                 }
             }
@@ -4664,7 +4666,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param layer Index of the layer to get the size of. Must be in range 0 to nLayers-1 inclusive
      * @return Size of the layer
      */
-    public int layerSize(int layer) {
+    public long layerSize(int layer) {
         if (layer < 0 || layer > layers.length) {
             throw new IllegalArgumentException("Invalid layer index: " + layer + ". Layer index must be between 0 and "
                     + (layers.length - 1) + " inclusive");
@@ -4683,7 +4685,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param layer Index of the layer to get the size of. Must be in range 0 to nLayers-1 inclusive
      * @return Size of the layer
      */
-    public int layerInputSize(int layer) {
+    public long layerInputSize(int layer) {
         if (layer < 0 || layer > layers.length) {
             throw new IllegalArgumentException("Invalid layer index: " + layer + ". Layer index must be between 0 and "
                     + (layers.length - 1) + " inclusive");
@@ -4701,7 +4703,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param layerName Name of the layer to get the size of
      * @return Size of the layer
      */
-    public int layerSize(String layerName) {
+    public long layerSize(String layerName) {
         Layer l = getLayer(layerName);
         if(l == null){
             throw new IllegalArgumentException("No layer with name \"" + layerName + "\" exists");
@@ -4712,8 +4714,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
 
-        // FIXME: int cast
-        return (int) ffl.getNOut();
+        return ffl.getNOut();
     }
 
     /**
@@ -4727,7 +4728,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
      * @param layerName Name of the layer to get the size of
      * @return Size of the layer
      */
-    public int layerInputSize(String layerName) {
+    public long layerInputSize(String layerName) {
         Layer l = getLayer(layerName);
         if(l == null){
             throw new IllegalArgumentException("No layer with name \"" + layerName + "\" exists");
@@ -4738,8 +4739,7 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
 
-        // FIXME: int cast
-        return (int) ffl.getNIn();
+        return ffl.getNIn();
     }
 
     /**

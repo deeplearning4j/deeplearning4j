@@ -411,7 +411,6 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
         OpExecutioner opExecutioner = Nd4j.getExecutioner();
         INDArray arr = Nd4j.linspace(1, 6, 6, DataType.DOUBLE).reshape(2, 3);
         INDArray slice = arr.slice(0);
-        // FIXME: int cast
         val expected = new double[(int) slice.length()];
         for (int i = 0; i < slice.length(); i++)
             expected[i] = (float) Math.exp(slice.getDouble(i));
@@ -852,7 +851,6 @@ public class OpExecutionerTestsC extends BaseNd4jTest {
             val next = iter.next();
             double d = fourd.getDouble(next);
 
-            // FIXME: int cast
             sums[(int) next[0]] += d;
             sumSquares[(int) next[0]] += d * d;
         }

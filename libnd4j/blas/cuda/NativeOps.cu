@@ -3198,14 +3198,15 @@ void deleteUtf8String(Nd4jPointer *extraPointers, Nd4jPointer ptr) {
 }
 
 ///////////////////////////////////////////////////////////////////
-template<typename T>
+template<typename T, typename I>
 __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArrs,
 										      void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets,
 										      void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets,
-										      const int* indexes) {
+										      const void* vindexes) {
 
     __shared__ T *x, *y;
     __shared__ Nd4jLong arrLenX, arrLenY;
+    auto indexes = reinterpret_cast<const I*>(vindexes);
 
     for (int e = 0; e < numOfSubArrs; e++ ) {
 
@@ -3261,10 +3262,10 @@ __global__ static void scatterUpdateCuda(const int opCode, const int numOfSubArr
     }
 }
 
-template<typename T>
-__host__ static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfSubArrs, void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets, void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets, const int* indexes) {
+template<typename T, typename I>
+__host__ static void scatterUpdateCudaLauncher(const cudaStream_t* stream, const int opCode, const int numOfSubArrs, void* vx, const Nd4jLong *xShapeInfo, const Nd4jLong *xOffsets, void* vy, const Nd4jLong *yShapeInfo, const Nd4jLong *yOffsets, const void* indexes) {
 
-    scatterUpdateCuda<T><<<512, 256, MAX_NUM_THREADS, *stream>>>(opCode, numOfSubArrs, vx, xShapeInfo, xOffsets, vy, yShapeInfo, yOffsets, indexes);
+    scatterUpdateCuda<T, I><<<512, 256, MAX_NUM_THREADS, *stream>>>(opCode, numOfSubArrs, vx, xShapeInfo, xOffsets, vy, yShapeInfo, yOffsets, indexes);
 }
 
 
@@ -3274,15 +3275,17 @@ void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
                       			void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
                       			void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
                       			void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
-                      			int* hIindexes, int* dIndexes) {
+                      			void* hIindexes, Nd4jLong* hIndicesShapeInfo, void* dIindexes, Nd4jLong* dIndicesShapeInfo) {
     try {
         auto stream = reinterpret_cast<cudaStream_t *>(extraPointers[1]);
 
-        nd4j::DataType type = ArrayOptions::dataType(hXShapeInfo);
+        auto type = ArrayOptions::dataType(hXShapeInfo);
+        auto iType = ArrayOptions::dataType(hIndicesShapeInfo);
 
-        BUILD_SINGLE_SELECTOR(type, scatterUpdateCudaLauncher,
+        BUILD_DOUBLE_SELECTOR(type,, iType, scatterUpdateCudaLauncher,
                               (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIndexes),
-                              LIBND4J_TYPES);
+                              LIBND4J_TYPES, INDEXING_TYPES);
+
         nd4j::DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
     } catch (std::exception &e) {
         nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);

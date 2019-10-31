@@ -20,6 +20,7 @@ import lombok.val;
 import org.nd4j.linalg.api.blas.impl.BaseLapack;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -40,7 +41,9 @@ public class CpuLapack extends BaseLapack {
     }
 
     protected static int getLda(INDArray A) {
-        // FIXME: int cast
+        if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE) {
+            throw new ND4JArraySizeException();
+        }
         return A.ordering() == 'f' ? (int) A.rows() : (int) A.columns();
     }
 //=========================    

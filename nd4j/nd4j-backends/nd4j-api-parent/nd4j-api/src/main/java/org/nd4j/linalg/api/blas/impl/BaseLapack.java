@@ -36,7 +36,6 @@ public abstract class BaseLapack implements Lapack {
     @Override
     public INDArray getrf(INDArray A) {
 
-        // FIXME: int cast
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -88,7 +87,6 @@ public abstract class BaseLapack implements Lapack {
     @Override
     public void potrf(INDArray A, boolean lower) {
 
-        // FIXME: int cast
         if (A.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -134,7 +132,6 @@ public abstract class BaseLapack implements Lapack {
     @Override
     public void geqrf(INDArray A, INDArray R) {
 
-        // FIXME: int cast
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -188,7 +185,6 @@ public abstract class BaseLapack implements Lapack {
             throw new Error("syev: V must be the length of the matrix dimension.");
         }
 
-        // FIXME: int cast
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -222,7 +218,6 @@ public abstract class BaseLapack implements Lapack {
 
     @Override
     public void gesvd(INDArray A, INDArray S, INDArray U, INDArray VT) {
-        // FIXME: int cast
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -279,7 +274,6 @@ public abstract class BaseLapack implements Lapack {
      */
     @Override
     public INDArray getLFactor(INDArray A) {
-        // FIXME: int cast
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 
@@ -304,7 +298,6 @@ public abstract class BaseLapack implements Lapack {
 
     @Override
     public INDArray getUFactor(INDArray A) {
-        // FIXME: int cast
         if (A.rows() > Integer.MAX_VALUE || A.columns() > Integer.MAX_VALUE)
             throw new ND4JArraySizeException();
 

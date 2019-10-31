@@ -99,13 +99,11 @@ public class KFoldIterator implements DataSetIterator {
 
     @Override
     public int inputColumns() {
-        // FIXME: int cast
         return (int) allData.getFeatures().size(1);
     }
 
     @Override
     public int totalOutcomes() {
-        // FIXME: int cast
         return (int) allData.getLabels().size(1);
     }
 

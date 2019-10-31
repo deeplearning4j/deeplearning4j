@@ -90,9 +90,8 @@ public abstract class BaseLabels implements Labels {
         Preconditions.checkState(predictions.size(1) == labels.size(), "Invalid input array:" +
                 " expected array with size(1) equal to numLabels (%s), got array with shape %s", labels.size(), predictions.shape());
 
-        // FIXME: int cast
-        int rows = (int) predictions.size(0);
-        int cols = (int) predictions.size(1);
+        long rows = predictions.size(0);
+        long cols = predictions.size(1);
         if (predictions.isColumnVectorOrScalar()) {
             predictions = predictions.ravel();
             rows = (int) predictions.size(0);

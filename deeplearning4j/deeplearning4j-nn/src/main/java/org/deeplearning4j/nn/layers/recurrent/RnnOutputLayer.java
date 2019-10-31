@@ -70,8 +70,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         this.input = inputTemp;
         INDArray epsilon2d = gradAndEpsilonNext.getSecond();
 
-        // FIXME: int cast
-        INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, (int) input.size(0), workspaceMgr, ArrayType.ACTIVATION_GRAD);
+        INDArray epsilon3d = TimeSeriesUtils.reshape2dTo3d(epsilon2d, input.size(0), workspaceMgr, ArrayType.ACTIVATION_GRAD);
 
         weightNoiseParams.clear();
 
@@ -145,8 +144,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
             }
         }
 
-        // FIXME: int cast
-        return TimeSeriesUtils.reshape2dTo3d(act2d, (int) input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
+        return TimeSeriesUtils.reshape2dTo3d(act2d, input.size(0), workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
     @Override
@@ -205,8 +203,7 @@ public class RnnOutputLayer extends BaseOutputLayer<org.deeplearning4j.nn.conf.l
         //scoreArray: shape [minibatch*timeSeriesLength, 1]
         //Reshape it to [minibatch, timeSeriesLength] then sum over time step
 
-        // FIXME: int cast
-        INDArray scoreArrayTs = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(scoreArray, (int) input.size(0));
+        INDArray scoreArrayTs = TimeSeriesUtils.reshapeVectorToTimeSeriesMask(scoreArray, (int)input.size(0));
         INDArray summedScores = scoreArrayTs.sum(true, 1);
 
         if (fullNetRegTerm != 0.0) {

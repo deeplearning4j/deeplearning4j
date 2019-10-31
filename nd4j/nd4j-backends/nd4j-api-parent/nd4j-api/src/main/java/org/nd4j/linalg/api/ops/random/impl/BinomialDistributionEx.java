@@ -33,7 +33,7 @@ import java.util.Map;
  * @author raver119@gmail.com
  */
 public class BinomialDistributionEx extends BaseRandomOp {
-    private int trials;
+    private long trials;
     private double probability;
 
     public BinomialDistributionEx() {
@@ -46,7 +46,7 @@ public class BinomialDistributionEx extends BaseRandomOp {
      * @param trials
      * @param probability
      */
-    public BinomialDistributionEx(@NonNull INDArray z, int trials, double probability) {
+    public BinomialDistributionEx(@NonNull INDArray z, long trials, double probability) {
         super(z, z, z);
         this.trials = trials;
         this.probability = probability;
@@ -59,7 +59,7 @@ public class BinomialDistributionEx extends BaseRandomOp {
      * @param trials
      * @param probabilities array with probability value for each trial
      */
-    public BinomialDistributionEx(@NonNull INDArray z, int trials, @NonNull INDArray probabilities) {
+    public BinomialDistributionEx(@NonNull INDArray z, long trials, @NonNull INDArray probabilities) {
         super(z, probabilities, z);
         if (z.length() != probabilities.length())
             throw new IllegalStateException("Length of probabilities array should match length of target array");
@@ -82,8 +82,7 @@ public class BinomialDistributionEx extends BaseRandomOp {
      * @param probabilities
      */
     public BinomialDistributionEx(@NonNull INDArray z, @NonNull INDArray probabilities) {
-        // FIXME: int cast
-        this(z, (int) probabilities.length(), probabilities);
+        this(z, probabilities.length(), probabilities);
     }
 
 

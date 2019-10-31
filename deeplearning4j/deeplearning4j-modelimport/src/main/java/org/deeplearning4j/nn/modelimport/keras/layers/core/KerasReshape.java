@@ -18,6 +18,7 @@ package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 
 import lombok.val;
+import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -51,6 +52,13 @@ public class KerasReshape extends KerasLayer {
         this(layerConfig, true);
     }
 
+    private long[] listToLongArray(List<Integer> list) {
+        long[] retVal = new long[list.size()];
+        for (int i = 0; i < list.size(); ++i) {
+            retVal[i] = list.get(i);
+        }
+        return retVal;
+    }
     /**
      * Constructor from parsed Keras layer configuration dictionary.
      *
@@ -67,9 +75,7 @@ public class KerasReshape extends KerasLayer {
         if (innerConfig.containsKey(targetShape)) {
             @SuppressWarnings("unchecked")
             List<Integer> targetShapeList = (List<Integer>) innerConfig.get(targetShape);
-
-            // FIXME: int cast
-            this.targetShape = ArrayUtil.toLongArray(ArrayUtil.toArray(targetShapeList));
+            this.targetShape = listToLongArray(targetShapeList);
         }
 
     }

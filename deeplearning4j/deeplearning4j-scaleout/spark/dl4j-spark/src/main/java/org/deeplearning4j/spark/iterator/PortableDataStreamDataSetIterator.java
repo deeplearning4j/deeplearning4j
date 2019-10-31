@@ -18,6 +18,7 @@ package org.deeplearning4j.spark.iterator;
 
 import org.apache.spark.input.PortableDataStream;
 import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -53,7 +54,9 @@ public class PortableDataStreamDataSetIterator extends BaseDataSetIterator<Porta
             ds = load(iter.next());
         }
 
-        // FIXME: int cast
+        if (ds.getLabels().size(1) > Integer.MAX_VALUE ||
+            ds.getFeatures().size(1) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         totalOutcomes = (int) ds.getLabels().size(1);
         inputColumns = (int) ds.getFeatures().size(1);
         batch = ds.numExamples();
