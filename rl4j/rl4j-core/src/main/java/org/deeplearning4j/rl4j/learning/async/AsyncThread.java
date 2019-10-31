@@ -22,10 +22,11 @@ import lombok.Setter;
 import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.rl4j.learning.*;
-import org.deeplearning4j.rl4j.learning.listener.*;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListener;
+import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.policy.Policy;
+import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.deeplearning4j.rl4j.util.IDataManager;
@@ -118,7 +119,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
             while (!getAsyncGlobal().isTrainingComplete() && getAsyncGlobal().isRunning()) {
                 handleTraining(context);
-                if (context.length >= getConf().getMaxEpochStep() || getMdp().isDone()) {
+                if (context.epochElapsedSteps >= getConf().getMaxEpochStep() || getMdp().isDone()) {
                     canContinue = finishEpoch(context) && startNewEpoch(context);
                     if (!canContinue) {
                         break;
@@ -135,16 +136,16 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
         context.obs = initMdp.getLastObs();
         context.rewards = initMdp.getReward();
-        context.length = initMdp.getSteps();
+        context.epochElapsedSteps = initMdp.getSteps();
     }
 
     private void handleTraining(RunContext<O> context) {
-        int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - context.length);
+        int maxSteps = Math.min(getConf().getNstep(), getConf().getMaxEpochStep() - context.epochElapsedSteps);
         SubEpochReturn<O> subEpochReturn = trainSubEpoch(context.obs, maxSteps);
 
         context.obs = subEpochReturn.getLastObs();
         stepCounter += subEpochReturn.getSteps();
-        context.length += subEpochReturn.getSteps();
+        context.epochElapsedSteps += subEpochReturn.getSteps();
         context.rewards += subEpochReturn.getReward();
         context.score = subEpochReturn.getScore();
     }
@@ -164,7 +165,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     private boolean finishEpoch(RunContext context) {
         postEpoch();
-        IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, context.rewards, context.length, context.score);
+        IDataManager.StatEntry statEntry = new AsyncStatEntry(getStepCounter(), epochCounter, context.rewards, context.epochElapsedSteps, context.score);
 
         log.info("ThreadNum-" + threadNumber + " Epoch: " + getEpochCounter() + ", reward: " + context.rewards);
 
@@ -182,7 +183,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
 
     protected abstract AsyncConfiguration getConf();
 
-    protected abstract Policy<O, A> getPolicy(NN net);
+    protected abstract IPolicy<O, A> getPolicy(NN net);
 
     protected abstract SubEpochReturn<O> trainSubEpoch(O obs, int nstep);
 
@@ -208,7 +209,7 @@ public abstract class AsyncThread<O extends Encodable, A, AS extends ActionSpace
     private static class RunContext<O extends Encodable> {
         private O obs;
         private double rewards;
-        private int length;
+        private int epochElapsedSteps;
         private double score;
     }
 

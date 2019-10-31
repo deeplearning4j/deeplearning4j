@@ -4,13 +4,18 @@ import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 public class MockNeuralNet implements NeuralNet {
 
     public int resetCallCount = 0;
+    public int copyCallCount = 0;
+    public List<INDArray> outputAllInputs = new ArrayList<INDArray>();
 
     @Override
     public NeuralNetwork[] getNeuralNetworks() {
@@ -29,17 +34,18 @@ public class MockNeuralNet implements NeuralNet {
 
     @Override
     public INDArray[] outputAll(INDArray batch) {
-        return new INDArray[0];
+        outputAllInputs.add(batch);
+        return new INDArray[] { Nd4j.create(new double[] { 1.0 }) };
     }
 
     @Override
     public NeuralNet clone() {
-        return null;
+        return this;
     }
 
     @Override
     public void copy(NeuralNet from) {
-
+        ++copyCallCount;
     }
 
     @Override

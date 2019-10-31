@@ -1,5 +1,8 @@
 package org.deeplearning4j.rl4j.learning.async;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import org.deeplearning4j.rl4j.learning.IHistoryProcessor;
 import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
@@ -9,7 +12,11 @@ import org.deeplearning4j.rl4j.support.*;
 import org.deeplearning4j.rl4j.util.IDataManager;
 import org.junit.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class AsyncThreadTest {
 
@@ -82,7 +89,42 @@ public class AsyncThreadTest {
             IDataManager.StatEntry statEntry = context.listener.statEntries.get(i);
             assertEquals(expectedStepCounter[i], statEntry.getStepCounter());
             assertEquals(i, statEntry.getEpochCounter());
-            assertEquals(2.0, statEntry.getReward(), 0.0001);
+            assertEquals(38.0, statEntry.getReward(), 0.0001);
+        }
+    }
+
+    @Test
+    public void when_run_expect_NeuralNetIsResetAtInitAndEveryEpoch() {
+        // Arrange
+        TestContext context = new TestContext();
+
+        // Act
+        context.sut.run();
+
+        // Assert
+        assertEquals(6, context.neuralNet.resetCallCount);
+    }
+
+    @Test
+    public void when_run_expect_trainSubEpochCalled() {
+        // Arrange
+        TestContext context = new TestContext();
+
+        // Act
+        context.sut.run();
+
+        // Assert
+        assertEquals(10, context.sut.trainSubEpochParams.size());
+        for(int i = 0; i < 10; ++i) {
+            MockAsyncThread.TrainSubEpochParams params = context.sut.trainSubEpochParams.get(i);
+            if(i % 2 == 0) {
+                assertEquals(2, params.nstep);
+                assertEquals(8.0, params.obs.toArray()[0], 0.00001);
+            }
+            else {
+                assertEquals(1, params.nstep);
+                assertNull(params.obs);
+            }
         }
     }
 
@@ -91,14 +133,18 @@ public class AsyncThreadTest {
         public final MockNeuralNet neuralNet = new MockNeuralNet();
         public final MockObservationSpace observationSpace = new MockObservationSpace();
         public final MockMDP mdp = new MockMDP(observationSpace);
-        public final MockAsyncConfiguration config = new MockAsyncConfiguration(5, 2);
+        public final MockAsyncConfiguration config = new MockAsyncConfiguration(5, 10, 0, 0, 10, 0, 0, 0, 0, 0);
         public final TrainingListenerList listeners = new TrainingListenerList();
         public final MockTrainingListener listener = new MockTrainingListener();
+        private final IHistoryProcessor.Configuration hpConf = new IHistoryProcessor.Configuration(5, 4, 4, 4, 4, 0, 0, 2);
+        public final MockHistoryProcessor historyProcessor = new MockHistoryProcessor(hpConf);
+
         public final MockAsyncThread sut = new MockAsyncThread(asyncGlobal, 0, neuralNet, mdp, config, listeners);
 
         public TestContext() {
             asyncGlobal.setMaxLoops(10);
             listeners.add(listener);
+            sut.setHistoryProcessor(historyProcessor);
         }
     }
 
@@ -107,10 +153,11 @@ public class AsyncThreadTest {
         public int preEpochCallCount = 0;
         public int postEpochCallCount = 0;
 
-
         private final IAsyncGlobal asyncGlobal;
         private final MockNeuralNet neuralNet;
         private final AsyncConfiguration conf;
+
+        private final List<TrainSubEpochParams> trainSubEpochParams = new ArrayList<TrainSubEpochParams>();
 
         public MockAsyncThread(IAsyncGlobal asyncGlobal, int threadNumber, MockNeuralNet neuralNet, MDP mdp, AsyncConfiguration conf, TrainingListenerList listeners) {
             super(asyncGlobal, mdp, listeners, threadNumber, 0);
@@ -154,7 +201,15 @@ public class AsyncThreadTest {
 
         @Override
         protected SubEpochReturn trainSubEpoch(Encodable obs, int nstep) {
+            trainSubEpochParams.add(new TrainSubEpochParams(obs, nstep));
             return new SubEpochReturn(1, null, 1.0, 1.0);
+        }
+
+        @AllArgsConstructor
+        @Getter
+        public static class TrainSubEpochParams {
+            Encodable obs;
+            int nstep;
         }
     }
 

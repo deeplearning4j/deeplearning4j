@@ -51,6 +51,9 @@ public abstract class Policy<O extends Encodable, A> implements IPolicy<O, A> {
 
     @Override
     public <AS extends ActionSpace<A>> double play(MDP<O, A, AS> mdp, IHistoryProcessor hp) {
+        boolean isHistoryProcessor = hp != null;
+        int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
+
         getNeuralNet().reset();
         Learning.InitMdp<O> initMdp = Learning.initMdp(mdp, hp);
         O obs = initMdp.getLastObs();
@@ -62,16 +65,9 @@ public abstract class Policy<O extends Encodable, A> implements IPolicy<O, A> {
         int step = initMdp.getSteps();
         INDArray[] history = null;
 
+        INDArray input = Learning.getInput(mdp, obs);
+
         while (!mdp.isDone()) {
-
-            INDArray input = Learning.getInput(mdp, obs);
-            boolean isHistoryProcessor = hp != null;
-
-            if (isHistoryProcessor)
-                hp.record(input);
-
-            int skipFrame = isHistoryProcessor ? hp.getConf().getSkipFrame() : 1;
-
 
             if (step % skipFrame != 0) {
                 action = lastAction;
@@ -102,8 +98,11 @@ public abstract class Policy<O extends Encodable, A> implements IPolicy<O, A> {
             StepReply<O> stepReply = mdp.step(action);
             reward += stepReply.getReward();
 
-            if (isHistoryProcessor)
-                hp.add(Learning.getInput(mdp, stepReply.getObservation()));
+            input = Learning.getInput(mdp, stepReply.getObservation());
+            if (isHistoryProcessor) {
+                hp.record(input);
+                hp.add(input);
+            }
 
             history = isHistoryProcessor ? hp.getHistory()
                             : new INDArray[] {Learning.getInput(mdp, stepReply.getObservation())};

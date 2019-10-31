@@ -85,7 +85,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         policy = new DQNPolicy(getQNetwork());
         egPolicy = new EpsGreedy(policy, mdp, conf.getUpdateStart(), epsilonNbStep, random, conf.getMinEpsilon(),
                 this);
-        mdp.getActionSpace().setSeed(conf.getSeed());
 
         tdTargetAlgorithm = conf.isDoubleDQN()
                 ? new DoubleDQN(this, conf.getGamma(), conf.getErrorClamp())
@@ -117,9 +116,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         INDArray input = getInput(obs);
         boolean isHistoryProcessor = getHistoryProcessor() != null;
 
-
-        if (isHistoryProcessor)
-            getHistoryProcessor().record(input);
 
         int skipFrame = isHistoryProcessor ? getHistoryProcessor().getConf().getSkipFrame() : 1;
         int historyLength = isHistoryProcessor ? getHistoryProcessor().getConf().getHistoryLength() : 1;
@@ -160,12 +156,16 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         StepReply<O> stepReply = getMdp().step(action);
 
+        INDArray ninput = getInput(stepReply.getObservation());
+
+        if (isHistoryProcessor)
+            getHistoryProcessor().record(ninput);
+
         accuReward += stepReply.getReward() * configuration.getRewardFactor();
 
         //if it's not a skipped frame, you can do a step of training
         if (getStepCounter() % skipFrame == 0 || stepReply.isDone()) {
 
-            INDArray ninput = getInput(stepReply.getObservation());
             if (isHistoryProcessor)
                 getHistoryProcessor().add(ninput);
 

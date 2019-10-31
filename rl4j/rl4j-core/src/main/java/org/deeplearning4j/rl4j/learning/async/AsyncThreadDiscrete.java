@@ -25,7 +25,7 @@ import org.deeplearning4j.rl4j.learning.listener.TrainingListenerList;
 import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
-import org.deeplearning4j.rl4j.policy.Policy;
+import org.deeplearning4j.rl4j.policy.IPolicy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -69,7 +69,7 @@ public abstract class AsyncThreadDiscrete<O extends Encodable, NN extends Neural
         Stack<MiniTrans<Integer>> rewards = new Stack<>();
 
         O obs = sObs;
-        Policy<O, Integer> policy = getPolicy(current);
+        IPolicy<O, Integer> policy = getPolicy(current);
 
         Integer action;
         Integer lastAction = null;
