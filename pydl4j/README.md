@@ -10,11 +10,8 @@ can use PyDL4J for the following tasks:
 
 ---------
 
-[![Build Status](https://jenkins.ci.skymind.io/buildStatus/icon?job=deeplearing4j/pydl4j/master)](https: // jenkins.ci.skymind.io/blue/organizations/jenkins/deeplearing4j % 2Fpydl4j/activity)
-[![License](https://img.shields.io/badge/License-Apache % 202.0-blue.svg)](https: // github.com/deeplearning4j/pydl4j/blob/master/LICENSE)
-[![PyPI version](https://badge.fury.io/py/pydl4j.svg)](https: // badge.fury.io/py/pydl4j)
-
-![PyDL4J](https: // github.com/deeplearning4j/pydl4j/blob/master/python_in_java.png)
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![PyPI version](https://badge.fury.io/py/pydl4j.svg)](https://badge.fury.io/py/pydl4j)
 
 # Installation
 
@@ -27,8 +24,8 @@ pip install pydl4j
 Alternatively, you can build the project locally as follows:
 
 ```bash
-git clone https: // www.github.com/deeplearning4j/pydl4j.git
-cd pydl4j
+git clone https://www.github.com/eclipse/deeplearning4j.git
+cd deeplearning4j/pydl4j
 python setup.py install
 ```
 
@@ -41,7 +38,7 @@ Skymind use PyDL4J under the hood and will install this dependency for you.
 Installing PyDL4J exposes a command line tool called `pydl4j`. You can use this tool to configure
 your PyDL4J environment. If you don't use the CLI, a default configuration that will be used instead.
 
-**Note: ** If you intend to use the CLI, make sure to have[`docker` installed](https: // docs.docker.com/install/)
+**Note:** If you intend to use the CLI, make sure to have [`docker` installed](https://docs.docker.com/install/)
 on your machine.
 
 To initialize a new PyDL4j configuration, type
