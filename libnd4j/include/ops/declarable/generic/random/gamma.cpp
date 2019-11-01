@@ -55,14 +55,15 @@ namespace nd4j {
             auto alphaShape = inputShape->at(1);
             auto lastDim = shape::sizeAt(alphaShape, 0);
             auto dtype = ArrayOptions::dataType(alphaShape);
-            shape.push_back(lastDim);
+            for (auto i = 0; i < shape::rank(alphaShape); i++)
+                shape.push_back(shape::sizeAt(alphaShape, i));
             auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape);
             return SHAPELIST(newShape);
         }
 
         DECLARE_TYPES(random_gamma) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::INT32)
+                    ->setAllowedInputTypes(0, {ALL_INTS})
                     ->setAllowedInputTypes(1, {ALL_FLOATS})
                     ->setAllowedInputTypes(2, {ALL_FLOATS})
                     ->setAllowedOutputTypes({ALL_FLOATS});

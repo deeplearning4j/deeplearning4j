@@ -27,24 +27,22 @@ namespace ops {
 namespace helpers {
 
     void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
-//        auto shift = output->lengthOf() / lambda->lengthOf();
-//        auto step = lambda->lengthOf();
-//        PRAGMA_OMP_PARALLEL_FOR
-//        for (auto k = 0; k < shift; k++) {
-//            auto pos = k * step;
-//            auto u = rng.relativeT<float>(k, 0., 1.);
-//            for (auto e = 0; e < lambda->lengthOf(); e++) {
-//                auto p = math::nd4j_exp<float, float>(-lambda->e<float>(e));
-//                auto s = p;
-//                auto x = 0.f;
-//                while (u > s) {
-//                    x += 1.f;
-//                    p *= lambda->e<float>(e) / x;
-//                    s += p;
-//                }
-//                output->p(pos + e, x);
-//            }
-//        }
+        auto shift = output->lengthOf() / alpha->lengthOf();
+        auto step = alpha->lengthOf();
+        if (beta != nullptr) {
+            shift /= beta->lengthOf();
+            step *= beta->lengthOf();
+        }
+
+        PRAGMA_OMP_PARALLEL_FOR
+        for (auto k = 0; k < shift; k++) {
+            auto pos = k * step;
+            auto u = rng.relativeT<float>(k, 0., 1.);
+            for (auto e = 0; e < alpha->lengthOf(); e++) {
+                output->p(pos + e, math::nd4j_igamma<float,float,float>(alpha->e<float>(e), u));
+//                output->p(pos + e, math::nd4j_igamma<float,float,float>(alpha->e<float>(e), beta?beta->e<float>(e) * u:u));
+            }
+        }
     }
 
     /*
