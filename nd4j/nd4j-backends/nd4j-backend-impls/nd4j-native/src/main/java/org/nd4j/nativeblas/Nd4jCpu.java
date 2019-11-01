@@ -3049,19 +3049,19 @@ public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPoint
                   Pointer dX, @Cast("Nd4jLong*") LongPointer dXShapeInfo, @Cast("Nd4jLong*") LongPointer dXOffsets,
                   Pointer hY, @Cast("Nd4jLong*") LongPointer hYShapeInfo, @Cast("Nd4jLong*") LongPointer hYOffsets,
                   Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeInfo, @Cast("Nd4jLong*") LongPointer dYOffsets,
-                  IntPointer hIindexes, IntPointer dIindexes);
+                  Pointer hIindexes, @Cast("Nd4jLong*") LongPointer hIndicesShapeInfo, Pointer dIindexes, @Cast("Nd4jLong*") LongPointer dIndicesShapeInfo);
 public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
                   Pointer hX, @Cast("Nd4jLong*") LongBuffer hXShapeInfo, @Cast("Nd4jLong*") LongBuffer hXOffsets,
                   Pointer dX, @Cast("Nd4jLong*") LongBuffer dXShapeInfo, @Cast("Nd4jLong*") LongBuffer dXOffsets,
                   Pointer hY, @Cast("Nd4jLong*") LongBuffer hYShapeInfo, @Cast("Nd4jLong*") LongBuffer hYOffsets,
                   Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeInfo, @Cast("Nd4jLong*") LongBuffer dYOffsets,
-                  IntBuffer hIindexes, IntBuffer dIindexes);
+                  Pointer hIindexes, @Cast("Nd4jLong*") LongBuffer hIndicesShapeInfo, Pointer dIindexes, @Cast("Nd4jLong*") LongBuffer dIndicesShapeInfo);
 public native void scatterUpdate(@Cast("Nd4jPointer*") PointerPointer extraPointers, int opCode, int numOfSubArrs,
                   Pointer hX, @Cast("Nd4jLong*") long[] hXShapeInfo, @Cast("Nd4jLong*") long[] hXOffsets,
                   Pointer dX, @Cast("Nd4jLong*") long[] dXShapeInfo, @Cast("Nd4jLong*") long[] dXOffsets,
                   Pointer hY, @Cast("Nd4jLong*") long[] hYShapeInfo, @Cast("Nd4jLong*") long[] hYOffsets,
                   Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo, @Cast("Nd4jLong*") long[] dYOffsets,
-                  int[] hIindexes, int[] dIindexes);
+                  Pointer hIindexes, @Cast("Nd4jLong*") long[] hIndicesShapeInfo, Pointer dIindexes, @Cast("Nd4jLong*") long[] dIndicesShapeInfo);
 
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongPointer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongPointer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
 public native void inspectArray(@Cast("Nd4jPointer*") PointerPointer extraPointers, @Cast("Nd4jPointer") Pointer buffer, @Cast("Nd4jLong*") LongBuffer shapeInfo, @Cast("Nd4jPointer") Pointer specialBuffer, @Cast("Nd4jLong*") LongBuffer specialShapeInfo, @Cast("Nd4jPointer") Pointer debugInfo);
@@ -20696,9 +20696,13 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
          *     1 - scales - 1D-tensor with shape (num_boxes) by float type
          *     2 - output_size - 0D-tensor by int type (optional)
          * float args:
-         *     0 - threshold - threshold value for overlap checks (optional, by default 0.5)
+         *     0 - overlap_threshold - threshold value for overlap checks (optional, by default 0.5)
+         *     1 - score_threshold - the threshold for deciding when to remove boxes based on score (optional, by default -inf)
          * int args:
          *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * output:
+         *     - vector with size M, where M <= output_size by int type
          *
          * */
 //         #if NOT_EXCLUDED(OP_image_non_max_suppression)
@@ -20714,6 +20718,39 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public non_max_suppression() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /*
+         * image.non_max_suppression_overlaps op.
+         * input:
+         *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
+         *     1 - scales - 1D-tensor with shape (num_boxes) by float type
+         *     2 - output_size - 0D-tensor by int type (optional)
+         * float args:
+         *     0 - overlap_threshold - threshold value for overlap checks (optional, by default 0.5)
+         *     1 - score_threshold - the threshold for deciding when to remove boxes based on score (optional, by default -inf)
+         * int args:
+         *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * output:
+         *     0 - 1D integer tensor with shape [M], epresenting the selected indices from the overlaps tensor, where M <= max_output_size
+         * */
+//         #if NOT_EXCLUDED(OP_image_non_max_suppression_overlaps)
+        @Namespace("nd4j::ops") public static class non_max_suppression_overlaps extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public non_max_suppression_overlaps(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public non_max_suppression_overlaps(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public non_max_suppression_overlaps position(long position) {
+                return (non_max_suppression_overlaps)super.position(position);
+            }
+        
+                                                                                    public non_max_suppression_overlaps() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }

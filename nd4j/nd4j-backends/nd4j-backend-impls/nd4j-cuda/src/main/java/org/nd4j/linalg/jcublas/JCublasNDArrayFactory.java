@@ -174,7 +174,8 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray create(DataBuffer data, long rows, long columns, int[] stride, long offset) {
-        return new JCublasNDArray(data, new long[] {rows, columns}, stride, Nd4j.order(), data.dataType());
+        // FIXME: int cast
+        return new JCublasNDArray(data, new long[] {rows, columns}, ArrayUtil.toLongArray(stride), Nd4j.order(), data.dataType());
     }
 
     @Override
@@ -454,7 +455,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray pullRows(INDArray source, int sourceDimension, long[] indexes) {
-        return pullRows(source, sourceDimension, indexes);
+        return pullRows(source, sourceDimension, ArrayUtil.toInts(indexes));
     }
 
     /**
@@ -466,7 +467,7 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
      * @return
      */
     @Override
-    public INDArray pullRows(INDArray source, int sourceDimension, long[] indexes, char order) {
+    public INDArray pullRows(INDArray source, int sourceDimension, int[] indexes, char order) {
         if (indexes == null || indexes.length < 1)
             throw new IllegalStateException("Indexes can't be null or zero-length");
 
