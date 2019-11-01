@@ -29,8 +29,32 @@ namespace helpers {
     void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
     }
 
+    /*
+     * algorithm Poisson generator based upon the inversion by sequential search:[48]:505
+    init:
+         Let x ← 0, p ← e−λ, s ← p.
+         Generate uniform random number u in [0,1].
+    while u > s do:
+         x ← x + 1.
+         p ← p * λ / x.
+         s ← s + p.
+    return x.
+     * */
     void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
-
+        for (auto pos = 0, k = 0; pos < output->lengthOf(); pos += lambda->lengthOf(), k++) {
+            auto u = rng.relativeT<float>(k, 0., 1.);
+            for (auto e = 0; e < lambda->lengthOf(); e++) {
+                auto p = math::nd4j_exp<float, float>(-lambda->e<float>(e));
+                auto s = p;
+                auto x = 0.f;
+                while (u > s) {
+                    x += 1.f;
+                    p *= lambda->e<float>(e) / x;
+                    s += p;
+                }
+                output->p(pos + e, x);
+            }
+        }
     }
 
 }

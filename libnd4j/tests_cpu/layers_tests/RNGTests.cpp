@@ -773,6 +773,26 @@ TEST_F(RNGTests, Test_ExponentialDistribution_2) {
     delete result;
 }
 
+TEST_F(RNGTests, Test_PoissonDistribution_1) {
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {1}, {10});
+    auto la = NDArrayFactory::create<float>('c', {2, 3});
+    auto exp0 = NDArrayFactory::create<float>('c', {10, 2, 3});
+
+    la.linspace(1.0);
+
+
+    nd4j::ops::random_poisson op;
+    auto result = op.execute({&x, &la}, {}, {});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Poisson distribution");
+    ASSERT_TRUE(exp0.isSameShape(z));
+    ASSERT_FALSE(exp0.equalsTo(z));
+
+    delete result;
+}
+
 namespace nd4j {
     namespace tests {
         static void fillList(Nd4jLong seed, int numberOfArrays, std::vector<Nd4jLong> &shape, std::vector<NDArray*> &list, nd4j::graph::RandomGenerator *rng) {

@@ -59,7 +59,6 @@ namespace nd4j {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, {ALL_INTS})
                     ->setAllowedInputTypes(1, {ALL_FLOATS})
-                    ->setAllowedInputTypes(2, {ALL_FLOATS})
                     ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }
