@@ -1,5 +1,8 @@
 # PyDL4J - Java dependency management for Python applications
 
+[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![PyPI version](https://badge.fury.io/py/pydl4j.svg)](https://badge.fury.io/py/pydl4j)
+
 PyDL4J is a lightweight package manager for the DL4J ecosystem whick allows you to focus
 on building Python applications on top of `pyjnius` without worrying about the details. You
 can use PyDL4J for the following tasks:
@@ -10,8 +13,6 @@ can use PyDL4J for the following tasks:
 
 ---------
 
-[![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
-[![PyPI version](https://badge.fury.io/py/pydl4j.svg)](https://badge.fury.io/py/pydl4j)
 
 # Installation
 
