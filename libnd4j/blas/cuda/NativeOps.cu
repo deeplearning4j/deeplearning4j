@@ -3282,8 +3282,8 @@ void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
         auto type = ArrayOptions::dataType(hXShapeInfo);
         auto iType = ArrayOptions::dataType(hIndicesShapeInfo);
 
-        BUILD_DOUBLE_SELECTOR(type,, iType, scatterUpdateCudaLauncher,
-                              (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIndexes),
+        BUILD_DOUBLE_SELECTOR(type, iType, scatterUpdateCudaLauncher,
+                              (stream, opCode, numOfSubArrs, dX, dXShapeInfo, dXOffsets, dY, dYShapeInfo, dYOffsets, dIindexes),
                               LIBND4J_TYPES, INDEXING_TYPES);
 
         nd4j::DebugHelper::checkErrorCode(stream, "scatterUpdate(...) failed");
