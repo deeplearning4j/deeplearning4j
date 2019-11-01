@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_random_gamma)
 
 #include <ops/declarable/headers/random.h>
-#include <helpers/RandomLauncher.h>
+#include <ops/declarable/helpers/random.h>
 
 namespace nd4j {
     namespace ops {
@@ -36,12 +36,13 @@ namespace nd4j {
                 beta = INPUT_VARIABLE(2);
                 REQUIRE_TRUE(alpha->isSameShape(beta), 0, "random_gamma: alpha and beta shapes should be equals.");
             }
-            auto z = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
             auto seed = 0;
             if (block.getIArguments()->size()) {
                 seed = INT_ARG(0);
             }
-
+            rng.setSeed(seed);
+            helpers::fillRandomGamma(block.launchContext(), rng, alpha, beta, output);
             //RandomLauncher::fillExponential(block.launchContext(), rng, z, lambda);
 
             return Status::OK();

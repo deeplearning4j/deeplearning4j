@@ -22,7 +22,7 @@
 #if NOT_EXCLUDED(OP_random_poisson)
 
 #include <ops/declarable/headers/random.h>
-#include <helpers/RandomLauncher.h>
+#include <ops/declarable/helpers/random.h>
 
 namespace nd4j {
     namespace ops {
@@ -31,13 +31,13 @@ namespace nd4j {
             auto rng = block.randomGenerator();
             auto shape = INPUT_VARIABLE(0);
             auto lambda = INPUT_VARIABLE(1);
-            auto z = OUTPUT_VARIABLE(0);
+            auto output = OUTPUT_VARIABLE(0);
             auto seed = 0;
             if (block.getIArguments()->size()) {
                 seed = INT_ARG(0);
             }
-
-            //RandomLauncher::fillExponential(block.launchContext(), rng, z, lambda);
+            rng.setSeed(seed);
+            helpers::fillRandomPoisson(block.launchContext(), rng, lambda, output);
 
             return Status::OK();
         }
@@ -47,16 +47,17 @@ namespace nd4j {
             auto in = INPUT_VARIABLE(0);
             auto shape = in->template asVectorT<Nd4jLong>();
             auto lambdaShape = inputShape->at(1);
-            auto lastDim = shape::sizeAt(lambdaShape, 0);
             auto dtype = ArrayOptions::dataType(lambdaShape);
-            shape.push_back(lastDim);
+            for (auto d = 0; d < shape::rank(lambdaShape); ++d ) {
+                shape.emplace_back(shape::sizeAt(lambdaShape, d));
+            }
             auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape);
             return SHAPELIST(newShape);
         }
 
         DECLARE_TYPES(random_poisson) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, nd4j::DataType::INT32)
+                    ->setAllowedInputTypes(0, {ALL_INTS})
                     ->setAllowedInputTypes(1, {ALL_FLOATS})
                     ->setAllowedInputTypes(2, {ALL_FLOATS})
                     ->setAllowedOutputTypes({ALL_FLOATS});
