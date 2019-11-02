@@ -133,16 +133,9 @@ public class LegacyOpMapper {
 
     public static Class<? extends Aggregate> aggregateOpClass(int opNum) {
         switch (opNum) {
-            case 0:
-                return HierarchicSoftmax.class;
-            case 1:
-                return AggregateDot.class;
+
             case 2:
                 return AggregateAxpy.class;
-            case 3:
-                return AggregateSkipGram.class;
-            case 4:
-                return AggregateCBOW.class;
             case 5:
                 return AggregateGEMM.class;
             default:

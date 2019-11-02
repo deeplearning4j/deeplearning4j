@@ -1482,6 +1482,52 @@ namespace simdOps {
 	};
 
 
+	template <typename X, typename Y, typename Z>
+	class IGamma {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_igamma<X, X, Z>(d1, params[0]);
+		}
+
+		op_def static Z op(X d1, Y d2) {
+			return nd4j::math::nd4j_igamma<X, Y, Z>(d1, d2);
+		}
+
+		op_def static Z op(X d1, Y d2, Z *params) {
+			return nd4j::math::nd4j_igamma<X, Y, Z>(d1, d2);
+		}
+
+		op_def static Z op(X d1) {
+			return d1;
+		}
+	};
+
+	template <typename X, typename Y, typename Z>
+	class IGammac {
+	public:
+		no_op_exec_special
+		no_op_exec_special_cuda
+
+		op_def static Z op(X d1, Z *params) {
+			return nd4j::math::nd4j_igammac<X, X, Z>(d1, params[0]);
+		}
+
+		op_def static Z op(X d1, Y d2) {
+			return nd4j::math::nd4j_igammac<X, Y, Z>(d1, d2);
+		}
+
+		op_def static Z op(X d1, Y d2, Z *params) {
+			return nd4j::math::nd4j_igammac<X, Y, Z>(d1, d2);
+		}
+
+		op_def static Z op(X d1) {
+			return d1;
+		}
+	};
+
 	template <typename X>
 	class Round {
 	public:
@@ -1812,6 +1858,17 @@ namespace simdOps {
 	};
 
 	template <typename X>
+	class Affine {
+	public:
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
+
+		op_def static X op(X d1, X *params) {
+			return params[0] * d1 + params[1];
+		}
+	};
+
+	template <typename X>
 	class SigmoidDerivative {
 	public:
 		no_op_exec_special_same
@@ -2002,6 +2059,17 @@ namespace simdOps {
 
 		op_def static X op(X d1, X *params) {
 			return nd4j::math::nd4j_tanh<X, X>(d1);
+		}
+	};
+
+	template <typename X>
+	class ScaledTanh {
+	public:
+		no_op_exec_special_same
+		no_op_exec_special_same_cuda
+
+		op_def static X op(X d1, X *params) {
+			return params[0] * nd4j::math::nd4j_tanh<X, X>(params[1] * d1);
 		}
 	};
 

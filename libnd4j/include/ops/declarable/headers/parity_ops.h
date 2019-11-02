@@ -1691,13 +1691,36 @@ namespace nd4j {
          *     1 - scales - 1D-tensor with shape (num_boxes) by float type
          *     2 - output_size - 0D-tensor by int type (optional)
          * float args:
-         *     0 - threshold - threshold value for overlap checks (optional, by default 0.5)
+         *     0 - overlap_threshold - threshold value for overlap checks (optional, by default 0.5)
+         *     1 - score_threshold - the threshold for deciding when to remove boxes based on score (optional, by default -inf)
          * int args:
          *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * output:
+         *     - vector with size M, where M <= output_size by int type
          *
          * */
         #if NOT_EXCLUDED(OP_image_non_max_suppression)
         DECLARE_CUSTOM_OP(non_max_suppression, 2, 1, false, 0, 0);
+        #endif
+
+        /*
+         * image.non_max_suppression_overlaps op.
+         * input:
+         *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
+         *     1 - scales - 1D-tensor with shape (num_boxes) by float type
+         *     2 - output_size - 0D-tensor by int type (optional)
+         * float args:
+         *     0 - overlap_threshold - threshold value for overlap checks (optional, by default 0.5)
+         *     1 - score_threshold - the threshold for deciding when to remove boxes based on score (optional, by default -inf)
+         * int args:
+         *     0 - output_size - as arg 2 used for same target. Eigher this or arg 2 should be provided.
+         *
+         * output:
+         *     0 - 1D integer tensor with shape [M], epresenting the selected indices from the overlaps tensor, where M <= max_output_size
+         * */
+        #if NOT_EXCLUDED(OP_image_non_max_suppression_overlaps)
+        DECLARE_CUSTOM_OP(non_max_suppression_overlaps, 2, 1, false, 0, 0);
         #endif
 
         /*

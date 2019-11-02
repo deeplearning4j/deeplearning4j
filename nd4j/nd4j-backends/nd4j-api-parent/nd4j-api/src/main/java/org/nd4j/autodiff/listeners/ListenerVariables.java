@@ -167,7 +167,7 @@ public class ListenerVariables {
             String[] names = new String[variables.length];
 
             for (int i = 0; i < variables.length; i++)
-                names[i] = variables[i].getVarName();
+                names[i] = variables[i].name();
 
             return requireVariables(op, names);
         }

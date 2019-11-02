@@ -442,22 +442,12 @@ public abstract class DifferentialFunction {
         setInstanceId();
         if(sameDiff != null) {
             sameDiff.addArgsFor(args, this);
-            for (int i = 0; i < args.length; i++) {
-                if (args[i].isPlaceHolder()) {
-                    sameDiff.addPropertyToResolve(this, args[i].getVarName());
-                }
-            }
         }
     }
 
     public void replaceArg(int i, SDVariable newArg){
         if(sameDiff != null){
             sameDiff.replaceArgFor(i, newArg, this);
-            if(args()[i].isPlaceHolder() && !newArg.isPlaceHolder()){
-                sameDiff.removePropertyToResolve(this, args()[i].getVarName());
-            } else if(!args()[i].isPlaceHolder() && newArg.isPlaceHolder()){
-                sameDiff.addPropertyToResolve(this, newArg.getVarName());
-            }
         }
     }
 
@@ -483,7 +473,7 @@ public abstract class DifferentialFunction {
         SDVariable[] outputVars = outputVariables();
         String[] out = new String[outputVars.length];
         for( int i=0; i<out.length; i++ ){
-            out[i] = outputVars[i].getVarName();
+            out[i] = outputVars[i].name();
         }
         return out;
     }
@@ -538,67 +528,9 @@ public abstract class DifferentialFunction {
         SDVariable[] args = args();
         String[] out = new String[args.length];
         for( int i=0; i<args.length; i++ ){
-            out[i] = args[i].getVarName();
+            out[i] = args[i].name();
         }
         return out;
-    }
-
-
-    /**
-     * Resolve properties and arguments right before execution of
-     * this operation.
-     *
-     * @deprecated Will be removed in the future.  Ops should support array arguments.  Should not bs used or overridden.
-     */
-    @Deprecated
-    public final void resolvePropertiesFromSameDiffBeforeExecution() {
-        val properties = sameDiff.propertiesToResolveForFunction(this);
-        val fields = DifferentialFunctionClassHolder.getInstance().getFieldsForFunction(this);
-        val currentFields = this.propertiesForFunction();
-
-        for(val property : properties) {
-            //property maybe a variable which is only an array
-            //just skip  if this is the case
-            if(!fields.containsKey(property))
-                continue;
-
-            val var = sameDiff.getVarNameForFieldAndFunction(this,property);
-            if(var == null)
-                continue;   //Rarely (like Conv2D) properties will be optional. For example kH/kW args will be inferred from weight shape
-            val fieldType = fields.get(property);
-            val varArr = sameDiff.getArrForVarName(var);
-            //already defined
-            if(currentFields.containsKey(property)) {
-                continue;
-            }
-
-            /**
-             * Possible cause:
-             * Might be related to output name alignment.
-             *
-             */
-            if(varArr == null) {
-                throw new ND4JIllegalStateException("Unable to set null array!");
-            }
-
-            if(fieldType.getType().equals(int[].class)) {
-                setValueFor(fieldType,varArr.data().asInt());
-            }
-
-            else if(fieldType.equals(double[].class)) {
-                setValueFor(fieldType,varArr.data().asDouble());
-            }
-
-            else if(fieldType.equals(int.class)) {
-                setValueFor(fieldType,varArr.getInt(0));
-            }
-
-            else if(fieldType.equals(double.class)) {
-                setValueFor(fieldType,varArr.getDouble(0));
-            }
-
-        }
-
     }
 
     /**
@@ -639,13 +571,12 @@ public abstract class DifferentialFunction {
 
                 SDVariable gradVar =  f().add(grad, vals.get(i));
                 vals.set(i, gradVar);
-                sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
+                sameDiff.setGradientForVariableName(var.name(), gradVar);
             } else {
                 SDVariable gradVar = vals.get(i);
 
-                sameDiff.updateVariableNameAndReference(gradVar,var.getVarName() + "-grad");
-                sameDiff.setGradientForVariableName(var.getVarName(), gradVar);
-                sameDiff.setForwardVariableForVarName(gradVar.getVarName(),var);
+                sameDiff.updateVariableNameAndReference(gradVar,var.name() + "-grad");
+                sameDiff.setGradientForVariableName(var.name(), gradVar);
 
             }
         }
@@ -659,7 +590,8 @@ public abstract class DifferentialFunction {
             if(sameDiff == null)
                 this.ownName = UUID.randomUUID().toString();
             else {
-                this.ownName = sameDiff.getOpName(opName());
+                String n = sameDiff.getOpName(opName());
+                this.ownName = n;
             }
 
             if(sameDiff != null)
@@ -696,29 +628,10 @@ public abstract class DifferentialFunction {
     }
 
     @JsonIgnore
-    private INDArray getX() {
-        INDArray ret =  sameDiff.getArrForVarName(args()[0].getVarName());
-        return ret;
+    public INDArray getInputArgument(int index){
+        //Subclasses should implement this
+        throw new UnsupportedOperationException("Not implemented");
     }
-
-    @JsonIgnore
-    private INDArray getY() {
-        if(args().length > 1) {
-            INDArray ret =  sameDiff.getArrForVarName(args()[1].getVarName());
-            return ret;
-        }
-        return null;
-    }
-
-    @JsonIgnore
-    private INDArray getZ() {
-        if(isInPlace())
-            return getX();
-        SDVariable opId = outputVariables()[0];
-        INDArray ret = opId.getArr();
-        return ret;
-    }
-
 
 
 
@@ -860,4 +773,8 @@ public abstract class DifferentialFunction {
 
     public int getNumOutputs(){return -1;}
 
+    /**
+     * Clear the input and output INDArrays, if any are set
+     */
+    public abstract void clearArrays();
 }

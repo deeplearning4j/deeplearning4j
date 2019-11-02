@@ -24,6 +24,7 @@ import lombok.Getter;
 import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.base.Preconditions;
 import org.nd4j.evaluation.IEvaluation;
 import org.nd4j.evaluation.IMetric;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -124,7 +125,7 @@ public class History {
      * Only works if there is only one evaluation with the given metric for param
      */
     public List<Double> trainingEval(SDVariable param, IMetric metric){
-        return trainingEval(param.getVarName(), metric);
+        return trainingEval(param.name(), metric);
     }
 
     /**
@@ -148,7 +149,7 @@ public class History {
      * Index determines the evaluation used not the epoch's results to return.
      */
     public List<Double> trainingEval(SDVariable param, int index, IMetric metric){
-        return trainingEval(param.getVarName(), index, metric);
+        return trainingEval(param.name(), index, metric);
     }
 
     /**
@@ -183,7 +184,7 @@ public class History {
      * Only works if there is only one evaluation for param.
      */
     public List<IEvaluation> trainingEval(SDVariable param){
-        return trainingEval(param.getVarName());
+        return trainingEval(param.name());
     }
 
     /**
@@ -207,7 +208,7 @@ public class History {
      * Index determines the evaluation used not the epoch's results to return.
      */
     public List<IEvaluation> trainingEval(SDVariable param, int index){
-        return trainingEval(param.getVarName(), index);
+        return trainingEval(param.name(), index);
     }
 
     /**
@@ -229,7 +230,7 @@ public class History {
      * Only works if there is only one evaluation with the given metric for param
      */
     public List<Double> validationEval(SDVariable param, IMetric metric){
-        return validationEval(param.getVarName(), metric);
+        return validationEval(param.name(), metric);
     }
 
     /**
@@ -253,7 +254,7 @@ public class History {
      * Index determines the evaluation used not the epoch's results to return.
      */
     public List<Double> validationEval(SDVariable param, int index, IMetric metric){
-        return validationEval(param.getVarName(), index, metric);
+        return validationEval(param.name(), index, metric);
     }
 
     /**
@@ -288,7 +289,7 @@ public class History {
      * Only works if there is only one evaluation for param.
      */
     public List<IEvaluation> validationEval(SDVariable param){
-        return validationEval(param.getVarName());
+        return validationEval(param.name());
     }
 
     /**
@@ -312,13 +313,14 @@ public class History {
      * Index determines the evaluation used not the epoch's results to return.
      */
     public List<IEvaluation> validationEval(SDVariable param, int index){
-        return validationEval(param.getVarName(), index);
+        return validationEval(param.name(), index);
     }
 
     /**
      * Gets the training evaluations ran during the last epoch
      */
     public EvaluationRecord finalTrainingEvaluations(){
+        Preconditions.checkState(!trainingHistory.isEmpty(), "Cannot get final training evaluation - history is empty");
         return trainingHistory.get(trainingHistory.size() - 1);
     }
 
@@ -326,6 +328,7 @@ public class History {
      * Gets the validation evaluations ran during the last epoch
      */
     public EvaluationRecord finalValidationEvaluations(){
+        Preconditions.checkState(!validationHistory.isEmpty(), "Cannot get final validation evaluation - history is empty");
         return validationHistory.get(validationHistory.size() - 1);
     }
 

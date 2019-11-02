@@ -14,18 +14,18 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.imports.graphmapper;
+package org.deeplearning4j.spark.impl.common.reduce;
 
-import lombok.Data;
-import org.nd4j.autodiff.samediff.SameDiff;
+import org.apache.spark.api.java.function.Function2;
+import scala.Tuple2;
 
-import java.util.Map;
-
-@Data
-public class ImportState<GRAPH_TYPE,TENSOR_TYPE> {
-    private SameDiff sameDiff;
-    private GRAPH_TYPE graph;
-    private Map<String,TENSOR_TYPE> variables;
-
-
+/**
+ * Add both elements of a {@code Tuple2<Integer,Double>}
+ */
+public class LongDoubleReduceFunction
+                implements Function2<Tuple2<Long, Double>, Tuple2<Long, Double>, Tuple2<Long, Double>> {
+    @Override
+    public Tuple2<Long, Double> call(Tuple2<Long, Double> f, Tuple2<Long, Double> s) throws Exception {
+        return new Tuple2<>(f._1() + s._1(), f._2() + s._2());
+    }
 }

@@ -40,6 +40,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.transforms.pairwise.arithmetic.MulOp;
 import org.nd4j.linalg.api.ops.impl.transforms.same.TimesOneMinus;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
@@ -113,7 +114,9 @@ public class LSTMHelpers {
 
         input = input.castTo(inputWeights.dataType());  //No-op if already correct dtype
 
-        // FIXME
+        if ((!is2dInput && (input.size(2) > Integer.MAX_VALUE)) ||
+            recurrentWeights.size(0) > Integer.MAX_VALUE || input.size(0) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int timeSeriesLength = (int) (is2dInput ? 1 : input.size(2));
         int hiddenLayerSize = (int) recurrentWeights.size(0);
         int miniBatchSize = (int) input.size(0);
@@ -550,7 +553,8 @@ public class LSTMHelpers {
         for (long iTimeIndex = timeSeriesLength - 1; iTimeIndex >= endIdx; iTimeIndex--) {
             try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.RNN_BP_LOOP_WORKING_MEM)) {
 
-                // FIXME: int cast
+                if (iTimeIndex > Integer.MAX_VALUE)
+                    throw new ND4JArraySizeException();
                 int time = (int) iTimeIndex;
                 int inext = 1;
 
@@ -574,8 +578,6 @@ public class LSTMHelpers {
                         (iTimeIndex == 0 ? fwdPass.prevAct : fwdPass.fwdPassOutputAsArrays[(int) (time - inext)]);
                 INDArray currMemCellState = fwdPass.memCellState[(int) time];
 
-
-                // FIXME: int cast
                 //LSTM unit output errors (dL/d(a_out)); not to be confused with \delta=dL/d(z_out)
                 INDArray epsilonSlice = (is2dInput ? epsilon : epsilon.tensorAlongDimension((int) time, 1, 0)); //(w^{L+1}*(delta^{(L+1)t})^T)^T or equiv.
 

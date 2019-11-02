@@ -14,19 +14,21 @@
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
 
-package org.nd4j.linalg.api.ops.impl.controlflow;
+//
+//  @author raver119@gmail.com
+//
 
-import lombok.Builder;
-import lombok.Data;
-import org.tensorflow.framework.NodeDef;
+#ifndef LIBND4J_KERNELS_H
+#define LIBND4J_KERNELS_H
 
-import java.util.List;
+#include <ops/declarable/headers/common.h>
 
-@Builder
-@Data
-public class IfImportState {
-    private List<NodeDef> condNodes;
-    private List<NodeDef> trueNodes;
-    private List<NodeDef> falseNodes;
-    private String falseBodyScopeName,trueBodyScopeName,conditionBodyScopeName;
+namespace nd4j {
+    namespace ops {
+    #if NOT_EXCLUDED(OP_knn_mindistance)
+        DECLARE_CUSTOM_OP(knn_mindistance, 3, 1, false, 0, 0);
+    #endif
+    }
 }
+
+#endif //LIBND4J_KERNELS_H

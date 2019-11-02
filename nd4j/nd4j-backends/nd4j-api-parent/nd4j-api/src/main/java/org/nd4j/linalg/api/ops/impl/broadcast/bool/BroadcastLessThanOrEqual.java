@@ -54,7 +54,7 @@ public class BroadcastLessThanOrEqual extends BaseBroadcastBoolOp {
         super(sameDiff, i_v, dimension, inPlace);
     }
 
-    public BroadcastLessThanOrEqual(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
+    public BroadcastLessThanOrEqual(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, dimension, extraArgs);
     }
 

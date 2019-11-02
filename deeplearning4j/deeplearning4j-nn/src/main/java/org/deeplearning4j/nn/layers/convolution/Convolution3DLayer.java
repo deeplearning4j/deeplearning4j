@@ -71,8 +71,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
 
         boolean isNCDHW = layerConfig.getDataFormat() == Convolution3D.DataFormat.NCDHW;
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
+        long miniBatch = input.size(0);
         int inD = (int) (isNCDHW ? input.size(2) : input.size(1));
         int inH = (int) (isNCDHW ? input.size(3) : input.size(2));
         int inW = (int) (isNCDHW ? input.size(4) : input.size(3));
@@ -189,8 +188,7 @@ public class Convolution3DLayer extends ConvolutionLayer {
                     + " " + layerId());
         }
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
+        long miniBatch = input.size(0);
         int inputChannels = (int) (isNCDHW ? input.size(1) : input.size(4));
         int inD =(int) (isNCDHW ? input.size(2) : input.size(1));
         int inH = (int) (isNCDHW ? input.size(3) : input.size(2));

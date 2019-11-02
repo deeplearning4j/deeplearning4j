@@ -134,3 +134,20 @@ TEST_F(DeclarableOpsTests16, test_hamming_distance_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests16, test_knn_mindistance_1) {
+    auto input = NDArrayFactory::create<float>('c', {512});
+    auto low = NDArrayFactory::create<float>('c', {512});
+    auto high = NDArrayFactory::create<float>('c', {512});
+
+    auto output = NDArrayFactory::create<float>(0.0f);
+
+    input.linspace(1.0);
+    low.linspace(1.0);
+    high.linspace(1.0);
+
+    nd4j::ops::knn_mindistance op;
+    auto result = op.execute({&input, &low, &high}, {&output}, {}, {}, {});
+    ASSERT_EQ(Status::OK(), result);
+
+}

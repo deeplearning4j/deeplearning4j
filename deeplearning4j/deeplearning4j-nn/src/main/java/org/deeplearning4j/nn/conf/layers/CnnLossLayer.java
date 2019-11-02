@@ -145,13 +145,13 @@ public class CnnLossLayer extends FeedForwardLayer {
         }
 
         @Override
-        public void setNIn(int nIn){
+        public void setNIn(long nIn){
             throw new UnsupportedOperationException(
                     "This layer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override
-        public void setNOut(int nOut){
+        public void setNOut(long nOut){
             throw new UnsupportedOperationException(
                     "This layer has no parameters, thus nIn will always equal nOut.");
         }

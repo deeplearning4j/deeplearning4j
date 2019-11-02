@@ -5273,7 +5273,6 @@ public class Nd4jTestsC extends BaseNd4jTest {
         INDArray exp = Nd4j.linspace(0, 9, 10, DataType.DOUBLE);
         int cnt = 0;
         for (long i = matrix.rows() - 1; i >= 0; i--) {
-            // FIXME: int cast
             matrix.getRow((int) i).assign(cnt);
             cnt++;
         }

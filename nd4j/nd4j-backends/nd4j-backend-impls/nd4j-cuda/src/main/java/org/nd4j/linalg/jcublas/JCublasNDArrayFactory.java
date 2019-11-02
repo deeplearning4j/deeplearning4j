@@ -455,7 +455,6 @@ public class JCublasNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public INDArray pullRows(INDArray source, int sourceDimension, long[] indexes) {
-        // FIXME: int cast
         return pullRows(source, sourceDimension, ArrayUtil.toInts(indexes));
     }
 

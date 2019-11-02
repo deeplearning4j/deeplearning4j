@@ -268,6 +268,21 @@ nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, 
     if(aRank == 2 && isBVector)
         return mmulMxV(A, B, C, alpha, beta, outOrder);
 
+    // vector x matrix, A{M} x B{M,N} = C{N} -> reduce to matrix x matrix A2{1,M} x B{M,N} = C2{1,N}, since there is no corresponding blas operation sgevm
+    if(isAVector && bRank == 2) {
+        NDArray* A2 = new NDArray(A->reshape(A->ordering(), {1, A->lengthOf()}));               // A{M} -> A2{1,M}
+        NDArray* C2 = C ? new NDArray(C->reshape(C->ordering(), {1, C->lengthOf()})) : nullptr; // C{N} -> C2{1,N}
+        auto result = mmulMxM(A2, B, C2, alpha, beta, outOrder);                                // result{1,N}
+        delete A2;
+        delete C2;
+
+        if(!C) {
+            result->reshapei({result->lengthOf()});                                             // result{1,N} -> result{N}
+            return result;
+        }
+        return C;
+    }
+
     // batched matrix multiplication
     return mmulNxN(A, B, C, alpha, beta, outOrder);
 }

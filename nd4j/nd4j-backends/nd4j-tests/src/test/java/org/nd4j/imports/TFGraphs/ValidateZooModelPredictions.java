@@ -105,11 +105,9 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
         //Perform inference
         List<String> inputs = sd.inputs();
         assertEquals(1, inputs.size());
-        List<String> outputs = sd.outputs();
-        assertEquals(1, outputs.size());
 
-        String out = outputs.get(0);
-        Map<String,INDArray> m = sd.exec(Collections.singletonMap(inputs.get(0), img), out);
+        String out = "MobilenetV1/Predictions/Softmax";
+        Map<String,INDArray> m = sd.output(Collections.singletonMap(inputs.get(0), img), out);
 
         INDArray outArr = m.get(out);
 
@@ -167,7 +165,7 @@ public class ValidateZooModelPredictions extends BaseNd4jTest {
         assertEquals(1, inputs.size());
 
         String out = "softmax_tensor";
-        Map<String,INDArray> m = sd.exec(Collections.singletonMap(inputs.get(0), img), out);
+        Map<String,INDArray> m = sd.output(Collections.singletonMap(inputs.get(0), img), out);
 
         INDArray outArr = m.get(out);
 

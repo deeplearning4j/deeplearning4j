@@ -331,7 +331,6 @@ public class TestUpdaters extends BaseDL4JTest {
         double calculatedByHandMScalar = 0.2;
         double[] expectedM = Nd4j.ones(1, numParams).mul(calculatedByHandMScalar).data().asDouble();
 
-        // FIXME: int cast
         double[] actualM = Arrays.copyOfRange(nadamUpdater.getM().data().asDouble(), 0, (int) numParams);
         for (int i = 0; i < actualM.length; i++) {
             actualM[i] = Math.round(actualM[i] * 1e2) / 1e2;

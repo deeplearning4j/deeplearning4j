@@ -21,8 +21,6 @@ import org.nd4j.config.ND4JEnvironmentVars;
 import org.nd4j.config.ND4JSystemProperties;
 import org.nd4j.context.Nd4jContext;
 import org.nd4j.linalg.io.Resource;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -152,6 +150,9 @@ public abstract class Nd4jBackend {
      */
     public static Nd4jBackend load() throws NoAvailableBackendException {
 
+        String logInitProperty = System.getProperty(ND4JSystemProperties.LOG_INITIALIZATION, "true");
+        boolean logInit = Boolean.parseBoolean(logInitProperty);
+
         List<Nd4jBackend> backends = new ArrayList<>(1);
         ServiceLoader<Nd4jBackend> loader = ServiceLoader.load(Nd4jBackend.class);
         try {
@@ -183,7 +184,9 @@ public abstract class Nd4jBackend {
                 error = e.getMessage();
             }
             if (!available) {
-                log.warn("Skipped [{}] backend (unavailable): {}", backend.getClass().getSimpleName(), error);
+                if(logInit) {
+                    log.warn("Skipped [{}] backend (unavailable): {}", backend.getClass().getSimpleName(), error);
+                }
                 continue;
             }
 
@@ -193,7 +196,9 @@ public abstract class Nd4jBackend {
                 e.printStackTrace();
             }
 
-            log.info("Loaded [{}] backend", backend.getClass().getSimpleName());
+            if(logInit) {
+                log.info("Loaded [{}] backend", backend.getClass().getSimpleName());
+            }
             return backend;
         }
 
@@ -272,6 +277,8 @@ public abstract class Nd4jBackend {
     public String toString() {
         return getClass().getName();
     }
+
+    public abstract void logBackendInit();
 
 
     @SuppressWarnings("serial")

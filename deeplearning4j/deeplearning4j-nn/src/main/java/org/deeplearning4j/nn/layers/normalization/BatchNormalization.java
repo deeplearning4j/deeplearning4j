@@ -118,6 +118,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
         INDArray globalVar = params.get(BatchNormalizationParamInitializer.GLOBAL_VAR);             //One of log10std will be null depending on config
         INDArray globalLog10Std = params.get(BatchNormalizationParamInitializer.GLOBAL_LOG_STD);
         INDArray gamma = null;
+        INDArray beta = null;
         INDArray dGammaView;
         INDArray dBetaView;
         INDArray dGlobalMeanView = gradientViews.get(BatchNormalizationParamInitializer.GLOBAL_MEAN);
@@ -129,6 +130,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             dBetaView = Nd4j.createUninitialized(dataType, tempShape, 'c');
         } else {
             gamma = getParam(BatchNormalizationParamInitializer.GAMMA);
+            beta = getParam(BatchNormalizationParamInitializer.BETA);
             dGammaView = gradientViews.get(BatchNormalizationParamInitializer.GAMMA);
             dBetaView = gradientViews.get(BatchNormalizationParamInitializer.BETA);
         }
@@ -152,15 +154,14 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 eps = epsilon;
             }
 
-            // FIXME: int cast
             Pair<Gradient,INDArray> ret = null;
             try {
-                ret = helper.backpropGradient(in, eps, ArrayUtil.toInts(shape), gamma, dGammaView, dBetaView,
+                ret = helper.backpropGradient(in, eps, shape, gamma, beta, dGammaView, dBetaView,
                         layerConf.getEps(), workspaceMgr);
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
             } catch (Throwable t){
-                if(t.getMessage().contains("Failed to allocate")){
+                if(t.getMessage() != null && t.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation
                     throw t;
                 }
@@ -438,7 +439,6 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             //Note that cudnn does not support dense (2d) batch norm case as of v7.1
             double decay = layerConf.getDecay();
 
-            // FIXME: int cast
             INDArray ret = null;
             try {
                 if(globalVarView == null){
@@ -448,12 +448,12 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                     globalVarView.muli(globalVarView);
                 }
 
-                ret = helper.preOutput(in, training == TrainingMode.TRAIN, ArrayUtil.toInts(shape), gamma, beta, globalMeanView,
+                ret = helper.preOutput(in, training == TrainingMode.TRAIN, shape, gamma, beta, globalMeanView,
                         globalVarView, decay, layerConf.getEps(), workspaceMgr);
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
             } catch (Throwable t) {
-                if(t.getMessage().contains("Failed to allocate")){
+                if(t.getMessage() != null && t.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation
                     throw t;
                 }

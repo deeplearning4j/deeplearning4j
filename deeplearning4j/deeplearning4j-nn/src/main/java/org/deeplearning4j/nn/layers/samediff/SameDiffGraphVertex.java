@@ -31,9 +31,12 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
@@ -95,113 +98,160 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
     @Override
     public INDArray doForward(boolean training, LayerWorkspaceMgr workspaceMgr) {
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            if(sameDiff == null){
+            if (sameDiff == null) {
                 doInit();
             }
-
-            Map<String,INDArray> phMap = new HashMap<>();
-            config.validateInput(inputs);
-            for(int i=0; i<inputs.length; i++ ){
-                String name = config.getVertexParams().getInputs().get(i);
-                final String maskName = name + "_mask";
-                phMap.put(name, inputs[i]);
-                if(maskArrays != null && maskArrays[i] != null) {
-                    phMap.put(maskName, maskArrays[i]);
-                }else{
-                    phMap.put(maskName, createMask(dataType, inputs[i].shape()));
-                }
-            }
-
-            if(paramTable != null && paramTable.size() > 0) {
-                //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
-                //TODO Find a more efficient solution for this
-                for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
-                    INDArray arr = e.getValue();
-                    sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
-                }
-            }
-            INDArray result = sameDiff.outputSingle(phMap, outputKey);
-
-            //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
-            sameDiff.clearPlaceholders(true);
-            sameDiff.clearOpInputs();
-            return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         }
-    }
 
-    @Override
-    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
-        Gradient g = new DefaultGradient();
-
-        INDArray[] dLdIns;
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            if(sameDiff == null){
-                doInit();
+        Map<String,INDArray> phMap = new HashMap<>();
+        config.validateInput(inputs);
+        for(int i=0; i<inputs.length; i++ ){
+            String name = config.getVertexParams().getInputs().get(i);
+            final String maskName = name + "_mask";
+            phMap.put(name, inputs[i]);
+            if(maskArrays != null && maskArrays[i] != null) {
+                phMap.put(maskName, maskArrays[i]);
+            }else{
+                phMap.put(maskName, createMask(dataType, inputs[i].shape()));
             }
-
-            List<String> inputNames = config.getVertexParams().getInputs();
-            if(!sameDiff.hasGradientFunction()) {
-                //Create when scoped out, to ensure any arrays are not in WS
-                String[] inArr = inputNames.toArray(new String[inputNames.size()]);
-                sameDiff.createGradFunction(inArr);
-            }
-            config.validateInput(inputs);
-            Map<String,INDArray> phMap = new HashMap<>();
-            List<String> inputs = config.getVertexParams().getInputs();
-            int i=0;
-            for(String s : inputs){
-                phMap.put(s, this.inputs[i++]);
-            }
-            for( int j=0; j<this.inputs.length; j++ ){
-                String name = inputs.get(j);
-                final String maskName = name + "_mask";
-                if(maskArrays != null && maskArrays[j] != null) {
-                    phMap.put(maskName, maskArrays[j]);
-                }else{
-                    phMap.put(maskName, createMask(dataType, this.inputs[j].shape()));
-                }
-            }
-            String epsName = fn.getGradPlaceholderName();
-            phMap.put(epsName, epsilon);
+        }
 
 
+        //Configure memory management for SameDiff instance - use DL4J workspaces
+        String wsNameWorking = workspaceMgr.getWorkspaceName(ArrayType.FF_WORKING_MEM);
+        String wsNameOutput = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATIONS);
+        WorkspaceConfiguration confWorking = workspaceMgr.getConfiguration(ArrayType.FF_WORKING_MEM);
+        WorkspaceConfiguration confOutput = workspaceMgr.getConfiguration(ArrayType.ACTIVATIONS);
+        boolean actScopedOut = workspaceMgr.isScopedOut(ArrayType.ACTIVATIONS);
+        Preconditions.checkState(actScopedOut || wsNameOutput != null, "Activations must have a workspace or must be scoped out");
+        SessionMemMgr mmgr = new DL4JSameDiffMemoryMgr(wsNameWorking, wsNameOutput, confWorking, confOutput);
+
+        InferenceSession is = sameDiff.getSessions().get(Thread.currentThread().getId());
+        if(is == null){
+            is = new InferenceSession(sameDiff);
+            sameDiff.getSessions().put(Thread.currentThread().getId(), is);
+        }
+        is.setMmgr(mmgr);
+
+
+
+        if(paramTable != null && paramTable.size() > 0) {
             //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
             //TODO Find a more efficient solution for this
             for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
                 INDArray arr = e.getValue();
                 sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
             }
+        }
+        INDArray result = sameDiff.outputSingle(phMap, outputKey);
 
-            List<String> required = new ArrayList<>(inputNames.size());     //Ensure that the input placeholder gradients are calculated
-            for(String s : inputNames){
-                required.add(sameDiff.getVariable(s).gradient().getVarName());
-            }
-            sameDiff.execBackwards(phMap, required);
-            for(String s : paramTable.keySet() ){
-                INDArray sdGrad = sameDiff.grad(s).getArr();
-                INDArray dl4jGrad = gradTable.get(s);
-                dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
-                g.gradientForVariable().put(s, dl4jGrad);
-            }
+        //Edge case: "vertex" is just an identity activation, for example
+        //TODO there may be a cleaner way to do this...
+        if(!actScopedOut && !result.data().getParentWorkspace().getId().equals(wsNameOutput)){
+            result = workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
+        } else if(actScopedOut && result.isAttached()){
+            result = result.detach();
+        }
 
-            dLdIns = new INDArray[inputs.size()];
-            String fnName = fn.getGradPlaceholderName();
-            for(int j=0; j<inputs.size(); j++ ){
-                String name = inputs.get(j);
-                dLdIns[j] = sameDiff.grad(name).getArr();
+        //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
+        sameDiff.clearPlaceholders(true);
+        sameDiff.clearOpInputs();
+        return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
+    }
 
-                String gradName = sameDiff.grad(inputNames.get(j)).getVarName();
-                if(dLdIns[j] == null && fnName.equals(gradName)){
-                    //Edge case with lambda vertices like identity: SameDiff doesn't store the placeholders
-                    // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
-                    dLdIns[j] = epsilon;
-                }
+    @Override
+    public Pair<Gradient, INDArray[]> doBackward(boolean tbptt, LayerWorkspaceMgr workspaceMgr) {
+        Gradient g = new DefaultGradient();
+
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            if (sameDiff == null) {
+                doInit();
             }
         }
 
-        //TODO optimize
-        for( int i=0; i<dLdIns.length; i++ ){
-            dLdIns[i] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIns[i]);
+        List<String> inputNames = config.getVertexParams().getInputs();
+        if(!sameDiff.hasGradientFunction()) {
+            //Create when scoped out, to ensure any arrays are not in WS
+            String[] inArr = inputNames.toArray(new String[inputNames.size()]);
+            sameDiff.createGradFunction(inArr);
+        }
+        config.validateInput(inputs);
+
+        //Configure memory management for SameDiff instance - use DL4J workspaces
+        Map<Long,InferenceSession> sessionMap = sameDiff.getFunction("grad").getSessions();
+        if(!sessionMap.containsKey(Thread.currentThread().getId())){
+            sessionMap.put(Thread.currentThread().getId(), new InferenceSession(sameDiff.getFunction("grad")));
+        }
+        String wsNameWorking = workspaceMgr.getWorkspaceName(ArrayType.BP_WORKING_MEM);
+        String wsNameActGrad = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATION_GRAD);
+        WorkspaceConfiguration confWorking = workspaceMgr.getConfiguration(ArrayType.BP_WORKING_MEM);
+        WorkspaceConfiguration confOutput = workspaceMgr.getConfiguration(ArrayType.ACTIVATION_GRAD);
+
+        boolean actGradScopedOut = workspaceMgr.isScopedOut(ArrayType.ACTIVATION_GRAD);
+        Preconditions.checkState(actGradScopedOut || wsNameActGrad != null, "Activation gradients must have a workspace or be scoped out");
+        SessionMemMgr mmgr = new DL4JSameDiffMemoryMgr(wsNameWorking, wsNameActGrad, confWorking, confOutput);
+        sessionMap.get(Thread.currentThread().getId()).setMmgr(mmgr);
+
+
+
+        Map<String,INDArray> phMap = new HashMap<>();
+        List<String> inputs = config.getVertexParams().getInputs();
+        int i=0;
+        for(String s : inputs){
+            phMap.put(s, this.inputs[i++]);
+        }
+        for( int j=0; j<this.inputs.length; j++ ){
+            String name = inputs.get(j);
+            final String maskName = name + "_mask";
+            if(maskArrays != null && maskArrays[j] != null) {
+                phMap.put(maskName, maskArrays[j]);
+            }else{
+                phMap.put(maskName, createMask(dataType, this.inputs[j].shape()));
+            }
+        }
+        String epsName = fn.getGradPlaceholderName();
+        phMap.put(epsName, epsilon);
+
+
+        //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
+        //TODO Find a more efficient solution for this
+        List<String> required = new ArrayList<>(inputNames.size());     //Ensure that the input placeholder gradients are calculated
+        for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+            INDArray arr = e.getValue();
+            sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
+        }
+
+        required.addAll(paramTable.keySet());
+        required.addAll(inputNames);
+
+        Map<String,INDArray> gradsMap = sameDiff.calculateGradients(phMap, required);
+        for(String s : paramTable.keySet() ){
+            INDArray sdGrad = gradsMap.get(s);
+            INDArray dl4jGrad = gradTable.get(s);
+            dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
+            g.gradientForVariable().put(s, dl4jGrad);
+        }
+
+        INDArray[] dLdIns = new INDArray[inputs.size()];
+        String fnName = fn.getGradPlaceholderName();
+        for(int j=0; j<inputs.size(); j++ ){
+            String name = inputs.get(j);
+            dLdIns[j] = sameDiff.grad(name).getArr();
+
+            String gradName = sameDiff.grad(inputNames.get(j)).name();
+            if(dLdIns[j] == null && fnName.equals(gradName)){
+                //Edge case with lambda vertices like identity: SameDiff doesn't store the placeholders
+                // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
+                dLdIns[j] = epsilon;
+            }
+
+            //Edge case: "vertex" is just an identity activation, for example
+            //TODO there may be a cleaner way to do this...
+            if(!actGradScopedOut && !dLdIns[j].data().getParentWorkspace().getId().equals(wsNameActGrad)){
+                dLdIns[j] = workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIns[j]);
+            } else if(actGradScopedOut && dLdIns[j].isAttached()){
+                dLdIns[j] = dLdIns[j].detach();
+            }
         }
 
         //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
@@ -264,7 +314,7 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
             fn = sameDiff.f().externalErrors(layerOutput);
             fn.outputVariable();
 
-            this.outputKey = outputVar.getVarName();
+            this.outputKey = outputVar.name();
         }
     }
 

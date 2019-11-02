@@ -16,7 +16,6 @@
 
 package org.nd4j.linalg.api.ops;
 
-import org.nd4j.shade.guava.primitives.Ints;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -24,21 +23,14 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
-import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.api.shape.Shape;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -69,12 +61,8 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
             this.dimensions = dimensions;
             f().validateDifferentialFunctionsameDiff(i_v);
             this.keepDims = keepDims;
-            this.xVertexId = i_v.getVarName();
+            this.xVertexId = i_v.name();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
-            if(Shape.isPlaceholderShape(i_v.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v.getVarName());
-            }
-
         } else {
             throw new IllegalArgumentException("Input not null variable.");
         }
@@ -93,8 +81,8 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
             this.dimensions = dimensions;
 
-            this.xVertexId = i_v.getVarName();
-            this.yVertexId = i_v2.getVarName();
+            this.xVertexId = i_v.name();
+            this.yVertexId = i_v2.name();
             f().validateDifferentialFunctionsameDiff(i_v);
             f().validateDifferentialFunctionsameDiff(i_v2);
             this.keepDims = keepDims;
@@ -219,14 +207,7 @@ public abstract class BaseReduceOp extends BaseOp implements ReduceOp {
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        if (!attributesForNode.containsKey("axes")) {
-            this.dimensions = new int[] { Integer.MAX_VALUE };
-        }
-        else {
-            val map = OnnxGraphMapper.getInstance().getAttrMap(node);
-            val dims = Ints.toArray(map.get("axes").getIntsList());
-            this.dimensions = dims;
-        }
+
     }
 
     @Override

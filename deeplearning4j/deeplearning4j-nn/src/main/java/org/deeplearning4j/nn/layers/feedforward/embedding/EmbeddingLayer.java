@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
@@ -64,8 +65,7 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray weightGradients = gradientViews.get(DefaultParamInitializer.WEIGHT_KEY);
         weightGradients.assign(0);
 
-        // FIXME: int cast
-        int[] indexes = new int[(int) input.length()];
+        long[] indexes = new long[(int) input.length()];
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = input.getInt(i, 0);
         }
@@ -99,7 +99,8 @@ public class EmbeddingLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
         val nIn = layerConf().getNIn();
 
-        // FIXME: int cast
+        if (input.length() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int[] indexes = new int[(int) input.length()];
         for (int i = 0; i < indexes.length; i++) {
             indexes[i] = input.getInt(i, 0);

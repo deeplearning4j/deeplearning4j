@@ -130,10 +130,7 @@ public class Concat extends DynamicCustomOp {
 
         val variable = initWith.getVariable(input);
         // concat dimension is only possible
-        if (variable != null && variable.getArr() == null) {
-            sameDiff.addPropertyToResolve(this, input);
-
-        } else if (variable != null) {
+        if (variable != null) {
             val arr = variable.getArr();
             if (arr.length() == 1) {
                 concatDimension = arr.getInt(0);
@@ -151,6 +148,7 @@ public class Concat extends DynamicCustomOp {
             removeInputArgument(inputArgs[inputArguments().length - 1]);
         }
 
+        //TODO Fix this: https://github.com/eclipse/deeplearning4j/issues/8285
         sameDiff.removeArgFromOp(input,this);
     }
 

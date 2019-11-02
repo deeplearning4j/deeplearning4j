@@ -195,7 +195,7 @@ public class ParameterAveragingTrainingWorkerStats implements SparkTrainingStats
             lastFitStartTime = timeSource.currentTimeMillis();
         }
 
-        public void logFitEnd(int numExamples) {
+        public void logFitEnd(long numExamples) {
             long now = timeSource.currentTimeMillis();
             fitTimes.add(new ExampleCountEventStats(lastFitStartTime, now - lastFitStartTime, numExamples));
         }

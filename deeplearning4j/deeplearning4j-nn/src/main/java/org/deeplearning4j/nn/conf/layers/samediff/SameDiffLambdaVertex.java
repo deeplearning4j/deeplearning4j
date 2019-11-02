@@ -65,7 +65,7 @@ public abstract class SameDiffLambdaVertex extends SameDiffVertex {
         defineVertex(temp, tempInputs);
         List<String> list = new ArrayList<>();
         for (Integer i : tempInputs.map.keySet()) {
-            list.add(tempInputs.map.get(i).getVarName());
+            list.add(tempInputs.map.get(i).name());
         }
         params.defineInputs(list.toArray(new String[list.size()]));
     }

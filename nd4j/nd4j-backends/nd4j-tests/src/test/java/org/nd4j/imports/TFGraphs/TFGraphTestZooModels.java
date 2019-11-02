@@ -255,7 +255,7 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
             OpValidationSuite.ignoreFailing();
         }
 
-//        if(!modelName.startsWith("ssd")){
+//        if(!modelName.startsWith("mobilenet_v2_1.0_224")){
 //            OpValidationSuite.ignoreFailing();
 //        }
         currentTestDir = testDir.newFolder();
@@ -282,9 +282,12 @@ public class TFGraphTestZooModels { //Note: Can't extend BaseNd4jTest here as we
         }
 
         //Libnd4j exec:
+        /*
+        //AB 2019/10/19 - Libnd4j execution disabled pending execution rewrite
         currentTestDir = testDir.newFolder();
         log.info("----- Libnd4j Exec: {} -----", modelName);
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, TFGraphTestAllHelper.ExecuteWith.LIBND4J,
                 LOADER, maxRE, minAbs);
+         */
     }
 }

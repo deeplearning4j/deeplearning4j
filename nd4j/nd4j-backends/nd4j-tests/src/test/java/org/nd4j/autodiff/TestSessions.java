@@ -17,10 +17,13 @@
 package org.nd4j.autodiff;
 
 import org.junit.Test;
+import org.nd4j.autodiff.listeners.At;
+import org.nd4j.autodiff.listeners.Operation;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.internal.AbstractSession;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.internal.memory.NoOpMemoryMgr;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -73,7 +76,7 @@ public class TestSessions extends BaseNd4jTest {
         m.put("y", y);
 
         Map<String,INDArray> outMap = is.output(Collections.singletonList("out"), m, null,
-                Collections.<String>emptyList(), true, null);
+                Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
 
         assertEquals(1, outMap.size());
         assertEquals(outExp, outMap.get("out"));
@@ -111,7 +114,7 @@ public class TestSessions extends BaseNd4jTest {
 
         System.out.println("----------------------------------");
         Map<String,INDArray> outMap = is.output(Collections.singletonList("d"), m, null,
-                Collections.<String>emptyList(), false, null);
+                Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
 
         assertEquals(1, outMap.size());
         assertEquals(dExp, outMap.get("d"));
@@ -143,10 +146,10 @@ public class TestSessions extends BaseNd4jTest {
 
         System.out.println("----------------------------------");
         InferenceSession is = new InferenceSession(sd);
-//        String outName = merge.getVarName();
-        String outName = outVar.getVarName();
+//        String outName = merge.name();
+        String outName = outVar.name();
         Map<String,INDArray> outMap = is.output(Collections.singletonList(outName), m, null,
-                Collections.<String>emptyList(), false, null);
+                Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
 
         assertEquals(1, outMap.size());
         INDArray out = outMap.get(outName);
@@ -178,11 +181,11 @@ public class TestSessions extends BaseNd4jTest {
         m.put("b", bArr);
 
         InferenceSession is = new InferenceSession(sd);
-        String n = merge.getVarName();
+        String n = merge.name();
 
         System.out.println("----------------------------------");
         Map<String,INDArray> outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(),
-                false, null);
+                null, At.defaultAt(Operation.TRAINING));
         assertEquals(1, outMap.size());
         assertEquals(expTrue, outMap.get(n));
 
@@ -191,12 +194,12 @@ public class TestSessions extends BaseNd4jTest {
         //Check false case:
         bArr.assign(0);
         is = new InferenceSession(sd);
-        outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(), false, null);
+        outMap = is.output(Collections.singletonList(n), m, null, Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
         assertEquals(1, outMap.size());
         assertEquals(expFalse, outMap.get(n));
     }
 
-    @Test(timeout = 60000L)
+    @Test(timeout = 20000L)
     public void testSwitchWhile() throws Exception{
 
         /*
@@ -212,18 +215,19 @@ public class TestSessions extends BaseNd4jTest {
 
         for( int numIter : new int[]{1,3}) {
             File f = new ClassPathResource("tf_graphs/examples/while1/iter_" + numIter + "/frozen_model.pb").getFile();
-            SameDiff sd = TFGraphMapper.getInstance().importGraph(f);
+            SameDiff sd = TFGraphMapper.importGraph(f);
 
             System.out.println(sd.summary());
 
             System.out.println("----------------------------------");
             //This particular test/graph doesn't use placeholders
             InferenceSession is = new InferenceSession(sd);
+            is.setMmgr(new NoOpMemoryMgr());    //So arrays aren't deallocated during execution
             String n = "while/Exit";
             String n2 = "while/Exit_1";
 
             Map<String, INDArray> m = is.output(Arrays.asList(n, n2), Collections.emptyMap(), null,
-                    Collections.<String>emptyList(), false, null);
+                    Collections.<String>emptyList(), null, At.defaultAt(Operation.TRAINING));
             assertEquals(2, m.size());
 
             INDArray exp = Nd4j.scalar((float)numIter);
@@ -231,7 +235,6 @@ public class TestSessions extends BaseNd4jTest {
             assertEquals(exp, m.get(n));
             assertEquals(exp, m.get(n2));
 
-            Map<String,AbstractSession.FrameIter> frameParents = is.getFrameParents();
             Map<AbstractSession.VarId,INDArray> outputs = is.getNodeOutputs();
             //Some sanity checks on the internal state:
             //Check 1: "while/Less" should be executed numIter+1 times... i.e., numIter times through the loop, plus once to exit

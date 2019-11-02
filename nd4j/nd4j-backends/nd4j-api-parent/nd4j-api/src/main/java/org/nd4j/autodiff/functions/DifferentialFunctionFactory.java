@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.blas.params.MMulTranspose;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.NoOp;
+import org.nd4j.linalg.api.ops.custom.*;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd;
 import org.nd4j.linalg.api.ops.impl.broadcast.BiasAddGrad;
 import org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter;
@@ -183,7 +184,6 @@ import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
 import org.nd4j.linalg.api.ops.impl.summarystats.StandardDeviation;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
-import org.nd4j.linalg.api.ops.impl.transforms.Constant;
 import org.nd4j.linalg.api.ops.impl.transforms.Pad;
 import org.nd4j.linalg.api.ops.impl.transforms.ReluLayer;
 import org.nd4j.linalg.api.ops.impl.transforms.any.IsMax;
@@ -351,12 +351,6 @@ public class DifferentialFunctionFactory {
         }
     }
 
-
-    public Constant val(SDVariable iX) {
-        return new Constant(sameDiff(), iX,
-                iX.getShape());
-    }
-
     public ExternalErrorsFunction externalErrors(SDVariable... inputs) {
         return externalErrors(null, inputs);
     }
@@ -381,10 +375,6 @@ public class DifferentialFunctionFactory {
     public SDVariable onesLike(String name, SDVariable input, DataType dataType) {
         validateDifferentialFunctionsameDiff(input);
         return new OnesLike(name, sameDiff(), input, dataType).outputVariable();
-    }
-
-    public SDVariable constant(SDVariable input, long... shape) {
-        return new Constant(sameDiff(), input, (shape != null && shape.length > 0 ? shape : null)).outputVariable();
     }
 
     public SDVariable linspace(SDVariable lower, SDVariable upper, SDVariable count, DataType dt) {
@@ -981,8 +971,8 @@ public class DifferentialFunctionFactory {
         return new CumProdBp(sameDiff(), in, grad, exclusive, reverse, axis).outputVariable();
     }
 
-    public SDVariable biasAdd(SDVariable input, SDVariable bias) {
-        return new BiasAdd(sameDiff(), input, bias).outputVariable();
+    public SDVariable biasAdd(SDVariable input, SDVariable bias, boolean nchw) {
+        return new BiasAdd(sameDiff(), input, bias, nchw).outputVariable();
     }
 
     public SDVariable[] biasAddBp(SDVariable input, SDVariable bias, SDVariable grad) {
@@ -1055,7 +1045,7 @@ public class DifferentialFunctionFactory {
 
 
     public SDVariable gradientBackwardsMarker(SDVariable iX) {
-        return new GradientBackwardsMarker(sameDiff(), iX, sameDiff.scalar(iX.getVarName() + "-pairgrad", 1.0)).outputVariable();
+        return new GradientBackwardsMarker(sameDiff(), iX, sameDiff.scalar(iX.name() + "-pairgrad", 1.0)).outputVariable();
     }
 
     public SDVariable abs(SDVariable iX) {
@@ -2629,7 +2619,6 @@ public class DifferentialFunctionFactory {
         validateDifferentialFunctionsameDiff(func);
         validateDifferentialFunctionsameDiff(input);
 
-        // FIXME: int cast!
         return tile(func, ArrayUtil.toInts(input.getShape()));
     }
 
@@ -2649,6 +2638,33 @@ public class DifferentialFunctionFactory {
         return new NextIteration(sameDiff, x).outputVariable();
     }
 
+    public SDVariable adjustContrast(SDVariable in, SDVariable factor) {
+        return new AdjustContrast(sameDiff, in, factor).outputVariable();
+    }
+
+    public SDVariable adjustContrastV2(SDVariable in, SDVariable factor) {
+        return new AdjustContrastV2(sameDiff, in, factor).outputVariable();
+    }
+
+    public SDVariable bitCast(SDVariable in, SDVariable dataType) {
+        return new BitCast(sameDiff, in, dataType).outputVariable();
+    }
+
+    public SDVariable compareAndBitpack(SDVariable threshold) {
+        return new CompareAndBitpack(sameDiff, threshold).outputVariable();
+    }
+
+    public SDVariable divideNoNan(SDVariable in1, SDVariable in2) {
+        return new DivideNoNan(sameDiff, in1, in2).outputVariable();
+    }
+
+    public SDVariable drawBoundingBoxes(SDVariable boxes, SDVariable colors) {
+        return new DrawBoundingBoxes(sameDiff, boxes, colors).outputVariable();
+    }
+
+    public SDVariable fakeQuantWithMinMaxVarsPerChannel(SDVariable x, SDVariable min, SDVariable max) {
+        return new FakeQuantWithMinMaxVarsPerChannel(sameDiff,x,min,max).outputVariable();
+    }
 
     public String toString() {
         return "DifferentialFunctionFactory{methodNames=" + methodNames + "}";

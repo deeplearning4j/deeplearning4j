@@ -226,22 +226,24 @@ public class TensorFlowImportValidator {
     }
 
     public static TFImportStatus checkModelForImport(String path, InputStream is, boolean exceptionOnRead) throws IOException {
-        TFGraphMapper m = TFGraphMapper.getInstance();
 
         try {
             int opCount = 0;
             Set<String> opNames = new HashSet<>();
 
             try(InputStream bis = new BufferedInputStream(is)) {
-                GraphDef graphDef = m.parseGraphFrom(bis);
-                List<NodeDef> nodes = m.getNodeList(graphDef);
+                GraphDef graphDef = GraphDef.parseFrom(bis);
+                List<NodeDef> nodes = new ArrayList<>(graphDef.getNodeCount());
+                for( int i=0; i<graphDef.getNodeCount(); i++ ){
+                    nodes.add(graphDef.getNode(i));
+                }
 
                 if(nodes.isEmpty()){
                     throw new IllegalStateException("Error loading model for import - loaded graph def has no nodes (empty/corrupt file?): " + path);
                 }
 
                 for (NodeDef nd : nodes) {
-                    if (m.isVariableNode(nd) || m.isPlaceHolderNode(nd))
+                    if (TFGraphMapper.isVariableNode(nd) || TFGraphMapper.isPlaceHolder(nd))
                         continue;
 
                     String op = nd.getOp();

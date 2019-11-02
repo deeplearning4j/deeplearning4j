@@ -28,6 +28,7 @@
 #include <MmulHelper.h>
 #include <GradCheck.h>
 #include <ops/declarable/CustomOperations.h>
+#include <ops/declarable/helpers/lstmLayer.h>
 
 
 using namespace nd4j;
@@ -2342,5 +2343,155 @@ TEST_F(HelpersTests1, softmaxDerivative_3) {
     ASSERT_TRUE(expOutput.equalsTo(output));
 }
 
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, lstmLayerCell_1) {
 
+    const int bS   = 2;
+    const int nIn  = 10;
+    const int nOut = 4;
+
+    const float dataFormat = 0;     // is ignored in cell op
+    const float cellClip = 5;       // clipping value
+    const float gateAct = 2;        // sigmoid activation for input (i), forget (f) and output (o) gates
+    const float gateAlpha = 0;      // alpha value for activation for gates, not required for sigmoid
+    const float gateBeta = 0;       // beta value for activation for gates, not required for sigmoid
+    const float cellAct = 0;        // tanh activation for cell state
+    const float cellAlpha = 0;      // alpha value for cell state activation, not required for tanh
+    const float cellBeta = 0;       // beta value for cell state activation, not required for tanh
+    const float outAct = 0;         // tanh activation for output
+    const float outAlpha = 0;       // alpha value for output activation, not required for tanh
+    const float outBeta = 0;        // beta value for output activation, not required for tanh
+
+    NDArray x ('c', {bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b ('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+
+    NDArray h('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray c('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+
+    NDArray expH('c', {bS, nOut}, {0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288, 0.999288}, nd4j::DataType::FLOAT32);
+    NDArray expC('c', {bS, nOut}, {3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778, 3.999778}, nd4j::DataType::FLOAT32);
+
+    std::vector<float> params = {dataFormat, 0, cellClip, gateAct, gateAlpha, gateBeta, cellAct, cellAlpha, cellBeta, outAct, outAlpha, outBeta};
+
+    x = 1.;
+    hI = 2.;
+    cI = 3.;
+    Wx = 0.5;
+    Wr = 0.4;
+    Wp = 0.3;
+    b = 0.7;
+
+    nd4j::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+    ASSERT_TRUE(expC.isSameShape(c));
+    ASSERT_TRUE(expC.equalsTo(c));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, lstmLayerCell_2) {
+
+    const int bS   = 2;
+    const int nIn  = 10;
+    const int nOut = 4;
+
+    const float dataFormat = 0;     // is ignored in cell op
+    const float cellClip = 3;       // clipping value
+    const float gateAct = 2;        // sigmoid activation for input (i), forget (f) and output (o) gates
+    const float gateAlpha = 0;      // alpha value for activation for gates, not required for sigmoid
+    const float gateBeta = 0;       // beta value for activation for gates, not required for sigmoid
+    const float cellAct = 0;        // tanh activation for cell state
+    const float cellAlpha = 0;      // alpha value for cell state activation, not required for tanh
+    const float cellBeta = 0;       // beta value for cell state activation, not required for tanh
+    const float outAct = 0;         // tanh activation for output
+    const float outAlpha = 0;       // alpha value for output activation, not required for tanh
+    const float outBeta = 0;        // beta value for output activation, not required for tanh
+
+    NDArray x ('c', {bS, nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b ('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+
+    NDArray h('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+    NDArray c('c', {bS, nOut}, nd4j::DataType::FLOAT32);
+
+    NDArray expH('c', {bS, nOut}, {0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995, 0.995}, nd4j::DataType::FLOAT32);
+    NDArray expC('c', {bS, nOut}, {3., 3., 3., 3., 3., 3., 3., 3.}, nd4j::DataType::FLOAT32);
+
+    std::vector<float> params = {dataFormat, 0, cellClip, gateAct, gateAlpha, gateBeta, cellAct, cellAlpha, cellBeta, outAct, outAlpha, outBeta};
+
+    x = 1.;
+    hI = 2.;
+    cI = 3.;
+    Wx = 0.5;
+    Wr = 0.4;
+    Wp = 0.3;
+    b = 0.7;
+
+    nd4j::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+    ASSERT_TRUE(expC.isSameShape(c));
+    ASSERT_TRUE(expC.equalsTo(c));
+}
+
+///////////////////////////////////////////////////////////////////
+TEST_F(HelpersTests1, lstmLayerCell_3) {
+
+    const int nIn  = 10;
+    const int nOut = 4;
+
+    const float dataFormat = 0;     // is ignored in cell op
+    const float cellClip = 5;       // clipping value
+    const float gateAct = 2;        // sigmoid activation for input (i), forget (f) and output (o) gates
+    const float gateAlpha = 0;      // alpha value for activation for gates, not required for sigmoid
+    const float gateBeta = 0;       // beta value for activation for gates, not required for sigmoid
+    const float cellAct = 0;        // tanh activation for cell state
+    const float cellAlpha = 0;      // alpha value for cell state activation, not required for tanh
+    const float cellBeta = 0;       // beta value for cell state activation, not required for tanh
+    const float outAct = 0;         // tanh activation for output
+    const float outAlpha = 0;       // alpha value for output activation, not required for tanh
+    const float outBeta = 0;        // beta value for output activation, not required for tanh
+
+    NDArray x ('c', {nIn}, nd4j::DataType::FLOAT32);
+    NDArray Wx('c', {nIn, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wr('c', {nOut, 4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray b ('c', {4*nOut}, nd4j::DataType::FLOAT32);
+    NDArray hI('c', {nOut}, nd4j::DataType::FLOAT32);
+    NDArray cI('c', {nOut}, nd4j::DataType::FLOAT32);
+    NDArray Wp('c', {3*nOut}, nd4j::DataType::FLOAT32);
+
+    NDArray h('c', {nOut}, nd4j::DataType::FLOAT32);
+    NDArray c('c', {nOut}, nd4j::DataType::FLOAT32);
+
+    NDArray expH('c', {nOut}, {0.999288, 0.999288, 0.999288, 0.999288}, nd4j::DataType::FLOAT32);
+    NDArray expC('c', {nOut}, {3.999778, 3.999778, 3.999778, 3.999778}, nd4j::DataType::FLOAT32);
+
+    std::vector<float> params = {dataFormat, 0, cellClip, gateAct, gateAlpha, gateBeta, cellAct, cellAlpha, cellBeta, outAct, outAlpha, outBeta};
+
+    x = 1.;
+    hI = 2.;
+    cI = 3.;
+    Wx = 0.5;
+    Wr = 0.4;
+    Wp = 0.3;
+    b = 0.7;
+
+    nd4j::ops::helpers::lstmLayerCell(&x, &Wx, &Wr, &b, &hI, &cI, &Wp, params, &h, &c);
+
+    ASSERT_TRUE(expH.isSameShape(h));
+    ASSERT_TRUE(expH.equalsTo(h));
+    ASSERT_TRUE(expC.isSameShape(c));
+    ASSERT_TRUE(expC.equalsTo(c));
+}
 

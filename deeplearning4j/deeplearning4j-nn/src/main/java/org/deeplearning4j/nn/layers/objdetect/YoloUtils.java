@@ -45,12 +45,11 @@ public class YoloUtils {
     }
 
     public static INDArray activate(@NonNull INDArray boundingBoxPriors, @NonNull INDArray input, LayerWorkspaceMgr layerWorkspaceMgr){
-        // FIXME: int cast
-        int mb = (int) input.size(0);
-        int h = (int) input.size(2);
-        int w = (int) input.size(3);
-        int b = (int) boundingBoxPriors.size(0);
-        int c = (int) (input.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
+        long mb = input.size(0);
+        long h = input.size(2);
+        long w = input.size(3);
+        long b = boundingBoxPriors.size(0);
+        long c = input.size(1)/b-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
         INDArray output = layerWorkspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), input.shape(), 'c');
         INDArray output5 = output.reshape('c', mb, b, 5+c, h, w);
@@ -77,7 +76,7 @@ public class YoloUtils {
         //TODO OPTIMIZE?
         INDArray inputClassesPreSoftmax = input5.get(all(), all(), interval(5, 5+c), all(), all());   //Shape: [minibatch, C, H, W]
         INDArray classPredictionsPreSoftmax2d = inputClassesPreSoftmax.permute(0,1,3,4,2) //[minibatch, b, c, h, w] To [mb, b, h, w, c]
-                .dup('c').reshape('c', new int[]{mb*b*h*w, c});
+                .dup('c').reshape('c', new long[]{mb*b*h*w, c});
         Transforms.softmax(classPredictionsPreSoftmax2d, false);
         INDArray postSoftmax5d = classPredictionsPreSoftmax2d.reshape('c', mb, b, h, w, c ).permute(0, 1, 4, 2, 3);
 
@@ -173,13 +172,12 @@ public class YoloUtils {
             throw new IllegalStateException("Invalid confidence threshold: must be in range [0,1]. Got: " + confThreshold);
         }
 
-        // FIXME: int cast
         //Activations format: [mb, 5b+c, h, w]
-        int mb = (int) networkOutput.size(0);
-        int h = (int) networkOutput.size(2);
-        int w = (int) networkOutput.size(3);
-        int b = (int) boundingBoxPriors.size(0);
-        int c = (int) (networkOutput.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
+        long mb = networkOutput.size(0);
+        long h = networkOutput.size(2);
+        long w = networkOutput.size(3);
+        long b = boundingBoxPriors.size(0);
+        long c = (networkOutput.size(1)/b)-5;  //input.size(1) == b * (5 + C) -> C = (input.size(1)/b) - 5
 
         //Reshape from [minibatch, B*(5+C), H, W] to [minibatch, B, 5+C, H, W] to [minibatch, B, 5, H, W]
         INDArray output5 = networkOutput.dup('c').reshape(mb, b, 5+c, h, w);

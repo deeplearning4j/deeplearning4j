@@ -214,7 +214,6 @@ public class FirstIterationFunction implements
                 else {
                     nextRandom.set(Math.abs(nextRandom.get() * 25214903917L + 11));
 
-                    // FIXME: int cast
                     int idx = Math.abs((int) (nextRandom.get() >> 16) % (int) negativeHolder.getTable().length());
 
                     target = negativeHolder.getTable().getInt(idx);

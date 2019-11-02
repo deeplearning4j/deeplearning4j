@@ -25,6 +25,7 @@ public class NonInplaceValidationListener extends BaseListener {
     private static AtomicInteger failCounter = new AtomicInteger();
 
     protected INDArray[] opInputs;
+    protected INDArray[] opInputsOrig;
 
     public NonInplaceValidationListener(){
         useCounter.getAndIncrement();
@@ -42,14 +43,18 @@ public class NonInplaceValidationListener extends BaseListener {
                 //No input op
                 return;
             } else if(o.y() == null){
+                opInputsOrig = new INDArray[]{o.x()};
                 opInputs = new INDArray[]{o.x().dup()};
             } else {
+                opInputsOrig = new INDArray[]{o.x(), o.y()};
                 opInputs = new INDArray[]{o.x().dup(), o.y().dup()};
             }
         } else if(op.getOp() instanceof DynamicCustomOp){
             INDArray[] arr = ((DynamicCustomOp) op.getOp()).inputArguments();
             opInputs = new INDArray[arr.length];
+            opInputsOrig = new INDArray[arr.length];
             for( int i=0; i<arr.length; i++ ){
+                opInputsOrig[i] = arr[i];
                 opInputs[i] = arr[i].dup();
             }
         } else {
@@ -64,23 +69,6 @@ public class NonInplaceValidationListener extends BaseListener {
             return;
         }
 
-        INDArray[] inputsAfter;
-        if(op.getOp() instanceof Op){
-            Op o = (Op)op.getOp();
-            if(o.x() == null){
-                //No input op
-                return;
-            } else if(o.y() == null){
-                inputsAfter = new INDArray[]{o.x()};
-            } else {
-                inputsAfter = new INDArray[]{o.x(), o.y()};
-            }
-        } else if(op.getOp() instanceof DynamicCustomOp){
-            inputsAfter = ((DynamicCustomOp) op.getOp()).inputArguments();
-        } else {
-            throw new IllegalStateException("Unknown op type: " + op.getOp().getClass());
-        }
-
         MessageDigest md;
         try {
             md = MessageDigest.getInstance("MD5");
@@ -93,12 +81,12 @@ public class NonInplaceValidationListener extends BaseListener {
 
             //Need to hash - to ensure zero changes to input array
             byte[] before = opInputs[i].data().asBytes();
-            INDArray after = inputsAfter[i];
+            INDArray after = this.opInputsOrig[i];
             boolean dealloc = false;
-            if(opInputs[i].ordering() != inputsAfter[i].ordering() || Arrays.equals(opInputs[i].stride(), inputsAfter[i].stride())
-                    || opInputs[i].elementWiseStride() != inputsAfter[i].elementWiseStride()){
+            if(opInputs[i].ordering() != opInputsOrig[i].ordering() || Arrays.equals(opInputs[i].stride(), opInputsOrig[i].stride())
+                    || opInputs[i].elementWiseStride() != opInputsOrig[i].elementWiseStride()){
                 //Clone if required (otherwise fails for views etc)
-                after = inputsAfter[i].dup();
+                after = opInputsOrig[i].dup();
                 dealloc = true;
             }
             byte[] afterB = after.data().asBytes();

@@ -75,6 +75,7 @@ import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import org.nd4j.linalg.dataset.api.iterator.MultiDataSetIterator;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.heartbeat.Heartbeat;
 import org.nd4j.linalg.heartbeat.reports.Environment;
@@ -425,7 +426,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         try(MemoryWorkspace ws = workspaceMgr.notifyScopeEntered(ArrayType.FF_WORKING_MEM)) {
             if (layerWiseConfigurations.getInputPreProcess(layerIdx) != null) {
 
-                // FIXME: int cast
+                if (input.size(0) > Integer.MAX_VALUE)
+                    throw new ND4JArraySizeException();
                 outputOfPrevLayer = layerWiseConfigurations.getInputPreProcess(layerIdx).preProcess(outputOfPrevLayer, (int) input.size(0),
                         LayerWorkspaceMgr.noWorkspaces(helperWorkspaces));
             }
@@ -439,7 +441,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         //In 99+% of cases, the input and labels dimension 0 size should be identical
         //The only real exceptions: space to batch, and batch to space layers
         //In those cases, we should base it on the labels size, as this impacts gradient calculation
-        // FIXME: int cast
+        if (input.size(0) > Integer.MAX_VALUE || labels.size(0) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         return labels == null ? (int) input.size(0) : (int)labels.size(0);
     }
 
@@ -2074,7 +2077,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             if (endTimeIdx > timeSeriesLength)
                 endTimeIdx = timeSeriesLength;
 
-            // FIXME: int cast
+            if (startTimeIdx > Integer.MAX_VALUE || endTimeIdx > Integer.MAX_VALUE)
+                throw new ND4JArraySizeException();
             INDArray[] subsets = getSubsetsForTbptt((int) startTimeIdx, (int) endTimeIdx, input, labels,
                     featuresMaskArray, labelsMaskArray);
 
@@ -2211,7 +2215,9 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public int[] predict(INDArray d) {
         INDArray output = output(d, Layer.TrainingMode.TEST);
 
-        // FIXME: int cast
+        if (d.size(0) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+
         int[] ret = new int[(int) d.size(0)];
         if (d.isRowVectorOrScalar())
             ret[0] = Nd4j.getBlasWrapper().iamax(output);
@@ -2335,7 +2341,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         org.deeplearning4j.nn.conf.layers.OutputLayer layerConf =
                 (org.deeplearning4j.nn.conf.layers.OutputLayer) getOutputLayer().conf().getLayer();
 
-        // FIXME: int cast
+        if (layerConf.getNOut() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         fit(examples, FeatureUtil.toOutcomeMatrix(labels, (int) layerConf.getNOut()));
     }
 
@@ -2584,7 +2591,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         INDArray inputToOutputLayer = outputOfLayerDetached(training, FwdPassType.STANDARD,layers.length-2, data.getFeatures(),
                 data.getFeaturesMaskArray(), data.getLabelsMaskArray(), null);
 
-        // FIXME: int cast
+        if (data.getFeatures().size(0) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         IOutputLayer ol = (IOutputLayer) getOutputLayer();
         if (getLayerWiseConfigurations().getInputPreProcess(layers.length - 1) != null) {
             inputToOutputLayer = getLayerWiseConfigurations().getInputPreProcess(layers.length - 1)
@@ -2647,7 +2655,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
             IOutputLayer ol = (IOutputLayer) getOutputLayer();
             if(layerWiseConfigurations.getInputPreProcess(layers.length-1) != null){
 
-                // FIXME: int cast
+                if (data.getFeatures().size(0) > Integer.MAX_VALUE)
+                    throw new ND4JArraySizeException();
                 inputLast = layerWiseConfigurations.getInputPreProcess(layers.length-1).preProcess(inputLast,
                         (int) data.getFeatures().size(0), mgr);
             }
@@ -2811,7 +2820,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                 throw new IllegalArgumentException(
                         "Invalid input: length 0 (shape: " + Arrays.toString(input.shape()) + ")");
 
-            // FIXME: int cast
+            if (input.size(0) > Integer.MAX_VALUE)
+                throw new ND4JArraySizeException();
             setInputMiniBatchSize((int) input.size(0));
         }
     }
@@ -3086,7 +3096,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         if(!conf().isMiniBatch())
             return 1;
 
-        // FIXME: int cast
+        if (input.size(0) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         return (int) input.size(0);
     }
 
@@ -3256,7 +3267,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
     public void setLayerMaskArrays(INDArray featuresMaskArray, INDArray labelsMaskArray) {
         if (featuresMaskArray != null) {
 
-            // FIXME: int cast
+            if (featuresMaskArray.size(0) > Integer.MAX_VALUE)
+                throw new ND4JArraySizeException();
             //New approach: use feedForwardMaskArray method
             feedForwardMaskArray(featuresMaskArray, MaskState.Active, (int) featuresMaskArray.size(0));
 
@@ -3438,7 +3450,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
                     val startTimeIdx = i * fwdLen;
                     val endTimeIdx = Math.min(startTimeIdx + fwdLen, tsLength);
 
-                    // FIXME: int cast
+                    if (endTimeIdx > Integer.MAX_VALUE)
+                        throw new ND4JArraySizeException();
                     INDArray[] subsets = getSubsetsForTbptt(startTimeIdx, (int) endTimeIdx, features, labels, fMask, lMask);
 
                     setLayerMaskArrays(subsets[2], subsets[3]);
@@ -3943,7 +3956,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
 
-        // FIXME: int cast
+        if (ffl.getNOut() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         return (int) ffl.getNOut();
     }
 
@@ -3969,7 +3983,8 @@ public class MultiLayerNetwork implements Serializable, Classifier, Layer, Neura
         }
         FeedForwardLayer ffl = (FeedForwardLayer) conf;
 
-        // FIXME: int cast
+        if (ffl.getNIn() > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         return (int) ffl.getNIn();
     }
 

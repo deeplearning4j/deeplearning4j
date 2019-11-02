@@ -109,6 +109,8 @@ public class FileReadWriteTests extends BaseNd4jTest {
         for (int i = 0; i < s.outputsLength(); i++) {
             outputs.add(s.outputs(i));
         }
+        if(outputs.isEmpty())
+            outputs = null;
         assertEquals(sd.outputs(), outputs);
 
             //Check variables

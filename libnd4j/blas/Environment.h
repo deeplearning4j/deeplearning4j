@@ -97,6 +97,10 @@ namespace nd4j{
 
         bool isCPU();
 
+        int blasMajorVersion();
+        int blasMinorVersion();
+        int blasPatchVersion();
+
         std::vector<Pair>& capabilities();
     };
 }

@@ -57,7 +57,7 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
     public ExternalErrorsFunction(){ }
 
     public String getGradPlaceholderName(){
-        return arg().getVarName() + "-grad";
+        return arg().name() + "-grad";
     }
 
     @Override
@@ -70,7 +70,7 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
                 out = sameDiff.getVariable(name);
             } else {
                 out = sameDiff.zero(name, Nd4j.dataType(), 1);
-                sameDiff.getOps().get(getOwnName()).setOutputsOfOp(Collections.singletonList(out.getVarName()));
+                sameDiff.getOps().get(getOwnName()).setOutputsOfOp(Collections.singletonList(out.name()));
                 sameDiff.getVariables().get(name).setOutputOfOp(getOwnName());
             }
         }
@@ -83,7 +83,7 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
         if (gradVariables == null) {
             gradVariables = new HashMap<>();
             for(SDVariable arg : args()){
-                INDArray gradArr = gradients.get(arg.getVarName());
+                INDArray gradArr = gradients.get(arg.name());
                 SDVariable grad;
                 DataType dt = arg.dataType();
                 String n = getGradPlaceholderName();
@@ -94,7 +94,7 @@ public class ExternalErrorsFunction extends DynamicCustomOp {
                 } else {
                     grad = sameDiff.var(n, VariableType.PLACEHOLDER, null, dt);
                 }
-                gradVariables.put(arg.getVarName(), grad);
+                gradVariables.put(arg.name(), grad);
                 out.add(grad);
             }
         }

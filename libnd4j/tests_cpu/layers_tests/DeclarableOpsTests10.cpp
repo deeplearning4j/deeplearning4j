@@ -537,6 +537,50 @@ TEST_F(DeclarableOpsTests10, atan2_test6) {
     delete result;
 }
 
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, IGamma_Test1) {
+
+    auto y = NDArrayFactory::create<double>('c', {1, 3, 4}, {1.1 , 2.1 , 3.1 ,4.1 , 5.1 , 6.1 ,7.1 ,8.1 ,9.1 ,10.1,11.1 ,12.1});
+    auto x = NDArrayFactory::create<double>('c', {      4}, {1.2, 2.2, 3.2, 4.2});
+
+    auto exp = NDArrayFactory::create<double>('c', {1,3,4}, {
+               0.659917,     0.61757898,  0.59726304,   0.58478117,
+           0.0066205109,    0.022211598, 0.040677428,  0.059117373,
+        0.0000039433403, 0.000086064574, 0.000436067, 0.0012273735});
+
+    nd4j::ops::igamma op;
+    auto result = op.execute({&y, &x}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto z = result->at(0);
+//    z->printBuffer("OUtput");
+//    exp.printBuffer("EXpect");
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, IGamma_Test2) {
+
+    auto y = NDArrayFactory::create<double>('c', {1, 3, 4}, {1.1 , 2.1 , 3.1 ,4.1 , 5.1 , 6.1 ,
+                                                             7.1 ,8.1 ,9.1 ,10.1,11.1 ,12.1});
+    auto x = NDArrayFactory::create<double>('c', {      4}, {1.2, 2.2, 3.2, 4.2});
+    auto exp = NDArrayFactory::create<double>('c', {1,3,4}, {0.340083, 0.382421, 0.402737, 0.415221,
+                                                             0.993379, 0.977788, 0.959323, 0.940883,
+                                                             0.999996, 0.999914, 0.999564, 0.998773});
+
+    nd4j::ops::igammac op;
+    auto result = op.execute({&y, &x}, {}, {}, {});
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto z = result->at(0);
+//    z->printBuffer("OUtput");
+//    exp.printBuffer("EXpect");
+    ASSERT_TRUE(exp.isSameShape(z));
+    ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
 
 //////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, range_test10) {
@@ -1916,7 +1960,82 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* result = results->at(0);
-    result->printBuffer("NonMaxSuppression OUtput2");
+//    result->printBuffer("NonMaxSuppression OUtput2");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_1) {
+
+    NDArray boxes    = NDArrayFactory::create<double>('c', {4,4}, {
+        0,     0, 1,    1,
+        0,   0.1, 1,  1.1,
+        0,  -0.1, 1,  0.9,
+        0,    10, 1,   11});
+    NDArray scores = NDArrayFactory::create<double>('c', {4}, {0.9, .75, .6, .95}); //3
+    NDArray max_num = NDArrayFactory::create<int>(3);
+    NDArray expected = NDArrayFactory::create<int>('c', {1,}, {3});
+
+    nd4j::ops::non_max_suppression_overlaps op;
+    auto results = op.execute({&boxes, &scores, &max_num}, {0.5, 0.}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+//    result->printBuffer("NonMaxSuppressionOverlap1 Output");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_2) {
+
+    NDArray boxes    = NDArrayFactory::create<double>('c', {4,4}, {
+            0,     0, 1,    1,
+            0,   0.1, 1,  1.1,
+            0,  -0.1, 1,  0.9,
+            0,    10, 1,   11});
+    NDArray scores = NDArrayFactory::create<double>('c', {4}, {0.9, .95, .6, .75}); //3
+    NDArray max_num = NDArrayFactory::create<int>(3);
+    NDArray expected = NDArrayFactory::create<int>('c', {3,}, {1,1,1});
+
+    nd4j::ops::non_max_suppression_overlaps op;
+    auto results = op.execute({&boxes, &scores, &max_num}, {0.5, 0.}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+//    result->printBuffer("NonMaxSuppressionOverlap Output");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_3) {
+
+    NDArray boxes    = NDArrayFactory::create<double>('c', {4,4}, {
+            0,     0, 1,    1,
+            0,   0.1, 1,  1.1,
+            0,  -0.1, 1,  0.9,
+            0,    10, 1,   11});
+    NDArray scores = NDArrayFactory::create<double>('c', {4}, {0.5, .95, -.6, .75}); //3
+    NDArray max_num = NDArrayFactory::create<int>(5);
+    NDArray expected = NDArrayFactory::create<int>('c', {5,}, {1,1,1,1,1});
+
+    nd4j::ops::non_max_suppression_overlaps op;
+    auto results = op.execute({&boxes, &scores, &max_num}, {0.5, 0.}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+//    result->printBuffer("NonMaxSuppressionOverlap Output");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -1940,7 +2059,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printIndexedBuffer("Cropped and Resized");
+//    result->printIndexedBuffer("Cropped and Resized");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -2269,7 +2388,35 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_5) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test1) {
+TEST_F(DeclarableOpsTests10, batchnorm_test1) {
+
+    NDArray input   ('c', {2,4}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.05, 1.15, 1.2, 1.3}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, {0.5, 0.7, 0.9,  1.1},  nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, {-1.2, 1.3, -1.4, 1.5}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, {10, 20, -10, -20},     nd4j::DataType::FLOAT32);
+
+    NDArray expected('c', {2,4}, {11.61218734,  18.52390321,  -8.67185076, -21.28716864, 10.93337162,  19.14541765, -9.26213931, -20.71509369}, nd4j::DataType::FLOAT32);
+
+    input.linspace(0.1, 0.1);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+    // output->printBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test2) {
 
     auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
     auto mean     = NDArrayFactory::create<TypeParam>('c', {4});
@@ -2286,7 +2433,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test1) {
     gamma.assign(1.2);
     beta.assign(1.);
 
-    nd4j::ops::batchnorm_new op;
+    nd4j::ops::batchnorm op;
 
     auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
 
@@ -2302,7 +2449,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test1) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test2) {
+TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test3) {
 
     auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
     auto mean     = NDArrayFactory::create<TypeParam>('c', {3}, {1.05, 1.1, 1.15});
@@ -2315,7 +2462,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test2) {
 
     input.linspace(0.1, 0.1);
 
-    nd4j::ops::batchnorm_new op;
+    nd4j::ops::batchnorm op;
 
     auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,1});
 
@@ -2330,7 +2477,7 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test2) {
 }
 
 ////////////////////////////////////////////////////////////////////
-TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test3) {
+TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_test4) {
 
     auto input    = NDArrayFactory::create<TypeParam>('c', {2,3,4});
     auto mean     = NDArrayFactory::create<TypeParam>('c', {2,1,4}, {1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4});
@@ -2343,9 +2490,66 @@ TYPED_TEST(TypedDeclarableOpsTests10, batchnorm_new_test3) {
 
     input.linspace(0.1, 0.1);
 
-    nd4j::ops::batchnorm_new op;
+    nd4j::ops::batchnorm op;
 
     auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,0,2});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, batchnorm_test5) {
+
+    NDArray input   ('c', {2,4,2,2}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.05, 1.15, 1.2, 1.3}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, {0.5, 0.7, 0.9,  1.1},  nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, {-1.2, 1.3, -1.4, 1.5}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, {10, 20, -10, -20},     nd4j::DataType::FLOAT32);
+
+    NDArray expected('c', {2,4,2,2}, {11.612187,  11.442483, 11.272779,  11.103076, 18.990039,  19.145418, 19.300796,  19.456175, -9.557284,  -9.704856, -9.852428, -10., -20.,
+                                      -19.856981, -19.713963, -19.570944, 8.896924,   8.727221, 8.557517,   8.387813, 21.476097,  21.631475, 21.786854,  21.942233, -11.918438,
+                                      -12.06601 , -12.213582, -12.361154, -17.7117, -17.568681, -17.425663, -17.282644}, nd4j::DataType::FLOAT32);
+    input.linspace(0.1, 0.1);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,1});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto output = results->at(0);
+    // output->printBuffer();
+
+    ASSERT_TRUE(expected.isSameShapeStrict(output));
+    ASSERT_TRUE(expected.equalsTo(output));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, batchnorm_test6) {
+
+    NDArray input   ('c', {2,2,2,4}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.05, 1.15, 1.2, 1.3}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, {0.5, 0.7, 0.9,  1.1},  nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, {-1.2, 1.3, -1.4, 1.5}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, {10, 20, -10, -20},     nd4j::DataType::FLOAT32);
+
+    NDArray expected('c', {2,2,2,4}, {11.612187,  18.523903,  -8.671851, -21.287169, 10.933372,  19.145418,  -9.262139, -20.715094, 10.254556,  19.766932,  -9.852428, -20.143019, 9.57574 ,
+                                    20.388447, -10.442716, -19.570944,8.896924,  21.009961, -11.033005, -18.998869, 8.218109,  21.631475, -11.623294, -18.426794, 7.539293,  22.25299 ,
+                                    -12.213582, -17.854719, 6.860477,  22.874504, -12.803871, -17.282644}, nd4j::DataType::FLOAT32);
+    input.linspace(0.1, 0.1);
+
+    nd4j::ops::batchnorm op;
+
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1,3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 

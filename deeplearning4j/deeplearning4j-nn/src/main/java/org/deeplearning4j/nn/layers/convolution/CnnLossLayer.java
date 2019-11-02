@@ -88,8 +88,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         INDArray delta2d = lossFunction.computeGradient(labels2d, input2d.dup(input2d.ordering()), layerConf().getActivationFn(), maskReshaped);
         delta2d = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta2d);
 
-        // FIXME: int cast
-        INDArray delta4d = ConvolutionUtils.reshape2dTo4d(delta2d, ArrayUtil.toInts(input.shape()), workspaceMgr, ArrayType.ACTIVATION_GRAD);
+        INDArray delta4d = ConvolutionUtils.reshape2dTo4d(delta2d, input.shape(), workspaceMgr, ArrayType.ACTIVATION_GRAD);
 
         // grab the empty gradient
         Gradient gradient = new DefaultGradient();
@@ -119,7 +118,6 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
 
     @Override
     public int numLabels() {
-        // FIXME: int cast
         return (int) labels.size(1);
     }
 
@@ -169,8 +167,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         INDArray input2d = ConvolutionUtils.reshape4dTo2d(in, workspaceMgr, ArrayType.ACTIVATIONS);
         INDArray out2d = layerConf().getActivationFn().getActivation(input2d, training);
 
-        // FIXME: int cast
-        return ConvolutionUtils.reshape2dTo4d(out2d, ArrayUtil.toInts(input.shape()), workspaceMgr, ArrayType.ACTIVATIONS);
+        return ConvolutionUtils.reshape2dTo4d(out2d, input.shape(), workspaceMgr, ArrayType.ACTIVATIONS);
     }
 
     @Override
@@ -236,8 +233,7 @@ public class CnnLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.Cn
         val newShape = input.shape().clone();
         newShape[1] = 1;
 
-        // FIXME
-        INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, ArrayUtil.toInts(newShape), workspaceMgr, ArrayType.FF_WORKING_MEM);
+        INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo4d(scoreArray, newShape, workspaceMgr, ArrayType.FF_WORKING_MEM);
         INDArray summedScores = scoreArrayTs.sum(1,2,3).reshape(scoreArrayTs.size(0), 1);
 
         if (fullNetRegTerm != 0.0) {

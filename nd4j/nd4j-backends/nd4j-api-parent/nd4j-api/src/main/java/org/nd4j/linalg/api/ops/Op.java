@@ -167,4 +167,9 @@ public interface Op {
      * @return the equivalent {@link CustomOp}
      */
     CustomOp toCustomOp();
+
+    /**
+     * Clear the input and output INDArrays, if any are set
+     */
+    void clearArrays();
 }

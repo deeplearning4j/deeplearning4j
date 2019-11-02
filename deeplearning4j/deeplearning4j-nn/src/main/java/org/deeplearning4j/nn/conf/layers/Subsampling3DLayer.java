@@ -32,6 +32,7 @@ import org.deeplearning4j.util.ValidationUtils;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.Collection;
@@ -138,9 +139,11 @@ public class Subsampling3DLayer extends NoParamLayer {
                             + "\"): Expected CNN input, got " + inputType);
         }
 
-        // FIXME: int cast
+        long inChannels = ((InputType.InputTypeConvolutional3D) inputType).getChannels();
+        if (inChannels > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         return InputTypeUtil.getOutputTypeCnn3DLayers(inputType, kernelSize, stride, padding, new int[] {1, 1, 1}, // no dilation
-                        convolutionMode, (int) ((InputType.InputTypeConvolutional3D) inputType).getChannels(),
+                        convolutionMode, (int) inChannels,
                         layerIndex, getLayerName(), Subsampling3DLayer.class);
     }
 

@@ -124,7 +124,6 @@ public class TestUtils {
     public static INDArray randomOneHot(long examples, long nOut, Random rng){
         INDArray arr = Nd4j.create(examples, nOut);
         for( int i=0; i<examples; i++ ){
-            // FIXME: int cast
             arr.putScalar(i, rng.nextInt((int) nOut), 1.0);
         }
         return arr;

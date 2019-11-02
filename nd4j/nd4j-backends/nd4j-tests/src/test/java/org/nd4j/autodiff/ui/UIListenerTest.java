@@ -63,7 +63,7 @@ public class UIListenerTest {
         Map<String, INDArray> m = new HashMap<>();
         iter.reset();
         m.put("in", iter.next().getFeatures());
-        INDArray out = sd.execSingle(m, "softmax");
+        INDArray out = sd.outputSingle(m, "softmax");
         assertNotNull(out);
         assertArrayEquals(new long[]{150, 3}, out.shape());
     }
@@ -181,7 +181,8 @@ public class UIListenerTest {
         SameDiff sd2 = SameDiff.create();
         SDVariable in1 = sd2.placeHolder("in1", DataType.FLOAT, -1, 4);
         SDVariable in2 = sd2.placeHolder("in2", DataType.FLOAT, -1, 4);
-        SDVariable mul = in1.mul(in2);
+        SDVariable w = sd2.var("w", DataType.FLOAT, 1, 4);
+        SDVariable mul = in1.mul(in2).mul(w);
         SDVariable loss = mul.std(true);
         sd2.setTrainingConfig(TrainingConfig.builder()
                 .dataSetFeatureMapping("in")

@@ -186,22 +186,22 @@ public class DeConv2D extends DynamicCustomOp {
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         val aStrides = nodeDef.getAttrOrThrow("strides");
         val tfStrides = aStrides.getList().getIList();
-        int sH = 1;
-        int sW = 1;
-        int kH = 1;
-        int kW = 1;
+        long sH = 1;
+        long sW = 1;
+        long kH = 1;
+        long kW = 1;
 
         val aPadding = nodeDef.getAttrOrDefault("padding", null);
 
         val paddingMode = aPadding.getS().toStringUtf8();
 
         val args = args();
-        INDArray arr = sameDiff.getVariable(args[1].getVarName()).getArr();
+        INDArray arr = sameDiff.getVariable(args[1].name()).getArr();
         if (arr == null) {
-            arr = TFGraphMapper.getInstance().getNDArrayFromTensor(nodeDef.getInput(0), nodeDef, graph);
+            arr = TFGraphMapper.getNDArrayFromTensor(nodeDef);
             // TODO: arguable. it might be easier to permute weights once
             //arr = (arr.permute(3, 2, 0, 1).dup('c'));
-            val varForOp = initWith.getVariable(args[1].getVarName());
+            val varForOp = initWith.getVariable(args[1].name());
             if (arr != null)
                 initWith.associateArrayWithVariable(arr, varForOp);
 
@@ -214,21 +214,18 @@ public class DeConv2D extends DynamicCustomOp {
             dataFormat = attr.getS().toStringUtf8().toLowerCase();
         }
 
-        // FIXME: int cast
-
-
         if (dataFormat.equalsIgnoreCase(DeConv2DConfig.NCHW)) {
-            sH = tfStrides.get(2).intValue();
-            sW = tfStrides.get(3).intValue();
+            sH = tfStrides.get(2).longValue();
+            sW = tfStrides.get(3).longValue();
 
-            kH = (int) arr.size(2);
-            kW = (int) arr.size(3);
+            kH = arr.size(2);
+            kW = arr.size(3);
         } else {
-            sH = tfStrides.get(1).intValue();
-            sW = tfStrides.get(2).intValue();
+            sH = tfStrides.get(1).longValue();
+            sW = tfStrides.get(2).longValue();
 
-            kH = (int) arr.size(0);
-            kW = (int) arr.size(1);
+            kH = arr.size(0);
+            kW = arr.size(1);
         }
 
 

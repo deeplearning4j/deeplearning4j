@@ -21,20 +21,18 @@ import lombok.val;
 import onnx.Onnx;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.base.Preconditions;
 import org.nd4j.imports.descriptors.properties.PropertyMapping;
-import org.nd4j.imports.graphmapper.onnx.OnnxGraphMapper;
-import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.exception.ND4JIllegalStateException;
-import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Reshape function
@@ -70,32 +68,7 @@ public class Reshape extends DynamicCustomOp {
         if (!nodeDef.containsAttr("TShape") && nodeDef.getInputCount() == 1) {
             this.shape = new long[]{};
             return;
-        } else if (nodeDef.getInputCount() > 1) {
-            val shapeNode = nodeDef.getInput(1);
-            NodeDef shapeNodeInGraph = null;
-            for (int i = 0; i < graph.getNodeCount(); i++) {
-                if (graph.getNode(i).getName().equals(shapeNode)) {
-                    shapeNodeInGraph = graph.getNode(i);
-
-                }
-            }
-
-            val arr = TFGraphMapper.getInstance().getNDArrayFromTensor("value", shapeNodeInGraph, graph);
-            if (arr != null && arr.isEmpty()) {
-                // special case: empty array
-                this.shape = new long[0];
-
-            } else if (arr != null) {
-                this.shape = arr.data().asLong();
-                //all TF is c
-                if (!ArrayUtil.containsAnyNegative(this.shape))
-                    addIArgument(this.shape);
-                else {
-                    arrName = nodeDef.getName();
-                }
-
-            }
-        } else {
+        } else if(nodeDef.getInputCount() == 1){
             val shape = nodeDef.getAttrOrThrow("Tshape");
             if (!shape.hasShape()) {
                 val shapeRet = new long[2];
@@ -127,8 +100,7 @@ public class Reshape extends DynamicCustomOp {
 
     @Override
     public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        val shape = new OnnxGraphMapper().getShape(node);
-        this.shape = shape;
+
     }
 
 

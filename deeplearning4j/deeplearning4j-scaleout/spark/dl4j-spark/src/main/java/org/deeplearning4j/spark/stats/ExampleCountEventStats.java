@@ -26,9 +26,9 @@ import lombok.Getter;
 public class ExampleCountEventStats extends BaseEventStats {
 
     @Getter
-    private final int totalExampleCount;
+    private final long totalExampleCount;
 
-    public ExampleCountEventStats(long startTime, long durationMs, int totalExampleCount) {
+    public ExampleCountEventStats(long startTime, long durationMs, long totalExampleCount) {
         super(startTime, durationMs);
         this.totalExampleCount = totalExampleCount;
     }

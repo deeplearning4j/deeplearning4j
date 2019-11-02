@@ -84,7 +84,6 @@ public class NDArrayUtil {
 
         n = n.reshape(-1);
 
-        // FIXME: int cast
         long[] ret = new long[(int) n.length()];
         for (int i = 0; i < n.length(); i++)
             ret[i] = (long) n.getFloat(i);

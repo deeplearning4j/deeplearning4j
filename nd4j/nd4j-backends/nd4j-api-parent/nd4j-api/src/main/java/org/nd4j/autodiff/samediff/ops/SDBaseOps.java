@@ -3266,7 +3266,7 @@ public abstract class SDBaseOps {
 
 
         if (cond_result.dataType() != DataType.BOOL)
-            throw new IllegalStateException("Can not use " + cond_result.getVarName() + " as the condition of an While loop, the condition must be a boolean.");
+            throw new IllegalStateException("Can not use " + cond_result.name() + " as the condition of an While loop, the condition must be a boolean.");
 
 
         final Set<String> alreadyEntered = Sets.newHashSet();
@@ -3275,7 +3275,7 @@ public abstract class SDBaseOps {
         for(int i = 0 ; i < loopVars.length ; i++){
             SDVariable[] s = f().switchOp(merged[i], cond_result);
             trueSwitches[i] = s[1];
-            alreadyEntered.add(s[1].getVarName());
+            alreadyEntered.add(s[1].name());
             exits[i] = f().exit(s[0]);
         }
 
@@ -3290,17 +3290,17 @@ public abstract class SDBaseOps {
             @Override
             public SDVariable intercept(SDVariable argument) {
 
-                if(!declared.contains(argument.getVarName()))
+                if(!declared.contains(argument.name()))
                     return argument;
 
-                if(alreadyEntered.contains(argument.getVarName()))
+                if(alreadyEntered.contains(argument.name()))
                     return argument;
 
-                if(done.containsKey(argument.getVarName()))
-                    return done.get(argument.getVarName());
+                if(done.containsKey(argument.name()))
+                    return done.get(argument.name());
 
                 SDVariable e = f().enter(argument, frameName, true);
-                done.put(argument.getVarName(), e);
+                done.put(argument.name(), e);
                 return e;
             }
         });
@@ -3371,7 +3371,7 @@ public abstract class SDBaseOps {
             //cleanup partially added block
 
             for(SDVariable v : sd().getVariablesInScope(ifScope))
-                sd().getVariables().remove(v.getVarName());
+                sd().getVariables().remove(v.name());
 
             for(SameDiffOp op : sd().getOpsInScope(ifScope)) {
                 for(String in : op.getInputsToOp()){
@@ -3381,7 +3381,7 @@ public abstract class SDBaseOps {
             }
 
 
-            throw new IllegalStateException("Can not use " + pred.getVarName()
+            throw new IllegalStateException("Can not use " + pred.name()
                     + " as the condition of an If statement, the condition must be a boolean.");
         }
 
@@ -3394,15 +3394,15 @@ public abstract class SDBaseOps {
             public SDVariable intercept(SDVariable argument) {
 
                 // if its declared in the if, we don't care acout it
-                if(!declared.contains(argument.getVarName()))
+                if(!declared.contains(argument.name()))
                     return argument;
 
                 // if we've already added a switch, move on
-                if(switches.containsKey(argument.getVarName()))
-                    return switches.get(argument.getVarName())[1];
+                if(switches.containsKey(argument.name()))
+                    return switches.get(argument.name())[1];
 
                 SDVariable[] s = f().switchOp(argument, pred);
-                switches.put(argument.getVarName(), s);
+                switches.put(argument.name(), s);
                 return s[1];
             }
         });
@@ -3410,9 +3410,9 @@ public abstract class SDBaseOps {
         SDVariable trueOut = trueBody.define(sd());
         sd().removeArgumentInterceptor();
 
-        if(declared.contains(trueOut.getVarName())) {
+        if(declared.contains(trueOut.name())) {
             SDVariable[] s = f().switchOp(trueOut, pred);
-            switches.put(trueOut.getVarName(), s);
+            switches.put(trueOut.name(), s);
             trueOut = s[1];
         }
 
@@ -3424,15 +3424,15 @@ public abstract class SDBaseOps {
             public SDVariable intercept(SDVariable argument) {
 
                 // if its declared in the if, we don't care acout it
-                if(!declared2.contains(argument.getVarName()))
+                if(!declared2.contains(argument.name()))
                     return argument;
 
                 // if we've already added a switch, move on
-                if(switches.containsKey(argument.getVarName()))
-                    return switches.get(argument.getVarName())[0];
+                if(switches.containsKey(argument.name()))
+                    return switches.get(argument.name())[0];
 
                 SDVariable[] s = f().switchOp(argument, pred);
-                switches.put(argument.getVarName(), s);
+                switches.put(argument.name(), s);
                 return s[0];
             }
         });
@@ -3440,9 +3440,9 @@ public abstract class SDBaseOps {
         SDVariable falseOut = falseBody.define(sd());
         sd().removeArgumentInterceptor();
 
-        if(declared2.contains(falseOut.getVarName())) {
+        if(declared2.contains(falseOut.name())) {
             SDVariable[] s = f().switchOp(falseOut, pred);
-            switches.put(falseOut.getVarName(), s);
+            switches.put(falseOut.name(), s);
             falseOut = s[0];
         }
         falseScope.close();

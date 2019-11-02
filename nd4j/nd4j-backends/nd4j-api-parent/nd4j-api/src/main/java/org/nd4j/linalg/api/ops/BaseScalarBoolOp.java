@@ -74,11 +74,8 @@ public abstract class BaseScalarBoolOp extends BaseOp implements ScalarOp {
         super(sameDiff,inPlace,extraArgs);
         this.scalarValue = Nd4j.scalar(i_v.dataType(), scalar);
         if (i_v != null) {
-            this.xVertexId = i_v.getVarName();
+            this.xVertexId = i_v.name();
             sameDiff.addArgsFor(new String[]{xVertexId},this);
-            if(Shape.isPlaceholderShape(i_v.getShape())) {
-                sameDiff.addPropertyToResolve(this,i_v.getVarName());
-            }
             f().validateDifferentialFunctionsameDiff(i_v);
         } else {
             throw new IllegalArgumentException("Input not null variable.");

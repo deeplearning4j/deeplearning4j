@@ -120,7 +120,7 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
             log.warn("Warning: Initializing ND4J with " + binLevel + " binary on a CPU with " + optLevel + " support");
             log.warn("Using ND4J with " + optLevel + " will improve performance. See deeplearning4j.org/cpu for more details");
             log.warn("Or set environment variable " + ND4JEnvironmentVars.ND4J_IGNORE_AVX + "=true to suppress this warning");
-            log.warn("************************************************************************************************");
+            log.warn("*************************************************************************************************");
         }
 
         blas = new CpuBlas();

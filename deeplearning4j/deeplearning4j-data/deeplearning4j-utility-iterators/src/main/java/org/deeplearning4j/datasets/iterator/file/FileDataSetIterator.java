@@ -151,7 +151,7 @@ public class FileDataSetIterator extends BaseFileIterator<DataSet, DataSetPrePro
     }
 
     @Override
-    protected int sizeOf(DataSet of) {
+    protected long sizeOf(DataSet of) {
         return of.numExamples();
     }
 

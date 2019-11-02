@@ -423,11 +423,11 @@ public class MiscOpValidation extends BaseOpValidation {
             }
 
             SDVariable loss = sd.sum(scatter);  //.standardDeviation(scatter, true);  //.sum(scatter);  //TODO stdev might be better here as gradients are non-symmetrical...
-            sd.execAndEndResult();
+
 
             TestCase tc = new TestCase(sd)
                     .expected(scatter, exp)
-                    .gradCheckSkipVariables(indices.getVarName());
+                    .gradCheckSkipVariables(indices.name());
 
             String error = OpValidation.validate(tc);
             if(error != null){
@@ -493,7 +493,7 @@ public class MiscOpValidation extends BaseOpValidation {
 
                 TestCase tc = new TestCase(sd)
                         .testName(msg)
-                        .gradCheckSkipVariables(indices.getVarName());
+                        .gradCheckSkipVariables(indices.name());
 
                 if (gatherExp != null) {
                     tc.expected(gather, gatherExp);
@@ -586,18 +586,19 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable varMul = varMulPre.mul("d", sdVariable1);
         SDVariable sum = sameDiff.sum("ret", varMul, Integer.MAX_VALUE);
 
-        sameDiff.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> m = sameDiff.outputAll(null);
+        Map<String,INDArray> gm = sameDiff.calculateGradients(null, m.keySet());
 
-        SDVariable finalResult = sameDiff.grad(sum.getVarName());
+        SDVariable finalResult = sameDiff.grad(sum.name());
 
-        SDVariable cGrad = sameDiff.grad(varMulPre.getVarName());
+        SDVariable cGrad = sameDiff.grad(varMulPre.name());
 
-        SDVariable mulGradResult = sameDiff.grad(varMul.getVarName());
-        SDVariable aGrad = sameDiff.grad(sdVariable.getVarName());
-        SDVariable wGrad = sameDiff.grad(sdVariable1.getVarName());
-        SDVariable dGrad = sameDiff.grad(varMul.getVarName());
+        SDVariable mulGradResult = sameDiff.grad(varMul.name());
+        SDVariable aGrad = sameDiff.grad(sdVariable.name());
+        SDVariable wGrad = sameDiff.grad(sdVariable1.name());
+        SDVariable dGrad = sameDiff.grad(varMul.name());
 
-        INDArray scalarGradTest = finalResult.getArr();
+        INDArray scalarGradTest = gm.get(sum.name());
         assertEquals(scalar, scalarGradTest);
 
 
@@ -737,11 +738,10 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable B2 = sd.var("B2", B);
 
         SDVariable[] batchMul = sd.batchMmul(new SDVariable[] {A1, A2}, new SDVariable[] {B1, B2});
-        sd.exec(Collections.emptyMap(), sd.outputs());
+        Map<String,INDArray> m = sd.output(Collections.emptyMap(), sd.outputs());
 
-        INDArray resultingMatrix = batchMul[0].getArr();
-        System.out.print(resultingMatrix);
-
+        INDArray resultingMatrix = m.get(batchMul[0].name());
+        //System.out.print(resultingMatrix);
     }
 
 
@@ -769,14 +769,14 @@ public class MiscOpValidation extends BaseOpValidation {
             SDVariable mmul = sd.f().mmul(f, s, mt);
             sd.updateVariableNameAndReference(mmul, "mmul");
 
-            INDArray out = sd.execAndEndResult();
+            INDArray out = mmul.eval();
 
             INDArray exp = first.transpose().mmul(second);
             assertEquals(exp, out);
 
             SDVariable loss = sd.standardDeviation(mmul, true);
             String err = OpValidation.validate(new TestCase(sd)
-                    .expected(mmul.getVarName(), exp));
+                    .expected(mmul.name(), exp));
 
             assertNull(err);
         }
@@ -1265,17 +1265,17 @@ public class MiscOpValidation extends BaseOpValidation {
         SameDiff sd = SameDiff.create();
         SDVariable var = sd.var("in", Nd4j.create(new long[]{1}).assign(5));
 
-        SDVariable merged = sd.math().mergeAvg(var);
+        SDVariable merged = sd.math().mergeAvg("merged", var);
         SDVariable sum = sd.sum(merged);
 
-        sd.execAndEndResult();
-        sd.execBackwards(Collections.emptyMap());
+        Map<String,INDArray> m = sd.output(Collections.emptyMap(), "merged");
+        Map<String,INDArray> gm = sd.calculateGradients(null, "in");
 
-        INDArray out = merged.getArr();
+        INDArray out = m.get("merged");
         assertEquals(1, out.rank());
 
-        INDArray inGrad = var.getGradient().getArr();
-        assertEquals(1, inGrad.rank());         //Fails here, getting rank 2
+        INDArray inGrad = gm.get("in");
+        assertEquals(1, inGrad.rank());
     }
 
     @Test
@@ -1286,7 +1286,7 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable var = sd.var("in", i);
         SDVariable diag = sd.math().diagPart(var);
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = diag.eval();
         assertEquals(1, out.rank());
     }
 
@@ -1643,10 +1643,10 @@ public class MiscOpValidation extends BaseOpValidation {
         SDVariable v = new StopGradient(sd, w).outputVariable();
         SDVariable loss = v.std(true);
 
-        sd.execBackwards(null);
+        Map<String,INDArray> gm = sd.calculateGradients(null, v.name(), w.name());
 
-        INDArray vArr = v.getGradient().getArr();
-        INDArray wArr = w.getGradient().getArr();
+        INDArray vArr = gm.get(v.name());
+        INDArray wArr = gm.get(w.name());
 
         System.out.println(vArr);
         System.out.println(wArr);
@@ -1668,18 +1668,18 @@ public class MiscOpValidation extends BaseOpValidation {
         INDArray expLoss = in.std(true);
 
         String err = OpValidation.validate(new TestCase(sd)
-                .expectedOutput(checkNumerics.getVarName(), in)
+                .expectedOutput(checkNumerics.name(), in)
                 .placeholderValue("in", in)
                 .expectedOutput("loss", expLoss));
         Preconditions.checkState(err == null, err);
 
 
         //Also check that it actually does what it's supposed to:
-        sd.execAll(Collections.singletonMap("in", in));
+        sd.outputAll(Collections.singletonMap("in", in));
 
         in.putScalar(0, Double.NaN);
         try {
-            sd.execAll(Collections.singletonMap("in", in));
+            sd.outputAll(Collections.singletonMap("in", in));
             fail("Expected exception");
         } catch (Throwable t){
             //OK
@@ -1687,14 +1687,14 @@ public class MiscOpValidation extends BaseOpValidation {
 
         in.putScalar(0, Double.POSITIVE_INFINITY);
         try {
-            sd.execAll(Collections.singletonMap("in", in));
+            sd.outputAll(Collections.singletonMap("in", in));
             fail("Expected exception");
         } catch (Throwable t){
             //OK
         }
 
         in.putScalar(0, 0.0);
-        sd.execAll(Collections.singletonMap("in", in));
+        sd.outputAll(Collections.singletonMap("in", in));
     }
 
     @Test

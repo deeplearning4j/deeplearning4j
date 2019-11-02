@@ -107,7 +107,7 @@ public class GradCheckUtil {
         Set<String> fnOutputs = new HashSet<>();
         for(DifferentialFunction f : sd.ops()){
             for(SDVariable s : f.outputVariables()){
-                fnOutputs.add(s.getVarName());
+                fnOutputs.add(s.name());
             }
         }
 
@@ -131,12 +131,12 @@ public class GradCheckUtil {
         // in this case, gradients of x and y are all 0 too
 
         //Collect variables to get gradients for - we want placeholders AND variables
-        Set<String> gradVarNames = new HashSet<>();
+        Set<String> varsNeedingGrads = new HashSet<>();
         for(Variable v : sd.getVariables().values()){
             if(v.getVariable().dataType().isFPType() && (v.getVariable().getVariableType() == VariableType.VARIABLE || v.getVariable().getVariableType() == VariableType.PLACEHOLDER)){
                 SDVariable g = v.getVariable().getGradient();
                 Preconditions.checkNotNull(g, "No gradient variable found for variable %s", v.getVariable());
-                gradVarNames.add(g.getVarName());
+                varsNeedingGrads.add(v.getName());
             }
         }
 
@@ -164,14 +164,14 @@ public class GradCheckUtil {
         }
 
 
-        sd.execBackwards(placeholderValues, new ArrayList<>(gradVarNames));
+        Map<String,INDArray> gm = sd.calculateGradients(placeholderValues, varsNeedingGrads);
 
         //Remove listener, to reduce overhead
         sd.getListeners().remove(listenerIdx);
 
         Map<String,INDArray> grad = new HashMap<>();
         for(SDVariable v : sd.variables()){
-            if (fnOutputs.contains(v.getVarName())) {
+            if (fnOutputs.contains(v.name())) {
                 //This is not an input to the graph
                 continue;
             }
@@ -179,20 +179,20 @@ public class GradCheckUtil {
                 //Skip non-fp variables, or variables that don't impact loss function value
                 continue;
             }
-            SDVariable g = sd.grad(v.getVarName());
+            SDVariable g = sd.grad(v.name());
             if(g == null){
-                throw new IllegalStateException("Null gradient variable for \"" + v.getVarName() + "\"");
+                throw new IllegalStateException("Null gradient variable for \"" + v.name() + "\"");
             }
-            INDArray ga = g.getArr();
+            INDArray ga = gm.get(v.name());
             if(ga == null){
-                throw new IllegalStateException("Null gradient array encountered for variable: " + v.getVarName());
+                throw new IllegalStateException("Null gradient array encountered for variable: " + v.name());
             }
-            if(!Arrays.equals(v.getArr().shape(), g.getArr().shape())){
+            if(!Arrays.equals(v.getArr().shape(), ga.shape())){
                 throw new IllegalStateException("Gradient shape does not match variable shape for variable \"" +
-                    v.getVarName() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
+                    v.name() + "\": shape " + Arrays.toString(v.getArr().shape()) + " vs. gradient shape " +
                     Arrays.toString(ga.shape()));
             }
-            grad.put(v.getVarName(), ga.dup());
+            grad.put(v.name(), ga.dup());
         }
 
         //Validate gradients for each variable:
@@ -201,25 +201,25 @@ public class GradCheckUtil {
         double maxError = 0.0;
         Random r = new Random(12345);
         for(SDVariable s : sd.variables()){
-            if (fnOutputs.contains(s.getVarName()) || !s.dataType().isFPType()) {
+            if (fnOutputs.contains(s.name()) || !s.dataType().isFPType()) {
                 //This is not an input to the graph, or is not a floating point input (so can't be gradient checked)
                 continue;
             }
 
-            if(skipVariables != null && skipVariables.contains(s.getVarName())){
-                log.info("Grad check: skipping variable \"{}\"", s.getVarName());
+            if(skipVariables != null && skipVariables.contains(s.name())){
+                log.info("Grad check: skipping variable \"{}\"", s.name());
                 continue;
             }
 
             if(s.dataType() != DataType.DOUBLE){
-                log.warn("DataType for variable {} is not double (is: {}) may cause precision issues in gradient checks", s.getVarName(), s.dataType());
+                log.warn("DataType for variable {} is not double (is: {}) may cause precision issues in gradient checks", s.name(), s.dataType());
             }
 
-            String name = s.getVarName();
+            String name = s.name();
             INDArray a = s.getArr();
             long n = a.length();
             if(print){
-                log.info("Starting test for variable \"{}\" with {} values", s.getVarName(), n);
+                log.info("Starting test for variable \"{}\" with {} values", s.name(), n);
             }
 
             Iterator<long[]> iter;
@@ -256,11 +256,11 @@ public class GradCheckUtil {
                 iter = new NdIndexIterator('c',a.shape());
             }
 
-            INDArray varMask = (gradCheckMask == null ? null : gradCheckMask.get(s.getVarName()));
+            INDArray varMask = (gradCheckMask == null ? null : gradCheckMask.get(s.name()));
 
             if(varMask != null){
-                Preconditions.checkState(a.equalShapes(varMask), "Variable \"%s\": Gradient check mask and array shapes must be equal: got %s vs. mask shape %s", s.getVarName(), a.shape(), varMask.shape());
-                Preconditions.checkState(varMask.dataType() == DataType.BOOL, "Variable \"%s\": Gradient check mask must be BOOLEAN datatype, got %s", s.getVarName(), varMask.dataType());
+                Preconditions.checkState(a.equalShapes(varMask), "Variable \"%s\": Gradient check mask and array shapes must be equal: got %s vs. mask shape %s", s.name(), a.shape(), varMask.shape());
+                Preconditions.checkState(varMask.dataType() == DataType.BOOL, "Variable \"%s\": Gradient check mask must be BOOLEAN datatype, got %s", s.name(), varMask.dataType());
             }
 
             int i=0;
@@ -281,12 +281,12 @@ public class GradCheckUtil {
                 double orig = a.getDouble(idx);
                 a.putScalar(idx, orig+eps);
                 double scorePlus = 0.0;
-                Map<String,INDArray> m = sd.exec(placeholderValues, lossFnVariables);//.get(outName).sumNumber().doubleValue();
+                Map<String,INDArray> m = sd.output(placeholderValues, lossFnVariables);//.get(outName).sumNumber().doubleValue();
                 for(INDArray arr : m.values()){
                     scorePlus += arr.sumNumber().doubleValue();
                 }
                 a.putScalar(idx, orig-eps);
-                m = sd.exec(placeholderValues, lossFnVariables);
+                m = sd.output(placeholderValues, lossFnVariables);
                 double scoreMinus = 0.0;
                 for(INDArray arr : m.values()){
                     scoreMinus += arr.sumNumber().doubleValue();
@@ -294,9 +294,9 @@ public class GradCheckUtil {
                 a.putScalar(idx, orig);
 
                 double numericalGrad = (scorePlus - scoreMinus) / (2 * eps);
-                INDArray aGrad = grad.get(s.getVarName());
+                INDArray aGrad = grad.get(s.name());
                 if(aGrad == null){
-                    log.warn("No gradient array for variable \"{}\" was found, skipping variable...", s.getVarName());
+                    log.warn("No gradient array for variable \"{}\" was found, skipping variable...", s.name());
                     continue;
                 }
                 double analyticGrad = aGrad.getDouble(idx);
@@ -408,18 +408,18 @@ public class GradCheckUtil {
 
         //Collect names of variables to get gradients for - i.e., the names of the GRADIENT variables for the specified activations
         sd.createGradFunction();
-        Set<String> gradVarNames = new HashSet<>();
+        Set<String> varsRequiringGrads = new HashSet<>();
         for(String s : actGrads){
             SDVariable grad = sd.getVariable(s).gradient();
             Preconditions.checkState( grad != null,"Could not get gradient for activation \"%s\": gradient variable is null", s);
-            gradVarNames.add(grad.getVarName());
+            varsRequiringGrads.add(s);
         }
 
         //Calculate analytical gradients
-        sd.execBackwards(config.getPlaceholderValues(), new ArrayList<>(gradVarNames));
+        Map<String,INDArray> grads = sd.calculateGradients(config.getPlaceholderValues(), new ArrayList<>(varsRequiringGrads));
         Map<String,INDArray> gradientsForAct = new HashMap<>();
         for(String s : actGrads){
-            INDArray arr = sd.getVariable(s).gradient().getArr();
+            INDArray arr = grads.get(s);
             Preconditions.checkState(arr != null, "No activation gradient array for variable \"%s\"", s);
             gradientsForAct.put(s, arr.dup());
         }
@@ -497,12 +497,12 @@ public class GradCheckUtil {
                 listener.setIdx(idx);
                 listener.setEps(config.getEps());
                 double scorePlus = 0.0;
-                Map<String,INDArray> m = sd.exec(config.getPlaceholderValues(), lossFnVariables);
+                Map<String,INDArray> m = sd.output(config.getPlaceholderValues(), lossFnVariables);
                 for(INDArray arr : m.values()){
                     scorePlus += arr.sumNumber().doubleValue();
                 }
                 listener.setEps(-config.getEps());
-                m = sd.exec(config.getPlaceholderValues(), lossFnVariables);
+                m = sd.output(config.getPlaceholderValues(), lossFnVariables);
                 double scoreMinus = 0.0;
                 for(INDArray arr : m.values()){
                     scoreMinus += arr.sumNumber().doubleValue();
@@ -597,10 +597,10 @@ public class GradCheckUtil {
 
         Set<String> varSetStr = new HashSet<>();
         for(SDVariable v : vars){
-            if(varSetStr.contains(v.getVarName())){
-                throw new IllegalStateException("Variable with name " + v.getVarName() + " already encountered");
+            if(varSetStr.contains(v.name())){
+                throw new IllegalStateException("Variable with name " + v.name() + " already encountered");
             }
-            varSetStr.add(v.getVarName());
+            varSetStr.add(v.name());
         }
         Preconditions.checkState(vars.size() == varSetStr.size(), "Duplicate variables in variables() list");
 
@@ -645,7 +645,7 @@ public class GradCheckUtil {
         Map<String, Variable> variableMap = sd.getVariables();
         Preconditions.checkState(vars.size() == variableMap.size(), "Variable map size check failed");
         for(Map.Entry<String, Variable> e : variableMap.entrySet()){
-            Preconditions.checkState(e.getKey().equals(e.getValue().getVariable().getVarName()), "Name not equal");
+            Preconditions.checkState(e.getKey().equals(e.getValue().getVariable().name()), "Name not equal");
         }
 
         if(generateAndCheckGradFn) {

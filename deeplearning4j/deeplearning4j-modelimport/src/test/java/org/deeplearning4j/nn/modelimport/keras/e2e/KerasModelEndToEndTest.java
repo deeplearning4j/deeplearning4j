@@ -690,13 +690,11 @@ public class KerasModelEndToEndTest extends BaseDL4JTest {
                 INDArray testLabels = Nd4j.create(predictionsDl4j.shape());
                 if (testLabels.rank() == 2) {
                     for (int i = 0; i < testLabels.size(0); i++) {
-                        // FIXME: int cast
                         testLabels.putScalar(i, r.nextInt((int) testLabels.size(1)), 1.0);
                     }
                 } else if (testLabels.rank() == 3) {
                     for (int i = 0; i < testLabels.size(0); i++) {
                         for (int j = 0; j < testLabels.size(1); j++) {
-                            // FIXME: int cast
                             testLabels.putScalar(i, j, r.nextInt((int) testLabels.size(1)), 1.0);
                         }
                     }

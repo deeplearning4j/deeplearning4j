@@ -16,6 +16,7 @@
 
 package org.nd4j.autodiff.samediff.serde;
 
+import org.nd4j.autodiff.samediff.internal.SameDiffOp;
 import org.nd4j.shade.guava.primitives.Ints;
 import com.google.flatbuffers.FlatBufferBuilder;
 import java.nio.ByteOrder;
@@ -762,7 +763,7 @@ public class FlatBuffersMapper {
 
         SDVariable[] inputs = node.args();
         for (SDVariable input : inputs) {
-            String varName = input.getVarName();
+            String varName = input.name();
             int outIdx;
             if (sameDiff.getVariables().get(varName).getOutputOfOp() != null) {
                 DifferentialFunction df = sameDiff.getOps().get(sameDiff.getVariables().get(varName).getOutputOfOp()).getOp();
@@ -847,6 +848,28 @@ public class FlatBuffersMapper {
         }
         int outTypesOffset = FlatNode.createOutputTypesVector(bufferBuilder, outTypes);
 
+        //Control dependencies:
+        SameDiffOp sdo = sameDiff.getOps().get(node.getOwnName());
+
+        int opCds = 0;
+        int[] opCdsArr = mapOrNull(sdo.getControlDeps(), bufferBuilder);
+        if(opCdsArr != null){
+            opCds = FlatNode.createControlDepsVector(bufferBuilder, opCdsArr);
+        }
+
+        int varCds = 0;
+        int[] varCdsArr = mapOrNull(sdo.getVarControlDeps(), bufferBuilder);
+        if(varCdsArr != null){
+            varCds = FlatNode.createVarControlDepsVector(bufferBuilder, varCdsArr);
+        }
+
+        int cdsFor = 0;
+        int[] cdsForArr = mapOrNull(sdo.getControlDepFor(), bufferBuilder);
+        if(cdsForArr != null){
+            cdsFor = FlatNode.createControlDepForVector(bufferBuilder, cdsForArr);
+        }
+
+
         int flatNode = FlatNode.createFlatNode(
                 bufferBuilder,
                 ownId,
@@ -867,10 +890,24 @@ public class FlatBuffersMapper {
                 outVarNamesOffset,
                 opNameOffset,
                 outTypesOffset,   //Output types
-                scalar
+                scalar,
+                opCds,
+                varCds,
+                cdsFor
         );
 
         return flatNode;
+    }
+
+    public static int[] mapOrNull(List<String> list, FlatBufferBuilder fbb){
+        if(list == null)
+            return null;
+        int[] out = new int[list.size()];
+        int i=0;
+        for(String s : list){
+            out[i++] = fbb.createString(s);
+        }
+        return out;
     }
 
     public static DifferentialFunction cloneViaSerialize(SameDiff sd, DifferentialFunction df ){

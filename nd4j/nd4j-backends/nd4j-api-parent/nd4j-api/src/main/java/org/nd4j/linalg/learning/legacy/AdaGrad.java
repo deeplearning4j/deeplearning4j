@@ -37,7 +37,7 @@ public class AdaGrad implements Serializable {
     public static final double DEFAULT_ADAGRAD_EPSILON = 1e-6;
 
     public INDArray historicalGradient;
-    public int[] shape;
+    public long[] shape;
     protected double learningRate = 1e-1; // learning rate
     protected int numIterations = 0;
     private double epsilon = DEFAULT_ADAGRAD_EPSILON;
@@ -73,7 +73,7 @@ public class AdaGrad implements Serializable {
      * @param learningRate
      */
     public AdaGrad(int rows, int cols, double learningRate) {
-        this.shape = new int[] {rows, cols};
+        this.shape = new long[] {rows, cols};
         this.learningRate = learningRate;
     }
 
@@ -81,7 +81,7 @@ public class AdaGrad implements Serializable {
         this(rows, cols, 0.1);
     }
 
-    public AdaGrad(int[] shape, double learningRate) {
+    public AdaGrad(long[] shape, double learningRate) {
         this.shape = shape;
         this.learningRate = learningRate;
     }
@@ -124,7 +124,7 @@ public class AdaGrad implements Serializable {
         return ret;
     }
 
-    public double getGradient(double gradient, int column, int[] shape) {
+    public double getGradient(double gradient, int column, long[] shape) {
         boolean historicalInitialized = false;
         if (this.historicalGradient == null) {
             this.historicalGradient = Nd4j.ones(shape);
@@ -143,7 +143,7 @@ public class AdaGrad implements Serializable {
         return adjustedGradient;
     }
 
-    public INDArray getGradient(INDArray gradient, int slice, int[] shape) {
+    public INDArray getGradient(INDArray gradient, int slice, long[] shape) {
         boolean historicalInitialized = false;
         INDArray sqrtHistory;
 

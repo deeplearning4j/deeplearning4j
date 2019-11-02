@@ -71,7 +71,7 @@ public class GraphFeedForwardWithKeyFunction<K> implements PairFlatMapFunction<I
 
         List<INDArray[]> featuresList = new ArrayList<>(batchSize);
         List<K> keyList = new ArrayList<>(batchSize);
-        List<Integer> origSizeList = new ArrayList<>();
+        List<Long> origSizeList = new ArrayList<>();
 
         long[][] firstShapes = null;
         boolean sizesDiffer = false;
@@ -96,8 +96,7 @@ public class GraphFeedForwardWithKeyFunction<K> implements PairFlatMapFunction<I
             featuresList.add(t2._2());
             keyList.add(t2._1());
 
-            // FIXME: int cast
-            origSizeList.add((int) t2._2()[0].size(0));
+            origSizeList.add(t2._2()[0].size(0));
             tupleCount++;
         }
 
@@ -156,7 +155,7 @@ public class GraphFeedForwardWithKeyFunction<K> implements PairFlatMapFunction<I
 
             examplesInBatch = 0;
             for (int i = firstIdx; i < nextIdx; i++) {
-                int numExamples = origSizeList.get(i);
+                long numExamples = origSizeList.get(i);
                 INDArray[] outSubset = new INDArray[out.length];
                 for (int j = 0; j < out.length; j++) {
                     outSubset[j] = getSubset(examplesInBatch, examplesInBatch + numExamples, out[j]);
@@ -174,7 +173,7 @@ public class GraphFeedForwardWithKeyFunction<K> implements PairFlatMapFunction<I
         return output.iterator();
     }
 
-    private INDArray getSubset(int exampleStart, int exampleEnd, INDArray from) {
+    private INDArray getSubset(long exampleStart, long exampleEnd, INDArray from) {
         switch (from.rank()) {
             case 2:
                 return from.get(NDArrayIndex.interval(exampleStart, exampleEnd), NDArrayIndex.all());

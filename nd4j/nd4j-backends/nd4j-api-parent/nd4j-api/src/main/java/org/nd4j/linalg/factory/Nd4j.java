@@ -5212,6 +5212,8 @@ public class Nd4j {
                     }
                 }
             }
+
+            backend.logBackendInit();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -5625,19 +5627,38 @@ public class Nd4j {
      * @return an ndarray created from the in memory
      * numpy pointer
      */
-
     @SuppressWarnings("WeakerAccess")
     public static INDArray createFromNpyPointer(Pointer pointer) {
         return INSTANCE.createFromNpyPointer(pointer);
     }
 
     /**
-     * Create from a given Numpy .npy file.
+     * Create an INDArray from a given Numpy .npy file.
+     *
+     * @param path Path to the .npy file to read
+     * @return the created ndarray
+     */
+    public static INDArray readNpy(@NonNull String path){
+        return readNpy(new File(path));
+    }
+
+    /**
+     * Create an INDArray from a given Numpy .npy file.
      *
      * @param file the file to create the ndarray from
      * @return the created ndarray
      */
-    public static INDArray createFromNpyFile(File file) {
+    public static INDArray readNpy(@NonNull File file){
+        return createFromNpyFile(file);
+    }
+
+    /**
+     * Create an INDArray from a given Numpy .npy file.
+     *
+     * @param file the file to create the ndarray from
+     * @return the created ndarray
+     */
+    public static INDArray createFromNpyFile(@NonNull File file) {
         if (!file.exists())
             throw new IllegalArgumentException("File [" + file.getAbsolutePath() + "] doesn't exist");
 
@@ -5654,7 +5675,7 @@ public class Nd4j {
      * @return the loaded ndarray
      */
     @SuppressWarnings("unused")
-    public static INDArray createNpyFromInputStream(InputStream is) throws IOException {
+    public static INDArray createNpyFromInputStream(@NonNull InputStream is) throws IOException {
         byte[] content = IOUtils.toByteArray(is);
         return createNpyFromByteArray(content);
     }
@@ -5668,7 +5689,7 @@ public class Nd4j {
      * @param input the input byte array with the npy format
      * @return the equivalent {@link INDArray}
      */
-    public static INDArray createNpyFromByteArray(byte[] input) {
+    public static INDArray createNpyFromByteArray(@NonNull byte[] input) {
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(input.length);
         byteBuffer.put(input);
         byteBuffer.rewind();
@@ -5708,15 +5729,22 @@ public class Nd4j {
         for (int e = 0; e < shapeInfo.length; e++)
             shapeInfo[e] = array.shape(e);
 
-        if (Shape.isEmpty(shapeInfo))
-            return Nd4j.empty();
+        val shapeOf = Shape.shapeOf(shapeInfo);
+        DataType _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+        if (Shape.isEmpty(shapeInfo)) {
+            if(Shape.rank(shapeInfo) == 0) {
+                return Nd4j.empty();
+            } else {
+                return Nd4j.create(_dtype, shapeOf);
+            }
+        }
 
         char ordering = shapeInfo[shapeInfo.length - 1] == 99 ? 'c' : 'f';
 
-        val shapeOf = Shape.shapeOf(shapeInfo);
+
         val stridesOf = Shape.stridesOf(shapeInfo);
 
-        val _dtype = FlatBuffersMapper.getDataTypeFromByte(dtype);
+
         val _order = FlatBuffersMapper.getOrderFromByte(order);
         val prod = rank > 0 ? ArrayUtil.prod(shapeOf) : 1;
 
@@ -5803,12 +5831,18 @@ public class Nd4j {
                 }
             }
             case UBYTE:
-                UInt8Buffer b = new UInt8Buffer(ArrayUtil.prod(shapeOf));
-                val sb = bb.order(_order).asReadOnlyBuffer();
-                for (int e = 0; e < prod; e++)
-                    b.put(e, sb.get(e));
+            case BFLOAT16:
+            case UINT16:
+                INDArray arr = Nd4j.createUninitialized(_dtype, shapeOf);
+                ByteBuffer obb = bb.order(_order);
+                int pos = obb.position();
+                byte[] bArr = new byte[obb.limit() - pos];
 
-                return Nd4j.create(b, shapeOf);
+                for (int e = 0; e < bArr.length; e++) {
+                    bArr[e] = obb.get(e + pos);
+                }
+                arr.data().asNio().put(bArr);
+                return arr;
             default:
                 throw new UnsupportedOperationException("Unknown datatype: [" + _dtype + "]");
         }
@@ -6541,7 +6575,8 @@ public class Nd4j {
      */
     @Deprecated
     public static void scatterUpdate(ScatterUpdate.UpdateOp op, @NonNull INDArray array, @NonNull INDArray indices, @NonNull INDArray updates, int... axis) {
-        Preconditions.checkArgument(indices.dataType() == DataType.INT, "Indices should have INT data type");
+        Preconditions.checkArgument(indices.dataType() == DataType.INT || indices.dataType() == DataType.LONG,
+                                "Indices should have INT data type");
         Preconditions.checkArgument(array.dataType() == updates.dataType(), "Array and updates should have the same data type");
         getExecutioner().scatterUpdate(op, array, indices, updates, axis);
     }

@@ -26,7 +26,10 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void nonMaxSuppressionV2(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output);
+    void nonMaxSuppression(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize,
+            double overlapThreshold, double scoreThreshold, NDArray* output);
+    Nd4jLong nonMaxSuppressionGeneric(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
+                             double overlapThreshold, double scoreThreshold, NDArray* output);
 
 }
 }

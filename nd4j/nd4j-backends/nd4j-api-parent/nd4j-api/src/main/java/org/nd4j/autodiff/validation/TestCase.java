@@ -121,7 +121,7 @@ public class TestCase {
      * @param output Expected INDArray
      */
     public TestCase expected(@NonNull SDVariable var, @NonNull INDArray output) {
-        return expected(var.getVarName(), output);
+        return expected(var.name(), output);
     }
 
     /**
@@ -135,7 +135,7 @@ public class TestCase {
     }
 
     public TestCase expected(SDVariable var, Function<INDArray,String> validationFn){
-        return expected(var.getVarName(), validationFn);
+        return expected(var.name(), validationFn);
     }
 
     /**

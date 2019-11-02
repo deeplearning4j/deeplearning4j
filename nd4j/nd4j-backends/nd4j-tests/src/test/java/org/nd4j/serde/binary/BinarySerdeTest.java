@@ -126,7 +126,6 @@ public class BinarySerdeTest extends BaseNd4jTest {
         Nd4j.getCompressor().compressi(arr, "GZIP");
         for (int i = 0; i < numTrials; i++) {
             StopWatch oldStopWatch = new StopWatch();
-            // FIXME: int cast
             BufferedOutputStream bos = new BufferedOutputStream(new ByteArrayOutputStream((int) arr.length()));
             DataOutputStream dos = new DataOutputStream(bos);
             oldStopWatch.start();

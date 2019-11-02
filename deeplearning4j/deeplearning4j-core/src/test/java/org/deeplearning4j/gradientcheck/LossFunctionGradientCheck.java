@@ -464,13 +464,11 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 ret[1] = Nd4j.zeros(labelsShape);
                 if (labelsShape.length == 2) {
                     for (int i = 0; i < labelsShape[0]; i++) {
-                        // FIXME: int cast
                         ret[1].putScalar(i, r.nextInt((int) labelsShape[1]), 1.0);
                     }
                 } else if (labelsShape.length == 3) {
                     for (int i = 0; i < labelsShape[0]; i++) {
                         for (int j = 0; j < labelsShape[2]; j++) {
-                            // FIXME: int cast
                             ret[1].putScalar(i, r.nextInt((int) labelsShape[1]), j, 1.0);
                         }
                     }
@@ -484,13 +482,11 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                 ret[1] = Nd4j.ones(labelsShape);
                 if (labelsShape.length == 2) {
                     for (int i = 0; i < labelsShape[0]; i++) {
-                        // FIXME: int cast
                         ret[1].putScalar(i, r.nextInt((int) labelsShape[1]), -1.0);
                     }
                 } else if (labelsShape.length == 3) {
                     for (int i = 0; i < labelsShape[0]; i++) {
                         for (int j = 0; j < labelsShape[2]; j++) {
-                            // FIXME: int cast
                             ret[1].putScalar(i, r.nextInt((int) labelsShape[1]), j, -1.0);
                         }
                     }

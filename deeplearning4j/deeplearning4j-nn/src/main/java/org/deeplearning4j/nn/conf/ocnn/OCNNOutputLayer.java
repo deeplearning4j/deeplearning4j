@@ -259,7 +259,7 @@ public class OCNNOutputLayer extends BaseOutputLayer {
         }
 
         @Override
-        public void setNOut(int nOut){
+        public void setNOut(long nOut){
             throw new UnsupportedOperationException(
                     "Unable to specify number of outputs with ocnn. Outputs are fixed to 1.");
         }

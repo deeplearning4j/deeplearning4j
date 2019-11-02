@@ -93,11 +93,8 @@ public abstract class BaseScalarOp extends BaseOp implements ScalarOp {
                         Object[] extraArgs) {
         super(sameDiff,inPlace,extraArgs);
         this.scalarValue = Nd4j.scalar(i_v.dataType(), scalar);
-        this.xVertexId = i_v.getVarName();
+        this.xVertexId = i_v.name();
         sameDiff.addArgsFor(new String[]{xVertexId},this);
-        if(Shape.isPlaceholderShape(i_v.getShape())) {
-            sameDiff.addPropertyToResolve(this,i_v.getVarName());
-        }
         f().validateDifferentialFunctionsameDiff(i_v);
     }
 

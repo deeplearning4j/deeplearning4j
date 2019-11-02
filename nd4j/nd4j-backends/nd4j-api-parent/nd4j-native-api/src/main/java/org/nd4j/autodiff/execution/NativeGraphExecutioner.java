@@ -27,6 +27,7 @@ import org.nd4j.autodiff.execution.conf.OutputMode;
 import org.nd4j.autodiff.functions.DifferentialFunction;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.VariableType;
 import org.nd4j.graph.FlatArray;
 import org.nd4j.graph.FlatResult;
 import org.nd4j.graph.FlatVariable;
@@ -115,15 +116,17 @@ public class NativeGraphExecutioner implements GraphExecutioner {
 
         for (int e = 0; e < fr.variablesLength(); e++) {
             FlatVariable var = fr.variables(e);
+            String varName = var.name();
 //            log.info("Var received: id: [{}:{}/<{}>];", var.id().first(), var.id().second(), var.name());
             FlatArray ndarray = var.ndarray();
-
 
             INDArray val = Nd4j.createFromFlatArray(ndarray);
             results[e] = val;
 
             if (var.name() != null && sd.variableMap().containsKey(var.name())) {
-                sd.associateArrayWithVariable(val, sd.variableMap().get(var.name()));
+                if(sd.getVariable(varName).getVariableType() != VariableType.ARRAY){
+                    sd.associateArrayWithVariable(val, sd.variableMap().get(var.name()));
+                }
             } else {
                 if (sd.variableMap().get(var.name()) != null) {
                     sd.associateArrayWithVariable(val,sd.getVariable(var.name()));

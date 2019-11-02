@@ -30,6 +30,7 @@ import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import org.nd4j.linalg.api.ops.impl.reduce.floating.Norm2;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.deeplearning4j.nn.workspace.ArrayType;
@@ -111,7 +112,8 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
                     if (currentBlock == null || !UpdaterUtils.updaterConfigurationsEquals(lastLayer, lastVariable,
                                     layers[i], var)) {
 
-                        // FIXME: int cast
+                        if (paramsViewSoFar + paramSizeThisVariable > Integer.MAX_VALUE || paramsViewSoFar + paramSizeThisVariable > Integer.MAX_VALUE)
+                            throw new ND4JArraySizeException();
                         //Create a new block
                         List<UpdaterBlock.ParamState> list = new ArrayList<>();
                         list.add(new UpdaterBlock.ParamState(layers[i], var, paramsViewSoFar,
@@ -122,9 +124,11 @@ public abstract class BaseMultiLayerUpdater<T extends Model> implements Updater 
 
                         updaterBlocks.add(currentBlock);
                     } else {
-                        // FIXME: int cast
+                        long newOffset = currentBlock.getParamOffsetEnd() + paramSizeThisVariable;
+                        if (newOffset > Integer.MAX_VALUE)
+                            throw new ND4JArraySizeException();
                         //Add to existing updater block
-                        currentBlock.setParamOffsetEnd((int) (currentBlock.getParamOffsetEnd() + paramSizeThisVariable));
+                        currentBlock.setParamOffsetEnd((int) newOffset);
                         currentBlock.setUpdaterViewOffsetEnd(
                                         currentBlock.getUpdaterViewOffsetEnd() + updaterStateSizeThisVariable);
                         currentBlock.getLayersAndVariablesInBlock()

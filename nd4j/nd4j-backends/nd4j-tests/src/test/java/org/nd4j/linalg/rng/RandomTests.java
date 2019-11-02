@@ -1376,6 +1376,24 @@ public class RandomTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testOrthogonalDistribution2() {
+        val dist = new OrthogonalDistribution(1.0);
+
+        val array = dist.sample(new int[] {9, 6});
+
+        log.info("Array: {}", array);
+    }
+
+    @Test
+    public void testOrthogonalDistribution3() {
+        val dist = new OrthogonalDistribution(1.0);
+
+        val array = dist.sample(new int[] {9, 9});
+
+        log.info("Array: {}", array);
+    }
+
+    @Test
     public void reproducabilityTest(){
 
         int numBatches = 1;

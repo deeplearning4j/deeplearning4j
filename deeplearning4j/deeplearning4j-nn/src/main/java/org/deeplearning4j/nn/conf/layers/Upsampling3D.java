@@ -83,11 +83,10 @@ public class Upsampling3D extends BaseUpsamplingLayer {
         }
         InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
 
-        // FIXME: int cast
-        int inHeight = (int) i.getHeight();
-        int inWidth = (int) i.getWidth();
-        int inDepth = (int) i.getDepth();
-        int inChannels = (int) i.getChannels();
+        long inHeight = (int) i.getHeight();
+        long inWidth = (int) i.getWidth();
+        long inDepth = (int) i.getDepth();
+        long inChannels = (int) i.getChannels();
 
         return InputType.convolutional3D(size[0] * inDepth, size[1] * inHeight, size[2] * inWidth, inChannels);
     }

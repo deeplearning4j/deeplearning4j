@@ -52,20 +52,26 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
 
     @Override
     public void setIArguments(long... arguments) {
-        super.setIArguments(arguments);
-        nativeOps.setGraphContextIArguments(context, new LongPointer(arguments), arguments.length);
+        if (arguments.length > 0) {
+            super.setIArguments(arguments);
+            nativeOps.setGraphContextIArguments(context, new LongPointer(arguments), arguments.length);
+        }
     }
 
     @Override
     public void setBArguments(boolean... arguments) {
-        super.setBArguments(arguments);
-        nativeOps.setGraphContextBArguments(context, new BooleanPointer(arguments), arguments.length);
+        if (arguments.length > 0) {
+            super.setBArguments(arguments);
+            nativeOps.setGraphContextBArguments(context, new BooleanPointer(arguments), arguments.length);
+        }
     }
 
     @Override
     public void setTArguments(double... arguments) {
-        super.setTArguments(arguments);
-        nativeOps.setGraphContextTArguments(context, new DoublePointer(arguments), arguments.length);
+        if (arguments.length > 0) {
+            super.setTArguments(arguments);
+            nativeOps.setGraphContextTArguments(context, new DoublePointer(arguments), arguments.length);
+        }
     }
 
     @Override

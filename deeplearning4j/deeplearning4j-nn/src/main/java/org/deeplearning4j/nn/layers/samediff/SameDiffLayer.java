@@ -26,9 +26,12 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.internal.InferenceSession;
+import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
+import org.nd4j.linalg.api.memory.conf.WorkspaceConfiguration;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.impl.layers.ExternalErrorsFunction;
 import org.nd4j.linalg.factory.Nd4j;
@@ -81,37 +84,62 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         assertInputSet(false);
 
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
-            if(sameDiff == null){
+            if (sameDiff == null) {
                 doInit();
             }
-
-            org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
-            bl.validateInput(input);
-
-            Map<String,INDArray> phMap = new HashMap<>();
-            phMap.put(INPUT_KEY, input);
-            if(maskArray != null){
-                phMap.put(MASK_KEY, maskArray);
-            } else {
-                phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
-            }
-
-            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
-            //TODO Find a more efficient solution for this
-            for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
-                INDArray arr = e.getValue();
-                sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
-            }
-
-            Map<String,INDArray> out = sameDiff.output(phMap, outputKey);
-            INDArray result = out.get(outputKey);
-
-            //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
-            sameDiff.clearPlaceholders(true);
-            sameDiff.clearOpInputs();
-
-            return workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
         }
+
+        org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+        bl.validateInput(input);
+
+        Map<String,INDArray> phMap = new HashMap<>();
+        phMap.put(INPUT_KEY, input);
+        if(maskArray != null){
+            phMap.put(MASK_KEY, maskArray);
+        } else {
+            phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
+        }
+
+        //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
+        //TODO Find a more efficient solution for this
+        for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+            INDArray arr = e.getValue();
+            sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
+        }
+
+        //Configure memory management for SameDiff instance - use DL4J workspaces
+        String wsNameWorking = workspaceMgr.getWorkspaceName(ArrayType.FF_WORKING_MEM);
+        String wsNameOutput = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATIONS);
+        WorkspaceConfiguration confWorking = workspaceMgr.getConfiguration(ArrayType.FF_WORKING_MEM);
+        WorkspaceConfiguration confOutput = workspaceMgr.getConfiguration(ArrayType.ACTIVATIONS);
+        boolean actScopedOut = workspaceMgr.isScopedOut(ArrayType.ACTIVATIONS);
+        Preconditions.checkState(actScopedOut || wsNameOutput != null, "Activations must have a workspace or must be scoped out");
+        SessionMemMgr mmgr = new DL4JSameDiffMemoryMgr(wsNameWorking, wsNameOutput, confWorking, confOutput);
+
+        InferenceSession is = sameDiff.getSessions().get(Thread.currentThread().getId());
+        if(is == null){
+            is = new InferenceSession(sameDiff);
+            sameDiff.getSessions().put(Thread.currentThread().getId(), is);
+        }
+        is.setMmgr(mmgr);
+
+        Map<String,INDArray> out = sameDiff.output(phMap, outputKey);
+        INDArray result = out.get(outputKey);
+
+        //Edge case - identity activation
+        //TODO there may be a cleaner way to do this...
+        if(!actScopedOut && !result.data().getParentWorkspace().getId().equals(wsNameOutput)){
+            result = workspaceMgr.dup(ArrayType.ACTIVATIONS, result);
+        } else if(actScopedOut && result.isAttached()){
+            result = result.detach();
+        }
+
+
+        //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
+        sameDiff.clearPlaceholders(true);
+        sameDiff.clearOpInputs();
+
+        return result;
     }
 
 
@@ -122,63 +150,72 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         Gradient g = new DefaultGradient();
 
         INDArray dLdIn;
-        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-            if(sameDiff == null){
+
+        try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            if (sameDiff == null) {
                 doInit();
             }
-            if(!sameDiff.hasGradientFunction()) {
+            if (!sameDiff.hasGradientFunction()) {
                 //Create when scoped out, to ensure any arrays are not in WS
                 sameDiff.createGradFunction(INPUT_KEY);
             }
-
-            org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
-            bl.validateInput(input);
-
-            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
-            //TODO Find a more efficient solution for this
-            for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
-                INDArray arr = e.getValue();
-                sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
-            }
-
-            Map<String,INDArray> phMap = new HashMap<>();
-            phMap.put(INPUT_KEY, input);
-            phMap.put(fn.getGradPlaceholderName(), epsilon);
-            if(maskArray != null){
-                phMap.put(MASK_KEY, maskArray);
-            } else {
-                phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
-            }
-
-            List<String> requiredGrads = new ArrayList<>(paramTable.size() + 1);
-            requiredGrads.add(sameDiff.grad(INPUT_KEY).getVarName());
-            for(String s : paramTable.keySet()){
-                requiredGrads.add(sameDiff.grad(s).getVarName());
-            }
-
-            sameDiff.execBackwards(phMap, requiredGrads);
-            for(String s : paramTable.keySet() ){
-                INDArray sdGrad = sameDiff.grad(s).getArr();
-                INDArray dl4jGrad = gradTable.get(s);
-                dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
-                g.gradientForVariable().put(s, dl4jGrad);
-            }
-
-            SDVariable v = sameDiff.grad(INPUT_KEY);
-            dLdIn = v.getArr();
-
-            if(dLdIn == null && fn.getGradPlaceholderName().equals(v.getVarName())){
-                //Edge case with lambda layers like identity: SameDiff doesn't store the placeholders
-                // So, this getArr() can be trying to get placeholder from SameDiff instance, when it's available here
-                dLdIn = epsilon;
-            }
         }
+        //Configure memory management for SameDiff instance - use DL4J workspaces
+        Map<Long,InferenceSession> sessionMap = sameDiff.getFunction("grad").getSessions();
+        if(!sessionMap.containsKey(Thread.currentThread().getId())){
+            sessionMap.put(Thread.currentThread().getId(), new InferenceSession(sameDiff.getFunction("grad")));
+        }
+        String wsNameWorking = workspaceMgr.getWorkspaceName(ArrayType.BP_WORKING_MEM);
+        String wsNameActGrad = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATION_GRAD);
+        WorkspaceConfiguration confWorking = workspaceMgr.getConfiguration(ArrayType.BP_WORKING_MEM);
+        WorkspaceConfiguration confOutput = workspaceMgr.getConfiguration(ArrayType.ACTIVATION_GRAD);
+
+        boolean actGradScopedOut = workspaceMgr.isScopedOut(ArrayType.ACTIVATION_GRAD);
+        Preconditions.checkState(actGradScopedOut || wsNameActGrad != null, "Activation gradients must have a workspace or be scoped out");
+        SessionMemMgr mmgr = new DL4JSameDiffMemoryMgr(wsNameWorking, wsNameActGrad, confWorking, confOutput);
+        sessionMap.get(Thread.currentThread().getId()).setMmgr(mmgr);
+
+
+        org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
+        bl.validateInput(input);
+
+        //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
+        //TODO Find a more efficient solution for this
+        for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
+            INDArray arr = e.getValue();
+            sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
+        }
+
+        Map<String,INDArray> phMap = new HashMap<>();
+        phMap.put(INPUT_KEY, input);
+        phMap.put(fn.getGradPlaceholderName(), epsilon);
+        if(maskArray != null){
+            phMap.put(MASK_KEY, maskArray);
+        } else {
+            phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
+        }
+
+        List<String> requiredGrads = new ArrayList<>(paramTable.size() + 1);
+        requiredGrads.add(INPUT_KEY);
+        requiredGrads.addAll(paramTable.keySet());
+
+        Map<String,INDArray> m = sameDiff.calculateGradients(phMap, requiredGrads);
+        for(String s : paramTable.keySet() ){
+            INDArray sdGrad = m.get(s);
+            INDArray dl4jGrad = gradTable.get(s);
+            dl4jGrad.assign(sdGrad);                                            //TODO OPTIMIZE THIS
+            g.gradientForVariable().put(s, dl4jGrad);
+        }
+
+        dLdIn = m.get(INPUT_KEY);
+
 
         //Clear placeholders and op inputs to ensure no out-of-scope arrays are still referenced anywhere
         sameDiff.clearPlaceholders(true);
         sameDiff.clearOpInputs();
 
-        return new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
+        Pair<Gradient, INDArray> ret = new Pair<>(g, workspaceMgr.dup(ArrayType.ACTIVATION_GRAD, dLdIn));   //TODO OPTIMIZE THIS
+        return ret;
     }
 
     /**Returns the parameters of the neural network as a flattened row vector
@@ -291,7 +328,7 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             fn = sameDiff.f().externalErrors(layerOutput);
             fn.outputVariable();
 
-            this.outputKey = outputVar.getVarName();
+            this.outputKey = outputVar.name();
         }
     }
 

@@ -41,12 +41,9 @@ public class InputTypeUtil {
                     Class<?> layerClass) {
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
 
-        // FIXME: int cast
-        val hIn = (int) i.getHeight();
-        val wIn = (int) i.getWidth();
+        val hIn = i.getHeight();
+        val wIn = i.getWidth();
 
-        val inHeight = (int) i.getHeight();
-        val inWidth = (int) i.getWidth();
         int padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
         int padW = (padding == null ? 0 : padding[1]);
         int kH = kernelSize[0];
@@ -69,13 +66,13 @@ public class InputTypeUtil {
         }
 
         if (convolutionMode == ConvolutionMode.Same) {
-            int hOut = stride[0] * hIn;
-            int wOut = stride[1] * wIn;
+            long hOut = stride[0] * hIn;
+            long wOut = stride[1] * wIn;
             return InputType.convolutional(hOut, wOut, outputDepth);
         }
 
-        int hOut = sH * (hIn - 1) + kH - 2 * padH;
-        int wOut = sW * (wIn - 1) + kW - 2 * padW;
+        long hOut = sH * (hIn - 1) + kH - 2 * padH;
+        long wOut = sW * (wIn - 1) + kW - 2 * padW;
 
         return InputType.convolutional(hOut, wOut, outputDepth);
     }
@@ -91,10 +88,9 @@ public class InputTypeUtil {
 
         InputType.InputTypeConvolutional3D i = (InputType.InputTypeConvolutional3D) inputType;
 
-        // FIXME: int cast
-        val inDepth = (int) i.getDepth();
-        val inHeight = (int) i.getHeight();
-        val inWidth = (int) i.getWidth();
+        long inDepth = i.getDepth();
+        long inHeight = i.getHeight();
+        long inWidth = i.getWidth();
 
         int padD = (padding == null ? 0 : padding[0]);
         int padH = (padding == null ? 0 : padding[1]);
@@ -211,9 +207,9 @@ public class InputTypeUtil {
             return InputType.convolutional3D(outD, outH, outW, outputChannels);
         }
 
-        int dOut = (inDepth - kD + 2 * padD) / sD + 1;
-        int hOut = (inHeight - kH + 2 * padH) / sH + 1;
-        int wOut = (inWidth - kW + 2 * padW) / sW + 1;
+        long dOut = (inDepth - kD + 2 * padD) / sD + 1;
+        long hOut = (inHeight - kH + 2 * padH) / sH + 1;
+        long wOut = (inWidth - kW + 2 * padW) / sW + 1;
         return InputType.convolutional3D(dOut, hOut, wOut, outputChannels);
     }
 
@@ -296,9 +292,8 @@ public class InputTypeUtil {
 
         InputType.InputTypeConvolutional i = (InputType.InputTypeConvolutional) inputType;
 
-        // FIXME: int cast
-        val inHeight = (int) i.getHeight();
-        val inWidth = (int) i.getWidth();
+        long inHeight = i.getHeight();
+        long inWidth = i.getWidth();
         int padH = (padding == null ? 0 : padding[0]); //May be null for ConvolutionMode.Same
         int padW = (padding == null ? 0 : padding[1]);
         int kH = kernelSize[0];
@@ -379,8 +374,8 @@ public class InputTypeUtil {
             return InputType.convolutional(outH, outW, outputDepth);
         }
 
-        int hOut = (inHeight - kH + 2 * padH) / sH + 1;
-        int wOut = (inWidth - kW + 2 * padW) / sW + 1;
+        long hOut = (inHeight - kH + 2 * padH) / sH + 1;
+        long wOut = (inWidth - kW + 2 * padW) / sW + 1;
         return InputType.convolutional(hOut, wOut, outputDepth);
     }
 

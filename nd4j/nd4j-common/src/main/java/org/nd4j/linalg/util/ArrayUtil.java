@@ -163,7 +163,8 @@ public class ArrayUtil {
     }
 
     public static long[] nTimes(long n, long toReplicate) {
-        // FIXME: int cast
+        if (n > Integer.MAX_VALUE)
+            throw new RuntimeException("Index overflow in nTimes");
         val ret = new long[(int) n];
         Arrays.fill(ret, toReplicate);
         return ret;
@@ -1329,8 +1330,6 @@ public class ArrayUtil {
      * @return the shape for tensor matrix multiply
      */
     public static long[] getTensorMmulShape(long[] aShape, long[] bShape, int[][] axes) {
-        // FIXME: int cast
-
 
         int validationLength = Math.min(axes[0].length, axes[1].length);
         for (int i = 0; i < validationLength; i++) {
@@ -2970,7 +2969,9 @@ public class ArrayUtil {
     }
 
     public static long[] buildInterleavedVector(Random rng, long length) {
-        // FIXME: int cast
+        if (length > Integer.MAX_VALUE) {
+            throw new RuntimeException("Integer overflow");
+        }
         val result = new long[(int) length];
 
         List<Integer> indexes = new ArrayList<>();

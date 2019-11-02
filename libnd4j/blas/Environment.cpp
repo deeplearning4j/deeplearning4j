@@ -66,13 +66,6 @@ namespace nd4j {
 #endif
 
 #ifdef __CUDABLAS__
-        BlasVersionHelper ver;
-        _blasMajorVersion = ver._blasMajorVersion;
-        _blasMinorVersion = ver._blasMinorVersion;
-        _blasPatchVersion = ver._blasPatchVersion;
-        printf("ND4J CUDA build version: %i.%i.%i\n", _blasMajorVersion, _blasMinorVersion, _blasPatchVersion);
-        fflush(stdout);
-
         int devCnt = 0;
 	    cudaGetDeviceCount(&devCnt);
 	    auto devProperties = new cudaDeviceProp[devCnt];
@@ -83,10 +76,12 @@ namespace nd4j {
 		    //cudaDeviceSetLimit(cudaLimitStackSize, 4096);
 		    Pair p(devProperties[i].major, devProperties[i].minor);
 		    _capabilities.emplace_back(p);
-
-		    printf("CUDA device %i: [%s]; cc: [%i.%i]; Total memory: [%lld];\n", i, devProperties[i].name, devProperties[i].major, devProperties[i].minor, (Nd4jLong) devProperties[i].totalGlobalMem);
 	    }
-	    fflush(stdout);
+
+	    BlasVersionHelper ver;
+        _blasMajorVersion = ver._blasMajorVersion;
+        _blasMinorVersion = ver._blasMinorVersion;
+        _blasPatchVersion = ver._blasPatchVersion;
 
 	    cudaSetDevice(0);
 	    delete[] devProperties;
@@ -201,6 +196,18 @@ namespace nd4j {
 #else
         return true;
 #endif
+    }
+
+    int Environment::blasMajorVersion(){
+        return _blasMajorVersion;
+    }
+
+    int Environment::blasMinorVersion(){
+        return _blasMinorVersion;
+    }
+
+    int Environment::blasPatchVersion(){
+        return _blasPatchVersion;
     }
 
     nd4j::Environment *nd4j::Environment::_instance = 0;

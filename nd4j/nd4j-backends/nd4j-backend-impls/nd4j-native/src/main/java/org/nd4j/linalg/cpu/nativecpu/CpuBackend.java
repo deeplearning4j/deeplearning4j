@@ -60,4 +60,9 @@ public class CpuBackend extends Nd4jBackend {
     public Class getNDArrayClass() {
         return NDArray.class;
     }
+
+    @Override
+    public void logBackendInit() {
+        //No additional logging for CPU backend
+    }
 }

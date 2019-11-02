@@ -26,8 +26,7 @@ import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.custom.Flatten;
-import org.nd4j.linalg.api.ops.custom.ScatterUpdate;
+import org.nd4j.linalg.api.ops.custom.*;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.api.ops.executioner.OpStatus;
 import org.nd4j.linalg.api.ops.impl.reduce.Mmul;
@@ -806,5 +805,130 @@ public class CustomOpsTests extends BaseNd4jTest {
                 .build());
 
         Nd4j.getExecutioner().commit();
+    }
+
+    @Test
+    public void testAdjustContrast() {
+        INDArray in = Nd4j.linspace(DataType.DOUBLE, 1.0, 1.0, 4*4*3).reshape(4,4,3);
+        INDArray out = Nd4j.zeros(DataType.DOUBLE,4, 4, 3);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{-21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
+                2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
+                26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
+                50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
+        }).reshape(4,4,3);
+        Nd4j.exec(new AdjustContrast(in, 2.0, out));
+
+        assertArrayEquals(out.shape(), in.shape());
+        assertEquals(expected, out);
+    }
+
+    @Test
+    public void testAdjustContrastV2() {
+        INDArray in = Nd4j.linspace(DataType.DOUBLE,1.0,1.0, 4*4*3).reshape(4,4,3);
+        INDArray out = Nd4j.createUninitialized(4,4,3);
+
+        INDArray expected = Nd4j.createFromArray(new double[]{-21.5, -20.5, -19.5,  -15.5, -14.5, -13.5,  -9.5,  -8.5,  -7.5,  -3.5,  -2.5,  -1.5,
+                2.5,   3.5,   4.5,    8.5,   9.5,  10.5,  14.5,  15.5,  16.5,  20.5,  21.5,  22.5,
+                26.5,  27.5,  28.5,   32.5,  33.5,  34.5,  38.5,  39.5,  40.5,  44.5,  45.5,  46.5,
+                50.5,  51.5,  52.5,   56.5,  57.5,  58.5,  62.5,  63.5,  64.5,  68.5,  69.5,  70.5
+        }).reshape(4,4,3);
+
+        Nd4j.exec(new AdjustContrastV2(in, 2.0, out));
+
+        assertArrayEquals(out.shape(), in.shape());
+        assertEquals(expected, out);
+    }
+
+    @Test
+    public void testBitCast() {
+        INDArray in = Nd4j.linspace(DataType.FLOAT, 1.0f, 1.0f, 8).reshape(2,2,2);
+        INDArray out = Nd4j.createUninitialized(2,2);
+
+        Nd4j.exec(new BitCast(in, DataType.DOUBLE.toInt(), out));
+
+        INDArray expected = Nd4j.createFromArray(new double[]{2., 512., 8192., 131072.032 }).reshape(2,2);
+        assertArrayEquals(new long[]{2,2}, out.shape());
+        assertEquals(expected, out);
+    }
+
+    @Test
+    public void testCompareAndBitpack() {
+        INDArray in = Nd4j.createFromArray(new double[]{-12.f, -11.f, -10.f, -9.f, -8.f, -7.f, -6.f, -5.f, -4.f, -3.f,
+                -2.f, -1.f, 0.f, 1.f, 2.f, 3.f, 4.f, 5.f, 6.f, 7.f, 8.f, 9.f, 10.f, 11.f}).reshape( 2,3,4);
+        INDArray out = Nd4j.createUninitialized(DataType.UBYTE, 2,3,4);
+        INDArray expected = Nd4j.createFromArray(new byte[]{0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1}).
+                reshape(2,3,4);
+
+        Nd4j.exec(new CompareAndBitpack(in ,2.0, out));
+        assertArrayEquals(new long[]{2,3,4}, out.shape());
+    }
+
+    @Test
+    public void testDivideNoNan() {
+        INDArray in1 = Nd4j.rand(DataType.DOUBLE, 2,3,4);
+        INDArray in2 = Nd4j.rand(DataType.DOUBLE, 2,3,4);
+        INDArray out = Nd4j.createUninitialized(DataType.DOUBLE, 2,3,4);
+
+        Nd4j.exec(new DivideNoNan(in1, in2, out));
+        assertArrayEquals(new long[]{2,3,4}, out.shape());
+    }
+
+    @Test
+    public void testDrawBoundingBoxes() {
+        INDArray images = Nd4j.linspace(DataType.FLOAT, 1.0f, 1.0f, 2*4*5*3).reshape(2,4,5,3);
+        INDArray boxes = Nd4j.createFromArray(new float[]{ 0.0f , 0.0f , 1.0f , 1.0f,
+                0.1f, 0.2f, 0.9f, 0.8f,
+                0.3f, 0.3f, 0.7f, 0.7f,
+                0.4f, 0.4f, 0.6f, 0.6f}).reshape(2,2,4);
+        INDArray colors = Nd4j.createFromArray(new float[]{
+                201.0f, 202.0f, 203.0f, 127.0f, 128.0f, 129.0f}).
+                reshape(2,3);
+        INDArray output = Nd4j.create(DataType.FLOAT, images.shape());
+        INDArray expected = Nd4j.createFromArray(new float[]{127.f, 128.f, 129.f,    127.f, 128.f, 129.f,    127.f, 128.f, 129.f,
+                127.f, 128.f, 129.f,    201.f, 202.f, 203.f,
+                127.f, 128.f,  129.f,    19.f,  20.f,  21.f,     22.f,  23.f,  24.f,    127.f, 128.f, 129.f,    201.f, 202.f, 203.f,
+                127.f, 128.f,  129.f,   127.f, 128.f, 129.f,    127.f, 128.f, 129.f,    127.f, 128.f, 129.f,    201.f, 202.f, 203.f,
+                201.f, 202.f,  203.f,    201.f ,202.f ,203.f,   201.f, 202.f, 203.f,    201.f, 202.f, 203.f,    201.f, 202.f, 203.f,
+
+                61.f,  62.f,   63.f,    201.f, 202.f, 203.f,    201.f, 202.f, 203.f,     70.f,  71.f,  72.f,     73.f,  74.f,  75.f,
+                76.f,  77.f,   78.f,    127.f, 128.f, 129.f,    127.f, 128.f, 129.f,     85.f,  86.f,  87.f,     88.f,  89.f,  90.f,
+                91.f,  92.f,   93.f,    201.f, 202.f, 203.f,    201.f, 202.f, 203.f,    100.f, 101.f, 102.f,    103.f, 104.f, 105.f,
+                106.f, 107.f,  108.f,    109.f, 110.f, 111.f,    112.f, 113.f, 114.f,    115.f, 116.f, 117.f,    118.f, 119.f, 120.f}).
+                reshape(2,4,5,3);
+
+        Nd4j.exec(new DrawBoundingBoxes(images, boxes, colors, output));
+
+        assertArrayEquals(images.shape(), output.shape());
+        assertEquals(expected, output);
+    }
+
+    @Test
+    public void FakeQuantWithMinMaxVarsPerChannel() {
+
+        INDArray x = Nd4j.createFromArray(new float[]{-63.80f, -63.75f, -63.4f, -63.5f, 0.0f, 0.1f}).
+                reshape(1,2,3,1);
+
+        INDArray min = Nd4j.createFromArray(new float[]{-63.65f});
+        INDArray max = Nd4j.createFromArray(new float[]{0.1f});
+
+        INDArray output = Nd4j.createUninitialized(DataType.FLOAT, 1,2,3,1);
+        INDArray expected = Nd4j.createFromArray(new float[]{-63.75f, -63.75f, -63.5f, -63.5f, 0.f, 0.f}).
+                reshape(1,2,3,1);
+
+        Nd4j.exec(new FakeQuantWithMinMaxVarsPerChannel(x,min,max,output));
+
+        assertEquals(expected, output);
+    }
+
+    @Test
+    public void testKnnMinDistance() {
+        INDArray point = Nd4j.rand(DataType.FLOAT, 1, 20);
+        INDArray lowest = Nd4j.rand(DataType.FLOAT, 1, 20);
+        INDArray highest = Nd4j.rand(DataType.FLOAT, 1, 20);
+        INDArray distance = Nd4j.scalar(0.f);
+
+        Nd4j.exec(new KnnMinDistance(point, lowest, highest, distance));
+        System.out.println(distance);
     }
 }

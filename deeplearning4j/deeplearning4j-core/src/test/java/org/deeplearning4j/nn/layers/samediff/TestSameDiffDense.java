@@ -80,154 +80,159 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
     @Test
     public void testSameDiffDenseForward() {
-        for (int minibatch : new int[]{5, 1}) {
-            int nIn = 3;
-            int nOut = 4;
+        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.ENABLED, WorkspaceMode.NONE}) {
+            for (int minibatch : new int[]{5, 1}) {
+                int nIn = 3;
+                int nOut = 4;
 
-            Activation[] afns = new Activation[]{
-                    Activation.TANH,
-                    Activation.SIGMOID,
-                    Activation.ELU,
-                    Activation.IDENTITY,
-                    Activation.SOFTPLUS,
-                    Activation.SOFTSIGN,
-                    Activation.CUBE,
-                    Activation.HARDTANH,
-                    Activation.RELU
-            };
+                Activation[] afns = new Activation[]{
+                        Activation.TANH,
+                        Activation.SIGMOID,
+                        Activation.ELU,
+                        Activation.IDENTITY,
+                        Activation.SOFTPLUS,
+                        Activation.SOFTSIGN,
+                        Activation.CUBE,
+                        Activation.HARDTANH,
+                        Activation.RELU
+                };
 
-            for (Activation a : afns) {
-                log.info("Starting test - " + a);
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .list()
-                        .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
-                                .activation(a)
-                                .build())
-                        .build();
+                for (Activation a : afns) {
+                    log.info("Starting test - " + a + ", workspace = " + wsm);
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .inferenceWorkspaceMode(wsm)
+                            .trainingWorkspaceMode(wsm)
+                            .list()
+                            .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
+                                    .activation(a)
+                                    .build())
+                            .build();
 
-                MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                net.init();
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
 
-                assertNotNull(net.paramTable());
+                    assertNotNull(net.paramTable());
 
-                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                        .list()
-                        .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
-                        .build();
+                    MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                            .list()
+                            .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
+                            .build();
 
-                MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-                net2.init();
+                    MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+                    net2.init();
 
-                net.params().assign(net2.params());
+                    net.params().assign(net2.params());
 
-                //Check params:
-                assertEquals(net2.params(), net.params());
-                Map<String, INDArray> params1 = net.paramTable();
-                Map<String, INDArray> params2 = net2.paramTable();
-                assertEquals(params2, params1);
+                    //Check params:
+                    assertEquals(net2.params(), net.params());
+                    Map<String, INDArray> params1 = net.paramTable();
+                    Map<String, INDArray> params2 = net2.paramTable();
+                    assertEquals(params2, params1);
 
-                INDArray in = Nd4j.rand(minibatch, nIn);
-                INDArray out = net.output(in);
-                INDArray outExp = net2.output(in);
+                    INDArray in = Nd4j.rand(minibatch, nIn);
+                    INDArray out = net.output(in);
+                    INDArray outExp = net2.output(in);
 
-                assertEquals(outExp, out);
+                    assertEquals(outExp, out);
 
-                //Also check serialization:
-                MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
-                INDArray outLoaded = netLoaded.output(in);
+                    //Also check serialization:
+                    MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
+                    INDArray outLoaded = netLoaded.output(in);
 
-                assertEquals(outExp, outLoaded);
+                    assertEquals(outExp, outLoaded);
 
-                //Sanity check on different minibatch sizes:
-                INDArray newIn = Nd4j.vstack(in, in);
-                INDArray outMbsd = net.output(newIn);
-                INDArray outMb = net2.output(newIn);
-                assertEquals(outMb, outMbsd);
+                    //Sanity check on different minibatch sizes:
+                    INDArray newIn = Nd4j.vstack(in, in);
+                    INDArray outMbsd = net.output(newIn);
+                    INDArray outMb = net2.output(newIn);
+                    assertEquals(outMb, outMbsd);
+                }
             }
         }
     }
 
     @Test
     public void testSameDiffDenseForwardMultiLayer() {
-        for (int minibatch : new int[]{5, 1}) {
-            int nIn = 3;
-            int nOut = 4;
+        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.ENABLED, WorkspaceMode.NONE}) {
+            for (int minibatch : new int[]{5, 1}) {
+                int nIn = 3;
+                int nOut = 4;
 
-            Activation[] afns = new Activation[]{
-                    Activation.TANH,
-                    Activation.SIGMOID,
-                    Activation.ELU,
-                    Activation.IDENTITY,
-                    Activation.SOFTPLUS,
-                    Activation.SOFTSIGN,
-                    Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
-                    Activation.HARDTANH,
-                    Activation.RELU      //JVM crash
-            };
+                Activation[] afns = new Activation[]{
+                        Activation.TANH,
+                        Activation.SIGMOID,
+                        Activation.ELU,
+                        Activation.IDENTITY,
+                        Activation.SOFTPLUS,
+                        Activation.SOFTSIGN,
+                        Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
+                        Activation.HARDTANH,
+                        Activation.RELU      //JVM crash
+                };
 
-            for (Activation a : afns) {
-                log.info("Starting test - " + a);
-                MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                        .seed(12345)
-                        .list()
-                        .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
-                                .weightInit(WeightInit.XAVIER)
-                                .activation(a).build())
-                        .layer(new SameDiffDense.Builder().nIn(nOut).nOut(nOut)
-                                .weightInit(WeightInit.XAVIER)
-                                .activation(a).build())
-                        .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut)
-                                .weightInit(WeightInit.XAVIER)
-                                .activation(a).build())
-                        .validateOutputLayerConfig(false)
-                        .build();
+                for (Activation a : afns) {
+                    log.info("Starting test - " + a + " - workspace=" + wsm);
+                    MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                            .seed(12345)
+                            .list()
+                            .layer(new SameDiffDense.Builder().nIn(nIn).nOut(nOut)
+                                    .weightInit(WeightInit.XAVIER)
+                                    .activation(a).build())
+                            .layer(new SameDiffDense.Builder().nIn(nOut).nOut(nOut)
+                                    .weightInit(WeightInit.XAVIER)
+                                    .activation(a).build())
+                            .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut)
+                                    .weightInit(WeightInit.XAVIER)
+                                    .activation(a).build())
+                            .validateOutputLayerConfig(false)
+                            .build();
 
-                MultiLayerNetwork net = new MultiLayerNetwork(conf);
-                net.init();
+                    MultiLayerNetwork net = new MultiLayerNetwork(conf);
+                    net.init();
 
-                assertNotNull(net.paramTable());
+                    assertNotNull(net.paramTable());
 
-                MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                        .seed(12345)
-                        .weightInit(WeightInit.XAVIER)
-                        .list()
-                        .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
-                        .layer(new DenseLayer.Builder().activation(a).nIn(nOut).nOut(nOut).build())
-                        .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut)
-                                .activation(a).build())
-                        .validateOutputLayerConfig(false)
-                        .build();
+                    MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                            .seed(12345)
+                            .weightInit(WeightInit.XAVIER)
+                            .list()
+                            .layer(new DenseLayer.Builder().activation(a).nIn(nIn).nOut(nOut).build())
+                            .layer(new DenseLayer.Builder().activation(a).nIn(nOut).nOut(nOut).build())
+                            .layer(new OutputLayer.Builder().nIn(nOut).nOut(nOut)
+                                    .activation(a).build())
+                            .validateOutputLayerConfig(false)
+                            .build();
 
-                MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
-                net2.init();
+                    MultiLayerNetwork net2 = new MultiLayerNetwork(conf2);
+                    net2.init();
 
-//                net.params().assign(net2.params());
-                assertEquals(net2.params(), net.params());
+                    assertEquals(net2.params(), net.params());
 
-                //Check params:
-                assertEquals(net2.params(), net.params());
-                Map<String, INDArray> params1 = net.paramTable();
-                Map<String, INDArray> params2 = net2.paramTable();
-                assertEquals(params2, params1);
+                    //Check params:
+                    assertEquals(net2.params(), net.params());
+                    Map<String, INDArray> params1 = net.paramTable();
+                    Map<String, INDArray> params2 = net2.paramTable();
+                    assertEquals(params2, params1);
 
-                INDArray in = Nd4j.rand(minibatch, nIn);
-                INDArray out = net.output(in);
-                INDArray outExp = net2.output(in);
+                    INDArray in = Nd4j.rand(minibatch, nIn);
+                    INDArray out = net.output(in);
+                    INDArray outExp = net2.output(in);
 
-                assertEquals(outExp, out);
+                    assertEquals(outExp, out);
 
-                //Also check serialization:
-                MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
-                INDArray outLoaded = netLoaded.output(in);
+                    //Also check serialization:
+                    MultiLayerNetwork netLoaded = TestUtils.testModelSerialization(net);
+                    INDArray outLoaded = netLoaded.output(in);
 
-                assertEquals(outExp, outLoaded);
+                    assertEquals(outExp, outLoaded);
 
 
-                //Sanity check different minibatch sizes
-                in = Nd4j.rand(2 * minibatch, nIn);
-                out = net.output(in);
-                outExp = net2.output(in);
-                assertEquals(outExp, out);
+                    //Sanity check different minibatch sizes
+                    in = Nd4j.rand(2 * minibatch, nIn);
+                    out = net.output(in);
+                    outExp = net2.output(in);
+                    assertEquals(outExp, out);
+                }
             }
         }
     }
@@ -244,10 +249,13 @@ public class TestSameDiffDense extends BaseDL4JTest {
                 Activation[] afns = new Activation[]{
                         Activation.TANH,
                         Activation.SIGMOID,
-                        Activation.ELU, Activation.IDENTITY, Activation.SOFTPLUS, Activation.SOFTSIGN,
+                        Activation.ELU,
+                        Activation.IDENTITY,
+                        Activation.SOFTPLUS,
+                        Activation.SOFTSIGN,
                         Activation.HARDTANH,
-                        Activation.CUBE,    //https://github.com/deeplearning4j/nd4j/issues/2426
-                        Activation.RELU      //JVM crash
+                        Activation.CUBE,
+                        Activation.RELU
                 };
 
                 for (Activation a : afns) {
@@ -337,64 +345,66 @@ public class TestSameDiffDense extends BaseDL4JTest {
 
         int nIn = 4;
         int nOut = 3;
-        boolean workspaces = true;
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .trainingWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
-                .inferenceWorkspaceMode(workspaces ? WorkspaceMode.ENABLED : WorkspaceMode.NONE)
-                .updater(new Adam(0.1))
-                .list()
-                .layer(new SameDiffDense.Builder().nIn(nIn).nOut(5).activation(Activation.TANH).build())
-                .layer(new SameDiffDense.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
-                .layer(new OutputLayer.Builder().nIn(5).nOut(nOut).activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                .build();
+        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.ENABLED, WorkspaceMode.NONE}) {
 
-        MultiLayerNetwork netSD = new MultiLayerNetwork(conf);
-        netSD.init();
+            MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .trainingWorkspaceMode(wsm)
+                    .inferenceWorkspaceMode(wsm)
+                    .updater(new Adam(0.1))
+                    .list()
+                    .layer(new SameDiffDense.Builder().nIn(nIn).nOut(5).activation(Activation.TANH).build())
+                    .layer(new SameDiffDense.Builder().nIn(5).nOut(5).activation(Activation.TANH).build())
+                    .layer(new OutputLayer.Builder().nIn(5).nOut(nOut).activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                    .build();
 
-        MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .updater(new Adam(0.1))
-                .list()
-                .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(nIn).nOut(5).build())
-                .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(5).build())
-                .layer(new OutputLayer.Builder().nIn(5).nOut(nOut).activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build())
-                .build();
+            MultiLayerNetwork netSD = new MultiLayerNetwork(conf);
+            netSD.init();
 
-        MultiLayerNetwork netStandard = new MultiLayerNetwork(conf2);
-        netStandard.init();
+            MultiLayerConfiguration conf2 = new NeuralNetConfiguration.Builder()
+                    .seed(12345)
+                    .updater(new Adam(0.1))
+                    .list()
+                    .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(nIn).nOut(5).build())
+                    .layer(new DenseLayer.Builder().activation(Activation.TANH).nIn(5).nOut(5).build())
+                    .layer(new OutputLayer.Builder().nIn(5).nOut(nOut).activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build())
+                    .build();
 
-        netSD.params().assign(netStandard.params());
+            MultiLayerNetwork netStandard = new MultiLayerNetwork(conf2);
+            netStandard.init();
 
-        //Check params:
-        assertEquals(netStandard.params(), netSD.params());
-        assertEquals(netStandard.paramTable(), netSD.paramTable());
+            netSD.params().assign(netStandard.params());
 
-        DataSetIterator iter = new IrisDataSetIterator(150,150);
-        DataSet ds = iter.next();
+            //Check params:
+            assertEquals(netStandard.params(), netSD.params());
+            assertEquals(netStandard.paramTable(), netSD.paramTable());
 
-        INDArray outSD = netSD.output(ds.getFeatures());
-        INDArray outStd = netStandard.output(ds.getFeatures());
+            DataSetIterator iter = new IrisDataSetIterator(150, 150);
+            DataSet ds = iter.next();
 
-        assertEquals(outStd, outSD);
+            INDArray outSD = netSD.output(ds.getFeatures());
+            INDArray outStd = netStandard.output(ds.getFeatures());
 
-        for( int i=0; i<3; i++ ){
-            netSD.fit(ds);
-            netStandard.fit(ds);
-            String s = String.valueOf(i);
-            assertEquals(s, netStandard.getFlattenedGradients(), netSD.getFlattenedGradients());
-            assertEquals(s, netStandard.params(), netSD.params());
-            assertEquals(s, netStandard.getUpdater().getStateViewArray(), netSD.getUpdater().getStateViewArray());
+            assertEquals(outStd, outSD);
+
+            for (int i = 0; i < 3; i++) {
+                netSD.fit(ds);
+                netStandard.fit(ds);
+                String s = String.valueOf(i);
+                assertEquals(s, netStandard.getFlattenedGradients(), netSD.getFlattenedGradients());
+                assertEquals(s, netStandard.params(), netSD.params());
+                assertEquals(s, netStandard.getUpdater().getStateViewArray(), netSD.getUpdater().getStateViewArray());
+            }
+
+            //Sanity check on different minibatch sizes:
+            INDArray newIn = Nd4j.vstack(ds.getFeatures(), ds.getFeatures());
+            INDArray outMbsd = netSD.output(newIn);
+            INDArray outMb = netStandard.output(newIn);
+            assertEquals(outMb, outMbsd);
         }
-
-        //Sanity check on different minibatch sizes:
-        INDArray newIn = Nd4j.vstack(ds.getFeatures(), ds.getFeatures());
-        INDArray outMbsd = netSD.output(newIn);
-        INDArray outMb = netStandard.output(newIn);
-        assertEquals(outMb, outMbsd);
     }
 
     @Test
@@ -402,7 +412,7 @@ public class TestSameDiffDense extends BaseDL4JTest {
         int nIn = 4;
         int nOut = 4;
 
-        for (boolean workspaces : new boolean[]{false, true}) {
+        for (boolean workspaces : new boolean[]{true, false}) {
             for (Activation a : new Activation[]{Activation.TANH, Activation.IDENTITY}) {
 
                 String msg = "workspaces: " + workspaces + ", " + a;

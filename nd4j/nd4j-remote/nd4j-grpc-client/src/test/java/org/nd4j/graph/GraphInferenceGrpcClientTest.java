@@ -43,7 +43,7 @@ public class GraphInferenceGrpcClientTest {
         val graphId = RandomUtils.nextLong(0, Long.MAX_VALUE);
 
         // preparing and registering graph (it's optional, and graph might be embedded into Docker image
-        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/expand_dim/frozen_model.pb").getInputStream());
+        val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/expand_dim/frozen_model.pb").getInputStream());
         assertNotNull(tg);
         client.registerGraph(graphId, tg, ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
 
@@ -66,7 +66,7 @@ public class GraphInferenceGrpcClientTest {
         val graphId = RandomUtils.nextLong(0, Long.MAX_VALUE);
 
         // preparing and registering graph (it's optional, and graph might be embedded into Docker image
-        val tg = TFGraphMapper.getInstance().importGraph(new ClassPathResource("tf_graphs/examples/expand_dim/frozen_model.pb").getInputStream());
+        val tg = TFGraphMapper.importGraph(new ClassPathResource("tf_graphs/examples/expand_dim/frozen_model.pb").getInputStream());
         assertNotNull(tg);
         client.registerGraph(graphId, tg, ExecutorConfiguration.builder().outputMode(OutputMode.IMPLICIT).build());
 

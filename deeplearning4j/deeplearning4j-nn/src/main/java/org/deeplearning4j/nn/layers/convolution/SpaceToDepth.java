@@ -75,11 +75,10 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
     public Pair<Gradient, INDArray> backpropGradient(INDArray epsilon, LayerWorkspaceMgr workspaceMgr) {
         assertInputSet(true);
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inDepth = (int) input.size(1);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        long miniBatch = input.size(0);
+        long inDepth = input.size(1);
+        long inH = input.size(2);
+        long inW = input.size(3);
 
         INDArray input = this.input.castTo(dataType);    //No-op if already correct type
 
@@ -122,17 +121,16 @@ public class SpaceToDepth extends AbstractLayer<org.deeplearning4j.nn.conf.layer
             return preOutput;
         }
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int depth = (int) input.size(1);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        long miniBatch = input.size(0);
+        long depth = input.size(1);
+        long inH = input.size(2);
+        long inW = input.size(3);
 
         int blockSize = getBlockSize();
 
-        int outH = inH / blockSize;
-        int outW = inW / blockSize;
-        int outDepth = depth * blockSize * blockSize;
+        long outH = inH / blockSize;
+        long outW = inW / blockSize;
+        long outDepth = depth * blockSize * blockSize;
 
         INDArray out = workspaceMgr.create(ArrayType.ACTIVATIONS, input.dataType(), new long[]{1, miniBatch * outDepth * outH * outW}, 'c');
         INDArray reshapedOut;

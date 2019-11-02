@@ -88,8 +88,7 @@ public class CrashTest extends BaseNd4jTest {
         INDArray y = Nd4j.create(64, 64, 1024);
 
         for (int i = 0; i < ITERATIONS; i++) {
-            // FIXME: int cast
-            int slice = RandomUtils.nextInt(0, (int) x.shape()[0]);
+            long slice = RandomUtils.nextLong(0, x.shape()[0]);
             op(x.slice(slice), y.slice(slice), i);
         }
     }

@@ -48,4 +48,11 @@ namespace nd4j {
     BroadcastOpsTuple BroadcastOpsTuple::Subtract() {
         return custom(nd4j::scalar::Subtract, nd4j::pairwise::Subtract, nd4j::broadcast::Subtract);
     }
+    BroadcastOpsTuple BroadcastOpsTuple::IGamma() {
+        return custom(nd4j::scalar::IGamma, nd4j::pairwise::IGamma, nd4j::broadcast::IGamma);
+    }
+    BroadcastOpsTuple BroadcastOpsTuple::IGammac() {
+        return custom(nd4j::scalar::IGammac, nd4j::pairwise::IGammac, nd4j::broadcast::IGammac);
+    }
+
 }

@@ -32,6 +32,8 @@ namespace helpers {
 template <typename T>
 static void batchnorm_(const NDArray* input, const NDArray* mean, const NDArray* variance, const NDArray* gamma, const NDArray* beta, NDArray* output, const std::vector<int>& axes, const double epsilon) {
 
+    // formula: output = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
+
     NDArray sigmaInvGam(mean);  // do not copy mean's buffer, take only its shapeInfo
     T eps = epsilon;
 

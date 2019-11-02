@@ -63,7 +63,7 @@ case class SDIndexWrapper(end: Long) {
 case class SDIndexWrapper1(start: Int) {
 
   def ::(end: Int): SDIndex =
-    SDIndex.interval(start, end)
+    SDIndex.interval(start.toLong, end.toLong)
 }
 
 object --- extends SDIndex {

@@ -144,7 +144,7 @@ public class LocalResponseNormalization
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
             } catch (Throwable t){
-                if(t.getMessage().contains("Failed to allocate")){
+                if(t.getMessage() != null && t.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation
                     throw t;
                 }
@@ -211,7 +211,7 @@ public class LocalResponseNormalization
             } catch (ND4JOpProfilerException e){
                 throw e;    //NaN panic etc for debugging
             } catch (Throwable t){
-                if(t.getMessage().contains("Failed to allocate")){
+                if(t.getMessage() != null && t.getMessage().contains("Failed to allocate")){
                     //This is a memory exception - don't fallback to built-in implementation
                     throw t;
                 }

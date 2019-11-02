@@ -38,15 +38,19 @@ namespace nd4j {
                 REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
             REQUIRE_TRUE(boxes->rankOf() == 2, 0, "image.non_max_suppression: The rank of boxes array should be 2, but %i is given", boxes->rankOf());
-            REQUIRE_TRUE(scales->rankOf() == 1 && scales->lengthOf() == boxes->sizeAt(0), 0, "image.non_max_suppression: The rank of boxes array should be 2, but %i is given", boxes->rankOf());
+            REQUIRE_TRUE(boxes->sizeAt(1) == 4, 0, "image.non_max_suppression: The last dimension of boxes array should be 4, but %i is given", boxes->sizeAt(1));
+            REQUIRE_TRUE(scales->rankOf() == 1 && scales->lengthOf() == boxes->sizeAt(0), 0, "image.non_max_suppression: The rank of scales array should be 1, but %i is given", boxes->rankOf());
 
             if (scales->lengthOf() < maxOutputSize)
                 maxOutputSize = scales->lengthOf();
-            double threshold = 0.5;
+            double overlayThreshold = 0.5;
+            double scoreThreshold = - DataTypeUtils::infOrMax<float>();
             if (block.getTArguments()->size() > 0)
-                threshold = T_ARG(0);
+                overlayThreshold = T_ARG(0);
+            if (block.getTArguments()->size() > 1)
+                scoreThreshold = T_ARG(1);
 
-            helpers::nonMaxSuppressionV2(block.launchContext(), boxes, scales, maxOutputSize, threshold, output);
+            helpers::nonMaxSuppression(block.launchContext(), boxes, scales, maxOutputSize, overlayThreshold, scoreThreshold, output);
             return Status::OK();
         }
 

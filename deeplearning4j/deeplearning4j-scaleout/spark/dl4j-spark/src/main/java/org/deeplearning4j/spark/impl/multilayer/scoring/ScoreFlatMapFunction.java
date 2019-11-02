@@ -64,7 +64,6 @@ public class ScoreFlatMapFunction implements FlatMapFunction<Iterator<DataSet>, 
             DataSet ds = iter.next();
             double score = network.score(ds, false);
 
-            // FIXME: int cast
             val numExamples = (int) ds.getFeatures().size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }

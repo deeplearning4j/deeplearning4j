@@ -217,7 +217,7 @@ namespace nd4j {
                             auto var = ctx.variable(pair);
                             auto shape = var->getNDArray()->shapeInfo();
 
-                            if (!shape::equalsSoft(out, shape)) {
+                            if (!shape::equalsSoft(out, shape) || shape::isEmpty(out) != shape::isEmpty(shape)) {
                                 auto eShape = ShapeUtils::shapeAsString(out);
                                 auto aShape = ShapeUtils::shapeAsString(shape);
 
@@ -237,7 +237,7 @@ namespace nd4j {
                             ctx.setOutputArray(idx, outArr, true);
                         } else {
                             auto array = fout[idx];
-                            if (!shape::equalsSoft(out, array->shapeInfo())) {
+                            if (!shape::equalsSoft(out, array->shapeInfo()) || shape::isEmpty(out) != array->isEmpty()) {
                                 auto eShape = ShapeUtils::shapeAsString(out);
                                 auto aShape = ShapeUtils::shapeAsString(array->shapeInfo());
 

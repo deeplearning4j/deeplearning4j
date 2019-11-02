@@ -39,13 +39,18 @@ import java.util.*;
 @NoArgsConstructor
 public class BiasAdd extends DynamicCustomOp {
 
+    protected boolean nchw = true;
 
-    public BiasAdd(SameDiff sameDiff, SDVariable input, SDVariable bias) {
+    public BiasAdd(SameDiff sameDiff, SDVariable input, SDVariable bias, boolean nchw) {
         super(null, sameDiff, new SDVariable[] {input, bias}, false);
+        bArguments.clear();
+        bArguments.add(nchw);
     }
 
-    public BiasAdd(@NonNull INDArray input, @NonNull INDArray bias, INDArray output){
+    public BiasAdd(@NonNull INDArray input, @NonNull INDArray bias, INDArray output, boolean nchw){
         super(new INDArray[]{input, bias}, wrapOrNull(output));
+        bArguments.clear();
+        bArguments.add(nchw);
     }
 
     @Override
@@ -56,7 +61,11 @@ public class BiasAdd extends DynamicCustomOp {
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
         super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-
+        if(attributesForNode.containsKey("data_format")){
+            nchw = "NCHW".equalsIgnoreCase(attributesForNode.get("data_format").getS().toStringUtf8());
+        }
+        bArguments.clear();
+        bArguments.add(nchw);
     }
 
     @Override

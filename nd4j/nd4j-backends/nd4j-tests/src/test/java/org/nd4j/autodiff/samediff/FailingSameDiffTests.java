@@ -78,82 +78,6 @@ public class FailingSameDiffTests extends BaseNd4jTest {
         assertArrayEquals(new long[]{3,3}, list.get(0).getShape());
     }
 
-    @Test(timeout = 10000L)
-    public void testWhileLoop() {
-        OpValidationSuite.ignoreFailing();
-        SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new DefaultSameDiffConditional(), new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
-                return new SDVariable[]{eqResult};
-            }
-        }, new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = variableInputs[1].add(1.0);
-                return new SDVariable[]{variableInputs[0], ret};
-            }
-        }, new SDVariable[]{
-                sameDiff.one("one", new long[]{1, 1}),
-                sameDiff.var("two", new long[]{1, 1}),
-
-        });
-
-        sameDiff.exec(Collections.emptyMap());
-    }
-
-    @Test(timeout = 10000L)
-    public void testWhileBackwards() {
-        OpValidationSuite.ignoreFailing();
-        SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new DefaultSameDiffConditional(), new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
-                return new SDVariable[]{eqResult};
-            }
-        }, new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = variableInputs[1].add(1.0);
-                return new SDVariable[]{variableInputs[0], ret};
-            }
-        }, new SDVariable[]{
-                sameDiff.one("one", new long[]{1, 1}),
-                sameDiff.var("two", new long[]{1, 1}),
-
-        });
-
-        sameDiff.execBackwards(Collections.emptyMap());
-        SameDiff exec = sameDiff.getFunction("grad");
-    }
-
-    @Test(timeout = 10000L)
-    public void testWhileLoop2() {
-        OpValidationSuite.ignoreFailing();
-        SameDiff sameDiff = SameDiff.create();
-        sameDiff.whileStatement(new DefaultSameDiffConditional(), new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable eqResult = sameDiff.neq(variableInputs[0], variableInputs[1]);
-                return new SDVariable[]{eqResult};
-            }
-        }, new SameDiffFunctionDefinition() {
-            @Override
-            public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
-                SDVariable ret = variableInputs[1].add(1.0);
-                return new SDVariable[]{variableInputs[0], ret};
-            }
-        }, new SDVariable[]{
-                sameDiff.one("one", new long[]{1, 1}),
-                sameDiff.var("two", new long[]{1, 1}),
-
-        });
-
-        sameDiff.exec(Collections.emptyMap(), sameDiff.outputs());
-    }
-
     @Test
     public void testExecutionDifferentShapesTransform(){
         OpValidationSuite.ignoreFailing();
@@ -163,12 +87,12 @@ public class FailingSameDiffTests extends BaseNd4jTest {
         SDVariable tanh = sd.math().tanh(in);
         INDArray exp = Transforms.tanh(in.getArr(), true);
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = tanh.eval();
         assertEquals(exp, out);
 
         //Now, replace with minibatch 5:
         in.setArray(Nd4j.linspace(1,20,20, DataType.DOUBLE).reshape(5,4));
-        INDArray out2 = sd.execAndEndResult();
+        INDArray out2 = tanh.eval();
         assertArrayEquals(new long[]{5,4}, out2.shape());
 
         exp = Transforms.tanh(in.getArr(), true);
@@ -200,12 +124,12 @@ public class FailingSameDiffTests extends BaseNd4jTest {
         SDVariable mmul = sd.mmul(in,w).add(b);
         INDArray exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
 
-        INDArray out = sd.execAndEndResult();
+        INDArray out = mmul.eval();
         assertEquals(exp, out);
 
         //Now, replace with minibatch 5:
         in.setArray(Nd4j.linspace(1,20,20, DataType.DOUBLE).reshape(5,4));
-        INDArray out2 = sd.execAndEndResult();
+        INDArray out2 = mmul.eval();
         assertArrayEquals(new long[]{5,5}, out2.shape());
 
         exp = in.getArr().mmul(w.getArr()).addiRowVector(b.getArr());
@@ -213,11 +137,10 @@ public class FailingSameDiffTests extends BaseNd4jTest {
 
         //Generate gradient function, and exec
         SDVariable loss = mmul.std(true);
-        sd.execBackwards(Collections.emptyMap());
+        sd.calculateGradients(Collections.emptyMap(), sd.getVariables().keySet());
 
         in.setArray(Nd4j.linspace(1,12,12, DataType.DOUBLE).reshape(3,4));
-        sd.execAndEndResult();
-        out2 = mmul.getArr();
+        out2 = mmul.eval();
         assertArrayEquals(new long[]{3,5}, out2.shape());
     }
 

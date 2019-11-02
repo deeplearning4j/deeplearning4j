@@ -320,7 +320,6 @@ public class MultiLayerTest extends BaseDL4JTest {
     public static float[] asFloat(INDArray arr) {
         long len = arr.length();
 
-        // FIXME: int cast
         float[] f = new float[(int) len];
         for (int i = 0; i < len; i++)
             f[i] = arr.getFloat(i);

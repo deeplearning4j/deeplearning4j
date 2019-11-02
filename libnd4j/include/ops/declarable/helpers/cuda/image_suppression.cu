@@ -22,6 +22,7 @@
 #include <NDArrayFactory.h>
 #include <NativeOps.h>
 #include <cuda_exception.h>
+#include <queue>
 
 namespace nd4j {
 namespace ops {
@@ -121,24 +122,40 @@ namespace helpers {
         for (auto i = tid; i < len; i += step)
             indexBuf[i] = (I)srcBuf[i];
     }
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    template <typename T, typename I>
+    static __global__ void suppressScores(T* scores, I* indices, Nd4jLong length, T scoreThreshold) {
+        auto start = blockIdx.x * blockDim.x;
+        auto step = gridDim.x * blockDim.x;
+
+        for (auto e = start + threadIdx.x; e < (int)length; e += step) {
+            if (scores[e] < scoreThreshold) {
+                scores[e] = scoreThreshold;
+                indices[e] = -1;
+            }
+            else {
+                indices[e] = I(e);
+            }
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // nonMaxSuppressionV2 algorithm - given from TF NonMaxSuppressionV2 implementation
 //
     template <typename T, typename I>
-    static void nonMaxSuppressionV2_(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
+    static void nonMaxSuppressionV2_(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
         auto stream = context->getCudaStream();
         NDArray::prepareSpecialUse({output}, {boxes, scales});
         std::unique_ptr<NDArray> indices(NDArrayFactory::create_<I>('c', {scales->lengthOf()})); // - 1, scales->lengthOf()); //, scales->getContext());
-        indices->linspace(0);
-        indices->syncToDevice(); // linspace only on CPU, so sync to Device as well
 
         NDArray scores(*scales);
         Nd4jPointer extras[2] = {nullptr, stream};
-
+        auto indexBuf = indices->dataBuffer()->specialAsT<I>();///reinterpret_cast<I*>(indices->specialBuffer());
+        auto scoreBuf = scores.dataBuffer()->specialAsT<T>();
+        suppressScores<T,I><<<128, 128, 128, *stream>>>(scoreBuf, indexBuf, scores.lengthOf(), T(scoreThreshold));
+        indices->tickWriteDevice();
         sortByValue(extras, indices->buffer(), indices->shapeInfo(), indices->specialBuffer(), indices->specialShapeInfo(), scores.buffer(), scores.shapeInfo(), scores.specialBuffer(), scores.specialShapeInfo(), true);
-
-        auto indexBuf = reinterpret_cast<I*>(indices->specialBuffer());
-
+        indices->tickWriteDevice();
         NDArray selectedIndices = NDArrayFactory::create<I>('c', {output->lengthOf()});
         int numSelected = 0;
         int numBoxes = boxes->sizeAt(0);
@@ -180,10 +197,156 @@ namespace helpers {
         }
 
     }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    template <typename T, typename I>
+    static __device__ bool checkOverlapBoxes(T* boxes, Nd4jLong* shape, T* scores, I* indices, I* selectedIndices, I* startIndices, I selectedSize, I nextCandidateIndex, T overlapThreshold, T scoreThreshold) {
+        bool shouldHardSuppress = false;
+        T& nextCandidateScore = scores[nextCandidateIndex];
+        I selectedIndex = indices[nextCandidateIndex];
+        I finish = startIndices[nextCandidateIndex];
+
+        for (int j = selectedSize; j > finish; --j) {
+            Nd4jLong xPos[] = {selectedIndex, selectedIndices[j - 1]};
+            auto xShift = shape::getOffset(shape, xPos, 0);
+            nextCandidateScore *= (boxes[xShift] <= static_cast<T>(overlapThreshold)?T(1.):T(0.));//
+            // First decide whether to perform hard suppression
+            if (boxes[xShift] >= overlapThreshold) {
+                shouldHardSuppress = true;
+                break;
+            }
+
+            // If nextCandidate survives hard suppression, apply soft suppression
+            if (nextCandidateScore <= scoreThreshold) break;
+        }
+
+        return shouldHardSuppress;
+    }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    template <typename T, typename I>
+    static __global__ void
+    suppressNonMaxOverlapKernel(T* boxes, Nd4jLong* boxesShape, T* scoresData, I* indices, I* startIndices, Nd4jLong length, I maxOutputLen,
+    T overlapThreshold, T scoreThreshold, I* output, Nd4jLong* outputShape, I* outputLength) {
+
+        __shared__ I selectedSize;
+        __shared__ I* tempOutput;
+
+        if (threadIdx.x == 0) {
+            selectedSize = outputLength?*outputLength:maxOutputLen;
+            extern __shared__ unsigned char shmem[];
+            tempOutput = (I*)shmem;
+        }
+        __syncthreads();
+
+        auto start = blockIdx.x * blockDim.x;
+        auto step = blockDim.x * gridDim.x;
+
+        for (I nextCandidateIndex = start + threadIdx.x; selectedSize < maxOutputLen && nextCandidateIndex < (I)length; ) {
+            auto originalScore = scoresData[nextCandidateIndex];//nextCandidate._score;
+            I nextCandidateBoxIndex = indices[nextCandidateIndex];
+            auto selectedSizeMark = selectedSize;
+
+            // skip for cases when index is less than 0 (under score threshold)
+            if (nextCandidateBoxIndex < 0) {
+                nextCandidateIndex += step;
+                continue;
+            }
+            // check for overlaps
+            bool shouldHardSuppress = checkOverlapBoxes(boxes, boxesShape, scoresData, indices, tempOutput, startIndices, selectedSize,
+                    nextCandidateIndex, overlapThreshold, scoreThreshold);//false;
+            T nextCandidateScore = scoresData[nextCandidateIndex];
+
+            startIndices[nextCandidateIndex] = selectedSize;
+            if (!shouldHardSuppress) {
+                if (nextCandidateScore == originalScore) {
+                    // Suppression has not occurred, so select nextCandidate
+                    if (output)
+                        output[selectedSize] = nextCandidateBoxIndex;
+                    tempOutput[selectedSize] = nextCandidateBoxIndex;
+                    math::atomics::nd4j_atomicAdd(&selectedSize, (I)1);
+                }
+
+                if (nextCandidateScore > scoreThreshold) {
+                    // Soft suppression has occurred and current score is still greater than
+                    // scoreThreshold; add nextCandidate back onto priority queue.
+                    continue;  // in some cases, this index not 0
+                }
+            }
+            nextCandidateIndex += step;
+        }
+
+        if (threadIdx.x == 0) {
+            if (outputLength)
+                *outputLength = selectedSize;
+        }
+    }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    template <typename T, typename I>
+    static Nd4jLong
+    nonMaxSuppressionGeneric_(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int outputSize,
+                              double overlapThreshold, double scoreThreshold, NDArray* output) {
+        auto stream = context->getCudaStream();
+        if (output)
+            NDArray::prepareSpecialUse({output}, {boxes, scores});
+        else {
+            if (!boxes->isActualOnDeviceSide())
+                boxes->syncToDevice();
+            if (!scores->isActualOnDeviceSide())
+                scores->syncToDevice();
+        }
+
+        NDArray indices = NDArrayFactory::create<I>('c', {scores->lengthOf()}); // - 1, scales->lengthOf()); //, scales->getContext());
+        NDArray startPositions = NDArrayFactory::create<I>('c', {scores->lengthOf()});
+        NDArray selectedScores(*scores);
+        Nd4jPointer extras[2] = {nullptr, stream};
+        auto indexBuf = indices.dataBuffer()->specialAsT<I>();///reinterpret_cast<I*>(indices->specialBuffer());
+
+        suppressScores<<<128, 128, 128, *stream>>>(selectedScores.dataBuffer()->specialAsT<T>(), indexBuf, selectedScores.lengthOf(), T(scoreThreshold));
+
+        sortByValue(extras, indices.buffer(), indices.shapeInfo(), indices.specialBuffer(), indices.specialShapeInfo(), selectedScores.buffer(), selectedScores.shapeInfo(), selectedScores.specialBuffer(), selectedScores.specialShapeInfo(), true);
+        indices.tickWriteDevice();
+        selectedScores.tickWriteDevice();
+
+        auto scoresData = selectedScores.dataBuffer()->specialAsT<T>();//, numBoxes, scoresData.begin());
+
+        auto startIndices = startPositions.dataBuffer()->specialAsT<I>();
+        I selectedSize = 0;
+        Nd4jLong res = 0;
+        if (output) { // this part used when output shape already calculated to fill up values on output
+            DataBuffer selectedSizeBuf(&selectedSize, sizeof(I), DataTypeUtils::fromT<I>());
+            suppressNonMaxOverlapKernel <<<1, 1, 1024, *stream >>> (boxes->dataBuffer()->specialAsT<T>(),
+                    boxes->specialShapeInfo(), scoresData, indexBuf, startIndices, scores->lengthOf(), (I) outputSize,
+                    T(overlapThreshold), T(scoreThreshold), output->dataBuffer()->specialAsT<I>(), output->specialShapeInfo(),
+                    selectedSizeBuf.specialAsT<I>());
+        }
+        else { // this case used on calculation of output shape. Output and output shape shoulde be nullptr.
+            DataBuffer selectedSizeBuf(&selectedSize, sizeof(I), DataTypeUtils::fromT<I>());
+            suppressNonMaxOverlapKernel <<<1, 1, 1024, *stream >>> (boxes->dataBuffer()->specialAsT<T>(),
+                    boxes->specialShapeInfo(), scoresData, indexBuf, startIndices, scores->lengthOf(), (I)outputSize,
+                    T(overlapThreshold), T(scoreThreshold), (I*)nullptr, (Nd4jLong*) nullptr, selectedSizeBuf.specialAsT<I>());
+            selectedSizeBuf.syncToPrimary(context, true);
+            res = *selectedSizeBuf.primaryAsT<I>();
+        }
+
+        if (output)
+            NDArray::registerSpecialUse({output}, {boxes, scores});
+
+        return res;
+    }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    void nonMaxSuppression(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
+        BUILD_DOUBLE_SELECTOR(boxes->dataType(), output->dataType(), nonMaxSuppressionV2_,
+                (context, boxes, scales, maxSize, threshold, scoreThreshold, output),
+                FLOAT_TYPES, INDEXING_TYPES);
+    }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    void nonMaxSuppressionV2(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(boxes->dataType(), output->dataType(), nonMaxSuppressionV2_, (context, boxes, scales, maxSize, threshold, output), FLOAT_TYPES, INDEXING_TYPES);
+    Nd4jLong nonMaxSuppressionGeneric(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize, double threshold, double scoreThreshold, NDArray* output) {
+        BUILD_DOUBLE_SELECTOR(boxes->dataType(), output ? output->dataType():DataType::INT32, return nonMaxSuppressionGeneric_,
+                              (context, boxes, scales, maxSize, threshold, scoreThreshold, output),
+                              FLOAT_TYPES, INDEXING_TYPES);
+        return boxes->sizeAt(0);
     }
 
 }

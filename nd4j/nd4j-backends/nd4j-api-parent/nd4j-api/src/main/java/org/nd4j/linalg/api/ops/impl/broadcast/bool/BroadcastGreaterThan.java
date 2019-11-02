@@ -53,7 +53,7 @@ public class BroadcastGreaterThan extends BaseBroadcastBoolOp {
         super(sameDiff, i_v, dimension, inPlace);
     }
 
-    public BroadcastGreaterThan(SameDiff sameDiff, SDVariable i_v, int[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
+    public BroadcastGreaterThan(SameDiff sameDiff, SDVariable i_v, long[] shape, boolean inPlace, int[] dimension, Object[] extraArgs) {
         super(sameDiff, i_v, shape, inPlace, dimension, extraArgs);
     }
 

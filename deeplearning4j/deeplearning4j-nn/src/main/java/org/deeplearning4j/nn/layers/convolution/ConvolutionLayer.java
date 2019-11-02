@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.convolution.Convolution;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.exception.ND4JOpProfilerException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
@@ -113,13 +114,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if(epsilon.dataType() != dataType)
             epsilon = epsilon.castTo(dataType);
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
+        long miniBatch = input.size(0);
         int inH = (int) input.size(2);
         int inW = (int) input.size(3);
 
-        int outDepth = (int) weights.size(0);
-        int inDepth = (int) weights.size(1);
+        long outDepth = weights.size(0);
+        long inDepth = weights.size(1);
         int kH = (int) weights.size(2);
         int kW = (int) weights.size(3);
 
@@ -143,7 +143,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray biasGradView = gradientViews.get(ConvolutionParamInitializer.BIAS_KEY);
         INDArray weightGradView = gradientViews.get(ConvolutionParamInitializer.WEIGHT_KEY); //4d, c order. Shape: [outDepth,inDepth,kH,kW]
         INDArray weightGradView2df = Shape
-                        .newShapeNoCopy(weightGradView, new int[] {outDepth, inDepth * kH * kW}, false).transpose();
+                        .newShapeNoCopy(weightGradView, new long[]{outDepth, inDepth * kH * kW}, false).transpose();
 
 
 
@@ -204,7 +204,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         //Note: due to the permute in preOut, and the fact that we essentially do a preOut.muli(epsilon), this reshape
         // should be zero-copy; only possible exception being sometimes with the "identity" activation case
-        INDArray delta2d = delta.reshape('c', new int[] {outDepth, miniBatch * outH * outW}); //Shape.newShapeNoCopy(delta,new int[]{outDepth,miniBatch*outH*outW},false);
+        INDArray delta2d = delta.reshape('c', new long[] {outDepth, miniBatch * outH * outW}); //Shape.newShapeNoCopy(delta,new int[]{outDepth,miniBatch*outH*outW},false);
 
         //Do im2col, but with order [miniB,outH,outW,depthIn,kH,kW]; but need to input [miniBatch,channels,kH,kW,outH,outW] given the current im2col implementation
         //To get this: create an array of the order we want, permute it to the order required by im2col implementation, and then do im2col on that
@@ -231,7 +231,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         //Calculate epsilons for layer below, in 2d format (note: this is in 'image patch' format before col2im reduction)
         //Note: cc -> f mmul here, then reshape to 6d in f order
         INDArray epsNext2d = w2d.mmul(delta2d); //TODO can we reuse im2col array instead of allocating new result array?
-        INDArray eps6d = Shape.newShapeNoCopy(epsNext2d, new int[] {kW, kH, inDepth, outW, outH, miniBatch}, true);
+        INDArray eps6d = Shape.newShapeNoCopy(epsNext2d, new long[] {kW, kH, inDepth, outW, outH, miniBatch}, true);
 
         //Calculate epsilonNext by doing im2col reduction.
         //Current col2im implementation expects input with order: [miniBatch,channels,kH,kW,outH,outW]
@@ -282,7 +282,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
     }
 
-    protected void validateInputDepth(int inDepth) {
+    protected void validateInputDepth(long inDepth) {
         if (input.size(1) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
             if (layerName == null)
@@ -313,14 +313,13 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
 
         INDArray input = this.input.castTo(dataType);
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int outDepth = (int) weights.size(0);
-        int inDepth = (int) weights.size(1);
+        long miniBatch = input.size(0);
+        long outDepth = weights.size(0);
+        long inDepth = weights.size(1);
         validateInputDepth(inDepth);
 
-        int kH = (int) weights.size(2);
-        int kW = (int) weights.size(3);
+        long kH = weights.size(2);
+        long kW = weights.size(3);
 
         int[] dilation = layerConf().getDilation();
         int[] kernel = layerConf().getKernelSize();
@@ -331,7 +330,8 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
 
-            // FIXME: int cast
+            if (input.size(2) > Integer.MAX_VALUE ||  input.size(3) > Integer.MAX_VALUE)
+                throw new ND4JArraySizeException();
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int) input.size(2), (int) input.size(3)}, kernel,
                             strides, dilation );
         } else {
@@ -397,10 +397,12 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         INDArray col = Nd4j.createUninitialized(weights.dataType(), new long[] {miniBatch, outH, outW, inDepth, kH, kW}, 'c');
         INDArray col2 = col.permute(0, 3, 4, 5, 1, 2);
         INDArray im2ColIn = input.castTo(col2.dataType());      //No op if already (for example) float
-        Convolution.im2col(im2ColIn, kH, kW, strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
+        if (kH > Integer.MAX_VALUE || kW > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
+        Convolution.im2col(im2ColIn, (int)kH, (int)kW, strides[0], strides[1], pad[0], pad[1], dilation[0], dilation[1],
                         convolutionMode == ConvolutionMode.Same, col2);
 
-        INDArray im2col2d = Shape.newShapeNoCopy(col, new int[] {miniBatch * outH * outW, inDepth * kH * kW}, false);
+        INDArray im2col2d = Shape.newShapeNoCopy(col, new long[] {miniBatch * outH * outW, inDepth * kH * kW}, false);
 
         //Current order of weights: [depthOut,depthIn,kH,kW], c order
         //Permute to give [kW,kH,depthIn,depthOut], f order
@@ -418,7 +420,7 @@ public class ConvolutionLayer extends BaseLayer<org.deeplearning4j.nn.conf.layer
         }
 
         //Now, reshape to [outW,outH,miniBatch,outDepth], and permute to have correct output order: [miniBath,outDepth,outH,outW];
-        z = Shape.newShapeNoCopy(z, new int[] {outW, outH, miniBatch, outDepth}, true);
+        z = Shape.newShapeNoCopy(z, new long[] {outW, outH, miniBatch, outDepth}, true);
         z = z.permute(2, 3, 1, 0);
 
         if (training && cacheMode != CacheMode.NONE && workspaceMgr.hasConfiguration(ArrayType.FF_CACHE) && workspaceMgr.isWorkspaceOpen(ArrayType.FF_CACHE)) {

@@ -57,17 +57,17 @@ public class GraphTransformUtilTests extends BaseNd4jTest {
 
         SDVariable sub = add.sub(add2);
 
-        assertTrue(OpPredicate.classEquals(AddOp.class).matches(sd, sd.getVariableOutputOp(add.getVarName())));
-        assertTrue(OpPredicate.classEquals(AddOp.class).matches(sd, sd.getVariableOutputOp(add2.getVarName())));
-        assertFalse(OpPredicate.classEquals(AddOp.class).matches(sd, sd.getVariableOutputOp(sub.getVarName())));
+        assertTrue(OpPredicate.classEquals(AddOp.class).matches(sd, sd.getVariableOutputOp(add.name())));
+        assertTrue(OpPredicate.classEquals(AddOp.class).matches(sd, sd.getVariableOutputOp(add2.name())));
+        assertFalse(OpPredicate.classEquals(AddOp.class).matches(sd, sd.getVariableOutputOp(sub.name())));
 
-        assertTrue(OpPredicate.opNameEquals(AddOp.OP_NAME).matches(sd, sd.getVariableOutputOp(add.getVarName())));
-        assertTrue(OpPredicate.opNameEquals(AddOp.OP_NAME).matches(sd, sd.getVariableOutputOp(add2.getVarName())));
-        assertFalse(OpPredicate.opNameEquals(AddOp.OP_NAME).matches(sd, sd.getVariableOutputOp(sub.getVarName())));
+        assertTrue(OpPredicate.opNameEquals(AddOp.OP_NAME).matches(sd, sd.getVariableOutputOp(add.name())));
+        assertTrue(OpPredicate.opNameEquals(AddOp.OP_NAME).matches(sd, sd.getVariableOutputOp(add2.name())));
+        assertFalse(OpPredicate.opNameEquals(AddOp.OP_NAME).matches(sd, sd.getVariableOutputOp(sub.name())));
 
-        assertTrue(OpPredicate.opNameMatches(".*dd").matches(sd, sd.getVariableOutputOp(add.getVarName())));
-        assertTrue(OpPredicate.opNameMatches("ad.*").matches(sd, sd.getVariableOutputOp(add2.getVarName())));
-        assertFalse(OpPredicate.opNameMatches(".*dd").matches(sd, sd.getVariableOutputOp(sub.getVarName())));
+        assertTrue(OpPredicate.opNameMatches(".*dd").matches(sd, sd.getVariableOutputOp(add.name())));
+        assertTrue(OpPredicate.opNameMatches("ad.*").matches(sd, sd.getVariableOutputOp(add2.name())));
+        assertFalse(OpPredicate.opNameMatches(".*dd").matches(sd, sd.getVariableOutputOp(sub.name())));
 
 
         SubGraphPredicate p = SubGraphPredicate.withRoot(OpPredicate.classEquals(AddOp.class));
@@ -76,11 +76,11 @@ public class GraphTransformUtilTests extends BaseNd4jTest {
         assertEquals(2, l.size());
 
         SubGraph sg1 = l.get(0);
-        assertTrue(sg1.getRootNode() == sd.getVariableOutputOp(add.getVarName()));
+        assertTrue(sg1.getRootNode() == sd.getVariableOutputOp(add.name()));
         assertEquals(0, sg1.getChildNodes().size());
 
         SubGraph sg2 = l.get(1);
-        assertTrue(sg2.getRootNode() == sd.getVariableOutputOp(add2.getVarName()));
+        assertTrue(sg2.getRootNode() == sd.getVariableOutputOp(add2.name()));
         assertEquals(0, sg2.getChildNodes().size());
     }
 
@@ -118,7 +118,7 @@ public class GraphTransformUtilTests extends BaseNd4jTest {
         });
 
         INDArray exp2 = p1.div(p2).mul(p1.sub(p2));
-        INDArray out2 = sd2.getVariable(mul.getVarName()).eval();
+        INDArray out2 = sd2.getVariable(mul.name()).eval();
         assertEquals(exp2, out2);
 
 

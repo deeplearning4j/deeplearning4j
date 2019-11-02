@@ -86,19 +86,18 @@ public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray delta2d = lossFunction.computeGradient(labels2d, input2d.dup(input2d.ordering()), layerConf().getActivationFn(), maskReshaped);
         delta2d = workspaceMgr.leverageTo(ArrayType.ACTIVATION_GRAD, delta2d);
 
-        // FIXME: int cast
-        int n = (int)input.size(0);
-        int d, h, w, c;
+        long n = input.size(0);
+        long d, h, w, c;
         if(layerConf().getDataFormat() == Convolution3D.DataFormat.NDHWC){
-            d = (int)input.size(1);
-            h = (int)input.size(2);
-            w = (int)input.size(3);
-            c = (int)input.size(4);
+            d = input.size(1);
+            h = input.size(2);
+            w = input.size(3);
+            c = input.size(4);
         } else {
-            d = (int)input.size(2);
-            h = (int)input.size(3);
-            w = (int)input.size(4);
-            c = (int)input.size(1);
+            d = input.size(2);
+            h = input.size(3);
+            w = input.size(4);
+            c = input.size(1);
         }
         INDArray delta5d = ConvolutionUtils.reshape2dTo5d(layerConf().getDataFormat(), delta2d, n, d, h, w, c, workspaceMgr, ArrayType.ACTIVATION_GRAD);
 
@@ -130,7 +129,6 @@ public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
 
     @Override
     public int numLabels() {
-        // FIXME: int cast
         return (int) labels.size(1);
     }
 
@@ -180,10 +178,8 @@ public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         INDArray input2d = ConvolutionUtils.reshape5dTo2d(layerConf().getDataFormat(), in, workspaceMgr, ArrayType.ACTIVATIONS);
         INDArray out2d = layerConf().getActivationFn().getActivation(input2d, training);
 
-        // FIXME: int cast
-
-        int n = (int)input.size(0);
-        int d, h, w, c;
+        long n = input.size(0);
+        long d, h, w, c;
         if(layerConf().getDataFormat() == Convolution3D.DataFormat.NDHWC){
             d = (int)input.size(1);
             h = (int)input.size(2);
@@ -262,19 +258,18 @@ public class Cnn3DLossLayer extends BaseLayer<org.deeplearning4j.nn.conf.layers.
         val newShape = input.shape().clone();
         newShape[1] = 1;
 
-        // FIXME
-        int n = (int)input.size(0);
-        int d, h, w, c;
+        long n = input.size(0);
+        long d, h, w, c;
         if(layerConf().getDataFormat() == Convolution3D.DataFormat.NDHWC){
-            d = (int)input.size(1);
-            h = (int)input.size(2);
-            w = (int)input.size(3);
-            c = (int)input.size(4);
+            d = input.size(1);
+            h = input.size(2);
+            w = input.size(3);
+            c = input.size(4);
         } else {
-            d = (int)input.size(2);
-            h = (int)input.size(3);
-            w = (int)input.size(4);
-            c = (int)input.size(1);
+            d = input.size(2);
+            h = input.size(3);
+            w = input.size(4);
+            c = input.size(1);
         }
         INDArray scoreArrayTs = ConvolutionUtils.reshape2dTo5d(layerConf().getDataFormat(), scoreArray, n, d, h, w, c, workspaceMgr, ArrayType.FF_WORKING_MEM);
         INDArray summedScores = scoreArrayTs.sum(1,2,3,4);

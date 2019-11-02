@@ -33,6 +33,7 @@ import org.deeplearning4j.ui.api.UIServer;
 import org.deeplearning4j.ui.storage.mapdb.MapDBStatsStorage;
 import org.deeplearning4j.util.UIDProvider;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.io.ClassPathResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -205,7 +206,8 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
                     if(layers[i].type() == Layer.Type.CONVOLUTIONAL){
                         INDArray output = activations.get(i+1); //Offset by 1 - activations list includes input
 
-                        // FIXME: int cast
+                        if (output.shape()[0] - 1 > Integer.MAX_VALUE)
+                            throw new ND4JArraySizeException();
                         int sampleDim = output.shape()[0] == 1 ? 0 : rnd.nextInt((int) output.shape()[0] - 1) + 1;
                         if (cnt == 0) {
                             INDArray inputs = layers[i].input();
@@ -426,7 +428,8 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
 
         val height = (numRows * (tShape[1] + border + padding_col)) + padding_col + zoomPadding + zoomWidth;
 
-        // FIXME: int cast
+        if (height > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         BufferedImage outputImage = new BufferedImage(maxWidth, (int) height, BufferedImage.TYPE_BYTE_GRAY);
         Graphics2D graphics2D = outputImage.createGraphics();
 
@@ -571,7 +574,8 @@ public class ConvolutionalIterationListener extends BaseTrainingListener {
             */
 
             graphics2D.setPaint(borderColor);
-            // FIXME: int cast
+            if (tad2D.shape()[0] > Integer.MAX_VALUE || tad2D.shape()[1] > Integer.MAX_VALUE)
+                throw new ND4JArraySizeException();
             graphics2D.drawRect(columnOffset, rowOffset, (int) tad2D.shape()[0], (int) tad2D.shape()[1]);
 
 

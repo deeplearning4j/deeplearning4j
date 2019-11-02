@@ -187,7 +187,6 @@ public class AsyncDataSetIteratorTest extends BaseDL4JTest {
         }
     }
 
-
     @Test
     public void testVariableTimeSeries2() throws Exception {
         AsyncDataSetIterator adsi =

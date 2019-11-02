@@ -114,10 +114,9 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         double lambdaCoord = layerConf().getLambdaCoord();
         double lambdaNoObj = layerConf().getLambdaNoObj();
 
-        // FIXME: int cast
-        int mb = (int) input.size(0);
-        int h = (int) input.size(2);
-        int w = (int) input.size(3);
+        long mb = input.size(0);
+        long h = input.size(2);
+        long w = input.size(3);
         int b = (int) layerConf().getBoundingBoxes().size(0);
         int c = (int) labels.size(1)-4;
 
@@ -243,12 +242,12 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
 
         //Class prediction loss
         INDArray classPredictionsPreSoftmax2d = inputClassesPreSoftmax.permute(0,1,3,4,2) //[minibatch, b, c, h, w] To [mb, b, h, w, c]
-                .dup('c').reshape('c', new int[]{mb*b*h*w, c});
+                .dup('c').reshape('c', new long[]{mb*b*h*w, c});
         INDArray classLabelsBroadcast = Nd4j.createUninitialized(input.dataType(), new long[]{mb, b, c, h, w}, 'c');
         for(int i=0; i<b; i++ ){
             classLabelsBroadcast.get(all(), point(i), all(), all(), all()).assign(classLabels); //[mb, c, h, w] to [mb, b, c, h, w]
         }
-        INDArray classLabels2d = classLabelsBroadcast.permute(0,1,3,4,2).dup('c').reshape('c', new int[]{mb*b*h*w, c});
+        INDArray classLabels2d = classLabelsBroadcast.permute(0,1,3,4,2).dup('c').reshape('c', new long[]{mb*b*h*w, c});
 
         //Calculate the loss:
         ILossFunction lossConfidence = new LossL2();
@@ -297,7 +296,7 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
         // ----- Gradient Calculation (specifically: return dL/dIn -----
 
         INDArray epsOut = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape(), 'c');
-        INDArray epsOut5 = Shape.newShapeNoCopy(epsOut, new int[]{mb, b, 5+c, h, w}, false);
+        INDArray epsOut5 = Shape.newShapeNoCopy(epsOut, new long[]{mb, b, 5+c, h, w}, false);
         INDArray epsClassPredictions = epsOut5.get(all(), all(), interval(5, 5+c), all(), all());    //Shape: [mb, b, 5+c, h, w]
         INDArray epsXY = epsOut5.get(all(), all(), interval(0,2), all(), all());
         INDArray epsWH = epsOut5.get(all(), all(), interval(2,4), all(), all());
@@ -426,16 +425,16 @@ public class Yolo2OutputLayer extends AbstractLayer<org.deeplearning4j.nn.conf.l
      * @return IOU and gradients
      */
     private static IOURet calculateIOULabelPredicted(INDArray labelTL, INDArray labelBR, INDArray predictedWH, INDArray predictedXYinGridBox, INDArray objectPresentMask, INDArray objectPresentMaskBool){
-        // FIXME: int cast
-        int mb = (int) labelTL.size(0);
-        int h = (int) labelTL.size(2);
-        int w = (int) labelTL.size(3);
-        int b = (int) predictedWH.size(1);
+
+        long mb = labelTL.size(0);
+        long h = labelTL.size(2);
+        long w = labelTL.size(3);
+        long b = predictedWH.size(1);
 
         INDArray labelWH = labelBR.sub(labelTL);                //4d [mb, 2, H, W], label W/H in terms of number of grid boxes
 
-        int gridH = (int) labelTL.size(2);
-        int gridW = (int) labelTL.size(3);
+        long gridH = labelTL.size(2);
+        long gridW = labelTL.size(3);
         //Add grid positions to the predicted XY values (to get predicted XY in terms of grid cell units in image,
         // from (0 to 1 in grid cell) format)
         INDArray linspaceX = Nd4j.linspace(0, gridW-1, gridW, predictedWH.dataType());

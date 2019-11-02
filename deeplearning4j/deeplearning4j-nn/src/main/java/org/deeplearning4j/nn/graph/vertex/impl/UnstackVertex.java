@@ -43,10 +43,10 @@ import java.util.Arrays;
  * @author Justin Long (crockpotveggies)
  */
 public class UnstackVertex extends BaseGraphVertex {
-    private int from;
+    private long from;
     private int stackSize;
     private long forwardShape[];
-    private int step;
+    private long step;
 
     public UnstackVertex(ComputationGraph graph, String name, int vertexIndex, int from, int stackSize, DataType dataType) {
         this(graph, name, vertexIndex, null, null, from, stackSize, dataType);
@@ -77,10 +77,9 @@ public class UnstackVertex extends BaseGraphVertex {
         // once we know the inputs, save the shape and interval size for doBackward
         this.forwardShape = Arrays.copyOf(inputs[0].shape(), inputs[0].rank());
 
-        // FIXME: int cast
-        this.step = (int) inputs[0].size(0) / stackSize;
-        int start = from * step;
-        int end = (from + 1) * step;
+        this.step = inputs[0].size(0) / stackSize;
+        long start = from * step;
+        long end = (from + 1) * step;
 
         INDArray ret;
         switch (inputs[0].rank()) { //TODO remove the dups here if/when possible (gradient checks must pass)
@@ -108,8 +107,8 @@ public class UnstackVertex extends BaseGraphVertex {
             throw new IllegalStateException("Cannot do backward pass: error not set");
 
         INDArray out = workspaceMgr.create(ArrayType.ACTIVATION_GRAD, inputs[0].dataType(), forwardShape);
-        int start = from * step;
-        int end = (from + 1) * step;
+        long start = from * step;
+        long end = (from + 1) * step;
 
         switch (forwardShape.length) {
             case 2:
@@ -154,8 +153,8 @@ public class UnstackVertex extends BaseGraphVertex {
         }
 
         //Mask arrays are either 1d (column vector) or 2d...
-        int start = from * minibatchSize;
-        int end = (from + 1) * minibatchSize;
+        long start = from * minibatchSize;
+        long end = (from + 1) * minibatchSize;
         INDArray outMask = maskArrays[0].get(NDArrayIndex.interval(start, end), NDArrayIndex.all());
         return new Pair<>(outMask, currentMaskState);
     }

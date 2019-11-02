@@ -871,6 +871,9 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @param shape the new shape of this ndarray
      * @return the shape to fill out to
      */
+    INDArray repmat(long... shape);
+
+    @Deprecated
     INDArray repmat(int... shape);
 
     /**
@@ -2814,4 +2817,10 @@ public interface INDArray extends Serializable, AutoCloseable {
      * @see org.nd4j.linalg.api.ndarray.BaseNDArray#toString(long, boolean, int)
      */
     String toStringFull();
+
+    /**
+     * A unique ID for the INDArray object instance. Does not account for views.
+     * @return INDArray unique ID
+     */
+    long getId();
 }

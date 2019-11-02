@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.indexing;
 
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.shade.guava.primitives.Ints;
 import org.nd4j.shade.guava.primitives.Longs;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -59,8 +60,8 @@ public class Indices {
         double otherTest = ((double) index) / arr.size(-1);
         int test = (int) Math.floor(otherTest);
 
-        // FIXME: int cast
-
+        if (arr.vectorsAlongDimension(-1) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int vectors = (int) arr.vectorsAlongDimension(-1);
         if (test >= vectors)
             return vectors - 1;

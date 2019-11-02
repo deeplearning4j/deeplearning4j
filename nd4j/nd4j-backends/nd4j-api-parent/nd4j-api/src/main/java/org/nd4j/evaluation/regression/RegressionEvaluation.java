@@ -216,7 +216,6 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
     }
 
     private static List<String> createDefaultColumnNames(long nColumns) {
-        // FIXME: int cast
         List<String> list = new ArrayList<>((int) nColumns);
         for (int i = 0; i < nColumns; i++)
             list.add("col_" + i);
@@ -244,7 +243,6 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
             labels = labels.castTo(predictions.dataType());
 
         if (!initialized) {
-            // FIXME: int cast
             initialize((int) labels.size(1));
         }
         //References for the calculations is this section:
@@ -394,7 +392,6 @@ public class RegressionEvaluation extends BaseEvaluation<RegressionEvaluation> {
             if (exampleCountPerColumn == null) {
                 return 0;
             }
-            // FIXME: int cast
             return (int) exampleCountPerColumn.size(1);
         }
         return columnNames.size();

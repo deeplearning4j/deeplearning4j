@@ -346,7 +346,6 @@ public abstract class AbstractLayer<LayerConfT extends org.deeplearning4j.nn.con
 
     @Override
     public int getInputMiniBatchSize() {
-        // FIXME: int cast
         return (int) input.size(0);
     }
 

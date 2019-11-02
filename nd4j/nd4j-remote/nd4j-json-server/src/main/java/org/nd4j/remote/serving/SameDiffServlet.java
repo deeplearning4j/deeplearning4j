@@ -200,7 +200,7 @@ public class SameDiffServlet<I, O> implements ModelServingServlet<I, O> {
                         map.put(n, mds.getFeatures(cnt++));
                 }
 
-                val output = sdModel.exec(map, orderedOutputNodes);
+                val output = sdModel.output(map, orderedOutputNodes);
                 val arrays = new INDArray[output.size()];
 
                 // now we need to get ordered output arrays, as specified in server constructor

@@ -34,9 +34,8 @@ public class BlasBufferUtil {
      * @param arr the array
      * @return the blas stride
      */
-    public static int getBlasOffset(INDArray arr) {
-        // FIXME: LONG
-        return (int) arr.offset();
+    public static long getBlasOffset(INDArray arr) {
+        return arr.offset();
     }
 
     /**
@@ -142,16 +141,15 @@ public class BlasBufferUtil {
      * @param defaultRows
      * @return
      */
-    public static int getDimension(INDArray arr, boolean defaultRows) {
-        // FIXME: int cast
+    public static long getDimension(INDArray arr, boolean defaultRows) {
 
         //ignore ordering for vectors
         if (arr.isVector()) {
-            return defaultRows ? (int) arr.rows() : (int) arr.columns();
+            return defaultRows ? arr.rows() : arr.columns();
         }
         if (arr.ordering() == NDArrayFactory.C)
-            return defaultRows ? (int) arr.columns() : (int) arr.rows();
-        return defaultRows ? (int) arr.rows() : (int) arr.columns();
+            return defaultRows ? arr.columns() : arr.rows();
+        return defaultRows ? arr.rows() : arr.columns();
     }
 
 

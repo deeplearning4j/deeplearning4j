@@ -73,7 +73,7 @@ public class BatchOutputConfig {
     public BatchOutputConfig output(@NonNull SDVariable... outputs){
         String[] outNames = new String[outputs.length];
         for(int i = 0 ; i < outputs.length ; i++){
-            outNames[i] = outputs[i].getVarName();
+            outNames[i] = outputs[i].name();
         }
 
         return output(outNames);
@@ -104,7 +104,7 @@ public class BatchOutputConfig {
      * See {@link #input(String, INDArray)}
      */
     public BatchOutputConfig input(@NonNull SDVariable variable, @NonNull INDArray placeholder){
-        return input(variable.getVarName(), placeholder);
+        return input(variable.name(), placeholder);
     }
 
     /**
@@ -133,10 +133,26 @@ public class BatchOutputConfig {
     }
 
     /**
+     * @deprecated Use {@link #output()}
+     */
+    @Deprecated
+    public Map<String, INDArray> exec() {
+        return output();
+    }
+
+    /**
      * Do inference and return the results
      */
-    public Map<String, INDArray> exec(){
+    public Map<String,INDArray> output(){
         return sd.output(placeholders, listeners, outputs.toArray(new String[0]));
+    }
+
+    /**
+     * @deprecated Use {@link #outputSingle()}
+     */
+    @Deprecated
+    public INDArray execSingle() {
+        return outputSingle();
     }
 
     /**
@@ -144,7 +160,7 @@ public class BatchOutputConfig {
      *
      * Only works if exactly one output is specified
      */
-    public INDArray execSingle(){
+    public INDArray outputSingle(){
         Preconditions.checkState(outputs.size() == 1,
                 "Can only use execSingle() when exactly one output is specified, there were %s", outputs.size());
         return exec().get(outputs.get(0));

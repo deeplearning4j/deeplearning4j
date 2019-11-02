@@ -61,7 +61,6 @@ public class RGBtoGrayscaleDataSetPreProcessor implements DataSetPreProcessor {
             B.muli(BLUE_RATIO);
             R.addi(G).addi(B);
 
-            // FIXME: int cast
             result.putSlice((int)n, R);
         }
 

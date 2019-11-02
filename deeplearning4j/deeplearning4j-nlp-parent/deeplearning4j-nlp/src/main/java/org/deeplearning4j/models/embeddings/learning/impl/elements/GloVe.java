@@ -104,11 +104,10 @@ public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorit
 
 
 
-        weightAdaGrad = new AdaGrad(new int[] {this.vocabCache.numWords() + 1, vectorLength}, learningRate);
+        weightAdaGrad = new AdaGrad(new long[] {this.vocabCache.numWords() + 1, vectorLength}, learningRate);
         bias = Nd4j.create(syn0.rows());
 
-        // FIXME: int cast
-        biasAdaGrad = new AdaGrad(ArrayUtil.toInts(bias.shape()), this.learningRate);
+        biasAdaGrad = new AdaGrad(bias.shape(), this.learningRate);
 
         //  maxmemory = Runtime.getRuntime().maxMemory() - (vocabCache.numWords() * vectorLength * 2 * 8);
 
@@ -237,15 +236,13 @@ public class GloVe<T extends SequenceElement> implements ElementsLearningAlgorit
     private void update(T element1, INDArray wordVector, INDArray contextVector, double gradient) {
         //gradient for word vectors
         INDArray grad1 = contextVector.mul(gradient);
-        // FIXME: int cast
-        INDArray update = weightAdaGrad.getGradient(grad1, element1.getIndex(), ArrayUtil.toInts(syn0.shape()));
+        INDArray update = weightAdaGrad.getGradient(grad1, element1.getIndex(), syn0.shape());
 
         //update vector
         wordVector.subi(update);
 
         double w1Bias = bias.getDouble(element1.getIndex());
-        // FIXME: int cast
-        double biasGradient = biasAdaGrad.getGradient(gradient, element1.getIndex(), ArrayUtil.toInts(bias.shape()));
+        double biasGradient = biasAdaGrad.getGradient(gradient, element1.getIndex(), bias.shape());
         double update2 = w1Bias - biasGradient;
         bias.putScalar(element1.getIndex(), update2);
     }

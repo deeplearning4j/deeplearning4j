@@ -151,9 +151,8 @@ public class FileMultiDataSetIterator extends BaseFileIterator<MultiDataSet, Mul
     }
 
     @Override
-    protected int sizeOf(MultiDataSet of) {
-        // FIXME: int cast
-        return  (int) of.getFeatures(0).size(0);
+    protected long sizeOf(MultiDataSet of) {
+        return  of.getFeatures(0).size(0);
     }
 
     @Override

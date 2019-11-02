@@ -1704,7 +1704,7 @@ ND4J_EXPORT void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOf
                   void* dX, Nd4jLong* dXShapeInfo, Nd4jLong* dXOffsets,
                   void* hY, Nd4jLong* hYShapeInfo, Nd4jLong* hYOffsets,
                   void* dY, Nd4jLong* dYShapeInfo, Nd4jLong* dYOffsets,
-                  int* hIindexes, int* dIindexes);
+                  void* hIindexes, Nd4jLong* hIndicesShapeInfo, void* dIindexes, Nd4jLong* dIndicesShapeInfo);
 
 ND4J_EXPORT void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo);
 

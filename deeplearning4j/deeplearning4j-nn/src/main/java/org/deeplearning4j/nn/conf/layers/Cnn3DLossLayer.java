@@ -152,16 +152,17 @@ public class Cnn3DLossLayer extends FeedForwardLayer {
         }
 
         @Override
-        public void setNIn(int nIn){
+        public void setNIn(long nIn){
             throw new UnsupportedOperationException(
                     "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
 
         @Override
-        public void setNOut(int nOut){
+        public void setNOut(long nOut){
             throw new UnsupportedOperationException(
                     "Cnn3DLossLayer has no parameters, thus nIn will always equal nOut.");
         }
+
 
         @Override
         @SuppressWarnings("unchecked")

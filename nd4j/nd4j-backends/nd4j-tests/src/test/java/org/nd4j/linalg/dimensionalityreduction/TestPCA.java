@@ -153,9 +153,8 @@ public class TestPCA extends BaseNd4jTest {
         System.out.println("Eigenvalues:\n" + ns.format(myPCA.getEigenvalues()));
         double variance = 0.0;
 
-        // FIXME: int cast
         // sample 1000 of the randomly generated samples with the reduced basis set
-        for (int i = 0; i < 1000; i++)
+        for (long i = 0; i < 1000; i++)
             variance += myPCA.estimateVariance(m.getRow(i), reduced70.columns());
         variance /= 1000.0;
         System.out.println("Fraction of variance using 70% variance with " + reduced70.columns() + " columns: "

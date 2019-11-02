@@ -20,6 +20,7 @@ import lombok.val;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.shape.Shape;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.BooleanIndexing;
 import org.nd4j.linalg.indexing.INDArrayIndex;
@@ -193,7 +194,7 @@ public class TimeSeriesUtils {
     }
 
 
-    public static INDArray reshape2dTo3d(INDArray in, int miniBatchSize, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
+    public static INDArray reshape2dTo3d(INDArray in, long miniBatchSize, LayerWorkspaceMgr workspaceMgr, ArrayType arrayType) {
         if (in.rank() != 2)
             throw new IllegalArgumentException("Invalid input: expect NDArray with rank 2");
         //Based on: RnnToFeedForwardPreProcessor
@@ -220,7 +221,6 @@ public class TimeSeriesUtils {
             in = in.dup('f');
         }
 
-        // FIXME: int cast
         int[] idxs = new int[(int) in.size(2)];
         int j=0;
         for( int i=idxs.length-1; i>=0; i--){
@@ -248,7 +248,8 @@ public class TimeSeriesUtils {
             in = workspaceMgr.dup(arrayType, in, 'f');
         }
 
-        // FIXME: int cast
+        if (in.size(2) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int[] idxs = new int[(int) in.size(2)];
         int j=0;
         for( int i=idxs.length-1; i>=0; i--){
@@ -291,7 +292,8 @@ public class TimeSeriesUtils {
                     + " with shape " + Arrays.toString(mask.shape()));
         }
 
-        // FIXME: int cast
+        if (mask.size(1) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int[] idxs = new int[(int) mask.size(1)];
         int j=0;
         for( int i=idxs.length-1; i>=0; i--){
@@ -319,7 +321,8 @@ public class TimeSeriesUtils {
                     + " with shape " + Arrays.toString(mask.shape()));
         }
 
-        // FIXME: int cast
+        if (mask.size(1) > Integer.MAX_VALUE)
+            throw new ND4JArraySizeException();
         int[] idxs = new int[(int) mask.size(1)];
         int j=0;
         for( int i=idxs.length-1; i>=0; i--){
@@ -358,9 +361,8 @@ public class TimeSeriesUtils {
         INDArray out;
         if (mask == null) {
 
-            // FIXME: int cast
             //No mask array -> extract same (last) column for all
-            int lastTS = (int) pullFrom.size(2) - 1;
+            long lastTS = pullFrom.size(2) - 1;
             out = pullFrom.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {
@@ -396,9 +398,8 @@ public class TimeSeriesUtils {
         INDArray out;
         if (mask == null) {
 
-            // FIXME: int cast
             //No mask array -> extract same (last) column for all
-            int lastTS = (int) pullFrom.size(2) - 1;
+            long lastTS = pullFrom.size(2) - 1;
             out = pullFrom.get(NDArrayIndex.all(), NDArrayIndex.all(), NDArrayIndex.point(lastTS));
             fwdPassTimeSteps = null; //Null -> last time step for all examples
         } else {

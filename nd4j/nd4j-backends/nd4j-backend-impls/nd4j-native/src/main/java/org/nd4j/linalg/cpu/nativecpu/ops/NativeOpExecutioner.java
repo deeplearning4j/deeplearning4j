@@ -1974,7 +1974,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
         loop.scatterUpdate(null, op.ordinal(), (int) indices.length(),
                 array.data().addressPointer(), (LongPointer) tadX.getFirst().addressPointer(), (LongPointer) tadX.getSecond().addressPointer(), null, null, null,
                 updates.data().addressPointer(), (LongPointer) tadY.getFirst().addressPointer(), (LongPointer) tadY.getSecond().addressPointer(), null, null, null,
-                (IntPointer) indices.data().addressPointer(), null);
+                indices.data().addressPointer(), (LongPointer) indices.shapeInfoDataBuffer().addressPointer(), null, null);
 
         if (loop.lastErrorCode() != 0)
             throw new RuntimeException(loop.lastErrorMessage());

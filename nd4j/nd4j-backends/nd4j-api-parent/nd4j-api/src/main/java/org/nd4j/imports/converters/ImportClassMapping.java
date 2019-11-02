@@ -46,6 +46,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.BarnesEdgeForces.class,
             org.nd4j.linalg.api.ops.custom.BarnesHutGains.class,
             org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize.class,
+            org.nd4j.linalg.api.ops.custom.KnnMinDistance.class,
             org.nd4j.linalg.api.ops.custom.SpTreeCell.class,
             org.nd4j.linalg.api.ops.custom.Flatten.class,
             org.nd4j.linalg.api.ops.impl.broadcast.BiasAdd.class,
@@ -69,13 +70,9 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThan.class,
             org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastLessThanOrEqual.class,
             org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastNotEqual.class,
-            org.nd4j.linalg.api.ops.impl.controlflow.If.class,
-            org.nd4j.linalg.api.ops.impl.controlflow.IfDerivative.class,
             org.nd4j.linalg.api.ops.impl.controlflow.Select.class,
             org.nd4j.linalg.api.ops.impl.controlflow.Where.class,
             org.nd4j.linalg.api.ops.impl.controlflow.WhereNumpy.class,
-            org.nd4j.linalg.api.ops.impl.controlflow.While.class,
-            org.nd4j.linalg.api.ops.impl.controlflow.WhileDerivative.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.Enter.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.Exit.class,
             org.nd4j.linalg.api.ops.impl.controlflow.compat.LoopCond.class,
@@ -326,7 +323,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.transforms.BinCount.class,
             org.nd4j.linalg.api.ops.impl.transforms.CheckNumerics.class,
             org.nd4j.linalg.api.ops.impl.transforms.Cholesky.class,
-            org.nd4j.linalg.api.ops.impl.transforms.Constant.class,
             org.nd4j.linalg.api.ops.impl.transforms.Histogram.class,
             org.nd4j.linalg.api.ops.impl.transforms.HistogramFixedWidth.class,
             org.nd4j.linalg.api.ops.impl.transforms.IdentityN.class,
@@ -581,8 +577,14 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.random.impl.ProbablisticMerge.class,
             org.nd4j.linalg.api.ops.random.impl.Range.class,
             org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution.class,
-            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class
-
+            org.nd4j.linalg.api.ops.random.impl.UniformDistribution.class,
+            org.nd4j.linalg.api.ops.custom.AdjustContrast.class,
+            org.nd4j.linalg.api.ops.custom.AdjustContrastV2.class,
+            org.nd4j.linalg.api.ops.custom.BitCast.class,
+            org.nd4j.linalg.api.ops.custom.CompareAndBitpack.class,
+            org.nd4j.linalg.api.ops.custom.DivideNoNan.class,
+            org.nd4j.linalg.api.ops.custom.DrawBoundingBoxes.class,
+            org.nd4j.linalg.api.ops.custom.FakeQuantWithMinMaxVarsPerChannel.class
     );
 
     static {

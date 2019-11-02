@@ -33,6 +33,7 @@ import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.CustomOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
@@ -90,10 +91,9 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
 
         INDArray input = this.input.castTo(dataType);
 
-        // FIXME: int cast
-        int miniBatch = (int) input.size(0);
-        int inH = (int) input.size(2);
-        int inW = (int) input.size(3);
+        long miniBatch = input.size(0);
+        int inH = (int)input.size(2);
+        int inW = (int)input.size(3);
 
         int inDepth = (int) depthWiseWeights.size(1);
         int kH = (int) depthWiseWeights.size(2);
@@ -194,9 +194,8 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
                     + " " + layerId());
         }
 
-        // FIXME: int cast
-        int inDepth = (int) depthWiseWeights.size(1);
-        int outDepth = (int) pointWiseWeights.size(0);
+        long inDepth = depthWiseWeights.size(1);
+        long outDepth = pointWiseWeights.size(0);
 
         if (input.size(1) != inDepth) {
             String layerName = conf.getLayer().getLayerName();
@@ -220,7 +219,9 @@ public class SeparableConvolution2DLayer extends ConvolutionLayer {
         if (convolutionMode == ConvolutionMode.Same) {
             outSize = ConvolutionUtils.getOutputSize(input, kernel, strides, null, convolutionMode, dilation); //Also performs validation
 
-            // FIXME: int cast
+            if (input.size(2) > Integer.MAX_VALUE || input.size(3) > Integer.MAX_VALUE) {
+                throw new ND4JArraySizeException();
+            }
             pad = ConvolutionUtils.getSameModeTopLeftPadding(outSize, new int[] {(int) input.size(2), (int) input.size(3)}, kernel,
                     strides, dilation );
         } else {

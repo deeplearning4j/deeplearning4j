@@ -21,6 +21,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.datasets.iterator.impl.MnistDataSetIterator;
 import org.deeplearning4j.eval.Evaluation;
 import org.deeplearning4j.exception.DL4JException;
+import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
 import org.deeplearning4j.nn.conf.ConvolutionMode;
@@ -692,5 +693,23 @@ public class ConvolutionLayerTest extends BaseDL4JTest {
         INDArray in = Nd4j.create(2, 10, 6);
         INDArray out = net.output(in);
         assertArrayEquals(new long[]{2,7,6}, out.shape());
+    }
+
+    @Test
+    public void testDeconvBadInput(){
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .list()
+                .layer(new Deconvolution2D.Builder().nIn(5).nOut(3).build())
+                .build();
+        MultiLayerNetwork net = new MultiLayerNetwork(conf);
+        net.init();
+
+        INDArray badInput = Nd4j.create(DataType.FLOAT, 1, 10, 5, 5);
+        try {
+            net.output(badInput);
+        } catch (DL4JInvalidInputException e){
+            String msg = e.getMessage();
+            assertTrue(msg,msg.contains("Deconvolution2D") && msg.contains("input") && msg.contains("channels"));
+        }
     }
 }

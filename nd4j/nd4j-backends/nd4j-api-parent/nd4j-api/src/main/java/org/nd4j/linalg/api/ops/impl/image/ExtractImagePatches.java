@@ -120,4 +120,10 @@ public class ExtractImagePatches extends DynamicCustomOp {
         //TF includes redundant leading and training 1s for kSizes, strides, rates (positions 0/3)
         return new int[]{(int)ilist.getI(1), (int)ilist.getI(2)};
     }
+
+    @Override
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+        Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        return Collections.singletonList(inputDataTypes.get(0));
+    }
 }

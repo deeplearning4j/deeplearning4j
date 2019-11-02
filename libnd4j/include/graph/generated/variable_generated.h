@@ -57,7 +57,10 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
     VT_SHAPE = 10,
     VT_NDARRAY = 12,
     VT_DEVICE = 14,
-    VT_VARIABLETYPE = 16
+    VT_VARIABLETYPE = 16,
+    VT_CONTROLDEPS = 18,
+    VT_CONTROLDEPFOROP = 20,
+    VT_CONTROLDEPSFORVAR = 22
   };
   const IntPair *id() const {
     return GetPointer<const IntPair *>(VT_ID);
@@ -80,6 +83,15 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
   VarType variabletype() const {
     return static_cast<VarType>(GetField<int8_t>(VT_VARIABLETYPE, 0));
   }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPS);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDepForOp() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPFOROP);
+  }
+  const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *controlDepsForVar() const {
+    return GetPointer<const flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>> *>(VT_CONTROLDEPSFORVAR);
+  }
   bool Verify(flatbuffers::Verifier &verifier) const {
     return VerifyTableStart(verifier) &&
            VerifyOffset(verifier, VT_ID) &&
@@ -93,6 +105,15 @@ struct FlatVariable FLATBUFFERS_FINAL_CLASS : private flatbuffers::Table {
            verifier.VerifyTable(ndarray()) &&
            VerifyField<int32_t>(verifier, VT_DEVICE) &&
            VerifyField<int8_t>(verifier, VT_VARIABLETYPE) &&
+           VerifyOffset(verifier, VT_CONTROLDEPS) &&
+           verifier.VerifyVector(controlDeps()) &&
+           verifier.VerifyVectorOfStrings(controlDeps()) &&
+           VerifyOffset(verifier, VT_CONTROLDEPFOROP) &&
+           verifier.VerifyVector(controlDepForOp()) &&
+           verifier.VerifyVectorOfStrings(controlDepForOp()) &&
+           VerifyOffset(verifier, VT_CONTROLDEPSFORVAR) &&
+           verifier.VerifyVector(controlDepsForVar()) &&
+           verifier.VerifyVectorOfStrings(controlDepsForVar()) &&
            verifier.EndTable();
   }
 };
@@ -121,6 +142,15 @@ struct FlatVariableBuilder {
   void add_variabletype(VarType variabletype) {
     fbb_.AddElement<int8_t>(FlatVariable::VT_VARIABLETYPE, static_cast<int8_t>(variabletype), 0);
   }
+  void add_controlDeps(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps) {
+    fbb_.AddOffset(FlatVariable::VT_CONTROLDEPS, controlDeps);
+  }
+  void add_controlDepForOp(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepForOp) {
+    fbb_.AddOffset(FlatVariable::VT_CONTROLDEPFOROP, controlDepForOp);
+  }
+  void add_controlDepsForVar(flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepsForVar) {
+    fbb_.AddOffset(FlatVariable::VT_CONTROLDEPSFORVAR, controlDepsForVar);
+  }
   explicit FlatVariableBuilder(flatbuffers::FlatBufferBuilder &_fbb)
         : fbb_(_fbb) {
     start_ = fbb_.StartTable();
@@ -141,8 +171,14 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariable(
     flatbuffers::Offset<flatbuffers::Vector<int64_t>> shape = 0,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0,
-    VarType variabletype = VarType_VARIABLE) {
+    VarType variabletype = VarType_VARIABLE,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDeps = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepForOp = 0,
+    flatbuffers::Offset<flatbuffers::Vector<flatbuffers::Offset<flatbuffers::String>>> controlDepsForVar = 0) {
   FlatVariableBuilder builder_(_fbb);
+  builder_.add_controlDepsForVar(controlDepsForVar);
+  builder_.add_controlDepForOp(controlDepForOp);
+  builder_.add_controlDeps(controlDeps);
   builder_.add_device(device);
   builder_.add_ndarray(ndarray);
   builder_.add_shape(shape);
@@ -161,7 +197,10 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
     const std::vector<int64_t> *shape = nullptr,
     flatbuffers::Offset<FlatArray> ndarray = 0,
     int32_t device = 0,
-    VarType variabletype = VarType_VARIABLE) {
+    VarType variabletype = VarType_VARIABLE,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDeps = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepForOp = nullptr,
+    const std::vector<flatbuffers::Offset<flatbuffers::String>> *controlDepsForVar = nullptr) {
   return nd4j::graph::CreateFlatVariable(
       _fbb,
       id,
@@ -170,7 +209,10 @@ inline flatbuffers::Offset<FlatVariable> CreateFlatVariableDirect(
       shape ? _fbb.CreateVector<int64_t>(*shape) : 0,
       ndarray,
       device,
-      variabletype);
+      variabletype,
+      controlDeps ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDeps) : 0,
+      controlDepForOp ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepForOp) : 0,
+      controlDepsForVar ? _fbb.CreateVector<flatbuffers::Offset<flatbuffers::String>>(*controlDepsForVar) : 0);
 }
 
 inline const nd4j::graph::FlatVariable *GetFlatVariable(const void *buf) {

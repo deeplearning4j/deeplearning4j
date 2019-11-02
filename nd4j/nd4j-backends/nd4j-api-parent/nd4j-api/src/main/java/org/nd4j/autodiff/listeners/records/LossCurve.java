@@ -116,7 +116,7 @@ public class LossCurve {
      * Return all mean loss values for a given variable
      */
     public float[] meanLoss(@NonNull SDVariable loss){
-        return meanLoss(loss.getVarName());
+        return meanLoss(loss.name());
     }
 
     /**
@@ -143,7 +143,7 @@ public class LossCurve {
      * See {@link #meanLoss(int)}
      */
     public float meanLoss(@NonNull SDVariable loss, int epoch){
-        return meanLoss(loss.getVarName(), epoch);
+        return meanLoss(loss.name(), epoch);
     }
 
     /**
@@ -162,7 +162,7 @@ public class LossCurve {
      * Return the mean loss value for a given variable on the last epoch.
      */
     public float lastMeanLoss(@NonNull SDVariable loss){
-        return lastMeanLoss(loss.getVarName());
+        return lastMeanLoss(loss.name());
     }
 
     /**
@@ -189,7 +189,7 @@ public class LossCurve {
      * A positive delta means the loss is increasing, and a negative delta means it is decreasing.
      */
     public double lastMeanDelta(SDVariable loss){
-        return lastMeanDelta(loss.getVarName());
+        return lastMeanDelta(loss.name());
     }
 
     /**

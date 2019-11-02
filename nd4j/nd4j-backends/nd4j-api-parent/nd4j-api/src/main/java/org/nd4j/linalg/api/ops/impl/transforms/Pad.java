@@ -99,8 +99,8 @@ public class Pad extends DynamicCustomOp {
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
-        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() == 1 || inputDataTypes.size() == 2),
-                "Expected 1 or 2 input datatypes for %s, got %s", getClass(), inputDataTypes);
+        Preconditions.checkState(inputDataTypes != null && (inputDataTypes.size() >= 1 && inputDataTypes.size() <= 3),
+                "Expected 1-3 input datatypes for %s, got %s", getClass(), inputDataTypes);     //input, padding, pad value
         return Collections.singletonList(inputDataTypes.get(0));
     }
 }

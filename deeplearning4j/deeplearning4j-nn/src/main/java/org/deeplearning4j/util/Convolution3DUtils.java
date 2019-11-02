@@ -61,15 +61,14 @@ public class Convolution3DUtils {
                                         ConvolutionMode convolutionMode, int[] dilation, boolean isNCDHW) {
 
         // NCDHW vs. NDHWC
-        int inD = (int) (isNCDHW ? inputData.size(2) : inputData.size(1));
-        int inH = (int) (isNCDHW ? inputData.size(3) : inputData.size(2));
-        int inW = (int) (isNCDHW ? inputData.size(4) : inputData.size(3));
+        long inD = (isNCDHW ? inputData.size(2) : inputData.size(1));
+        long inH = (isNCDHW ? inputData.size(3) : inputData.size(2));
+        long inW = (isNCDHW ? inputData.size(4) : inputData.size(3));
 
         int[] eKernel = effectiveKernelSize(kernel, dilation);
         boolean atrous = (eKernel == kernel);
 
-        // FIXME: int cast
-        val inShape = new int[]{inD, inH, inW};
+        val inShape = new long[]{inD, inH, inW};
         validateShapes(ArrayUtil.toInts(inputData.shape()), eKernel, strides, padding, convolutionMode, dilation, inShape, atrous);
 
         if (convolutionMode == ConvolutionMode.Same) {
@@ -80,16 +79,16 @@ public class Convolution3DUtils {
             return new int[]{outD, outH, outW};
         }
 
-        int outD = (inD - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
-        int outH = (inH - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
-        int outW = (inW - eKernel[2] + 2 * padding[2]) / strides[2] + 1;
+        int outD = ((int)inD - eKernel[0] + 2 * padding[0]) / strides[0] + 1;
+        int outH = ((int)inH - eKernel[1] + 2 * padding[1]) / strides[1] + 1;
+        int outW = ((int)inW - eKernel[2] + 2 * padding[2]) / strides[2] + 1;
 
         return new int[]{outD, outH, outW};
     }
 
 
     private static void validateShapes(int[] inputDataShape, int[] eKernel, int[] strides, int[] padding,
-                                      ConvolutionMode convolutionMode, int[] dilation, int[] inShape,
+                                      ConvolutionMode convolutionMode, int[] dilation, long[] inShape,
                                       boolean atrous) {
 
         String[] dims = new String[]{"depth", "height", "width"};

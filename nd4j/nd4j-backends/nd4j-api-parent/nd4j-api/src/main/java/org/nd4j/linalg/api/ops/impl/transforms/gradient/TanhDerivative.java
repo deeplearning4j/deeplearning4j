@@ -28,13 +28,19 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- *
+ *  TanhDerivative: calculated dL/dIn from dL/dOut and In
  */
 public class TanhDerivative extends DynamicCustomOp {
     public TanhDerivative(SameDiff sameDiff, SDVariable i_v1, SDVariable i_v2) {
         super(sameDiff, new SDVariable[]{i_v1, i_v2});
     }
 
+    /**
+     *
+     * @param x Input
+     * @param y Gradient at output (dL/dOut)
+     * @param z Output array, gradient at input (dL/dIn - to be calculated)
+     */
     public TanhDerivative(INDArray x, INDArray y, INDArray z) {
         super(null, new INDArray[]{x, y}, new INDArray[]{z});
     }
@@ -42,6 +48,10 @@ public class TanhDerivative extends DynamicCustomOp {
     public TanhDerivative() {
     }
 
+    /**
+     * @param x Input
+     * @param y Gradient at output (dL/dOut)
+     */
     public TanhDerivative(INDArray x, INDArray y) {
         this(x, y, null);
     }

@@ -21,6 +21,7 @@ import org.deeplearning4j.BaseDL4JTest;
 import org.deeplearning4j.TestUtils;
 import org.deeplearning4j.nn.conf.ComputationGraphConfiguration;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.WorkspaceMode;
 import org.deeplearning4j.nn.conf.graph.ElementWiseVertex;
 import org.deeplearning4j.nn.conf.graph.ScaleVertex;
 import org.deeplearning4j.nn.conf.graph.ShiftVertex;
@@ -52,152 +53,169 @@ public class TestSameDiffLambda extends BaseDL4JTest {
 
     @Test
     public void testSameDiffLamdaLayerBasic(){
-        Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .updater(new Adam(0.01))
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in")
-                .addLayer("1", new SameDiffSimpleLambdaLayer(), "0")
-                .addLayer("2", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "1")
-                .setOutputs("2")
-                .build();
+        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.ENABLED, WorkspaceMode.NONE}) {
+            log.info("--- Workspace Mode: {} ---", wsm);
 
-        //Equavalent, not using SameDiff Lambda:
-        ComputationGraphConfiguration confStd = new NeuralNetConfiguration.Builder()
-                .seed(12345)
-                .updater(new Adam(0.01))
-                .graphBuilder()
-                .addInputs("in")
-                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in")
-                .addVertex("1", new ShiftVertex(1.0), "0")
-                .addVertex("2", new ScaleVertex(2.0), "1")
-                .addLayer("3", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "2")
-                .setOutputs("3")
-                .build();
 
-        ComputationGraph lambda = new ComputationGraph(conf);
-        lambda.init();
+            Nd4j.getRandom().setSeed(12345);
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .trainingWorkspaceMode(wsm)
+                    .inferenceWorkspaceMode(wsm)
+                    .seed(12345)
+                    .updater(new Adam(0.01))
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in")
+                    .addLayer("1", new SameDiffSimpleLambdaLayer(), "0")
+                    .addLayer("2", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "1")
+                    .setOutputs("2")
+                    .build();
 
-        ComputationGraph std = new ComputationGraph(confStd);
-        std.init();
+            //Equavalent, not using SameDiff Lambda:
+            ComputationGraphConfiguration confStd = new NeuralNetConfiguration.Builder()
+                    .trainingWorkspaceMode(wsm)
+                    .inferenceWorkspaceMode(wsm)
+                    .seed(12345)
+                    .updater(new Adam(0.01))
+                    .graphBuilder()
+                    .addInputs("in")
+                    .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in")
+                    .addVertex("1", new ShiftVertex(1.0), "0")
+                    .addVertex("2", new ScaleVertex(2.0), "1")
+                    .addLayer("3", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "2")
+                    .setOutputs("3")
+                    .build();
 
-        lambda.setParams(std.params());
+            ComputationGraph lambda = new ComputationGraph(conf);
+            lambda.init();
 
-        INDArray in = Nd4j.rand(3,5);
-        INDArray labels = TestUtils.randomOneHot(3, 5);
-        DataSet ds = new DataSet(in, labels);
+            ComputationGraph std = new ComputationGraph(confStd);
+            std.init();
 
-        INDArray outLambda = lambda.outputSingle(in);
-        INDArray outStd = std.outputSingle(in);
+            lambda.setParams(std.params());
 
-        assertEquals(outLambda, outStd);
+            INDArray in = Nd4j.rand(3, 5);
+            INDArray labels = TestUtils.randomOneHot(3, 5);
+            DataSet ds = new DataSet(in, labels);
 
-        double scoreLambda = lambda.score(ds);
-        double scoreStd = std.score(ds);
+            INDArray outLambda = lambda.outputSingle(in);
+            INDArray outStd = std.outputSingle(in);
 
-        assertEquals(scoreStd, scoreLambda, 1e-6);
+            assertEquals(outLambda, outStd);
 
-        for( int i=0; i<3; i++ ){
-            lambda.fit(ds);
-            std.fit(ds);
+            double scoreLambda = lambda.score(ds);
+            double scoreStd = std.score(ds);
 
-            String s = String.valueOf(i);
-            assertEquals(s, std.params(), lambda.params());
-            assertEquals(s, std.getFlattenedGradients(), lambda.getFlattenedGradients());
+            assertEquals(scoreStd, scoreLambda, 1e-6);
+
+            for (int i = 0; i < 3; i++) {
+                lambda.fit(ds);
+                std.fit(ds);
+
+                String s = String.valueOf(i);
+                assertEquals(s, std.params(), lambda.params());
+                assertEquals(s, std.getFlattenedGradients(), lambda.getFlattenedGradients());
+            }
+
+            ComputationGraph loaded = TestUtils.testModelSerialization(lambda);
+            outLambda = loaded.outputSingle(in);
+            outStd = std.outputSingle(in);
+
+            assertEquals(outStd, outLambda);
+
+            //Sanity check on different minibatch sizes:
+            INDArray newIn = Nd4j.vstack(in, in);
+            INDArray outMbsd = lambda.output(newIn)[0];
+            INDArray outMb = std.output(newIn)[0];
+            assertEquals(outMb, outMbsd);
         }
-
-        ComputationGraph loaded = TestUtils.testModelSerialization(lambda);
-        outLambda = loaded.outputSingle(in);
-        outStd = std.outputSingle(in);
-
-        assertEquals(outStd, outLambda);
-
-        //Sanity check on different minibatch sizes:
-        INDArray newIn = Nd4j.vstack(in, in);
-        INDArray outMbsd = lambda.output(newIn)[0];
-        INDArray outMb = std.output(newIn)[0];
-        assertEquals(outMb, outMbsd);
     }
 
     @Test
     public void testSameDiffLamdaVertexBasic(){
-        Nd4j.getRandom().setSeed(12345);
-        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
-                .dataType(DataType.DOUBLE)
-                .seed(12345)
-                .updater(new Adam(0.01))
-                .graphBuilder()
-                .addInputs("in1", "in2")
-                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in1")
-                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in2")
-                .addVertex("lambda", new SameDiffSimpleLambdaVertex(), "0", "1")
-                .addLayer("2", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lambda")
-                .setOutputs("2")
-                .build();
+        for(WorkspaceMode wsm : new WorkspaceMode[]{WorkspaceMode.ENABLED, WorkspaceMode.NONE}) {
+            log.info("--- Workspace Mode: {} ---", wsm);
 
-        //Equavalent, not using SameDiff Lambda:
-        ComputationGraphConfiguration confStd = new NeuralNetConfiguration.Builder()
-                .dataType(DataType.DOUBLE)
-                .seed(12345)
-                .updater(new Adam(0.01))
-                .graphBuilder()
-                .addInputs("in1", "in2")
-                .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in1")
-                .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in2")
-                .addVertex("elementwise", new ElementWiseVertex(ElementWiseVertex.Op.Product), "0", "1")
-                .addLayer("3", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
-                        .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "elementwise")
-                .setOutputs("3")
-                .build();
+            Nd4j.getRandom().setSeed(12345);
+            ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                    .trainingWorkspaceMode(wsm)
+                    .inferenceWorkspaceMode(wsm)
+                    .dataType(DataType.DOUBLE)
+                    .seed(12345)
+                    .updater(new Adam(0.01))
+                    .graphBuilder()
+                    .addInputs("in1", "in2")
+                    .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in1")
+                    .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in2")
+                    .addVertex("lambda", new SameDiffSimpleLambdaVertex(), "0", "1")
+                    .addLayer("2", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "lambda")
+                    .setOutputs("2")
+                    .build();
 
-        ComputationGraph lambda = new ComputationGraph(conf);
-        lambda.init();
+            //Equavalent, not using SameDiff Lambda:
+            ComputationGraphConfiguration confStd = new NeuralNetConfiguration.Builder()
+                    .trainingWorkspaceMode(wsm)
+                    .inferenceWorkspaceMode(wsm)
+                    .dataType(DataType.DOUBLE)
+                    .seed(12345)
+                    .updater(new Adam(0.01))
+                    .graphBuilder()
+                    .addInputs("in1", "in2")
+                    .addLayer("0", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in1")
+                    .addLayer("1", new DenseLayer.Builder().nIn(5).nOut(5).activation(Activation.TANH).build(), "in2")
+                    .addVertex("elementwise", new ElementWiseVertex(ElementWiseVertex.Op.Product), "0", "1")
+                    .addLayer("3", new OutputLayer.Builder().nIn(5).nOut(5).activation(Activation.SOFTMAX)
+                            .lossFunction(LossFunctions.LossFunction.MCXENT).build(), "elementwise")
+                    .setOutputs("3")
+                    .build();
 
-        ComputationGraph std = new ComputationGraph(confStd);
-        std.init();
+            ComputationGraph lambda = new ComputationGraph(conf);
+            lambda.init();
 
-        lambda.setParams(std.params());
+            ComputationGraph std = new ComputationGraph(confStd);
+            std.init();
 
-        INDArray in1 = Nd4j.rand(3,5);
-        INDArray in2 = Nd4j.rand(3,5);
-        INDArray labels = TestUtils.randomOneHot(3, 5);
-        MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[]{in1, in2}, new INDArray[]{labels});
+            lambda.setParams(std.params());
 
-        INDArray outLambda = lambda.output(in1, in2)[0];
-        INDArray outStd = std.output(in1, in2)[0];
+            INDArray in1 = Nd4j.rand(3, 5);
+            INDArray in2 = Nd4j.rand(3, 5);
+            INDArray labels = TestUtils.randomOneHot(3, 5);
+            MultiDataSet mds = new org.nd4j.linalg.dataset.MultiDataSet(new INDArray[]{in1, in2}, new INDArray[]{labels});
 
-        assertEquals(outLambda, outStd);
+            INDArray outLambda = lambda.output(in1, in2)[0];
+            INDArray outStd = std.output(in1, in2)[0];
 
-        double scoreLambda = lambda.score(mds);
-        double scoreStd = std.score(mds);
+            assertEquals(outLambda, outStd);
 
-        assertEquals(scoreStd, scoreLambda, 1e-6);
+            double scoreLambda = lambda.score(mds);
+            double scoreStd = std.score(mds);
 
-        for( int i=0; i<3; i++ ){
-            lambda.fit(mds);
-            std.fit(mds);
+            assertEquals(scoreStd, scoreLambda, 1e-6);
 
-            String s = String.valueOf(i);
-            assertEquals(s, std.params(), lambda.params());
-            assertEquals(s, std.getFlattenedGradients(), lambda.getFlattenedGradients());
+            for (int i = 0; i < 3; i++) {
+                lambda.fit(mds);
+                std.fit(mds);
+
+                String s = String.valueOf(i);
+                assertEquals(s, std.params(), lambda.params());
+                assertEquals(s, std.getFlattenedGradients(), lambda.getFlattenedGradients());
+            }
+
+            ComputationGraph loaded = TestUtils.testModelSerialization(lambda);
+            outLambda = loaded.output(in1, in2)[0];
+            outStd = std.output(in1, in2)[0];
+
+            assertEquals(outStd, outLambda);
+
+            //Sanity check on different minibatch sizes:
+            INDArray newIn1 = Nd4j.vstack(in1, in1);
+            INDArray newIn2 = Nd4j.vstack(in2, in2);
+            INDArray outMbsd = lambda.output(newIn1, newIn2)[0];
+            INDArray outMb = std.output(newIn1, newIn2)[0];
+            assertEquals(outMb, outMbsd);
         }
-
-        ComputationGraph loaded = TestUtils.testModelSerialization(lambda);
-        outLambda = loaded.output(in1, in2)[0];
-        outStd = std.output(in1, in2)[0];
-
-        assertEquals(outStd, outLambda);
-
-        //Sanity check on different minibatch sizes:
-        INDArray newIn1 = Nd4j.vstack(in1, in1);
-        INDArray newIn2 = Nd4j.vstack(in2, in2);
-        INDArray outMbsd = lambda.output(newIn1, newIn2)[0];
-        INDArray outMb = std.output(newIn1, newIn2)[0];
-        assertEquals(outMb, outMbsd);
     }
 }

@@ -48,6 +48,7 @@ import org.nd4j.linalg.api.rng.DefaultRandom;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.conditions.Condition;
 import org.nd4j.linalg.learning.config.AdaGrad;
@@ -664,8 +665,10 @@ public class TestOptimizers extends BaseDL4JTest {
             double xlm1 = parameters.getDouble(nDims - 2);
             double gl = 200 * (xl - xlm1 * xlm1);
 
-            // FIXME: int cast
-            gradient.put(0, (int) nDims - 1, gl);
+            if (nDims - 1 > Integer.MAX_VALUE) {
+                throw new ND4JArraySizeException();
+            }
+            gradient.put(0,  (int)nDims - 1, gl);
             Gradient g = new DefaultGradient();
             g.gradientForVariable().put("W", gradient);
             this.gradient = g;
@@ -865,8 +868,7 @@ public class TestOptimizers extends BaseDL4JTest {
 
         @Override
         public long numParams() {
-            // FIXME: int cast
-            return (int) parameters.length();
+            return parameters.length();
         }
 
         @Override

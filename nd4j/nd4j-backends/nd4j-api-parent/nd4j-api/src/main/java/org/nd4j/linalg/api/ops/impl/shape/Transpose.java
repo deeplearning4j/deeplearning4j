@@ -114,7 +114,7 @@ public class Transpose extends DynamicCustomOp {
 
         }
 
-        INDArray permuteArrayOp = TFGraphMapper.getInstance().getNDArrayFromTensor("value", permuteDimsNode, graph);
+        INDArray permuteArrayOp = TFGraphMapper.getNDArrayFromTensor(permuteDimsNode);
         if (permuteArrayOp != null) {
             this.permuteDims = permuteArrayOp.data().asInt();
         }
@@ -124,13 +124,7 @@ public class Transpose extends DynamicCustomOp {
             return;
         }
 
-        INDArray arr = sameDiff.getArrForVarName(arg().getVarName());
-        if (arr == null) {
-            val arrVar = sameDiff.getVariable(arg().getVarName());
-
-            arr = arrVar.getWeightInitScheme().create(arrVar.dataType(), arrVar.getShape());
-            sameDiff.setArrayForVariable(arg().getVarName(), arr);
-        }
+        INDArray arr = sameDiff.getArrForVarName(arg().name());
 
         if(permuteArrayOp != null){
             addInputArgument(arr, permuteArrayOp);
@@ -138,16 +132,12 @@ public class Transpose extends DynamicCustomOp {
             addInputArgument(arr);
         }
 
-
-
         if (arr != null && permuteDims == null) {
             this.permuteDims = ArrayUtil.reverseCopy(ArrayUtil.range(0, arr.rank()));
         }
 
         if (permuteDims != null && permuteDims.length < arg().getShape().length)
             throw new ND4JIllegalStateException("Illegal permute found. Not all dimensions specified");
-
-
     }
 
     @Override

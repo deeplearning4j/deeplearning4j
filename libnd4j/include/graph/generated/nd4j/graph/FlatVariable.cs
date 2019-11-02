@@ -37,6 +37,12 @@ public struct FlatVariable : IFlatbufferObject
   public FlatArray? Ndarray { get { int o = __p.__offset(12); return o != 0 ? (FlatArray?)(new FlatArray()).__assign(__p.__indirect(o + __p.bb_pos), __p.bb) : null; } }
   public int Device { get { int o = __p.__offset(14); return o != 0 ? __p.bb.GetInt(o + __p.bb_pos) : (int)0; } }
   public VarType Variabletype { get { int o = __p.__offset(16); return o != 0 ? (VarType)__p.bb.GetSbyte(o + __p.bb_pos) : VarType.VARIABLE; } }
+  public string ControlDeps(int j) { int o = __p.__offset(18); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int ControlDepsLength { get { int o = __p.__offset(18); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public string ControlDepForOp(int j) { int o = __p.__offset(20); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int ControlDepForOpLength { get { int o = __p.__offset(20); return o != 0 ? __p.__vector_len(o) : 0; } }
+  public string ControlDepsForVar(int j) { int o = __p.__offset(22); return o != 0 ? __p.__string(__p.__vector(o) + j * 4) : null; }
+  public int ControlDepsForVarLength { get { int o = __p.__offset(22); return o != 0 ? __p.__vector_len(o) : 0; } }
 
   public static Offset<FlatVariable> CreateFlatVariable(FlatBufferBuilder builder,
       Offset<IntPair> idOffset = default(Offset<IntPair>),
@@ -45,8 +51,14 @@ public struct FlatVariable : IFlatbufferObject
       VectorOffset shapeOffset = default(VectorOffset),
       Offset<FlatArray> ndarrayOffset = default(Offset<FlatArray>),
       int device = 0,
-      VarType variabletype = VarType.VARIABLE) {
-    builder.StartObject(7);
+      VarType variabletype = VarType.VARIABLE,
+      VectorOffset controlDepsOffset = default(VectorOffset),
+      VectorOffset controlDepForOpOffset = default(VectorOffset),
+      VectorOffset controlDepsForVarOffset = default(VectorOffset)) {
+    builder.StartObject(10);
+    FlatVariable.AddControlDepsForVar(builder, controlDepsForVarOffset);
+    FlatVariable.AddControlDepForOp(builder, controlDepForOpOffset);
+    FlatVariable.AddControlDeps(builder, controlDepsOffset);
     FlatVariable.AddDevice(builder, device);
     FlatVariable.AddNdarray(builder, ndarrayOffset);
     FlatVariable.AddShape(builder, shapeOffset);
@@ -57,7 +69,7 @@ public struct FlatVariable : IFlatbufferObject
     return FlatVariable.EndFlatVariable(builder);
   }
 
-  public static void StartFlatVariable(FlatBufferBuilder builder) { builder.StartObject(7); }
+  public static void StartFlatVariable(FlatBufferBuilder builder) { builder.StartObject(10); }
   public static void AddId(FlatBufferBuilder builder, Offset<IntPair> idOffset) { builder.AddOffset(0, idOffset.Value, 0); }
   public static void AddName(FlatBufferBuilder builder, StringOffset nameOffset) { builder.AddOffset(1, nameOffset.Value, 0); }
   public static void AddDtype(FlatBufferBuilder builder, DType dtype) { builder.AddSbyte(2, (sbyte)dtype, 0); }
@@ -68,6 +80,18 @@ public struct FlatVariable : IFlatbufferObject
   public static void AddNdarray(FlatBufferBuilder builder, Offset<FlatArray> ndarrayOffset) { builder.AddOffset(4, ndarrayOffset.Value, 0); }
   public static void AddDevice(FlatBufferBuilder builder, int device) { builder.AddInt(5, device, 0); }
   public static void AddVariabletype(FlatBufferBuilder builder, VarType variabletype) { builder.AddSbyte(6, (sbyte)variabletype, 0); }
+  public static void AddControlDeps(FlatBufferBuilder builder, VectorOffset controlDepsOffset) { builder.AddOffset(7, controlDepsOffset.Value, 0); }
+  public static VectorOffset CreateControlDepsVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateControlDepsVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartControlDepsVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddControlDepForOp(FlatBufferBuilder builder, VectorOffset controlDepForOpOffset) { builder.AddOffset(8, controlDepForOpOffset.Value, 0); }
+  public static VectorOffset CreateControlDepForOpVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateControlDepForOpVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartControlDepForOpVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
+  public static void AddControlDepsForVar(FlatBufferBuilder builder, VectorOffset controlDepsForVarOffset) { builder.AddOffset(9, controlDepsForVarOffset.Value, 0); }
+  public static VectorOffset CreateControlDepsForVarVector(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); for (int i = data.Length - 1; i >= 0; i--) builder.AddOffset(data[i].Value); return builder.EndVector(); }
+  public static VectorOffset CreateControlDepsForVarVectorBlock(FlatBufferBuilder builder, StringOffset[] data) { builder.StartVector(4, data.Length, 4); builder.Add(data); return builder.EndVector(); }
+  public static void StartControlDepsForVarVector(FlatBufferBuilder builder, int numElems) { builder.StartVector(4, numElems, 4); }
   public static Offset<FlatVariable> EndFlatVariable(FlatBufferBuilder builder) {
     int o = builder.EndObject();
     return new Offset<FlatVariable>(o);

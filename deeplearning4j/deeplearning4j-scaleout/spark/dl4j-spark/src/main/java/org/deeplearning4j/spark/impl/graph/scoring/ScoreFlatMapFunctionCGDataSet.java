@@ -36,7 +36,7 @@ import java.util.Iterator;
 import java.util.List;
 
 /** Function used to score a DataSet using a ComputationGraph */
-public class ScoreFlatMapFunctionCGDataSet implements FlatMapFunction<Iterator<DataSet>, Tuple2<Integer, Double>> {
+public class ScoreFlatMapFunctionCGDataSet implements FlatMapFunction<Iterator<DataSet>, Tuple2<Long, Double>> {
     private static final Logger log = LoggerFactory.getLogger(ScoreFlatMapFunctionCGDataSet.class);
     private String json;
     private Broadcast<INDArray> params;
@@ -50,9 +50,9 @@ public class ScoreFlatMapFunctionCGDataSet implements FlatMapFunction<Iterator<D
     }
 
     @Override
-    public Iterator<Tuple2<Integer, Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
+    public Iterator<Tuple2<Long, Double>> call(Iterator<DataSet> dataSetIterator) throws Exception {
         if (!dataSetIterator.hasNext()) {
-            return Collections.singletonList(new Tuple2<>(0, 0.0)).iterator();
+            return Collections.singletonList(new Tuple2<>(0L, 0.0)).iterator();
         }
 
         DataSetIterator iter = new IteratorDataSetIterator(dataSetIterator, minibatchSize); //Does batching where appropriate
@@ -65,13 +65,12 @@ public class ScoreFlatMapFunctionCGDataSet implements FlatMapFunction<Iterator<D
                             "Network did not have same number of parameters as the broadcast set parameters");
         network.setParams(val);
 
-        List<Tuple2<Integer, Double>> out = new ArrayList<>();
+        List<Tuple2<Long, Double>> out = new ArrayList<>();
         while (iter.hasNext()) {
             DataSet ds = iter.next();
             double score = network.score(ds, false);
 
-            // FIXME: int cast
-            int numExamples = (int) ds.getFeatures().size(0);
+            long numExamples = ds.getFeatures().size(0);
             out.add(new Tuple2<>(numExamples, score * numExamples));
         }
 

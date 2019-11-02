@@ -178,7 +178,7 @@ public class ListenerEvaluations {
          * @param evaluations The evaluations to run
          */
         public Builder trainEvaluation(@NonNull SDVariable variable, int labelIndex, @NonNull IEvaluation... evaluations) {
-            return trainEvaluation(variable.getVarName(), labelIndex, evaluations);
+            return trainEvaluation(variable.name(), labelIndex, evaluations);
         }
 
         /**
@@ -202,7 +202,7 @@ public class ListenerEvaluations {
          * @param evaluations The evaluations to run
          */
         public Builder validationEvaluation(@NonNull SDVariable variable, int labelIndex, @NonNull IEvaluation... evaluations) {
-            return validationEvaluation(variable.getVarName(), labelIndex, evaluations);
+            return validationEvaluation(variable.name(), labelIndex, evaluations);
         }
 
         /**
