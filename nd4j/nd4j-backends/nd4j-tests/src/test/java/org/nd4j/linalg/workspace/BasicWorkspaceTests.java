@@ -319,6 +319,11 @@ public class BasicWorkspaceTests extends BaseNd4jTest {
             long reqMemory = 5 * Nd4j.sizeOfDataType(array1.dataType());
             assertEquals(reqMemory + reqMemory % 8, wsI.getPrimaryOffset());
             assertEquals(array1, array2);
+
+            INDArray array3 = Nd4j.createUninitializedDetached(DataType.FLOAT, new long[0]);
+            assertTrue(array3.isScalar());
+            assertEquals(1, array3.length());
+            assertEquals(1, array3.data().length());
         }
     }
 

@@ -309,11 +309,11 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param ordering the ordering of the ndarray
      */
     public BaseNDArray(int[] shape, int[] stride, long offset, char ordering) {
-        this(Nd4j.createBuffer(ArrayUtil.prodLong(shape)), shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(shape.length == 0 ? 1 : ArrayUtil.prodLong(shape)), shape, stride, offset, ordering);
     }
 
     public BaseNDArray(long[] shape, long[] stride, long offset, char ordering) {
-        this(Nd4j.createBuffer(ArrayUtil.prodLong(shape)), shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(shape.length == 0 ? 1 : ArrayUtil.prodLong(shape)), shape, stride, offset, ordering);
     }
 
     /**
@@ -326,19 +326,19 @@ public abstract class BaseNDArray implements INDArray, Iterable {
      * @param initialize Whether to initialize the INDArray. If true: initialize. If false: don't.
      */
     public BaseNDArray(int[] shape, int[] stride, long offset, char ordering, boolean initialize) {
-        this(Nd4j.createBuffer(ArrayUtil.prodLong(shape), initialize), shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(shape.length == 0 ? 1 : ArrayUtil.prodLong(shape), initialize), shape, stride, offset, ordering);
     }
 
     public BaseNDArray(long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
-        this(Nd4j.createBuffer(ArrayUtil.prodLong(shape), initialize), shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(shape.length == 0 ? 1 : ArrayUtil.prodLong(shape), initialize), shape, stride, offset, ordering);
     }
 
     public BaseNDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize) {
-        this(Nd4j.createBuffer(type, ArrayUtil.prodLong(shape), initialize), type, shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(type, shape.length == 0 ? 1 : ArrayUtil.prodLong(shape), initialize), type, shape, stride, offset, ordering);
     }
 
     public BaseNDArray(DataType type, long[] shape, long[] stride, long offset, char ordering, boolean initialize, MemoryWorkspace workspace) {
-        this(Nd4j.createBuffer(type, ArrayUtil.prodLong(shape), initialize, workspace), type, shape, stride, offset, ordering);
+        this(Nd4j.createBuffer(type, shape.length == 0 ? 1 : ArrayUtil.prodLong(shape), initialize, workspace), type, shape, stride, offset, ordering);
     }
 
 
