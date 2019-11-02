@@ -47,7 +47,7 @@ public abstract class BaseDataSetIterator<T> implements DataSetIterator {
     public int inputColumns() {
         if (inputColumns == -1)
             preloadDataSet();
-        return inputColumns;
+        return (int)inputColumns;
     }
 
     @Override

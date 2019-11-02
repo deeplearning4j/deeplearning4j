@@ -38,6 +38,7 @@ import org.deeplearning4j.spark.api.TrainingMaster;
 import org.deeplearning4j.spark.api.stats.SparkTrainingStats;
 import org.deeplearning4j.spark.impl.SparkListenable;
 import org.deeplearning4j.spark.impl.common.reduce.IntDoubleReduceFunction;
+import org.deeplearning4j.spark.impl.common.reduce.LongDoubleReduceFunction;
 import org.deeplearning4j.spark.impl.graph.dataset.DataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.dataset.PairDataSetToMultiDataSetFn;
 import org.deeplearning4j.spark.impl.graph.evaluation.IEvaluateMDSFlatMapFunction;
@@ -374,11 +375,11 @@ public class SparkComputationGraph extends SparkListenable {
      *                      in one go)
      */
     public double calculateScore(JavaRDD<DataSet> data, boolean average, int minibatchSize) {
-        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGDataSet(conf.toJson(),
-                        sc.broadcast(network.params(false)), minibatchSize));
+        JavaRDD<Tuple2<Long, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGDataSet(conf.toJson(),
+                        sc.broadcast(network.params()), minibatchSize));
 
         //Reduce to a single tuple, with example count + sum of scores
-        Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
+        Tuple2<Long, Double> countAndSumScores = rdd.reduce(new LongDoubleReduceFunction());
         if (average) {
             return countAndSumScores._2() / countAndSumScores._1();
         } else {
@@ -409,10 +410,10 @@ public class SparkComputationGraph extends SparkListenable {
      *                      in one go)
      */
     public double calculateScoreMultiDataSet(JavaRDD<MultiDataSet> data, boolean average, int minibatchSize) {
-        JavaRDD<Tuple2<Integer, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGMultiDataSet(conf.toJson(),
-                        sc.broadcast(network.params(false)), minibatchSize));
+        JavaRDD<Tuple2<Long, Double>> rdd = data.mapPartitions(new ScoreFlatMapFunctionCGMultiDataSet(conf.toJson(),
+                        sc.broadcast(network.params()), minibatchSize));
         //Reduce to a single tuple, with example count + sum of scores
-        Tuple2<Integer, Double> countAndSumScores = rdd.reduce(new IntDoubleReduceFunction());
+        Tuple2<Long, Double> countAndSumScores = rdd.reduce(new LongDoubleReduceFunction());
         if (average) {
             return countAndSumScores._2() / countAndSumScores._1();
         } else {
