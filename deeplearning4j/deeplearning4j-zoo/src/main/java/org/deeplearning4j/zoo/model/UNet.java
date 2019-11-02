@@ -215,7 +215,7 @@ public class UNet extends ZooModel {
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.RELU).build(), "conv9-2")
 
-                .addLayer("conv10", new ConvolutionLayer.Builder(3,3).stride(1,1).nOut(1)
+                .addLayer("conv10", new ConvolutionLayer.Builder(1,1).stride(1,1).nOut(1)
                         .convolutionMode(ConvolutionMode.Same).cudnnAlgoMode(cudnnAlgoMode)
                         .activation(Activation.IDENTITY).build(), "conv9-3")
                 .addLayer("output", new CnnLossLayer.Builder(LossFunctions.LossFunction.XENT)

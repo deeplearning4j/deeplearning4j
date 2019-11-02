@@ -20,6 +20,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.DataSet;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
@@ -125,7 +126,9 @@ public class ImagePreProcessingScaler implements DataNormalization {
 
     @Override
     public void transformLabel(INDArray label) {
-        //No op
+        Preconditions.checkState(label != null && label.rank() == 4, "Labels can only be transformed for segmentation use" +
+                " cases using this preprocesser - i.e., labels must be rank 4. Got: %ndShape", label);
+        transform(label);
     }
 
     @Override
@@ -161,7 +164,9 @@ public class ImagePreProcessingScaler implements DataNormalization {
 
     @Override
     public void revertLabels(INDArray labels) {
-        //No op
+        Preconditions.checkState(labels != null && labels.rank() == 4, "Labels can only be transformed for segmentation use" +
+                " cases using this preprocesser - i.e., labels must be rank 4. Got: %ndShape", labels);
+        revertFeatures(labels);
     }
 
     @Override
@@ -171,9 +176,7 @@ public class ImagePreProcessingScaler implements DataNormalization {
 
     @Override
     public void fitLabel(boolean fitLabels) {
-        if (fitLabels) {
-            log.warn("Labels fitting not currently supported for ImagePreProcessingScaler. Labels will not be modified");
-        }
+        //No-op
     }
 
     @Override

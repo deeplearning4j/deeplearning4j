@@ -123,7 +123,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
     }
 
     @Override
-    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma,
+    public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, int[] shape, INDArray gamma, INDArray beta,
                     INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr layerWorkspaceMgr) {
         this.eps = eps;
         val miniBatch = (int) input.size(0);
@@ -189,7 +189,7 @@ public class CudnnBatchNormalizationHelper extends BaseCudnnHelper implements Ba
         Pointer varCacheData = allocator.getPointer(varCache, context);
 
         checkCudnn(cudnnSetStream(cudnnContext, new CUstream_st(context.getCublasStream())));
-        checkCudnn(cudnnBatchNormalizationBackward(cudnnContext, batchNormMode, alpha, beta, alpha, alpha,
+        checkCudnn(cudnnBatchNormalizationBackward(cudnnContext, batchNormMode, alpha, this.beta, alpha, alpha,
                         cudnnContext.srcTensorDesc, srcData, cudnnContext.deltaTensorDesc, epsData,
                         cudnnContext.dstTensorDesc, dstData, cudnnContext.gammaBetaTensorDesc, gammaData, dGammaData,
                         dBetaData, eps, meanCacheData, varCacheData));

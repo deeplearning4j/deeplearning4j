@@ -16,21 +16,28 @@
 
 package org.deeplearning4j.nn.layers.mkldnn;
 
+import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.normalization.BatchNormalizationHelper;
+import org.deeplearning4j.nn.params.BatchNormalizationParamInitializer;
 import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.nd4j.linalg.api.ops.OpContext;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNorm;
+import org.nd4j.linalg.api.ops.impl.layers.convolution.BatchNormDerivative;
 import org.nd4j.linalg.api.ops.impl.summarystats.Variance;
+import org.nd4j.linalg.api.shape.LongShapeDescriptor;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -57,27 +64,53 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
 
     @Override
     public Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, long[] shape, INDArray gamma,
-                                                     INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr workspaceMgr) {
-        //2019-02-14: Backprop disabled pending fixes. https://github.com/deeplearning4j/deeplearning4j/issues/7166
-        //Also no MKL-DNN implemented for backprop anyway
+                                                     INDArray beta, INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr workspaceMgr) {
+        if(input.dataType() != DataType.FLOAT)
+            return null;    //MKL-DNN only supports float
         /*
-        INDArray[] in = gamma == null ? new INDArray[]{input, mean, var, epsilon} : new INDArray[]{input, mean, var, gamma, beta, epsilon};
+        //TODO FIXME - AB 2019/11/01 - https://github.com/eclipse/deeplearning4j/issues/8335
+        List<INDArray> args = new ArrayList<>();
+        args.add(input);
+        args.add(meanCache);
+        args.add(varCache);
+        args.add(epsilon);
+        if(gamma != null)
+            args.add(gamma.reshape(gamma.length()));
+        if(beta != null)
+            args.add(beta.reshape(beta.length()));
 
-        INDArray gradAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATIONS, input.dataType(), input.shape());
 
-        INDArray[] out = gamma == null ? new INDArray[]{gradAtInput, }
-
-        BatchNormDerivative bn = BatchNormDerivative.derivativeBuilder()
-                .applyBeta(gamma != null)
-                .applyGamma(gamma != null)
-                .axis(new int[]{1})     //4d: is channels: NCHW; 2d: is nIn - axis 1 in both cases
-                .epsilon(eps)
-                .inputArrays(in)
-                .outputArrays(new INDArray[]{out})
+        DynamicCustomOp op = DynamicCustomOp.builder("batchnorm_bp")
+                .addInputs(args.toArray(new INDArray[0]))
+                .addIntegerArguments(
+                        gamma == null ? 0 : 1,          //Apply scale
+                        beta == null ? 0 : 1,           //Apply beta
+                        1)                              //Axis (NCHW)
+                .addFloatingPointArguments(eps)
                 .build();
-        Nd4j.exec(bn);
-        */
 
+        INDArray epsAtInput = workspaceMgr.createUninitialized(ArrayType.ACTIVATION_GRAD, input.dataType(), input.shape());
+        INDArray dLdm = workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, meanCache.dataType(), meanCache.shape());
+        INDArray dLdv = workspaceMgr.createUninitialized(ArrayType.BP_WORKING_MEM, meanCache.dataType(), meanCache.shape());
+
+        op.setOutputArgument(0, epsAtInput);
+        op.setOutputArgument(1, dLdm);
+        op.setOutputArgument(2, dLdv);
+        if(dGammaView != null) {
+            //Both are always null/not null simultaneously
+            op.setOutputArgument(3, dGammaView.reshape(dGammaView.length()));
+            op.setOutputArgument(4, dBetaView.reshape(dBetaView.length()));
+        }
+
+
+        Nd4j.exec(op);
+
+        Gradient g = new DefaultGradient();
+        g.setGradientFor(BatchNormalizationParamInitializer.GAMMA, dGammaView);
+        g.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
+
+        return new Pair<>(g, epsAtInput);
+         */
         return null;
     }
 

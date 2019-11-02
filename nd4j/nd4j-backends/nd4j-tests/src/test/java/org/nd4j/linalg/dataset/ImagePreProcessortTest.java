@@ -20,11 +20,13 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.nd4j.linalg.BaseNd4jTest;
+import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImageMultiPreProcessingScaler;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
+import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import static org.junit.Assert.assertEquals;
@@ -42,32 +44,32 @@ public class ImagePreProcessortTest extends BaseNd4jTest {
 
     @Test
     public void simpleImageTest() {
-        INDArray rChannels = Nd4j.zeros(10, 10).addi(128);
-        INDArray gChannels = Nd4j.zeros(10, 10).addi(64);
-        INDArray bChannels = Nd4j.zeros(10, 10).addi(255);
-        INDArray image = Nd4j.vstack(rChannels, gChannels, bChannels).reshape(3, 10, 10);
+        INDArray rChannels = Nd4j.zeros(DataType.FLOAT, 10, 10).addi(128);
+        INDArray gChannels = Nd4j.zeros(DataType.FLOAT, 10, 10).addi(64);
+        INDArray bChannels = Nd4j.zeros(DataType.FLOAT, 10, 10).addi(255);
+        INDArray image = Nd4j.vstack(rChannels, gChannels, bChannels).reshape(1, 3, 10, 10);
         INDArray orig = image.dup();
 
         //System.out.println(Arrays.toString(image.shape()));
-        DataSet ds = new DataSet(image.reshape(1, 3, 10, 10), Nd4j.ones(1, 1));
+        DataSet ds = new DataSet(image, Nd4j.ones(1, 1));
         ImagePreProcessingScaler myScaler = new ImagePreProcessingScaler();
         //So this should scale to 0.5,0.25 and 1;
         INDArray expected = image.mul(0);
-        expected.slice(0, 0).addi(0.5);
-        expected.slice(1, 0).addi(0.25);
-        expected.slice(2, 0).addi(1.0);
+        expected.slice(0, 1).addi(0.5);
+        expected.slice(1, 1).addi(0.25);
+        expected.slice(2, 1).addi(1.0);
         myScaler.transform(ds);
         assertTrue(Transforms.abs(ds.getFeatures().sub(expected)).maxNumber().doubleValue() <= 0.01);
 
         //Now giving it 16 bits instead of the default
         //System.out.println(Arrays.toString(image.shape()));
-        ds = new DataSet(image.reshape(1, 3, 10, 10), Nd4j.ones(1, 1));
+        ds = new DataSet(image, Nd4j.ones(1, 1));
         myScaler = new ImagePreProcessingScaler(0, 1, 16);
         //So this should scale to 0.5,0.25 and 1;
         expected = image.mul(0);
-        expected.slice(0, 0).addi(0.5 / 256);
-        expected.slice(1, 0).addi(0.25 / 256);
-        expected.slice(2, 0).addi(1.0 / 256);
+        expected.slice(0, 1).addi(0.5 / 256);
+        expected.slice(1, 1).addi(0.25 / 256);
+        expected.slice(2, 1).addi(1.0 / 256);
         myScaler.transform(ds);
         assertTrue(Transforms.abs(ds.getFeatures().sub(expected)).maxNumber().doubleValue() <= 0.01);
 
@@ -87,6 +89,16 @@ public class ImagePreProcessortTest extends BaseNd4jTest {
         myScaler = new ImagePreProcessingScaler(0, 1, 1);
         myScaler.transform(before);
         myScaler.revertFeatures(before);
+        assertEquals(orig, before);
+
+
+        //Test labels (segmentation case)
+        before = orig.dup();
+        myScaler = new ImagePreProcessingScaler(0, 1);
+        myScaler.transformLabel(before);
+        expected = orig.div(255);
+        assertEquals(expected, before);
+        myScaler.revertLabels(before);
         assertEquals(orig, before);
     }
 

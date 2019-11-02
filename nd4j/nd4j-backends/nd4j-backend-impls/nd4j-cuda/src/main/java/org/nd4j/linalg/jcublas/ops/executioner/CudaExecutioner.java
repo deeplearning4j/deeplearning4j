@@ -1000,8 +1000,13 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         val dataType = op.resultType();
 
-        val ret = Nd4j.createUninitialized(dataType, retShape);
-        op.setZ(ret);
+        if( op.z() == null ){
+            val ret = Nd4j.createUninitialized(dataType, retShape);
+            op.setZ(ret);
+        } else if(op.z().dataType() != dataType || !Arrays.equals(retShape, op.z().shape())){
+            throw new ND4JIllegalStateException("Output array for op " + op.getClass().getSimpleName() + " should have type " + dataType + " and shape " + Arrays.toString(retShape)
+                    + " but has datatype " + op.z().dataType() + " and shape " + Arrays.toString(op.z().shape()));
+        }
 
         val eb = op.extraArgsDataBuff(op.z().dataType() == DataType.BOOL || op.getOpType() == Op.Type.REDUCE_LONG ? op.x().dataType() : op.z().dataType());
         Pointer extraArgs = op.extraArgs() != null ? AtomicAllocator.getInstance().getPointer(eb, context) : null;

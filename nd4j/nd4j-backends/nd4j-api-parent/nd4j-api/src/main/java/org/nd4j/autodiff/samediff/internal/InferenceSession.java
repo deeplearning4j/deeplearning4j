@@ -797,7 +797,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
                 } else if (v.getVariableType() == VariableType.VARIABLE) {
                     args[i] = v.getArr();
                 } else if (v.isPlaceHolder()) {
-                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array provided for placeholder %s", s);
+                    Preconditions.checkState(placeholderValues != null && placeholderValues.containsKey(s), "No array was provided for required placeholder variable \"%s\"", s);
                     args[i] = placeholderValues.get(s);
                 } else {
                     VarId vid = lookup(s, opInputs, allIterInputs, true);

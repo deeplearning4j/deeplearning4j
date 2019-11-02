@@ -122,7 +122,7 @@ public interface Listener {
     /**
      * Called when any activation becomes available.
      * <p>
-     * The activation will most likely be freed later, use detach() if you need to save it.<br>
+     * The activation will most likely be freed later, use dup() if you need to save it.<br>
      * <br>
      * Note that this method will be called when any activation becomes available, not just ones from {@link #requiredVariables(SameDiff)}<br>
      * It is guaranteed to be called for variables from requiredVariables().<br>

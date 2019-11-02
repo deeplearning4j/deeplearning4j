@@ -31,8 +31,8 @@ import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 public interface BatchNormalizationHelper extends LayerHelper {
     boolean checkSupported(double eps, boolean fixedGammaBeta);
 
-    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, long[] shape, INDArray gamma,
-                    INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr workspaceMgr);
+    Pair<Gradient, INDArray> backpropGradient(INDArray input, INDArray epsilon, long[] shape, INDArray gamma, INDArray beta,
+                                              INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr workspaceMgr);
 
     INDArray preOutput(INDArray x, boolean training, long[] shape, INDArray gamma, INDArray beta, INDArray mean,
                     INDArray var, double decay, double eps, LayerWorkspaceMgr workspaceMgr);

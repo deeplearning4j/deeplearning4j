@@ -29,6 +29,7 @@ import org.nd4j.autodiff.listeners.*;
 import org.nd4j.autodiff.listeners.impl.HistoryListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.listeners.records.LossCurve;
+import org.nd4j.autodiff.samediff.api.OutAndGrad;
 import org.nd4j.autodiff.samediff.config.BatchOutputConfig;
 import org.nd4j.autodiff.samediff.config.EvaluationConfig;
 import org.nd4j.autodiff.samediff.config.FitConfig;
@@ -1642,7 +1643,13 @@ public class SameDiff extends SDBaseOps {
 
         Set<String> requiredVars = new HashSet<>();
         for (Listener l : activeListeners) {
-            requiredVars.addAll(l.requiredVariables(this).trainingVariables());
+            ListenerVariables lv = l.requiredVariables(this);
+            if(lv != null) {
+                Set<String> s = lv.trainingVariables();
+                if(s != null) {
+                    requiredVars.addAll(s);
+                }
+            }
         }
 
         List<Listener> listenersWitHistory = new ArrayList<>(listeners);
@@ -1660,6 +1667,10 @@ public class SameDiff extends SDBaseOps {
         }
         TrainingSession ts = new TrainingSession(gradInstance);
         gradInstance.setTrainingConfig(trainingConfig);     //In case any listeners want to use it
+
+        for(Listener l : activeListeners){
+            l.operationStart(gradInstance, Operation.TRAINING);
+        }
 
         Set<String> paramsToTrain = new LinkedHashSet<>();
         for(Variable v : variables.values()){
@@ -1844,9 +1855,12 @@ public class SameDiff extends SDBaseOps {
      */
     private void validateListenerActivations(List<Listener> listeners, Operation op) {
         for (Listener l : listeners) {
-            for (String s : l.requiredVariables(this).requiredVariables(op)) {
-                if (!variables.containsKey(s)) {
-                    Preconditions.checkState(false, "Listener %s requested variable %s that is not defined in this SameDiff graph", l, s);
+            ListenerVariables lv = l.requiredVariables(this);
+            if(lv != null) {
+                for (String s : lv.requiredVariables(op)) {
+                    if (!variables.containsKey(s)) {
+                        Preconditions.checkState(false, "Listener %s requested variable %s that is not defined in this SameDiff graph", l, s);
+                    }
                 }
             }
         }
@@ -2151,31 +2165,20 @@ public class SameDiff extends SDBaseOps {
 
         if (hasListeners) {
             for (Listener l : activeListeners) {
-                requiredVars.addAll(l.requiredVariables(this).evaluationVariables());
+                ListenerVariables v = l.requiredVariables(this);
+                if(v != null) {
+                    requiredVars.addAll(v.evaluationVariables());
+                }
             }
         }
 
         String[] requiredVarsArr = requiredVars.toArray(new String[0]);
 
         while (iterator.hasNext()) {
-            long dataStart = hasListeners ? System.currentTimeMillis() : 0;
             MultiDataSet ds = iterator.next();
-            long dataEnd = hasListeners ? System.currentTimeMillis() : 0;
             Map<String, INDArray> placeholderMap = toPlaceholderMap(ds);
 
-            Map<String, INDArray> m;
-            Map<String, INDArray> outs = null;
-            if (hasListeners) {
-
-                for (Listener l : activeListeners) {
-                    l.iterationStart(this, at, ds, (dataEnd - dataStart));
-                }
-
-                m = directExecHelper(placeholderMap, at, ds, Collections.<String>emptyList(), activeListeners, requiredVarsArr);
-            } else {
-                m = directExecHelper(placeholderMap, at, ds, Collections.<String>emptyList(), activeListeners, requiredVarsArr);
-            }
-
+            Map<String, INDArray> m = directExecHelper(placeholderMap, at, ds, Collections.<String>emptyList(), activeListeners, requiredVarsArr);
 
             for (Map.Entry<String, List<IEvaluation>> e : variableEvals.entrySet()) {
                 INDArray prediction = m.get(e.getKey());
@@ -2185,15 +2188,6 @@ public class SameDiff extends SDBaseOps {
                     INDArray label = ds.getLabels(predictionLabelMapping.get(e.getKey()));
                     INDArray mask = ds.getLabelsMaskArray(predictionLabelMapping.get(e.getKey()));
                     eval.eval(label, prediction, mask);
-                }
-            }
-
-            if (hasListeners) {
-                for (Listener l : activeListeners) {
-                    Map<String, INDArray> outVars = Maps.newHashMap(
-                            Maps.filterKeys(outs,
-                                    Predicates.in(l.requiredVariables(this).evaluationVariables())));
-                    l.iterationDone(this, at, ds, null);
                 }
             }
 
@@ -2518,7 +2512,7 @@ public class SameDiff extends SDBaseOps {
      * Special case of {@link #batchOutput()}.
      */
     public Map<String, INDArray> output(Map<String, INDArray> placeholders, @NonNull List<String> outputs) {
-        return batchOutput().output(outputs.toArray(new String[0])).inputs(placeholders).exec();
+        return batchOutput().output(outputs.toArray(new String[0])).inputs(placeholders).output();
     }
 
     /**
@@ -2529,7 +2523,7 @@ public class SameDiff extends SDBaseOps {
      * Special case of {@link #batchOutput()}.
      */
     public Map<String, INDArray> output(Map<String, INDArray> placeholders, String... outputs) {
-        return batchOutput().output(outputs).inputs(placeholders).exec();
+        return batchOutput().output(outputs).inputs(placeholders).output();
     }
 
 
@@ -2542,31 +2536,36 @@ public class SameDiff extends SDBaseOps {
      * @param listeners    Additional listeners to use during this operation.
      * @param outputs      The variables to output and return.
      */
-    public Map<String, INDArray> output(Map<String, INDArray> placeholders, @NonNull List<Listener> listeners, String... outputs) {
-        return batchOutputHelper(placeholders, listeners, outputs);
+    public Map<String, INDArray> output(Map<String, INDArray> placeholders, List<Listener> listeners, String... outputs) {
+        return batchOutputHelper(placeholders, listeners, Operation.INFERENCE, outputs);
     }
 
-    protected Map<String, INDArray> batchOutputHelper(Map<String, INDArray> placeholders, @NonNull List<Listener> listeners, String... outputs) {
+    protected Map<String, INDArray> batchOutputHelper(Map<String, INDArray> placeholders, List<Listener> listeners, Operation operation, String... outputs) {
         List<Listener> activeListeners = new ArrayList<>();
 
+        if(operation == null)
+            operation = Operation.INFERENCE;
+
         for (Listener l : this.listeners)
-            if (l.isActive(Operation.INFERENCE))
+            if (l.isActive(operation))
                 activeListeners.add(l);
 
-        for (Listener l : listeners)
-            if (l.isActive(Operation.INFERENCE))
-                activeListeners.add(l);
-
-        for (Listener l : activeListeners) {
-            l.operationStart(this, Operation.INFERENCE);
+        if(listeners != null) {
+            for (Listener l : listeners)
+                if (l.isActive(operation))
+                    activeListeners.add(l);
         }
 
-        validateListenerActivations(activeListeners, Operation.INFERENCE);
+        for (Listener l : activeListeners) {
+            l.operationStart(this, operation);
+        }
 
-        Map<String, INDArray> ret = directExecHelper(placeholders, At.defaultAt(Operation.INFERENCE), null, Collections.<String>emptyList(), activeListeners, outputs);
+        validateListenerActivations(activeListeners, operation);
+
+        Map<String, INDArray> ret = directExecHelper(placeholders, At.defaultAt(operation), null, Collections.<String>emptyList(), activeListeners, outputs);
 
         for (Listener l : activeListeners) {
-            l.operationEnd(this, Operation.INFERENCE);
+            l.operationEnd(this, operation);
         }
         return ret;
     }
@@ -3992,7 +3991,6 @@ public class SameDiff extends SDBaseOps {
 
             sameDiffFunctionInstances.put(function, sub);
         }
-
     }
 
     /**
@@ -4012,32 +4010,64 @@ public class SameDiff extends SDBaseOps {
      */
     public Map<String, INDArray> calculateGradients(Map<String, INDArray> placeholderVals, @NonNull Collection<String> variables) {
         Preconditions.checkArgument(!variables.isEmpty(), "No variables were specified");
+        OutAndGrad oag = calculateGradientsAndOutputs(placeholderVals, null, variables);
+        return oag.getGradients();
+    }
+
+    /**
+     * Calculate the activations and the gradients for the specified variables, in one execution call.
+     * This is equivalent to calling {@link #output(Map, List)} and {@link #calculateGradients(Map, Collection)}, but
+     * is more efficient than calling both separately.
+     *
+     * @param placeholderVals Placeholders. May be null
+     * @param outputVars      Names of the variables that you want the activations/outputs for. May be null
+     * @param gradientVars    Names of the variables that you want the gradient arrays for. May be null
+     * @return Activations and gradients, keyed by variable name
+     */
+    public OutAndGrad calculateGradientsAndOutputs(Map<String,INDArray> placeholderVals, Collection<String> outputVars, Collection<String> gradientVars){
+        Preconditions.checkArgument((outputVars != null && !outputVars.isEmpty()) || (gradientVars != null && !gradientVars.isEmpty()),
+                "No variables were specified for either output or gradients");
         if (getFunction(GRAD_FN_KEY) == null) {
             createGradFunction();
         }
 
-        List<String> gradVarNames = new ArrayList<>(variables.size());
-        for (String s : variables) {
-            Preconditions.checkState(this.variables.containsKey(s), "No variable with name \"%s\" exists in the SameDiff instance", s);
-            SDVariable v = getVariable(s).getGradient();
-            if (v != null) {
-                //In a few cases (like loss not depending on trainable parameters) we won't have gradient array for parameter variable
-                gradVarNames.add(v.name());
+        List<String> varNames = new ArrayList<>();
+        if(outputVars != null){
+            varNames.addAll(outputVars);
+        }
+        if(gradientVars != null) {
+            for (String s : gradientVars) {
+                Preconditions.checkState(this.variables.containsKey(s), "No variable with name \"%s\" exists in the SameDiff instance", s);
+                SDVariable v = getVariable(s).getGradient();
+                if (v != null) {
+                    //In a few cases (like loss not depending on trainable parameters) we won't have gradient array for parameter variable
+                    varNames.add(v.name());
+                }
             }
         }
 
         //Key is gradient variable name
-        Map<String, INDArray> grads = getFunction(GRAD_FN_KEY).output(placeholderVals, gradVarNames);
+        SameDiff gradFn = getFunction(GRAD_FN_KEY);
+        gradFn.setListeners(listeners);
+        Map<String, INDArray> grads = gradFn.batchOutputHelper(placeholderVals, null, Operation.TRAINING, varNames.toArray(new String[0]));
 
-        Map<String, INDArray> out = new HashMap<>();
-        for (String s : variables) {
-            if (getVariable(s).getGradient() != null) {
-                String gradVar = getVariable(s).getGradient().name();
-                out.put(s, grads.get(gradVar));
+        Map<String, INDArray> outOutputs = outputVars == null ? null : new HashMap<String,INDArray>();
+        Map<String, INDArray> outGrads = gradientVars == null ? null : new HashMap<String,INDArray>();
+        if(outputVars != null){
+            for(String s : outputVars){
+                outOutputs.put(s, grads.get(s));
+            }
+        }
+        if(gradientVars != null) {
+            for (String s : gradientVars) {
+                if (getVariable(s).getGradient() != null) {
+                    String gradVar = getVariable(s).getGradient().name();
+                    outGrads.put(s, grads.get(gradVar));
+                }
             }
         }
 
-        return out;
+        return new OutAndGrad(outOutputs, outGrads);
     }
 
     /**

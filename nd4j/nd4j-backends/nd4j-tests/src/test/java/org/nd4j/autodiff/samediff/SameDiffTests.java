@@ -39,6 +39,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.OpValidationSuite;
+import org.nd4j.autodiff.samediff.api.OutAndGrad;
 import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
@@ -3425,5 +3426,31 @@ public class SameDiffTests extends BaseNd4jTest {
         Nd4j.getRandom().setSeed(0);
         INDArray a1 = rand1.eval();
         assertEquals(a0, a1);
+    }
+
+
+    @Test
+    public void testCalculateGradientsAndOutputs(){
+        SameDiff sd = SameDiff.create();
+        SDVariable in = sd.placeHolder("in", DataType.FLOAT, -1, 4);
+        SDVariable w = sd.var("w", Nd4j.rand(DataType.FLOAT, 4, 3));
+        SDVariable b = sd.var("b", Nd4j.rand(DataType.FLOAT, 3));
+        SDVariable z = in.mmul(w).add("z", b);
+        SDVariable softmax = sd.nn.softmax("softmax", z);
+
+        Map<String,INDArray> ph = Collections.singletonMap("in", Nd4j.rand(DataType.FLOAT, 2, 4));
+        List<String> outputs = Arrays.asList("in", "z", "softmax");
+        List<String> grads = Arrays.asList("in", "w", "z");
+
+        OutAndGrad oag = sd.calculateGradientsAndOutputs(ph, outputs, grads);
+        Map<String,INDArray> outs = oag.getOutputs();
+        Map<String,INDArray> g = oag.getGradients();
+
+
+        Map<String,INDArray> outExp = sd.output(ph, outputs);
+        Map<String,INDArray> gExp = sd.calculateGradients(ph, grads);
+
+        assertEquals(outExp, outs);
+        assertEquals(gExp, g);
     }
 }

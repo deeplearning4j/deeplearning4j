@@ -22,6 +22,8 @@ import org.deeplearning4j.nn.conf.CacheMode;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.LayerHelper;
+import org.deeplearning4j.nn.layers.mkldnn.BaseMKLDNNHelper;
+import org.deeplearning4j.nn.layers.mkldnn.MKLDNNLSTMHelper;
 import org.deeplearning4j.nn.params.LSTMParamInitializer;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -73,6 +75,16 @@ public class LSTM extends BaseRecurrentLayer<org.deeplearning4j.nn.conf.layers.L
                 }
             }
         }
+        /*
+        //Disabled pending: https://github.com/eclipse/deeplearning4j/issues/8331
+        else if ("CPU".equalsIgnoreCase(backend) && BaseMKLDNNHelper.mklDnnEnabled()){
+            helper = new MKLDNNLSTMHelper();
+            log.debug("MKLDNNLSTMHelper successfully initialized");
+            if (!helper.checkSupported(layerConf().getGateActivationFn(), layerConf().getActivationFn(), false)) {
+                helper = null;
+            }
+        }
+         */
     }
 
     @Override
