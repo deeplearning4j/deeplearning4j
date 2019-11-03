@@ -243,7 +243,7 @@ TYPED_TEST(TypedDeclarableOpsTests4, Test_Pooling_Parity_12) {
 }
 
 
-TEST_F(DeclarableOpsTests4, Test_BiasAdd_NHWC_1) {
+TEST_F(DeclarableOpsTests4, biasadd_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 3, 3, 2});
     auto bias = NDArrayFactory::create<double>('c', {2}, {1, 2});
     auto exp = NDArrayFactory::create<double>('c', {2, 3, 3, 2}, {1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f, 1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f,  1.f,  2.f});
@@ -261,7 +261,7 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_NHWC_1) {
     delete result;
 }
 
-TEST_F(DeclarableOpsTests4, Test_BiasAdd_NCHW_1) {
+TEST_F(DeclarableOpsTests4, biasadd_2) {
     auto x = NDArrayFactory::create<double>('c', {2, 2, 3, 3});
     auto bias = NDArrayFactory::create<double>('c', {2}, {1, 2});
     auto exp = NDArrayFactory::create<double>('c', {2, 2, 3, 3}, {1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2});
@@ -277,6 +277,95 @@ TEST_F(DeclarableOpsTests4, Test_BiasAdd_NCHW_1) {
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
+}
+
+TEST_F(DeclarableOpsTests4, biasadd_3) {
+    auto x = NDArrayFactory::create<double>('c', {2, 3});
+    auto row = NDArrayFactory::create<double>('c', {3}, {1, 2, 3});
+    auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 1, 2, 3});
+
+    nd4j::ops::biasadd op;
+    auto result = op.execute({&x, &row}, {}, {}, {true}, false, nd4j::DataType::DOUBLE);
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto z = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(z));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, biasadd_bp_1) {
+
+    NDArray x('c', {2,2,2,3}, {1.,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, nd4j::DataType::FLOAT32);
+    NDArray gradO('c', {2,2,2,3}, nd4j::DataType::FLOAT32);
+    NDArray bias('c', {3}, {-1., -2, -3}, nd4j::DataType::FLOAT32);
+
+    NDArray expGradB('c', {3}, {9.2, 10. , 10.8}, nd4j::DataType::FLOAT32);
+
+    gradO.linspace(0.1, 0.1);
+
+    nd4j::ops::biasadd_bp op;
+    auto result = op.execute({&x, &bias, &gradO}, {}, {}, {false}); // NHWC
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto gradI = result->at(0);
+    auto gradB = result->at(1);
+
+    ASSERT_TRUE(gradI->isSameShape(gradO));
+    ASSERT_TRUE(gradI->equalsTo(gradO));
+
+    ASSERT_TRUE(gradB->isSameShape(expGradB));
+    ASSERT_TRUE(gradB->equalsTo(expGradB));
+
+    delete result;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests4, biasadd_bp_2) {
+
+    NDArray x('c', {2,3,2,2}, {1.,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24}, nd4j::DataType::FLOAT32);
+    NDArray gradO('c', {2,3,2,2}, nd4j::DataType::FLOAT32);
+    NDArray bias('c', {3}, {-1., -2, -3}, nd4j::DataType::FLOAT32);
+
+    NDArray expGradB('c', {3}, {6.8, 10., 13.2}, nd4j::DataType::FLOAT32);
+
+    gradO.linspace(0.1, 0.1);
+
+    nd4j::ops::biasadd_bp op;
+    auto result = op.execute({&x, &bias, &gradO}, {}, {}, {true}); // NCHW
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+
+    auto gradI = result->at(0);
+    auto gradB = result->at(1);
+
+    ASSERT_TRUE(gradI->isSameShape(gradO));
+    ASSERT_TRUE(gradI->equalsTo(gradO));
+
+    ASSERT_TRUE(gradB->isSameShape(expGradB));
+    ASSERT_TRUE(gradB->equalsTo(expGradB));
+
+    delete result;
+}
+
+TEST_F(DeclarableOpsTests4, biasadd_4) {
+    if (!Environment::getInstance()->isExperimentalBuild())
+        return;
+
+    auto x = NDArrayFactory::create<double>('c', {2, 3});
+    auto y = NDArrayFactory::create<float>('c', {3}, {1.f, 2.f, 3.f});
+    auto z = NDArrayFactory::create<float>('c', {2, 3});
+    auto exp = NDArrayFactory::create<float>('c', {2, 3}, {1.f, 2.f, 3.f, 1.f, 2.f, 3.f});
+
+    nd4j::ops::biasadd op;
+    auto status = op.execute({&x, &y}, {&z}, {}, {}, {true});
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(exp, z);
 }
 
 TEST_F(DeclarableOpsTests4, Test_Fill_1) {
@@ -638,24 +727,6 @@ TEST_F(DeclarableOpsTests4, Test_Squeeze_args_3) {
 
     delete result;
 }
-
-TEST_F(DeclarableOpsTests4, Test_BiasAdd_1) {
-    auto x = NDArrayFactory::create<double>('c', {2, 3});
-    auto row = NDArrayFactory::create<double>('c', {3}, {1, 2, 3});
-    auto exp = NDArrayFactory::create<double>('c', {2, 3}, {1, 2, 3, 1, 2, 3});
-
-    nd4j::ops::biasadd op;
-    auto result = op.execute({&x, &row}, {}, {}, {true}, false, nd4j::DataType::DOUBLE);
-
-    ASSERT_EQ(ND4J_STATUS_OK, result->status());
-
-    auto z = result->at(0);
-
-    ASSERT_TRUE(exp.isSameShape(z));
-
-    delete result;
-}
-
 
 TEST_F(DeclarableOpsTests4, Test_1D_1) {
     auto x = NDArrayFactory::create<double>('c', {2, 3});

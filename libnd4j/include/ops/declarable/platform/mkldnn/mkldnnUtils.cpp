@@ -148,14 +148,15 @@ namespace nd4j {
                 mkldnn::memory::desc* conv_diff_weights_md, mkldnn::memory::desc* conv_bias_md, mkldnn::memory::desc* conv_dst_md,
                 mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_weights_md,
                 mkldnn::memory::desc* user_diff_weights_md, mkldnn::memory::desc* user_bias_md, mkldnn::memory::desc* user_dst_md,
-                mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r) {
+                mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r, mkldnn::memory::dims& conv_dilation) {
             mkldnn::memory::dims conv_src_tz = { bS, iC, iH, iW };
             mkldnn::memory::dims conv_weights_tz = { oC, iC, kH, kW };
             mkldnn::memory::dims conv_bias_tz = { oC };
             mkldnn::memory::dims conv_dst_tz = { bS, oC, oH, oW };
 
-            conv_strides = { sH, sW };
-            conv_padding = { pH, pW };
+            conv_strides   = { sH, sW };
+            conv_padding   = { pH, pW };
+            conv_dilation  = { dH-1, dW-1};
             conv_padding_r = { (oH - 1) * sH - iH + kH - pH,
                                (oW - 1) * sW - iW + kW - pW };
 
@@ -227,14 +228,15 @@ namespace nd4j {
                 mkldnn::memory::desc* conv_diff_weights_md, mkldnn::memory::desc* conv_bias_md, mkldnn::memory::desc* conv_dst_md,
                 mkldnn::memory::desc* user_src_md, mkldnn::memory::desc* user_diff_src_md, mkldnn::memory::desc* user_weights_md,
                 mkldnn::memory::desc* user_diff_weights_md, mkldnn::memory::desc* user_bias_md, mkldnn::memory::desc* user_dst_md,
-                mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r) {
+                mkldnn::memory::dims& conv_strides, mkldnn::memory::dims& conv_padding, mkldnn::memory::dims& conv_padding_r, mkldnn::memory::dims& conv_dilation) {
             mkldnn::memory::dims conv_src_tz = { bS, iC, iD, iH, iW };
             mkldnn::memory::dims conv_weights_tz = { oC, iC, kD, kH, kW };
             mkldnn::memory::dims conv_bias_tz = { oC };
             mkldnn::memory::dims conv_dst_tz = { bS, oC, oD, oH, oW };
 
-            conv_strides = { sD, sH, sW };
-            conv_padding = { pD, pH, pW };
+            conv_strides   = { sD, sH, sW };
+            conv_dilation  = { dD-1, dH-1, dW-1};
+            conv_padding   = { pD, pH, pW };
             conv_padding_r = { (oD - 1) * sD - iD + kD - pD,
                                (oH - 1) * sH - iH + kH - pH,
                                (oW - 1) * sW - iW + kW - pW };

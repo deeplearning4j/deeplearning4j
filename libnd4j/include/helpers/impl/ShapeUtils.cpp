@@ -672,6 +672,20 @@ Nd4jLong* ShapeUtils::evalTileShapeInfo(const NDArray& arr, const std::vector<Nd
     }
 
 //////////////////////////////////////////////////////////////////////////
+std::vector<Nd4jLong> ShapeUtils::shapeAsVector(const Nd4jLong* shapeInfo) {
+
+    if(!shapeInfo)
+        throw std::runtime_error("ShapeUtils::shapeAsVector method: input shapeInfo must not be nullptr !");
+
+    std::vector<Nd4jLong> vector(shapeInfo[0]);
+
+    for (uint e = 0; e < shapeInfo[0]; e++)
+        vector[e] = shapeInfo[e + 1];
+
+    return vector;
+}
+
+//////////////////////////////////////////////////////////////////////////
 // evaluate shapeInfo for diagonal array which is made using input arr elements as diagonal
 Nd4jLong* ShapeUtils::evalDiagShapeInfo(const Nd4jLong* shapeInfoConst, nd4j::memory::Workspace* workspace){
     auto shapeInfo = const_cast<Nd4jLong*>(shapeInfoConst);
