@@ -32,21 +32,25 @@ namespace nd4j {
             auto shape = INPUT_VARIABLE(0);
             auto alpha = INPUT_VARIABLE(1);
             NDArray* beta = nullptr;
+
             if (block.width() > 2) {
                 beta = INPUT_VARIABLE(2);
                 REQUIRE_TRUE(ShapeUtils::areShapesBroadcastable(*alpha, *beta), 0, "random_gamma: alpha and beta shapes should be broadcastable.");
             }
+
             auto output = OUTPUT_VARIABLE(0);
             auto seed = 0;
+
             if (block.getIArguments()->size()) {
                 seed = INT_ARG(0);
             }
+
             rng.setSeed(seed);
+
             helpers::fillRandomGamma(block.launchContext(), rng, alpha, beta, output);
 
             return Status::OK();
         }
-
 
         DECLARE_SHAPE_FN(random_gamma) {
             auto in = INPUT_VARIABLE(0);

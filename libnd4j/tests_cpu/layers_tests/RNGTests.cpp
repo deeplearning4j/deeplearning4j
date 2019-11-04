@@ -841,7 +841,7 @@ TEST_F(RNGTests, Test_GammaDistribution_3) {
     auto exp0 = NDArrayFactory::create<float>('c', {10, 3, 2});
 
     al.linspace(1.0);
-    be.assign(1.0);
+    be.assign(2.0);
 
     nd4j::ops::random_gamma op;
     auto result = op.execute({&x, &al, &be}, {}, {});
