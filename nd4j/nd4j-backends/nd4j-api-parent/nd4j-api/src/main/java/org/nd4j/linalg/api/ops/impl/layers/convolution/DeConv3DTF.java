@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2019 Skymind, Inc.
+ * Copyright (c) 2015-2018 Skymind, Inc.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -28,7 +28,6 @@ import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
-import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv2DConfig;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.DeConv3DConfig;
 import org.nd4j.linalg.util.ArrayUtil;
 import org.tensorflow.framework.AttrValue;
@@ -36,47 +35,26 @@ import org.tensorflow.framework.GraphDef;
 import org.tensorflow.framework.NodeDef;
 
 import java.lang.reflect.Field;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 
 /**
- * DeConv3D operation
- *
- * @author Alex Black
+ * DeConv3D operation, TF-wrapper
  */
 @Slf4j
 @Getter
 @NoArgsConstructor
-public class DeConv3D extends DynamicCustomOp {
+public class DeConv3DTF extends DynamicCustomOp {
 
     protected DeConv3DConfig config;
 
-    public DeConv3D(SameDiff sameDiff, @NonNull SDVariable input, @NonNull SDVariable weights, SDVariable bias, @NonNull DeConv3DConfig config) {
-        super(sameDiff, toArr(input, weights, bias));
-        this.config = config;
-        addArgs();
-    }
-
-    public DeConv3D(INDArray[] inputs, INDArray[] outputs, DeConv3DConfig config){
-        super(inputs, outputs);
+    public DeConv3DTF(@NonNull SameDiff sameDiff, @NonNull SDVariable shape, @NonNull SDVariable weights, @NonNull SDVariable input, @NonNull DeConv3DConfig config) {
+        super(sameDiff, new SDVariable[]{shape, weights, input});
 
         this.config = config;
         addArgs();
-    }
-
-    public DeConv3D(@NonNull INDArray input, @NonNull INDArray weights, INDArray bias, INDArray output, @NonNull DeConv3DConfig config){
-        this(wrapFilterNull(input, weights, bias), wrapOrNull(output), config);
-    }
-
-    private static SDVariable[] toArr(SDVariable input, SDVariable weights, SDVariable bias){
-        if(bias != null){
-            return new SDVariable[]{input, weights, bias};
-        } else {
-            return new SDVariable[]{input, weights};
-        }
     }
 
     @Override
@@ -149,22 +127,82 @@ public class DeConv3D extends DynamicCustomOp {
 
 
     @Override
+    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
+
+        val aStrides = nodeDef.getAttrOrThrow("strides");
+        val aDilations = nodeDef.getAttrOrDefault("dilations", null);
+        val tfStrides = aStrides.getList().getIList();
+        val tfDilation = aDilations == null ? null : aDilations.getList().getIList();
+        int sD, sH, sW, dD, dH, dW;
+
+        val aPadding = nodeDef.getAttrOrDefault("padding", null);
+        String paddingMode = aPadding.getS().toStringUtf8();
+
+        String dataFormat = DeConv3DConfig.NDHWC;
+        if (nodeDef.containsAttr("data_format")) {
+            val attr = nodeDef.getAttrOrThrow("data_format");
+            dataFormat = attr.getS().toStringUtf8().toLowerCase();
+        }
+
+        if (dataFormat.equalsIgnoreCase(DeConv3DConfig.NCDHW)) {
+            sD = tfStrides.get(2).intValue();
+            sH = tfStrides.get(3).intValue();
+            sW = tfStrides.get(4).intValue();
+
+
+            dD = tfDilation == null ? 1 : tfDilation.get(2).intValue();
+            dH = tfDilation == null ? 1 : tfDilation.get(3).intValue();
+            dW = tfDilation == null ? 1 : tfDilation.get(4).intValue();
+        } else {
+            sD = tfStrides.get(1).intValue();
+            sH = tfStrides.get(2).intValue();
+            sW = tfStrides.get(3).intValue();
+
+            dD = tfDilation == null ? 1 : tfDilation.get(1).intValue();
+            dH = tfDilation == null ? 1 : tfDilation.get(2).intValue();
+            dW = tfDilation == null ? 1 : tfDilation.get(3).intValue();
+        }
+
+
+        boolean isSameMode = paddingMode.equalsIgnoreCase("SAME");
+        DeConv3DConfig conv3DConfig = DeConv3DConfig.builder()
+                .kD(-1)
+                .kH(-1)
+                .kW(-1)
+                .sD(sD)
+                .sH(sW)
+                .sW(sH)
+                .dD(dD)
+                .dH(dH)
+                .dW(dW)
+                .isSameMode(isSameMode)
+                .dataFormat(dataFormat.equalsIgnoreCase(DeConv3DConfig.NCDHW) ? DeConv3DConfig.NCDHW : DeConv3DConfig.NDHWC)
+                .build();
+        this.config = conv3DConfig;
+
+        addArgs();
+    }
+
+    @Override
     public String opName() {
-        return "deconv3d";
+        return "deconv3d_tf";
+    }
+
+    @Override
+    public String[] tensorflowNames() {
+        return new String[]{"Conv3DBackpropInput", "Conv3DBackpropInputV2"};
     }
 
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
-        SDVariable bias = args().length > 2 ? arg(2) : null;
-        SDVariable[] outVars = f().deconv3dDerivative(arg(0), arg(1), bias, f1.get(0), config);
-        return Arrays.asList(outVars);
+        throw new UnsupportedOperationException("Backprop not yet implemented for " + getClass());
     }
 
     @Override
-    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
+    public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){ //inShape, weights, input
         int n = args().length;
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == n, "Expected %s input data types for %s, got %s", n, getClass(), inputDataTypes);
-        return Collections.singletonList(inputDataTypes.get(0));
+        return Collections.singletonList(inputDataTypes.get(2));
     }
 }
