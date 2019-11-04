@@ -16,6 +16,7 @@
 
 package org.nd4j.linalg.api.ops.impl.shape.bp;
 
+import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import onnx.Onnx;
@@ -42,6 +43,7 @@ import java.util.*;
 @Slf4j
 public class ConcatBp extends DynamicCustomOp {
     private int concatDimension;
+    private boolean dynamicAxis;
 
     public ConcatBp(){
 
@@ -53,36 +55,28 @@ public class ConcatBp extends DynamicCustomOp {
      * @param concatDimension
      * @param inputsAndGrad     Original inputs, followed by output gradient
      */
-    public ConcatBp(SameDiff sameDiff, int concatDimension, SDVariable... inputsAndGrad){
+    public ConcatBp(@NonNull SameDiff sameDiff, int concatDimension, @NonNull SDVariable... inputsAndGrad){
         super(null, sameDiff, inputsAndGrad);
         addIArgument(concatDimension);
         this.concatDimension = concatDimension;
     }
 
+    /**
+     *
+     * @param sameDiff       SameDiff instance
+     * @param inputsGradAxis Inputs, gradient array, and axis
+     */
+    public ConcatBp(@NonNull SameDiff sameDiff, @NonNull SDVariable... inputsGradAxis){
+        super(null, sameDiff, inputsGradAxis);
+        Preconditions.checkState(inputsGradAxis[inputsGradAxis.length-1].dataType().isIntType(),
+                "When using this constructor, the last input must be an integer array (for the axis)");
+        addBArgument(true);     //Last argument
+        this.dynamicAxis = true;
+    }
+
     @Override
     public String opName() {
         return "concat_bp";
-    }
-
-    @Override
-    public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        //No op
-    }
-
-
-    @Override
-    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        //No op
-    }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        throw new NoOpNameFoundException("No tensorflow op opName found for " +  opName());
     }
 
     @Override
@@ -92,7 +86,7 @@ public class ConcatBp extends DynamicCustomOp {
 
     @Override
     public int getNumOutputs(){
-        return args().length - 1;
+        return args().length - 1 - (dynamicAxis ? 1 : 0);
     }
 
     @Override

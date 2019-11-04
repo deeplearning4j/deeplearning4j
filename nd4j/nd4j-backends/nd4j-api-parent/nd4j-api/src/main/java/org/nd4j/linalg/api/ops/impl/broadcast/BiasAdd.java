@@ -45,12 +45,14 @@ public class BiasAdd extends DynamicCustomOp {
         super(null, sameDiff, new SDVariable[] {input, bias}, false);
         bArguments.clear();
         bArguments.add(nchw);
+        this.nchw = nchw;
     }
 
     public BiasAdd(@NonNull INDArray input, @NonNull INDArray bias, INDArray output, boolean nchw){
         super(new INDArray[]{input, bias}, wrapOrNull(output));
         bArguments.clear();
         bArguments.add(nchw);
+        this.nchw = nchw;
     }
 
     @Override
@@ -80,7 +82,7 @@ public class BiasAdd extends DynamicCustomOp {
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> gradient){
-        return Arrays.asList(f().biasAddBp(arg(0), arg(1), gradient.get(0)));
+        return Arrays.asList(f().biasAddBp(arg(0), arg(1), gradient.get(0), nchw));
     }
 
     @Override

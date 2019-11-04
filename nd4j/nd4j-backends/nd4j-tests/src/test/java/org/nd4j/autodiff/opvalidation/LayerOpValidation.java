@@ -1358,4 +1358,35 @@ public class LayerOpValidation extends BaseOpValidation {
                 .build());
         assertEquals(outCC, outFC);       //Fails here
     }
+
+    @Test
+    public void testBiasAdd_nchw_nhwc() {
+        Nd4j.getRandom().setSeed(12345);
+
+        for(boolean nchw : new boolean[]{true, false}) {
+            log.info("Starting test: {}", nchw ? "nchw" : "nhwc");
+            SameDiff sameDiff = SameDiff.create();
+
+            SDVariable in = sameDiff.var("input", Nd4j.rand(DataType.DOUBLE, nchw ? new long[]{2,4,3,3} : new long[]{2,3,3,4}));
+            SDVariable b = sameDiff.var("bias", Nd4j.rand(DataType.DOUBLE, new long[]{4}));
+
+            SDVariable bAdd = sameDiff.nn.biasAdd(in, b, nchw);
+            SDVariable loss = bAdd.std(true);
+
+
+            INDArray exp = in.getArr().dup();
+            if(nchw){
+                exp.addi(b.getArr().reshape(1,4,1,1));
+            } else {
+                exp.addi(b.getArr().reshape(1,1,1,4));
+            }
+
+            TestCase tc = new TestCase(sameDiff)
+                    .gradientCheck(true)
+                    .expectedOutput(bAdd.name(), exp);
+
+            String err = OpValidation.validate(tc);
+            assertNull(err);
+        }
+    }
 }

@@ -78,7 +78,10 @@ CUSTOM_OP_IMPL(concat, -1, 1, false, 0, 0) {
     }
 
     const int rank = nonEmptyArrs[0]->rankOf();                     //  look up to first non-empty array
-    int axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<int>(0) : (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank);
+    int axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<int>(0) : INT_ARG(0);
+    if(axis < 0){
+        axis += rank;
+    }
 
     // ******** input validation ******** //
     REQUIRE_TRUE(allOfSameType, 0, "CONCAT op: all of input arrays must have same type !");
@@ -150,7 +153,10 @@ DECLARE_SHAPE_FN(concat) {
 
     const int rank = arrShapes[0][0];
 
-    int axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<int>(0) : (INT_ARG(0) >= 0 ? INT_ARG(0) : INT_ARG(0) + rank);
+    int axis = isAxisInLastArr ? INPUT_VARIABLE(block.width() - 1)->e<int>(0) : INT_ARG(0);
+    if(axis < 0){
+        axis += rank;
+    }
 
     // ******** input validation ******** //
     REQUIRE_TRUE(0 <= axis && axis < rank, 0, "CONCAT op: input axis must be in range [0, %i], but got %i instead!", rank-1, axis);
