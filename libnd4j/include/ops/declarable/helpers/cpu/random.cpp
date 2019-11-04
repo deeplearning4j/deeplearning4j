@@ -28,7 +28,8 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
+    template <typename T>
+    void fillRandomGamma_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
 
         Nd4jLong* broadcasted = nullptr;
         if (beta != nullptr)
@@ -52,10 +53,10 @@ namespace helpers {
         PRAGMA_OMP_PARALLEL_FOR
         for (auto k = 0; k < shift; k++) {
             auto pos = k * step;
-            auto u = rng.relativeT<float>(k, 0., 1.);
+            auto u = rng.relativeT<T>(k, 0., 1.);
             for (auto e = 0; e < step; e++)
-                    output->p(pos + e, math::nd4j_igamma<float, float, float>(copyAlpha->e<float>(e),
-                                                                              beta != nullptr?copyBeta->e<float>(e) * u:u));
+                    output->t<T>(pos + e) = math::nd4j_igamma<T, T, T>(copyAlpha->t<T>(e),
+                                                                         beta != nullptr?copyBeta->t<T>(e) * u:u);
         }
 
         if (beta != nullptr) {
@@ -64,6 +65,12 @@ namespace helpers {
             //delete broadcasted;
         }
     }
+
+    void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomGamma_, (context, rng, alpha, beta, output), FLOAT_NATIVE);
+    }
+    BUILD_SINGLE_TEMPLATE(template void fillRandomGamma_, (LaunchContext* context,
+            graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output), FLOAT_NATIVE);
 
     /*
      * algorithm Poisson generator based upon the inversion by sequential search:[48]:505
@@ -76,26 +83,33 @@ namespace helpers {
          s ← s + p.
     return x.
      * */
-    void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
+    template <typename T>
+    void fillRandomPoisson_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
         auto shift = output->lengthOf() / lambda->lengthOf();
         auto step = lambda->lengthOf();
         PRAGMA_OMP_PARALLEL_FOR
         for (auto k = 0; k < shift; k++) {
             auto pos = k * step;
-            auto u = rng.relativeT<float>(k, 0., 1.);
+            auto u = rng.relativeT<T>(k, 0., 1.);
             for (auto e = 0; e < step; e++) {
-                auto p = math::nd4j_exp<float, float>(-lambda->e<float>(e));
+                auto p = math::nd4j_exp<T, T>(-lambda->t<T>(e));
                 auto s = p;
-                auto x = 0.f;
+                auto x = T(0.f);
                 while (u > s) {
                     x += 1.f;
-                    p *= lambda->e<float>(e) / x;
+                    p *= lambda->t<T>(e) / x;
                     s += p;
                 }
-                output->p(pos + e, x);
+                output->t<T>(pos + e) = x;
             }
         }
     }
+
+    void fillRandomPoisson(LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomPoisson_, (context, rng, lambda, output), FLOAT_NATIVE);
+    }
+    BUILD_SINGLE_TEMPLATE(template void fillRandomPoisson_, (LaunchContext* context,
+            graph::RandomGenerator& rng, NDArray* lambda, NDArray* output), FLOAT_TYPES);
 
 }
 }
