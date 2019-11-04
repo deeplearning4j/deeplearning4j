@@ -88,6 +88,7 @@ ScalNet uses a Keras like API, wrapping deeplearning4j to make it more easier to
  
 Also, since you can call Java code from Scala, you can still use everything from deeplearning4j. 
 
-To see what ScalNet has to offer, run one of the [examples](https://github.com/deeplearning4j/ScalNet/tree/master/src/test/scala/org/deeplearning4j/scalnet/examples) it ships with.
+To see what ScalNet has to offer, run one of the [examples]
+(https://github.com/eclipse/deeplearning4j/tree/master/scalnet/src/test/scala/org/deeplearning4j/scalnet/examples) it ships with.
 
 Please note that those examples are not state-of-the-art in any way, they're just enough to get you started.
