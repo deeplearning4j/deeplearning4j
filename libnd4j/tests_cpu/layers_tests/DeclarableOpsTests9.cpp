@@ -2911,8 +2911,8 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
     NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
     NDArray gradO   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,3,4}, {-1.527335, -1.272779, -1.018224, -0.763668,-0.509112, -0.254556,  0.,  0.254556,0.509112,  0.763668,  1.018224,  1.272779,
-                                1.527335,  1.781891,  2.036447,  2.291003,2.545559,  2.800115,  3.054671,  3.309227,3.563783,  3.818338,  4.072894,  4.32745}, nd4j::DataType::FLOAT32);
+    NDArray expdLdI('c', {2,3,4}, { 0.033889,  0.33935 ,  0.746631,  1.255733,0.020334,  0.20361 ,  0.447979,  0.75344 ,0.006778,  0.06787 ,  0.149326,  0.251147,
+                                    -0.006778, -0.06787 , -0.149326, -0.251147,-0.020334, -0.20361 , -0.447979, -0.75344 ,-0.033889, -0.33935 , -0.746631, -1.255733}, nd4j::DataType::FLOAT32);
     NDArray expdLdG('c', {4}, {6.448749, 7.212417, 8.230641, 9.50342 }, nd4j::DataType::FLOAT32);
     NDArray expdLdB('c', {4}, {3.6, 4.5, 5.4, 6.3}, nd4j::DataType::FLOAT32);
 
@@ -2932,6 +2932,8 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
     auto dLdI = results->at(0);
     auto dLdG = results->at(3);
     auto dLdB = results->at(4);
+
+    dLdI->printBuffer();
 
     ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
