@@ -894,6 +894,10 @@ namespace nd4j {
             Z aim = nd4j_pow<X, X, Z>(x, a) / (nd4j_exp<X, Z>(x) * nd4j_gamma<Y, Z>(a));
             auto sum = Z(0.);
             auto denom = Z(1.);
+            if (a <= X(0.000001))
+                //throw std::runtime_error("Cannot calculate gamma for a zero val.");
+                return Z(0);
+
             for (int i = 0; Z(1./denom) > Z(1.0e-12); i++) {
                 denom *= (a + i);
                 sum += nd4j_pow<X, int, Z>(x, i) / denom;

@@ -786,7 +786,7 @@ TEST_F(RNGTests, Test_PoissonDistribution_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Poisson distribution");
+//    z->printIndexedBuffer("Poisson distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
@@ -806,7 +806,7 @@ TEST_F(RNGTests, Test_GammaDistribution_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Gamma distribution");
+//    z->printIndexedBuffer("Gamma distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
@@ -827,7 +827,7 @@ TEST_F(RNGTests, Test_GammaDistribution_2) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Gamma distribution");
+//    z->printIndexedBuffer("Gamma distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
@@ -848,7 +848,7 @@ TEST_F(RNGTests, Test_GammaDistribution_3) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Gamma distribution");
+//    z->printIndexedBuffer("Gamma distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 
