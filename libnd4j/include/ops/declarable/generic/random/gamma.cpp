@@ -34,7 +34,7 @@ namespace nd4j {
             NDArray* beta = nullptr;
             if (block.width() > 2) {
                 beta = INPUT_VARIABLE(2);
-                REQUIRE_TRUE(alpha->isSameShape(beta), 0, "random_gamma: alpha and beta shapes should be equals.");
+                REQUIRE_TRUE(ShapeUtils::areShapesBroadcastable(*alpha, *beta), 0, "random_gamma: alpha and beta shapes should be broadcastable.");
             }
             auto output = OUTPUT_VARIABLE(0);
             auto seed = 0;
@@ -43,7 +43,6 @@ namespace nd4j {
             }
             rng.setSeed(seed);
             helpers::fillRandomGamma(block.launchContext(), rng, alpha, beta, output);
-            //RandomLauncher::fillExponential(block.launchContext(), rng, z, lambda);
 
             return Status::OK();
         }
@@ -53,10 +52,16 @@ namespace nd4j {
             auto in = INPUT_VARIABLE(0);
             auto shape = in->template asVectorT<Nd4jLong>();
             auto alphaShape = inputShape->at(1);
+            auto additionalShape = alphaShape;
+            if (inputShape->size() > 2) {
+                auto rest = inputShape->at(2); additionalShape = nullptr;
+                REQUIRE_TRUE(ShapeUtils::areShapesBroadcastable(alphaShape, rest), 0, "random_gamma: alpha and beta shapes should be broadcastable.");
+                ShapeUtils::evalBroadcastShapeInfo(alphaShape, rest, true, additionalShape, block.workspace());
+            }
             auto lastDim = shape::sizeAt(alphaShape, 0);
             auto dtype = ArrayOptions::dataType(alphaShape);
-            for (auto i = 0; i < shape::rank(alphaShape); i++)
-                shape.push_back(shape::sizeAt(alphaShape, i));
+            for (auto i = 0; i < shape::rank(additionalShape); i++)
+                shape.push_back(shape::sizeAt(additionalShape, i));
             auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape);
             return SHAPELIST(newShape);
         }

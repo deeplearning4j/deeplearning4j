@@ -29,10 +29,10 @@ namespace helpers {
     void fillRandomGamma(LaunchContext* context, graph::RandomGenerator& rng, NDArray* alpha, NDArray* beta, NDArray* output) {
         auto shift = output->lengthOf() / alpha->lengthOf();
         auto step = alpha->lengthOf();
-        if (beta != nullptr) {
-            shift /= beta->lengthOf();
-            step *= beta->lengthOf();
-        }
+//        if (beta != nullptr) {
+//            shift /= beta->lengthOf();
+//            step *= beta->lengthOf();
+//        }
 
         PRAGMA_OMP_PARALLEL_FOR
         for (auto k = 0; k < shift; k++) {
