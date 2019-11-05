@@ -469,7 +469,7 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
                 useBisection = true;
             if (shift == right && (muCur < -(right - left) || muCur > (T)0.))
                 useBisection = true;
-            if (math::nd4j_abs<T>(fCur) > math::nd4j_abs<T>(fPrev))
+            if (math::nd4j_abs<T>(fCur) > math::nd4j_abs<T>(fPrev) &&  math::nd4j_abs<T>(fCur - fPrev) > (T)16. * DataTypeUtils::eps<T>())
                 useBisection = true;
         }
 
