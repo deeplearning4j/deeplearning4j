@@ -176,40 +176,38 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
         if(i != 3)
             REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0, "BATCHNORM_BP op: types of arrays (input, mean, variance, gamma, beta) should be the same !");
 
-
-    // let dLdO *= gamma
-
-    // dLdV = (-0.5  * (dLdO * (x - mean))_sum) / (variance + epsilon)^1.5
-    // dLdM = -dLdO_sum / (variance + epsilon)^0.5 - 2 * dLdV * (x - mean)_sum
-    // dLdI = dLdO * (gamma / N)  * ((N - 1) / (variance + epsilon)^0.5 - (x - mean)^2 / (variance + epsilon)^1.5)
-    // dLdV = (-0.5  * gamma * (dLdO * (x - mean))_sum) / (variance + epsilon)^1.5
-
-
-
-
-
-
     // ***** calculations ***** //
 
-    // formula for forward step: f = gamma * ((input - mean) / sqrt(variance + epsilon)) + beta
-    // define stdInv = 1 / (variance + epsilon)^0.5
+    // formula for forward step: f = gamma * ((x - m) / (v + eps)^0.5) + beta
 
-    // dLdI = dLdO * (dfdx + dfdmean * dmeandx + dfdvar * dvardx)
-    // dmeandx = 1 / N
-    // dfdmean = DfDmean + dfdvar * dvardmean
-    // dvardx =  DvarDx + dvardmean * dmeandx = DvarDx + dvardmean / N
-    // DvarDx = 2 * (x - mean) / N
-    // dfdx =  gamma * stdInv
-    // DfDmean = -gamma * stdInv
-    // dvardmean = -2 * (x - mean)_sum / N
-    // dfdvar = -0.5 * gamma * (x - mean) * stdInv^3
+    // notations:
+    // stdInv = 1 / (v + eps)^0.5
+    // N - batch size (or product of spatial dimensions)
 
-    // dLdV = dLdO * dfdvar = -0.5 * gamma * (dLdO * (x - mean))_sum * stdInv^3
-    // dLdM = dLdO * dfdmean = dLdO_sum * DfDmean + dLdO * dfdvar * dvardmean = dLdO_sum * DfDmean + dLdV * dvardmean
-    // dLdG = (dLdO * (x - mean))_sum * stdInv
+    // derivatives:
+    // dfdx = dfdx_ + dfdm*dmdx + dfdv*dvdx
+    // dfdm = dfdm_ + dfdv*dvdm
+    // dvdx = dvdx_ + dvdm*dmdx
+
+    // dfdx = dfdx_ + (dfdm_ + dfdv*dvdm)*dmdx + dfdv*(dvdx_ + dvdm*dmdx) = dfdx_ + dfdm_*dmdx + dfdv*(2*dvdm*dmdx + dvdx_)
+    // dmdx = 1 / N
+    // dfdm_ = -dfdx_
+    // dfdx = dfdx_*(N-1)/N + dfdv*(2*dvdm / N + dvdx_)
+
+    // dfdx_ =  gamma * stdInv
+    // dvdx_ = 2 * (x - m) / N
+    // dvdm  = -2 * (x - m)_sum / N
+    // dfdv  = -0.5 * gamma * (x - m) * stdInv^3
+
+    // dfdg = (x - m) * stdInv
+    // dfdb = 1
+
+    // dLdI = dLdO * dfdx
+    // dLdV = (dLdO * dfdv)_sum
+    // dLdM = (dLdO * dfdm)_sum = (dLdO * (-dfdx_ + dfdv*dvdm))_sum
+
+    // dLdG = (dLdO * (x - m))_sum * stdInv
     // dLdB = dLdO_sum
-    // dLdI = dLdO_sum * dfdx + dLdM / N + dLdV * dvardx
-
 
     const auto excludedAxes = ShapeUtils::evalDimsToExclude(inRank, axes);
     const bool keepUnitiesInShape = inRank == mean->rankOf();
@@ -221,121 +219,64 @@ CUSTOM_OP_IMPL(batchnorm_bp, 4, 3, false, 1, 2) {
     NDArray xMinusMean(input); // empty array with same shape as input
     input->applyBroadcast(nd4j::broadcast::Subtract, axes, mean, &xMinusMean);
 
+    // stdInv
     NDArray stdInv = *variance + epsilon;
     stdInv.applyTransform(transform::Reciprocal);               // 1 / (variance + epsilon)
     stdInv.applyTransform(transform::Sqrt);                     // 1 / (variance + epsilon)^0.5
 
-    // use dLdM as temporary storage containing (dLdO * (x - mean))_sum
-    // use dLdI as temporary storage containing dLdO * (x - mean)
-    xMinusMean.applyPairwiseTransform(nd4j::pairwise::Multiply, dLdO, dLdI);
-    dLdI->reduceAlongDimension(reduce::Sum, dLdM, excludedAxes, keepUnitiesInShape);   // (dLdO * (x - mean))_sum
-
-    // dLdG
-    if(applyScale) {
-        dLdM->applyPairwiseTransform(nd4j::pairwise::Multiply, stdInv, dLdG);   // (dLdO * (x - mean))_sum * stdInv
-        dLdM *= gamma;                                                          // gamma * (dLdO * (x - mean))_sum
-    }
-
-    // dLdV
-    stdInv.applyTransform(nd4j::transform::Cube, dLdV);     //  stdInv^3
-    *dLdV *= -0.5;                                          // -0.5 * stdInv^3
-    *dLdV *= *dLdM;                                         // -0.5 * stdInv^3 * gamma * (dLdO * (x - mean))_sum
-
-
-    // use dLdM as temporary storage containing dLdO_sum
-    NDArray dLdOSum = dLdO->reduceAlongDims(reduce::Sum, excludedAxes, keepUnitiesInShape);   // dLdO_sum
-
-    // dLdB
-    if(applyOffset)
-        dLdB->assign(dLdOSum);
-
-    // stdInv = stdInv * gamma
+    // dfdx_
+    auto dfdx_ = stdInv;
     if(applyScale)
-        stdInv *= *gamma;
+        dfdx_ *= *gamma;
 
-    // dvardmean
-    NDArray dvardmean(mean);    // empty array with same shape as mean
-    xMinusMean.reduceAlongDimension(reduce::Sum, &dvardmean, excludedAxes, keepUnitiesInShape);     // (x - mean)_sum
-    dvardmean *= -2.f / N;                                                                          // - 2 * (x - mean)_sum / N
+    // dvdx_
+    auto dvdx_ =  xMinusMean * (2.f / N);
 
-    // dvardx
-    NDArray dvardx = xMinusMean * 2.f;                              // DvarDx * N = 2 * (x - mean)
-    dvardx->applyBroadcast(nd4j::broadcast::Add, axes, &dvardmean)  // DvarDx * N + dvardmean
-    dvardx *= (1.f / N);                                            // DvarDx  + dvardmean / N
+    // dvdm
+    auto dvdm = xMinusMean.reduceAlongDims(nd4j::reduce::Sum, excludedAxes, keepUnitiesInShape);
+    dvdm *= (-2.f / N);
 
-    // dLdM
-    dLdOSum->applyPairwiseTransform(nd4j::pairwise::Multiply, &stdInv);         // dLdO_sum *= gamma * stdInv;
-    dLdOSum->applyTransform(nd4j::transform::Neg, dLdM);                                 // - gamma * stdInv * dLdO_sum;
-    dvardmean *= * dLdV;
-    dLdM->applyPairwiseTransform(nd4j::pairwise::Add, &dvardmean);              // dLdO_sum * DfDmean + dLdV * dvardmean
+    // dfdv
+    NDArray dfdv(input);        // empty array with same shape as input
+    auto stdInv3 = stdInv.transform(nd4j::transform::Cube);
+    stdInv3.applyScalar(nd4j::scalar::Multiply, -0.5f);
+    if(applyScale)
+        stdInv3.applyPairwiseTransform(nd4j::pairwise::Multiply, *gamma);
+    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, &stdInv3, &dfdv);
+    // xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, &stdInv3, dLdI);
+    // auto dfdv = dLdI->reduceAlongDims(reduce::Sum, excludedAxes, keepUnitiesInShape);
 
+    // dLdI, use dLdM as temporary storage here
+    dvdm.applyScalar(nd4j::scalar::Multiply, (2.f / N), dLdM);
+    dvdx_.applyBroadcast(nd4j::broadcast::Add, axes, dLdM);
+    // dvdx_.applyBroadcast(nd4j::broadcast::Multiply, axes, &dfdv);
+    dvdx_ *= dfdv;
+    dfdx_.applyScalar(nd4j::scalar::Multiply, ((N - 1.f) / N), dLdM);
+    dvdx_.applyBroadcast(nd4j::broadcast::Add, axes, dLdM);
+    dvdx_.applyPairwiseTransform(nd4j::pairwise::Multiply, dLdO, dLdI);
 
+    // dLdM, use dvdx_ as temporary storage here
+    // dfdv.applyPairwiseTransform(nd4j::pairwise::Multiply, &dvdm, &dvdx_);
+    // dvdx_.applyBroadcast(nd4j::broadcast::Add, axes, -&dfdx_);
+    // dvdx_.applyPairwiseTransform(nd4j::pairwise::Multiply, *dLdO);
+    // dvdx_.reduceAlongDimension(reduce::Sum, dLdM, excludedAxes, keepUnitiesInShape);
+    *dLdM = 0;      // put zeros so far
 
+    // dLdV, use dvdx_ as temporary storage here too
+    // dfdv.applyPairwiseTransform(nd4j::pairwise::Multiply, dLdO, &dvdx_);
+    // dvdx_.reduceAlongDimension(reduce::Sum, dLdV, excludedAxes, keepUnitiesInShape);
+    *dLdV = 0;      // put zeros so far
 
-    // dLdI = dLdO_sum * dfdx + dLdM / N + dLdV * dvardx
-    dvardx->applyBroadcast(nd4j::broadcast::Multiply, axes, &dLdV)
-
-    *= *dLdV;
-    dvardx += dLdOSum;      // dLdO_sum * dfdx + dLdV * dvardx
-
-    dLdOSum->applyPairwiseTransform(nd4j::pairwise::Multiply, stdInv);   // dLdO_sum * dfdx;
-
-
-
-
-
-
-
-
- // DfDmean
-    NDArray DfDmean = stdInv.transform(nd4j::transform::Neg);
-
-    (dLdO * (x - mean))_sum / (variance + epsilon)^0.5
-    dLdV->applyPairwiseTransform(nd4j::pairwise::Multiply, *dLdM);                      // -0.5 *stdInv^3 * (gamma * dLdO * (x - mean))_sum
-
-    // dLdM
-    dLdV->applyPairwiseTransform(nd4j::pairwise::Multiply, dvardmean);                  // dLdV * dvardmean
-    dLdO->reduceAlongDimension(reduce::Sum, dLdM, excludedAxes, keepUnitiesInShape);    // dLdO_sum
-    if(applyOffset)     // dLdB
-        dLdB->assign(dLdM);
-
-
-
-
-
-
-
-
-
-
-
-
-    // dLdG
+    // dLdG, use dvdx_ as temporary storage here too
     if(applyScale) {
-        // use dLdI as temporary storage
-        dLdO->applyPairwiseTransform(nd4j::pairwise::Multiply, &xMinusMean, dLdI);           // dLdO * (x - mean)
-        dLdI->reduceAlongDimension(reduce::Sum, dLdG, excludedAxes, keepUnitiesInShape);    // (dLdO * (x - mean))_sum
-        dLdG->applyPairwiseTransform(nd4j::pairwise::Multiply, stdInv);                     // / (variance + epsilon)^0.5
+        xMinusMean.applyPairwiseTransform(nd4j::pairwise::Multiply, dLdO, &dvdx_);
+        dvdx_.reduceAlongDimension(reduce::Sum, dLdG, excludedAxes, keepUnitiesInShape);
+        *dLdG *= stdInv;
     }
 
     // dLdB
     if(applyOffset)
         dLdO->reduceAlongDimension(reduce::Sum, dLdB, excludedAxes, keepUnitiesInShape);
-
-    // dLdI
-    xMinusMean.applyTransform(nd4j::transform::Square);                         // (x - mean)^2
-    NDArray stdInv3 = stdInv.transform(nd4j::transform::Cube);                  // 1 / (variance + epsilon)^1.5
-    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, &stdInv3);       // (x - mean)^2 / (variance + epsilon)^1.5
-    stdInv *= N - 1;                                                            // (N - 1) / (variance + epsilon)^0.5
-    xMinusMean.applyBroadcast(nd4j::broadcast::ReverseSubtract, axes, &stdInv); // (N - 1) / (variance + epsilon)^0.5 - (x - mean)^2 / (variance + epsilon)^1.5
-    xMinusMean.applyPairwiseTransform(nd4j::pairwise::Multiply, dLdO, dLdI);    // * dLdO
-    *dLdI *= 1.f / N;                                                           // / N
-    if(applyScale)
-        dLdI->applyBroadcast(nd4j::broadcast::Multiply, axes, gamma);           // * gamma
-
-
-    *dLdM = 0;      // put zeros so far
-    *dLdV = 0;      // put zeros so far
 
     return Status::OK();
 }

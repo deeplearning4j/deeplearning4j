@@ -2947,6 +2947,40 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
     delete results;
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, gg) {
+
+    NDArray input   ('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray mean    ('c', {4}, nd4j::DataType::DOUBLE);
+    NDArray variance('c', {4}, nd4j::DataType::DOUBLE);
+    NDArray gamma   ('c', {4}, nd4j::DataType::DOUBLE);
+    NDArray beta    ('c', {4}, nd4j::DataType::DOUBLE);
+    NDArray gradO   ('c', {2,3,4}, nd4j::DataType::DOUBLE);
+
+    NDArray expdLdI('c', {2,3,4}, { 0.033889,  0.33935 ,  0.746631,  1.255733,0.020334,  0.20361 ,  0.447979,  0.75344 ,0.006778,  0.06787 ,  0.149326,  0.251147,
+                                    -0.006778, -0.06787 , -0.149326, -0.251147,-0.020334, -0.20361 , -0.447979, -0.75344 ,-0.033889, -0.33935 , -0.746631, -1.255733}, nd4j::DataType::FLOAT32);
+    NDArray expdLdG('c', {4}, {6.448749, 7.212417, 8.230641, 9.50342 }, nd4j::DataType::FLOAT32);
+    NDArray expdLdB('c', {4}, {3.6, 4.5, 5.4, 6.3}, nd4j::DataType::FLOAT32);
+
+    input.linspace(0.1, 0.1);
+    mean.assign(1.);
+    variance.assign(0.5);
+    gamma.assign(1.2);
+    // beta.assign(1.);     // has no effect on gradient calculations
+    gradO.linspace(-0.9, 0.15);
+
+    const OpArgsHolder argsHolderFF({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
+    const OpArgsHolder argsHolderBP({&input, &mean, &variance, &gradO, &gamma, &beta} , {1e-5}, {1,1});
+
+    nd4j::ops::batchnorm opFF;
+    nd4j::ops::batchnorm_bp opBP;
+
+    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, false, false, true, true});
+
+    ASSERT_TRUE(isGradCorrect);
+}
+
+
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, batchnorm_bp_test2) {
 
