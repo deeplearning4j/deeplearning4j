@@ -9,6 +9,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * A simple {@link ArrayHolder} that uses a simple {@code Map<String, INDArray>} internally.
+ * No thread safety guarantees
+ *
+ * @author Alex Black
+ */
 public class SingleThreadArrayHolder implements ArrayHolder {
 
     private final Map<String, INDArray> map = new HashMap<>();
@@ -42,7 +48,7 @@ public class SingleThreadArrayHolder implements ArrayHolder {
     public void initFrom(ArrayHolder arrayHolder) {
         map.clear();
         Collection<String> names = arrayHolder.arrayNames();
-        for(String n : names){
+        for (String n : names) {
             map.put(n, arrayHolder.getArray(n));
         }
     }

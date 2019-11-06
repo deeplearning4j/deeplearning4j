@@ -10,12 +10,20 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+/**
+ * An {@link ArrayHolder} that uses the thread safe {@link DeviceLocalNDArray} internally
+ *
+ * @author Alex Black
+ */
 public class ThreadSafeArrayHolder implements ArrayHolder {
 
     private final Map<String, DeviceLocalNDArray> map = new ConcurrentHashMap<>();
     private final boolean lazyInit;
 
-    public ThreadSafeArrayHolder(boolean lazyInit){
+    /**
+     * @param lazyInit If true: use lazy initialization for {@link DeviceLocalNDArray}
+     */
+    public ThreadSafeArrayHolder(boolean lazyInit) {
         this.lazyInit = lazyInit;
     }
 
@@ -31,9 +39,9 @@ public class ThreadSafeArrayHolder implements ArrayHolder {
 
     @Override
     public void setArray(@NonNull String name, @NonNull INDArray array) {
-        if(array.isView())
+        if (array.isView())
             array = array.dup();    //Device local doesn't support views
-        if(!map.containsKey(name)){
+        if (!map.containsKey(name)) {
             DeviceLocalNDArray dla = new DeviceLocalNDArray(array, lazyInit);
             map.put(name, dla);
         } else {
@@ -45,7 +53,7 @@ public class ThreadSafeArrayHolder implements ArrayHolder {
     @Override
     public INDArray removeArray(@NonNull String name) {
         DeviceLocalNDArray arr = map.remove(name);
-        if(arr == null)
+        if (arr == null)
             return null;
         return arr.get();
     }
@@ -59,7 +67,7 @@ public class ThreadSafeArrayHolder implements ArrayHolder {
     public void initFrom(ArrayHolder arrayHolder) {
         map.clear();
         Collection<String> names = arrayHolder.arrayNames();
-        for(String n : names){
+        for (String n : names) {
             setArray(n, arrayHolder.getArray(n));
         }
     }
