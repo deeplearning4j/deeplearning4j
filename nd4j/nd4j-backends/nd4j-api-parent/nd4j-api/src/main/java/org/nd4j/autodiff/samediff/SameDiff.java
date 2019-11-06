@@ -30,6 +30,7 @@ import org.nd4j.autodiff.listeners.impl.HistoryListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.listeners.records.LossCurve;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
+import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder;
 import org.nd4j.autodiff.samediff.config.BatchOutputConfig;
 import org.nd4j.autodiff.samediff.config.EvaluationConfig;
@@ -733,11 +734,11 @@ public class SameDiff extends SDBaseOps {
         SDVariable v = variables.get(varName).getVariable();
         switch (v.getVariableType()) {
             case VARIABLE:
-                return variablesArrays.getArray(varName).get();
+                return variablesArrays.getArray(varName);
             case CONSTANT:
                 if (!constantArrays.hasArray(varName))
                     return null;
-                return constantArrays.getArray(varName).get();
+                return constantArrays.getArray(varName);
             case ARRAY:
                 //Only stored in inference session...
                 InferenceSession s = sessions.get(Thread.currentThread().getId());
@@ -3004,7 +3005,7 @@ public class SameDiff extends SDBaseOps {
             name = getNewVarName();
 
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType());
-        associateArrayWithVariable(arr.dup(), ret);
+        associateArrayWithVariable(arr, ret);
 
         addVariable(ret);
         return ret;
@@ -4158,6 +4159,8 @@ public class SameDiff extends SDBaseOps {
 
             @Override
             public SDVariable[] define(SameDiff sameDiff, Map<String, INDArray> inputs, SDVariable[] variableInputs) {
+                sameDiff.setArrayHolders(new SingleThreadArrayHolder(), new SingleThreadArrayHolder(), false);      //Training isn't thread safe, no need to use DeviceLocal, even with lazy init
+
                 //Propagate graph to this samediff instance which will also contain the backward
                 if (SameDiff.this.debugMode) {
                     sameDiff.enableDebugMode();
