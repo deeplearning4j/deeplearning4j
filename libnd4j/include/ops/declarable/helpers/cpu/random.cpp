@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -23,6 +23,7 @@
 #include <memory>
 //#include <graph/Context.h>
 #include <ShapeUtils.h>
+#include <helpers/RandomLauncher.h>
 
 namespace nd4j {
 namespace ops {
@@ -126,6 +127,32 @@ namespace helpers {
     }
     BUILD_SINGLE_TEMPLATE(template void fillRandomPoisson_, (LaunchContext* context,
             graph::RandomGenerator& rng, NDArray* lambda, NDArray* output), FLOAT_TYPES);
+
+    template <typename T>
+    void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
+         T minVal = T(0);
+         T maxVal = DataTypeUtils::infOrMax<T>();
+         if (min)
+             minVal = min->t<T>(0);
+         if (max)
+             maxVal = max->t<T>(0);
+
+        if (output->isR())
+            RandomLauncher::fillUniform(context, rng, output, minVal, maxVal);
+        else {
+            PRAGMA_OMP_PARALLEL_FOR
+            for (auto i = 0; i < output->lengthOf(); i++) {
+                output->t<T>(i) = rng.relativeT<T>(i, minVal, maxVal);
+            }
+        }
+    }
+
+    void fillRandomUniform(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomUniform_, (context, rng, min, max, output), NUMERIC_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void fillRandomUniform_, (LaunchContext* context,
+            graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output), NUMERIC_TYPES);
 
 }
 }

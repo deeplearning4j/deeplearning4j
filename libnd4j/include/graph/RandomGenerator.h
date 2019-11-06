@@ -194,8 +194,22 @@ namespace nd4j {
 
         template <typename T>
         _CUDA_HD FORCEINLINE T RandomGenerator::relativeT(Nd4jLong index, T from, T to) {            
-            auto t = this->relativeT<T>(index);            
-            auto z = from + (t * (to - from));
+            auto t = this->relativeT<T>(index);
+            auto z = from + T(t * (to - from));
+            return z;
+        }
+
+        template <>
+        _CUDA_HD FORCEINLINE Nd4jLong RandomGenerator::relativeT(Nd4jLong index, Nd4jLong from, Nd4jLong to) {
+            auto t = this->relativeT<double>(index);
+            auto z = from + Nd4jLong(t * (to - from));
+            return z;
+        }
+
+        template <>
+        _CUDA_HD FORCEINLINE int RandomGenerator::relativeT(Nd4jLong index, int from, int to) {
+            auto t = this->relativeT<float>(index);
+            auto z = from + float(t * (to - from));
             return z;
         }
 
