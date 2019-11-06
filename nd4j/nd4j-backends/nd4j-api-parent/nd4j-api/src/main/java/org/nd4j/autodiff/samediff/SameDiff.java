@@ -3004,6 +3004,22 @@ public class SameDiff extends SDBaseOps {
         if (name == null || name.length() < 1)
             name = getNewVarName();
 
+        boolean duped = false;
+        if (arr.isAttached()) {
+            arr = arr.detach();
+            duped = true;
+        }
+
+        if (!duped) {
+            for (String s : variablesArrays.arrayNames()) {
+                if (variablesArrays.getArray(s) == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
+                    arr = arr.dup();
+                    break;
+                }
+            }
+        }
+
+
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType());
         associateArrayWithVariable(arr, ret);
 
