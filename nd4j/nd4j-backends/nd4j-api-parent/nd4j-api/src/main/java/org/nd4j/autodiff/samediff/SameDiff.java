@@ -30,6 +30,7 @@ import org.nd4j.autodiff.listeners.impl.HistoryListener;
 import org.nd4j.autodiff.listeners.records.History;
 import org.nd4j.autodiff.listeners.records.LossCurve;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
+import org.nd4j.autodiff.samediff.array.ThreadSafeArrayHolder;
 import org.nd4j.autodiff.samediff.config.BatchOutputConfig;
 import org.nd4j.autodiff.samediff.config.EvaluationConfig;
 import org.nd4j.autodiff.samediff.config.FitConfig;
@@ -122,8 +123,8 @@ public class SameDiff extends SDBaseOps {
     @Getter
     private final Map<Long, InferenceSession> sessions = new ConcurrentHashMap<>();      //Key: thread ID
 
-    private final Map<String, DeviceLocalNDArray> constantArrays = new ConcurrentHashMap<>();
-    private final Map<String, DeviceLocalNDArray> variablesArrays = new ConcurrentHashMap<>();     //TODO issues with DeviceLocal +  mutable / changed during training?
+    private ArrayHolder constantArrays = new ThreadSafeArrayHolder(true);
+    private ArrayHolder variablesArrays = new ThreadSafeArrayHolder(true);
     private final Map<Long, Map<String, INDArray>> placeholdersPerThread = new ConcurrentHashMap<>(); //Placeholders for each thread - if the user sets them
 
     private final List<String> lossVariables = new ArrayList<>();
@@ -346,6 +347,14 @@ public class SameDiff extends SDBaseOps {
         return listeners;
     }
 
+    public void setArrayHolders(@NonNull ArrayHolder variableArrayHolder, @NonNull ArrayHolder constantArrayHolder, boolean initialize){
+        if(initialize){
+            variableArrayHolder.initFrom(this.variablesArrays);
+            constantArrayHolder.initFrom(this.constantArrays);
+        }
+        this.variablesArrays = variableArrayHolder;
+        this.constantArrays = constantArrayHolder;
+    }
 
     /**
      * @return The current name scope, if any (null otherwise). See {@link #withNameScope(String)} for more details.
@@ -674,9 +683,9 @@ public class SameDiff extends SDBaseOps {
 
         SDVariable v = getVariable(varName);
         if (v.isConstant()) {
-            constantArrays.put(varName, new DeviceLocalNDArray(arr, true));
+            constantArrays.setArray(varName, arr);
         } else if (v.getVariableType() == VariableType.VARIABLE) {
-            variablesArrays.put(varName, new DeviceLocalNDArray(arr, true));
+            variablesArrays.setArray(varName, arr);
         } else if (v.isPlaceHolder()) {
             long tid = Thread.currentThread().getId();
             if (!placeholdersPerThread.containsKey(tid)) {
@@ -699,12 +708,12 @@ public class SameDiff extends SDBaseOps {
         SDVariable var = getVariable(varName);
         switch (var.getVariableType()) {
             case VARIABLE:
-                return variablesArrays.containsKey(varName);
+                return variablesArrays.hasArray(varName);
             case ARRAY:
                 long tid = Thread.currentThread().getId();
                 return sessions.containsKey(tid) && sessions.get(tid).contains(varName, InferenceSession.OUTER_FRAME, 0, null);
             case CONSTANT:
-                return constantArrays.containsKey(varName);
+                return constantArrays.hasArray(varName);
             case PLACEHOLDER:
                 return placeholdersPerThread.containsKey(Thread.currentThread().getId()) &&
                         placeholdersPerThread.get(Thread.currentThread().getId()).containsKey(varName);
@@ -724,11 +733,11 @@ public class SameDiff extends SDBaseOps {
         SDVariable v = variables.get(varName).getVariable();
         switch (v.getVariableType()) {
             case VARIABLE:
-                return variablesArrays.get(varName).get();
+                return variablesArrays.getArray(varName).get();
             case CONSTANT:
-                if (!constantArrays.containsKey(varName))
+                if (!constantArrays.hasArray(varName))
                     return null;
-                return constantArrays.get(varName).get();
+                return constantArrays.getArray(varName).get();
             case ARRAY:
                 //Only stored in inference session...
                 InferenceSession s = sessions.get(Thread.currentThread().getId());
@@ -781,31 +790,16 @@ public class SameDiff extends SDBaseOps {
             sessions.put(Thread.currentThread().getId(), new InferenceSession(this));
         }
 
-        boolean duped = false;
         if (arr.isAttached()) {
             arr = arr.detach();
-            duped = true;
-        }
-        if (arr.isView()) {
-            arr = arr.dup();
-            duped = true;
-        }
-
-        if (!duped && variable.getVariableType() == VariableType.VARIABLE) {
-            for (DeviceLocalNDArray otherArr : variablesArrays.values()) {
-                if (otherArr.get() == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
-                    arr = arr.dup();
-                    break;
-                }
-            }
         }
 
         switch (variable.getVariableType()) {
             case VARIABLE:
-                variablesArrays.put(variable.name(), new DeviceLocalNDArray(arr, true));  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
+                variablesArrays.setArray(variable.name(), arr);
                 break;
             case CONSTANT:
-                constantArrays.put(variable.name(), new DeviceLocalNDArray(arr, true));
+                constantArrays.setArray(variable.name(), arr);
                 break;
             case ARRAY:
                 throw new UnsupportedOperationException("Cannot associate array with SDVariable of type ARRAY - arrays for" +
@@ -859,9 +853,9 @@ public class SameDiff extends SDBaseOps {
             arr = arr.dup();
 
         if(variable.getVariableType() == VariableType.VARIABLE ){
-            variablesArrays.get(variable.name()).update(arr);
+            variablesArrays.setArray(variable.name(), arr);
         } else {
-            constantArrays.get(variable.name()).update(arr);
+            constantArrays.setArray(variable.name(), arr);
         }
     }
 
@@ -2715,7 +2709,7 @@ public class SameDiff extends SDBaseOps {
         SDVariable v = new SDVariable(name, VariableType.CONSTANT, this, constant.shape(), constant.dataType());
         name = v.name();
         variables.put(name, Variable.builder().name(name).variable(v).build());
-        constantArrays.put(name, new DeviceLocalNDArray(constant, true));   //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
+        constantArrays.setArray(name, constant);
         return v;
     }
 
@@ -2792,7 +2786,7 @@ public class SameDiff extends SDBaseOps {
         if(variableType == VariableType.VARIABLE){
             try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
                 INDArray vArr = weightInitScheme.create(dataType, shape);
-                variablesArrays.put(name, new DeviceLocalNDArray(vArr, true));
+                variablesArrays.setArray(name, vArr);
             }
         }
 
@@ -2924,7 +2918,7 @@ public class SameDiff extends SDBaseOps {
                 SDVariable r = new SDVariable(v.name(), v.getVariableType(), this, v.getShape(), v.dataType());
                 addVariable(r);
                 try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()){
-                    variablesArrays.put(v.name(), new DeviceLocalNDArray(v.getArr().dup(), true));
+                    variablesArrays.setArray(v.name(), v.getArr().dup());
                 }
                 return r;
             case ARRAY:
@@ -3009,27 +3003,8 @@ public class SameDiff extends SDBaseOps {
         if (name == null || name.length() < 1)
             name = getNewVarName();
 
-        boolean duped = false;
-        if (arr.isAttached()) {
-            arr = arr.detach();
-            duped = true;
-        }
-        if (arr.isView()) {
-            arr = arr.dup();
-            duped = true;
-        }
-
-        if (!duped) {
-            for (DeviceLocalNDArray otherArr : variablesArrays.values()) {
-                if (otherArr.get() == arr) {    //Check for exact same object, to avoid array reuse (can result in unexpected behaviour)
-                    arr = arr.dup();
-                    break;
-                }
-            }
-        }
-
         SDVariable ret = new SDVariable(name, VariableType.VARIABLE, this, arr.shape(), arr.dataType());
-        associateArrayWithVariable(arr, ret);
+        associateArrayWithVariable(arr.dup(), ret);
 
         addVariable(ret);
         return ret;
@@ -3085,8 +3060,8 @@ public class SameDiff extends SDBaseOps {
             INDArray arr = variable.getArr();
             Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
 
-            constantArrays.put(n, new DeviceLocalNDArray(arr, true));   //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
-            variablesArrays.remove(n);
+            constantArrays.setArray(n, arr);   //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
+            variablesArrays.removeArray(n);
             if (!placeholdersPerThread.isEmpty()) {
                 for (Map<String, INDArray> m : placeholdersPerThread.values()) {
                     m.remove(n);
@@ -3183,8 +3158,8 @@ public class SameDiff extends SDBaseOps {
             INDArray arr = variable.getArr();
             Preconditions.checkNotNull(arr, "Could not get array for variable %s: if this is a placeholder, use SDVariable.setArray before converting", variable);
 
-            variablesArrays.put(n, new DeviceLocalNDArray(arr, true));  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
-            constantArrays.remove(n);
+            variablesArrays.setArray(n, arr);  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
+            constantArrays.removeArray(n);
             if (!placeholdersPerThread.isEmpty()) {
                 for (Map<String, INDArray> m : placeholdersPerThread.values()) {
                     m.remove(n);
@@ -3260,16 +3235,14 @@ public class SameDiff extends SDBaseOps {
 
             switch (v.getVariableType()) {
                 case VARIABLE:
-                    DeviceLocalNDArray dl = variablesArrays.remove(e.getKey());
-                    INDArray arr = dl.get();
+                    INDArray arr = variablesArrays.removeArray(e.getKey());
                     INDArray newArr = arr.castTo(d);
-                    variablesArrays.put(e.getKey(), new DeviceLocalNDArray(newArr, true));  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
+                    variablesArrays.setArray(e.getKey(), newArr);  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
                     break;
                 case CONSTANT:
-                    DeviceLocalNDArray dl2 = constantArrays.remove(e.getKey());
-                    INDArray arr2 = dl2.get();
+                    INDArray arr2 = constantArrays.removeArray(e.getKey());
                     INDArray newArr2 = arr2.castTo(d);
-                    constantArrays.put(e.getKey(), new DeviceLocalNDArray(newArr2, true));  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
+                    constantArrays.setArray(e.getKey(), newArr2);  //DeviceLocal with delayed initialization, in case we don't actually need multiple threads
                     break;
                 case PLACEHOLDER:
                     Map<String, INDArray> m = placeholdersPerThread.get(Thread.currentThread().getId());
@@ -3409,14 +3382,12 @@ public class SameDiff extends SDBaseOps {
         variables.remove(from);
         variables.put(to, v);
 
-        if(v.getVariable().getVariableType() == VariableType.CONSTANT && constantArrays.containsKey(from)){
-            DeviceLocalNDArray dl = constantArrays.remove(from);
-            constantArrays.put(to, dl);
+        if(v.getVariable().getVariableType() == VariableType.CONSTANT && constantArrays.hasArray(from)){
+            constantArrays.rename(from, to);
         }
 
-        if(v.getVariable().getVariableType() == VariableType.VARIABLE && variablesArrays.containsKey(from)){
-            DeviceLocalNDArray dl = variablesArrays.remove(from);
-            variablesArrays.put(to, dl);
+        if(v.getVariable().getVariableType() == VariableType.VARIABLE && variablesArrays.hasArray(from)){
+            variablesArrays.rename(from, to);
         }
 
         if(v.getVariable().getVariableType() == VariableType.PLACEHOLDER ){
