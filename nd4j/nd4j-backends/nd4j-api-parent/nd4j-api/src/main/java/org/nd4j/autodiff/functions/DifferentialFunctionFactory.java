@@ -975,8 +975,8 @@ public class DifferentialFunctionFactory {
         return new BiasAdd(sameDiff(), input, bias, nchw).outputVariable();
     }
 
-    public SDVariable[] biasAddBp(SDVariable input, SDVariable bias, SDVariable grad) {
-        return new BiasAddGrad(sameDiff(), input, bias, grad).outputVariables();
+    public SDVariable[] biasAddBp(SDVariable input, SDVariable bias, SDVariable grad, boolean nchw) {
+        return new BiasAddGrad(sameDiff(), input, bias, grad, nchw).outputVariables();
     }
 
     public SDVariable norm1(SDVariable i_x, boolean keepDims, int... dimensions) {

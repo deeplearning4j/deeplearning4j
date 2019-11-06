@@ -37,21 +37,6 @@ public:
     }
 };
 
-TEST_F(DeclarableOpsTests11, test_mixed_biasadd_1) {
-    if (!Environment::getInstance()->isExperimentalBuild())
-        return;
-
-    auto x = NDArrayFactory::create<double>('c', {2, 3});
-    auto y = NDArrayFactory::create<float>('c', {3}, {1.f, 2.f, 3.f});
-    auto z = NDArrayFactory::create<float>('c', {2, 3});
-    auto exp = NDArrayFactory::create<float>('c', {2, 3}, {1.f, 2.f, 3.f, 1.f, 2.f, 3.f});
-
-    nd4j::ops::biasadd op;
-    auto status = op.execute({&x, &y}, {&z}, {}, {}, {true});
-    ASSERT_EQ(Status::OK(), status);
-
-    ASSERT_EQ(exp, z);
-}
 
 TEST_F(DeclarableOpsTests11, test_listdiff_1) {
     auto x = NDArrayFactory::create<int>('c', {4}, {0, 1, 2, 3});

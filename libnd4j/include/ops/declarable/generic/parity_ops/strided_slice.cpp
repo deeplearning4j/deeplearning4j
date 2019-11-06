@@ -623,7 +623,7 @@ namespace nd4j {
 
 			//Zero output array, so unused elements have 0 gradient
 			output->nullify();
-
+            std::sort(indices.begin(), indices.end());
             if(indices.size() == 3 && (indices[1] - indices[0]) == 1) {
                 output->p(indices[0], *epsNext);
             }

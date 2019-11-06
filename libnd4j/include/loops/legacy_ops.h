@@ -323,7 +323,9 @@
         (11, TruncatedNormalDistribution) ,\
         (12, AlphaDropOut),\
         (13, ExponentialDistribution),\
-        (14, ExponentialDistributionInv)
+        (14, ExponentialDistributionInv), \
+        (15, PoissonDistribution), \
+        (16, GammaDistribution)
 
 #define PAIRWISE_INT_OPS \
         (0, ShiftLeft), \

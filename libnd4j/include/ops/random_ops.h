@@ -129,6 +129,47 @@ namespace randomOps {
         }
     };
 
+    template <typename T>
+    class PoissonDistribution {
+    public:
+        no_exec_special
+        no_exec_special_cuda
+
+        method_XY
+
+        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
+            T lambda = extraParams[0];
+            T x = helper->relativeT(idx, -nd4j::DataTypeUtils::template max<T>() / 10 , nd4j::DataTypeUtils::template max<T>() / 10);
+            return x <= (T)0.f ? (T)0.f : nd4j::math::nd4j_igammac<T,T,T>(nd4j::math::nd4j_floor<T,T>(x), lambda);
+        }
+
+        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
+            T lambda = extraParams[0];
+            return valueX <= (T)0.f ? (T)0.f : (T)nd4j::math::nd4j_igammac<T,T,T>(nd4j::math::nd4j_floor<T,T>(valueX), lambda);
+        }
+    };
+
+    template <typename T>
+    class GammaDistribution {
+    public:
+        no_exec_special
+        no_exec_special_cuda
+
+        method_XY
+
+        random_def T op(Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
+            T alpha = extraParams[0];
+            T beta = extraParams[1];
+            T x = helper->relativeT(idx, -nd4j::DataTypeUtils::template max<T>() / 10 , nd4j::DataTypeUtils::template max<T>() / 10);
+            return x <= (T)0.f ? (T)0.f : nd4j::math::nd4j_igamma<T,T,T>(alpha, x * beta);
+        }
+
+        random_def T op(T valueX, Nd4jLong idx, Nd4jLong length, nd4j::graph::RandomGenerator *helper, T *extraParams) {
+            T alpha = extraParams[0];
+            T beta = extraParams[1];
+            return valueX <= (T)0.f ? (T)0.f : nd4j::math::nd4j_igamma<T,T,T>(alpha, beta * valueX);
+        }
+    };
 
     /**
      * Basic DropOut/DropConnect Op

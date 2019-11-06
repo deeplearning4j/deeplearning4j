@@ -575,24 +575,38 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test1) {
     int paddingMode = 0;             // 1-SAME, 0-VALID;
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, oC});
-    auto weights  = NDArrayFactory::create<double>('c', {kD, kH, kW, iC, oC});
-    auto bias     = NDArrayFactory::create<double>('c', {iC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
+    auto input    = NDArrayFactory::create<float>('c', {bS, oD, oH, oW, oC});
+    auto weights  = NDArrayFactory::create<float>('c', {kD, kH, kW, iC, oC});
+    auto bias     = NDArrayFactory::create<float>('c', {iC});
+    auto gradO    = NDArrayFactory::create<float>('c', {bS, iD, iH, iW, iC});
+
+    NDArray expGradI('c', {bS, oD, oH, oW, oC}, {62., 67.6, 68.4, 74.8, 81.2, 89.2, 87.6, 96.4, 119.6, 132.4, 126., 139.6, 138.8, 154., 145.2, 161.2}, nd4j::DataType::FLOAT32);
+    NDArray expGradW('c', {kD, kH, kW, iC, oC}, {28., 28., 32., 32., 40., 40., 44., 44., 64, 64., 68., 68., 76., 76., 80., 80.}, nd4j::DataType::FLOAT32);
+    NDArray expGradB('c', {iC}, {364.5}, nd4j::DataType::FLOAT32);
 
     input = 0.5;
     weights.linspace(0.1, 0.1);
     gradO.linspace(0.5);
 
-    const OpArgsHolder argsHolderFF({&input, &weights, &bias},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    const OpArgsHolder argsHolderBP({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    nd4j::ops::deconv3d_bp op;
+    auto results = op.execute({&input, &weights, &bias, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
 
-    nd4j::ops::deconv3d opFF;
-    nd4j::ops::deconv3d_bp opBP;
+    auto gradI = results->at(0);
+    auto gradW = results->at(1);
+    auto gradB = results->at(2);
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    ASSERT_EQ(Status::OK(), results->status());
 
-    ASSERT_TRUE(isGradCorrect);
+    ASSERT_TRUE(expGradI.isSameShape(gradI));
+    ASSERT_TRUE(expGradI.equalsTo(gradI));
+
+    ASSERT_TRUE(expGradW.isSameShape(gradW));
+    ASSERT_TRUE(expGradW.equalsTo(gradW));
+
+    ASSERT_TRUE(expGradB.isSameShape(gradB));
+    ASSERT_TRUE(expGradB.equalsTo(gradB));
+
+    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -603,23 +617,32 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test2) {
     int paddingMode = 1;             // 1-SAME, 0-VALID;
     int dataFormat  = 1;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, oD, oH, oW, oC});
-    auto weights  = NDArrayFactory::create<double>('c', {kD, kH, kW, iC, oC});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iD, iH, iW, iC});
+    auto input    = NDArrayFactory::create<float>('c', {bS, oD, oH, oW, oC});
+    auto weights  = NDArrayFactory::create<float>('c', {kD, kH, kW, iC, oC});
+    auto gradO    = NDArrayFactory::create<float>('c', {bS, iD, iH, iW, iC});
+
+    NDArray expGradI('c', {bS, oD, oH, oW, oC}, {34, 37.2, 16.6, 18.4, 15.4, 17.4, 7.1, 8.2, 10.6, 13., 4.3, 5.6, 2.9, 4.3, 0.75, 1.5}, nd4j::DataType::FLOAT32);
+    NDArray expGradW('c', {kD, kH, kW, iC, oC}, {16, 16, 9, 9, 10, 10, 5.5, 5.5, 12, 12, 6.5, 6.5, 7, 7, 3.75, 3.75}, nd4j::DataType::FLOAT32);
 
     input = 0.5;
     weights.linspace(0.1, 0.1);
     gradO.linspace(0.5);
 
-    const OpArgsHolder argsHolderFF({&input, &weights},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    const OpArgsHolder argsHolderBP({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    nd4j::ops::deconv3d_bp op;
+    auto results = op.execute({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
 
-    nd4j::ops::deconv3d opFF;
-    nd4j::ops::deconv3d_bp opBP;
+    auto gradI = results->at(0);
+    auto gradW = results->at(1);
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    ASSERT_EQ(Status::OK(), results->status());
 
-    ASSERT_TRUE(isGradCorrect);
+    ASSERT_TRUE(expGradI.isSameShape(gradI));
+    ASSERT_TRUE(expGradI.equalsTo(gradI));
+
+    ASSERT_TRUE(expGradW.isSameShape(gradW));
+    ASSERT_TRUE(expGradW.equalsTo(gradW));
+
+    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -630,24 +653,31 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test3) {
     int paddingMode = 0;             // 1-SAME, 0-VALID;
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, oC, oD, oH, oW});
-    auto weights  = NDArrayFactory::create<double>('c', {oC, iC, kD, kH, kW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
+    auto input    = NDArrayFactory::create<float>('c', {bS, oC, oD, oH, oW});
+    auto weights  = NDArrayFactory::create<float>('c', {kD, kH, kW, iC, oC}, {0.1,0.9,0.2,0.1,0.3,1.1,0.4,1.2,0.5,1.3,0.6,1.4,0.7,1.5,0.8,1.6});
+    auto gradO    = NDArrayFactory::create<float>('c', {bS, iC, iD, iH, iW});
+
+    NDArray expGradI('c', {bS, oD, oH, oW, oC}, {33.8, 37.4, 44.6, 48.2, 66.2, 69.8, 77., 80.6, 77.25, 86.35, 104.55, 113.65, 159.15, 168.25, 186.45, 195.55}, nd4j::DataType::FLOAT32);
+    NDArray expGradW('c', {kD, kH, kW, iC, oC}, {28., 28, 32, 32, 40, 40, 44, 44, 64, 64, 68, 68, 76, 76, 80, 80.}, nd4j::DataType::FLOAT32);
 
     input = 0.5;
-    weights.linspace(0.1, 0.1);
     gradO.linspace(0.5);
-    weights.permutei({2, 3, 4, 1, 0});
 
-    const OpArgsHolder argsHolderFF({&input, &weights},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    const OpArgsHolder argsHolderBP({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    nd4j::ops::deconv3d_bp op;
+    auto results = op.execute({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
 
-    nd4j::ops::deconv3d opFF;
-    nd4j::ops::deconv3d_bp opBP;
+    auto gradI = results->at(0);
+    auto gradW = results->at(1);
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    ASSERT_EQ(Status::OK(), results->status());
 
-    ASSERT_TRUE(isGradCorrect);
+    ASSERT_TRUE(expGradI.isSameShape(gradI));
+    ASSERT_TRUE(expGradI.equalsTo(gradI));
+
+    ASSERT_TRUE(expGradW.isSameShape(gradW));
+    ASSERT_TRUE(expGradW.equalsTo(gradW));
+
+    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////
@@ -658,24 +688,31 @@ TEST_F(ConvolutionTests2, deconv3d_bp_test4) {
     int paddingMode = 0;             // 1-SAME, 0-VALID;
     int dataFormat  = 0;             // 1-NDHWC, 0-NCDHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, oC, oD, oH, oW});
-    auto weights  = NDArrayFactory::create<double>('c', {oC, iC, kD, kH, kW});
-    auto gradO    = NDArrayFactory::create<double>('c', {bS, iC, iD, iH, iW});
+    auto input    = NDArrayFactory::create<float>('c', {bS, oC, oD, oH, oW});
+    auto weights  = NDArrayFactory::create<float>('c', {kD, kH, kW, iC, oC}, {0.1,0.9,0.2,0.1,0.3,1.1,0.4,1.2,0.5,1.3,0.6,1.4,0.7,1.5,0.8,1.6});
+    auto gradO    = NDArrayFactory::create<float>('c', {bS, iC, iD, iH, iW});
+
+    NDArray expGradI('c', {bS, oC, oD, oH, oW}, {0.4, 1.55, 1.05, 2.3, 5.7, 3.2, 1.5, 3.35, 1.75, 3.8, 8.3, 4.3, 9.0, 18.6, 9.2, 4.4, 8.7, 4.1, 1.8, 3.55, 1.65, 3.5, 6.5, 2.8, 1.3, 2.15, 0.75, 0.8, 3.15, 2.25, 4.7, 12.1, 7.2, 3.5, 8.15, 4.55, 7.8, 17.9, 9.9, 19.75, 42.85, 23.6, 9.35, 21.55, 12.9, 5.4, 11.55, 6.05, 8.25, 20.75, 13.2, 0.65, 6.6, 6.75}, nd4j::DataType::FLOAT32);
+    NDArray expGradW('c', {kD, kH, kW, iC, oC}, {16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.0, 16.}, nd4j::DataType::FLOAT32);
 
     input = 0.5;
-    weights.linspace(0.1, 0.1);
     gradO.linspace(0.5);
-    weights.permutei({2, 3, 4, 1, 0});
 
-    const OpArgsHolder argsHolderFF({&input, &weights},         {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
-    const OpArgsHolder argsHolderBP({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat});
+    nd4j::ops::deconv3d_bp op;
+    auto results = op.execute({&input, &weights, &gradO}, {}, {kD,kH,kW,  sD,sH,sW,  pD,pH,pW,  dD,dH,dW, paddingMode, dataFormat}, {});
 
-    nd4j::ops::deconv3d opFF;
-    nd4j::ops::deconv3d_bp opBP;
+    auto gradI = results->at(0);
+    auto gradW = results->at(1);
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP);
+    ASSERT_EQ(Status::OK(), results->status());
 
-    ASSERT_TRUE(isGradCorrect);
+    ASSERT_TRUE(expGradI.isSameShape(gradI));
+    ASSERT_TRUE(expGradI.equalsTo(gradI));
+
+    ASSERT_TRUE(expGradW.isSameShape(gradW));
+    ASSERT_TRUE(expGradW.equalsTo(gradW));
+
+    delete results;
 }
 
 //////////////////////////////////////////////////////////////////////

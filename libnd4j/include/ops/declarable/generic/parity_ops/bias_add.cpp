@@ -69,36 +69,26 @@ DECLARE_TYPES(biasadd) {
 
 ////////////////////////////////////////////////////////////////////
 CUSTOM_OP_IMPL(biasadd_bp, 3, 2, false, 0, 0) {
-    auto input = INPUT_VARIABLE(0);
-    auto bias = INPUT_VARIABLE(1);
-    auto epsilonNext = INPUT_VARIABLE(2);
 
-    auto epsilon = OUTPUT_VARIABLE(0);
+    auto input = INPUT_VARIABLE(0);
+    auto bias  = INPUT_VARIABLE(1);
+    auto gradO = INPUT_VARIABLE(2);
+
+    auto gradI = OUTPUT_VARIABLE(0);
     auto gradB = OUTPUT_VARIABLE(1);
 
-    epsilon->assign(epsilonNext);
+    const bool isNCHW = !block.getBArguments()->empty() ? B_ARG(0) : false;
+    const int channelDim = isNCHW ? 1 : input->rankOf() - 1;      // second or last
 
-    // cnn case
-    if (input->rankOf() == 4) {
-        auto epsilonNext2d = epsilonNext->permute({1, 0, 2, 3});
-        epsilonNext2d.reshapei('c', {(int) bias->lengthOf(), -1});
+    gradI->assign(gradO);
 
-        auto sum = epsilonNext2d.reduceAlongDimension(reduce::Sum, {1});
-        gradB->assign(sum);
-
-        delete sum;
-    } else if (input->rankOf() == 2) {
-        // regular fully-connected case
-        auto sum = epsilonNext->reduceAlongDimension(reduce::Sum, {0});
-        gradB->assign(sum);
-
-        delete sum;
-    }
+    gradO->reduceAlongDimension(nd4j::reduce::Sum, gradB, ShapeUtils::evalDimsToExclude(gradO->rankOf(), {channelDim}));
 
     return ND4J_STATUS_OK;
 }
 DECLARE_SYN(BiasAddGrad, biasadd_bp);
 
+////////////////////////////////////////////////////////////////////
 DECLARE_SHAPE_FN(biasadd_bp) {
     auto input = inputShape->at(0);
     auto bias = inputShape->at(1);

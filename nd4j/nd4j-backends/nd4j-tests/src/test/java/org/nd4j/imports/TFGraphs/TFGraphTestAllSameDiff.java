@@ -99,7 +99,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //2019/07/09 - Need "Multinomial" op - https://github.com/eclipse/deeplearning4j/issues/7913
             "multinomial/.*",
 
-            //2019/11/02 AB - need deconv3d changes (for handling shape)
+            //2019/11/04 AB - disabled, pending libnd4j deconv3d_tf implementation
             "conv3d_transpose.*"
     };
 

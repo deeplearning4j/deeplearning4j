@@ -756,6 +756,27 @@ TEST_F(DeclarableOpsTests9, concat_test24) {
     ASSERT_EQ(e, z);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests9, concat_test25) {
+
+    auto x0 = NDArrayFactory::create<double>('c', {1,4}, {1,2,3,4});
+    auto x1 = NDArrayFactory::create<double>('c', {1,4}, {5,6,7,8});
+    auto axis = NDArrayFactory::create<double>('c', {1}, {0.});
+    auto exp = NDArrayFactory::create<double>('c', {2,4}, {1,2,3,4,5,6,7,8});
+
+    nd4j::ops::concat op;
+
+    auto result = op.execute({&x0, &x1, &axis}, {}, {}, {true});
+
+    ASSERT_EQ(ND4J_STATUS_OK, result->status());
+    auto output = result->at(0);
+
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete result;
+}
+
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, tile_bp_test1) {
 

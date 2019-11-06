@@ -37,7 +37,7 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
 
     const int rows = matrix.sizeAt(0);
     const int cols = matrix.sizeAt(1);
-    
+
     if(cols > rows) {
 
         _transp = true;
@@ -52,7 +52,7 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
     _switchSize = switchSize;
     _calcU = calcU;
     _calcV = calcV;
-    _fullUV = fullUV;    
+    _fullUV = fullUV;
 
     if (_transp)
         math::nd4j_swap<bool>(_calcU, _calcV);
@@ -63,7 +63,7 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
 
     if (_calcU)
         _u = NDArrayFactory::create<T>(matrix.ordering(), {_diagSize + 1, _diagSize + 1}, matrix.getContext());
-    else         
+    else
         _u = NDArrayFactory::create<T>(matrix.ordering(), {2, _diagSize + 1}, matrix.getContext());
     _u.assign(0.);
 
@@ -84,7 +84,7 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
 
     const int rows = matrix.sizeAt(0);
     const int cols = matrix.sizeAt(1);
-    
+
     if(cols > rows) {
 
         _transp = true;
@@ -99,7 +99,7 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
     _switchSize = switchSize;
     _calcU = calcU;
     _calcV = calcV;
-    _fullUV = fullUV;    
+    _fullUV = fullUV;
 
     if (_transp)
         math::nd4j_swap<bool>(_calcU, _calcV);
@@ -110,7 +110,7 @@ SVD<T>::SVD(const NDArray& matrix, const int switchSize, const bool calcU, const
 
     if (_calcU)
         _u = NDArrayFactory::create<T>(matrix.ordering(), {_diagSize + 1, _diagSize + 1}, matrix.getContext());
-    else         
+    else
         _u = NDArrayFactory::create<T>(matrix.ordering(), {2, _diagSize + 1}, matrix.getContext());
     _u.assign(0.);
 
@@ -128,13 +128,13 @@ void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
     if(ind <= 0)
         throw std::runtime_error("ops::helpers::SVD::deflation1 method: input int must satisfy condition ind > 0 !");
 
-    int first = col1 + shift;    
+    int first = col1 + shift;
     T cos = _m.e<T>(first, first);
     T sin = _m.e<T>(first+ind, first);
     T denom = math::nd4j_sqrt<T, T>(cos*cos + sin*sin);
 
     if (denom == (T)0.) {
-        
+
         _m.p(first+ind, first+ind, 0.f);
         return;
     }
@@ -145,14 +145,14 @@ void SVD<T>::deflation1(int col1, int shift, int ind, int size) {
     _m.p(first,first, denom);
     _m.p(first+ind, first, 0.f);
     _m.p(first+ind, first+ind, 0.f);
-        
+
     auto rotation = NDArrayFactory::create<T>(_m.ordering(), {2, 2},  _m.getContext());
     rotation.p(0, 0, cos);
     rotation.p(0, 1, -sin);
     rotation.p(1, 0, sin);
     rotation.p(1, 1, cos);
 
-    if (_calcU) {        
+    if (_calcU) {
         auto temp = _u({col1,col1+size+1, 0,0}, true);
         JacobiSVD<T>::mulRotationOnRight(col1, col1+ind, temp, rotation);
     }
@@ -466,7 +466,7 @@ void SVD<T>::calcSingVals(const NDArray& col0, const NDArray& diag, const NDArra
                 useBisection = true;
             if (shift == right && (muCur < -(right - left) || muCur > (T)0.))
                 useBisection = true;
-            if (math::nd4j_abs<T>(fCur) > math::nd4j_abs<T>(fPrev))
+            if (math::nd4j_abs<T>(fCur) > math::nd4j_abs<T>(fPrev) &&  math::nd4j_abs<T>(fCur - fPrev) > (T)16. * DataTypeUtils::eps<T>())
                 useBisection = true;
         }
 
@@ -900,12 +900,8 @@ void SVD<T>::evalData(const NDArray& matrix) {
         scale = 1.;
 
     NDArray copy;
-    if(_transp) {
-        copy = NDArrayFactory::create<T>(matrix.ordering(), {matrix.sizeAt(1), matrix.sizeAt(0)}, matrix.getContext());
-        for(int i = 0; i < copy.sizeAt(0); ++i)
-            for(int j = 0; j < copy.sizeAt(1); ++j)
-                copy.p<T>(i, j, matrix.e<T>(j,i) / scale);
-    }
+    if(_transp)
+        copy = matrix.transpose();
     else
         copy = matrix / scale;
 
@@ -934,8 +930,8 @@ void SVD<T>::evalData(const NDArray& matrix) {
         else if (i == _diagSize-1)
             break;
     }
-    
-    if(_transp) 
+
+    if(_transp)
         exchangeUV(biDiag.makeHHsequence('v'), biDiag.makeHHsequence('u'), _v, _u);
     else
         exchangeUV(biDiag.makeHHsequence('u'), biDiag.makeHHsequence('v'), _u, _v);
@@ -954,20 +950,20 @@ static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const b
     auto u = outArrs[1];
     auto v = outArrs[2];
 
-    const int rank =  x->rankOf();    
-    const int sRank = rank - 1; 
+    const int rank =  x->rankOf();
+    const int sRank = rank - 1;
 
     auto listX = x->allTensorsAlongDimension({rank-2, rank-1});
     auto listS = s->allTensorsAlongDimension({sRank-1});
     ResultSet* listU(nullptr), *listV(nullptr);
-    
-    if(calcUV) {                
+
+    if(calcUV) {
         listU = u->allTensorsAlongDimension({rank-2, rank-1});
         listV = v->allTensorsAlongDimension({rank-2, rank-1});
     }
 
     for(int i = 0; i < listX->size(); ++i) {
-        
+
         // NDArray<T> matrix(x->ordering(), {listX->at(i)->sizeAt(0), listX->at(i)->sizeAt(1)}, block.getContext());
         // matrix.assign(listX->at(i));
         helpers::SVD<T> svdObj(*(listX->at(i)), switchNum, calcUV, calcUV, fullUV);
@@ -976,12 +972,12 @@ static void svd_(const NDArray* x, const std::vector<NDArray*>& outArrs, const b
         if(calcUV) {
             listU->at(i)->assign(svdObj._u);
             listV->at(i)->assign(svdObj._v);
-        }        
+        }
     }
 
     delete listX;
     delete listS;
-    
+
     if(calcUV) {
         delete listU;
         delete listV;

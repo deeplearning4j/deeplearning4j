@@ -39,6 +39,7 @@ import java.util.*;
 @Slf4j
 public class Concat extends DynamicCustomOp {
     private int concatDimension = -1;
+    private boolean isDynamicAxis = false;
 
     public Concat(){
 
@@ -84,72 +85,10 @@ public class Concat extends DynamicCustomOp {
     }
 
     @Override
-    public Map<String, Map<String, PropertyMapping>> mappingsForFunction() {
-        Map<String, Map<String, PropertyMapping>> ret = new HashMap<>();
-
-        Map<String,PropertyMapping> concatMap = new HashMap<>();
-        val concatDimProps = PropertyMapping.builder()
-                .tfInputPosition(0)
-                .onnxAttrName("axis")
-                .build();
-        concatMap.put("concatDimension",concatDimProps);
-
-
-        Map<String,PropertyMapping> concatV2Map = new HashMap<>();
-        val concat2DimProps = PropertyMapping.builder()
-                //lalst position
-                .tfInputPosition(-1)
-                .onnxAttrName("axis")
-                .build();
-        concatV2Map.put("concatDimension",concat2DimProps);
-
-        //note that onnx is already covered here
-        ret.put(tensorflowNames()[0],concatMap);
-        ret.put(tensorflowNames()[1],concatV2Map);
-
-
-        return ret;
-    }
-
-    @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        int concatDimension = -1;
-        String input = null;
-        val inputCount = nodeDef.getInputCount();
-        for(int i = 0; i < inputCount; i++) {
-            if(nodeDef.getInput(i).contains("/concat_dim")) {
-                input = nodeDef.getInput(i);
-                break;
-            }
-        }
-
-        //older versions may specify a concat_dim, usually it's the last argument
-        if(input == null) {
-            input = nodeDef.getInput(nodeDef.getInputCount() - 1);
-        }
-
-        val variable = initWith.getVariable(input);
-        // concat dimension is only possible
-        if (variable != null) {
-            val arr = variable.getArr();
-            if (arr.length() == 1) {
-                concatDimension = arr.getInt(0);
-            }
-
-            this.concatDimension = concatDimension;
-            addIArgument(this.concatDimension);
-            log.trace("Concat dimension: {}", concatDimension);
-
-        }
-
-        //don't pass both iArg and last axis down to libnd4j
-        if(inputArguments().length == nodeDef.getInputCount()) {
-            val inputArgs = inputArguments();
-            removeInputArgument(inputArgs[inputArguments().length - 1]);
-        }
-
-        //TODO Fix this: https://github.com/eclipse/deeplearning4j/issues/8285
-        sameDiff.removeArgFromOp(input,this);
+        //TF uses dynamic axis - last argument is a scalar integer array for axis
+        addBArgument(true);
+        isDynamicAxis = true;
     }
 
     @Override
@@ -157,12 +96,6 @@ public class Concat extends DynamicCustomOp {
         Map<String,Object> ret = new LinkedHashMap<>();
         ret.put("concatDimension",concatDimension);
         return ret;
-    }
-
-
-    @Override
-    public void initFromOnnx(Onnx.NodeProto node, SameDiff initWith, Map<String, Onnx.AttributeProto> attributesForNode, Onnx.GraphProto graph) {
-        super.initFromOnnx(node, initWith, attributesForNode, graph);
     }
 
     @Override
@@ -174,7 +107,6 @@ public class Concat extends DynamicCustomOp {
     public String tensorflowName() {
         return "Concat";
     }
-
 
     @Override
     public String[] tensorflowNames() {
@@ -189,18 +121,32 @@ public class Concat extends DynamicCustomOp {
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         SDVariable[] args = args();
-        SDVariable[] bpArgs = Arrays.copyOf(args, args.length + 1);
-        bpArgs[bpArgs.length-1] = i_v.get(0);
-        return Arrays.asList(new ConcatBp(sameDiff, concatDimension, bpArgs).outputVariables());
+        SDVariable[] bpArgs;
+        if(isDynamicAxis){
+            bpArgs = Arrays.copyOf(args, args.length + 2);
+            bpArgs[bpArgs.length - 1] = bpArgs[bpArgs.length - 3];      //Last input is axis -> move to end of bp args too
+            bpArgs[bpArgs.length - 2] = i_v.get(0);
+            return Arrays.asList(new ConcatBp(sameDiff, concatDimension, bpArgs).outputVariables());
+        } else {
+            bpArgs = Arrays.copyOf(args, args.length + 1);
+            bpArgs[bpArgs.length - 1] = i_v.get(0);
+            return Arrays.asList(new ConcatBp(sameDiff, concatDimension, bpArgs).outputVariables());
+        }
     }
 
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> dataTypes){
         DataType first = dataTypes.get(0);
-        for( int i=1; i<dataTypes.size(); i++ ){
+
+        for( int i=1; i<dataTypes.size() - (isDynamicAxis ? 1 : 0); i++ ){
             DataType dt = dataTypes.get(i);
             Preconditions.checkState(first == dt, "All inputs must have same datatype - got %s and %s for inputs 0 and %s respectively", first, dt, i);
         }
+        if(isDynamicAxis) {
+            Preconditions.checkState(dataTypes.get(dataTypes.size() - 1).isIntType(),
+                    "For dynamic axis case, last datatype must be an integer type, got input types %s");
+        }
+
         //Output type is same as input types
         return Collections.singletonList(first);
     }
