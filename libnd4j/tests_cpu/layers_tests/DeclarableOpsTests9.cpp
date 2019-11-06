@@ -2905,7 +2905,7 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_4) {
 TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
 
     NDArray input   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
-    NDArray mean    ('c', {4}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.1, 1.2, 1.3, 1.4}, nd4j::DataType::FLOAT32);
     NDArray variance('c', {4}, nd4j::DataType::FLOAT32);
     NDArray gamma   ('c', {4}, nd4j::DataType::FLOAT32);
     NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
@@ -2917,15 +2917,14 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
     NDArray expdLdB('c', {4}, {3.6, 4.5, 5.4, 6.3}, nd4j::DataType::FLOAT32);
 
     input.linspace(0.1, 0.1);
-    mean.assign(1.);
-    variance.assign(0.5);
+    variance.assign(0.46666667);
     gamma.assign(1.2);
-    // beta.assign(1.);     // has no effect on gradient calculations
+    beta.assign(1.);     // has no effect on gradient calculations
     gradO.linspace(-0.9, 0.15);
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gradO, &gamma, &beta}, {1e-5}, {1,1});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -2950,34 +2949,46 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
 ////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, gg) {
 
-    NDArray input   ('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    NDArray mean    ('c', {4}, nd4j::DataType::DOUBLE);
-    NDArray variance('c', {4}, nd4j::DataType::DOUBLE);
-    NDArray gamma   ('c', {4}, nd4j::DataType::DOUBLE);
-    NDArray beta    ('c', {4}, nd4j::DataType::DOUBLE);
-    NDArray gradO   ('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray input   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {4}, {1.1, 1.2, 1.3, 1.4}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {4}, nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {4}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
+    NDArray gradO   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,3,4}, { 0.033889,  0.33935 ,  0.746631,  1.255733,0.020334,  0.20361 ,  0.447979,  0.75344 ,0.006778,  0.06787 ,  0.149326,  0.251147,
-                                    -0.006778, -0.06787 , -0.149326, -0.251147,-0.020334, -0.20361 , -0.447979, -0.75344 ,-0.033889, -0.33935 , -0.746631, -1.255733}, nd4j::DataType::FLOAT32);
-    NDArray expdLdG('c', {4}, {6.448749, 7.212417, 8.230641, 9.50342 }, nd4j::DataType::FLOAT32);
+    NDArray expdLdI('c', {2,3,4}, {-0.000056, -0.000056, -0.000056, -0.000056, -0.000034, -0.000034, -0.000034, -0.000034, -0.000011, -0.000011, -0.000011, -0.000011, 0.000011, 0.000011, 0.000011, 0.000011, 0.000034, 0.000034, 0.000034, 0.000034, 0.000056, 0.000056, 0.000056, 0.000056}, nd4j::DataType::FLOAT32);
+    NDArray expdLdG('c', {4}, {11.944889, 14.052811, 16.424223, 19.059124}, nd4j::DataType::FLOAT32);
     NDArray expdLdB('c', {4}, {3.6, 4.5, 5.4, 6.3}, nd4j::DataType::FLOAT32);
 
     input.linspace(0.1, 0.1);
-    mean.assign(1.);
-    variance.assign(0.5);
+    variance.assign(0.46666667);
     gamma.assign(1.2);
-    // beta.assign(1.);     // has no effect on gradient calculations
+    beta.assign(1.);     // has no effect on gradient calculations
     gradO.linspace(-0.9, 0.15);
 
-    const OpArgsHolder argsHolderFF({&input, &mean, &variance, &gamma, &beta}, {1e-5}, {1,1});
-    const OpArgsHolder argsHolderBP({&input, &mean, &variance, &gradO, &gamma, &beta} , {1e-5}, {1,1});
 
-    nd4j::ops::batchnorm opFF;
-    nd4j::ops::batchnorm_bp opBP;
+    nd4j::ops::batchnorm_bp op;
 
-    const bool isGradCorrect = GradCheck::checkGrad(opFF, opBP, argsHolderFF, argsHolderBP, {true, false, false, true, true});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1});
 
-    ASSERT_TRUE(isGradCorrect);
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto dLdI = results->at(0);
+    auto dLdG = results->at(3);
+    auto dLdB = results->at(4);
+
+    dLdI->printBuffer();
+
+    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
+    ASSERT_TRUE(expdLdI.equalsTo(dLdI));
+
+    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
+    ASSERT_TRUE(expdLdG.equalsTo(dLdG));
+
+    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
+    ASSERT_TRUE(expdLdB.equalsTo(dLdB));
+
+    delete results;
 }
 
 
