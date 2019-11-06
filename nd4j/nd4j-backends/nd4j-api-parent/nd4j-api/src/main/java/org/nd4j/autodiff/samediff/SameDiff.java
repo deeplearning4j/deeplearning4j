@@ -348,6 +348,15 @@ public class SameDiff extends SDBaseOps {
         return listeners;
     }
 
+    /**
+     * Set the array holders for variable and constant arrays<br>
+     * <b>NOTE:</b> this is usually reserved for developers and internal use, and should not be needed by almost all users<br>
+     * See {@link ArrayHolder} for more details
+     *
+     * @param variableArrayHolder Array holder for variable arrays
+     * @param constantArrayHolder Array holder for constant arrays
+     * @param initialize          If true: transfer any arrays from the current array holders to the new/specified ones
+     */
     public void setArrayHolders(@NonNull ArrayHolder variableArrayHolder, @NonNull ArrayHolder constantArrayHolder, boolean initialize){
         if(initialize){
             variableArrayHolder.initFrom(this.variablesArrays);
