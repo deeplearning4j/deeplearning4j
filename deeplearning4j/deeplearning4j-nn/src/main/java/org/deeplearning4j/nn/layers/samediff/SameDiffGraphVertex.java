@@ -31,6 +31,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.base.Preconditions;
@@ -133,16 +134,6 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         }
         is.setMmgr(mmgr);
 
-
-
-        if(paramTable != null && paramTable.size() > 0) {
-            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
-            //TODO Find a more efficient solution for this
-            for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
-                INDArray arr = e.getValue();
-                sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
-            }
-        }
         INDArray result = sameDiff.outputSingle(phMap, outputKey);
 
         //Edge case: "vertex" is just an identity activation, for example
@@ -212,17 +203,8 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
         String epsName = fn.getGradPlaceholderName();
         phMap.put(epsName, epsilon);
 
-
-        //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
-        //TODO Find a more efficient solution for this
-        List<String> required = new ArrayList<>(inputNames.size());     //Ensure that the input placeholder gradients are calculated
-        for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
-            INDArray arr = e.getValue();
-            sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
-        }
-
+        List<String> required = new ArrayList<>(config.getVertexParams().getInputs());     //Ensure that the input placeholder gradients are calculated
         required.addAll(paramTable.keySet());
-        required.addAll(inputNames);
 
         Map<String,INDArray> gradsMap = sameDiff.calculateGradients(phMap, required);
         for(String s : paramTable.keySet() ){
@@ -279,6 +261,8 @@ public class SameDiffGraphVertex extends BaseGraphVertex {
     protected void doInit(){
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             sameDiff = SameDiff.create();
+            //Use SingleThreadArrayHolder so we can use views (also don't nede multithreading here, DL4J is not thread safe)
+            sameDiff.setArrayHolders(new SingleThreadArrayHolder(), new SingleThreadArrayHolder(), false);
 
             inputVars = new LinkedHashMap<>();
             LinkedHashMap<String, SDVariable> maskVars = new LinkedHashMap<>();
