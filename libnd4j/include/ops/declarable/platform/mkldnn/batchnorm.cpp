@@ -418,6 +418,7 @@ PLATFORM_CHECK(batchnorm) {
 
     const int inRank = input->rankOf();
 
+    // return false;
     return block.isUseMKLDNN() && axes.size() == 1 && axes[0] == 1 && (inRank == 2 || inRank == 4 || inRank == 5) &&
             (inputType == DataType::FLOAT32 && meanType == DataType::FLOAT32 && varType == DataType::FLOAT32 &&
              gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 && outType == DataType::FLOAT32);
@@ -558,29 +559,29 @@ PLATFORM_CHECK(batchnorm) {
 //////////////////////////////////////////////////////////////////////////
 PLATFORM_IMPL(batchnorm_bp) {
 
-    NDArray* input    = INPUT_VARIABLE(0);      // 2D:nc, 4D:nchw, 5D:ncdhw
-    NDArray* mean     = INPUT_VARIABLE(1);      // [c]
-    NDArray* variance = INPUT_VARIABLE(2);      // [c]
-    NDArray* dLdO     = INPUT_VARIABLE(3);      // same as input
-    NDArray* gamma    = nullptr;                // [c]
-    NDArray* beta     = nullptr;                // [c]
+    NDArray* input    = INPUT_VARIABLE(0);                  // 2D:nc, 4D:nchw, 5D:ncdhw
+    NDArray* mean     = INPUT_VARIABLE(1);                  // [c]
+    NDArray* variance = INPUT_VARIABLE(2);                  // [c]
+    NDArray* gamma    = nullptr;                            // [c]
+    NDArray* beta     = nullptr;                            // [c]
+    NDArray* dLdO     = INPUT_VARIABLE(block.width() - 1);  // same as input
 
-    NDArray* dLdI = OUTPUT_VARIABLE(0);         // same as input
-    NDArray* dLdM = OUTPUT_VARIABLE(1);         // [c]
-    NDArray* dLdV = OUTPUT_VARIABLE(2);         // [c]
-    NDArray* dLdG = nullptr;                    // [c]
-    NDArray* dLdB = nullptr;                    // [c]
+    NDArray* dLdI = OUTPUT_VARIABLE(0);                     // same as input
+    NDArray* dLdM = OUTPUT_VARIABLE(1);                     // [c]
+    NDArray* dLdV = OUTPUT_VARIABLE(2);                     // [c]
+    NDArray* dLdG = nullptr;                                // [c]
+    NDArray* dLdB = nullptr;                                // [c]
 
     const bool  applyScale  = (bool)INT_ARG(0);
     const bool  applyOffset = (bool)INT_ARG(1);
     const float epsilon     = T_ARG(0);
 
     if(applyScale) {
-        gamma = INPUT_VARIABLE(4);
+        gamma = INPUT_VARIABLE(3);
         dLdG  = OUTPUT_VARIABLE(3);
     }
     if(applyOffset) {
-        beta = INPUT_VARIABLE(4 + (int)applyScale);
+        beta = INPUT_VARIABLE(3 + (int)applyScale);
         dLdB = OUTPUT_VARIABLE(3 + (int)applyScale);
     }
 
@@ -606,7 +607,7 @@ PLATFORM_IMPL(batchnorm_bp) {
     if(beta != nullptr)
         REQUIRE_TRUE(beta->rankOf() == 1 && beta->sizeAt(0) == input->sizeAt(axes[0]), 0, "BATCHNORM_BP_MKLDNN op: wrong shape of beta array, expected is [%lld], but got %s instead !", input->sizeAt(axes[0]), ShapeUtils::shapeAsString(beta).c_str());
 
-    // types of all input arrays should be the same (except dLdO)
+    // types of all input arrays should be the same
     for(int i = 1; i < block.width() - 1; ++i)
         REQUIRE_TRUE(INPUT_VARIABLE(0)->dataType() == INPUT_VARIABLE(i)->dataType(), 0, "BATCHNORM_BP_MKLDNN op: types of all input arrays should be the same !");
 
@@ -696,6 +697,7 @@ PLATFORM_CHECK(batchnorm_bp) {
 
     const int inRank = input->rankOf();
 
+    // return false;
     return block.isUseMKLDNN() && axes.size() == 1 && axes[0] == 1 && (inRank == 2 || inRank == 4 || inRank == 5) &&
             (inputType == DataType::FLOAT32 && meanType  == DataType::FLOAT32 && varType  == DataType::FLOAT32 &&
              dLdOType  == DataType::FLOAT32 && gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 &&

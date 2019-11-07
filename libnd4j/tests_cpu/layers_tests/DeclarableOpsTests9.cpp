@@ -2901,7 +2901,7 @@ TEST_F(DeclarableOpsTests9, Floormod_BP_Test_4) {
     delete result;
 }
 
-////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
 
     NDArray input   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
@@ -2911,53 +2911,8 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test1) {
     NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
     NDArray gradO   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,3,4}, { 0.033889,  0.33935 ,  0.746631,  1.255733,0.020334,  0.20361 ,  0.447979,  0.75344 ,0.006778,  0.06787 ,  0.149326,  0.251147,
-                                    -0.006778, -0.06787 , -0.149326, -0.251147,-0.020334, -0.20361 , -0.447979, -0.75344 ,-0.033889, -0.33935 , -0.746631, -1.255733}, nd4j::DataType::FLOAT32);
-    NDArray expdLdG('c', {4}, {6.448749, 7.212417, 8.230641, 9.50342 }, nd4j::DataType::FLOAT32);
-    NDArray expdLdB('c', {4}, {3.6, 4.5, 5.4, 6.3}, nd4j::DataType::FLOAT32);
-
-    input.linspace(0.1, 0.1);
-    variance.assign(0.46666667);
-    gamma.assign(1.2);
-    beta.assign(1.);     // has no effect on gradient calculations
-    gradO.linspace(-0.9, 0.15);
-
-    nd4j::ops::batchnorm_bp op;
-
-    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1});
-
-    ASSERT_EQ(ND4J_STATUS_OK, results->status());
-
-    auto dLdI = results->at(0);
-    auto dLdG = results->at(3);
-    auto dLdB = results->at(4);
-
-    dLdI->printBuffer();
-
-    ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
-    ASSERT_TRUE(expdLdI.equalsTo(dLdI));
-
-    ASSERT_TRUE(expdLdG.isSameShapeStrict(dLdG));
-    ASSERT_TRUE(expdLdG.equalsTo(dLdG));
-
-    ASSERT_TRUE(expdLdB.isSameShapeStrict(dLdB));
-    ASSERT_TRUE(expdLdB.equalsTo(dLdB));
-
-    delete results;
-}
-
-////////////////////////////////////////////////////////////////////////////////
-TEST_F(DeclarableOpsTests9, gg) {
-
-    NDArray input   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
-    NDArray mean    ('c', {4}, {1.1, 1.2, 1.3, 1.4}, nd4j::DataType::FLOAT32);
-    NDArray variance('c', {4}, nd4j::DataType::FLOAT32);
-    NDArray gamma   ('c', {4}, nd4j::DataType::FLOAT32);
-    NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
-    NDArray gradO   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
-
     NDArray expdLdI('c', {2,3,4}, {-0.000056, -0.000056, -0.000056, -0.000056, -0.000034, -0.000034, -0.000034, -0.000034, -0.000011, -0.000011, -0.000011, -0.000011, 0.000011, 0.000011, 0.000011, 0.000011, 0.000034, 0.000034, 0.000034, 0.000034, 0.000056, 0.000056, 0.000056, 0.000056}, nd4j::DataType::FLOAT32);
-    NDArray expdLdG('c', {4}, {11.944889, 14.052811, 16.424223, 19.059124}, nd4j::DataType::FLOAT32);
+    NDArray expdLdG('c', {4}, {6.148104, 6.148104, 6.148105, 6.148105}, nd4j::DataType::FLOAT32);
     NDArray expdLdB('c', {4}, {3.6, 4.5, 5.4, 6.3}, nd4j::DataType::FLOAT32);
 
     input.linspace(0.1, 0.1);
@@ -2965,7 +2920,6 @@ TEST_F(DeclarableOpsTests9, gg) {
     gamma.assign(1.2);
     beta.assign(1.);     // has no effect on gradient calculations
     gradO.linspace(-0.9, 0.15);
-
 
     nd4j::ops::batchnorm_bp op;
 
@@ -2976,8 +2930,6 @@ TEST_F(DeclarableOpsTests9, gg) {
     auto dLdI = results->at(0);
     auto dLdG = results->at(3);
     auto dLdB = results->at(4);
-
-    dLdI->printBuffer();
 
     ASSERT_TRUE(expdLdI.isSameShapeStrict(dLdI));
     ASSERT_TRUE(expdLdI.equalsTo(dLdI));
@@ -2995,17 +2947,18 @@ TEST_F(DeclarableOpsTests9, gg) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, batchnorm_bp_test2) {
 
-    NDArray input   ('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    NDArray mean    ('c', {3}, {1.05, 1.1, 1.15});
-    NDArray variance('c', {3}, {0.5, 0.6, 0.7});
-    NDArray gamma   ('c', {3}, {1.2, 1.3, 1.4});
-    NDArray beta    ('c', {3}, nd4j::DataType::DOUBLE);
-    NDArray gradO   ('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray input   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {3}, {1.05, 1.1, 1.15}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {3}, {0.5, 0.6, 0.7}, nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {3}, {1.2, 1.3, 1.4}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {3}, nd4j::DataType::FLOAT32);
+    NDArray gradO   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,3,4}, {-1.527335, -1.272779, -1.018224, -0.763668,-0.503484, -0.251742,  0.,  0.251742,0.501992,  0.752989,  1.003985,  1.254981,
-                                    1.527335,  1.781891,  2.036447,  2.291003,2.517418,  2.76916 ,  3.020902,  3.272644,3.513947,  3.764943,  4.015939,  4.266936});
-    NDArray expdLdG('c', {3}, {5.81236 ,  7.048771, 12.155388});
-    NDArray expdLdB('c', {3}, {1.8,  6.6, 11.4});
+    NDArray expdLdI('c', {2,3,4}, {-0.601415, -0.521226, -0.441037, -0.360849, -0.456306, -0.395465, -0.334624, -0.273784, 0.396631, 0.343747,
+                                    0.290863, 0.237978, 0.360849, 0.441037, 0.521226, 0.601415, 0.273784, 0.334625, 0.395465, 0.456306, -0.237978,
+                                    -0.290863, -0.343746, -0.396631}, nd4j::DataType::FLOAT32);
+    NDArray expdLdG('c', {3}, {5.81236 ,  7.048771, 12.155388}, nd4j::DataType::FLOAT32);
+    NDArray expdLdB('c', {3}, {1.8,  6.6, 11.4}, nd4j::DataType::FLOAT32);
 
     input.linspace(0.1, 0.1);
     // beta.assign(1.);     // has no effect on gradient calculations
@@ -3013,7 +2966,7 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test2) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gradO, &gamma, &beta}, {1e-5}, {1,1,1});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3036,17 +2989,18 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test2) {
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests9, batchnorm_bp_test3) {
 
-    NDArray input   ('c', {2,3,4}, nd4j::DataType::DOUBLE);
-    NDArray mean    ('c', {2,1,4}, {1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4});
-    NDArray variance('c', {2,1,4}, {0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2});
-    NDArray gamma   ('c', {2,1,4}, {1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9});
-    NDArray beta    ('c', {2,1,4}, nd4j::DataType::DOUBLE);
-    NDArray gradO   ('c', {2,3,4}, nd4j::DataType::DOUBLE);
+    NDArray input   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
+    NDArray mean    ('c', {2,1,4}, {1.05, 1.1, 1.15, 1.2, 1.25, 1.3, 1.35, 1.4}, nd4j::DataType::FLOAT32);
+    NDArray variance('c', {2,1,4}, {0.5, 0.6, 0.7, 0.8, 0.9, 1., 1.1, 1.2}, nd4j::DataType::FLOAT32);
+    NDArray gamma   ('c', {2,1,4}, {1.2, 1.3, 1.4, 1.5, 1.6, 1.7, 1.8, 1.9}, nd4j::DataType::FLOAT32);
+    NDArray beta    ('c', {2,1,4}, nd4j::DataType::FLOAT32);
+    NDArray gradO   ('c', {2,3,4}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,3,4}, {-1.527335, -1.258709, -1.003985, -0.754668,-0.509112, -0.251742,  0.,  0.251556,0.509112,  0.755225,  1.003985,  1.25778 ,
-                                   1.517885,  1.784991,  2.05947 ,  2.341504,2.529808,  2.804986,  3.089205,  3.382173,3.541731,  3.824981,  4.11894 ,  4.422841});
-    NDArray expdLdG('c', {2,1,4}, {1.378844, 0.910144, 0.573706, 0.335408, 2.640487, 2.954985, 3.289431, 3.64234 });
-    NDArray expdLdB('c', {2,1,4}, {-0.9 , -0.45,  0.  ,  0.45,  4.5 ,  4.95,  5.4 ,  5.85});
+    NDArray expdLdI('c', {2,3,4}, {-0.577002, -0.744041, -0.850999, -0.922373, -0.000000, -0.000000, -0.000000, -0.000000, 0.577002,
+                                    0.744041, 0.850999, 0.922373, -0.386037, -0.350205, -0.312047, -0.271737, -0.000000, -0.000000,
+                                    -0.000000, -0.000000, 0.386037, 0.350205, 0.312047, 0.271736}, nd4j::DataType::FLOAT32);
+    NDArray expdLdG('c', {2,1,4}, {1.378844, 0.910144, 0.573706, 0.335408, 2.640487, 2.954985, 3.289431, 3.64234 }, nd4j::DataType::FLOAT32);
+    NDArray expdLdB('c', {2,1,4}, {-0.9 , -0.45,  0.  ,  0.45,  4.5 ,  4.95,  5.4 ,  5.85}, nd4j::DataType::FLOAT32);
 
     input.linspace(0.1, 0.1);
     // beta.assign(1.);     // has no effect on gradient calculations
@@ -3054,7 +3008,7 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test3) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gradO, &gamma, &beta}, {1e-5}, {1,1,0,2});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,0,2});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3084,8 +3038,8 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test4) {
     NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
     NDArray gradO   ('c', {2,4}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,4}, {1.527335, -1.16534 ,  0.885433, -0.643584,  0.509112, -0.233068, -0.,  0.214528}, nd4j::DataType::FLOAT32);
-    NDArray expdLdG('c', {4}, {1.442483, 0.9502  , 0.569207, 0.314641}, nd4j::DataType::FLOAT32);
+    NDArray expdLdI('c', {2,4}, {0.162923, -0.289673, 0.354174, -0.386151, -0.162923, 0.289673, -0.354174, 0.386151}, nd4j::DataType::FLOAT32);
+    NDArray expdLdG('c', {4}, {1.442483, 0.950200, 0.569207, 0.314641}, nd4j::DataType::FLOAT32);
     NDArray expdLdB('c', {4}, {-1.2, -0.9, -0.6, -0.3}, nd4j::DataType::FLOAT32);
 
     input.linspace(0.1, 0.1);
@@ -3093,7 +3047,7 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test4) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gradO, &gamma, &beta}, {1e-5}, {1,1});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3123,8 +3077,9 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test5) {
     NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
     NDArray gradO   ('c', {2,4,2,2}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,4,2,2}, {1.527335,  1.272779,1.018224,  0.763668,-0.466136, -0.233068,0.,  0.233068,-0.442716, -0.664075,-0.885433, -1.106791,1.287169,  1.501697,1.716225,  1.930753,
-                                    -2.545559, -2.800115,-3.054671, -3.309227,3.262951,  3.496019,3.729087,  3.962155,-3.984448, -4.205806,-4.427164, -4.648522,4.719618,  4.934146,5.148675,  5.363203}, nd4j::DataType::FLOAT32);
+    NDArray expdLdI('c', {2,4,2,2}, {-0.737512, -0.659880, -0.582247, -0.504614, 0.561404, 0.502309, 0.443214, 0.384118, -1.168243,
+        -1.045270, -0.922297, -0.799324, 1.899026, 1.699128, 1.499231, 1.299333, 0.504614, 0.582247, 0.659880, 0.737512, -0.384118,
+        -0.443214, -0.502308, -0.561404, 0.799324, 0.922297, 1.045270, 1.168243, -1.299334, -1.499231, -1.699129, -1.899026}, nd4j::DataType::FLOAT32);
     NDArray expdLdG('c', {4}, {11.073181, 12.585667, 17.708657, 24.313186}, nd4j::DataType::FLOAT32);
     NDArray expdLdB('c', {4}, {4.2,  9. , 13.8, 18.6}, nd4j::DataType::FLOAT32);
 
@@ -3133,7 +3088,7 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test5) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gradO, &gamma, &beta}, {1e-5}, {1,1,1});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3163,8 +3118,9 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test6) {
     NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
     NDArray gradO   ('c', {2,2,2,4}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,2,2,4}, {1.527335, -1.16534 ,  0.885433, -0.643584, 0.509112, -0.233068, -0.,  0.214528, -0.509112,  0.699204, -0.885433,  1.072641, -1.527335,  1.631475, -1.770866,  1.930753,
-                                    -2.545559,  2.563747, -2.656298,  2.788865, -3.563783,  3.496019, -3.541731,  3.646978, -4.582006,  4.42829 , -4.427164,  4.50509 , -5.60023 ,  5.360562, -5.312597,  5.363203}, nd4j::DataType::FLOAT32);
+    NDArray expdLdI('c', {2,2,2,4}, {-4.989124, 2.540357, -1.515022, 0.791769, -3.563660, 1.814540, -1.082159, 0.565549, -2.138196, 1.088724, -0.649295,
+                                    0.339329, -0.712732, 0.362908, -0.216432, 0.113110, 0.712732, -0.362908, 0.216432, -0.113110, 2.138195, -1.088724, 0.649295,
+                                    -0.339330, 3.563660,-1.814540, 1.082159, -0.565549, 4.989125, -2.540356, 1.515022, -0.791770}, nd4j::DataType::FLOAT32);
     NDArray expdLdG('c', {4}, {20.364472, 17.856588, 16.949714, 15.903684}, nd4j::DataType::FLOAT32);
     NDArray expdLdB('c', {4}, {9.6, 10.8, 12. , 13.2}, nd4j::DataType::FLOAT32);
 
@@ -3173,7 +3129,7 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test6) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gradO, &gamma, &beta}, {1e-5}, {1,1,3});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,3});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3203,20 +3159,21 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test7) {
     NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
     NDArray gradO   ('c', {2,2,2,2,4}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,2,2,2,4}, {1.527335,  -1.16534 ,   0.885433,  -0.643584,0.509112,  -0.233068,  -0.,   0.214528,-0.509112,   0.699204,  -0.885433,   1.072641,-1.527335,   1.631475,  -1.770866,
-                                      1.930753,-2.545559,   2.563747,  -2.656298,   2.788865,-3.563783,   3.496019,  -3.541731,   3.646978,-4.582006,   4.42829 ,  -4.427164,
-                                      4.50509 ,-5.60023 ,   5.360562,  -5.312597,   5.363203,  -6.618453,   6.292834,  -6.19803 ,   6.221315,-7.636677,   7.225105,  -7.083463,
-                                      7.079428,-8.6549  ,   8.157377,  -7.968895,   7.93754 ,-9.673124,   9.089649,  -8.854328,   8.795652, -10.691348,  10.02192 ,  -9.739761,
-                                      9.653765,-11.709571,  10.954192, -10.625194,  10.511877,-12.727795,  11.886464, -11.510627,  11.36999 ,-13.746018,  12.818735, -12.39606 ,  12.228102}, nd4j::DataType::FLOAT32);
+    NDArray expdLdI('c', {2,2,2,2,4}, {-119.435059, 78.159744, -58.732986, 46.630123, -103.510391, 67.738441, -50.901920, 40.412773, -87.585716, 57.317142,
+        -43.070854, 34.195419, -71.661041, 46.895844, -35.239792, 27.978071, -55.736359, 36.474548, -27.408726, 21.760721, -39.811687, 26.053242, -19.577662,
+        15.543370, -23.887009, 15.631950, -11.746595, 9.326023, -7.962326, 5.210644, -3.915531, 3.108671, 7.962341, -5.210655, 3.915535, -3.108677, 23.887032,
+        -15.631958, 11.746601, -9.326031, 39.811691, -26.053246, 19.577671, -15.543377, 55.736382, -36.474548, 27.408726, -21.760731, 71.661064, -46.895851, 35.239788,
+        -27.978077, 87.585732, -57.317154, 43.070866, -34.195431, 103.510384, -67.738464, 50.901920, -40.412777, 119.435097, -78.159744, 58.732998, -46.630131}, nd4j::DataType::FLOAT32);
     NDArray expdLdG('c', {4}, {282.38734 , 244.542027, 224.140995, 207.548793}, nd4j::DataType::FLOAT32);
     NDArray expdLdB('c', {4}, {57.6, 60. , 62.4, 64.8}, nd4j::DataType::FLOAT32);
 
     input.linspace(0.1, 0.1);
     gradO.linspace(-0.9, 0.15);
 
+
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gradO, &gamma, &beta}, {1e-5}, {1,1,4});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,4});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
@@ -3248,10 +3205,11 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test8) {
     NDArray beta    ('c', {4}, nd4j::DataType::FLOAT32);
     NDArray gradO   ('c', {2,4,2,2,2}, nd4j::DataType::FLOAT32);
 
-    NDArray expdLdI('c', {2,4,2,2,2}, {1.527335,   1.272779, 1.018224,   0.763668, 0.509112,   0.254556, -0.      ,  -0.254556, 0.466136,   0.699204, 0.932272,   1.16534 , 1.398407,   1.631475, 1.864543,   2.097611,
-                                    -2.213582,  -2.43494 , -2.656298,  -2.877657, -3.099015,  -3.320373, -3.541731,  -3.76309 , 3.861506,   4.076034, 4.290562,   4.50509 , 4.719618,   4.934146, 5.148675,   5.363203,
-                                    -6.618453,  -6.873009, -7.127565,  -7.382121, -7.636677,  -7.891233, -8.145789,  -8.400345, 7.924309,   8.157377, 8.390445,   8.623513, 8.856581,   9.089649, 9.322717,   9.555784,
-                                    -9.297045,  -9.518403, -9.739761,  -9.961119, -10.182477, -10.403836, -10.625194, -10.846552, 10.726405,  10.940933, 11.155462,  11.36999 , 11.584518,  11.799046, 12.013574,  12.228102}, nd4j::DataType::FLOAT32);
+    NDArray expdLdI('c', {2,4,2,2,2}, {-34.373802, -32.611046, -30.848286, -29.085529, -27.322769, -25.560009, -23.797251, -22.034491, 36.146996, 34.293301,
+        32.439610, 30.585917, 28.732227, 26.878534, 25.024841, 23.171150, -42.876553, -40.677757, -38.478958, -36.280159, -34.081367, -31.882565, -29.683767,
+        -27.484968, 50.674446, 48.075760, 45.477066, 42.878380, 40.279686, 37.681000, 35.082310, 32.483616, 22.034489, 23.797249, 25.560009, 27.322765, 29.085526,
+        30.848286, 32.611046, 34.373802, -23.171146, -25.024837, -26.878536, -28.732231, -30.585918, -32.439613, -34.293297, -36.146996, 27.484982, 29.683773,
+        31.882572, 34.081364, 36.280178, 38.478970, 40.677776, 42.876560, -32.483627, -35.082329, -37.681023, -40.279701, -42.878403, -45.477081, -48.075775, -50.674484}, nd4j::DataType::FLOAT32);
     NDArray expdLdG('c', {4}, {134.490365, 179.785003, 248.933114, 330.087248}, nd4j::DataType::FLOAT32);
     NDArray expdLdB('c', {4}, {32.4, 51.6, 70.8, 90.}, nd4j::DataType::FLOAT32);
 
@@ -3260,7 +3218,7 @@ TEST_F(DeclarableOpsTests9, batchnorm_bp_test8) {
 
     nd4j::ops::batchnorm_bp op;
 
-    auto results = op.execute({&input, &mean, &variance, &gradO, &gamma, &beta}, {1e-5}, {1,1,1});
+    auto results = op.execute({&input, &mean, &variance, &gamma, &beta, &gradO}, {1e-5}, {1,1,1});
 
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
