@@ -130,12 +130,12 @@ namespace helpers {
 
     template <typename T>
     void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
-         T minVal = T(0);
-         T maxVal = DataTypeUtils::infOrMax<T>();
-         if (min)
-             minVal = min->t<T>(0);
-         if (max)
-             maxVal = max->t<T>(0);
+        T minVal = T(0);
+        T maxVal = DataTypeUtils::infOrMax<T>();
+        if (min)
+            minVal = min->t<T>(0);
+        if (max)
+            maxVal = max->t<T>(0);
 
         if (output->isR())
             RandomLauncher::fillUniform(context, rng, output, minVal, maxVal);
@@ -150,10 +150,6 @@ namespace helpers {
     void fillRandomUniform(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
         BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomUniform_, (context, rng, min, max, output), NUMERIC_TYPES);
     }
-
-    BUILD_SINGLE_TEMPLATE(template void fillRandomUniform_, (LaunchContext* context,
-            graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output), NUMERIC_TYPES);
-
 }
 }
 }

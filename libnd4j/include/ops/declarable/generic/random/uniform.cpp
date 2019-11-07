@@ -44,13 +44,27 @@ namespace nd4j {
             if (block.getIArguments()->size())
                 dtype = (DataType)INT_ARG(0);
 
-            auto min = block.width() > 1?INPUT_VARIABLE(1):(NDArray*)nullptr;
-            auto max = block.width() > 2?INPUT_VARIABLE(2):(NDArray*)nullptr;
+            auto min = block.width() > 1 ? INPUT_VARIABLE(1) : (NDArray*) nullptr;
+            auto max = block.width() > 2 ? INPUT_VARIABLE(2) : (NDArray*) nullptr;
+            bool disposable = false;
+
+            if (min == nullptr && max == nullptr && block.numT() >= 2) {
+                min = NDArrayFactory::create_('c', {}, dtype);
+                max = NDArrayFactory::create_('c', {}, dtype);
+                min->assign(T_ARG(0));
+                max->assign(T_ARG(1));
+                disposable = true;
+            }
 
             auto output = OUTPUT_VARIABLE(0);
             REQUIRE_TRUE(output->dataType() == dtype, 0, "RandomUniform: data type of output should be equals to given.");
 
             helpers::fillRandomUniform(block.launchContext(), rng, min, max, output);
+
+            if (disposable) {
+                delete min;
+                delete max;
+            }
             return Status::OK();
         }
 
