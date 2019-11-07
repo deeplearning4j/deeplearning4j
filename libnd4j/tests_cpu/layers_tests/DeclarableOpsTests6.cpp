@@ -248,7 +248,7 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_BP_1) {
 //    auto e = NDArrayFactory::create<int>('c', {1}, {zero});
 //    auto s = NDArrayFactory::create<int>('c', {1}, {1});
 
-    auto grad = NDArrayFactory::create<double>('c', {5,4});
+    auto grad = NDArrayFactory::create<double>('c', {5});
 
     matrix.linspace(1);
     grad.linspace(1);
@@ -264,6 +264,7 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_BP_1) {
 
     delete result;
 }
+
 TEST_F(DeclarableOpsTests6, Test_StridedSlice_BP_2) {
     int zero = 0;
     auto matrix = NDArrayFactory::create<double>('c', {1, 2});
@@ -287,6 +288,31 @@ TEST_F(DeclarableOpsTests6, Test_StridedSlice_BP_2) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests6, Test_StridedSlice_BP_3) {
+    int zero = 0;
+    auto matrix = NDArrayFactory::create<float>('c', {4, 8192});
+//    auto b = NDArrayFactory::create<int>('c', {1}, {zero});
+//    auto e = NDArrayFactory::create<int>('c', {1}, {zero});
+//    auto s = NDArrayFactory::create<int>('c', {1}, {1});
+
+    auto grad = NDArrayFactory::create<double>('c', {4, 256});
+
+    matrix.linspace(1);
+    grad.linspace(1);
+
+    nd4j::ops::strided_slice_bp op;
+    auto result = op.execute({&matrix, &grad}, {}, {1, 0, 1, 0, 0, 0, 0, 0, 256, 1, 1});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printShapeInfo("Output shape");
+    z->printIndexedBuffer("Output");
+    //ASSERT_TRUE(exp.equalsTo(z));
+
+    delete result;
+}
+
 TEST_F(DeclarableOpsTests6, Test_Simple_Scalar_1) {
     auto x = NDArrayFactory::create<double>('c', {1, 1}, {2.0f});
     auto exp = NDArrayFactory::create<double>('c', {1, 1}, {4.0f});
