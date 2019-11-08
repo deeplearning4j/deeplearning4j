@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -273,8 +274,8 @@ public:
     BlockInformation(Nd4jLong length, int threshold) {
 
     threads = length / threshold;
-    threads = nd4j::math::nd4j_max<int>(1, threads);
-    threads = nd4j::math::nd4j_min<int>(threads, omp_get_max_threads());
+    threads = (1 < threads)?threads:1;//nd4j::math::nd4j_max<int>(1, threads);
+    threads = (threads < omp_get_max_threads())?threads:omp_get_max_threads();//nd4j::math::nd4j_min<int>(threads, omp_get_max_threads());
 
     items = length / threads;
     remainder = length % threads;

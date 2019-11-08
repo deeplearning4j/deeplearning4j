@@ -18,6 +18,7 @@ package org.nd4j.autodiff.samediff.ops;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.linalg.api.buffer.DataType;
 
 import static org.nd4j.autodiff.samediff.ops.SDValidation.validateInteger;
 
@@ -238,20 +239,35 @@ public class SDRandom extends SDOps {
     }
 
     /**
+     * @see #uniform(String, double, double, SDVariable)
+     */
+    public SDVariable uniform(double min, double max, SDVariable shape, DataType dataType) {
+        return uniform(null, min, max, shape, dataType);
+    }
+
+    /**
+     * As per {@link #uniform(double, double, SDVariable, DataType)} but with Float32 output
+     */
+    public SDVariable uniform(String name, double min, double max, SDVariable shape) {
+        return uniform(name, min, max, shape, null);
+    }
+
+    /**
      * Generate a new random SDVariable, where values are randomly sampled according to a uniform distribution,
-     * U(min,max)<br>
+     * U(min,max). Note that the output datatype may optionally be specified. If not specified (null) - float32 output is returned<br>
      * See {@link #uniform(double, double, long...)} for the equivalent function where the shape is
      * specified as a long[] instead
      *
-     * @param name  Name of the new SDVariable
-     * @param min   Minimum value
-     * @param max   Maximum value. Must satisfy max >= min
-     * @param shape Shape of the new random SDVariable, as a 1D array
-     * @return New SDVariable
+     * @param name     Name of the new SDVariable
+     * @param min      Minimum value
+     * @param max      Maximum value. Must satisfy max >= min
+     * @param shape    Shape of the new random SDVariable, as a 1D array
+     * @param dataType Data type of the output array (if null: Float32 output is returned)
+     * @return New SDVariable, of the specified data type
      */
-    public SDVariable uniform(String name, double min, double max, SDVariable shape) {
+    public SDVariable uniform(String name, double min, double max, SDVariable shape, DataType dataType) {
         validateInteger("uniform random", shape);
-        SDVariable ret = f().randomUniform(min, max, shape);
+        SDVariable ret = f().randomUniform(min, max, shape, dataType);
         return updateVariableNameAndReference(ret, name);
     }
 

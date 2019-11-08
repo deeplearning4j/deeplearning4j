@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -23,6 +24,7 @@
 
 #include <ops/declarable/CustomOperations.h>
 #include <helpers/RandomLauncher.h>
+#include <ops/declarable/helpers/random.h>
 
 namespace nd4j {
     namespace ops {
@@ -35,41 +37,59 @@ namespace nd4j {
          * TArgs[0] - min for rng
          * TArgs[1] - max for rng
          */
-        CUSTOM_OP_IMPL(randomuniform, 1, 1, true, 2, 0) {
+        CUSTOM_OP_IMPL(randomuniform, 1, 1, true, 0, 0) {
             // uniform distribution
             auto rng = block.randomGenerator();
+            auto dtype = DataType::FLOAT32;
+            if (block.getIArguments()->size())
+                dtype = (DataType)INT_ARG(0);
 
-            // FIXME: to be implemented
-            /*
-            if (rng == nullptr)
-                return Status::THROW("RNG is null, aborting...");
+            auto min = block.width() > 1 ? INPUT_VARIABLE(1) : (NDArray*) nullptr;
+            auto max = block.width() > 2 ? INPUT_VARIABLE(2) : (NDArray*) nullptr;
+            bool disposable = false;
 
-            auto x = INPUT_VARIABLE(0);
-            auto z = OUTPUT_VARIABLE(0);
+            if (min == nullptr && max == nullptr && block.numT() >= 2) {
+                min = NDArrayFactory::create_(dtype);
+                max = NDArrayFactory::create_(dtype);
+                min->p(0, T_ARG(0));
+                max->p(0, T_ARG(1));
+                disposable = true;
+            }
 
-            functions::random::RandomFunction<T>::template execTransform<randomOps::UniformDistribution<T>>(block.getRNG(), z->getBuffer(), z->getShapeInfo(), block.getTArguments()->data());
+            auto output = OUTPUT_VARIABLE(0);
+            REQUIRE_TRUE(output->dataType() == dtype, 0, "RandomUniform: data type of output should be equals to given.");
 
-            STORE_RESULT(*z);
-*/
-            REQUIRE_TRUE(block.numT() > 1, 0, "RandomUniform: to/from must be set");
+            helpers::fillRandomUniform(block.launchContext(), rng, min, max, output);
 
-            RandomLauncher::fillUniform(block.launchContext(), rng, OUTPUT_VARIABLE(0), T_ARG(0), T_ARG(1));
+            if (disposable) {
+                delete min;
+                delete max;
+            }
             return Status::OK();
         }
 
 
         DECLARE_SHAPE_FN(randomuniform) {
             auto in = INPUT_VARIABLE(0);
+            //auto min = INPUT_VARIABLE(1);
             auto shape = in->template asVectorT<Nd4jLong>();
+            auto dtype = DataType::FLOAT32; //ArrayOptions::dataType(inputShape->at(1)); // output type is by given min
 
-            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(block.dataType(), 'c', shape);
+            if (block.getIArguments()->size())
+                dtype = (DataType)INT_ARG(0);
+            if (block.width() > 1)
+                REQUIRE_TRUE(dtype == INPUT_VARIABLE(1)->dataType(), 0, "RandomUniform: data type of output and min/max args should be the same");
+
+            auto newShape = ConstantShapeHelper::getInstance()->createShapeInfo(dtype, 'c', shape);
             return SHAPELIST(newShape);
         }
 
         DECLARE_TYPES(randomuniform) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(nd4j::DataType::ANY)
-                    ->setAllowedOutputTypes({ALL_FLOATS});
+                    ->setAllowedInputTypes(0, {ALL_INTS})
+                    ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
+                    ->setAllowedInputTypes(2, {ALL_INTS, ALL_FLOATS})
+                    ->setAllowedOutputTypes({ALL_FLOATS, ALL_INTS});
         }
     }
 }

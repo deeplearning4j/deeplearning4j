@@ -29,6 +29,7 @@ import org.deeplearning4j.nn.workspace.ArrayType;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.base.Preconditions;
@@ -119,15 +120,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
         }
         is.setMmgr(mmgr);
 
-
-
-        //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
-        //TODO Find a more efficient solution for this
-        for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
-            INDArray arr = e.getValue();
-            sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
-        }
-
         Map<String,INDArray> phMap = new HashMap<>();
         phMap.put(INPUT_KEY, input);
         if(!activations && layerConf().labelsRequired() && labels != null) {
@@ -191,13 +183,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
         if(!sameDiff.hasGradientFunction()) {
             //Create when scoped out, to ensure any arrays are not in WS
             sameDiff.createGradFunction(INPUT_KEY);
-        }
-
-        //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
-        //TODO Find a more efficient solution for this
-        for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
-            INDArray arr = e.getValue();
-            sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
         }
 
         List<String> gradVarNames = new ArrayList<>();
@@ -317,6 +302,8 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             org.deeplearning4j.nn.conf.layers.samediff.SameDiffOutputLayer bl = layerConf();
             sameDiff = SameDiff.create();
+            //Use SingleThreadArrayHolder so we can use views (also don't nede multithreading here, DL4J is not thread safe)
+            sameDiff.setArrayHolders(new SingleThreadArrayHolder(), new SingleThreadArrayHolder(), false);
             Map<String, INDArray> p = paramTable();
 
             long[] inputShape = input.shape().clone();
@@ -339,7 +326,6 @@ public class SameDiffOutputLayer extends AbstractLayer<org.deeplearning4j.nn.con
             Preconditions.checkNotNull(layerOutput, "Invalid output: layer output is null");
             outputVar = layerOutput;
 
-            //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
             for (Map.Entry<String, INDArray> e : p.entrySet()) {
                 INDArray arr = e.getValue();
                 sameDiff.associateArrayWithVariable(arr, sameDiff.getVariable(e.getKey()));

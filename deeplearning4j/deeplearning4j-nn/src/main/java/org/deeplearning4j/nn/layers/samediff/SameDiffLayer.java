@@ -26,6 +26,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.layers.AbstractLayer;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.autodiff.samediff.array.SingleThreadArrayHolder;
 import org.nd4j.autodiff.samediff.internal.InferenceSession;
 import org.nd4j.autodiff.samediff.internal.SessionMemMgr;
 import org.nd4j.base.Preconditions;
@@ -100,13 +101,6 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
             phMap.put(MASK_KEY, layerConf().onesMaskForInput(input));
         }
 
-        //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
-        //TODO Find a more efficient solution for this
-        for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
-            INDArray arr = e.getValue();
-            sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
-        }
-
         //Configure memory management for SameDiff instance - use DL4J workspaces
         String wsNameWorking = workspaceMgr.getWorkspaceName(ArrayType.FF_WORKING_MEM);
         String wsNameOutput = workspaceMgr.getWorkspaceName(ArrayType.ACTIVATIONS);
@@ -178,13 +172,6 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
 
         org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
         bl.validateInput(input);
-
-        //Because DL4J parameters are views, and SameDiff uses DeviceLocal (which doesn't support views), we need to update the arrays on each iteration
-        //TODO Find a more efficient solution for this
-        for (Map.Entry<String, INDArray> e : paramTable.entrySet()) {
-            INDArray arr = e.getValue();
-            sameDiff.assignArray(arr, sameDiff.getVariable(e.getKey()));
-        }
 
         Map<String,INDArray> phMap = new HashMap<>();
         phMap.put(INPUT_KEY, input);
@@ -300,6 +287,8 @@ public class SameDiffLayer extends AbstractLayer<AbstractSameDiffLayer> {
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
             org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer bl = (org.deeplearning4j.nn.conf.layers.samediff.SameDiffLayer) layerConf();
             sameDiff = SameDiff.create();
+            //Use SingleThreadArrayHolder so we can use views (also don't nede multithreading here, DL4J is not thread safe)
+            sameDiff.setArrayHolders(new SingleThreadArrayHolder(), new SingleThreadArrayHolder(), false);
             Map<String, INDArray> p = paramTable();
 
             long[] inputShape = input.shape().clone();

@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -26,6 +26,7 @@
 #include <helpers/RandomLauncher.h>
 #include <ShapeUtils.h>
 #include <NDArrayFactory.h>
+#include <cuda_exception.h>
 
 namespace nd4j {
 namespace ops {
@@ -181,6 +182,72 @@ namespace helpers {
     }
 
     BUILD_SINGLE_TEMPLATE(template void fillRandomPoisson_, (LaunchContext* context, graph::RandomGenerator& rng, NDArray* lambda, NDArray* output), FLOAT_NATIVE);
+
+    template <typename T>
+    static __global__ void fillUniformKernel(graph::RandomGenerator* devRng, T from, T to, T* output, Nd4jLong* outputShape) {
+        auto start = blockIdx.x * blockDim.x + threadIdx.x;
+        auto step = blockDim.x * gridDim.x;
+
+        __shared__ Nd4jLong outputLen;
+
+        if (0 == threadIdx.x) {
+            outputLen = shape::length(outputShape);
+        }
+        __syncthreads();
+
+        for (auto i = start; i < outputLen; i += step) {
+            auto zIndex = shape::getIndexOffset(i, outputShape);
+            output[zIndex] = devRng->relativeT<T>(i, from, to);
+        }
+
+    }
+
+    template <typename T>
+    static void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
+        T minVal = T(0);
+        T maxVal = DataTypeUtils::infOrMax<T>();
+        if (min)
+            minVal = min->t<T>(0);
+        if (max)
+            maxVal = max->t<T>(0);
+
+        if (output->isR())
+            RandomLauncher::fillUniform(context, rng, output, minVal, maxVal);
+        else {
+            auto stream = context->getCudaStream();
+            graph::RandomGenerator *devRng;
+            auto err = cudaMalloc(&devRng, sizeof(graph::RandomGenerator));
+            if (err != 0) {
+                cuda_exception::build("fillRandomUniform_: Cannot allocate device memory for random generator due error", err);
+            }
+
+            err = cudaMemcpy(devRng, &rng, sizeof(graph::RandomGenerator), cudaMemcpyHostToDevice);
+            if (err != 0) {
+                cuda_exception::build("fillRandomUniform_: Cannot copy random generator to device", err);
+            }
+            auto outputBuf = output->dataBuffer()->specialAsT<T>();
+            auto outputShape = output->specialShapeInfo();
+            fillUniformKernel<T><<<128, 128, 128, *stream>>>(devRng, minVal, maxVal, outputBuf, outputShape);
+
+            err = cudaStreamSynchronize(*stream);
+            if (err != 0) {
+                cuda_exception::build("fillRandomUniform_: Cannot successfully finish kernel call", err);
+            }
+
+            err = cudaFree(devRng);
+            if (err != 0) {
+                cuda_exception::build("fillRandomUniform_: Cannot deallocate device memory for random generator", err);
+            }
+        }
+    }
+
+    void fillRandomUniform(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(output->dataType(), fillRandomUniform_, (context, rng, min, max, output), NUMERIC_TYPES);
+    }
+
+    BUILD_SINGLE_TEMPLATE(template void fillRandomUniform_, (LaunchContext* context,
+            graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output), NUMERIC_TYPES);
+
 }
 }
 }
