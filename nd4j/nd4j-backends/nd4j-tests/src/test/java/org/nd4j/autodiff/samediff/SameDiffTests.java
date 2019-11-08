@@ -2311,7 +2311,6 @@ public class SameDiffTests extends BaseNd4jTest {
         SDVariable loss = out.std("out", true);
 
         INDArray outArr = loss.eval();
-//        sd.execBackwards(Collections.emptyMap());
         Map<String,INDArray> grads = sd.calculateGradients(null, in.name(), w.name(), out.name());
 
         Map<String, INDArray> origGrad = new HashMap<>();
@@ -2321,7 +2320,6 @@ public class SameDiffTests extends BaseNd4jTest {
 
         in.getArr().assign(Nd4j.rand(in.getArr().shape()));
         INDArray outArr2 = loss.eval();
-//        sd.execBackwards(Collections.emptyMap());
         grads = sd.calculateGradients(null, in.name(), w.name(), out.name());
 
         assertNotEquals(outArr, outArr2);
@@ -2641,8 +2639,7 @@ public class SameDiffTests extends BaseNd4jTest {
                 .expectedOutput("out", out)
                 .gradientCheck(true));
 
-        assertNull(err, err);
-
+        assertNull(err);
     }
 
     @Test

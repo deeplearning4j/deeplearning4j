@@ -401,8 +401,8 @@ public class DifferentialFunctionFactory {
         return new MeshGrid(sameDiff(), cartesian, inputs).outputVariables();
     }
 
-    public SDVariable randomUniform(double min, double max, SDVariable shape) {
-        return new DistributionUniform(sameDiff(), shape, min, max).outputVariable();
+    public SDVariable randomUniform(double min, double max, SDVariable shape, DataType dataType) {
+        return new DistributionUniform(sameDiff(), shape, min, max, dataType).outputVariable();
     }
 
     public SDVariable randomUniform(double min, double max, long... shape) {
