@@ -1001,3 +1001,13 @@ TEST_F(RNGTests, test_choice_1) {
     delete x;
     delete prob;
 }
+
+TEST_F(RNGTests, test_uniform_119) {
+    auto x = NDArrayFactory::create<int>('c', {2}, {1, 5});
+    auto z = NDArrayFactory::create<float>('c', {1, 5});
+
+
+    nd4j::ops::randomuniform op;
+    auto status = op.execute({&x}, {&z}, {1.0, 2.0}, {}, {});
+    ASSERT_EQ(Status::OK(), status);
+}

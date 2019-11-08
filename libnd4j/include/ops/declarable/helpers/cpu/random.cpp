@@ -131,7 +131,7 @@ namespace helpers {
     template <typename T>
     void fillRandomUniform_(LaunchContext* context, graph::RandomGenerator& rng, NDArray* min, NDArray* max, NDArray* output) {
         T minVal = T(0);
-        T maxVal = DataTypeUtils::infOrMax<T>();
+        T maxVal = DataTypeUtils::max<T>();
         if (min)
             minVal = min->t<T>(0);
         if (max)

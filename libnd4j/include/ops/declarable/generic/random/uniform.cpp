@@ -49,10 +49,10 @@ namespace nd4j {
             bool disposable = false;
 
             if (min == nullptr && max == nullptr && block.numT() >= 2) {
-                min = NDArrayFactory::create_('c', {}, dtype);
-                max = NDArrayFactory::create_('c', {}, dtype);
-                min->assign(T_ARG(0));
-                max->assign(T_ARG(1));
+                min = NDArrayFactory::create_(dtype);
+                max = NDArrayFactory::create_(dtype);
+                min->p(0, T_ARG(0));
+                max->p(0, T_ARG(1));
                 disposable = true;
             }
 
