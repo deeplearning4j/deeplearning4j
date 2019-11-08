@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -855,18 +856,39 @@ TEST_F(RNGTests, Test_GammaDistribution_3) {
     delete result;
 }
 
+TEST_F(RNGTests, Test_UniformDistribution_04) {
+    auto x = NDArrayFactory::create<Nd4jLong>('c', {1}, {10});
+    auto al = NDArrayFactory::create<int>(1);
+    auto be = NDArrayFactory::create<int>(20);
+    auto exp0 = NDArrayFactory::create<float>('c', {10});
+
+
+    nd4j::ops::randomuniform op;
+    auto result = op.execute({&x, &al, &be}, {}, {DataType::INT32});
+    ASSERT_EQ(Status::OK(), result->status());
+
+    auto z = result->at(0);
+    z->printIndexedBuffer("Uniform int distribution");
+    ASSERT_TRUE(exp0.isSameShape(z));
+    ASSERT_FALSE(exp0.equalsTo(z));
+
+    delete result;
+}
+
 namespace nd4j {
     namespace tests {
         static void fillList(Nd4jLong seed, int numberOfArrays, std::vector<Nd4jLong> &shape, std::vector<NDArray*> &list, nd4j::graph::RandomGenerator *rng) {
             rng->setSeed((int) seed);
 
             for (int i = 0; i < numberOfArrays; i++) {
-                auto array = NDArrayFactory::create_<double>('c', shape);
-
+                auto arrayI = NDArrayFactory::create<Nd4jLong>(shape);
+                auto arrayR = NDArrayFactory::create_<double>('c', shape);
+                auto min = NDArrayFactory::create(0.0);
+                auto max = NDArrayFactory::create(1.0);
                 nd4j::ops::randomuniform op;
-                op.execute(*rng, {array}, {array}, {0.0, 1.0}, {}, {}, true);
+                op.execute(*rng, {&arrayI, &min, &max}, {arrayR}, {}, {DataType::DOUBLE}, {}, false);
 
-                list.emplace_back(array);
+                list.emplace_back(arrayR);
             }
         };
     }
@@ -978,4 +1000,14 @@ TEST_F(RNGTests, test_choice_1) {
 
     delete x;
     delete prob;
+}
+
+TEST_F(RNGTests, test_uniform_119) {
+    auto x = NDArrayFactory::create<int>('c', {2}, {1, 5});
+    auto z = NDArrayFactory::create<float>('c', {1, 5});
+
+
+    nd4j::ops::randomuniform op;
+    auto status = op.execute({&x}, {&z}, {1.0, 2.0}, {}, {});
+    ASSERT_EQ(Status::OK(), status);
 }

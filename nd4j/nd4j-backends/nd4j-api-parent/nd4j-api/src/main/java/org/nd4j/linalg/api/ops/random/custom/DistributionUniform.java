@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
@@ -41,30 +42,47 @@ import java.util.Map;
 public class DistributionUniform extends DynamicCustomOp {
     private double min = 0.0;
     private double max = 1.0;
+    private DataType dataType;
 
     public DistributionUniform() {
         //
     }
 
-    public DistributionUniform(SameDiff sd, SDVariable shape, double min, double max){
+    public DistributionUniform(SameDiff sd, SDVariable shape, double min, double max) {
+        this(sd, shape, min, max, null);
+    }
+
+    public DistributionUniform(SameDiff sd, SDVariable shape, double min, double max, DataType dataType){
         super(null, sd, new SDVariable[]{shape});
         Preconditions.checkState(min <= max, "Minimum (%s) must be <= max (%s)", min, max);
-        addTArgument(min, max);
+        Preconditions.checkState(dataType == null || dataType.isNumerical(), "Only numerical datatypes can be used with DistributionUniform - rquested output datatype: %s", dataType);
+        this.dataType = dataType;
+        this.min = min;
+        this.max = max;
+        addArgs();
     }
 
     public DistributionUniform(INDArray shape, INDArray out, double min, double max){
         super(null, new INDArray[]{shape}, new INDArray[]{out}, Arrays.asList(min, max), (List<Integer>)null);
+        this.min = min;
+        this.max = max;
     }
 
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {
-        super.initFromTensorFlow(nodeDef, initWith, attributesForNode, graph);
-        addArgs();
+        AttrValue v = attributesForNode.get("dtype");
+        dataType = TFGraphMapper.convertType(v.getType());
+        addIArgument(dataType.toInt());
     }
 
     protected void addArgs() {
+        tArguments.clear();
         addTArgument(min, max);
+        if(dataType != null){
+            iArguments.clear();
+            addIArgument(dataType.toInt());
+        }
     }
 
     @Override
@@ -85,8 +103,10 @@ public class DistributionUniform extends DynamicCustomOp {
     @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 1, "Expected exactly 1 input datatype for %s, got %s", getClass(), inputDataTypes);
-        //Input data type specifies the shape; output data type should be any float
-        //TODO MAKE CONFIGUREABLE - https://github.com/deeplearning4j/deeplearning4j/issues/6854
+        //Input data type specifies the shape
+        if(dataType != null){
+            return Collections.singletonList(dataType);
+        }
         return Collections.singletonList(DataType.FLOAT);
     }
 }
