@@ -61,7 +61,7 @@ lazy val commonSettings = Seq(
 
 lazy val publishNexus = Seq(
   publishTo := {
-    val nexus = "https://nexus.ci.skymind.io/"
+    val nexus = "https://packages.konduit.ai/"
     if (isSnapshot.value)
       Some("snapshots" at nexus + "content/repositories/maven-snapshots")
     else

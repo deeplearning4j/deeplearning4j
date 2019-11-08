@@ -170,9 +170,9 @@ class ConstructionTest extends FlatSpec with Matchers {
     sd.setTrainingConfig(conf)
     sd.fit(new SingletonMultiDataSetIterator(mds), 1)
 
-    w.eval.toDoubleVector.head shouldBe (0.0629 +- 0.0001)
-    w.eval.toDoubleVector.tail.head shouldBe (0.3128 +- 0.0001)
-    w.eval.toDoubleVector.tail.tail.head shouldBe (0.2503 +- 0.0001)
+    w.getArr.get(0) shouldBe (0.0629 +- 0.0001)
+    w.getArr.get(1) shouldBe (0.3128 +- 0.0001)
+    w.getArr.get(2) shouldBe (0.2503 +- 0.0001)
     //Console.println(w.eval)
   }
 }
