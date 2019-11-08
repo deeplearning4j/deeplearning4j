@@ -26,10 +26,12 @@ import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.discrete.TDTargetAlgorithm.*;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.DQNPolicy;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
+import org.deeplearning4j.rl4j.util.LegacyMDPWrapper;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
 import org.nd4j.linalg.dataset.api.DataSet;
@@ -51,8 +53,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
     @Getter
     final private QLConfiguration configuration;
-    @Getter
-    final private MDP<O, Integer, DiscreteSpace> mdp;
+    private final LegacyMDPWrapper<O, Integer, DiscreteSpace> mdp;
     @Getter
     private DQNPolicy<O> policy;
     @Getter
@@ -79,7 +80,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                              int epsilonNbStep, Random random) {
         super(conf);
         this.configuration = conf;
-        this.mdp = mdp;
+        this.mdp = new LegacyMDPWrapper<O, Integer, DiscreteSpace>(mdp);
         qNetwork = dqn;
         targetQNetwork = dqn.clone();
         policy = new DQNPolicy(getQNetwork());
@@ -90,6 +91,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
                 ? new DoubleDQN(this, conf.getGamma(), conf.getErrorClamp())
                 : new StandardDQN(this, conf.getGamma(), conf.getErrorClamp());
 
+    }
+
+    public MDP<O, Integer, DiscreteSpace> getMdp() {
+        return mdp.getWrappedMDP();
     }
 
     public void postEpoch() {
@@ -110,10 +115,10 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
      * @param obs last obs
      * @return relevant info for next step
      */
-    protected QLStepReturn<O> trainStep(O obs) {
+    protected QLStepReturn<Observation> trainStep(Observation obs) {
 
         Integer action;
-        INDArray input = getInput(obs);
+        INDArray input = obs.toINDArray();
         boolean isHistoryProcessor = getHistoryProcessor() != null;
 
 
@@ -154,9 +159,9 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
 
         lastAction = action;
 
-        StepReply<O> stepReply = getMdp().step(action);
+        StepReply<Observation> stepReply = mdp.step(action);
 
-        INDArray ninput = getInput(stepReply.getObservation());
+        INDArray ninput = stepReply.getObservation().toINDArray();
 
         if (isHistoryProcessor)
             getHistoryProcessor().record(ninput);
@@ -183,7 +188,7 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
             accuReward = 0;
         }
 
-        return new QLStepReturn<O>(maxQ, getQNetwork().getLatestScore(), stepReply);
+        return new QLStepReturn<Observation>(maxQ, getQNetwork().getLatestScore(), stepReply);
     }
 
     protected DataSet setTarget(ArrayList<Transition<Integer>> transitions) {

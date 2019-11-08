@@ -21,11 +21,13 @@ import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import lombok.*;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.gym.StepReply;
+import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.sync.ExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.IExpReplay;
 import org.deeplearning4j.rl4j.learning.sync.SyncLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.policy.EpsGreedy;
 import org.deeplearning4j.rl4j.space.ActionSpace;
 import org.deeplearning4j.rl4j.space.Encodable;
@@ -43,7 +45,7 @@ import java.util.List;
  * hopefully one day for the  Continuous domain.
  */
 @Slf4j
-public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A>>
+public abstract class QLearning<O, A, AS extends ActionSpace<A>>
                 extends SyncLearning<O, A, AS, IDQN> implements TargetQNetworkSource {
 
     // FIXME Changed for refac
@@ -95,11 +97,11 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
 
     protected abstract void postEpoch();
 
-    protected abstract QLStepReturn<O> trainStep(O obs);
+    protected abstract QLStepReturn<Observation> trainStep(Observation obs);
 
     protected StatEntry trainEpoch() {
         InitMdp<O> initMdp = initMdp();
-        O obs = initMdp.getLastObs();
+        Observation obs = new Observation(getInput(initMdp.getLastObs()));
 
         double reward = initMdp.getReward();
         int step = initMdp.getSteps();
@@ -114,7 +116,7 @@ public abstract class QLearning<O extends Encodable, A, AS extends ActionSpace<A
                 updateTargetNetwork();
             }
 
-            QLStepReturn<O> stepR = trainStep(obs);
+            QLStepReturn<Observation> stepR = trainStep(obs);
 
             if (!stepR.getMaxQ().isNaN()) {
                 if (startQ.isNaN())

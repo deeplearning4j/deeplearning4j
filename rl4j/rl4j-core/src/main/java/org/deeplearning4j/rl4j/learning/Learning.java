@@ -39,7 +39,7 @@ import org.nd4j.linalg.factory.Nd4j;
  *
  */
 @Slf4j
-public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>, NN extends NeuralNet>
+public abstract class Learning<O, A, AS extends ActionSpace<A>, NN extends NeuralNet>
                 implements ILearning<O, A, AS>, NeuralNetFetchable<NN> {
 
     @Getter @Setter
@@ -53,8 +53,8 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
         return Nd4j.argMax(vector, Integer.MAX_VALUE).getInt(0);
     }
 
-    public static <O extends Encodable, A, AS extends ActionSpace<A>> INDArray getInput(MDP<O, A, AS> mdp, O obs) {
-        INDArray arr = Nd4j.create(obs.toArray());
+    public static <O, A, AS extends ActionSpace<A>> INDArray getInput(MDP<O, A, AS> mdp, O obs) {
+        INDArray arr = Nd4j.create(((Encodable)obs).toArray());
         int[] shape = mdp.getObservationSpace().getShape();
         if (shape.length == 1)
             return arr.reshape(new long[] {1, arr.length()});
@@ -62,7 +62,7 @@ public abstract class Learning<O extends Encodable, A, AS extends ActionSpace<A>
             return arr.reshape(shape);
     }
 
-    public static <O extends Encodable, A, AS extends ActionSpace<A>> InitMdp<O> initMdp(MDP<O, A, AS> mdp,
+    public static <O, A, AS extends ActionSpace<A>> InitMdp<O> initMdp(MDP<O, A, AS> mdp,
                     IHistoryProcessor hp) {
 
         O obs = mdp.reset();

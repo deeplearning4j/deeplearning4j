@@ -26,7 +26,7 @@ import org.deeplearning4j.rl4j.space.Encodable;
  *
  * A common interface that any training method should implement
  */
-public interface ILearning<O extends Encodable, A, AS extends ActionSpace<A>> extends StepCountable {
+public interface ILearning<O, A, AS extends ActionSpace<A>> extends StepCountable {
 
     IPolicy<O, A> getPolicy();
 

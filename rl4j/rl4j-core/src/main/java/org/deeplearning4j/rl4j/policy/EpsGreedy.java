@@ -38,7 +38,7 @@ import org.nd4j.linalg.api.rng.Random;
  */
 @AllArgsConstructor
 @Slf4j
-public class EpsGreedy<O extends Encodable, A, AS extends ActionSpace<A>> extends Policy<O, A> {
+public class EpsGreedy<O, A, AS extends ActionSpace<A>> extends Policy<O, A> {
 
     final private Policy<O, A> policy;
     final private MDP<O, A, AS> mdp;
