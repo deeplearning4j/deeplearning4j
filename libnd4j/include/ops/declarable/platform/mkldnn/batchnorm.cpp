@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -55,7 +56,7 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     mkldnn::memory::data_type type = mkldnn::memory::data_type::f32;
 
     // indicate whether gamma or/and beta are given
-    auto flags = mkldnn::normalization_flags::use_global_stats;
+    auto flags = mkldnn::normalization_flags::use_global_stats;         // don't calculate the mean and variance for each mini-batch
     if (weights != nullptr)
         flags |= mkldnn::normalization_flags::use_scale_shift;
 
@@ -182,7 +183,7 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     mkldnn::memory::data_type type = mkldnn::memory::data_type::f32;
 
     // indicate whether gamma or/and beta are given
-    auto flags = mkldnn::normalization_flags::use_global_stats;
+    auto flags = mkldnn::normalization_flags::use_global_stats;     // don't calculate the mean and variance for each mini-batch
     if (weights != nullptr)
         flags |= mkldnn::normalization_flags::use_scale_shift;
 
@@ -308,6 +309,70 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     stream.wait();
 
     // shape::printArray(dLdI_mkl_mem.map_data<float>(),8);
+
+    // notations:
+    // f = g * (gamma * ((x - m) / (v + eps)^0.5) + beta) -> means dLdO * ff_output
+    // g = dLdO
+    // stdInv = 1 / (v + eps)^0.5
+    // N - batch size (product of spatial dimensions)
+
+    // formula for full derivative with respect to input (x)
+    // dLdI = dfdx + dfdm*dmdx + dfdv*(dvdm*dmdx + dvdx)
+
+    // !!! MKL CALCULATES ONLY FIRST TERM dfdx, SO WE SHOULD CALCULATE TERM (dfdm*dmdx + dfdv*(dvdm*dmdx + dvdx)) BY OURSELF !!!
+
+    // dfdm = -gamma*stdInv*g_sum;
+    // dmdx  = 1/N;
+    // dvdx  = 2 *  (x - m) / N
+    // dvdm  = -2 * [(x - m)]_sum / N
+    // dfdv  = -0.5 * [g*(x - m)]_sum * stdInv^3, drop gamma here for calc convenience
+
+    // finally:
+    // dLdI = dfdm / N + (2/N) * dfdv * (dvdm/2  + (x - m))
+    // dLdI = gamma * (  stdInv * -g_sum/N + (2/N) * dfdv * (dvdm/2  + (x - m))  )
+
+    std::vector<int> axes = {1};
+    const auto excludedAxes = ShapeUtils::evalDimsToExclude(x->rankOf(), axes);
+
+    // inversed batch size 1 / N
+    const auto Ninv = 1.f * mean->lengthOf() / x->lengthOf();
+
+    // x - mean
+    NDArray xMinusMean(x); // empty array with same shape as x
+    const_cast<NDArray*>(x)->applyBroadcast(nd4j::broadcast::Subtract, axes, mean, &xMinusMean);
+
+    // stdInv
+    NDArray stdInv = *variance + epsilon;
+    stdInv.applyTransform(transform::Reciprocal);                           // 1 / (variance + epsilon)
+    stdInv.applyTransform(transform::Sqrt);                                 // 1 / (variance + epsilon)^0.5
+
+    // dfdm / N
+    auto dfdm = dLdO->reduceAlongDims(nd4j::reduce::Sum, excludedAxes);
+    dfdm *= stdInv;
+    dfdm *= -Ninv;
+
+    // dvdm / 2
+    NDArray dvdm(mean);                 // empty array with same shape as mean
+    xMinusMean.reduceAlongDimension(nd4j::reduce::Sum, &dvdm, excludedAxes);
+    dvdm *= -Ninv;
+
+    // (2/N)*dfdv
+    NDArray dfdv(variance);                 // empty array with same shape as variance
+    (xMinusMean * *dLdO).reduceAlongDimension(nd4j::reduce::Sum, &dfdv, excludedAxes);
+    dfdv *= stdInv*stdInv*stdInv;
+    dfdv *= -Ninv;
+
+    // dvdm/2  + (x - m)
+    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, &dvdm);
+    // dfdv * (dvdm/2  + (x - m))
+    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, &dfdv);
+    // add dfdm / N
+    xMinusMean.applyBroadcast(nd4j::broadcast::Add, axes, &dfdm);
+    // * gamma
+    auto gamma = (*weights)({0,1, 0,0});
+    xMinusMean.applyBroadcast(nd4j::broadcast::Multiply, axes, &gamma);
+
+    *dLdI += xMinusMean;
 }
 
 PLATFORM_IMPL(batchnorm) {
@@ -371,9 +436,17 @@ PLATFORM_IMPL(batchnorm) {
             (*weights)({1,2, 0,0}).assign(0);
     }
 
+    if(axes[0] == inRank - 1 && inRank > 2) {   // if nhwc or ndhwc
+        std::vector<int> permut = inRank == 4 ? std::vector<int>({0,3,1,2}) : std::vector<int>({0,4,1,2,3});
+        input = new NDArray(input->permute(permut));
+    }
+
     batchnormMKLDNN(input, mean, variance, weights, epsilon, output);
 
     delete weights;
+
+    if(axes[0] == inRank - 1 && inRank > 2)
+        delete input;
 
     return Status::OK();
 }
@@ -418,8 +491,7 @@ PLATFORM_CHECK(batchnorm) {
 
     const int inRank = input->rankOf();
 
-    // return false;
-    return block.isUseMKLDNN() && axes.size() == 1 && axes[0] == 1 && (inRank == 2 || inRank == 4 || inRank == 5) &&
+    return block.isUseMKLDNN() && axes.size() == 1 && (axes[0] == 1 || axes[0] == inRank - 1)  && (inRank == 2 || inRank == 4 || inRank == 5) &&
             (inputType == DataType::FLOAT32 && meanType == DataType::FLOAT32 && varType == DataType::FLOAT32 &&
              gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 && outType == DataType::FLOAT32);
 }
@@ -627,10 +699,18 @@ PLATFORM_IMPL(batchnorm_bp) {
             (*weights)({1,2, 0,0}).assign(0);
     }
 
-    *dLdM = 0;
-    *dLdV = 0;
+
+    if(axes[0] == inRank - 1 && inRank > 2) {   // if nhwc or ndhwc
+        std::vector<int> permut = inRank == 4 ? std::vector<int>({0,3,1,2}) : std::vector<int>({0,4,1,2,3});
+        input = new NDArray(input->permute(permut));
+        dLdO = new NDArray(dLdO->permute(permut));
+        dLdI = new NDArray(dLdI->permute(permut));
+    }
 
     batchnormBackPropMKLDNN(input, mean, variance, dLdO, weights, epsilon, dLdI, dLdW);
+
+    *dLdM = 0;
+    *dLdV = 0;
 
     if(applyScale || applyOffset) {
         if(applyScale)
@@ -640,6 +720,12 @@ PLATFORM_IMPL(batchnorm_bp) {
 
         delete weights;
         delete dLdW;
+    }
+
+    if(axes[0] == inRank - 1 && inRank > 2) {
+        delete input;
+        delete dLdO;
+        delete dLdI;
     }
 
     return Status::OK();
@@ -697,8 +783,7 @@ PLATFORM_CHECK(batchnorm_bp) {
 
     const int inRank = input->rankOf();
 
-    // return false;
-    return block.isUseMKLDNN() && axes.size() == 1 && axes[0] == 1 && (inRank == 2 || inRank == 4 || inRank == 5) &&
+    return block.isUseMKLDNN() && axes.size() == 1 && (axes[0] == 1 || axes[0] == inRank - 1)  && (inRank == 2 || inRank == 4 || inRank == 5) &&
             (inputType == DataType::FLOAT32 && meanType  == DataType::FLOAT32 && varType  == DataType::FLOAT32 &&
              dLdOType  == DataType::FLOAT32 && gammaType == DataType::FLOAT32 && betaType == DataType::FLOAT32 &&
              dLdIType  == DataType::FLOAT32 && dLdGType  == DataType::FLOAT32 && dLdBType == DataType::FLOAT32);
