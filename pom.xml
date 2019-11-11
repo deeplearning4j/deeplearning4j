@@ -288,21 +288,21 @@
         <javacpp.platform.extension/> <!-- -Djavacpp.platform.extension=-avx512 -->
         <javacpp.platform.properties>${javacpp.platform}</javacpp.platform.properties>
 
-        <javacpp.version>1.5.1-1</javacpp.version>
-        <javacpp-presets.version>1.5.1</javacpp-presets.version>
-        <javacv.version>1.5.1</javacv.version>
+        <javacpp.version>1.5.2</javacpp.version>
+        <javacpp-presets.version>1.5.2</javacpp-presets.version>
+        <javacv.version>1.5.2</javacv.version>
 
-        <python.version>3.7.3</python.version>
+        <python.version>3.7.5</python.version>
         <cpython-platform.version>${python.version}-${javacpp-presets.version}</cpython-platform.version>
 
-        <openblas.version>0.3.6</openblas.version>
-        <mkl.version>2019.4</mkl.version>
-        <opencv.version>4.1.0</opencv.version>
-        <ffmpeg.version>4.1.3</ffmpeg.version>
+        <openblas.version>0.3.7</openblas.version>
+        <mkl.version>2019.5</mkl.version>
+        <opencv.version>4.1.2</opencv.version>
+        <ffmpeg.version>4.2.1</ffmpeg.version>
         <leptonica.version>1.78.0</leptonica.version>
         <hdf5.version>1.10.5</hdf5.version>
         <ale.version>0.6.0</ale.version>
-        <tensorflow.version>1.14.0</tensorflow.version>
+        <tensorflow.version>1.15.0</tensorflow.version>
         <tensorflow.javacpp.version>${tensorflow.version}-${javacpp-presets.version}</tensorflow.javacpp.version>
 
         <commons-compress.version>1.18</commons-compress.version>

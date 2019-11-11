@@ -422,6 +422,11 @@ NDArray NDArrayFactory::create(nd4j::DataType dtype, nd4j::LaunchContext * conte
     return res;
 }
 
+NDArray* NDArrayFactory::create_(nd4j::DataType dtype, nd4j::LaunchContext * context) {
+    auto result = new NDArray();
+    *result = NDArrayFactory::create(dtype, context);
+    return result;
+}
 
 ////////////////////////////////////////////////////////////////////////
 template <typename T>

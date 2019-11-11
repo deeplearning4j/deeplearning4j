@@ -1,5 +1,5 @@
 /*******************************************************************************
- * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -15,7 +15,7 @@
  ******************************************************************************/
 
 //
-// Created by raver119 on 20.11.17.
+// @author raver119@gmail.com
 //
 
 #include "testlayers.h"
@@ -47,42 +47,44 @@
 using namespace nd4j;
 using namespace nd4j::graph;
 
-class PlaygroundTests : public testing::Test {
+class PerformanceTests : public testing::Test {
 public:
-    int numIterations = 3;
-    int poolSize = 10;
+    int numIterations = 100;
 
-    PlaygroundTests() {
-        printf("\n");
-        fflush(stdout);
+    PerformanceTests() {
+        //
     }
 };
 
-TEST_F(PlaygroundTests, test_s_1) {
-    auto t = ::runLightBenchmarkSuit(true);
-    delete[] t;
+#ifdef RELEASE_BUILD
+
+TEST_F(PerformanceTests, test_maxpooling2d_1) {
+    std::vector<Nd4jLong> valuesX;
+    auto x = NDArrayFactory::create<float>('c', {32, 3, 224, 224});
+    auto z = NDArrayFactory::create<float>('c', {32, 3, 224, 224});
+    x.linspace(1.0f);
+    Nd4jLong k = 5;
+
+    Nd4jLong iArgs[] {k,k, 1,1, 0,0, 1,1, 1};
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setOutputArray(0, &z);
+    ctx.setIArguments(iArgs, 9);
+
+    nd4j::ops::maxpool2d op;
+
+    for (int i = 0; i < numIterations; i++) {
+        auto timeStart = std::chrono::system_clock::now();
+
+        op.execute(&ctx);
+
+        auto timeEnd = std::chrono::system_clock::now();
+        auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
+        valuesX.emplace_back(outerTime);
+    }
+
+    std::sort(valuesX.begin(), valuesX.end());
+    nd4j_printf("Execution time: %lld; Min: %lld; Max: %lld;\n", valuesX[valuesX.size() / 2], valuesX[0], valuesX[valuesX.size() - 1]);
 }
 
-/*
-TEST_F(PlaygroundTests, test_relubp_1) {
-    auto x = NDArrayFactory::create<float>('c', {128, 64, 224, 224});
-    auto y = x.ulike();
-    auto z = x.ulike();
-    RandomGenerator rng(119, 120);
-    RandomLauncher::fillUniform(LaunchContext::defaultContext(), rng, &x, -1.0, 1.0);
-    RandomLauncher::fillUniform(LaunchContext::defaultContext(), rng, &y, -1.0, 1.0);
-
-    int iterations = 10;
-
-    auto timeStart = std::chrono::system_clock::now();
-    for (int e = 0; e < iterations; e++)
-        ops::helpers::reluDerivative(LaunchContext::defaultContext(), &x, &y, &z);
-    auto timeEnd = std::chrono::system_clock::now();
-
-    auto outerTime = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
-    auto time = (Nd4jLong) outerTime / iterations;
-    auto bw = (1000000L * (float) (x.lengthOf() * x.sizeOfT()) / time) / 1024 / 1024 / 1024;
-
-    nd4j_printf("Time: %lld; BW: %f GB/s\n", time, bw);
-}
-*/
+#endif

@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -27,7 +28,7 @@
 #include <dll.h>
 #include <pointercast.h>
 #include <platformmath.h>
-
+#include <DataTypeUtils.h>
 
 #define BFLOAT16_MAX_VALUE 32737.
 #define HALF_MAX_VALUE 65504.
@@ -883,7 +884,7 @@ namespace nd4j {
             if (a > 171.624) {
                 // Correct answer too large to display. Force +infinity.
                 return Z(DOUBLE_MAX_VALUE);
-                //DataTypeUtils::infOrMax<Z>();
+//                return DataTypeUtils::infOrMax<Z>();
             }
 
             return nd4j::math::nd4j_exp<Z,Z>(nd4j::math::nd4j_lgamma<X,Z>(a));
@@ -894,6 +895,10 @@ namespace nd4j {
             Z aim = nd4j_pow<X, X, Z>(x, a) / (nd4j_exp<X, Z>(x) * nd4j_gamma<Y, Z>(a));
             auto sum = Z(0.);
             auto denom = Z(1.);
+            if (a <= X(0.000001))
+                //throw std::runtime_error("Cannot calculate gamma for a zero val.");
+                return Z(0);
+
             for (int i = 0; Z(1./denom) > Z(1.0e-12); i++) {
                 denom *= (a + i);
                 sum += nd4j_pow<X, int, Z>(x, i) / denom;

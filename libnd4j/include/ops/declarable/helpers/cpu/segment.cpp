@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -91,7 +92,7 @@ namespace helpers {
                    val = nd4j::math::nd4j_min<T>(val, input->t<T>(e));
                 }
                 else {
-                    idx = indices->e<int>(e);
+                    idx = indices->e<Nd4jLong>(e);
                     val = input->t<T>(e);
                 }
                 output->t<T>(idx) = val;
@@ -111,14 +112,14 @@ namespace helpers {
             minT->assign(listOfTensors->at(0));
 
             for (Nd4jLong i = 1; i < indices->lengthOf(); i++) {
-                if (indices->e<T>(i) == idx) {
+                if (indices->e<Nd4jLong>(i) == idx) {
 
                     for (int e = 0; e < minT->lengthOf(); e++) {
                        minT->p(e, nd4j::math::nd4j_min(minT->e<T>(e), listOfTensors->at(i)->e<T>(e)));
                     }
                 }
                 else {
-                    idx = indices->e<T>(i);
+                    idx = indices->e<Nd4jLong>(i);
                     minT = listOfOutTensors->at(idx);
                     minT->assign(listOfTensors->at(i));
                 }

@@ -382,4 +382,21 @@ public class RandomOpValidation extends BaseOpValidation {
         INDArray out = Nd4j.exec(all);
         assertEquals(x, out);
     }
+
+    @Test
+    public void testUniformDtype(){
+        for(DataType t : new DataType[]{DataType.FLOAT, DataType.DOUBLE, }){
+            SameDiff sd = SameDiff.create();
+            SDVariable shape = sd.constant("shape", Nd4j.createFromArray(1, 100));
+            SDVariable out = sd.random.uniform(0, 10, shape, t);
+            INDArray arr = out.eval();
+            assertEquals(t, arr.dataType());
+            double min = arr.minNumber().doubleValue();
+            double max = arr.maxNumber().doubleValue();
+            double mean = arr.meanNumber().doubleValue();
+            assertEquals(0, min, 0.5);
+            assertEquals(10, max, 0.5);
+            assertEquals(5.5, mean, 1);
+        }
+    }
 }

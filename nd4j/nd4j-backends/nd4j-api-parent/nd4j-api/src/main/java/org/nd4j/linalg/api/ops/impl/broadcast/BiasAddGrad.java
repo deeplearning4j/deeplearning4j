@@ -31,9 +31,12 @@ import java.util.Collections;
 import java.util.List;
 
 public class BiasAddGrad extends DynamicCustomOp {
+    protected boolean nchw = true;
 
-    public BiasAddGrad(SameDiff sameDiff, SDVariable input, SDVariable bias, SDVariable gradient) {
+    public BiasAddGrad(SameDiff sameDiff, SDVariable input, SDVariable bias, SDVariable gradient, boolean nchw) {
         super(null, sameDiff, new SDVariable[]{input, bias, gradient});
+        this.nchw = nchw;
+        addBArgument(nchw);
     }
 
     public BiasAddGrad(@NonNull INDArray input, @NonNull INDArray bias, @NonNull INDArray gradient, INDArray output){
@@ -51,8 +54,6 @@ public class BiasAddGrad extends DynamicCustomOp {
     public String opName() {
         return "biasadd_bp";
     }
-
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

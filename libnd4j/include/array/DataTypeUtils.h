@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -29,8 +30,8 @@
 #include <dll.h>
 #include <Environment.h>
 #include <ArrayOptions.h>
-#include <templatemath.h>
-#include <shape.h>
+//#include <templatemath.h>
+//#include <shape.h>
 #include <helpers/logger.h>
 
 namespace nd4j {
@@ -128,7 +129,9 @@ namespace nd4j {
         // if both dtypes are the same - just return it
         if (typeX == typeY)
             return typeX;
-
+        auto nd4j_max = [](nd4j::DataType typeX, nd4j::DataType typeY) {
+            return typeX > typeY?typeX:typeY;
+        };
         auto rX = isR(typeX);
         auto rY = isR(typeY);
 
@@ -144,7 +147,7 @@ namespace nd4j {
         if (rX && rY) {
             // if we allow precision boost, then we pick bigger data type
             if (nd4j::Environment::getInstance()->precisionBoostAllowed()) {
-                return nd4j::math::nd4j_max<nd4j::DataType>(typeX, typeY);
+                return nd4j_max(typeX, typeY);
             } else {
                 // and we return first operand otherwise
                 return typeX;
@@ -155,7 +158,7 @@ namespace nd4j {
         // if that's not real type, we apply same rules
         if (!rX && !rY) {
             if (nd4j::Environment::getInstance()->precisionBoostAllowed()) {
-                return nd4j::math::nd4j_max<nd4j::DataType>(typeX, typeY);
+                return nd4j_max(typeX, typeY);
             } else {
                 // and we return first operand otherwise
                 return typeX;
@@ -367,8 +370,8 @@ FORCEINLINE std::string DataTypeUtils::asString(DataType dataType) {
 
 template <typename T>
 FORCEINLINE bool DataTypeUtils::castShapeInfo(const Nd4jLong *originalShapeInfo, T *newShapeInfo) {
-
-    for (int e = 0; e < shape::shapeInfoLength(originalShapeInfo); e++) {
+    auto shapeInfoLength = *originalShapeInfo * 2 + 4;
+    for (auto e = 0; e < shapeInfoLength; e++) {
         if (originalShapeInfo[e] < static_cast<Nd4jLong>(DataTypeUtils::max<T>())) {
             newShapeInfo[e] = static_cast<T>(originalShapeInfo[e]);
         } else

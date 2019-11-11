@@ -39,6 +39,7 @@ public class LogSumExp extends DynamicCustomOp {
         super(sameDiff, i_v);
         if(dimensions != null) {
             addIArgument(dimensions);
+            this.dimensions = dimensions;
         }
         addTArgument(keepDims ? 1.0 : 0.0);
         this.keepDims = keepDims;
