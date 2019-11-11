@@ -34,6 +34,9 @@ TensorFlow documentation on frozen models can be found [here](https://www.Tensor
         .output(outputs)
         .execSingle();
 
+For multiple outputs, use `exec()` instead of `execSingle()`, to return a `Map<String,INDArray>` of outputs instead.
+Alternatively, you can use methods such as `SameDiff.output(Map<String, INDArray> placeholders, String... outputs)` to get the same output.
+
 ##  Import Validation.
 We have a TensorFlow graph analyzing utility which will report any missing operations (operations that still need to be implemented) [here](https://github.com/eclipse/deeplearning4j/blob/master/nd4j/nd4j-backends/nd4j-api-parent/nd4j-api/src/main/java/org/nd4j/imports/TensorFlow/TensorFlowImportValidator.java)
 
@@ -59,3 +62,10 @@ See the [BERT Graph test](https://github.com/eclipse/deeplearning4j/blob/master/
 - [temperature_bidirectional_63](https://deeplearning4jblob.blob.core.windows.net/testresources/temperature_bidirectional_63_frozenmodel.pb)
 - [temperature_stacked_63](https://deeplearning4jblob.blob.core.windows.net/testresources/temperature_stacked_63_frozenmodel.pb)
 - [text_gen_81](https://deeplearning4jblob.blob.core.windows.net/testresources/text_gen_81_frozenmodel.pb)
+
+## Operations Coverage
+
+SameDiff's TensorFlow import is still being developed, and does not yet have support for every single operation and datatype in TensorFlow.
+Almost all of the common/standard operations are importable and tested, however - including almost everything in the tf, tf.math, tf.layers, tf.losses, tf.bitwise and tf.nn namespaces. The majority of existing pretrained models out there should be importable into SameDiff.
+
+If you run into an operation that can't be imported, feel free to [open an issue](https://github.com/eclipse/deeplearning4j/issues).
