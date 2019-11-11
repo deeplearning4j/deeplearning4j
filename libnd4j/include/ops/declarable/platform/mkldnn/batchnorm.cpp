@@ -439,14 +439,17 @@ PLATFORM_IMPL(batchnorm) {
     if(axes[0] == inRank - 1 && inRank > 2) {   // if nhwc or ndhwc
         std::vector<int> permut = inRank == 4 ? std::vector<int>({0,3,1,2}) : std::vector<int>({0,4,1,2,3});
         input = new NDArray(input->permute(permut));
+        output = new NDArray(output->permute(permut));
     }
 
     batchnormMKLDNN(input, mean, variance, weights, epsilon, output);
 
     delete weights;
 
-    if(axes[0] == inRank - 1 && inRank > 2)
+    if(axes[0] == inRank - 1 && inRank > 2) {
         delete input;
+        delete output;
+    }
 
     return Status::OK();
 }
