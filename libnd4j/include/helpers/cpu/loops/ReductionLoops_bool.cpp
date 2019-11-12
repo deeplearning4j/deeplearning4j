@@ -27,7 +27,9 @@ namespace nd4j {
     template<typename X, typename Z>
     template <typename OpType>
     void ReductionBoolLoops<X, Z>::innerloopReduce(X* x, Nd4jLong* xShapeInfo, Z* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams) {
+#ifndef INLINE_LOOPS
         ReductionLoops<X,Z,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams);
+#endif
     }
 
     template<typename X, typename Y>
@@ -35,7 +37,9 @@ namespace nd4j {
                                             Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
                                             Nd4jLong *tadOffsets,
                                             X *extraParams) {
+#ifndef INLINE_LOOPS
         DISPATCH_BY_OPNUM_TT(innerloopReduce, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams), REDUCE_BOOL_OPS);
+#endif
     }
 
     BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT ReductionBoolLoops, , LIBND4J_TYPES, BOOL_TYPES);
