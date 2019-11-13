@@ -22,6 +22,7 @@
 #include <NDArrayFactory.h>
 #include <helpers/BlasHelper.h>
 #include <exceptions/datatype_exception.h>
+#include <execution/Threads.h>
 
 
 namespace nd4j {
@@ -74,26 +75,28 @@ static void usualGemm(const char cOrder, const bool transA, const bool transB, c
     //     }
     // }   
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(M*N > Environment::getInstance()->elementwiseThreshold()) schedule(guided) collapse(2))
-    for(uint row = 0; row < M; ++row) {
-       for(uint col = 0; col < N; ++col) {
-            
-            T3* c = flagC ? (C + row + col * ldc) : (C + row * ldc + col);
-            T3 val = 0;  
+    auto func = PRAGMA_THREADS_FOR_2D { ;
+        for (auto row = start_x; row < stop_x; row += inc_x) {
+            for (auto col = start_y; col < stop_y; col += inc_y) {
+                T3 *c = flagC ? (C + row + col * ldc) : (C + row * ldc + col);
+                T3 val = 0;
 
-            PRAGMA_OMP_SIMD
-            for(uint i = 0; i < K; ++i) {
-                T3 a = flagA ? *(A + row * lda + i) : *(A + row + i * lda);
-                T3 b = flagB ? *(B + col + i * ldb) : *(B + col * ldb + i);             
-                val += alphaZ * a * b;
+                PRAGMA_OMP_SIMD
+                for (uint i = 0; i < K; ++i) {
+                    T3 a = flagA ? *(A + row * lda + i) : *(A + row + i * lda);
+                    T3 b = flagB ? *(B + col + i * ldb) : *(B + col * ldb + i);
+                    val += alphaZ * a * b;
+                }
+
+                if (betaZ)
+                    *c = val + betaZ * *c;
+                else
+                    *c = val;
             }
-            
-            if(betaZ)
-                *c = val + betaZ * *c;
-            else
-                *c = val;
-       }
-    }
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, M, 1, 0, N, 1);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -108,24 +111,27 @@ static void usualGemv(const char aOrder, const int M, const int N, const double 
     
     const bool flagA = aOrder == 'f';
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(M > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
-    for(int row = 0; row < M; ++row) {
-                        
-        T3* y = Y + row * incy;
-        T3 val = 0;
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto row = start; row < stop; row += increment) {
 
-        PRAGMA_OMP_SIMD
-        for(int i = 0; i < N; ++i) {
-            T3 a = flagA ? *(A + row + i * lda) : *(A + row * lda + i);
-            T3 x = *(X + i * incx);
-            val += alphaZ * a * x;
+            T3 *y = Y + row * incy;
+            T3 val = 0;
+
+            PRAGMA_OMP_SIMD
+            for (int i = 0; i < N; ++i) {
+                T3 a = flagA ? *(A + row + i * lda) : *(A + row * lda + i);
+                T3 x = *(X + i * incx);
+                val += alphaZ * a * x;
+            }
+
+            if (betaZ)
+                *y = val + betaZ * *y;
+            else
+                *y = val;
         }
-        
-        if(betaZ)
-            *y = val + betaZ * *y;
-        else
-            *y = val;
-    }
+    };
+
+        samediff::Threads::parallel_for(func, 0, M);
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -141,7 +147,7 @@ static void usualDot(const Nd4jLong length, const double alpha, const void* vX, 
     T3 sum = 0;
     PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(length > Environment::getInstance()->elementwiseThreshold()) schedule(guided) reduction(OMP_SUMT:sum))
     for(int i = 0; i < length; ++i)
-            sum = sum + X[i * incx] * Y[i * incy];        
+            sum += X[i * incx] * Y[i * incy];
     
     *Z = alphaZ * sum + betaZ * *Z;
 }

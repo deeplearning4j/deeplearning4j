@@ -44,62 +44,67 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
     const Nd4jLong* tadShape  = shape::shapeOf(const_cast<Nd4jLong*>(tadShapeInfo));
     const Nd4jLong* tadStride = shape::stride(const_cast<Nd4jLong*>(tadShapeInfo));
 
-    int tadsPerThread = zLen / TAD_THRESHOLD;
-    int numThreads = nd4j::math::nd4j_max<int>(1, tadsPerThread);
-    numThreads = nd4j::math::nd4j_min<int>(numThreads, omp_get_max_threads());
-
     switch (kindOfLoop) {
         //*********************************************//
         case nd4j::LoopKind::EWS1: {
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; i++) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint j = 0; j < tadLen; j++) {
-                    functions::indexreduce::IndexValue<X> comp(tad[j], j);
-                    indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint j = 0; j < tadLen; j++) {
+                        functions::indexreduce::IndexValue<X> comp(tad[j], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    }
+
+                    z[i] = (Z) indexValue.index;
                 }
+            };
 
-                z[i] = (Z) indexValue.index;
-            }
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
             //*********************************************//
         case nd4j::LoopKind::EWSNONZERO: {
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; i++) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint j = 0; j < tadLen; j++) {
-                    functions::indexreduce::IndexValue<X> comp(tad[j * tadEws], j);
-                    indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint j = 0; j < tadLen; j++) {
+                        functions::indexreduce::IndexValue<X> comp(tad[j * tadEws], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    }
+
+                    z[i * zEws] = (Z) indexValue.index;
                 }
+            };
 
-                z[i * zEws] = (Z) indexValue.index;
-            }
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
             //*********************************************//
         case nd4j::LoopKind::RANK1: {
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; i++) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint i0 = 0; i0 < tadLen; ++i0) {
-                    functions::indexreduce::IndexValue<X> comp(tad[i0 * tadStride[0]], i0);
-                    indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint i0 = 0; i0 < tadLen; ++i0) {
+                        functions::indexreduce::IndexValue<X> comp(tad[i0 * tadStride[0]], i0);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    }
+
+                    z[i] = (Z) indexValue.index;
                 }
+            };
 
-                z[i] = (Z) indexValue.index;
-            }
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -108,22 +113,25 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             Nd4jLong newStride[2];
             shape::updateStrides(2, tadShape, newStride, 'c');
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; ++i) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                    for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                        const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1];
-                        const auto tadIndex  = i0 * newStride[0] + i1;
-                        functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
-                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                            const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1];
+                            const auto tadIndex = i0 * newStride[0] + i1;
+                            functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
+                            indexValue = OpType::update(indexValue, comp, extraParams);
+                        }
                     }
-                }
 
-                z[i] = (Z) indexValue.index;
-            }
+                    z[i] = (Z) indexValue.index;
+                }
+            };
+
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -132,24 +140,27 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             Nd4jLong newStride[3];
             shape::updateStrides(3, tadShape, newStride, 'c');
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; ++i) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                    for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                        for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                            const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2];
-                            const auto tadIndex  = i0 * newStride[0] + i1 * newStride[1] + i2;
-                            functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
-                            indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                            for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                                const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2];
+                                const auto tadIndex = i0 * newStride[0] + i1 * newStride[1] + i2;
+                                functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
+                                indexValue = OpType::update(indexValue, comp, extraParams);
+                            }
                         }
                     }
-                }
 
-                z[i] = (Z) indexValue.index;
-            }
+                    z[i] = (Z) indexValue.index;
+                }
+            };
+
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -158,26 +169,29 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             Nd4jLong newStride[4];
             shape::updateStrides(4, tadShape, newStride, 'c');
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; ++i) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                    for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                        for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                            for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
-                                const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2] + i3 * tadStride[3];
-                                const auto tadIndex  = i0 * newStride[0] + i1 * newStride[1] + i2 * newStride[2] + i3;
-                                functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
-                                indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                            for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                                for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
+                                    const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2] + i3 * tadStride[3];
+                                    const auto tadIndex = i0 * newStride[0] + i1 * newStride[1] + i2 * newStride[2] + i3;
+                                    functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
+                                    indexValue = OpType::update(indexValue, comp, extraParams);
+                                }
                             }
                         }
                     }
-                }
 
-                z[i] = (Z) indexValue.index;
-            }
+                    z[i] = (Z) indexValue.index;
+                }
+            };
+
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -186,28 +200,31 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             Nd4jLong newStride[5];
             shape::updateStrides(5, tadShape, newStride, 'c');
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; ++i) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
-                    for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
-                        for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
-                            for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
-                                for (uint i4 = 0; i4 < tadShape[4]; ++i4) {
-                                    const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2] + i3 * tadStride[3] + i4 * tadStride[4];
-                                    const auto tadIndex  = i0 * newStride[0] + i1 * newStride[1] + i2 * newStride[2] + i3 * newStride[3] + i4;
-                                    functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
-                                    indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint i0 = 0; i0 < tadShape[0]; ++i0) {
+                        for (uint i1 = 0; i1 < tadShape[1]; ++i1) {
+                            for (uint i2 = 0; i2 < tadShape[2]; ++i2) {
+                                for (uint i3 = 0; i3 < tadShape[3]; ++i3) {
+                                    for (uint i4 = 0; i4 < tadShape[4]; ++i4) {
+                                        const auto tadOffset = i0 * tadStride[0] + i1 * tadStride[1] + i2 * tadStride[2] + i3 * tadStride[3] + i4 * tadStride[4];
+                                        const auto tadIndex = i0 * newStride[0] + i1 * newStride[1] + i2 * newStride[2] + i3 * newStride[3] + i4;
+                                        functions::indexreduce::IndexValue<X> comp(tad[tadOffset], tadIndex);
+                                        indexValue = OpType::update(indexValue, comp, extraParams);
+                                    }
                                 }
                             }
                         }
                     }
-                }
 
-                z[i] = (Z) indexValue.index;
-            }
+                    z[i] = (Z) indexValue.index;
+                }
+            };
+
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -216,19 +233,22 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             uint castZShapeInfo[MAX_RANK];
             const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; i++) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint j = 0; j < tadLen; j++) {
-                    functions::indexreduce::IndexValue<X> comp(tad[j * tadEws], j);
-                    indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint j = 0; j < tadLen; j++) {
+                        functions::indexreduce::IndexValue<X> comp(tad[j * tadEws], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    }
+
+                    auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
+                    z[zOffset] = (Z) indexValue.index;
                 }
+            };
 
-                auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
-                z[zOffset] = (Z) indexValue.index;
-            }
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -237,19 +257,22 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             uint castTadShapeInfo[MAX_RANK];
             const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; i++) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint j = 0; j < tadLen; j++) {
-                    auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
-                    functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
-                    indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint j = 0; j < tadLen; j++) {
+                        auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
+                        functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    }
+
+                    z[i * zEws] = (Z) indexValue.index;
                 }
+            };
 
-                z[i * zEws] = (Z) indexValue.index;
-            }
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
             break;
 
@@ -260,20 +283,23 @@ void nd4j::IndexReductionLoops<X,Z>::loopIndexReduce(X* x, Nd4jLong* xShapeInfo,
             const bool canCastTad = nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeInfo, castTadShapeInfo);
             const bool canCastZ   = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo,   castZShapeInfo);
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(numThreads)
-            for (uint i = 0; i < zLen; i++) {
-                auto tad = const_cast<X*>(x) + tadOffsets[i];
-                auto indexValue = OpType::startingIndexValue(tad);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto tad = const_cast<X *>(x) + tadOffsets[i];
+                    auto indexValue = OpType::startingIndexValue(tad);
 
-                for (uint j = 0; j < tadLen; j++) {
-                    auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
-                    functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
-                    indexValue = OpType::update(indexValue, comp, extraParams);
+                    for (uint j = 0; j < tadLen; j++) {
+                        auto tadOffset = shape::indexOffset(j, tadShapeInfo, castTadShapeInfo, canCastTad);
+                        functions::indexreduce::IndexValue<X> comp(tad[tadOffset], j);
+                        indexValue = OpType::update(indexValue, comp, extraParams);
+                    }
+
+                    auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
+                    z[zOffset] = (Z) indexValue.index;
                 }
+            };
 
-                auto zOffset = shape::indexOffset(i, zShapeInfo, castZShapeInfo, canCastZ);
-                z[zOffset] = (Z) indexValue.index;
-            }
+            samediff::Threads::parallel_tad(func, 0, zLen);
         }
     }
 }

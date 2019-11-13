@@ -442,11 +442,11 @@ TEST_F(LegacyOpsTests, reduce3_1) {
 
     //int *tadShapeBuffer = shape::computeResultShape(shapeBuffer,dimension,dimensionLength);
     auto tadShapeBuffer = nd4j::ShapeUtils::evalReduceShapeInfo('c', dim, shapeBuffer, false, true, nullptr);
-    functions::reduce3::Reduce3<float, float>::exec(opNum, x, xShapeBuffer, extraVals, y, shapeBuffer, result, tadShapeBuffer, dimension, dimensionLength);
+    functions::reduce3::Reduce3<float, float>::exec(opNum, x, xShapeBuffer, extraVals, y, shapeBuffer, result, tadShapeBuffer, dimension, dimensionLength, 0, 4);
 
     float distancesAssertion[4] = {0.0,8.0,16.0,24.0};
     for(int i = 0; i < 4; i++)
-        ASSERT_EQ(distancesAssertion[i],result[i]);
+        ASSERT_NEAR(distancesAssertion[i],result[i], 1e-5);
 
     delete[] shapeBuffer;
     delete[] xShapeBuffer;
@@ -724,6 +724,26 @@ TEST_F(LegacyOpsTests, test_legacy_reduce_empty_3) {
     NativeOpExecutioner::execReduceSame(LaunchContext::defaultContext(), reduce::SameOps::Max, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(), nullptr, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), &dim, 1, x.getPlatformShapeInfo(), nullptr);
 
     ASSERT_EQ(e, z);
+}
+
+TEST_F(LegacyOpsTests, test_legacy_reduce_empty_4) {
+    if (!Environment::getInstance()->isCPU())
+        return;
+    int a = 0;
+
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 2});
+    auto d = NDArrayFactory::create<int>('c', {1}, {a});
+    auto z = NDArrayFactory::create<float>('c', {0, 2});
+    auto e = NDArrayFactory::create<float>('c', {0, 2});
+
+
+
+    ::execReduceSame2(nullptr, reduce::SameOps::Sum,
+            x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
+            nullptr,
+            z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+            d.buffer(), d.shapeInfo(), d.specialBuffer(), d.specialShapeInfo());
+
 }
 
 TEST_F(LegacyOpsTests, test_legacy_transform_float_1) {

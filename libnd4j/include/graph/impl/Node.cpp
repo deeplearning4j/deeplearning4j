@@ -682,8 +682,9 @@ namespace nd4j {
             if (_protoContext != nullptr)
                 delete _protoContext;
 
-            if (_isDeductable && _customOp != nullptr)
-                delete _customOp;
+            if (_isDeductable && _customOp != nullptr) {
+                Node::deleteOpByType(_opType, _customOp);
+            }
         }
 
         int nd4j::graph::Node::getRewindNode() {
@@ -708,6 +709,70 @@ namespace nd4j {
                 return true;
 
             return false;
+        }
+
+        void nd4j::graph::Node::deleteOpByType(OpType opType, void *op) {
+            switch (opType) {
+                case OpType_PAIRWISE:
+                    delete reinterpret_cast<nd4j::ops::LegacyPairwiseTransformOp*>(op);
+                    break;
+                case OpType_PAIRWISE_BOOL:
+                    delete reinterpret_cast<nd4j::ops::LegacyPairwiseTransformBoolOp*>(op);
+                    break;
+                case OpType_TRANSFORM_STRICT:
+                    delete reinterpret_cast<nd4j::ops::LegacyTransformStrictOp*>(op);
+                    break;
+                case OpType_TRANSFORM_SAME:
+                    delete reinterpret_cast<nd4j::ops::LegacyTransformSameOp*>(op);
+                    break;
+                case OpType_TRANSFORM_FLOAT:
+                    delete reinterpret_cast<nd4j::ops::LegacyTransformFloatOp*>(op);
+                    break;
+                case OpType_TRANSFORM_BOOL:
+                    delete reinterpret_cast<nd4j::ops::LegacyTransformBoolOp*>(op);
+                    break;
+                case OpType_SCALAR:
+                    delete reinterpret_cast<nd4j::ops::LegacyScalarOp*>(op);
+                    break;
+                case OpType_SCALAR_BOOL:
+                    delete reinterpret_cast<nd4j::ops::LegacyScalarBoolOp*>(op);
+                    break;
+                case OpType_REDUCE_3:
+                    delete reinterpret_cast<nd4j::ops::LegacyReduce3Op*>(op);
+                    break;
+                case OpType_REDUCE_SAME:
+                    delete reinterpret_cast<nd4j::ops::LegacyReduceSameOp*>(op);
+                    break;
+                case OpType_REDUCE_FLOAT:
+                    delete reinterpret_cast<nd4j::ops::LegacyReduceFloatOp*>(op);
+                    break;
+                case OpType_REDUCE_LONG:
+                    delete reinterpret_cast<nd4j::ops::LegacyReduceLongOp*>(op);
+                    break;
+                case OpType_REDUCE_BOOL:
+                    delete reinterpret_cast<nd4j::ops::LegacyReduceBoolOp*>(op);
+                    break;
+                case OpType_INDEX_REDUCE:
+                    delete reinterpret_cast<nd4j::ops::LegacyIndexReduceOp*>(op);
+                    break;
+                case OpType_SUMMARYSTATS:
+                    delete reinterpret_cast<nd4j::ops::LegacyStatsOp*>(op);
+                    break;
+                case OpType_RANDOM:
+                    delete reinterpret_cast<nd4j::ops::LegacyRandomOp*>(op);
+                    break;
+                case OpType_BROADCAST:
+                    delete reinterpret_cast<nd4j::ops::LegacyBroadcastOp*>(op);
+                    break;
+                case OpType_BROADCAST_BOOL:
+                    delete reinterpret_cast<nd4j::ops::LegacyBroadcastBoolOp*>(op);
+                    break;
+                case OpType_CUSTOM:
+                    delete reinterpret_cast<nd4j::ops::DeclarableOp*>(op);
+                    break;
+                default:
+                    throw std::runtime_error("Bad opType passed in");
+            }
         }
 
         nd4j::ops::DeclarableOp* nd4j::graph::Node::buildOpByType(OpType opType, int numInputs,  int numIArgs, int numTArgs, int opNum, NDArray *scalar) {

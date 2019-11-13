@@ -22,6 +22,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <array/DataTypeUtils.h>
 
 namespace nd4j {
     namespace ops {
@@ -39,7 +40,7 @@ namespace nd4j {
             ExtraArguments extras(*block.getTArguments());
             PointersManager manager(block.launchContext(), "LegacyReduce3Op");
 
-            if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT))) {
+            if (x->isSameShape(y) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == nd4j::DataTypeUtils::max<int>()))) {
                 // reduce3 to scalar
                 NativeOpExecutioner::execReduce3Scalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                         extras.argumentsAsT(z->dataType()),
@@ -97,7 +98,7 @@ namespace nd4j {
 
             Nd4jLong *zShape = nullptr;
 
-            if (shape::equalsSoft(xShape, yShape) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT))) {
+            if (shape::equalsSoft(xShape, yShape) && (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == nd4j::DataTypeUtils::max<int>()))) {
                 // reduce3 to scalar case
                 ALLOCATE(zShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
                 zShape[0] = 2;

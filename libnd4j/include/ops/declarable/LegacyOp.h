@@ -45,6 +45,7 @@ namespace nd4j {
         public:
             LegacyOp(int numInputs);
             LegacyOp(int numInputs, int opNum);
+            ~LegacyOp() = default;
 
             // All Op classes provide own specific implementation for this method
             ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override = 0;

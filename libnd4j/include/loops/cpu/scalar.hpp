@@ -22,6 +22,7 @@
 #include <op_boilerplate.h>
 #include <types/types.h>
 #include <LoopKind.h>
+#include <execution/Threads.h>
 #include "../legacy_ops.h"
 
 using namespace simdOps;
@@ -39,7 +40,8 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
                                                 void *vscalars,
                                                 int *dimension, int dimensionLength,
                                                 Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
-                                                Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+                                                Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets,
+                                                const uint64_t start, const uint64_t stop) {
 
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
@@ -63,29 +65,27 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
         return;
     }
 
-    int num_threads = nd4j::math::nd4j_min<int>(numTads, omp_get_max_threads());
+    int num_threads = nd4j::math::nd4j_min<int>(numTads, nd4j::Environment::getInstance()->maxThreads());
 
     if (kindOfLoop == nd4j::LoopKind::EWS1) {
-        PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-        for (unsigned int r = 0; r < numTads; r++) {
+        for (auto r = start; r < stop; r++) {
             auto oZ = z + zTadOffsets[r];
             auto oX = x + xTadOffsets[r];
 
             PRAGMA_OMP_SIMD
             for (unsigned int f = 0; f < tadLength; f++)
                 oZ[f] = OpType::op(oX[f], scalars[r], extraParams);
-        }
+        };
     }
     else {
-        PRAGMA_OMP_PARALLEL_FOR_THREADS(num_threads)
-        for (unsigned int r = 0; r < numTads; r++) {
+        for (auto r = start; r < stop; r++) {
             auto oZ = z + zTadOffsets[r];
             auto oX = x + xTadOffsets[r];
 
             PRAGMA_OMP_SIMD
             for (unsigned int f = 0; f < tadLength; f++)
                 oZ[f * zTadEws] = OpType::op(oX[f * xTadEws], scalars[r], extraParams);
-        }
+        };
     }
 }
 
@@ -98,9 +98,10 @@ void ScalarTransform<X,Y,Z>::transform(int opNum,
                               void *scalars,
                               int *dimension, int dimensionLength,
                               Nd4jLong *xTadShapeInfo, Nd4jLong *xTadOffsets,
-                              Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets) {
+                              Nd4jLong *zTadShapeInfo, Nd4jLong *zTadOffsets,
+                              const uint64_t start, const uint64_t stop) {
 
-    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets), SCALAR_OPS);
+    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, extraParams, z, zShapeInfo, scalars, dimension, dimensionLength, xTadShapeInfo, xTadOffsets, zTadShapeInfo, zTadOffsets, start, stop), SCALAR_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -110,9 +111,10 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum,
                                         void *z, Nd4jLong zStride,
                                         void *scalar,
                                         void *extraParams,
-                                        const Nd4jLong n, bool allowParallelism) {
+                                        const uint64_t n,
+                                        const uint64_t start, const uint64_t stop) {
 
-    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xStride, z, zStride, scalar, extraParams, n, allowParallelism), SCALAR_OPS);
+    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xStride, z, zStride, scalar, extraParams, n, start, stop), SCALAR_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -121,9 +123,10 @@ void ScalarTransform<X, Y, Z>::transform(const int opNum,
                                         void *x, Nd4jLong *xShapeInfo,
                                         void *z, Nd4jLong *zShapeInfo,
                                         void *scalar,
-                                        void *extraParams, bool allowParallelism) {
+                                        void *extraParams,
+                                        const uint64_t start, const uint64_t stop) {
 
-    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, allowParallelism), SCALAR_OPS);
+    DISPATCH_BY_OPNUM_TTT(transform, PARAMS(x, xShapeInfo, z, zShapeInfo, scalar, extraParams, start, stop), SCALAR_OPS);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -132,7 +135,8 @@ template<typename OpType>
 void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
                                         void *vz, Nd4jLong *zShapeInfo,
                                         void *vscalar,
-                                        void *vextraParams, bool allowParallelism) {
+                                        void *vextraParams,
+                                        const uint64_t start, const uint64_t stop) {
 
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
@@ -146,48 +150,30 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong *xShapeInfo,
     nd4j::LoopKind::Kind kindOfLoop = nd4j::LoopKind::deduceKindOfLoopXZ(xShapeInfo, zShapeInfo);
 
     if (kindOfLoop == nd4j::LoopKind::EWS1 || kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
-        transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len, allowParallelism);
+        transform<OpType>(x, xEws, z, zEws, vscalar, extraParams, len, start, stop);
     }
     else {
 
         uint xShapeInfoCast[MAX_RANK];
         const bool canCastX = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
 
-        nd4j::OmpLaunchHelper info(len, allowParallelism ? -1 : 1);
-
         if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
-
-            PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
-            {
-                auto threadNum = omp_get_thread_num();
-                auto threadOffset = info.getThreadOffset(threadNum);
-                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
-                PRAGMA_OMP_SIMD
-                for (unsigned int i = 0; i < ulen; i++) {
-                    auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
-                    z[offset] = OpType::op(x[offset], scalar, extraParams);
-                }
-            }
+            PRAGMA_OMP_SIMD
+            for (auto i = start; i < stop; i++) {
+                auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                z[offset] = OpType::op(x[offset], scalar, extraParams);
+            };
         }
         else {
-
             uint zShapeInfoCast[MAX_RANK];
             const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo<uint>(zShapeInfo, zShapeInfoCast);
 
-            PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
-            {
-                auto threadNum = omp_get_thread_num();
-                auto threadOffset = info.getThreadOffset(threadNum);
-                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
-                PRAGMA_OMP_SIMD
-                for (unsigned int i = 0; i < ulen; i++) {
-                    auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
-                    auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, canCastZ);
-                    z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
-                }
-            }
+            PRAGMA_OMP_SIMD
+            for (auto i = start; i < stop; i++) {
+                auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+                z[zOffset] = OpType::op(x[xOffset], scalar, extraParams);
+            };
         }
     }
 }
@@ -199,44 +185,22 @@ void ScalarTransform<X, Y, Z>::transform(void *vx, Nd4jLong xEws,
                                         void *vz, Nd4jLong zEws,
                                         void *vscalar,
                                         void *vextraParams,
-                                        const Nd4jLong len, bool allowParallelism) {
+                                        const uint64_t len, const uint64_t start, const uint64_t stop) {
 
     auto x = reinterpret_cast<X *>(vx);
     auto z = reinterpret_cast<Z *>(vz);
     auto scalar = reinterpret_cast<Y *>(vscalar)[0];
     auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-    nd4j::OmpLaunchHelper info(len, allowParallelism ? -1 : 1);
-
     if (xEws == 1 && zEws == 1) {
-
-        PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
-        {
-            auto threadNum = omp_get_thread_num();
-            auto threadOffset = info.getThreadOffset(threadNum);
-            auto xi = x + threadOffset;
-            auto zi = z + threadOffset;
-            auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
-            PRAGMA_OMP_SIMD
-            for (unsigned int i = 0; i < ulen; i++)
-                zi[i] = OpType::op(xi[i], scalar, extraParams);
-        }
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++)
+            z[i] = OpType::op(x[i], scalar, extraParams);
     }
     else {
-
-        PRAGMA_OMP_PARALLEL_THREADS_IF(info._numThreads, allowParallelism)
-        {
-            auto threadNum = omp_get_thread_num();
-            auto threadOffset = info.getThreadOffset(threadNum);
-            auto xi = x + xEws * threadOffset;
-            auto zi = z + zEws * threadOffset;
-            auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
-            PRAGMA_OMP_SIMD
-            for (unsigned int i = 0; i < ulen; i++)
-                zi[i * zEws] = OpType::op(xi[i * xEws], scalar, extraParams);
-        }
+        PRAGMA_OMP_SIMD
+        for (auto i = start; i < stop; i++)
+            z[i * zEws] = OpType::op(x[i * xEws], scalar, extraParams);
     }
 }
 

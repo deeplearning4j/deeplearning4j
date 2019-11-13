@@ -54,7 +54,7 @@ TEST_F(BroadcastMultiDimTest,MultimDimTest) {
             tad->tadOnlyShapeInfo, //tadShapeInfo
             tad->tadOffsets, //tadOffset
             tad->tadOnlyShapeInfo, //tadShapeInfoZ
-            tad->tadOffsets); //tadOffsetZ
+            tad->tadOffsets, 0, tad->numTads); //tadOffsetZ
     for(int i = 0; i < 30; i++) {
         ASSERT_EQ(dataAssertion[i],result[i]);
     }

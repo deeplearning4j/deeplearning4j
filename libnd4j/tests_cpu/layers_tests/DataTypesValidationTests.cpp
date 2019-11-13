@@ -110,7 +110,7 @@ TEST_F(DataTypesValidationTests, test_bfloat16_rand_1) {
     RandomGenerator gen(119, 120);
     RandomLauncher::fillUniform(LaunchContext::defaultContext(), gen, &x, 1, 6);
 
-    ASSERT_TRUE(x.sumNumber().e<float>(0) > 0);
+    ASSERT_TRUE(x.sumNumber().e<float>(0) != 0.f);
 }
 
 TEST_F(DataTypesValidationTests, test_bfloat16_rand_2) {
@@ -118,7 +118,7 @@ TEST_F(DataTypesValidationTests, test_bfloat16_rand_2) {
     RandomGenerator gen(119, 120);
     RandomLauncher::fillGaussian(LaunchContext::defaultContext(), gen, &x, 0, 1);
 
-    ASSERT_TRUE(x.sumNumber().e<float>(0) > 0);
+    ASSERT_TRUE(x.sumNumber().e<float>(0) != 0.f);
 }
 
 TEST_F(DataTypesValidationTests, cast_1) {

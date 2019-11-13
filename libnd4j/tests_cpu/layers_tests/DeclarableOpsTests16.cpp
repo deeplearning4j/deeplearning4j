@@ -149,5 +149,16 @@ TEST_F(DeclarableOpsTests16, test_knn_mindistance_1) {
     nd4j::ops::knn_mindistance op;
     auto result = op.execute({&input, &low, &high}, {&output}, {}, {}, {});
     ASSERT_EQ(Status::OK(), result);
+}
 
+TEST_F(DeclarableOpsTests16, test_empty_cast_1) {
+    auto x = NDArrayFactory::create<bool>('c', {1, 0, 2});
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {1, 0, 2});
+
+    nd4j::ops::cast op;
+    auto result = op.execute({&x}, {}, {10});
+    ASSERT_EQ(Status::OK(), result->status());
+    ASSERT_EQ(e, *result->at(0));
+
+    delete result;
 }

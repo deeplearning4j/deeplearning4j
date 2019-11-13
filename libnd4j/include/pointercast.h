@@ -21,6 +21,7 @@
 #ifndef NATIVEOPERATIONS_POINTERCAST_H
 #define NATIVEOPERATIONS_POINTERCAST_H
 
+#include <msvc.h>
 #include <stdint.h>
 
 typedef void* Nd4jPointer;

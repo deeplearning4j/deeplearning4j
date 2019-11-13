@@ -152,7 +152,6 @@ TEST_F(NDArrayCudaBasicsTests, Test_Cosine_1) {
     //ASSERT_TRUE(y->isActualOnDeviceSide());
     //ASSERT_TRUE(y->isActualOnHostSide());
     //y->syncToHost();
-    y->printBuffer("Cosine");
     delete x;
     delete y;
 }
@@ -251,9 +250,6 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_3) {
     cudaMemcpy(z.buffer(), z.specialBuffer(), z.lengthOf() * z.sizeOfT(), cudaMemcpyDeviceToHost);
     res = cudaStreamSynchronize(*stream);
     ASSERT_EQ(0, res);
-    x.printBuffer("3X = ");
-    y.printBuffer("3Y = ");
-    z.printBuffer("3Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -347,11 +343,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_6) {
     x += y;
     //x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);
     x.syncToHost();
-    x.printBuffer("6X = ");
-    //y.printBuffer("3Y = ");
-    //z.printBuffer("3Result out");
 
-    //
     // cudaFree(devBufferPtrX);
     //cudaFree(devBufferPtrZ);
     //cudaFree(devShapePtrX);
@@ -381,11 +373,7 @@ TEST_F(NDArrayCudaBasicsTests, TestAdd_7) {
     x += 2.;
     //x.applyPairwiseTransform(pairwise::Add, &y, &z, nullptr);
     x.syncToHost();
-    x.printBuffer("7X = ");
-    //y.printBuffer("3Y = ");
-    //z.printBuffer("3Result out");
 
-    //
     // cudaFree(devBufferPtrX);
     //cudaFree(devBufferPtrZ);
     //cudaFree(devShapePtrX);
@@ -445,9 +433,6 @@ TEST_F(NDArrayCudaBasicsTests, TestMultiply_2) {
     //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
     //ASSERT_EQ(0, res);
     x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
-    x.printBuffer("3X = ");
-    y.printBuffer("3Y = ");
-    z.printBuffer("3Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -744,8 +729,7 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_2) {
 
     cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     z.tickWriteDevice();
-    z.printBuffer("Result with Broadcast2 (multiply)");
-    exp.printBuffer("Expect with Broadcast2 (multiply)");
+
     // verify results
     for (int e = 0; e < z.lengthOf(); e++)
         ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
@@ -811,7 +795,6 @@ TEST_F(NDArrayCudaBasicsTests, TestRawBroadcast_3) {
 
     //cudaResult = cudaStreamSynchronize(stream); ASSERT_EQ(0, cudaResult);
     //z.syncToHost();
-    z.printBuffer("Result with Broadcast3 (multiply)");
     // verify results
     for (int e = 0; e < z.lengthOf(); e++)
         ASSERT_NEAR(exp.e<double>(e), z.e<double>(e), 1e-5);
@@ -842,11 +825,8 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_1) {
     //res = cudaMalloc(reinterpret_cast<void **>(&devShapePtrX), shape::shapeInfoByteLength(x.shapeInfo()));
     //ASSERT_EQ(0, res);
     //x.applyPairwiseTransform(pairwise::Multiply, &y, &z, nullptr);
-    //x.printBuffer("23X = ");
-    //y.printBuffer("23Y = ");
     x *= y;
     //x.syncToHost();
-    x.printBuffer("54Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -995,7 +975,6 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastRaw_1) {
     // allocate required amount of global device memory and copy host data to it
     //cudaResult = allocateDeviceMem(*pLc, devicePtrs, hostData);	ASSERT_EQ(0, cudaResult);
     for(size_t i = 0; i < devicePtrs.size(); ++i) {
-        nd4j_printf("Allocation of %i bytes with device\n", hostData[i].second)
         cudaResult = cudaMalloc(&devicePtrs[i], hostData[i].second); //if(cudaResult != 0) return cudaResult;
         ASSERT_EQ(cudaResult, 0);
         cudaMemcpy(devicePtrs[i], hostData[i].first, hostData[i].second, cudaMemcpyHostToDevice);
@@ -1047,7 +1026,6 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply) {
     //x.printBuffer("23X = ");
     //y.printBuffer("23Y = ");
     x *= y;
-    x.printBuffer("55Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -1082,7 +1060,6 @@ TEST_F(NDArrayCudaBasicsTests, TestBroadcastMultiply_2) {
     //y.printBuffer("23Y = ");
     //void NDArray::applyTrueBroadcast(nd4j::BroadcastOpsTuple op, const NDArray* other, NDArray* target, const bool checkTargetShape, ExtraArguments *extraArgs)
     x.applyTrueBroadcast(BroadcastOpsTuple::Multiply(), &y, &exp);
-    exp.printBuffer("56Result out");
 
     //
     // cudaFree(devBufferPtrX);
@@ -1111,8 +1088,6 @@ TEST_F(NDArrayCudaBasicsTests, TestReduceSum_1) {
     ASSERT_EQ(0, res);
     y.syncToHost();
 
-    x.printBuffer("X = ");
-    y.printBuffer("Y = ");
     ASSERT_NEAR(y.e<double>(0), 15, 1e-5);
 }
 
@@ -1120,7 +1095,6 @@ TEST_F(NDArrayCudaBasicsTests, TestReduceSum_1) {
 TEST_F(NDArrayCudaBasicsTests, TestDup1) {
 
     NDArray array('c', {2,3}, {1,2,3,4,5,6});
-    array.printBuffer("Array at start");
     auto arrC = array.dup('c');
     auto arrF = array.dup('f');
     // arrC->printBuffer("arrC");
@@ -1498,22 +1472,18 @@ TEST_F(NDArrayCudaBasicsTests, EqualityTest1) {
             arrayA->p(i, k, (float) i);
         }
     }
-    arrayA->printBuffer("arrayA is ");
+
     for (int i = 0; i < arrayB->rows(); i++) {
         for (int k = 0; k < arrayB->columns(); k++) {
             arrayB->p(i, k, (float) i);
         }
     }
-    arrayB->printBuffer("arrayB is ");
 
     for (int i = 0; i < arrayC->rows(); i++) {
         for (int k = 0; k < arrayC->columns(); k++) {
             arrayC->p(i, k, (float) i+1);
         }
     }
-    arrayC->printBuffer("arrayC is ");
-
-
 
     ASSERT_TRUE(arrayA->equalsTo(arrayB, 1e-5));
 
@@ -1920,8 +1890,6 @@ TEST_F(NDArrayCudaBasicsTests, Tile_Test_2_2)
     auto y = x.tile({1,2,1});
     auto exp = NDArrayFactory::create<float>('f', {2, 2, 2});
     exp = 10.;
-    y.printShapeInfo("Output SHAPE");
-    y.printBuffer("Output TILE");
     ASSERT_TRUE(exp.equalsTo(y));
 }
 
@@ -1945,17 +1913,13 @@ TEST_F(NDArrayCudaBasicsTests, Operator_Plus_Test_2)
 {
     double expBuff[] = {2., 3, 3., 4., 4., 5, 5., 6., 6., 7, 7., 8.};
     NDArray a('c', {4,4}, {1.,2,3,4,5,6,7,8,9,2,3,2,1,0,4,7.}, nd4j::DataType::FLOAT32);
-    a.printBuffer();
     auto x = NDArrayFactory::create<double>('c', {3, 2, 1});
     auto y = NDArrayFactory::create<double>('c',    {1, 2});
     auto expected = NDArrayFactory::create<double>(expBuff, 'c', {3, 2, 2});
 
     x.linspace(1);
     y.linspace(1);
-    x.printBuffer("X=");
-    y.printBuffer("Y=");
     auto result = x + y;
-    result.printIndexedBuffer("Result");
 
     ASSERT_TRUE(expected.isSameShape(&result));
     ASSERT_TRUE(expected.equalsTo(&result));
@@ -2133,7 +2097,7 @@ TEST_F(NDArrayCudaBasicsTests, Test_diagonal_1) {
     for (Nd4jLong e = 0; e < exp.lengthOf(); ++e) {
         printf("VAL[%ld] = %f\n", e, diag->e<float>(e)); //, exp.e<float>(e), 1.e-5);
     }
-    diag->printIndexedBuffer("DIAGONAL");
+
     for (Nd4jLong e = 0; e < exp.lengthOf(); ++e) {
         ASSERT_NEAR(diag->e<float>(e), exp.e<float>(e), 1.e-5);
     }

@@ -42,29 +42,17 @@ void histogramFixedWidth_(const NDArray& input, const NDArray& range, NDArray& o
 
     Nd4jLong inputLength = input.lengthOf();
 
-    PRAGMA_OMP_PARALLEL_FOR
+    // FIXME: make this one parallel without CRITICAL section
     for(Nd4jLong i = 0; i < inputLength; ++i) {
-
         const T value = input.e<T>(i);
 
         if(value < secondEdge) {
-
-            PRAGMA_OMP_CRITICAL
-            {
-                output.p<Nd4jLong>(0, output.e<Nd4jLong>(0) + 1);
-            }
+            output.p<Nd4jLong>(0, output.e<Nd4jLong>(0) + 1);
         } else if(value >= lastButOneEdge) {
-            PRAGMA_OMP_CRITICAL
-            {
-                output.p<Nd4jLong>(nbins - 1, output.e<Nd4jLong>(nbins - 1) + 1);
-            }
+            output.p<Nd4jLong>(nbins - 1, output.e<Nd4jLong>(nbins - 1) + 1);
         } else {
             Nd4jLong currInd = static_cast<Nd4jLong>((value - leftEdge) / binWidth);
-
-            PRAGMA_OMP_CRITICAL
-            {
-                output.p<Nd4jLong>(currInd, output.e<Nd4jLong>(currInd) + 1);
-            }
+            output.p<Nd4jLong>(currInd, output.e<Nd4jLong>(currInd) + 1);
         }
     }
 }

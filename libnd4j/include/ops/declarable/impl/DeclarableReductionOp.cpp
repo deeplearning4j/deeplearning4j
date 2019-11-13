@@ -23,17 +23,13 @@
 #include <helpers/TAD.h>
 #include <helpers/ShapeUtils.h>
 #include <helpers/ConstantTadHelper.h>
+#include <array/DataTypeUtils.h>
 
 namespace nd4j {
     namespace ops {
         DeclarableReductionOp::DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
             //
         }
-
-        DeclarableReductionOp::~DeclarableReductionOp()  {
-            //
-        }
-
 
         nd4j::ShapeList* DeclarableReductionOp::calculateOutputShape(nd4j::ShapeList* inputShape, nd4j::graph::Context& block)  {
            // int numDims = INT_ARG(0);
@@ -55,7 +51,7 @@ namespace nd4j {
                 std::sort(dims.begin(), dims.end());
 
             // special case - output is scalar
-            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
+            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == nd4j::DataTypeUtils::max<int>())) {
                 auto newShape = ConstantShapeHelper::getInstance()->scalarShapeInfo(block.dataType());
                 return SHAPELIST(newShape);
             }

@@ -21,6 +21,7 @@
 #include <ops/declarable/helpers/scatter.h>
 #include <numeric>
 #include <helpers/ShapeUtils.h>
+#include <execution/Threads.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -34,16 +35,16 @@ void scatter(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& ind
     const Nd4jLong indLen = indices.lengthOf();
 
     if(outRank == 1) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                Nd4jLong idx = indices.e<Nd4jLong>(i);
+                NDArray out = output({idx, idx + 1});
 
-// PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
-PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(!lock) schedule(guided))
-        for(Nd4jLong i = 0; i < indLen; ++i) {
+                out.applyPairwiseTransform(op, updates.e(i), nullptr);
+            }
+        };
 
-            Nd4jLong idx = indices.e<Nd4jLong>(i);
-            NDArray out = output({idx, idx+1});
-
-            out.applyPairwiseTransform(op, updates.e(i), nullptr);
-        }
+        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : nd4j::Environment::getInstance()->maxThreads());
     }
     else {      // outRank > 1
 
@@ -54,17 +55,16 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(!lock) schedule(guided))
         std::vector<int> dimsToExcludeUpd(sizeOfDims);
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
 
-        shape::printIntArray(dimsToExcludeUpd.data(),dimsToExcludeUpd.size());
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                NDArray outSubArr = output(indices.e<Nd4jLong>(i), std::vector<int>({0}));
+                NDArray updSubArr = updates(i, dimsToExcludeUpd);
 
-// PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided)) // causes known openMP asan bug !
-PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(!lock) schedule(guided))
-        for(Nd4jLong i = 0; i < indLen; ++i) {
+                outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
+            }
+        };
 
-            NDArray outSubArr = output(indices.e<Nd4jLong>(i), std::vector<int>({0}));
-            NDArray updSubArr = updates(i, dimsToExcludeUpd);
-
-            outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
-        }
+        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : nd4j::Environment::getInstance()->maxThreads());
     }
 }
 
@@ -77,40 +77,41 @@ void scatterND(nd4j::LaunchContext  *context, pairwise::Ops op, const NDArray& i
     const Nd4jLong indLastDim = indices.sizeAt(-1);
 
     if(outRank == 1) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                Nd4jLong idx = indices.e<Nd4jLong>(i);
+                NDArray out = output({idx, idx + 1});
 
-// PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(indLen > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
-PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(!lock) schedule(guided))
-        for(Nd4jLong i = 0; i < indLen; ++i) {
+                out.applyPairwiseTransform(op, updates.e(i), nullptr);
+            }
+        };
 
-            Nd4jLong idx = indices.e<Nd4jLong>(i);
-            NDArray out = output({idx, idx+1});
-
-            out.applyPairwiseTransform(op, updates.e(i), nullptr);
-        }
+        samediff::Threads::parallel_tad(func, 0, indLen, 1, lock ? 1 : nd4j::Environment::getInstance()->maxThreads());
     }
     else {
-
         std::vector<int> dimsToExcludeInd = ShapeUtils::evalDimsToExclude(indRank, {indRank-1});
         std::vector<int> dimsToExcludeUpd(indRank - 1);
         std::iota(dimsToExcludeUpd.begin(), dimsToExcludeUpd.end(), 0);
-        std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
 
-// PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(indLen/indLastDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided) firstprivate(idxRangeOut))
-PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(!lock) schedule(guided) firstprivate(idxRangeOut))
-        for(Nd4jLong i = 0; i < indLen/indLastDim; ++i) {
+        auto func = PRAGMA_THREADS_FOR {
+            std::vector<Nd4jLong> idxRangeOut(2*outRank, 0);
 
-            NDArray indSubArr = indices(i, dimsToExcludeInd);
+            for (auto i = start; i < stop; i += increment) {
+                NDArray indSubArr = indices(i, dimsToExcludeInd);
 
-            for(Nd4jLong j = 0; j < indLastDim; ++j) {
-                idxRangeOut[2*j] = indSubArr.e<Nd4jLong>(j);
-                idxRangeOut[2*j + 1] = idxRangeOut[2*j] + 1;
+                for (Nd4jLong j = 0; j < indLastDim; ++j) {
+                    idxRangeOut[2 * j] = indSubArr.e<Nd4jLong>(j);
+                    idxRangeOut[2 * j + 1] = idxRangeOut[2 * j] + 1;
+                }
+
+                NDArray outSubArr = output(idxRangeOut);
+                NDArray updSubArr = updates(i, dimsToExcludeUpd);
+
+                outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
             }
+        };
 
-            NDArray outSubArr = output(idxRangeOut);
-            NDArray updSubArr = updates(i, dimsToExcludeUpd);
-
-            outSubArr.applyPairwiseTransform(op, updSubArr, nullptr);
-        }
+        samediff::Threads::parallel_tad(func, 0, indLen / indLastDim, 1, lock ? 1 : nd4j::Environment::getInstance()->maxThreads());
     }
 }
 
@@ -125,20 +126,24 @@ void scatterForLoss(nd4j::LaunchContext  *context, const NDArray& indices, NDArr
     std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(updates.rankOf(), {-1});
 
     if(!calcGrad) {
-PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided))
-        for(Nd4jLong i = 0; i < indicesLen; ++i) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                auto subArr = updates(i, dimsToExclude);
+                output.p(i, subArr.e(indices.e<Nd4jLong>(i)));
+            }
+        };
 
-            auto subArr = updates(i, dimsToExclude);
-            output.p(i, subArr.e(indices.e<Nd4jLong>(i)));
-        }
+        samediff::Threads::parallel_for(func, 0, indicesLen);
     } else {
-PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided))
-		for(Nd4jLong i = 0; i < indicesLen; ++i) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                auto subArr = updates(i, dimsToExclude);
+                auto ind = indices.e<Nd4jLong>(i);
+                subArr.p(ind, subArr.e(ind) - 1.);
+            }
+        };
 
-            auto subArr = updates(i, dimsToExclude);
-            auto ind = indices.e<Nd4jLong>(i);
-            subArr.p(ind, subArr.e(ind) - 1.);
-        }
+        samediff::Threads::parallel_for(func, 0, indicesLen);
     }
 }
 

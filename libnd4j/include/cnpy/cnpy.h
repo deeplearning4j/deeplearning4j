@@ -97,10 +97,10 @@ namespace cnpy {
      * @param t
      * @return
      */
-    char mapType(const std::type_info &t);
+    ND4J_EXPORT char mapType(const std::type_info &t);
 
     template <typename T>
-    char mapType();
+    ND4J_EXPORT char mapType();
 
     /**
      *
@@ -111,7 +111,7 @@ namespace cnpy {
      * @return
      */
     template<typename T>
-    std::vector<char> createNpyHeader(const void *data,
+    ND4J_EXPORT std::vector<char> createNpyHeader(const void *data,
                                       const unsigned int *shape,
                                       const unsigned int ndims,
                                       unsigned int wordSize = 4);
@@ -126,7 +126,7 @@ namespace cnpy {
      * @param ndims
      * @param fortranOrder
      */
-    void parseNpyHeader(FILE *fp,
+    ND4J_EXPORT void parseNpyHeader(FILE *fp,
                         unsigned int &wordSize,
                         unsigned int *&shape,
                         unsigned int &ndims,
@@ -143,7 +143,7 @@ namespace cnpy {
     * @param ndims
     * @param fortran_order
     */
-    void parseNpyHeaderPointer(
+    ND4J_EXPORT void parseNpyHeaderPointer(
             const char *header,
             unsigned int& word_size,
             unsigned int*& shape,
@@ -156,7 +156,7 @@ namespace cnpy {
      * @param global_header_size
      * @param global_header_offset
      */
-    void parseZipFooter(FILE *fp,
+    ND4J_EXPORT void parseZipFooter(FILE *fp,
                         unsigned short &nrecs,
                         unsigned int &global_header_size,
                         unsigned int &global_header_offset);
@@ -167,14 +167,14 @@ namespace cnpy {
      * @param varname
      * @return
      */
-    NpyArray npzLoad(std::string fname, std::string varname);
+    ND4J_EXPORT NpyArray npzLoad(std::string fname, std::string varname);
 
     /**
      *
      * @param fname
      * @return
      */
-    NpyArray npyLoad(std::string fname);
+    ND4J_EXPORT NpyArray npyLoad(std::string fname);
 
     /**
     * Parse the numpy header from
@@ -187,7 +187,7 @@ namespace cnpy {
     * @param ndims
     * @param fortranOrder
     */
-    void parseNpyHeaderStr(std::string header,
+    ND4J_EXPORT void parseNpyHeaderStr(std::string header,
                            unsigned int &wordSize,
                            unsigned int *&shape,
                            unsigned int &ndims,
@@ -199,14 +199,14 @@ namespace cnpy {
      * @param fp
      * @return
      */
-    int * shapeFromFile(FILE *fp);
+    ND4J_EXPORT int* shapeFromFile(FILE *fp);
 
     /**
      *
      * @param data
      * @return
      */
-    int * shapeFromPointer(char *data);
+    ND4J_EXPORT int* shapeFromPointer(char *data);
 
     /**
      * Load the numpy array from the given file.
@@ -250,7 +250,7 @@ namespace cnpy {
 * @param ndims
 * @param fortran_order
 */
-    void parseNpyHeader(std::string header,
+    ND4J_EXPORT void parseNpyHeader(std::string header,
                         unsigned int &word_size,
                         unsigned int *&shape,
                         unsigned int &ndims,
@@ -273,7 +273,7 @@ namespace cnpy {
 
 
     template<typename T>
-    void npy_save(std::string fname, const T* data, const unsigned int* shape, const unsigned int ndims, std::string mode = "w");
+    ND4J_EXPORT void npy_save(std::string fname, const T* data, const unsigned int* shape, const unsigned int ndims, std::string mode = "w");
 
 }
 
@@ -284,8 +284,8 @@ namespace cnpy {
      * @param rhs
      * @return
      */
-template<typename T>
-std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs);
+    template<typename T>
+    ND4J_EXPORT std::vector<char>& operator+=(std::vector<char>& lhs, const T rhs);
 
 
 #endif

@@ -644,7 +644,6 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
 
             // apply Fisher-Yates shuffle
             if(isInplace) {
-                PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->elementwiseThreshold())
                 for(int i = firstDim - 1; i > 0; --i) {
                     int r = rng.relativeInt(i) % i;
 
@@ -658,7 +657,7 @@ void clipByNormBP(nd4j::LaunchContext* context, const NDArray& input, const NDAr
                 std::vector<int> indices(firstDim);
                 std::iota(indices.begin(), indices.end(), 0);
                 bool isZeroShuffled = false;
-                PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
+
                 for(int i = firstDim - 1; i > 0; --i) {
                     int r = rng.relativeInt(i) % i;
                     subArrsListOut->at(i)->assign(subArrsListIn->at(indices[r]));

@@ -191,7 +191,8 @@ TEST_F(NativeOpsTests, ExecBroadcast_2) {
 #ifdef __CUDABLAS__
 printf("Unsupported for cuda now.\n");
 #else
-    auto dimension = NDArrayFactory::create<int>('c', {1}, {(int)0});
+    int dimd = 0;
+    auto dimension = NDArrayFactory::create<int>('c', {1}, {dimd});
 
     ::execBroadcastBool(nullptr,
         broadcast::EqualTo,
@@ -525,8 +526,8 @@ TEST_F(NativeOpsTests, Reduce3Test_1) {
                             y.specialBuffer(), y.specialShapeInfo(),
                             exp.buffer(), exp.shapeInfo(),
                             exp.specialBuffer(), exp.specialShapeInfo());
-//    x.printIndexedBuffer("Input");
-//    exp.printIndexedBuffer("Reduce3 Dot");
+    //z.printIndexedBuffer("Z");
+    //exp.printIndexedBuffer("Reduce3 Dot");
     ASSERT_TRUE(exp.equalsTo(z));
 }
 

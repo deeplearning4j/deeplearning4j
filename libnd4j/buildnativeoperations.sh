@@ -53,6 +53,7 @@ CLEAN="false"
 MINIFIER="false"
 TESTS="false"
 VERBOSE="false"
+VERBOSE_ARG="VERBOSE=1"
 HELPER=
 NAME=
 while [[ $# > 0 ]]
@@ -291,38 +292,37 @@ case "$OS" in
 
     macosx*)
     # Do something under Mac OS X platform
-    if [ "$CHIP" == "cuda" ]; then
+    #if [ "$CHIP" == "cuda" ]; then
         export CC=clang
         export CXX=clang++
-        PARALLEL="false"
-    else
-        export CC="$(ls -1 /usr/local/bin/gcc-? | head -n 1)"
-        export CXX="$(ls -1 /usr/local/bin/g++-? | head -n 1)"
         PARALLEL="true"
-    fi
+    #else
+    #    export CC="$(ls -1 /usr/local/bin/gcc-? | head -n 1)"
+    #    export CXX="$(ls -1 /usr/local/bin/g++-? | head -n 1)"
+    #    PARALLEL="true"
+    #fi
     export CMAKE_COMMAND="$CMAKE_COMMAND -DCMAKE_MACOSX_RPATH=ON -DAPPLE_BUILD=true"
     ;;
 
     windows*)
-    # Do something under Windows NT platform
-    if [ "$CHIP" == "cuda" ]; then
+      # Do something under Windows NT platform
+      if [ "$CHIP" == "cuda" ]; then
         export CMAKE_COMMAND="cmake -G \"Ninja\""
         export MAKE_COMMAND="ninja"
         export CC="cl.exe"
         export CXX="cl.exe"
         PARALLEL="true"
-    else
+        VERBOSE_ARG="-v"
+      else
         export CMAKE_COMMAND="cmake -G \"MSYS Makefiles\""
         export MAKE_COMMAND="make"
-
-        # Sam, do we really need this?
         export CC=/mingw64/bin/gcc
         export CXX=/mingw64/bin/g++
         PARALLEL="true"
+      fi
 
-    fi
-    # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
-    if [ -z "${VCINSTALLDIR:-}" ]; then
+      # Try some defaults for Visual Studio 2013 if user has not run vcvarsall.bat or something
+      if [ -z "${VCINSTALLDIR:-}" ]; then
         export VisualStudioVersion=12.0
         export VSINSTALLDIR="C:\\Program Files (x86)\\Microsoft Visual Studio $VisualStudioVersion"
         export VCINSTALLDIR="$VSINSTALLDIR\\VC"
@@ -332,10 +332,10 @@ case "$OS" in
         export LIB="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\lib\\winv6.3\\um\\x64"
         export LIBPATH="$VCINSTALLDIR\\LIB\\amd64;$WindowsSdkDir\\References\\CommonConfiguration\\Neutral"
         export PATH="$PATH:$VCINSTALLDIR\\BIN\\amd64:$WindowsSdkDir\\bin\\x64:$WindowsSdkDir\\bin\\x86"
-    fi
-    # Make sure we are using 64-bit MinGW-w64
-    export PATH=/mingw64/bin/:$PATH
-    # export GENERATOR="MSYS Makefiles"
+      fi
+      # Make sure we are using 64-bit MinGW-w64
+      export PATH=/mingw64/bin/:/mingw64/lib:$PATH
+      # export GENERATOR="MSYS Makefiles"
     ;;
 esac
 
@@ -534,6 +534,6 @@ if [ "$PARALLEL" == "true" ]; then
     MAKE_ARGUMENTS="$MAKE_ARGUMENTS -j $MAKEJ"
 fi
 if [ "$VERBOSE" == "true" ]; then
-    MAKE_ARGUMENTS="$MAKE_ARGUMENTS VERBOSE=1"
+    MAKE_ARGUMENTS="$MAKE_ARGUMENTS $VERBOSE_ARG"
 fi
 eval $MAKE_COMMAND $MAKE_ARGUMENTS && cd ../../..

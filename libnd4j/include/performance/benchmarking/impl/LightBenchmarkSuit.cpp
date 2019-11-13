@@ -21,14 +21,14 @@
 #include <ops/declarable/CustomOperations.h>
 #include "performance/benchmarking/LightBenchmarkSuit.h"
 
-#ifdef _RELEASE
-#define WARMUP 3
-#define NUM_ITER 10
+#ifdef RELEASE_BUILD
+#define WARMUP 5
+#define NUM_ITER 100
 
 #else
 
-#define WARMUP 0
-#define NUM_ITER 1
+#define WARMUP 5
+#define NUM_ITER 100
 
 #endif
 
@@ -592,7 +592,7 @@ namespace nd4j {
     }
 
     std::string LightBenchmarkSuit::runSuit() {
-#ifdef _RELEASE
+#ifdef RELEASE_BUILD
         std::vector<nd4j::DataType> dtypes({nd4j::DataType::FLOAT32, nd4j::DataType::HALF});
 #else
         std::vector<nd4j::DataType> dtypes({nd4j::DataType::FLOAT32});
@@ -609,7 +609,7 @@ namespace nd4j {
 
             nd4j_printf("Running LightBenchmarkSuite.pairwiseBenchmark [%s]\n", DataTypeUtils::asString(t).c_str());
             BUILD_SINGLE_SELECTOR(t, result += pairwiseBenchmark, (), LIBND4J_TYPES);
-
+/*
             nd4j_printf("Running LightBenchmarkSuite.reduceFullBenchmark [%s]\n", DataTypeUtils::asString(t).c_str());
             BUILD_SINGLE_SELECTOR(t, result += reduceFullBenchmark, (), LIBND4J_TYPES);
 
@@ -627,12 +627,13 @@ namespace nd4j {
 
             nd4j_printf("Running LightBenchmarkSuite.lstmBenchmark [%s]\n", DataTypeUtils::asString(t).c_str());
             BUILD_SINGLE_SELECTOR(t, result += lstmBenchmark, (), LIBND4J_TYPES);
+            */
         }
 
         nd4j_printf("Running LightBenchmarkSuite.broadcast2d\n", "");
-        result += broadcast2d();
+        //result += broadcast2d();
         nd4j_printf("Running LightBenchmarkSuite.mismatchedOrderAssign\n", "");
-        result += mismatchedOrderAssign();
+        //result += mismatchedOrderAssign();
 
         return result;
     }

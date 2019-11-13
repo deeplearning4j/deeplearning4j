@@ -22,6 +22,7 @@
 #include <types/float16.h>
 #include <ops/declarable/helpers/batched_gemm.h>
 #include <helpers/BlasHelper.h>
+#include <execution/Threads.h>
 
 
 namespace nd4j    {
@@ -92,25 +93,28 @@ void bgemm_(const std::vector<NDArray*>& vA, const std::vector<NDArray*>& vB, st
 
         int vaSize = vA.size();
 
-        PRAGMA_OMP_PARALLEL_FOR
-        for (int p = 0; p < vaSize; ++p) {
-            auto A = reinterpret_cast<T*>(vA.at(p)->buffer());
-            auto B = reinterpret_cast<T*>(vB.at(p)->buffer());
-            auto C = reinterpret_cast<T*>(vC.at(p)->buffer());
-            auto alpha = alphas->e<T>(p);
-            auto beta = betas->e<T>(p);
-            for (int m = 0; m < M; ++m) {
-                for (int n = 0; n < N; ++n) {
-                    T c_mnp = 0;
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto p = start; p < stop; p += increment) {
+                auto A = reinterpret_cast<T *>(vA.at(p)->buffer());
+                auto B = reinterpret_cast<T *>(vB.at(p)->buffer());
+                auto C = reinterpret_cast<T *>(vC.at(p)->buffer());
+                auto alpha = alphas->e<T>(p);
+                auto beta = betas->e<T>(p);
+                for (int m = 0; m < M; ++m) {
+                    for (int n = 0; n < N; ++n) {
+                        T c_mnp = 0;
 
-                    PRAGMA_OMP_SIMD
-                    for (int k = 0; k < K; ++k)
-                        c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] * B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)];
+                        PRAGMA_OMP_SIMD
+                        for (int k = 0; k < K; ++k)
+                            c_mnp += A[tA == CblasNoTrans ? (m + k * lda) : (m * lda + k)] * B[tB == CblasNoTrans ? (k + n * ldb) : (k * ldb + n)];
 
-                    C[m + n * ldc] = alpha * c_mnp + beta * C[m + n * ldc];
+                        C[m + n * ldc] = alpha * c_mnp + beta * C[m + n * ldc];
+                    }
                 }
             }
-        }
+        };
+
+        samediff::Threads::parallel_tad(func, 0, vaSize);
     }
 }
 

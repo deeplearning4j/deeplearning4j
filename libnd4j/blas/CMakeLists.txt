@@ -30,8 +30,8 @@ if(APPLE)
 endif()
 
 if (APPLE_BUILD)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAPPLE_BUILD=true")
-    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAPPLE_BUILD=true")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DAPPLE_BUILD=true -mmacosx-version-min=10.10")
+    set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -DAPPLE_BUILD=true -mmacosx-version-min=10.10")
 endif()
 
 if (ANDROID_BUILD)
@@ -92,11 +92,13 @@ ELSE()
     IF(${EXTENSION} MATCHES "avx512")
         message("Building AVX512 binary...")
         # we need to set flag here, that we can use hardware f16 conversion + tell that cpu features should be tracked
-        message("Current CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mmmx -msse -msse2 -msse3 -msse4.1 -msse4.2 -mavx -mavx2 -mfma -mf16c -mavx512f -mavx512vl -mavx512bw -mavx512dq  -mavx512cd -mbmi -mbmi2 -mprefetchwt1 -mclflushopt -mxsavec -mxsaves -DSD_F16C=true -DF_AVX512=true")
     endif()
 
-    set(ARCH_TUNE "-march=${ARCH} -mtune=${ARCH_TYPE}")
+    if (NOT WIN32)
+        # we don't want this definition for msvc
+        set(ARCH_TUNE "-march=${ARCH} -mtune=${ARCH_TYPE}")
+    endif()
 ENDIF()
 
 if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
@@ -109,7 +111,7 @@ elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Intel")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "MSVC")
     # using Visual Studio C++
 
-    set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /EHsc /w")
+    set( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} /EHsc ${ARCH_TUNE}")
 elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
     # using GCC
     SET( CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} ${ARCH_TUNE}")
@@ -283,8 +285,8 @@ if(CUDA_BLAS)
 
         if(WIN32)
             message("CUDA on Windows: enabling /EHsc")
-            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj")
-            SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc /bigobj")
+            SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
+            SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc /bigobj /std:c++14")
         endif()
 
 
@@ -322,7 +324,7 @@ elseif(CPU_BLAS)
     endif()
 
     if (X86_BUILD)
-        #we disable platform optimizations for certains files
+        # we disable platform optimizations for certains files for linux/macos
         set_source_files_properties(cpu/NativeOps.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
         set_source_files_properties(../include/helpers/impl/OpTracker.cpp PROPERTIES COMPILE_FLAGS "-march=x86-64 -mtune=generic")
     endif()
@@ -342,7 +344,16 @@ elseif(CPU_BLAS)
         add_library(${LIBND4J_NAME}       SHARED $<TARGET_OBJECTS:nd4jobj>)
     endif()
 
+    #if(WIN32)
+    #    message("CPU on Windows: enabling /EHsc")
+    #    SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /EHsc /bigobj /std:c++14")
+    #    SET_TARGET_PROPERTIES(${LIBND4J_NAME} PROPERTIES COMPILER_FLAGS "/EHsc /bigobj /std:c++14")
+    #endif()
+
     # we're including {MKLDNN} here in case of building from sources. in future that'll replace {MKLDNN_LIBRARIES}. same applies to BLAS
+    if (NOT BLAS_LIBRARIES)
+        set(BLAS_LIBRARIES "")
+    endif()
     target_link_libraries(${LIBND4J_NAME} ${MKLDNN} ${MKLDNN_LIBRARIES} ${OPENBLAS_LIBRARIES} ${BLAS_LIBRARIES} ${CPU_FEATURES})
 
     if ("${LIBND4J_ALL_OPS}" AND "${LIBND4J_BUILD_MINIFIER}")

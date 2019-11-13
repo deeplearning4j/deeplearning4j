@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/legacy_helpers.h>
+#include <ops/ops.h>
 #include <NDArrayFactory.h>
 #include <op_boilerplate.h>
 

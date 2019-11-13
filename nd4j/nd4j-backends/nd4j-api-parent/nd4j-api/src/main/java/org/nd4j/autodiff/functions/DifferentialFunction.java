@@ -509,7 +509,7 @@ public abstract class DifferentialFunction {
      * @return the arguments for a given function
      */
     public  SDVariable[] args() {
-        return sameDiff.getInputVariablesForOp(this);
+        return sameDiff == null ? null : sameDiff.getInputVariablesForOp(this);
     }
 
     /**

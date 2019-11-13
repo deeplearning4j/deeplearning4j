@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/hashcode.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
     namespace ops {
@@ -40,18 +41,20 @@ namespace nd4j {
                 auto tempResult = tempBufferB;
 
                 // we divide array into 32 element chunks, and store intermediate results once
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (int b = 0; b < numBlocks; b++) {
-                    auto blockBuffer = buffer + b * numBlocks;
+                auto func = PRAGMA_THREADS_FOR {
+                    for (auto b = 0; b < stop; b += increment) {
+                        auto blockBuffer = buffer + b * numBlocks;
 
-                    Nd4jLong r = 1;
-                    for (int e = 0; e < blockSize && e + (b * numBlocks) < length; e++) {
-                        auto v = longBytes<T>(blockBuffer[e]);
-                        r = 31 * r + v;
+                        Nd4jLong r = 1;
+                        for (int e = 0; e < blockSize && e + (b * numBlocks) < length; e++) {
+                            auto v = longBytes<T>(blockBuffer[e]);
+                            r = 31 * r + v;
+                        }
+
+                        tempBuffer[b] = r;
                     }
-
-                    tempBuffer[b] = r;
-                }
+                };
+                samediff::Threads::parallel_tad(func, 0, numBlocks);
 
                 // we replace pointer with intermediate one, and repeat only one chunk left
                 int iterationCount = 0;
@@ -60,18 +63,20 @@ namespace nd4j {
                     numBlocks = lastLength / blockSize + ((lastLength % blockSize == 0) ? 0 : 1);
 
 
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD
-                    for (int b = 0; b < numBlocks; b++) {
-                        auto blockBuffer = tempBuffer + b * numBlocks;
+                    auto func2 = PRAGMA_THREADS_FOR {
+                        for (auto b = start; b < stop; b += increment) {
+                            auto blockBuffer = tempBuffer + b * numBlocks;
 
-                        Nd4jLong r = 1;
-                        for (int e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
-                            auto v = longBytes<T>(blockBuffer[e]);
-                            r = 31 * r + v;
+                            Nd4jLong r = 1;
+                            for (int e = 0; e < blockSize && e + (b * numBlocks) < lastLength; e++) {
+                                auto v = longBytes<T>(blockBuffer[e]);
+                                r = 31 * r + v;
+                            }
+
+                            tempResult[b] = r;
                         }
-
-                        tempResult[b] = r;
-                    }
+                    };
+                    samediff::Threads::parallel_tad(func2, 0, numBlocks);
 
 
                     iterationCount++;

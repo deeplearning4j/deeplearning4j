@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/helpers.h>
 #include <ops/declarable/helpers/hamming.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
     namespace ops {
@@ -46,7 +47,7 @@ namespace nd4j {
 
                 Nd4jLong distance = 0;
                 auto lengthOf = x.lengthOf();
-                const int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
+                int maxThreads = nd4j::math::nd4j_min<int>(256, omp_get_max_threads());
                 Nd4jLong intermediate[256];
 
                 // nullify temp values
@@ -54,30 +55,38 @@ namespace nd4j {
                     intermediate[e] = 0;
 
                 if (xEws == 1 && yEws == 1 && x.ordering() == y.ordering()) {
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < lengthOf; e++) {
-                        auto _x = static_cast<unsigned long long>(xBuffer[e]);
-                        auto _y = static_cast<unsigned long long>(yBuffer[e]);
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = start; e < stop; e += increment) {
+                            auto _x = static_cast<unsigned long long>(xBuffer[e]);
+                            auto _y = static_cast<unsigned long long>(yBuffer[e]);
 
-                        intermediate[omp_get_thread_num()] += hamming_distance(_x, _y);
-                    }
+                            intermediate[thread_id] += hamming_distance(_x, _y);
+                        }
+                    };
 
+                    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 } else if (xEws > 1 && yEws > 1 && x.ordering() == y.ordering()) {
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < lengthOf; e++) {
-                        auto _x = static_cast<unsigned long long>(xBuffer[e * xEws]);
-                        auto _y = static_cast<unsigned long long>(yBuffer[e * yEws]);
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = start; e < stop; e += increment) {
+                            auto _x = static_cast<unsigned long long>(xBuffer[e * xEws]);
+                            auto _y = static_cast<unsigned long long>(yBuffer[e * yEws]);
 
-                        intermediate[omp_get_thread_num()] += hamming_distance(_x, _y);
-                    }
+                            intermediate[thread_id] += hamming_distance(_x, _y);
+                        }
+                    };
+
+                    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 } else {
-                    PRAGMA_OMP_PARALLEL_FOR
-                    for (Nd4jLong e = 0; e < lengthOf; e++) {
-                        auto _x = static_cast<unsigned long long>(x.e<Nd4jLong>(e));
-                        auto _y = static_cast<unsigned long long>(y.e<Nd4jLong>(e));
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto e = start; e < stop; e += increment) {
+                            auto _x = static_cast<unsigned long long>(x.e<Nd4jLong>(e));
+                            auto _y = static_cast<unsigned long long>(y.e<Nd4jLong>(e));
 
-                        intermediate[omp_get_thread_num()] += hamming_distance(_x, _y);
-                    }
+                            intermediate[thread_id] += hamming_distance(_x, _y);
+                        }
+                    };
+
+                    maxThreads = samediff::Threads::parallel_for(func, 0, lengthOf);
                 }
 
                 // accumulate intermediate variables into output array

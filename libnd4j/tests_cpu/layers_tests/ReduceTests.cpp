@@ -77,7 +77,7 @@ TEST_F(EuclideanDistanceTest,Test1) {
                                              result,
                                              tadShapeBuffer,
                                              dimension,
-                                             dimensionLength);
+                                             dimensionLength, 0, 2);
 
     ASSERT_EQ(result[1],result[0]);
 }
@@ -107,7 +107,7 @@ TEST_F(StdTest,MultiDimTest) {
             dimensionsForStd,
             dimensionLength,
             tad->tadOnlyShapeInfo,
-            tad->tadOffsets);
+            tad->tadOffsets, 0, shape::length(resultShapeInfo));
 
     // for(int i = 0; i < shape::length(resultShapeInfo); i++)
         // printf("%f\n",result[i]);
@@ -145,7 +145,7 @@ TEST_F(ReduceTest,MatrixTest) {
             dimension,
             dimensionLength,
             tad->tadOnlyShapeInfo,
-            tad->tadOffsets);
+            tad->tadOffsets, 0, tad->numTads);
 
     // for(int i = 0; i < shape::length(resultShapeInfo); i++)
     //     printf("%f\n",result[i]);

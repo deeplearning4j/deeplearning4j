@@ -24,6 +24,8 @@
 #include <string>
 #include "Environment.h"
 #include <helpers/StringUtils.h>
+#include <thread>
+#include <helpers/logger.h>
 
 #ifdef _OPENMP
 
@@ -49,6 +51,7 @@ namespace nd4j {
         _precBoost.store(false);
         _leaks.store(false);
         _dataType.store(nd4j::DataType::FLOAT32);
+        _maxThreads = std::thread::hardware_concurrency();
 
 #ifndef ANDROID
         const char* omp_threads = std::getenv("OMP_NUM_THREADS");
@@ -86,9 +89,7 @@ namespace nd4j {
 	    cudaSetDevice(0);
 	    delete[] devProperties;
 #else
-#ifdef _OPENMP
-        omp_set_nested(1);
-#endif
+
 #endif
     }
 

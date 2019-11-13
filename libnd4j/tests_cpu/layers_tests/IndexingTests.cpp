@@ -58,7 +58,6 @@ TEST_F(IndexingTests, StridedSlice_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Output");
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -379,8 +378,6 @@ TEST_F(IndexingTests, Test_StridedSlice_1) {
 
     auto z = result->at(0);
 
-    z->printIndexedBuffer("Z");
-
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -423,8 +420,6 @@ TEST_F(IndexingTests, Test_StridedSlice_3) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-
-    z->printIndexedBuffer("Z");
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));

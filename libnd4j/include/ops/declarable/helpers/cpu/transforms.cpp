@@ -42,11 +42,13 @@ static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const N
     const_cast<NDArray&>(input).fillAsTriangular<T>(0, diagonal, dOdI.sizeAt(-1), 'b', &dOdI);
     int dLen = dOdI.lengthOf();
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(dLen > Environment::getInstance()->elementwiseThreshold())
-    for(Nd4jLong i = 0; i < dLen; ++i) {
-        if(dOdI.t<T>(i) != static_cast<T>(0.f))
-            dOdI.t<T>(i) = static_cast<T>(1.f);
-    }
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment) {
+            if (dOdI.t<T>(i) != static_cast<T>(0.f))
+                dOdI.t<T>(i) = static_cast<T>(1.f);
+        }
+    };
+    samediff::Threads::parallel_for(func, 0, dLen);
 
     // FIXME: !!!
     gradI.assign(dOdI * gradO);                          // chain rule: dLoss/dI = dO/dI * dLoss/dO
@@ -59,14 +61,14 @@ static void triuBP_(nd4j::LaunchContext * context, const NDArray& input, const N
 //////////////////////////////////////////////////////////////////////////
 template <typename T>
 static void trace_(const NDArray& input, NDArray& output) {
-
     const int inRank = input.rankOf();
-
     auto setOfSubArrs = input.allTensorsAlongDimension({inRank-2, inRank-1});
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(setOfSubArrs->size() > Environment::getInstance()->tadThreshold())
-    for(int i = 0; i < setOfSubArrs->size(); ++i)
-        output.p(i, setOfSubArrs->at(i)->getTrace());
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment)
+            output.p(i, setOfSubArrs->at(i)->getTrace());
+    };
+    samediff::Threads::parallel_for(func, 0, setOfSubArrs->size());
 
     delete setOfSubArrs;
 }
@@ -107,7 +109,8 @@ void randomShuffle_(NDArray& input, NDArray& output, nd4j::graph::RandomGenerato
             std::vector<int> indices(firstDim);
             std::iota(indices.begin(), indices.end(), 0);
             output.p<T>(Nd4jLong(0), input.e<T>(0));
-            PRAGMA_OMP_PARALLEL_FOR_IF((firstDim-1) > Environment::getInstance()->tadThreshold())
+
+            // FIXME: parallelism!!
             for(int i = firstDim-1; i > 0; --i) {
                 int r = rng.relativeInt(i) % i;
                 output.t<T>(i) = input.t<T>(indices[r]);
@@ -184,54 +187,61 @@ void pad_(const int mode, const NDArray& input, const NDArray& paddings, NDArray
 
     const auto zLen = output.lengthOf();
 
-    std::vector<Nd4jLong> coords(rank);  // we use the same coordinates storage both for input and output since their ranks are the same
-
     if(mode == 0) { // CONSTANT case
 
         const T padVal = padValue.e<T>(0);
 
-        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
-        for(uint i = 0; i < zLen; ++i) {
+        auto func = PRAGMA_THREADS_FOR {
+            Nd4jLong coords[MAX_RANK];
+            for (auto i = start; i < stop; i += increment) {
+                shape::index2coords(i, output.getShapeInfo(), coords);
+                const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
 
-            shape::index2coords(i, output.getShapeInfo(), coords.data());
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
+                bool within = true;
+                for (int j = rankMinusOne; j >= 0; --j) {
+                    if (xShape[j] == zShape[j]) continue;
+                    const auto left = paddings.e<Nd4jLong>(j, 0);
+                    if (coords[j] < left || coords[j] >= left + xShape[j]) {
+                        within = false;
+                        break;
+                    }
+                    else { coords[j] = coords[j] - left; }
+                }
 
-            bool within = true;
-            for(int j = rankMinusOne; j >= 0; --j) {
-                if(xShape[j] == zShape[j]) continue;
-                const auto left = paddings.e<Nd4jLong>(j, 0);
-                if(coords[j] < left || coords[j] >= left + xShape[j]) {within = false; break;}
-                else                                                  {coords[j] = coords[j] - left;}
+                if (within)
+                    z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords)];
+                else
+                    z[zOffset] = padVal;
             }
+        };
 
-            if(within)
-                z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords.data())];
-            else
-                z[zOffset] = padVal;
-        }
+        samediff::Threads::parallel_tad(func, 0, zLen);
     }
     else {  // REFLECT and SYMMETRIC cases
 
         const Nd4jLong shift1 = mode == 1 ? 0 : 1;         // REFLECT : SYMMETRIC
         const Nd4jLong shift2 = mode == 1 ? 2 : 1;         // REFLECT : SYMMETRIC
 
-        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
-        for(uint i = 0; i < zLen; ++i) {
+        auto func = PRAGMA_THREADS_FOR {
+            Nd4jLong coords[MAX_RANK];
+            for (auto i = start; i < stop; i += increment) {
+                shape::index2coords(i, output.getShapeInfo(), coords);
+                const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
 
-            shape::index2coords(i, output.getShapeInfo(), coords.data());
-            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
+                for (int j = rankMinusOne; j >= 0; --j) {
 
-            for(int j = rankMinusOne; j >= 0; --j) {
+                    if (xShape[j] == zShape[j]) continue;
+                    coords[j] = coords[j] - paddings.e<Nd4jLong>(j, 0);                             // are ready to fill middle (within input dimension range)
+                    if (coords[j] < 0) coords[j] = -coords[j] - shift1;                // means fill from left
+                    else if (coords[j] >= xShape[j]) coords[j] = 2 * xShape[j] - coords[j] - shift2; // means fill from right
+                }
 
-                if(xShape[j] == zShape[j]) continue;
-                coords[j] = coords[j] - paddings.e<Nd4jLong>(j, 0);                             // are ready to fill middle (within input dimension range)
-                if(coords[j] < 0)               coords[j] = -coords[j] - shift1;                // means fill from left
-                else if(coords[j] >= xShape[j]) coords[j] = 2 * xShape[j] - coords[j] - shift2; // means fill from right
+                const auto xOffset = shape::getOffset(input.getShapeInfo(), coords);
+                z[zOffset] = x[xOffset];
             }
+        };
 
-            const auto xOffset = shape::getOffset(input.getShapeInfo(), coords.data());
-            z[zOffset] = x[xOffset];
-        }
+        samediff::Threads::parallel_tad(func, 0, zLen);
     }
 }
 
@@ -558,50 +568,49 @@ static void gatherND_(NDArray& input, NDArray& indices, NDArray& output) {
 
     const int yLastDim = indices.sizeAt(-1);
 
-    std::vector<Nd4jLong> coords(maxRank);
+    auto func = PRAGMA_THREADS_FOR {
+        Nd4jLong coords[MAX_RANK * 3];
+        for (auto i = start; i < stop; i += increment) {
+            Nd4jLong *zCoordStart, *xCoordStart;
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
-    for (Nd4jLong i = 0; i < zLen; ++i) {
+            if (yLastDim == xRank) {
+                zCoordStart = coords;
+                xCoordStart = coords;
+            } else if (zRank >= xRank) {
+                zCoordStart = coords;
+                xCoordStart = coords + zRank - xRank;
+            } else {
+                zCoordStart = coords + xRank - zRank;
+                xCoordStart = coords;
+            }
 
-        Nd4jLong *zCoordStart, *xCoordStart;
+            shape::index2coords(i, output.getShapeInfo(), zCoordStart);
 
-        if(yLastDim == xRank) {
-            zCoordStart = coords.data();
-            xCoordStart = coords.data();
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoordStart);
+
+            // last y coordinate
+            uint coordToRestore;
+            if (yLastDim != xRank)
+                coordToRestore = static_cast<uint>(zCoordStart[yRank - 1]);
+
+            zCoordStart[yRank - 1] = 0;
+            const auto yOffset = shape::getOffset(indices.getShapeInfo(), zCoordStart);
+
+            //restore z coordinate
+            if (yLastDim != xRank)
+                zCoordStart[yRank - 1] = coordToRestore;
+
+            // construct coordinates for x
+            for (uint j = 0; j < yLastDim; ++j)
+                xCoordStart[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];   // last stride
+
+            const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoordStart);
+
+            z[zOffset] = x[xOffset];
         }
-        else if(zRank >= xRank) {
-            zCoordStart = coords.data();
-            xCoordStart = coords.data() + zRank - xRank;
-        }
-        else {
-            zCoordStart = coords.data() + xRank - zRank;
-            xCoordStart = coords.data();
-        }
+    };
 
-        shape::index2coords(i, output.getShapeInfo(), zCoordStart);
-
-        const auto zOffset = shape::getOffset(output.getShapeInfo(), zCoordStart);
-
-        // last y coordinate
-        uint coordToRestore;
-        if(yLastDim != xRank)
-            coordToRestore = static_cast<uint>(zCoordStart[yRank - 1]);
-
-        zCoordStart[yRank - 1] = 0;
-        const auto yOffset = shape::getOffset(indices.getShapeInfo(), zCoordStart);
-
-        //restore z coordinate
-        if(yLastDim != xRank)
-            zCoordStart[yRank - 1] = coordToRestore;
-
-        // construct coordinates for x
-        for(uint j = 0; j < yLastDim; ++j)
-            xCoordStart[j] = y[yOffset + j * indices.stridesOf()[yRank - 1]];   // last stride
-
-        const auto xOffset = shape::getOffset(input.getShapeInfo(), xCoordStart);
-
-        z[zOffset] = x[xOffset];
-    }
+    samediff::Threads::parallel_tad(func, 0, zLen);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -644,21 +653,28 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
         }
         else if (input->rankOf() == 1 && indices->isVector()) {
             // special case
-            PRAGMA_OMP_PARALLEL_FOR_IF(indices->lengthOf() > Environment::getInstance()->tadThreshold())
-            for (int e = 0; e < indices->lengthOf(); e++)
-                output->p(e, input->e<T>(indices->e<Nd4jLong>(e)));
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment)
+                    output->p(e, input->e<T>(indices->e<Nd4jLong>(e)));
+            };
+
+            samediff::Threads::parallel_for(func, 0, indices->lengthOf());
         }
         else {
 
             std::vector<int> dimsOut(indices->rankOf());
             std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... indices->rankOf()-1
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), dimsOut);
-            PRAGMA_OMP_PARALLEL_FOR_IF(numOfSubArrs > Environment::getInstance()->tadThreshold())
-            for(int i = 0; i < numOfSubArrs; ++i) {
-                NDArray subArrOut = (*output)(i, dimsOut);
-                NDArray subArrIn  = (*input)(indices->e<Nd4jLong>(i), {axis});
-                subArrOut.assign(subArrIn);
-            }
+
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    NDArray subArrOut = (*output)(i, dimsOut);
+                    NDArray subArrIn = (*input)(indices->e<Nd4jLong>(i), {axis});
+                    subArrOut.assign(subArrIn);
+                }
+            };
+
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     }
     else {
@@ -673,12 +689,16 @@ static void gather_(NDArray* input, const NDArray* indices, NDArray* output, con
         }
         else { // vector case
             const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(output->getShapeInfo(), {axis});
-            PRAGMA_OMP_PARALLEL_FOR_IF(numOfSubArrs > Environment::getInstance()->tadThreshold())
-            for(int i = 0; i < numOfSubArrs; ++i) {
-                NDArray subArrOut = (*output)(i, {axis});
-                NDArray subArrIn  = (*input)(intArgs[i+1], {axis});
-                subArrOut.assign(subArrIn);
-            }
+
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    NDArray subArrOut = (*output)(i, {axis});
+                    NDArray subArrIn = (*input)(intArgs[i + 1], {axis});
+                    subArrOut.assign(subArrIn);
+                }
+            };
+
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     }
 }
@@ -693,9 +713,12 @@ void eye(nd4j::LaunchContext * context, NDArray& output) {
     const int rank = output.rankOf();
     auto arrs = output.allTensorsAlongDimension({rank-2, rank-1});
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(arrs->size() > Environment::getInstance()->tadThreshold())
-    for(int i = 0; i < arrs->size(); ++i)
-        arrs->at(i)->setIdentity();
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment)
+            arrs->at(i)->setIdentity();
+    };
+
+    samediff::Threads::parallel_tad(func, 0, arrs->size());
 
     delete arrs;
 }
@@ -719,41 +742,43 @@ void scatterUpdate(nd4j::LaunchContext * context, NDArray& input, NDArray& updat
     for (; e < intArgs->size(); e++)
         indices.push_back((*intArgs)[e]);
 
-    PRAGMA_OMP_PARALLEL_FOR
-    for (Nd4jLong i = 0; i < indices.size(); ++i) {
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment) {
+            auto inSubArr = input(indices[i], dimsToExclude, true);
+            auto updSubArr = updates(i, dimsToExclude, true);
 
-        auto inSubArr  = input(indices[i], dimsToExclude, true);
-        auto updSubArr = updates(i,        dimsToExclude, true);
-
-        if (inSubArr.lengthOf() != updSubArr.lengthOf())
-            continue;
-
-        switch (opCode) {
-            case 0:
-                inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 1:
-                inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 2:
-                inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 3:
-                inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 4:
-                inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 5:
-                inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
-                break;
-            case 6:
-                inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
-                break;
-            default:
+            if (inSubArr.lengthOf() != updSubArr.lengthOf())
                 continue;
+
+            switch (opCode) {
+                case 0:
+                    inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 1:
+                    inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 2:
+                    inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 3:
+                    inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 4:
+                    inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 5:
+                    inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
+                    break;
+                case 6:
+                    inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
+                    break;
+                default:
+                    continue;
+            }
         }
-    }
+    };
+
+    samediff::Threads::parallel_tad(func, 0, indices.size());
 }
 
 
@@ -766,11 +791,14 @@ void scatterSimple(nd4j::LaunchContext * context, const int opId, NDArray& input
     switch (opId) {
 
         case 6: {   // copy
-            PRAGMA_OMP_PARALLEL_FOR_IF(len > Environment::getInstance()->elementwiseThreshold())
-            for(uint i = 0; i < len; ++i) {
-                auto inSubArr = input(i, dimensions);
-                inSubArr.p(indices.t<Nd4jLong>(i), updates.e(i));
-            }
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto inSubArr = input(i, dimensions);
+                    inSubArr.p(indices.t<Nd4jLong>(i), updates.e(i));
+                }
+            };
+
+            samediff::Threads::parallel_for(func, 0, len);
         }
             break;
 
@@ -786,70 +814,79 @@ static void mergeMaxIndex_(const std::vector<NDArray*>& inArrs, NDArray& output)
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
-    for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
-        T max = -DataTypeUtils::max<T>();
-        Nd4jLong idx = 0;
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto e = start; e < stop; e += increment) {
+            T max = -DataTypeUtils::max<T>();
+            Nd4jLong idx = 0;
 
-        for (int i = 0; i < numArgs; i++){
-
-            T v = inArrs[i]->e<T>(e);
-            if (v > max) {
-                max = v;
-                idx = i;
+            for (int i = 0; i < numArgs; i++) {
+                T v = inArrs[i]->e<T>(e);
+                if (v > max) {
+                    max = v;
+                    idx = i;
+                }
             }
+            output.p(e, idx);
         }
-        output.p(e, idx);
-    }
+    };
+
+    samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
-    void mergeMaxIndex(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), mergeMaxIndex_, (inArrs, output), LIBND4J_TYPES);
-    }
+
+void mergeMaxIndex(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    BUILD_SINGLE_SELECTOR(inArrs[0]->dataType(), mergeMaxIndex_, (inArrs, output), LIBND4J_TYPES);
+}
 
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mergeMax_(const std::vector<NDArray*>& inArrs, NDArray& output) {
-
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
-     for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
-        T max = -DataTypeUtils::max<T>();
-        for (int i = 0; i < numArgs; i++) {
-            T v = inArrs[i]->e<T>(e);
-            if (v > max)
-                max = v;
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto e = start; e < stop; e += increment) {
+            T max = -DataTypeUtils::max<T>();
+            for (int i = 0; i < numArgs; i++) {
+                T v = inArrs[i]->e<T>(e);
+                if (v > max)
+                    max = v;
+            }
+            output.p(e, max);
         }
-        output.p(e, max);
-    }
+    };
+
+    samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
-    void mergeMax(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (inArrs, output), LIBND4J_TYPES);
-    }
+
+void mergeMax(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    BUILD_SINGLE_SELECTOR(output.dataType(), mergeMax_, (inArrs, output), LIBND4J_TYPES);
+}
 
 //////////////////////////////////////////////////////////////////////////
 template<typename T>
 static void mergeAvg_(const std::vector<NDArray*>& inArrs, NDArray& output) {
-
     const Nd4jLong numArgs = inArrs.size();
     const T factor = 1.f / numArgs;
     auto x = inArrs[0];
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
-    for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
-        T sum = 0.;
-        for (int i = 0; i < numArgs; i++) {
-            T v = inArrs[i]->e<T>(e);
-            sum += v;
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto e = start; e < stop; e += increment) {
+            T sum = 0.;
+            for (int i = 0; i < numArgs; i++) {
+                T v = inArrs[i]->e<T>(e);
+                sum += v;
+            }
+            output.p<T>(e, sum * factor);
         }
-        output.p<T>(e, sum * factor);
-    }
+    };
+
+    samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
-    void mergeAvg(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
-        BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (inArrs, output), LIBND4J_TYPES);
-    }
+
+void mergeAvg(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
+    BUILD_SINGLE_SELECTOR(output.dataType(), mergeAvg_, (inArrs, output), LIBND4J_TYPES);
+}
 
 
 //////////////////////////////////////////////////////////////////////////
@@ -859,16 +896,17 @@ static void mergeAdd_(const std::vector<NDArray*>& inArrs, NDArray& output) {
     const Nd4jLong numArgs = inArrs.size();
     auto x = inArrs[0];
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(x->lengthOf() > Environment::getInstance()->elementwiseThreshold())
-    for (Nd4jLong e = 0; e < x->lengthOf(); e++) {
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto e = start; e < stop; e += increment) {
+            T sum = (T) 0.f;
+            for (int i = 0; i < numArgs; i++)
+                sum += inArrs[i]->e<T>(e);
 
-        T sum = (T) 0.f;
+            output.p(e, sum);
+        }
+    };
 
-        for (int i = 0; i < numArgs; i++)
-            sum += inArrs[i]->e<T>(e);
-
-        output.p(e, sum);
-    }
+    samediff::Threads::parallel_for(func, 0, x->lengthOf());
 }
     void mergeAdd(nd4j::LaunchContext * context, const std::vector<NDArray*>& inArrs, NDArray& output) {
         BUILD_SINGLE_SELECTOR(output.dataType(), mergeAdd_, (inArrs, output), LIBND4J_TYPES);
@@ -895,14 +933,15 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
 
             auto listOfInSubArrs = input.allTensorsAlongDimension(dimensions);
 
-            PRAGMA_OMP_PARALLEL_FOR
-            for(Nd4jLong i = 0; i < listOfInSubArrs->size(); ++i) {
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    const T iNormActual = norm2.e<T>(i);
+                    if (iNormActual > normClip)
+                        *listOfInSubArrs->at(i) *= normClip / iNormActual;
+                }
+            };
+            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs->size());
 
-                const T iNormActual = norm2.e<T>(i);
-
-                if (iNormActual > normClip)
-                    *listOfInSubArrs->at(i) *= normClip / iNormActual;
-            }
             delete listOfInSubArrs;
         }
     }
@@ -920,18 +959,19 @@ static void clipByNorm_(NDArray& input, NDArray& output, const std::vector<int>&
             auto listOfInSubArrs  = input.allTensorsAlongDimension(dimensions);
             auto listOfOutSubArrs = output.allTensorsAlongDimension(dimensions);
 
-            PRAGMA_OMP_PARALLEL_FOR
-            for(Nd4jLong i = 0; i < listOfInSubArrs->size(); ++i) {
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto inputSubArr = listOfInSubArrs->at(i);
+                    auto outputSubArr = listOfOutSubArrs->at(i);
+                    outputSubArr->assign(inputSubArr);
 
-                auto inputSubArr  = listOfInSubArrs->at(i);
-                auto outputSubArr = listOfOutSubArrs->at(i);
-                outputSubArr->assign(inputSubArr);
+                    const T iNormActual = norm2.e<T>(i);
 
-                const T iNormActual = norm2.e<T>(i);
-
-                if (iNormActual > clipNorm.e<T>(0))
-                    *outputSubArr *= clipNorm / iNormActual;
-            }
+                    if (iNormActual > clipNorm.e<T>(0))
+                        *outputSubArr *= clipNorm / iNormActual;
+                }
+            };
+            samediff::Threads::parallel_tad(func, 0, listOfInSubArrs->size());
 
             delete listOfInSubArrs;
             delete listOfOutSubArrs;
@@ -1028,31 +1068,29 @@ static void clipByNormBP_(const NDArray& input, const NDArray& gradO, NDArray& g
 
         auto cn = clipNorm.e<T>(0);
 
-        PRAGMA_OMP_PARALLEL_FOR
-        for(Nd4jLong i = 0; i < gradISubArrs->size(); ++i) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                T N = norm2.e<T>(i);
 
-            T N = norm2.e<T>(i);
+                auto gradOSubArr = gradOSubArrs->at(i);
+                auto gradISubArr = gradISubArrs->at(i);
 
-            auto gradOSubArr = gradOSubArrs->at(i);
-            auto gradISubArr = gradISubArrs->at(i);
+                if (N > cn) {
+                    auto inputSubArr = inputSubArrs->at(i);
+                    const T sumOfProd = (*inputSubArr * *gradOSubArr).reduceNumber(reduce::Sum).e<T>(0);    // reduce to scalar
+                    const T factor1 = static_cast<T>(1.f) / N;
+                    const T factor3 = factor1 / (N * N);                                            // 1 / (N*N*N)
 
-            if (N > cn) {
+                    auto lambda = LAMBDA_TT(elem1, elem2, cn, sumOfProd, factor1, factor3) {
+                        return cn * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
+                    };
 
-                auto inputSubArr = inputSubArrs->at(i);
-
-                const T sumOfProd = (*inputSubArr * *gradOSubArr).reduceNumber(reduce::Sum).e<T>(0);    // reduce to scalar
-                const T factor1 = static_cast<T>(1.f) / N;
-                const T factor3 = factor1 / (N * N) ;                                            // 1 / (N*N*N)
-
-                auto lambda = LAMBDA_TT(elem1, elem2, cn, sumOfProd, factor1, factor3) {
-                    return cn * (factor1 * elem2 - factor3 * elem1 * sumOfProd);
-                };
-
-                inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
+                    inputSubArr->applyPairwiseLambda<T>(gradOSubArr, lambda, gradISubArr);
+                } else
+                    gradISubArr->assign(gradOSubArr);
             }
-            else
-                gradISubArr->assign(gradOSubArr);
-        }
+        };
+        samediff::Threads::parallel_tad(func, 0, gradISubArrs->size());
 
         delete gradISubArrs;
         delete gradOSubArrs;
@@ -1165,34 +1203,35 @@ static void mirrorPad_(const NDArray& input, const NDArray& paddings, NDArray& o
     }
     else {
 
-        std::vector<Nd4jLong> inIdx(rank), outIdx(rank);
+        auto func = PRAGMA_THREADS_FOR {
+            Nd4jLong inIdx[MAX_RANK];
+            Nd4jLong outIdx[MAX_RANK];
+            for (auto i = start; i < stop; i += increment) {
+                shape::index2coords(i, output.getShapeInfo(), outIdx);
 
-        PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(inIdx, outIdx))
-        for(int i = 0; i < outLen; ++i) {
+                for (int j = 0; j < rank; ++j) {
+                    const Nd4jLong inLen = input.sizeAt(j);
+                    const auto leftSide = paddings.e<T>(j, 0);
+                    const auto leftSideCorrected = leftSide - reflBorder;
+                    const Nd4jLong len = 2 * (inLen - 1) + leftSide + reflBorder;
 
-            shape::index2coords(i, output.getShapeInfo(), outIdx.data());
+                    if (outIdx[j] < leftSide)                                        // left side
+                        inIdx[j] = leftSideCorrected - outIdx[j];
 
-            for(int j = 0; j < rank; ++j) {
+                    else if (outIdx[j] >= leftSide && outIdx[j] < leftSide + inLen)  // middle
+                        inIdx[j] = outIdx[j] - leftSide;
 
-                const Nd4jLong inLen         = input.sizeAt(j);
-                const auto leftSide          = paddings.e<T>(j, 0);
-                const auto leftSideCorrected = leftSide - reflBorder;
-                const Nd4jLong len           = 2*(inLen-1) + leftSide + reflBorder;
+                    else                                                            // right side
+                        inIdx[j] = len - outIdx[j];
+                }
 
-                if(outIdx[j] < leftSide)                                        // left side
-                    inIdx[j] = leftSideCorrected - outIdx[j];
-
-                else if(outIdx[j] >= leftSide && outIdx[j] < leftSide + inLen)  // middle
-                    inIdx[j] = outIdx[j] - leftSide;
-
-                else                                                            // right side
-                    inIdx[j] = len - outIdx[j];
+                auto outOffset = shape::getOffset(output.getShapeInfo(), outIdx);
+                auto inOffset = shape::getOffset(input.getShapeInfo(), inIdx);
+                reinterpret_cast<T *>(output.buffer())[outOffset] = reinterpret_cast<T *>(input.getBuffer())[inOffset];
             }
+        };
 
-            auto outOffset = shape::getOffset(output.getShapeInfo(), outIdx.data());
-            auto inOffset  = shape::getOffset(input.getShapeInfo(), inIdx.data());
-            reinterpret_cast<T*>(output.buffer())[outOffset] = reinterpret_cast<T*>(input.getBuffer())[inOffset];
-        }
+        samediff::Threads::parallel_for(func, 0, outLen);
     }
 }
 

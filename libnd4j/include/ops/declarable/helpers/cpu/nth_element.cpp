@@ -22,6 +22,7 @@
 #include <TAD.h>
 #include <ShapeUtils.h>
 #include <helpers/ConstantTadHelper.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -53,11 +54,14 @@ namespace helpers {
             std::unique_ptr<ResultSet> rows(sortedVals.allTensorsAlongDimension(lastDims));
             Nd4jLong oL = output->lengthOf();
 
-            PRAGMA_OMP_PARALLEL_FOR
-            for (Nd4jLong e = 0; e < oL; e++) {
-                auto row = rows->at(e);
-                output->p(e, row->e<T>(n));
-            }
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto row = rows->at(e);
+                    output->p(e, row->e<T>(n));
+                }
+            };
+
+            samediff::Threads::parallel_for(func, 0, oL);
         }
     }
 

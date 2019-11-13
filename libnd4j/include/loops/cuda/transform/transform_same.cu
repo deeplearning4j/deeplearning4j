@@ -118,17 +118,6 @@ namespace functions {
             nd4j::DebugHelper::checkErrorCode(stream, "transformSame(...) failed");
 		}
 
-        template<typename X>
-        void TransformSame<X>::exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-
-        }
-
-        template<typename X>
-        template <typename OpType>
-        void TransformSame<X>::exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-
-        }
-
         BUILD_SINGLE_TEMPLATE(template class ND4J_EXPORT TransformSame, , LIBND4J_TYPES);
     }
 }

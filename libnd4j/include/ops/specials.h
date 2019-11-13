@@ -18,8 +18,8 @@
 // Created by raver119 on 24.04.17.
 //
 
-#ifndef LIBND4J_CONCAT_H
-#define LIBND4J_CONCAT_H
+#ifndef LIBND4J_SPECIALS_H
+#define LIBND4J_SPECIALS_H
 
 
 #ifdef __CUDACC__
@@ -28,6 +28,7 @@
 #endif
 
 #include <pointercast.h>
+#include <vector>
 
 namespace nd4j {
     class NDArray;
@@ -81,4 +82,4 @@ namespace nd4j {
 }
 
 
-#endif //LIBND4J_CONCAT_H
+#endif //LIBND4J_SPECIALS_H

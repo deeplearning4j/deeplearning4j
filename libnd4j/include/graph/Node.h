@@ -232,6 +232,7 @@ namespace nd4j {
             }
 
             static nd4j::ops::DeclarableOp* buildOpByType(OpType opType, int numInputs, int numIArgs, int numTArgs, int opNum, NDArray *scalar);
+            static void deleteOpByType(OpType opType, void *op);
         };
     }
 }

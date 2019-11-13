@@ -132,7 +132,7 @@ __device__ void Reduce3<X,Z>::execScalarCuda( void *vx, Nd4jLong *xShapeInfo,
 		extraZ[1] = (Z) 0.0f;
 
 		if (extraParams != nullptr)
-			extraZ[2] = *(static_cast<Z*>(extraParams));
+			extraZ[2] = static_cast<Z*>(extraParams)[2];
 		else
 			extraZ[2] = (Z) 0.0f;
 	}

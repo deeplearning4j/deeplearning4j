@@ -60,11 +60,11 @@ class SameDiffTest extends FlatSpec with Matchers {
     sd.associateArrayWithVariable(inputArr, input)
     sd.associateArrayWithVariable(labelArr, label)
 
-    val result: INDArray = sd.execAndEndResult
-    assertEquals(1, result.length)
+    val result = sd.output(null: java.util.Map[String, org.nd4j.linalg.api.ndarray.INDArray], "loss")
+    assertEquals(1, result.values().size())
 
     val emptyMap = new HashMap[String, INDArray]()
-    sd.execBackwards(emptyMap)
+    sd.output(emptyMap, "loss")
   }
 
   "SameDiff" should "run test dense layer forward pass" in {
@@ -84,7 +84,7 @@ class SameDiffTest extends FlatSpec with Matchers {
     val expMmul = iInput.mmul(iWeights)
     val expZ = expMmul.addRowVector(iBias)
     val expOut = Transforms.sigmoid(expZ, true)
-    sd.exec(new HashMap[String, INDArray](), sd.outputs)
+    sd.output(new HashMap[String, INDArray](), "mmul", "out", "bias", "add")
     assertEquals(expMmul, mmul.getArr)
     assertEquals(expZ, z.getArr)
     assertEquals(expOut, out.getArr)
@@ -109,15 +109,18 @@ class SameDiffTest extends FlatSpec with Matchers {
       .dataSetFeatureMapping("in", "in2")
       .skipBuilderValidation(true)
       .build
-    sd.setTrainingConfig(c)
-    sd.fit(new SingletonMultiDataSetIterator(new MultiDataSet(Array[INDArray](inArr, inArr2), null)), 1)
-    val out = tanh.eval
+
+    val data = new HashMap[String, INDArray]()
+    data.put("in", Nd4j.randn(1, 3))
+    data.put("in2", Nd4j.randn(3, 4))
     in.convertToConstant
-    val out2 = tanh.eval
+    val out = sd.output(data, "tanh")
+    val out2 = sd.output(data, "tanh")
     assertEquals(out, out2)
     assertEquals(VariableType.CONSTANT, in.getVariableType)
     assertEquals(inArr, in.getArr)
     //Sanity check on fitting:
-    sd.fit(new SingletonMultiDataSetIterator(new MultiDataSet(Array[INDArray](inArr2), null)), 1)
+    sd.setTrainingConfig(c)
+    sd.fit(new SingletonMultiDataSetIterator(new MultiDataSet(Array[INDArray](inArr, inArr2), null)), 1)
   }
 }

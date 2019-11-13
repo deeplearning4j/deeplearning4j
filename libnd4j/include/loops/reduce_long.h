@@ -28,18 +28,12 @@
 #include <nd4jmalloc.h>
 #include <pairwise_util.h>
 #include <ops/ops.h>
-#include <ops/special_accumulation_ops.h>
 #include <op_boilerplate.h>
 
 #pragma once
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#endif
-
-#ifndef _OPENMP
-#define omp_get_thread_num() 0
-#define omp_get_max_threads() 1
 #endif
 
 #include "legacy_ops.h"
@@ -78,7 +72,7 @@ namespace functions {
 
             static __host__ void execReduceXD(dim3 launchDims, cudaStream_t *stream, int opNum, int rank, void *vx, Nd4jLong *xShapeInfo, Nd4jLong* hXShapeInfo, void *extraParams, void *vz, Nd4jLong *zShapeInfo, Nd4jLong* hZShapeInfo, int *dimension, int dimensionLength, void *reductionPointer, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-#endif
+#else
 
             /**
              * Reduce down to 1 number
@@ -122,7 +116,7 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset);
+                             Nd4jLong *tadOffset, int64_t start, int64_t stop);
 
             /**
              * Execute on the cpu
@@ -146,7 +140,7 @@ namespace functions {
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
-                             Nd4jLong *tadOffset);
+                             Nd4jLong *tadOffset, int64_t start, int64_t stop);
 
             /**
             * CPU implementation
@@ -179,6 +173,7 @@ namespace functions {
                     Nd4jLong xElementWiseStride,
                     Nd4jLong length,
                     void *extraParams);
+#endif
         };
 
 #ifdef __CUDACC__
