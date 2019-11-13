@@ -19,6 +19,7 @@
 //
 
 #include <graph/Graph.h>
+#include <array/DataTypeUtils.h>
 #include <helpers/EnumUtils.h>
 #include <graph/FlatUtils.h>
 #include <NativeOps.h>
@@ -154,7 +155,7 @@ namespace nd4j {
                         Nd4jLong *newShape = nullptr;
 
                         // if that's scalar output - we don't care about previous node
-                        if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == MAX_INT)) {
+                        if (node->getDimensions()->size() == 0 || (node->getDimensions()->size() == 1 && node->getDimensions()->at(0) == nd4j::DataTypeUtils::max<int>())) {
                             newShape = new Nd4jLong[8];
 
                             newShape[0] = 2;

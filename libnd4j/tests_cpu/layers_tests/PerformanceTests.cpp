@@ -43,6 +43,7 @@
 #include <performance/benchmarking/LightBenchmarkSuit.h>
 
 #include <ops/declarable/helpers/legacy_helpers.h>
+#include <execution/ThreadPool.h>
 
 using namespace nd4j;
 using namespace nd4j::graph;
@@ -52,7 +53,7 @@ public:
     int numIterations = 100;
 
     PerformanceTests() {
-        //
+        samediff::ThreadPool::getInstance();
     }
 };
 
@@ -64,6 +65,7 @@ TEST_F(PerformanceTests, test_maxpooling2d_1) {
     auto z = NDArrayFactory::create<float>('c', {32, 3, 224, 224});
     x.linspace(1.0f);
     Nd4jLong k = 5;
+
 
     Nd4jLong iArgs[] {k,k, 1,1, 0,0, 1,1, 1};
     Context ctx(1);
@@ -81,6 +83,9 @@ TEST_F(PerformanceTests, test_maxpooling2d_1) {
         auto timeEnd = std::chrono::system_clock::now();
         auto outerTime = std::chrono::duration_cast<std::chrono::nanoseconds>(timeEnd - timeStart).count();
         valuesX.emplace_back(outerTime);
+
+        if ((i + 1) % 1000 == 0)
+            nd4j_printf("Iteration %i finished...\n", i + 1);
     }
 
     std::sort(valuesX.begin(), valuesX.end());

@@ -32,33 +32,40 @@ void NDArray::applyTriplewiseLambda(NDArray* second, NDArray *third, const std::
 
     if (this->ordering() == second->ordering() && this->ordering() == third->ordering()  && this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1) && this->ews() == second->ews() && this->ews() == third->ews()) {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (Nd4jLong e = 0; e < _length; e++)
-            z[e] = func(f[e], s[e], t[e]);
+        auto loop = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment)
+                z[e] = func(f[e], s[e], t[e]);
+        };
+
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (Nd4jLong e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto tOffset = this->getOffset(e);
+                    auto uOffset = second->getOffset(e);
+                    auto vOffset = third->getOffset(e);
 
-                auto tOffset = this->getOffset(e);
-                auto uOffset = second->getOffset(e);
-                auto vOffset = third->getOffset(e);
+                    f[tOffset] = func(f[tOffset], s[uOffset], t[vOffset]);
+                }
+            };
 
-                f[tOffset] = func(f[tOffset], s[uOffset], t[vOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (Nd4jLong e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto tOffset = this->getOffset(e);
+                    auto uOffset = second->getOffset(e);
+                    auto vOffset = third->getOffset(e);
+                    auto zOffset = target->getOffset(e);
 
-                auto tOffset = this->getOffset(e);
-                auto uOffset = second->getOffset(e);
-                auto vOffset = third->getOffset(e);
-                auto zOffset = target->getOffset(e);
+                    z[zOffset] = func(f[tOffset], s[uOffset], t[vOffset]);
+                }
+            };
 
-                z[zOffset] = func(f[tOffset], s[uOffset], t[vOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -103,31 +110,38 @@ void NDArray::applyPairwiseLambda(const NDArray* other, const std::function<T(T,
 
     if (this->ordering() == other->ordering() && this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1) && this->ews() == other->ews()) {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (Nd4jLong e = 0; e < _length; e++)
-            z[e] = func(f[e], s[e]);
+        auto loop = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment)
+                z[e] = func(f[e], s[e]);
+        };
+
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (Nd4jLong e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto xOffset = this->getOffset(e);
+                    auto yOffset = other->getOffset(e);
 
-                auto xOffset = this->getOffset(e);
-                auto yOffset = other->getOffset(e);
+                    f[xOffset] = func(f[xOffset], s[yOffset]);
+                }
+            };
 
-                f[xOffset] = func(f[xOffset], s[yOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (Nd4jLong e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto xOffset = this->getOffset(e);
+                    auto yOffset = other->getOffset(e);
+                    auto zOffset = target->getOffset(e);
 
-                auto xOffset = this->getOffset(e);
-                auto yOffset = other->getOffset(e);
-                auto zOffset = target->getOffset(e);
+                    z[zOffset] = func(f[xOffset], s[yOffset]);
+                }
+            };
 
-                z[zOffset] = func(f[xOffset], s[yOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -161,29 +175,36 @@ void NDArray::applyLambda(const std::function<T(T)>& func, NDArray* target) {
 
     if (this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1)) {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (int e = 0; e < _length; e++)
-            z[e] = func(f[e]);
+        auto loop = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment)
+                z[e] = func(f[e]);
+        };
+
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto xOffset = this->getOffset(e);
 
-                auto xOffset = this->getOffset(e);
+                    f[xOffset] = func(f[xOffset]);
+                }
+            };
 
-                f[xOffset] = func(f[xOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto xOffset = this->getOffset(e);
+                    auto zOffset = target->getOffset(e);
 
-                auto xOffset = this->getOffset(e);
-                auto zOffset = target->getOffset(e);
+                    z[zOffset] = func(f[xOffset]);
+                }
+            };
 
-                z[zOffset] = func(f[xOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -217,29 +238,36 @@ void NDArray::applyIndexedLambda(const std::function<T(Nd4jLong, T)>& func, NDAr
 
     if (this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1)) {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (Nd4jLong e = 0; e < _length; e++)
-            z[e] = func(e, f[e]);
+        auto loop = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment)
+                z[e] = func(e, f[e]);
+        };
+
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (Nd4jLong e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto xOffset = this->getOffset(e);
 
-                auto xOffset = this->getOffset(e);
+                    f[xOffset] = func(e, f[xOffset]);
+                }
+            };
 
-                f[xOffset] = func(e, f[xOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (Nd4jLong e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto xOffset = this->getOffset(e);
+                    auto zOffset = target->getOffset(e);
 
-                auto xOffset = this->getOffset(e);
-                auto zOffset = target->getOffset(e);
+                    z[zOffset] = func(e, f[xOffset]);
+                }
+            };
 
-                z[zOffset] = func(e, f[xOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }
@@ -282,31 +310,38 @@ void NDArray::applyIndexedPairwiseLambda(NDArray* other, const std::function<T(N
 
     if (this->ordering() == other->ordering() && this->ordering() == target->ordering() && (this->ews() == 1 && target->ews() == 1) && this->ews() == other->ews()) {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (Nd4jLong e = 0; e < _length; e++)
-            z[e] = func((Nd4jLong) e, f[e], s[e]);
+        auto loop = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment)
+                z[e] = func((Nd4jLong) e, f[e], s[e]);
+        };
+
+        samediff::Threads::parallel_for(loop, 0, _length);
     } else {
         if (f == z) {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto xOffset = this->getOffset(e);
+                    auto yOffset = other->getOffset(e);
 
-                auto xOffset = this->getOffset(e);
-                auto yOffset = other->getOffset(e);
+                    f[xOffset] = func((Nd4jLong) e, f[xOffset], s[yOffset]);
+                }
+            };
 
-                f[xOffset] = func((Nd4jLong) e, f[xOffset], s[yOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         } else {
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int e = 0; e < _length; e++) {
+            auto loop = PRAGMA_THREADS_FOR {
+                for (auto e = start; e < stop; e += increment) {
+                    auto xOffset = this->getOffset(e);
+                    auto yOffset = other->getOffset(e);
+                    auto zOffset = target->getOffset(e);
 
-                auto xOffset = this->getOffset(e);
-                auto yOffset = other->getOffset(e);
-                auto zOffset = target->getOffset(e);
+                    z[zOffset] = func((Nd4jLong) e, f[xOffset], s[yOffset]);
+                }
+            };
 
-                z[zOffset] = func((Nd4jLong) e, f[xOffset], s[yOffset]);
-            }
+            samediff::Threads::parallel_for(loop, 0, _length);
         }
     }
 }

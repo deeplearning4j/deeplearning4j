@@ -868,7 +868,6 @@ TEST_F(RNGTests, Test_UniformDistribution_04) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Uniform int distribution");
     ASSERT_TRUE(exp0.isSameShape(z));
     ASSERT_FALSE(exp0.equalsTo(z));
 

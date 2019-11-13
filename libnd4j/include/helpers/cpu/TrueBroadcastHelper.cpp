@@ -19,6 +19,7 @@
 //
 
 #include <TrueBroadcastHelper.h>
+#include <ops/ops.h>
 
 using namespace simdOps;
 

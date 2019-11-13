@@ -402,8 +402,6 @@ TEST_F(DeclarableOpsTests12, TestDivideBP_1) {
     Nd4jStatus status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    output1.printIndexedBuffer("DivideBP X out");
-    output2.printIndexedBuffer("DivideBP Y out");
     //ASSERT_TRUE(output.e<double>(0) == 47.);
 }
 
@@ -427,8 +425,6 @@ TEST_F(DeclarableOpsTests12, TestDivideBP_2) {
     Nd4jStatus status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    output1.printIndexedBuffer("2DivideBP X out");
-    output2.printIndexedBuffer("2DivideBP Y out");
     ASSERT_TRUE(output1.equalsTo(exp1));
     ASSERT_TRUE(output2.equalsTo(exp2));
 }
@@ -450,8 +446,6 @@ TEST_F(DeclarableOpsTests12, TestReverseDivideBP_1) {
     Nd4jStatus status = op.execute({&y, &x, &eps}, {&output2, &output1}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    output1.printIndexedBuffer("RDivideBP X out");
-    output2.printIndexedBuffer("RDivideBP Y out");
     //ASSERT_TRUE(output.e<double>(0) == 47.);
 }
 
@@ -476,8 +470,6 @@ TEST_F(DeclarableOpsTests12, TestReverseDivideBP_2) {
     Nd4jStatus status = op.execute({&y, &x, &eps}, {&output2, &output1}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    output1.printIndexedBuffer("2RDivideBP X out");
-    output2.printIndexedBuffer("2RDivideBP Y out");
     ASSERT_TRUE(output1.equalsTo(exp1));
     ASSERT_TRUE(output2.equalsTo(exp2));
 }
@@ -501,7 +493,6 @@ TEST_F(DeclarableOpsTests12, TestSliceBP_1) {
     Nd4jStatus status = op.execute({&x, &eps}, {&output}, {}, {1,1,2,2}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    output.printIndexedBuffer("SLICE_BP out");
     ASSERT_TRUE(output.equalsTo(exp));
     //ASSERT_TRUE(output2.equalsTo(exp2));
 }
@@ -526,7 +517,6 @@ TEST_F(DeclarableOpsTests12, TestConfusionZero_1) {
     Nd4jStatus status = op.execute({&x, &i}, {&output}, {}, {4}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    output.printIndexedBuffer("Confusion out");
     ASSERT_TRUE(output.equalsTo(exp));
     //ASSERT_TRUE(output2.equalsTo(exp2));
 }
@@ -545,8 +535,6 @@ TEST_F(DeclarableOpsTests12, TestMaximumBP_1) {
     output1.assign(119);
     x.linspace(1.);
     y.linspace(12., -1.);
-    x.printBuffer("X");
-    y.printBuffer("Y");
     eps.linspace(1.);
     //exp1.assign(1.);
     //exp2.assign(-2.);
@@ -554,8 +542,6 @@ TEST_F(DeclarableOpsTests12, TestMaximumBP_1) {
     Nd4jStatus status = op.execute({&x, &y, &eps}, {&output1, &output2}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    output1.printIndexedBuffer("X max");
-    output2.printIndexedBuffer("Y max");
     ASSERT_TRUE(output1.equalsTo(exp1));
     ASSERT_TRUE(output2.equalsTo(exp2));
 }
@@ -574,8 +560,6 @@ TEST_F(DeclarableOpsTests12, TestMinimumBP_1) {
     output1.assign(119);
     x.linspace(1.);
     y.linspace(12., -1.);
-    x.printBuffer("X");
-    y.printBuffer("Y");
     eps.linspace(1.);
     //exp1.assign(1.);
     //exp2.assign(-2.);
@@ -583,8 +567,6 @@ TEST_F(DeclarableOpsTests12, TestMinimumBP_1) {
     Nd4jStatus status = op.execute({&x, &y, &eps}, {&output2, &output1}, {}, {}, {});
 
     ASSERT_EQ(ND4J_STATUS_OK, status);
-    output2.printIndexedBuffer("X min");
-    output1.printIndexedBuffer("Y min");
     ASSERT_TRUE(output1.equalsTo(exp1));
     ASSERT_TRUE(output2.equalsTo(exp2));
 }

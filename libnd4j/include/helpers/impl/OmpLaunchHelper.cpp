@@ -45,7 +45,7 @@ OmpLaunchHelper::OmpLaunchHelper(const Nd4jLong N, float desiredNumThreads) {
             else
                 desiredNumThreads = nd4j::math::nd4j_min<int>(omp_get_max_threads(), desiredNumThreads);
         #else
-            desiredNumThreads = 1;
+            desiredNumThreads = nd4j::Environment::getInstance()->maxThreads();
         #endif
         _numThreads = nd4j::math::nd4j_min<int>(N / maxItersPerThread, desiredNumThreads);        
     }
@@ -75,7 +75,7 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
         #ifdef _OPENMP
             return betterThreads(N, omp_get_max_threads());
         #else
-            return 1;
+            return betterThreads(N, nd4j::Environment::getInstance()->maxThreads());;
         #endif
     }
 
@@ -92,7 +92,7 @@ Nd4jLong OmpLaunchHelper::betterSpan(Nd4jLong N) {
 #ifdef _OPENMP
         auto maxThreads = omp_get_max_threads();
 #else
-        auto maxThreads = 1;
+        auto maxThreads = nd4j::Environment::getInstance()->maxThreads();
 #endif
 
         // if there's only 1 thread allowed - nothing to do here

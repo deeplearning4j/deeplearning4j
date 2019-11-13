@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/dilation2d.h>
 #include <array/DataTypeUtils.h>
+#include <execution/Threads.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -52,33 +53,36 @@ static void dilation2d_(NDArray *input, NDArray *weights, NDArray *output, const
     const uint oH = output->sizeAt(1);
     const uint oW = output->sizeAt(2);
 
-    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(collapse(4))
-    for (uint b = 0; b < bS; ++b) {
-        for (uint oh = 0; oh < oH; ++oh) {
-            for (uint ow = 0; ow < oW; ++ow) {
-                for (uint c = 0; c < iC; ++c)  {
+    auto func = PRAGMA_THREADS_FOR_2D {
+        for (uint b = start_x; b < stop_x; b += inc_x) {
+            for (uint oh = start_y; oh < stop_y; oh += inc_y) {
+                for (uint ow = 0; ow < oW; ++ow) {
+                    for (uint c = 0; c < iC; ++c) {
 
-                    X max = -DataTypeUtils::max<X>();
+                        X max = -DataTypeUtils::max<X>();
 
-                    for (uint kh = 0; kh < kH; ++kh) {
-                        const int ih = oh * sH - pH + kh * dH;
-                        if (ih < 0 || ih >= iH) continue;
+                        for (uint kh = 0; kh < kH; ++kh) {
+                            const int ih = oh * sH - pH + kh * dH;
+                            if (ih < 0 || ih >= iH) continue;
 
-                        for (uint kw = 0; kw < kW; ++kw) {
-                            const int iw = ow * sW - pW + kw * dW;
-                            if(iw < 0 || iw >= iW) continue;
+                            for (uint kw = 0; kw < kW; ++kw) {
+                                const int iw = ow * sW - pW + kw * dW;
+                                if (iw < 0 || iw >= iW) continue;
 
-                            const X val = x[shape::getOffset(xShapeInfo, {b,(uint)ih,(uint)iw,c})] + y[shape::getOffset(yShapeInfo, {kh,kw,c})];
-                            if (val > max)
-                                max = val;
+                                const X val = x[shape::getOffset(xShapeInfo, {b, (uint) ih, (uint) iw, c})] + y[shape::getOffset(yShapeInfo, {kh, kw, c})];
+                                if (val > max)
+                                    max = val;
+                            }
                         }
-                    }
 
-                    z[shape::getOffset(zShapeInfo, {b,oh,ow,c})] = static_cast<Z>(max);
+                        z[shape::getOffset(zShapeInfo, {b, oh, ow, c})] = static_cast<Z>(max);
+                    }
                 }
             }
         }
-    }
+    };
+
+    samediff::Threads::parallel_for(func, 0, bS, 1, 0, oH, 1);
 }
 
 void dilation2d(nd4j::LaunchContext* context, NDArray *input, NDArray *weights, NDArray *output, const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {

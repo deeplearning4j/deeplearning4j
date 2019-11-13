@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/legacy_helpers.h>
 #include <NDArrayFactory.h>
+#include <ops/ops.h>
 #include <op_boilerplate.h>
 
 namespace nd4j {

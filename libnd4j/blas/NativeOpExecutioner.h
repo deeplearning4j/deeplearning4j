@@ -24,10 +24,10 @@
 
 #include <types/types.h>
 #include <dll.h>
-#include <loops/aggregates.h>
 #include <ops/specials.h>
 #include <ops/specials_sparse.h>
 #include <execution/LaunchContext.h>
+#include <array/ArrayOptions.h>
 
 /**
  * Native op executioner:
@@ -624,10 +624,6 @@ static void execTransformBool(nd4j::LaunchContext  *lc,
                               void *vrealArguments,
                               int numRealArguments) {
 
-        auto arguments = reinterpret_cast<X **>(varguments);
-        auto realArguments = reinterpret_cast<X *>(vrealArguments);
-
-        functions::aggregate::AggregatedFunction<X>::exec(opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments);
     }
     
 

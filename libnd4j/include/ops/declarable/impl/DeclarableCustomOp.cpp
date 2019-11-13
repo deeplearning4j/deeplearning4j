@@ -26,9 +26,5 @@ namespace nd4j {
         DeclarableCustomOp::DeclarableCustomOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs) : nd4j::ops::DeclarableOp(numInputs, numOutputs, opName, allowsInplace, tArgs, iArgs) {
             //
         }
-
-        DeclarableCustomOp::~DeclarableCustomOp()  {
-            //
-        }
     }
 }

@@ -30,14 +30,6 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
 
-            // TODO: once we add support for multiple dtypes - uncommend this
-            /*
-            int it = INT_ARG(0);
-            DataType newType = DataTypeUtils::fromInt(it);
-
-            input->cast(output, newType);
-            */
-			
             if(input->isEmpty()){
                 REQUIRE_TRUE(output->isEmpty(), 0, "If input is empty, output array must also be empty");
                 return Status::OK();

@@ -234,7 +234,6 @@ TEST_F(NormalThreeFourFive,DimensionTest) {
     tad->init(inputShapeBuffer,dimension,dimensionLength);
     tad->createTadOnlyShapeInfo();
     tad->createOffsets();
-    shape::printShapeInfoLinear(tad->tadOnlyShapeInfo);
     ASSERT_TRUE(arrsEquals(8,assertionBuffer,tad->tadOnlyShapeInfo));
 
     delete tad;

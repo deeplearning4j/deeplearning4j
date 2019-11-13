@@ -72,7 +72,8 @@ namespace helpers {
 
         for (int i = 0; i < numBoxes; ++i) {
             bool shouldSelect = numSelected < output->lengthOf();
-            PRAGMA_OMP_PARALLEL_FOR //_ARGS(firstprivate(numSelected))
+
+            // FIXME: add parallelism here
             for (int j = numSelected - 1; j >= 0; --j) {
                 if (shouldSelect)
                 if (needToSuppressWithThreshold(*boxes, indices[i], indices[selectedIndices[j]], T(overlapThreshold))) {

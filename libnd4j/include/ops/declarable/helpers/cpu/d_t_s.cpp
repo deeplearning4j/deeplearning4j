@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/d_t_s.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -44,45 +45,51 @@ namespace helpers {
 
         if (isNHWC) {
             const int total_count = batch_size * output_height * output_width * output_depth;
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int out_idx = 0; out_idx < total_count; out_idx++) {
-                const int d = out_idx % output_depth;
-                const int out_idx2 = out_idx / output_depth;
-                const int w = out_idx2 % output_width;
-                const int out_idx3 = out_idx2 / output_width;
-                const int h = out_idx3 % output_height;
-                const int b = out_idx3 / output_height;
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto out_idx = start; out_idx < stop; out_idx += increment) {
+                    const int d = out_idx % output_depth;
+                    const int out_idx2 = out_idx / output_depth;
+                    const int w = out_idx2 % output_width;
+                    const int out_idx3 = out_idx2 / output_width;
+                    const int h = out_idx3 % output_height;
+                    const int b = out_idx3 / output_height;
 
-                const int in_h = h / block_size;
-                const int offset_h = h % block_size;
-                const int in_w = w / block_size;
-                const int offset_w = w % block_size;
-                const int offset_d = (offset_h * block_size + offset_w) * output_depth;
-                const int in_d = d + offset_d;
-                const int inp_idx = in_d + input_depth * (in_w + input_width * (in_h + input_height * b));
-                (output_ptr + out_idx)[0] = (input_ptr + inp_idx)[0];
-            }
+                    const int in_h = h / block_size;
+                    const int offset_h = h % block_size;
+                    const int in_w = w / block_size;
+                    const int offset_w = w % block_size;
+                    const int offset_d = (offset_h * block_size + offset_w) * output_depth;
+                    const int in_d = d + offset_d;
+                    const int inp_idx = in_d + input_depth * (in_w + input_width * (in_h + input_height * b));
+                    (output_ptr + out_idx)[0] = (input_ptr + inp_idx)[0];
+                }
+            };
+
+            samediff::Threads::parallel_for(func, 0, total_count);
         } else {
             const int total_count = batch_size * input_depth_by_input_area;
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int input_idx = 0; input_idx < total_count; input_idx++) {
-                const int n_bY_bX_oC_iY = input_idx / input_width;
-                const int iX = input_idx - n_bY_bX_oC_iY * input_width;
+            auto func = PRAGMA_THREADS_FOR {
+                for (int input_idx = start; input_idx < stop; input_idx += increment) {
+                    const int n_bY_bX_oC_iY = input_idx / input_width;
+                    const int iX = input_idx - n_bY_bX_oC_iY * input_width;
 
-                const int n_bY_bX = n_bY_bX_oC_iY / output_depth_by_input_height;
-                const int oC_iY = n_bY_bX_oC_iY - n_bY_bX * output_depth_by_input_height;
+                    const int n_bY_bX = n_bY_bX_oC_iY / output_depth_by_input_height;
+                    const int oC_iY = n_bY_bX_oC_iY - n_bY_bX * output_depth_by_input_height;
 
-                const int n_bY = n_bY_bX / block_size;
-                const int bX = n_bY_bX - n_bY * block_size;
+                    const int n_bY = n_bY_bX / block_size;
+                    const int bX = n_bY_bX - n_bY * block_size;
 
-                const int n = n_bY / block_size;
-                const int bY = n_bY - n * block_size;
+                    const int n = n_bY / block_size;
+                    const int bY = n_bY - n * block_size;
 
-                const int output_idx = bX + block_size * (iX + input_width * (bY + block_size * (oC_iY + n * output_depth_by_input_height)));
+                    const int output_idx = bX + block_size * (iX + input_width * (bY + block_size * (oC_iY + n * output_depth_by_input_height)));
 
-                (output_ptr + output_idx)[0] = (input_ptr + input_idx)[0];
-            }
+                    (output_ptr + output_idx)[0] = (input_ptr + input_idx)[0];
+                }
+            };
+
+            samediff::Threads::parallel_for(func, 0, total_count);
         }
     }
 

@@ -36,9 +36,8 @@ namespace functions {
 				void *z,
 				Nd4jLong *zShapeInfo,
 				void *extraParams,
-				Nd4jLong *tadShapeInfo,
-				Nd4jLong *tadOffsets) {
-                    DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets), TRANSFORM_FLOAT_OPS);
+                uint64_t threadId, uint64_t numThreads) {
+                    DISPATCH_BY_OPNUM_TT(exec, PARAMS(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads), TRANSFORM_FLOAT_OPS);
 		}
 
         template <typename X, typename Z>
@@ -48,20 +47,13 @@ namespace functions {
                     Nd4jLong *xShapeInfo,
                     void *vz,
                     Nd4jLong *zShapeInfo,
-                    void *vextraParams,
-                    Nd4jLong *tadShapeInfo,
-                    Nd4jLong *tadOffsets) {
+                    void *vextraParams, uint64_t threadId, uint64_t numThreads) {
 
             auto x = reinterpret_cast<X *>(vx);
 		    auto z = reinterpret_cast<Z *>(vz);
 		    auto extraParams = reinterpret_cast<Z *>(vextraParams);
 
-            if(OpType::requiresSpecial) {
-                OpType::execSpecial(x, xShapeInfo, z, zShapeInfo, extraParams, tadShapeInfo, tadOffsets);
-                return;
-            }
-
-            nd4j::TransformLoops<X,Z,Z>::template loopTransform<OpType, true>(x, xShapeInfo, z, zShapeInfo, extraParams);
+            nd4j::TransformLoops<X,Z,Z>::template loopTransform<OpType>(x, xShapeInfo, z, zShapeInfo, extraParams, threadId, numThreads);
         }
 
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformFloat, , LIBND4J_TYPES, FLOAT_TYPES);

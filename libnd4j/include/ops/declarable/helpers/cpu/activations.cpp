@@ -23,6 +23,7 @@
 #include <ShapeUtils.h>
 #include <numeric>
 #include <ConstantTadHelper.h>
+#include <execution/Threads.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -44,11 +45,9 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
 
         if (inEWS == 1 && outEWS == 1) {
 
-            PRAGMA_OMP_SIMD_MAX(max)
             for (int i = 0; i < length; i++)
                 max = nd4j::math::nd4j_max<T>(max, inBuff[i]);
 
-            PRAGMA_OMP_SIMD_SUM(sum)
             for (int i = 0; i < length; i++) {
                 outBuff[i] = nd4j::math::nd4j_exp<T, T>(inBuff[i] - max);
                 sum += outBuff[i];
@@ -60,11 +59,9 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
         }
         else {
 
-            PRAGMA_OMP_SIMD_MAX(max)
             for (int i = 0; i < length; i++)
                 max = nd4j::math::nd4j_max<T>(max, inBuff[i * inEWS]);
 
-            PRAGMA_OMP_SIMD_SUM(sum)
             for (int i = 0; i < length; i++) {
                 T r = nd4j::math::nd4j_exp<T, T>(inBuff[i * inEWS] - max);
                 outBuff[i * outEWS] = r;
@@ -89,19 +86,17 @@ static void softMaxForVector_(void *input, Nd4jLong *inShapeInfo, void *output, 
         T sum = 0.;
         int length = shape::length(inShapeInfo);
 
-PRAGMA_OMP_SIMD_ARGS(reduction(OMP_MAXT:max))
         for (int i = 0; i < length; i++) {
             const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo);
             max = nd4j::math::nd4j_max<T>(max, inBuff[offset]);
         }
 
-PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(reduction(OMP_SUMT:sum))
         for (int i = 0; i < length; i++) {
             const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo);
             outBuff[offset] = nd4j::math::nd4j_exp<T, T>(inBuff[offset] - max);
             sum += outBuff[offset];
         }
-PRAGMA_OMP_SIMD
+
         for (int i = 0; i < length; i++) {
             const Nd4jLong offset = shape::getIndexOffset(i, inShapeInfo);
             outBuff[offset] /= sum;
@@ -151,7 +146,6 @@ void softMaxForVector(nd4j::LaunchContext * context, const NDArray& input, NDArr
         auto length = shape::length(inShapeInfo);
 
         if (inEWS == 1) {
-            PRAGMA_OMP_SIMD_MAX(max)
             for (int i = 0; i < length; i++)
                 max = nd4j::math::nd4j_max<T>(max, inBuff[i]);
 
@@ -212,7 +206,7 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
     }
     else if(input.isSameShapeStrict(&output)) {
 
-        TadPack tadPack  = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), {dimension});
+        TadPack tadPack  = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(input.getShapeInfo(), dimension);
         Nd4jLong* tadShapeInfo  = tadPack.primaryShapeInfo();
         Nd4jLong* tadOffsets    = tadPack.primaryOffsets();
         const uint numOfSubArrs = tadPack.numberOfTads();
@@ -220,27 +214,30 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
 
         if(shape::elementWiseStride(tadShapeInfo) == 1){
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (uint i = 0; i < numOfSubArrs; ++i) {
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
 
-                T* inBuff  = input.bufferAsT<T>()  + tadOffsets[i];
-                T* outBuff = output.bufferAsT<T>() + tadOffsets[i];
+                    T *inBuff = input.bufferAsT<T>() + tadOffsets[i];
+                    T *outBuff = output.bufferAsT<T>() + tadOffsets[i];
 
-                T max = -DataTypeUtils::max<T>();
-                T sum = 0;
+                    T max = -DataTypeUtils::max<T>();
+                    T sum = 0;
 
-                for(uint j = 0; j < tadLen; ++j)
-                    max = nd4j::math::nd4j_max<T>(max, inBuff[j]);
+                    for (uint j = 0; j < tadLen; ++j)
+                        max = nd4j::math::nd4j_max<T>(max, inBuff[j]);
 
-                for (uint j = 0; j < tadLen; ++j) {
-                    T temp = nd4j::math::nd4j_exp<T,T>(inBuff[j] - max);
-                    outBuff[j] = temp;
-                    sum += temp;
+                    for (uint j = 0; j < tadLen; ++j) {
+                        T temp = nd4j::math::nd4j_exp<T, T>(inBuff[j] - max);
+                        outBuff[j] = temp;
+                        sum += temp;
+                    }
+
+                    for (uint j = 0; j < tadLen; ++j)
+                        outBuff[j] /= sum;
                 }
+            };
 
-                for (uint j = 0; j < tadLen; ++j)
-                    outBuff[j] /= sum;
-            }
+            samediff::Threads::parallel_tad(func,0, numOfSubArrs);
         }
         else {
 
@@ -250,29 +247,30 @@ static void softmax_(nd4j::LaunchContext * context, const NDArray& input, NDArra
             auto offsets = new Nd4jLong[tadLen];
             shape::calcOffsets(tadShapeInfo, offsets);
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (uint i = 0; i < numOfSubArrs; ++i) {
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    auto inBuff = input.bufferAsT<T>() + tadOffsets[i];
+                    auto outBuff = output.bufferAsT<T>() + tadOffsets[i];
 
-                T* inBuff  = input.bufferAsT<T>()  + tadOffsets[i];
-                T* outBuff = output.bufferAsT<T>() + tadOffsets[i];
+                    T max = -DataTypeUtils::max<T>();
+                    T sum = 0.f;
 
-                T max = -DataTypeUtils::max<T>();
-                T sum = 0.f;
+                    for (uint j = 0; j < tadLen; ++j)
+                        max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);
 
+                    for (uint j = 0; j < tadLen; ++j) {
+                        T temp = nd4j::math::nd4j_exp<T, T>(inBuff[offsets[j]] - max);
+                        outBuff[offsets[j]] = temp;
+                        sum += temp;
+                    }
 
-
-                for(uint j = 0; j < tadLen; ++j)
-                    max = nd4j::math::nd4j_max<T>(max, inBuff[offsets[j]]);
-
-                for (uint j = 0; j < tadLen; ++j) {
-                    T temp = nd4j::math::nd4j_exp<T,T>(inBuff[offsets[j]] - max);
-                    outBuff[offsets[j]] = temp;
-                    sum += temp;
+                    for (uint j = 0; j < tadLen; ++j)
+                        outBuff[offsets[j]] /= sum;
                 }
+            };
 
-                for (uint j = 0; j < tadLen; ++j)
-                    outBuff[offsets[j]] /= sum;
-            }
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
+
             delete []offsets;
         }
     }
@@ -299,16 +297,19 @@ void prelu(nd4j::LaunchContext * context, const NDArray& input, const NDArray& a
     const Nd4jLong* inputShapeInfo = input.getShapeInfo();
     const Nd4jLong* alphaShapeInfo = alpha.getShapeInfo();
 
-    PRAGMA_OMP_PARALLEL_FOR_IF(inputLen > Environment::getInstance()->elementwiseThreshold())
-    for(Nd4jLong i = 0; i < inputLen; ++i) {
-         // FIXME: double!
-        double x = input.e<double>(i);
-        if(x < 0.0) {
-            // FIXME: double
-            output.p(i, (x * alpha.e<double>(shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo))));
-        } else
-            output.p(i, x);
-    }
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment) {
+            // FIXME: double!
+            double x = input.e<double>(i);
+            if (x < 0.0) {
+                // FIXME: double
+                output.p(i, (x * alpha.e<double>(shape::subArrayIndex(i, inputShapeInfo, alphaShapeInfo))));
+            } else
+                output.p(i, x);
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, inputLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

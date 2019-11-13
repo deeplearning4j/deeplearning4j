@@ -160,7 +160,6 @@ TEST_F(ConditionalTests, Flat_Test_2) {
 
     auto exp = NDArrayFactory::create<float>('c', {2, 2}, {1, 1, 1, 1});
 
-    z->printIndexedBuffer("z");
     ASSERT_TRUE(exp.equalsTo(z));
     delete graph;
 }

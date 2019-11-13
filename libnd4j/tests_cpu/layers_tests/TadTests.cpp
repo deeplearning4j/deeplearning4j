@@ -206,8 +206,6 @@ TEST_F(TadTests, test_TAD_empty_dims_1) {
     xTad.init(xShape, reinterpret_cast<int*>(112L), 0);
     xTad.createTadOnlyShapeInfo();
     xTad.createOffsets();
-    nd4j_printf("numTads: %i\n", (int) xTad.numTads);
-    shape::printShapeInfoLinear("TAD shape", xTad.tadOnlyShapeInfo);
 }
 
 TEST_F(TadTests, test_tad_order_1) {
@@ -218,7 +216,6 @@ TEST_F(TadTests, test_tad_order_1) {
     xTad.init(xShape, &dim, 1);
     xTad.createTadOnlyShapeInfo();
 
-    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
     ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
 }
 
@@ -230,7 +227,6 @@ TEST_F(TadTests, test_tad_order_2) {
     xTad.init(xShape, &dim, 1);
     xTad.createTadOnlyShapeInfo();
 
-    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
     ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
 }
 
@@ -243,7 +239,6 @@ TEST_F(TadTests, test_tad_order_3) {
     xTad.init(xShape, &dim, 1);
     xTad.createTadOnlyShapeInfo();
 
-    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
     ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
 }
 
@@ -256,7 +251,6 @@ TEST_F(TadTests, test_tad_order_4) {
     xTad.init(xShape, dim, 2);
     xTad.createTadOnlyShapeInfo();
 
-    shape::printShapeInfoLinear("tad shape", xTad.tadOnlyShapeInfo);
     ASSERT_TRUE(shape::equalsStrict(tShape, xTad.tadOnlyShapeInfo));
 }
 
@@ -264,7 +258,6 @@ TEST_F(TadTests, test_column_1) {
     auto x = NDArrayFactory::create<float>('c', {5, 2});
     auto tadPack = nd4j::ConstantTadHelper::getInstance()->tadForDimensions(x.shapeInfo(), 0);
 
-    shape::printShapeInfoLinear("column view", tadPack.primaryShapeInfo());
     ASSERT_EQ(1, shape::rank(tadPack.primaryShapeInfo()));
     ASSERT_EQ(5, shape::length(tadPack.primaryShapeInfo()));
     ASSERT_TRUE(shape::isVector(tadPack.primaryShapeInfo()));

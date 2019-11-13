@@ -55,7 +55,6 @@ TEST_F(WorkspaceTests, BasicInitialization2) {
 
     auto v = array.reduceNumber(reduce::Sum);
     auto f = v.e<float>(0);
-    v.printShapeInfo("v shape");
 
     ASSERT_NEAR(2.0f, f, 1e-5);
 
@@ -77,7 +76,6 @@ TEST_F(WorkspaceTests, BasicInitialization3) {
 
     auto v = array.reduceNumber(reduce::Sum);
     auto f = v.e<float>(0);
-    v.printShapeInfo("v shape");
 
     ASSERT_NEAR(2.0f, array.reduceNumber(reduce::Sum).e<float>(0), 1e-5);
 

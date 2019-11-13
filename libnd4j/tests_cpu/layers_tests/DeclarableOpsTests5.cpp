@@ -304,7 +304,6 @@ TEST_F(DeclarableOpsTests5, hardsigmoid_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Hadrdsigmoid 2x2");
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
@@ -321,7 +320,6 @@ TEST_F(DeclarableOpsTests5, hardsigmoid_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Hadrdsigmoid 2x2");
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
@@ -384,7 +382,6 @@ TEST_F(DeclarableOpsTests5, histogram_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Histogram4");
     ASSERT_TRUE(exp.equalsTo(z));
 
     delete result;
@@ -400,7 +397,6 @@ TEST_F(DeclarableOpsTests5, Identity_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-//    z->printIndexedBuffer("Histogram3");
     ASSERT_TRUE(matrix.equalsTo(z));
 
     delete result;
@@ -416,7 +412,6 @@ TEST_F(DeclarableOpsTests5, Identity_test2) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Identity_BP");
     ASSERT_TRUE(z->equalsTo(eps));
 
     delete result;
@@ -433,7 +428,6 @@ TEST_F(DeclarableOpsTests5, Log1p_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Log1p");
     ASSERT_TRUE(z->equalsTo(y));
 
     delete result;
@@ -450,7 +444,6 @@ TEST_F(DeclarableOpsTests5, Test_SpaceToBatch_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    // z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(z));
     ASSERT_TRUE(exp.equalsTo(z));
@@ -845,9 +838,6 @@ TEST_F(DeclarableOpsTests5, reverse_sequense_test1) {
     ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
-
-    exp.printIndexedBuffer("E");
-    output->printIndexedBuffer("O");
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1314,17 +1304,6 @@ TEST_F(DeclarableOpsTests5, Test_TopK_3_unsorted) {
     auto v = result->at(0);
     auto i = result->at(1);
 
-//    v->printShapeInfo("shape v");
-//    expV.printShapeInfo("shape expV");
-
-//    i->printShapeInfo("shape I");
-//    expI.printShapeInfo("shape expI");
-
-    v->printIndexedBuffer("v");
-//    expV.printIndexedBuffer("expV");
-    i->printIndexedBuffer("i");
-//    expI.printIndexedBuffer("expI");
-
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
 
@@ -1349,17 +1328,6 @@ TEST_F(DeclarableOpsTests5, Test_TopK_4) {
     auto v = result->at(0);
     auto i = result->at(1);
 
-//    v->printShapeInfo("shape v");
-//    expV.printShapeInfo("shape expV");
-
-//    i->printShapeInfo("shape I");
-//    expI.printShapeInfo("shape expI");
-
-//    v->printIndexedBuffer("v");
-//    expV.printIndexedBuffer("expV");
-//    i->printIndexedBuffer("i");
-//    expI.printIndexedBuffer("expI");
-
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
 
@@ -1377,29 +1345,12 @@ TEST_F(DeclarableOpsTests5, Test_TopK_5) {
 
     nd4j::ops::top_k op;
     auto result = op.execute({&x}, {}, {2, 1});
-    for (Nd4jLong r = 0; r < 2; r++) {
-        for (Nd4jLong c = 0; c < 3; c++)
-            nd4j_printf("%f, ", x.e<double>(r,c));
-        nd4j_printf("\n", "");
-    }
 
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
     ASSERT_EQ(2, result->size());
 
     auto v = result->at(0);
     auto i = result->at(1);
-
-//    x.printShapeInfo("shape of the source X");
-//    v->printShapeInfo("shape v");
-//    expV.printShapeInfo("shape expV");
-
-//    i->printShapeInfo("shape I");
-//    expI.printShapeInfo("shape expI");
-
-    v->printIndexedBuffer("v");
-    expV.printIndexedBuffer("expV");
-    i->printIndexedBuffer("i");
-    expI.printIndexedBuffer("expI");
 
     ASSERT_TRUE(expV.isSameShape(v));
     ASSERT_TRUE(expV.equalsTo(v));
@@ -2025,10 +1976,6 @@ TEST_F(DeclarableOpsTests5, DynamicPartition_2) {
 
     for (int e = 0; e < result->size(); e++) {
         auto output = result->at(e);
-         nd4j_printf("%i: ", e);
-         output->printShapeInfo("Output shape> ");
-         exp[e].printShapeInfo("Expected shape> ");
-         output->printIndexedBuffer("Output data> ");
 
         ASSERT_TRUE(exp[e].isSameShape(output));
         ASSERT_TRUE(exp[e].equalsTo(output));
@@ -2126,10 +2073,6 @@ TEST_F(DeclarableOpsTests5, DynamicStitch_1) {
 
     auto output = result->at(0);
 
-    // output->printShapeInfo("Output shape> ");
-    // exp.printShapeInfo("Expected shape> ");
-     output->printIndexedBuffer("O data");
-     exp.printIndexedBuffer("E data");
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -2334,8 +2277,6 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test1) {
     ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
-    output->printIndexedBuffer("CM output");
-    expected.printIndexedBuffer("CM expected");
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -2355,9 +2296,6 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test2) {
     ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
-    output->printIndexedBuffer("CM2 output");
-    expected.printIndexedBuffer("CM2 expected");
-
 
     ASSERT_TRUE(expected.isSameShape(output));
     ASSERT_TRUE(expected.equalsTo(output));
@@ -2376,8 +2314,6 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test3) {
     nd4j::ops::confusion_matrix op;
     auto results = op.execute({&labels, &predictions, &weights}, {}, {3});
     auto output = results->at(0);
-    output->printIndexedBuffer("CM3");
-
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -2397,7 +2333,6 @@ TEST_F(DeclarableOpsTests5, confusion_matrix_test4) {
     nd4j::ops::confusion_matrix op;
     auto results = op.execute({&labels, &predictions, &weights}, {}, {3, nd4j::DataType::DOUBLE});
     auto output = results->at(0);
-    output->printIndexedBuffer("CM4");
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));
@@ -2469,11 +2404,6 @@ TEST_F(DeclarableOpsTests5, XWPlusB_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto output = result->at(0);
-
-    output->printShapeInfo("Output shape> ");
-    exp.printShapeInfo("Expected shape> ");
-    output->printIndexedBuffer("Output data> ");
-    exp.printIndexedBuffer("Expected res>");
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -2778,7 +2708,7 @@ TEST_F(DeclarableOpsTests5, L2_Loss_1) {
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(output->isScalar());
-    output->printIndexedBuffer("L2_Loss output");
+
     ASSERT_EQ(output->e<double>(0), exp);
 
     delete results;

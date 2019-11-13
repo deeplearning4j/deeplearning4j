@@ -95,11 +95,9 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     	seqLen->assign(time);                                        // set each element of seqLen to be equal to time
     }
 
-    std::initializer_list<Nd4jLong> dimsForReverse = timeMajor ? std::initializer_list<Nd4jLong>{0,1} : std::initializer_list<Nd4jLong>{1,0};
-
     // reverse x     
     nd4j::ops::reverse_sequence reverse;
-    auto resultsIn = reverse.execute({x, seqLen}, {}, dimsForReverse, {}, false, x->dataType());
+    auto resultsIn = timeMajor ? reverse.execute({x, seqLen}, {}, {0, 1}, {}, false, x->dataType()) : reverse.execute({x, seqLen}, {}, {1, 0}, {}, false, x->dataType());
     REQUIRE_TRUE (resultsIn->status() == ND4J_STATUS_OK, 0, "dynamic_bidirectional_rnn: there is a problem with reverse on the sequence.");
     auto revInput = resultsIn->at(0);
 
@@ -109,7 +107,7 @@ CUSTOM_OP_IMPL(dynamic_bidirectional_rnn, 7, 4, false, 0, 0) {
     hBWFinal->assign(resultsBW->at(1));
 
     // reverse hBWtemp 
-    auto resultsOut = reverse.execute({hBWtemp, seqLen}, {}, dimsForReverse, {});
+    auto resultsOut = timeMajor ? reverse.execute({hBWtemp, seqLen}, {}, {0, 1}, {}) : reverse.execute({hBWtemp, seqLen}, {}, {1, 0}, {});
     hBW->assign(resultsOut->at(0));
     
 	delete resultsOut;

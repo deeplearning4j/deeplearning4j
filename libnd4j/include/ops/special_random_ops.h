@@ -25,6 +25,7 @@
 #include <helpers/shape.h>
 #include <graph/RandomGenerator.h>
 #include <specials_cuda.h>
+#include <execution/Threads.h>
 
 namespace randomOps {
 
@@ -152,9 +153,9 @@ namespace randomOps {
             // TODO: we probably might want to skip this sum, and state that probabilities array should be real probabilities, i.e. should sum to 1.0
             //T probSum = extraArguments[0];
 
-            Nd4jLong xLength = shape::length(xShapeBuffer);
-            Nd4jLong yLength = shape::length(yShapeBuffer);
-            Nd4jLong zLength = shape::length(zShapeBuffer);
+            auto xLength = shape::length(xShapeBuffer);
+            auto yLength = shape::length(yShapeBuffer);
+            auto zLength = shape::length(zShapeBuffer);
 
             auto xEWS = shape::elementWiseStride(xShapeBuffer);
             auto yEWS = shape::elementWiseStride(yShapeBuffer);
@@ -162,47 +163,53 @@ namespace randomOps {
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             if (zEWS >= 1 && xEWS >= 1 && yEWS >= 1) {
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
-                for (Nd4jLong e = 0; e < zLength; e++) {
-                    T prob = rng->relativeT<T>(e);
-                    T cumProb = (T) 0.0f;
-                    for (Nd4jLong f = 0; f < yLength; f++) {
-                        T relProb = y[f * yEWS];
-                        cumProb += relProb;
+                auto func = PRAGMA_THREADS_FOR {
+                    for (uint64_t e = start; e < stop; e += increment) {
+                        T prob = rng->relativeT<T>(e);
+                        T cumProb = (T) 0.0f;
+                        for (Nd4jLong f = 0; f < yLength; f++) {
+                            T relProb = y[f * yEWS];
+                            cumProb += relProb;
 
-                        if (prob <= cumProb || f == yLength - 1) {
-                            z[e * zEWS] = x[f * xEWS];
-                            break;
+                            if (prob <= cumProb || f == yLength - 1) {
+                                z[e * zEWS] = x[f * xEWS];
+                                break;
+                            }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
             }
             else {
 
-                PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
-                for (Nd4jLong i = 0; i < zLength; i++) {
+                auto func = PRAGMA_THREADS_FOR {
+                    for (Nd4jLong i = 0; i < zLength; i++) {
 
-                    auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
-                    T prob = rng->relativeT<T>(i);
-                    T cumProb = (T) 0.0f;
+                        auto zOffset2 = shape::getIndexOffset(i, zShapeBuffer);
+                        T prob = rng->relativeT<T>(i);
+                        T cumProb = (T) 0.0f;
 
-                    for (Nd4jLong f = 0; f < yLength; f++) {
+                        for (Nd4jLong f = 0; f < yLength; f++) {
 
-                        auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer);
-                        T relProb = y[yOffset2];
-                        cumProb += relProb;
+                            auto yOffset2 = shape::getIndexOffset(f, yShapeBuffer);
+                            T relProb = y[yOffset2];
+                            cumProb += relProb;
 
-                        if (prob <= cumProb || f == yLength - 1) {
+                            if (prob <= cumProb || f == yLength - 1) {
 
-                            auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer);
-                            z[zOffset2] = x[xOffset2];
-                            break;
+                                auto xOffset2 = shape::getIndexOffset(f, xShapeBuffer);
+                                z[zOffset2] = x[xOffset2];
+                                break;
+                            }
                         }
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
             }
         }
     };
@@ -308,7 +315,7 @@ namespace randomOps {
 
             int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             int span = (middle / _threads) + 8;
 
@@ -322,25 +329,30 @@ namespace randomOps {
 
             const T epsilon = static_cast<T>(1e-5);
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
-            for (Nd4jLong e = 0; e < middle; e++) {
-                auto epm = e + middle;
+            auto func = PRAGMA_THREADS_FOR {
+                for (uint64_t e = start; e < stop; e += increment) {
+                    auto epm = e + middle;
 
-                // we need to get random values
-                T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
-                T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
+                    // we need to get random values
+                    T r0 = rng->relativeT<T>(e, epsilon, static_cast<T>(1.0f));
+                    T r1 = rng->relativeT<T>(epm, epsilon, static_cast<T>(1.0f));
 
-                T realMean0 = y == z ? mean : y[e * yEWS];
+                    T realMean0 = y == z ? mean : y[e * yEWS];
 
-                auto z0 =  (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_cos<T,T>(two_pi * r1)) * stddev + realMean0;
-                z[e * zEWS] = z0;
+                    auto z0 = (nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(r0)) *
+                               nd4j::math::nd4j_cos<T, T>(two_pi * r1)) * stddev + realMean0;
+                    z[e * zEWS] = z0;
 
-                if (epm < zLength) {
-                    T realMean1 = y == z ? mean : y[epm * yEWS];
-                    auto z1 = (nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean1;
-                    z[epm * zEWS] = z1;
+                    if (epm < zLength) {
+                        T realMean1 = y == z ? mean : y[epm * yEWS];
+                        auto z1 = (nd4j::math::nd4j_sqrt<T, T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T, T>(r0)) *
+                                   nd4j::math::nd4j_sin<T, T>(two_pi * r1)) * stddev + realMean1;
+                        z[epm * zEWS] = z1;
+                    }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, middle, 1, _threads);
         }
     };
 
@@ -422,21 +434,13 @@ namespace randomOps {
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
-            auto span = (zLength / _threads) + 8;
+            T prob = extraArguments[1];
 
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-            PRAGMA_OMP_PARALLEL_THREADS(_threads)
-            {
-                int tid = omp_get_thread_num();
-                auto start = span * tid;
-                auto end = span * (tid + 1);
-                if (end > zLength) end = zLength;
-
-                T prob = extraArguments[1];
-
-                for (Nd4jLong e = start; e < end; e++) {
+            auto func = PRAGMA_THREADS_FOR {
+                for (Nd4jLong e = start; e < stop; e += increment) {
 
                     int success = 0;
                     for (int t = 1; t <= trials; t++) {
@@ -453,7 +457,9 @@ namespace randomOps {
                     // if trials is set to 0, effectively we just have successful memset
                     z[e * zEWS] = static_cast<T>(success);
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
         }
     };
 
@@ -536,22 +542,14 @@ namespace randomOps {
 
             int elementsPerThread = zLength / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
-            auto span = (zLength / _threads) + 8;
+            T prob = extraArguments[1];
 
             //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-            PRAGMA_OMP_PARALLEL_THREADS(_threads)
-            {
-                int tid = omp_get_thread_num();
-                Nd4jLong start = span * tid;
-                Nd4jLong end = span * (tid + 1);
-                if (end > zLength) end = zLength;
-
-                T prob = extraArguments[1];
-
-                for (Nd4jLong e = start; e < end; e++) {
+            auto func = PRAGMA_THREADS_FOR {
+                for (uint64_t e = start; e < stop; e += increment) {
 
                     int success = 0;
                     for (int t = 1; t <= trials; t++) {
@@ -568,7 +566,9 @@ namespace randomOps {
                     // if trials is set to 0, effectively we just have successful memset
                     z[e * zEWS] = static_cast<T>(success);
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
         }
     };
 
@@ -685,19 +685,22 @@ namespace randomOps {
             Nd4jLong middle = zLength / 2 + (zLength % 2);
             int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             const T epsilon = static_cast<T>(1e-5);
 
-            PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
-            for (Nd4jLong e = 0; e < zLength; ++e) {
-                if (z[e] > mean + ds || z[e] < mean - ds) {
-                    z[e] = step(rng, mean, stddev, e, middle, z[e]);
+            auto func = PRAGMA_THREADS_FOR {
+                for (uint64_t e = start; e < stop; e += increment) {
+                    if (z[e] > mean + ds || z[e] < mean - ds) {
+                        z[e] = step(rng, mean, stddev, e, middle, z[e]);
 
-                    if (z[e] > mean + ds || z[e] < mean - ds)
-                        z[e] = mean + nd4j::DataTypeUtils::min<T>();
+                        if (z[e] > mean + ds || z[e] < mean - ds)
+                            z[e] = mean + nd4j::DataTypeUtils::min<T>();
+                    }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, zLength, 1, _threads);
         }
     };
 
@@ -799,7 +802,7 @@ namespace randomOps {
 
             int elementsPerThread = middle / TAD_THRESHOLD;
             int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-            _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+            _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
             int span = (zLength / _threads) + 8;
 
@@ -813,16 +816,9 @@ namespace randomOps {
             const T stddev = extraArguments[1];
             const T epsilon = static_cast<T>(1e-5);
 
-            PRAGMA_OMP_PARALLEL_THREADS(_threads)
-            {
-                int tid = omp_get_thread_num();
-                Nd4jLong start = span * tid;
-                Nd4jLong end = span * (tid + 1);
-                if (end > middle)
-                    end = middle;
-
+            auto func = PRAGMA_THREADS_FOR {
                 PRAGMA_OMP_SIMD
-                for (Nd4jLong e = start; e < end; e++) {
+                for (uint64_t e = start; e < stop; e += increment) {
                     auto epm = e + middle;
 
                     // we need to get random values
@@ -838,7 +834,9 @@ namespace randomOps {
                         z[epm * zEWS] =  nd4j::math::nd4j_exp<T,T>((nd4j::math::nd4j_sqrt<T,T>(static_cast<T>(-2.0f) * nd4j::math::nd4j_log<T,T>(r0)) * nd4j::math::nd4j_sin<T,T>(two_pi * r1)) * stddev + realMean);
                     }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, middle, 1, _threads);
         }
     };
 

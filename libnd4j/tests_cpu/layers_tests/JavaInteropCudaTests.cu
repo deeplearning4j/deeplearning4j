@@ -50,7 +50,6 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_1) {
 
     context.setOutputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
 
-    nd4j_printf("Starting execution...\n","");
     PointersManager pm(LaunchContext::defaultContext(), "test_DeclarableOp_execution_1");
     execCustomOp2(nullptr, op.getOpHash(), &context);
 
@@ -78,7 +77,6 @@ TEST_F(JavaInteropCudaTests, test_DeclarableOp_execution_2) {
 
     context.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
 
-    nd4j_printf("Starting execution...\n","");
     PointersManager pm(LaunchContext::defaultContext(), "test_DeclarableOp_execution_2");
     execCustomOp2(nullptr, op.getOpHash(), &context);
 

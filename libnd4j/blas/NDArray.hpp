@@ -2478,7 +2478,6 @@ double NDArray::getTrace() const {
 
     double sum = 0.;
 
-PRAGMA_OMP_PARALLEL_FOR_ARGS(reduction(OMP_SUMT:sum) OMP_IF(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
     for(int i = 0; i < minDim; ++i)
         sum += e<double>(i * offset);
 
@@ -3275,7 +3274,7 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
         // regular numeric types
         NDArray tmp(nd4j::DataType::FLOAT32, getContext()); // scalar = 0
 
-        ExtraArguments extras({eps});
+        ExtraArguments extras({0.0, 0.0, eps});
 
         NDArray::prepareSpecialUse({&tmp}, {this, other});
         NativeOpExecutioner::execReduce3Scalar(getContext(), reduce3::EqualsWithEps, getBuffer(), getShapeInfo(),
@@ -3288,7 +3287,7 @@ bool NDArray::equalsTo(const NDArray *other, double eps) const {
 
         synchronize("NDArray::equalsTo");
 
-        if (tmp.e<int>(0) > 0)
+        if (tmp.e<Nd4jLong>(0) != 0)
             return false;
 
         return true;

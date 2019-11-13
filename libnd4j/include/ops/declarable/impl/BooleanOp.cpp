@@ -29,10 +29,6 @@ namespace nd4j {
             //
         }
 
-        BooleanOp::~BooleanOp() {
-            //
-        }
-
         /**
         * Output shape of any BooleanOp is ALWAYS scalar
         */

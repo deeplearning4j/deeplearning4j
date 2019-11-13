@@ -20,6 +20,9 @@
 
 #ifndef NATIVEOPERATIONS_DLL_H
 #define NATIVEOPERATIONS_DLL_H
+
+#include <msvc.h>
+
 #ifdef _WIN32
 //#include <windows.h>
 #  define ND4J_EXPORT __declspec(dllexport)

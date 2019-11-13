@@ -533,7 +533,6 @@ TEST_F(DeclarableOpsTests13, adjustSaturation_1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    // result->printIndexedBuffer();
 
     ASSERT_TRUE(exp.isSameShape(result));
     ASSERT_TRUE(exp.equalsTo(result));

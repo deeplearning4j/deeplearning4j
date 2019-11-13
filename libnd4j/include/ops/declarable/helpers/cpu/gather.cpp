@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/gather.h>
 #include <numeric>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -56,12 +57,16 @@ void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* 
             std::vector<int> dimsOut(indices->rankOf());
             std::iota(dimsOut.begin(), dimsOut.end(), axis);   // fill with axis, axis+1, ... axis+indices->rankOf()-1
             const Nd4jLong numOfSubArrs = indices->lengthOf();
-            PRAGMA_OMP_PARALLEL_FOR_IF(numOfSubArrs > Environment::getInstance()->tadThreshold())
-            for(int i = 0; i < numOfSubArrs; ++i) {
-                NDArray subArrOut = (*output)(i, dimsOut);
-                NDArray subArrIn  = (*input)(indices->e<Nd4jLong>(i), {axis});
-                subArrOut.assign(subArrIn);
-            }
+
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    NDArray subArrOut = (*output)(i, dimsOut);
+                    NDArray subArrIn = (*input)(indices->e<Nd4jLong>(i), {axis});
+                    subArrOut.assign(subArrIn);
+                }
+            };
+
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     } 
     else {
@@ -72,12 +77,16 @@ void gather(nd4j::LaunchContext * context, const NDArray* input, const NDArray* 
         }
         else { // vector case
             const Nd4jLong numOfSubArrs = intArgs.size() - 1;
-            PRAGMA_OMP_PARALLEL_FOR_IF(numOfSubArrs > Environment::getInstance()->tadThreshold())
-            for(int i = 0; i < numOfSubArrs; ++i) {
-                NDArray subArrOut = (*output)(i, {axis});
-                NDArray subArrIn  = (*input)(intArgs[i+1], {axis});
-                subArrOut.assign(subArrIn);
-            }
+
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    NDArray subArrOut = (*output)(i, {axis});
+                    NDArray subArrIn = (*input)(intArgs[i + 1], {axis});
+                    subArrOut.assign(subArrIn);
+                }
+            };
+
+            samediff::Threads::parallel_tad(func, 0, numOfSubArrs);
         }
     }    
 }

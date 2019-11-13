@@ -41,12 +41,6 @@
 #include <types/float16.h>
 #endif
 
-#ifndef _OPENMP
-#define omp_get_thread_num() 0
-#define omp_get_max_threads() 1
-#endif
-
-
 
 namespace functions {
     namespace pairwise_transforms {
@@ -76,7 +70,9 @@ namespace functions {
 				Nd4jLong *yShapeInfo,
 				void *z,
 				Nd4jLong *zShapeInfo,
-				void *extraParams);
+				void *extraParams,
+                uint64_t start,
+                uint64_t stop);
 
 			static void exec(
 				const int opNum,
@@ -87,7 +83,9 @@ namespace functions {
 				void *z,
 				Nd4jLong resultStride,
 				void *extraParams,
-				Nd4jLong len);
+				Nd4jLong len,
+                uint64_t start,
+                uint64_t stop);
 
 
 			template<typename OpType>
@@ -98,7 +96,9 @@ namespace functions {
                     Nd4jLong* yShapeInfo,
                     void *vresult,
                     Nd4jLong* zShapeInfo,
-                    void *vextraParams);
+                    void *vextraParams,
+                    uint64_t start,
+                    uint64_t stop);
 
             template<typename OpType>
             static void exec(void *vx,
@@ -108,7 +108,9 @@ namespace functions {
                              void *vresult,
                              Nd4jLong resultStride,
                              void *vextraParams,
-                             const Nd4jLong len);
+                             Nd4jLong len,
+                             uint64_t start,
+                             uint64_t stop);
         };
     }
 }

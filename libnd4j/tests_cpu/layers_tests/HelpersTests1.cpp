@@ -20,6 +20,7 @@
 #include <hhSequence.h>
 #include <svd.h>
 #include <hhColPivQR.h>
+#include <array>
 #include <jacobiSVD.h>
 #include <ops/declarable/helpers/reverse.h>
 #include <ops/declarable/helpers/activations.h>
@@ -46,14 +47,14 @@ public:
 #ifndef __CUDABLAS__
 
 TEST_F(HelpersTests1, test_binary_search_1) {
-    std::array<int, 10> array({0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+    std::array<int, 10> array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     auto idx = nd4j::ops::helpers::binarySearch(array.data(), 2, 10);
     ASSERT_EQ(2, idx);
 }
 
 TEST_F(HelpersTests1, test_binary_search_2) {
-    std::array<int, 10> array({0, 1, 2, 3, 4, 5, 6, 7, 8, 9});
+    std::array<int, 10> array = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
 
     auto idx = nd4j::ops::helpers::binarySearch(array.data(), 18, 10);
     ASSERT_EQ(-1, idx);

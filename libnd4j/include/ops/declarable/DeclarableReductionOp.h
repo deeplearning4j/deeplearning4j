@@ -33,7 +33,6 @@ namespace nd4j {
             Nd4jStatus validateAndExecute(Context& block) override = 0;
         public:
             DeclarableReductionOp(int numInputs, int numOutputs, const char *opName, bool allowsInplace, int tArgs, int iArgs);
-            ~DeclarableReductionOp();
 
             ShapeList* calculateOutputShape(ShapeList* inputShape, nd4j::graph::Context& block) override;
         };

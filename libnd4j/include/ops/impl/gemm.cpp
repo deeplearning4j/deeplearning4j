@@ -22,6 +22,7 @@
 #include <gemm.h>
 #include <types/types.h>
 #include <Environment.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
     namespace blas {
@@ -32,15 +33,18 @@ namespace nd4j {
             auto source = reinterpret_cast<T *>(vsource);
 
             // handle transpose in parallel
-            PRAGMA_OMP_PARALLEL_FOR_COLLAPSE(2)
-            for (int r = 0; r < rows; r++) {
-                for (int c = 0; c < cols; c++) {
-                    int zIdx = orderTarget == CblasRowMajor ? linearIndexC(rows, cols, r, c) : linearIndexF(rows, cols, r, c);
-                    int xIdx = orderSource == CblasColMajor ? linearIndexF(rows, cols, r, c) : linearIndexC(rows, cols, r, c);
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto r = start; r < stop; r += increment) {
+                    for (int c = 0; c < cols; c++) {
+                        int zIdx = orderTarget == CblasRowMajor ? linearIndexC(rows, cols, r, c) : linearIndexF(rows, cols, r, c);
+                        int xIdx = orderSource == CblasColMajor ? linearIndexF(rows, cols, r, c) : linearIndexC(rows, cols, r, c);
 
-                    ret[zIdx] = source[xIdx];
+                        ret[zIdx] = source[xIdx];
+                    }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, rows);
 
             return ret;
         }
@@ -62,44 +66,49 @@ namespace nd4j {
             bool transBFlag = TransB == CblasTrans;
 
             if (beta == 0.0) {
+                Z z = 0.f;
                 int length = M*N;
                 if (length <= Environment::getInstance()->elementwiseThreshold()) {
-                    PRAGMA_OMP_SIMD
                     for (int r = 0; r < length; r++)
-                        C[r] = static_cast<Z>(0.0f);
+                        C[r] = z;
                 } else {
-                    PRAGMA_OMP_PARALLEL_FOR_SIMD
-                    for (int r = 0; r < length; r++)
-                        C[r] = static_cast<Z>(0.0f);
+                    auto func = PRAGMA_THREADS_FOR {
+                        for (auto r = start; r < stop; r += increment)
+                            C[r] = z;
+                    };
+                    samediff::Threads::parallel_for(func, 0, length);
                 }
             }
 
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
-            for (int r = 0; r < M; r++) {
-                for (int c = 0; c < N; c++) {
-                    int zIdx = linearIndexF(M, N, r, c);
+            auto func = PRAGMA_THREADS_FOR_2D {
+                for (auto r = start_x; r < stop_x; r += inc_x) {
+                    for (auto c = start_y; c < stop_y; c += inc_y) {
+                        int zIdx = linearIndexF(M, N, r, c);
 
-                    Z dot = static_cast<Z>(0.0f);
+                        Z dot = static_cast<Z>(0.0f);
 
-                    if (alpha != 0.0) {
-                        int bIdx; // = linearIndexF(K, N, 0, c);
-                        int aIdx;
+                        if (alpha != 0.0) {
+                            int bIdx; // = linearIndexF(K, N, 0, c);
+                            int aIdx;
 
-                        for (int k = 0; k < K; k++) {
-                            aIdx = (transAFlag ? linearIndexC(M, K, r, k) : linearIndexF(M, K, r, k));
-                            bIdx = (transBFlag ? linearIndexC(K, N, k, c) : linearIndexF(K,N, k, c));
-                            dot += static_cast<Z>(alpha) * static_cast<Z>(A[aIdx]) * static_cast<Z>(B[bIdx]);//A[aIdx]nd4j::math::nd4j_dot<T>(aX, bX, K) * alpha;
+                            for (int k = 0; k < K; k++) {
+                                aIdx = (transAFlag ? linearIndexC(M, K, r, k) : linearIndexF(M, K, r, k));
+                                bIdx = (transBFlag ? linearIndexC(K, N, k, c) : linearIndexF(K, N, k, c));
+                                dot += static_cast<Z>(alpha) * static_cast<Z>(A[aIdx]) * static_cast<Z>(B[bIdx]);//A[aIdx]nd4j::math::nd4j_dot<T>(aX, bX, K) * alpha;
+                            }
+                        }
+
+                        if (beta != 0.0) {
+                            C[zIdx] = static_cast<Z>(dot + beta * C[zIdx]);
+                        } else {
+                            C[zIdx] = static_cast<Z>(dot);
                         }
                     }
-
-                    if (beta != 0.0) {
-                        C[zIdx] = static_cast<Z>(dot + beta * C[zIdx]);
-                    } else {
-                        C[zIdx] = static_cast<Z>(dot);
-                    }
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func, 0, M, 1, 0, N, 1);
         }
 
 
@@ -120,14 +129,16 @@ namespace nd4j {
 
             auto aT = TRANS == CblasTrans ? reinterpret_cast<X *>(nd4j::blas::transpose<X>(CblasColMajor, CblasRowMajor, M, N, reinterpret_cast<void *>(x))) : x;
 
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (int r = 0; r < M; r++) {
-                int aIdx = linearIndexC(M, N, r, 0);
-                auto aX = aT + aIdx;
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto r = start; r < stop; r += increment) {
+                    int aIdx = linearIndexC(M, N, r, 0);
+                    auto aX = aT + aIdx;
 
-                auto dot = nd4j::math::nd4j_dot<X, Y, Z>(aX, y, lda) * alpha;
-                z[r] =  beta == 0.0f ? dot : dot + beta * z[r];
-            }
+                    auto dot = nd4j::math::nd4j_dot<X, Y, Z>(aX, y, lda) * alpha;
+                    z[r] = beta == 0.0f ? dot : dot + beta * z[r];
+                }
+            };
+            samediff::Threads::parallel_for(func, 0, M);
 
             if (TRANS == CblasTrans)
                 delete[] aT;

@@ -731,7 +731,6 @@ public class Nd4jCuda extends org.nd4j.nativeblas.Nd4jCudaHelper {
 // #define ND4J_EXPORT
 // #endif
 // #include <dll.h>
-// #include <helpers/BlasHelper.h>
 
 /*
 int tad_threshold = 1;
@@ -3604,6 +3603,7 @@ public native @Cast("bool") boolean isOptimalRequirementsMet();
 // #include <indexing/IndicesList.h>
 // #include <graph/Intervals.h>
 // #include <array/DataType.h>
+// #include <array/DataTypeUtils.h>
 // #include <stdint.h>
 // #include <array/ArrayOptions.h>
 // #include <array/ArrayType.h>

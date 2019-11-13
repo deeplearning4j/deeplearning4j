@@ -28,7 +28,6 @@
 #include <templatemath.h>
 #include <types/float8.h>
 #include <loops/type_conversions.h>
-#include <loops/aggregates.h>
 #include <helpers/helper_ptrmap.h>
 #include <helpers/logger.h>
 #include <pointercast.h>
@@ -36,6 +35,7 @@
 #include <types/types.h>
 #include <ops/declarable/helpers/transforms.h>
 #include <exceptions/allocation_exception.h>
+#include <helpers/BlasHelper.h>
 
 
 #include <fcntl.h>
@@ -75,6 +75,7 @@ bool experimentalSupport = false;
 #include <performance/benchmarking/BenchmarkSuit.h>
 #include <performance/benchmarking/FullBenchmarkSuit.h>
 #include <performance/benchmarking/LightBenchmarkSuit.h>
+#include <execution/Threads.h>
 
 #ifdef CPU_FEATURES
 #include <cpuinfo_x86.h>
@@ -1152,10 +1153,7 @@ void initializeFunctions(Nd4jPointer *functions) {
        * @param flags optional parameter
        */
 Nd4jPointer mallocHost(Nd4jLong memorySize, int flags) {
-    Nd4jPointer pointer = (Nd4jPointer) malloc(memorySize);
-    if (pointer == 0)
-        return 0L;
-    return pointer;
+    return reinterpret_cast<Nd4jPointer>(new int8_t[memorySize]);
 }
 
 /**
@@ -1179,7 +1177,7 @@ Nd4jPointer mallocDevice(Nd4jLong memorySize, int deviceId, int flags) {
  * @param pointer pointer that'll be freed
  */
 int freeHost(Nd4jPointer pointer) {
-    free(reinterpret_cast<void *>(pointer));
+    delete[] reinterpret_cast<int8_t *>(pointer);
     return 1L;
 }
 
@@ -1364,37 +1362,37 @@ void pullRowsGeneric(void *vx,
 
     int elementsPerThread = n / TAD_THRESHOLD;
     int _threads = nd4j::math::nd4j_max<int>(1, elementsPerThread);
-    _threads = nd4j::math::nd4j_min<int>(_threads, omp_get_max_threads());
+    _threads = nd4j::math::nd4j_min<int>(_threads, nd4j::Environment::getInstance()->maxThreads());
 
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
-    for (int idx = 0; idx < n; idx++) {
-        auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
-        auto zTadOffsetForBlock = zTadOffsets[idx];
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto idx = start; idx < stop; idx += increment) {
+            auto xTadOffsetForBlock = tadOffsets[indexes[idx]];
+            auto zTadOffsetForBlock = zTadOffsets[idx];
 
-        auto rX = hX + xTadOffsetForBlock;
-        auto rZ = hZ + zTadOffsetForBlock;
+            auto rX = hX + xTadOffsetForBlock;
+            auto rZ = hZ + zTadOffsetForBlock;
 
-        if (xEWS == 1 && zEWS == 1) {
-
-            PRAGMA_OMP_SIMD
-            for (int i = 0; i < tadLength; i++ ) {
-                rZ[i] = rX[i];
-            }
-        } else if (xEWS >= 1 && zEWS >= 1) {
-
-            PRAGMA_OMP_SIMD
-            for (int i = 0; i < tadLength; i++ ) {
-                rZ[i * zEWS] = rX[i * xEWS];
-            }
-        }
-        else {
-            for (int i = 0; i < tadLength; i++) {
-                auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
-                auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
-                hZ[zOffset] = hX[xOffset];
+            if (xEWS == 1 && zEWS == 1) {
+                PRAGMA_OMP_SIMD
+                for (int i = 0; i < tadLength; i++) {
+                    rZ[i] = rX[i];
+                }
+            } else if (xEWS >= 1 && zEWS >= 1) {
+                PRAGMA_OMP_SIMD
+                for (int i = 0; i < tadLength; i++) {
+                    rZ[i * zEWS] = rX[i * xEWS];
+                }
+            } else {
+                for (int i = 0; i < tadLength; i++) {
+                    auto xOffset = xTadOffsetForBlock + shape::getIndexOffset(i, tadShapeInfo);
+                    auto zOffset = zTadOffsetForBlock + shape::getIndexOffset(i, zTadShapeInfo);
+                    hZ[zOffset] = hX[xOffset];
+                }
             }
         }
-    }
+    };
+
+    samediff::Threads::parallel_tad(func, 0, n, 1, _threads);
 }
 
 void pullRows(Nd4jPointer *extraPointers,
@@ -1433,30 +1431,29 @@ void tearGeneric(void *vx,
     auto zEWS = shape::elementWiseStride(hZShapeInfo);
     auto numTads = shape::length(hXShapeInfo) / tadLength;
 
-    PRAGMA_OMP_PARALLEL_FOR
-    for (Nd4jLong i = 0; i < numTads; i++) {
-        auto hZ = reinterpret_cast<T *>(targets[i]);
-        auto s = hX + tadOffsets[i];
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment) {
+            auto hZ = reinterpret_cast<T *>(targets[i]);
+            auto s = hX + tadOffsets[i];
 
-        if (zEWS == 1 && tadEWS == 1) {
-
-            PRAGMA_OMP_SIMD
-            for (Nd4jLong j = 0; j < tadLength; j++) {
-                hZ[j] = s[j];
-            }
-        } else if (zEWS > 0 && tadEWS > 0) {
-
-            PRAGMA_OMP_SIMD
-            for (Nd4jLong j = 0; j < tadLength; j++) {
-                hZ[j * zEWS] = s[j * tadEWS];
+            if (zEWS == 1 && tadEWS == 1) {
+                PRAGMA_OMP_SIMD
+                for (Nd4jLong j = 0; j < tadLength; j++) {
+                    hZ[j] = s[j];
+                }
+            } else if (zEWS > 0 && tadEWS > 0) {
+                PRAGMA_OMP_SIMD
+                for (Nd4jLong j = 0; j < tadLength; j++) {
+                    hZ[j * zEWS] = s[j * tadEWS];
+                }
+            } else {
+                for (Nd4jLong j = 0; j < tadLength; j++)
+                    hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
             }
         }
-        else {
+    };
 
-            for (Nd4jLong j = 0; j < tadLength; j++)
-                hZ[shape::getIndexOffset(j, hZShapeInfo)] = s[shape::getIndexOffset(j, tadShapeInfo)];
-        }
-    }
+    samediff::Threads::parallel_tad(func,0, numTads);
 }
 
 void tear(Nd4jPointer *extraPointers,
@@ -1557,57 +1554,60 @@ void shuffleGeneric(void **hX, Nd4jLong **hXShapeInfo, void **dz, Nd4jLong **hZS
     auto dX = reinterpret_cast<T **>(hX);
     auto dZ = reinterpret_cast<T **>(dz);
 
-    PRAGMA_OMP_PARALLEL_FOR_SIMD_THREADS(N)
-    for (int f = 0; f < N; f++) {
-        auto hX = reinterpret_cast<T *>(dX[f]);
-        //auto hZ = reinterpret_cast<T *>(dZ[f]);
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto f = start; f < stop; f += increment) {
+            auto hX = reinterpret_cast<T *>(dX[f]);
+            //auto hZ = reinterpret_cast<T *>(dZ[f]);
 
-        auto xShapeInfo = hXShapeInfo[f];
-        auto tadOffset = reinterpret_cast<Nd4jLong *>(tadOffsets[f]);
+            auto xShapeInfo = hXShapeInfo[f];
+            auto tadOffset = reinterpret_cast<Nd4jLong *>(tadOffsets[f]);
 
 
-        const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
-        auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
-        auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
-        auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
+            const auto tadLength = shape::length(tadOnlyShapeInfo[f]);
+            auto tadEWS = shape::elementWiseStride(tadOnlyShapeInfo[f]);
+            auto tadRank = shape::rank(tadOnlyShapeInfo[f]);
+            auto numTads = shape::length(hXShapeInfo[f]) / tadLength;
 
-        auto tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
-        auto tadStride = shape::stride(tadOnlyShapeInfo[f]);
+            auto tadShape = shape::shapeOf(tadOnlyShapeInfo[f]);
+            auto tadStride = shape::stride(tadOnlyShapeInfo[f]);
 
-        if (shape::rank(xShapeInfo) == 1) {
-            auto xLength = shape::length(xShapeInfo);
-            auto ews = shape::elementWiseStride(xShapeInfo);
-            for (Nd4jLong r = 0; r < xLength; r++) {
-                auto swapIdx = shuffleMap[r];
-                if (swapIdx < 0)
-                    continue;
+            if (shape::rank(xShapeInfo) == 1) {
+                auto xLength = shape::length(xShapeInfo);
+                auto ews = shape::elementWiseStride(xShapeInfo);
+                for (Nd4jLong r = 0; r < xLength; r++) {
+                    auto swapIdx = shuffleMap[r];
+                    if (swapIdx < 0)
+                        continue;
 
-                nd4j::math::nd4j_swap<T>(hX[r*ews], hX[swapIdx*ews]);
-            }
-        } else {
-            for (Nd4jLong r = 0; r < numTads; r++) {
-                if (shuffleMap[r] < 0)
-                    continue;
+                    nd4j::math::nd4j_swap<T>(hX[r * ews], hX[swapIdx * ews]);
+                }
+            } else {
+                for (Nd4jLong r = 0; r < numTads; r++) {
+                    if (shuffleMap[r] < 0)
+                        continue;
 
-                auto oldOffset = tadOffset[r];
-                auto newOffset = tadOffset[shuffleMap[r]];
+                    auto oldOffset = tadOffset[r];
+                    auto newOffset = tadOffset[shuffleMap[r]];
 
-                auto rX = hX + oldOffset;
-                auto rY = hX + newOffset;
+                    auto rX = hX + oldOffset;
+                    auto rY = hX + newOffset;
 
-                if (tadEWS == 1) {
-                    for (Nd4jLong i = 0; i < tadLength; i++) {
-                        nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
-                    }
-                } else {
-                    for (Nd4jLong i = 0; i < tadLength; i++) {
-                        auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
-                        nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+                    if (tadEWS == 1) {
+                        for (Nd4jLong i = 0; i < tadLength; i++) {
+                            nd4j::math::nd4j_swap<T>(rX[i], rY[i]);
+                        }
+                    } else {
+                        for (Nd4jLong i = 0; i < tadLength; i++) {
+                            auto offset = shape::getIndexOffset(i, tadOnlyShapeInfo[f]);
+                            nd4j::math::nd4j_swap<T>(hX[offset + oldOffset], hX[offset + newOffset]);
+                        }
                     }
                 }
             }
         }
-    }
+    };
+
+    samediff::Threads::parallel_tad(func, 0, N);
 }
 
 void shuffle(Nd4jPointer *extras,
@@ -1772,71 +1772,8 @@ void execAggregate(Nd4jPointer *extraPointers,int opNum,
                                     void *realArguments,
                                     int numRealArguments,
                                     nd4j::DataType dtype) {
-    try {
-        BUILD_SINGLE_SELECTOR(dtype, NativeOpExecutioner::execAggregate, (nullptr, opNum, arguments, numArguments, shapeArguments, numShapeArguments, indexArguments, numIndexArguments, intArrays, numIntArrays, realArguments, numRealArguments), FLOAT_TYPES);
-    } catch (std::exception &e) {
-        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    }
 
 }
-
-template <typename T>
-void _batchExecutor(Nd4jPointer *extraPointers,
-                           int numAggregates,
-                           int opNum,
-                           int maxArgs,
-                           int maxShapes,
-                           int maxIntArrays,
-                           int maxIntArraySize,
-                           int maxIdx,
-                           int maxReals,
-                           void *ptrToArguments,
-                           nd4j::DataType dtype) {
-    // probably, we don't want too much threads as usually
-    int _threads = nd4j::math::nd4j_min<int>(numAggregates, omp_get_max_threads());
-
-    nd4j::PointersHelper<T> helper(ptrToArguments,
-                                        numAggregates,
-                                        maxArgs,
-                                        maxShapes,
-                                        maxIntArrays,
-                                        maxIntArraySize,
-                                        maxIdx,
-                                        maxReals);
-
-    // special case here, we prefer spread arrangement here, all threads are detached from each other
-    PRAGMA_OMP_PARALLEL_FOR_THREADS(_threads)
-    for (int i = 0; i < numAggregates; i++) {
-        auto intArrays = new int *[maxIntArrays];
-
-        auto arguments = helper.getArguments(i);
-        auto shapes = helper.getShapeArguments(i);
-        auto idxArg = helper.getIndexArguments(i);
-        auto realArg = helper.getRealArguments(i);
-
-        for (int e = 0; e < maxIntArrays; e++) {
-            intArrays[e] = helper.getIntArrayArguments(i, e);
-        }
-
-        execAggregate(extraPointers,
-                      opNum,
-                      reinterpret_cast<void **>(arguments),
-                      helper.getNumArguments(i),
-                      shapes,
-                      helper.getNumShapeArguments(i),
-                      idxArg,
-                      helper.getNumIndexArguments(i),
-                      intArrays,
-                      helper.getNumIntArrayArguments(i),
-                      realArg,
-                      helper.getNumRealArguments(i),
-                      dtype);
-
-        delete [] intArrays;
-    }
-}
-BUILD_SINGLE_TEMPLATE(template void _batchExecutor, (Nd4jPointer *extraPointers, int numAggregates, int opNum, int maxArgs, int maxShapes, int maxIntArrays, int maxIntArraySize, int maxIdx, int maxReals, void *ptrToArguments, nd4j::DataType dtype), FLOAT_TYPES);
 
 void batchExecutor(Nd4jPointer *extraPointers,
                                int numAggregates,
@@ -1849,12 +1786,7 @@ void batchExecutor(Nd4jPointer *extraPointers,
                                int maxReals,
                                void *ptrToArguments,
                                nd4j::DataType dtype) {
-    try {
-        BUILD_SINGLE_SELECTOR(dtype, _batchExecutor, (extraPointers, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments, dtype), FLOAT_TYPES);
-    } catch (std::exception &e) {
-        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    }
+
 }
 
 void execAggregateBatch(Nd4jPointer *extraPointers,
@@ -1868,12 +1800,7 @@ void execAggregateBatch(Nd4jPointer *extraPointers,
                                          int maxReals,
                                          void *ptrToArguments,
                                          nd4j::DataType dtype) {
-    try {
-        BUILD_SINGLE_SELECTOR(dtype, _batchExecutor, (extraPointers, numAggregates, opNum, maxArgs, maxShapes, maxIntArrays, maxIntArraySize, maxIdx, maxReals, ptrToArguments, dtype), FLOAT_TYPES);
-    } catch (std::exception &e) {
-        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorCode(1);
-        nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
-    }
+
 }
 
 
@@ -2094,27 +2021,21 @@ const char* getAllCustomOps() {
 template <typename T>
 FORCEINLINE int estimateThresholdGeneric(Nd4jPointer *extraPointers, Nd4jPointer hX, int N, T threshold) {
     auto buffer = reinterpret_cast<T *>(hX);
-
     int span = (N / 6) + 8;
-    int cnt = 0;
 
-    PRAGMA_OMP_PARALLEL_REDUCTION(+:cnt)
-    {
-        int tid = omp_get_thread_num();
-        int start = span * tid;
-        int stop = span * (tid + 1);
-        if (stop > N)
-            stop = N;
-
+    auto func = PRAGMA_REDUCE_LONG {
+        int64_t cnt = 0;
         PRAGMA_OMP_SIMD
-        for (int e = start; e < stop; e++) {
+        for (auto e = start; e < stop; e++) {
             auto v = nd4j::math::nd4j_abs<T>(buffer[e]);
             if (v >= threshold)
                 cnt++;
         }
-    }
 
-    return cnt;
+        return cnt;
+    };
+
+    return samediff::Threads::parallel_long(func, LAMBDA_AL { return _old + _new; }, 0, N);
 }
 
 
@@ -2776,58 +2697,51 @@ static void  _scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSub
                             void* vIindexes, Nd4jLong* hIndicesShapeInfo, void* dIindexes, Nd4jLong* dIndicesShapeInfo) {
 
     auto hIindexes = reinterpret_cast<I*>(vIindexes);
-
-    int numThreads = omp_get_max_threads();
-
-    PRAGMA_OMP_PARALLEL_THREADS(numThreads)
-    {
-        for (int i = 0; i < numOfSubArrs; ++i) {
-
-            int threadIndex = omp_get_thread_num();
+        auto func = PRAGMA_THREADS_DO {
+            for (int i = 0; i < numOfSubArrs; ++i) {
+                int threadIndex = thread_id;
             const auto xIndex = hIindexes[i];
             const bool isOwner = xIndex < numThreads ? threadIndex == xIndex : threadIndex == xIndex % numThreads;
 
             if (!isOwner)
                 continue;
 
-            NDArray inSubArr(
-                    reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                    hXShapeInfo);
-            NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)),
-                              hYShapeInfo);
+                NDArray inSubArr(reinterpret_cast<int8_t *>(hX) + (hXOffsets[hIindexes[i]] * DataTypeUtils::sizeOf(hXShapeInfo)), hXShapeInfo);
+                NDArray updSubArr(reinterpret_cast<int8_t *>(hY) + (hYOffsets[i] * DataTypeUtils::sizeOf(hXShapeInfo)), hYShapeInfo);
 
             if (inSubArr.lengthOf() != updSubArr.lengthOf()) {
                 continue;
             }
 
-            switch (opCode) {
-                case 0:
-                    inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 1:
-                    inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 2:
-                    inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 3:
-                    inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 4:
-                    inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 5:
-                    inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
-                    break;
-                case 6:
-                    inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
-                    break;
-                default:
-                    continue;
+                switch (opCode) {
+                    case 0:
+                        inSubArr.applyPairwiseTransform(pairwise::Add, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 1:
+                        inSubArr.applyPairwiseTransform(pairwise::Subtract, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 2:
+                        inSubArr.applyPairwiseTransform(pairwise::Multiply, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 3:
+                        inSubArr.applyPairwiseTransform(pairwise::Divide, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 4:
+                        inSubArr.applyPairwiseTransform(pairwise::ReverseSubtract, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 5:
+                        inSubArr.applyPairwiseTransform(pairwise::ReverseDivide, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    case 6:
+                        inSubArr.applyPairwiseTransform(pairwise::CopyPws, &updSubArr, &inSubArr, nullptr);
+                        break;
+                    default:
+                        continue;
+                }
             }
-        }
-    }
+        };
 
+        samediff::Threads::parallel_do(func);
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -2846,6 +2760,7 @@ void scatterUpdate(Nd4jPointer *extraPointers, int opCode, int numOfSubArrs,
         nd4j::LaunchContext::defaultContext()->errorReference()->setErrorMessage(e.what());
     }
 }
+
 
 void inspectArray(Nd4jPointer *extraPointers, Nd4jPointer buffer, Nd4jLong *shapeInfo, Nd4jPointer specialBuffer, Nd4jLong *specialShapeInfo, Nd4jPointer debugInfo) {
     try {

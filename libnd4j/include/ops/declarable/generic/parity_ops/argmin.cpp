@@ -77,7 +77,7 @@ namespace nd4j {
             }
 
             // special case - output is scalar
-            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == MAX_INT)) {
+            if (dims.size() == 0 || (dims.size() == 1 && dims.at(0) == nd4j::DataTypeUtils::max<int>())) {
                 return SHAPELIST(ConstantShapeHelper::getInstance()->scalarShapeInfo(DataType::INT64));
             }
 

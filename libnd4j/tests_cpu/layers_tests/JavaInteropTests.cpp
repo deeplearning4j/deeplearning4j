@@ -426,6 +426,24 @@ TEST_F(JavaInteropTests, Test_FastPath_Validation_2) {
     ASSERT_NE(Status::OK(), status);
 }
 
+TEST_F(JavaInteropTests, Test_empty_cast_1) {
+    auto x = NDArrayFactory::create<bool>('c', {1, 0, 2});
+    auto z = NDArrayFactory::create<Nd4jLong>('c', {1, 0, 2});
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {1, 0, 2});
+
+    Nd4jLong iArgs[] = {10};
+
+    Context ctx(1);
+    ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+    ctx.setIArguments(iArgs, 1);
+
+    nd4j::ops::cast op;
+    auto result = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), result);
+    ASSERT_EQ(e, z);
+}
+
 /*
 TEST_F(JavaInteropTests, test_avgpooling_edge_1) {
     int inOutH = 35;
@@ -1183,7 +1201,9 @@ TEST_F(JavaInteropTests, test_bfloat16_rng) {
     RandomGenerator rng(119, 323841120L);
     bfloat16 args[2] = {(bfloat16) 0.0f, (bfloat16) 1.0f};
     execRandom(nullptr, nd4j::random::Ops::UniformDistribution, &rng, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(), args);
-    z.printIndexedBuffer("z");
+
+    //z.printIndexedBuffer("z");
+
     ASSERT_TRUE(z.sumNumber().e<float>(0) > 0);
 }
 
@@ -1192,7 +1212,7 @@ TEST_F(JavaInteropTests, test_ismax_view) {
     auto v = original.subarray({NDIndex::all(), NDIndex::all(), NDIndex::interval(0, 40, 2)});
     v->assign(1.0);
 
-    auto e = v->ulike();
+    auto e = v->like();
     auto t = e.tensorAlongDimension(0, {0, 1});
     t->assign(1.0);
 
@@ -1208,7 +1228,6 @@ TEST_F(JavaInteropTests, test_ismax_view) {
     nd4j::ops::ismax op;
     op.execute(&ctx);
 
-    z.printIndexedBuffer("z");
     ASSERT_EQ(e, z);
 
     delete v;

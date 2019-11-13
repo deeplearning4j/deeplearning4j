@@ -23,6 +23,7 @@
 #include <NDArrayFactory.h>
 #include <ops/declarable/headers/parity_ops.h>
 #include <helpers/DebugInfo.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
     DebugInfo DebugHelper::debugStatistics(NDArray const* input) {
@@ -88,11 +89,18 @@ PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) reduction(+:_nanCount,_infCount,_m
             }
             *info = {_minValue, _maxValue, _meanValue / input->lengthOf(), _stdDevValue, _zeroCount, _positiveCount, _negativeCount, _infCount, _nanCount};
             _stdDevValue = 0; //math::nd4j_sqrt<double, double>(info->_stdDevValue / (input->lengthOf() - 1));
-PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule (static) reduction(+:_stdDevValue))
-            for (Nd4jLong e = 0; e < input->lengthOf(); e++) {
-                double current = input->e<double>(e);
-                _stdDevValue += (info->_meanValue - current) * (info->_meanValue - current); //info->_minValue;
-            }
+
+            auto func = PRAGMA_REDUCE_DOUBLE {
+                auto _stdDevValue = 0.0;
+                for (auto e = start; e < stop; e++) {
+                    double current = input->e<double>(e);
+                    _stdDevValue += (info->_meanValue - current) * (info->_meanValue - current); //info->_minValue;
+                }
+
+                return _stdDevValue;
+            };
+            _stdDevValue = samediff::Threads::parallel_double(func, LAMBDA_AD { return _old + _new; }, 0, input->lengthOf());
+
             info->_stdDevValue = math::nd4j_sqrt<double, double>(_stdDevValue / input->lengthOf());
 
         }

@@ -184,7 +184,6 @@ TEST_F(NDArrayTest2, SetIdentity_test_8) {
 
     auto x = NDArrayFactory::create<float>('c', {3, 3, 3});
     auto xExp = NDArrayFactory::create<float>('c', {3, 3, 3}, {1.,0.,0. ,0.,0.,0., 0.,0.,0.,   0.,0.,0. ,0.,1.,0., 0.,0.,0.,  0.,0.,0. ,0.,0.,0., 0.,0.,1.});
-    xExp.printIndexedBuffer("Identity8");
     x.setIdentity();
 
     ASSERT_TRUE(x.equalsTo(&xExp));
@@ -921,8 +920,6 @@ TEST_F(NDArrayTest2, test_subarray_ews_1) {
     NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
 
-    subArr1->printShapeInfo("subArr1");
-
     ASSERT_EQ(5, subArr1->ews());
     delete subArr1;
 }
@@ -932,8 +929,6 @@ TEST_F(NDArrayTest2, test_subarray_ews_2) {
 
     NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::point(2)});
-
-    subArr1->printShapeInfo("subArr1");
 
     ASSERT_EQ(1, subArr1->ews());
     delete subArr1;
@@ -945,8 +940,6 @@ TEST_F(NDArrayTest2, test_subarray_ews_3) {
     NDArray x('c', {10, 5}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
 
-    subArr1->printShapeInfo("subArr1");
-
     ASSERT_EQ(1, subArr1->ews());
     delete subArr1;
 }
@@ -956,8 +949,6 @@ TEST_F(NDArrayTest2, test_subarray_ews_4) {
 
     NDArray x('f', {10, 5}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::point(2), NDIndex::all()});
-
-    subArr1->printShapeInfo("subArr1");
 
     ASSERT_EQ(10, subArr1->ews());
     delete subArr1;
@@ -1074,8 +1065,6 @@ TEST_F(NDArrayTest2, test_subarray_interval_1) {
     NDArray x('f', {10, 10}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0,9)});
 
-    subArr1->printShapeInfo("subArr1");
-
     ASSERT_EQ(10, subArr1->sizeAt(0));
     ASSERT_EQ(9, subArr1->sizeAt(1));
     delete subArr1;
@@ -1085,8 +1074,6 @@ TEST_F(NDArrayTest2, test_subarray_interval_2) {
 
     NDArray x('c', {10, 10}, nd4j::DataType::FLOAT32);
     auto subArr1 = x.subarray({NDIndex::all(), NDIndex::interval(0,9)});
-
-    subArr1->printShapeInfo("subArr1");
 
     ASSERT_EQ(10, subArr1->sizeAt(0));
     ASSERT_EQ(9, subArr1->sizeAt(1));
@@ -1098,10 +1085,8 @@ TEST_F(NDArrayTest2, test_subarray_3d_cf) {
     NDArray c('c', {10, 20, 30}, nd4j::DataType::FLOAT32);
 
     auto subarrayF = f({0,0, 0,0, 2,3}, true);
-    subarrayF.printShapeInfo("F subarray shapeInfo");
 
     auto subarrayC = c({2,3, 0,0, 0,0}, true);
-    subarrayC.printShapeInfo("C subarray shapeInfo");
 }
 
 TEST_F(NDArrayTest2, test_broadcast_row_1) {
@@ -1133,8 +1118,6 @@ TEST_F(NDArrayTest2, test_broadcast_column_2) {
     e.assign(1.0f);
 
     x.applyTrueBroadcast(BroadcastOpsTuple::Add(), &y, &x, false);
-    x.printShapeInfo();
-    x.printIndexedBuffer();
 
     ASSERT_EQ(e, x);
 }
@@ -1189,8 +1172,6 @@ TEST_F(NDArrayTest2, test_long_sum_1) {
     auto x = NDArrayFactory::create<Nd4jLong>('c', {2, 2}, {1, 2, 3, 4});
 
     auto z = x.reduceAlongDims(reduce::Sum, {0});
-
-    z.printIndexedBuffer("z long");
 }
 
 //////////////////////////////////////////////////////////////////////

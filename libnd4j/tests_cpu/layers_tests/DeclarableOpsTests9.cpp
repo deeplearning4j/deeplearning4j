@@ -924,8 +924,6 @@ TEST_F(DeclarableOpsTests9, tile_test1) {
     auto reps   = NDArrayFactory::create<int>('c', {1, 2}, {2, 1});
     auto expOut = NDArrayFactory::create<double>('c', {2, 6,}, {1.,2.,3.,4.,5.,6., 1.,2.,3.,4.,5.,6.});
 
-    expOut.printIndexedBuffer("expOut");
-
     nd4j::ops::tile op;
     auto results = op.execute({&input, &reps}, {}, {});
     auto out = results->at(0);
@@ -1659,8 +1657,6 @@ TEST_F(DeclarableOpsTests9, test_range_int_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-
-    z->printIndexedBuffer("z");
 
     delete result;
 }
@@ -3343,8 +3339,8 @@ TEST_F(DeclarableOpsTests9, Cholesky_Test_3) {
     auto result = op.execute({&x}, {}, {});
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto res = result->at(0);
-//    res->printIndexedBuffer("Output for Cholesky 3");
-    ASSERT_TRUE(exp.equalsTo(res));
+    // res->printIndexedBuffer("Output for Cholesky 3");
+    ASSERT_TRUE(exp.equalsTo(res, 1e-4));
     delete result;
 }
 

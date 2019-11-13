@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/confusion.h>
+#include <execution/Threads.h>
 
 
 namespace nd4j {
@@ -30,13 +31,16 @@ namespace helpers {
         std::unique_ptr<ResultSet> arrs(output->allTensorsAlongDimension({1}));
         int lLen = labels->lengthOf();
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(lLen > Environment::getInstance()->elementwiseThreshold())
-        for (int j = 0; j < lLen; ++j){
-            auto label = labels->e<Nd4jLong>(j);
-            auto pred = predictions->e<Nd4jLong>(j);
-            T value = (weights == nullptr ? (T)1.0f : weights->e<T>(j));
-            (*arrs->at(label)).p<T>(pred, value);
-        }
+        auto func = PRAGMA_THREADS_FOR {
+            for (int j = start; j < stop; j += increment) {
+                auto label = labels->e<Nd4jLong>(j);
+                auto pred = predictions->e<Nd4jLong>(j);
+                T value = (weights == nullptr ? (T) 1.0f : weights->e<T>(j));
+                (*arrs->at(label)).p<T>(pred, value);
+            }
+        };
+
+        samediff::Threads::parallel_for(func, 0, lLen);
     }
 
     void confusionFunctor(nd4j::LaunchContext * context, NDArray* labels, NDArray* predictions, NDArray* weights, NDArray* output) {

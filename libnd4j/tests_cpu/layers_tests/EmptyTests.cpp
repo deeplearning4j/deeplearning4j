@@ -121,7 +121,6 @@ TEST_F(EmptyTests, Test_Concat_3) {
 
     auto z = result->at(0);
 
-    z->printIndexedBuffer("z");
     ASSERT_EQ(exp, *z);
 
     delete result;
@@ -141,7 +140,6 @@ TEST_F(EmptyTests, Test_Concat_4) {
 
     auto z = result->at(0);
 
-    z->printIndexedBuffer("z");
     ASSERT_EQ(exp, *z);
 
     delete result;
@@ -282,7 +280,6 @@ TEST_F(EmptyTests, test_shaped_empty_3) {
 
 TEST_F(EmptyTests, test_shaped_empty_4) {
     auto shape = ConstantShapeHelper::getInstance()->vectorShapeInfo(0, nd4j::DataType::FLOAT32);
-    shape::printShapeInfoLinear("shape", shape);
     NDArray array(shape, true, nd4j::LaunchContext::defaultContext());
     std::vector<Nd4jLong> shapeOf({0});
 

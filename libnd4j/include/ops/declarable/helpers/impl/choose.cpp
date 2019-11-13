@@ -20,6 +20,7 @@
 
 #include <ops/declarable/helpers/choose.h>
 #include <NDArrayFactory.h>
+#include <ops/ops.h>
 
 namespace nd4j {
 namespace ops {

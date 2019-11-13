@@ -26,9 +26,9 @@ namespace nd4j {
 
     template<typename X>
     template <typename OpType>
-    void ReductionSameLoops<X>::innerloopReduce(X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams) {
+    void ReductionSameLoops<X>::innerloopReduce(X* x, Nd4jLong* xShapeInfo, X* z, Nd4jLong* zShapeInfo, Nd4jLong* tadShapeInfo, Nd4jLong* tadOffsets, X* extraParams, int64_t start, int64_t stop) {
 #ifndef INLINE_LOOPS
-        ReductionLoops<X,X,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams);
+        ReductionLoops<X,X,X>::template loopReduce<OpType>(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams, start, stop);
 #endif
     }
 
@@ -36,13 +36,13 @@ namespace nd4j {
     void ReductionSameLoops<X>::wrapper(const int opNum, X *vx, Nd4jLong *xShapeInfo, X *vz,
                                            Nd4jLong *zShapeInfo, Nd4jLong *tadShapeInfo,
                                            Nd4jLong *tadOffsets,
-                                           X *vextraParams) {
+                                           X *vextraParams, int64_t start, int64_t stop) {
 #ifndef INLINE_LOOPS
         auto x = reinterpret_cast<X *>(vx);
         auto z = reinterpret_cast<X *>(vz);
         auto extraParams = reinterpret_cast<X *>(vextraParams);
 
-        DISPATCH_BY_OPNUM_T(innerloopReduce, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams), REDUCE_SAME_OPS);
+        DISPATCH_BY_OPNUM_T(innerloopReduce, PARAMS(x, xShapeInfo, z, zShapeInfo, tadShapeInfo, tadOffsets, extraParams, start, stop), REDUCE_SAME_OPS);
 #endif
     }
 

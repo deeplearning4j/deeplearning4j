@@ -185,6 +185,8 @@
                             <buildCommand>
                                 <program>bash</program>
                                 <argument>run_tests.sh</argument>
+                                <argument>--chip</argument>
+                                <argument>${libnd4j.chip}</argument>
                             </buildCommand>
                         </configuration>
                     </execution>

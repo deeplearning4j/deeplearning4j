@@ -142,18 +142,6 @@ namespace functions {
             nd4j::DebugHelper::checkErrorCode(stream, "transformFloat(...) failed");
 		}
 
-        template<typename X, typename Z>
-        void TransformFloat<X,Z>::exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-
-        }
-
-        template<typename X, typename Z>
-        template <typename OpType>
-        void TransformFloat<X,Z>::exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
-
-        }
-
-
 		BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT TransformFloat, , LIBND4J_TYPES, FLOAT_TYPES);
     }
 }

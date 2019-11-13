@@ -23,6 +23,7 @@
 #include<ops/declarable/helpers/sru.h>
 #include <NDArrayFactory.h>
 #include <MmulHelper.h>
+#include <execution/Threads.h>
 
 namespace nd4j    {
 namespace ops     {
@@ -141,47 +142,49 @@ static void sruBI_(NDArray* x, const NDArray* w, const NDArray* b, const NDArray
     T* pHt   = ht->bufferAsT<T>();
     T* pCt   = ct->bufferAsT<T>();
 
-    PRAGMA_OMP_PARALLEL_FOR
-    for (Nd4jLong col = 0; col < ncols; ++col) {
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto col = start; col < stop; col += increment) {
+            const auto colNum = col % d2;
+            bool flip = colNum >= K;
+            T maskVal = mask ? *(pMask + col) : T(1);
+            T cur = *(pInit + col);
+            T bF = *(pBias + colNum);
+            T bR = *(pBias + colNum + d2);
+            T *pWiVal = pWi + 3 * col;
+            T *pIVal = pI + col;
+            T *pHtVal = pHt + col;
+            T *pCtVal = pCt + col;
 
-        const auto colNum = col % d2;
-        bool flip = colNum >= K;
-        T maskVal = mask ? *(pMask + col) : T(1);
-        T cur     = *(pInit + col);
-        T bF      = *(pBias + colNum);
-        T bR      = *(pBias + colNum + d2);
-        T* pWiVal = pWi     + 3*col;
-        T* pIVal  = pI      + col;
-        T* pHtVal = pHt     + col;
-        T* pCtVal = pCt     + col;
+            if (flip) {
+                const auto step = (time - 1) * ncols;
+                pIVal += step;
+                pHtVal += step;
+                pCtVal += step;
+                pWiVal += (time - 1) * ncolsWi;
+            }
 
-        if (flip) {
-            const auto step = (time - 1) * ncols;
-            pIVal  += step;
-            pHtVal += step;
-            pCtVal += step;
-            pWiVal += (time - 1) * ncolsWi;
+            auto ncolsRev = flip ? -ncols : ncols;
+            auto ncolsWiRev = flip ? -ncolsWi : ncolsWi;
+
+            for (Nd4jLong t = 0; t < time; ++t) {
+                // evaluate sigmoids
+                T ft = (1.) / (1. + nd4j::math::nd4j_exp<T, T>(-(pWiVal[1] + bF)));
+                T rt = (1.) / (1. + nd4j::math::nd4j_exp<T, T>(-(pWiVal[2] + bR)));
+
+                cur = (cur - *pWiVal) * ft + *pWiVal;
+                *pCtVal = cur;
+                T val = nd4j::math::nd4j_tanh<T, T>(cur);
+                *pHtVal = (val * maskVal - *pIVal) * rt + *pIVal;
+
+                pIVal += ncolsRev;
+                pWiVal += ncolsWiRev;
+                pCtVal += ncolsRev;
+                pHtVal += ncolsRev;
+            }
         }
+    };
 
-        auto ncolsRev   = flip ? -ncols   : ncols;
-        auto ncolsWiRev = flip ? -ncolsWi : ncolsWi;
-
-        for (Nd4jLong t = 0; t < time; ++t) {
-            // evaluate sigmoids
-            T ft = (1.)/(1. + nd4j::math::nd4j_exp<T, T>(-(pWiVal[1] + bF)));
-            T rt = (1.)/(1. + nd4j::math::nd4j_exp<T, T>(-(pWiVal[2] + bR)));
-
-            cur = (cur - *pWiVal)*ft + *pWiVal;
-            *pCtVal = cur;
-            T val = nd4j::math::nd4j_tanh<T, T>(cur);
-            *pHtVal = (val*maskVal - *pIVal)*rt + *pIVal;
-
-            pIVal  += ncolsRev;
-            pWiVal += ncolsWiRev;
-            pCtVal += ncolsRev;
-            pHtVal += ncolsRev;
-        }
-    }
+    samediff::Threads::parallel_tad(func, 0, ncols);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -232,72 +235,75 @@ static void sruBIBP_(NDArray* x, const NDArray* w, const NDArray* b, const NDArr
     T* pGradBias  = gradBias.bufferAsT<T>();
     T* pGradInit  = gradC0->bufferAsT<T>();
 
-    PRAGMA_OMP_PARALLEL_FOR
-    for (Nd4jLong col = 0; col < ncols; ++col) {
-        T gbF = 0.f;
-        T gbR = 0.f;
-        const auto colNum = col % d2;
-        const bool flip = colNum >= K;
-        T maskVal       = mask ? *(pMask + col) : T(1.);
-        T cur           = *(pInGradCt + col);
-        T bF            = *(pBias     + colNum);
-        T bR            = *(pBias     + colNum + d2);
-        T* pWiVal        = pWi         + 3*col;
-        T* pInputVal     = pInput      + col;
-        T* pStateVal     = pState      + col;
-        T* pInGradHtVal  = pInGradHt    + col;
-        T* pGradWiVal    = pGradWi     + 3*col;
-        T* pGradInputVal = pGradInput  + col;
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto col = start; col < stop; col += increment) {
+            T gbF = 0.f;
+            T gbR = 0.f;
+            const auto colNum = col % d2;
+            const bool flip = colNum >= K;
+            T maskVal = mask ? *(pMask + col) : T(1.);
+            T cur = *(pInGradCt + col);
+            T bF = *(pBias + colNum);
+            T bR = *(pBias + colNum + d2);
+            T *pWiVal = pWi + 3 * col;
+            T *pInputVal = pInput + col;
+            T *pStateVal = pState + col;
+            T *pInGradHtVal = pInGradHt + col;
+            T *pGradWiVal = pGradWi + 3 * col;
+            T *pGradInputVal = pGradInput + col;
 
-        if (!flip) {
-            const auto stepI = (time - 1) * ncols;
-            const auto stepW = (time - 1) * ncolsWi;
-            pInputVal     += stepI;
-            pStateVal     += stepI;
-            pInGradHtVal  += stepI;
-            pGradInputVal += stepI;
-            pWiVal        += stepW;
-            pGradWiVal    += stepW;
+            if (!flip) {
+                const auto stepI = (time - 1) * ncols;
+                const auto stepW = (time - 1) * ncolsWi;
+                pInputVal += stepI;
+                pStateVal += stepI;
+                pInGradHtVal += stepI;
+                pGradInputVal += stepI;
+                pWiVal += stepW;
+                pGradWiVal += stepW;
+            }
+
+            Nd4jLong ncolsRev = flip ? -ncols : ncols;
+            Nd4jLong ncolsWiRev = flip ? -ncolsWi : ncolsWi;
+
+            for (Nd4jLong t = 0; t < time; ++t) {
+                // evaluate sigmoids
+                T ft = ((T) 1.) / ((T) 1. + nd4j::math::nd4j_exp<T, T>(-(*(pWiVal + 1) + bF)));
+                T rt = ((T) 1.) / ((T) 1. + nd4j::math::nd4j_exp<T, T>(-(*(pWiVal + 2) + bR)));
+
+                T val = nd4j::math::nd4j_tanh<T, T>(*pStateVal);
+                T prevVal = (t < time - 1) ? (*(pStateVal - ncolsRev)) : (*(pInit + col));
+                // grad wrt input
+                *pGradInputVal = *pInGradHtVal - (*pInGradHtVal) * rt;
+                // grad wrt rt, wiR and bR
+                T grt = (*pInGradHtVal) * (val * maskVal - *pInputVal) * (rt - rt * rt);
+                *(pGradWiVal + 2) = grt;
+                gbR += grt;
+                // grad wrt state
+                T gradSateVal = (*pInGradHtVal) * maskVal * (rt - rt * val * val) + cur;
+                // grad wrt wi0
+                *pGradWiVal = gradSateVal - gradSateVal * ft;
+                // grad wrt ft, wi1, and bF
+                T gft = gradSateVal * (prevVal - *pWiVal) * (ft - ft * ft);
+                *(pGradWiVal + 1) = gft;
+                gbF += gft;
+                // grad wrt c_previous
+                cur = gradSateVal * ft;
+
+                pInputVal -= ncolsRev;
+                pWiVal -= ncolsWiRev;
+                pStateVal -= ncolsRev;
+                pGradWiVal -= ncolsWiRev;
+                pGradInputVal -= ncolsRev;
+                pInGradHtVal -= ncolsRev;
+            }
+            *(pGradBias + col) = gbF;
+            *(pGradBias + col + ncols) = gbR;
+            *(pGradInit + col) = cur;
         }
+    };
 
-        Nd4jLong ncolsRev   = flip ? -ncols   : ncols;
-        Nd4jLong ncolsWiRev = flip ? -ncolsWi : ncolsWi;
-
-        for (Nd4jLong t = 0; t < time; ++t) {
-            // evaluate sigmoids
-            T ft = ((T)1.)/((T)1. + nd4j::math::nd4j_exp<T,T>(-(*(pWiVal + 1) + bF)));
-            T rt = ((T)1.)/((T)1. + nd4j::math::nd4j_exp<T,T>(-(*(pWiVal + 2) + bR)));
-
-            T val     = nd4j::math::nd4j_tanh<T,T>(*pStateVal);
-            T prevVal = (t < time-1) ? (*(pStateVal - ncolsRev)) : (*(pInit + col));
-            // grad wrt input
-            *pGradInputVal = *pInGradHtVal - (*pInGradHtVal)*rt ;
-            // grad wrt rt, wiR and bR
-            T grt = (*pInGradHtVal) * (val*maskVal - *pInputVal) * (rt - rt*rt);
-            *(pGradWiVal + 2) = grt;
-            gbR += grt;
-            // grad wrt state
-            T gradSateVal = (*pInGradHtVal) * maskVal * (rt - rt*val*val) + cur;
-            // grad wrt wi0
-            *pGradWiVal = gradSateVal - gradSateVal*ft;
-            // grad wrt ft, wi1, and bF
-            T gft = gradSateVal * (prevVal - *pWiVal) * (ft - ft*ft);
-            *(pGradWiVal + 1) = gft;
-            gbF += gft;
-            // grad wrt c_previous
-            cur = gradSateVal * ft;
-
-            pInputVal     -= ncolsRev;
-            pWiVal        -= ncolsWiRev;
-            pStateVal     -= ncolsRev;
-            pGradWiVal    -= ncolsWiRev;
-            pGradInputVal -= ncolsRev;
-            pInGradHtVal  -= ncolsRev;
-        }
-        *(pGradBias + col) = gbF;
-        *(pGradBias + col + ncols) = gbR;
-        *(pGradInit + col) = cur;
-    }
+    samediff::Threads::parallel_tad(func, 0, ncols);
 
     // gradB
     gradBias.reduceAlongDimension(reduce::Sum, gradB, {0});    // [4*K]

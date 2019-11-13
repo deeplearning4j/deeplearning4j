@@ -68,8 +68,6 @@ TEST_F(LambdaTests, test_basic_1) {
     ASSERT_EQ(0, res);
 
     ASSERT_EQ(e, x);
-
-    x.printIndexedBuffer("x");
 }
 
 void test(NDArray &x) {
@@ -127,7 +125,6 @@ TEST_F(LambdaTests, test_basic_2) {
 
     test(x);
 
-    x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);
 }
 
@@ -137,7 +134,6 @@ TEST_F(LambdaTests, test_basic_3) {
 
     test(x);
 
-    x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);
 }
 
@@ -147,7 +143,6 @@ TEST_F(LambdaTests, test_basic_4) {
 
     test2<float>(x);
 
-    x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);
 }
 
@@ -158,7 +153,6 @@ TEST_F(LambdaTests, test_basic_5) {
 
     testPairwise(x, y);
 
-    x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);
 }
 
@@ -168,7 +162,6 @@ TEST_F(LambdaTests, test_basic_6) {
 
     testIndexed(x);
 
-    x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);
 }
 
@@ -180,7 +173,6 @@ TEST_F(LambdaTests, test_basic_7) {
 
     testTriplewise(w, x, y);
 
-    w.printIndexedBuffer("w");
     ASSERT_EQ(e, w);
 }
 
@@ -191,7 +183,6 @@ TEST_F(LambdaTests, test_basic_8) {
 
     testIndexedPairwise(x, y);
 
-    x.printIndexedBuffer("x");
     ASSERT_EQ(e, x);
 }
 

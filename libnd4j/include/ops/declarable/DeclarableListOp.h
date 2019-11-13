@@ -34,13 +34,12 @@ namespace nd4j {
         protected:
             Nd4jStatus validateAndExecute(Context& block) override = 0;
 
-            nd4j::NDArray* getZ(Context& block, int inputId);
+            nd4j::NDArray* getZ(Context& block, int inputId) ;
             void setupResult(NDArray* array, Context& block);
             void setupResultList(NDArrayList* arrayList, Context& block);
 
         public:
             DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs);
-            ~DeclarableListOp();
 
             
             Nd4jStatus execute(Context* block) override;
