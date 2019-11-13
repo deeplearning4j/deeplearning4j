@@ -42,8 +42,6 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
 
     @Setter
     private int[] nShape; // TODO: Remove once we use DataSets in observations
-    @Setter
-    private double scale = 1.0; // TODO: Remove once we use DataSets in observations
 
     /**
      *
@@ -117,12 +115,6 @@ public abstract class BaseTDTargetAlgorithm implements ITDTargetAlgorithm<Intege
                     nextObservations.put(new INDArrayIndex[] {NDArrayIndex.point(i), NDArrayIndex.point(j)}, nextObsArray[j]);
                 }
             }
-        }
-
-        // TODO: Remove once we use DataSets in observations
-        if(scale != 1.0) {
-            observations.muli(1.0 / scale);
-            nextObservations.muli(1.0 / scale);
         }
 
         initComputation(observations, nextObservations);

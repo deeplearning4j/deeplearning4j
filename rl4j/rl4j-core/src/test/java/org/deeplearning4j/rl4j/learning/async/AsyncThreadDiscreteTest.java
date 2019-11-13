@@ -50,7 +50,7 @@ public class AsyncThreadDiscreteTest {
         assertEquals(1, asyncGlobalMock.enqueueCallCount);
 
         // HistoryProcessor
-        assertEquals(10, hpMock.addCallCount);
+        assertEquals(10, hpMock.addCalls.size());
         double[] expectedRecordValues = new double[] { 123.0, 0.0, 1.0, 2.0, 3.0 };
         assertEquals(expectedRecordValues.length, hpMock.recordCalls.size());
         for(int i = 0; i < expectedRecordValues.length; ++i) {

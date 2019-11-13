@@ -61,7 +61,11 @@ public class QLearningDiscreteTest {
         for(int i = 0; i < expectedRecords.length; ++i) {
             assertEquals(expectedRecords[i], hp.recordCalls.get(i).getDouble(0), 0.0001);
         }
-        assertEquals(13, hp.addCallCount);
+        double[] expectedAdds = new double[] { 0.0, 2.0, 4.0, 6.0, 8.0, 9.0, 11.0, 13.0, 15.0, 17.0, 19.0, 21.0, 23.0 };
+        assertEquals(expectedAdds.length, hp.addCalls.size());
+        for(int i = 0; i < expectedAdds.length; ++i) {
+            assertEquals(expectedAdds[i], 255.0 * hp.addCalls.get(i).getDouble(0), 0.0001);
+        }
         assertEquals(0, hp.startMonitorCallCount);
         assertEquals(0, hp.stopMonitorCallCount);
 
@@ -119,9 +123,9 @@ public class QLearningDiscreteTest {
             Transition tr = expReplay.transitions.get(i);
             assertEquals(expectedTrRewards[i], tr.getReward(), 0.0001);
             assertEquals(expectedTrActions[i], tr.getAction());
-            assertEquals(expectedTrNextObservation[i], tr.getNextObservation().getDouble(0), 0.0001);
+            assertEquals(expectedTrNextObservation[i], 255.0 * tr.getNextObservation().getDouble(0), 0.0001);
             for(int j = 0; j < expectedTrObservations[i].length; ++j) {
-                assertEquals("row: "+ i + " col: " + j, expectedTrObservations[i][j], tr.getObservation()[j].getDouble(0), 0.0001);
+                assertEquals("row: "+ i + " col: " + j, expectedTrObservations[i][j], 255.0 * tr.getObservation()[j].getDouble(0), 0.0001);
             }
         }
 

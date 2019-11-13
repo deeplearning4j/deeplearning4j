@@ -22,6 +22,7 @@ import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.deeplearning4j.optimize.api.TrainingListener;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.util.ModelSerializer;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
@@ -68,6 +69,10 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
 
     public INDArray output(INDArray batch) {
         return mln.output(batch);
+    }
+
+    public INDArray output(Observation observation) {
+        return this.output(observation.toHStack());
     }
 
     public INDArray[] outputAll(INDArray batch) {

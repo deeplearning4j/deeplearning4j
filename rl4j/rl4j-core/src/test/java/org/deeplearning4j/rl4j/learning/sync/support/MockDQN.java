@@ -5,6 +5,7 @@ import org.deeplearning4j.nn.api.NeuralNetwork;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -55,6 +56,11 @@ public class MockDQN implements IDQN {
         }
 
         return batch;
+    }
+
+    @Override
+    public INDArray output(Observation observation) {
+        return this.output(observation.toHStack());
     }
 
     @Override

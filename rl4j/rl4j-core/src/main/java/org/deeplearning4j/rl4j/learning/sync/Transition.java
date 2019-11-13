@@ -18,6 +18,7 @@ package org.deeplearning4j.rl4j.learning.sync;
 
 import lombok.AllArgsConstructor;
 import lombok.Value;
+import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
@@ -28,7 +29,6 @@ import org.nd4j.linalg.factory.Nd4j;
  * State, Action, Reward, (isTerminal), State
  */
 @Value
-@AllArgsConstructor
 public class Transition<A> {
 
     INDArray[] observation;
@@ -36,6 +36,22 @@ public class Transition<A> {
     double reward;
     boolean isTerminal;
     INDArray nextObservation;
+
+    public Transition(Observation observation, A action, double reward, boolean isTerminal, Observation nextObservation) {
+        this.observation = observation.toINDArray();
+        this.action = action;
+        this.reward = reward;
+        this.isTerminal = isTerminal;
+        this.nextObservation = nextObservation.toINDArray()[0];
+    }
+
+    public Transition(INDArray[] observation, A action, double reward, boolean isTerminal, INDArray nextObservation) {
+        this.observation = observation;
+        this.action = action;
+        this.reward = reward;
+        this.isTerminal = isTerminal;
+        this.nextObservation = nextObservation;
+    }
 
     /**
      * concat an array history into a single INDArry of as many channel
