@@ -1495,7 +1495,7 @@ public class ArrayUtil {
 
     }
 
-    //Credit: http://stackoverflow.com/questions/15533854/converting-byte-array-to-double-array
+    //Credit: https://stackoverflow.com/questions/15533854/converting-byte-array-to-double-array
 
     /**
      *

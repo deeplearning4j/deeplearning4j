@@ -236,7 +236,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
         /**
          * Epsilon value for batch normalization; small floating point value added to variance (algorithm 1 in <a
-         * href="http://arxiv.org/pdf/1502.03167v3.pdf">http://arxiv.org/pdf/1502.03167v3.pdf</a>) to reduce/avoid
+         * href="https://arxiv.org/pdf/1502.03167v3.pdf">https://arxiv.org/pdf/1502.03167v3.pdf</a>) to reduce/avoid
          * underflow issues.<br> Default: 1e-5
          */
         protected double eps = 1e-5;
@@ -365,7 +365,7 @@ public class BatchNormalization extends FeedForwardLayer {
 
         /**
          * Epsilon value for batch normalization; small floating point value added to variance (algorithm 1 in <a
-         * href="http://arxiv.org/pdf/1502.03167v3.pdf">http://arxiv.org/pdf/1502.03167v3.pdf</a>) to reduce/avoid
+         * href="https://arxiv.org/pdf/1502.03167v3.pdf">https://arxiv.org/pdf/1502.03167v3.pdf</a>) to reduce/avoid
          * underflow issues.<br> Default: 1e-5
          *
          * @param eps Epsilon values to use

@@ -16,7 +16,7 @@
 
 //
 // Methods to lookup files in $PATH
-// adopted from http://stackoverflow.com/questions/2718915/check-if-file-exists-including-on-path
+// adopted from https://stackoverflow.com/questions/2718915/check-if-file-exists-including-on-path
 //
 
 #ifndef LIBND4J_FILES_H

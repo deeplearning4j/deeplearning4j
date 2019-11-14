@@ -64,7 +64,7 @@ public class DL4JResources {
     /**
      * Set the base download URL for (most) DL4J datasets and models.<br>
      * This usually doesn't need to be set manually unless there is some issue with the default location
-     * @param baseDownloadURL Base download URL to set. For example, http://blob.deeplearning4j.org/
+     * @param baseDownloadURL Base download URL to set. For example, https://dl4jdata.blob.core.windows.net/
      */
     public static void setBaseDownloadURL(@NonNull String baseDownloadURL){
         baseURL = baseDownloadURL;
@@ -79,8 +79,8 @@ public class DL4JResources {
 
     /**
      * Get the URL relative to the base URL.<br>
-     * For example, if baseURL is "http://blob.deeplearning4j.org/", and relativeToBase is "/datasets/iris.dat"
-     * this simply returns "http://blob.deeplearning4j.org/datasets/iris.dat"
+     * For example, if baseURL is "https://dl4jdata.blob.core.windows.net/", and relativeToBase is "/datasets/iris.dat"
+     * this simply returns "https://dl4jdata.blob.core.windows.net/datasets/iris.dat"
      *
      * @param relativeToBase Relative URL
      * @return URL
@@ -92,8 +92,8 @@ public class DL4JResources {
 
     /**
      * Get the URL relative to the base URL as a String.<br>
-     * For example, if baseURL is "http://blob.deeplearning4j.org/", and relativeToBase is "/datasets/iris.dat"
-     * this simply returns "http://blob.deeplearning4j.org/datasets/iris.dat"
+     * For example, if baseURL is "https://dl4jdata.blob.core.windows.net/", and relativeToBase is "/datasets/iris.dat"
+     * this simply returns "https://dl4jdata.blob.core.windows.net/datasets/iris.dat"
      *
      * @param relativeToBase Relative URL
      * @return URL

@@ -627,7 +627,7 @@ To use the system clock time source, add the following to Spark submit:
 
 ## <a name="ubuntu16">Failed training on Ubuntu 16.04 (Ubuntu bug that may affect DL4J users)</a>
 
-When running a Spark on YARN cluster on Ubuntu 16.04 machines, chances are that after finishing a job, all processes owned by the user running Hadoop/YARN are killed. This is related to a bug in Ubuntu, which is documented at https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499. There's also a Stackoverflow discussion about it at http://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04.
+When running a Spark on YARN cluster on Ubuntu 16.04 machines, chances are that after finishing a job, all processes owned by the user running Hadoop/YARN are killed. This is related to a bug in Ubuntu, which is documented at https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499. There's also a Stackoverflow discussion about it at https://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04.
 
 Some workarounds are suggested. 
 
@@ -695,7 +695,7 @@ To use the system clock time source, add the following to Spark submit:
 
 ## <a href="ubuntu16">Failed training on Ubuntu 16.04 (Ubuntu bug that may affect DL4J users)</a>
 
-When running a Spark on YARN cluster on Ubuntu 16.04 machines, chances are that after finishing a job, all processes owned by the user running Hadoop/YARN are killed. This is related to a bug in Ubuntu, which is documented at https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499. There's also a Stackoverflow discussion about it at http://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04.
+When running a Spark on YARN cluster on Ubuntu 16.04 machines, chances are that after finishing a job, all processes owned by the user running Hadoop/YARN are killed. This is related to a bug in Ubuntu, which is documented at https://bugs.launchpad.net/ubuntu/+source/procps/+bug/1610499. There's also a Stackoverflow discussion about it at https://stackoverflow.com/questions/38419078/logouts-while-running-hadoop-under-ubuntu-16-04.
 
 Some workarounds are suggested. 
 

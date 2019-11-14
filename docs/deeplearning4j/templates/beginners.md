@@ -99,4 +99,4 @@ You can also download a [free version of the Skymind Intelligence Layer](https:/
 
 Most of what we know about deep learning is contained in academic papers. You can find some of the major research groups [here](https://skymind.ai/wiki/machine-learning-research-groups-labs).
 
-While individual courses have limits on what they can teach, the Internet does not. Most math and programming questions can be answered by Googling and searching sites like [Stackoverflow](http://stackoverflow.com) and [Math Stackexchange](https://math.stackexchange.com/).
+While individual courses have limits on what they can teach, the Internet does not. Most math and programming questions can be answered by Googling and searching sites like [Stackoverflow](https://stackoverflow.com) and [Math Stackexchange](https://math.stackexchange.com/).

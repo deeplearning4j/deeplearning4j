@@ -32,7 +32,7 @@ import java.util.Map;
 
 /**
  * The AdaMax updater, a variant of Adam.
- * http://arxiv.org/abs/1412.6980
+ * https://arxiv.org/abs/1412.6980
  *
  * @author Justin Long
  */

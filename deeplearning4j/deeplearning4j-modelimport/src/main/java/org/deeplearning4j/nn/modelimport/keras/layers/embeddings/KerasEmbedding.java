@@ -104,7 +104,7 @@ public class KerasEmbedding extends KerasLayer {
                     "on Embedding layers. Zero Masking for the Embedding layer only works with unidirectional LSTM for now."
                     + " If you want to have this behaviour for your imported model " +
                     "in DL4J, apply masking as a pre-processing step to your input." +
-                    "See https://deeplearning4j.org/usingrnns#masking for more on this.");
+                    "See http://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent#masking for more on this.");
 
         Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);

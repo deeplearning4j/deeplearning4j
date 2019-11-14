@@ -57,12 +57,7 @@
         </plugins>
     </build>
     <dependencies>
-         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.0.2.RELEASE</version>
-            <scope>test</scope>
-        </dependency>
+
 
         <dependency>
             <groupId>junit</groupId>
@@ -105,10 +100,12 @@
             <artifactId>logback-core</artifactId>
             <version>${logback.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-kafka_${scala.binary.version}</artifactId>
-            <version>${project.version}</version>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+            <version>5.0.2.RELEASE</version>
+            <scope>test</scope>
         </dependency>
 
         <dependency>

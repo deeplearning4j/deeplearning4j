@@ -74,6 +74,7 @@ public class DistributionUniform extends DynamicCustomOp {
         AttrValue v = attributesForNode.get("dtype");
         dataType = TFGraphMapper.convertType(v.getType());
         addIArgument(dataType.toInt());
+        addTArgument(0.0, 1.0); //TF version is hardcoded 0 to 1
     }
 
     protected void addArgs() {
