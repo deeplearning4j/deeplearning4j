@@ -53,8 +53,9 @@ if(NOT CUDA_BLAS)
     # we need this definition to avoid global memory use within mkldnn
     add_definitions(-DMKLDNN_ENABLE_CONCURRENT_EXEC=true)
 
-    # there's a chance, we have no BLAS provided externally
-    if ("${OPENBLAS_PATH}" STREQUAL "")
+    # there's a chance, we have no BLAS provided externally.
+    # or we're on macOS, and we have Accelerate framework
+    if (APPLE OR "${OPENBLAS_PATH}" STREQUAL "")
         #we don't want static OpenBLAS on Apple
         set(BLA_STATIC ON)
         if (NOT APPLE)
