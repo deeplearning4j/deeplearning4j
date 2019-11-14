@@ -136,4 +136,9 @@ public class CudaOpContext extends BaseOpContext implements OpContext {
     public void markInplace(boolean reallyInplace) {
         nativeOps.markGraphContextInplace(context, reallyInplace);
     }
+
+    @Override
+    public void allowHelpers(boolean reallyAllow) {
+        nativeOps.ctxAllowHelpers(context, reallyAllow);
+    }
 }

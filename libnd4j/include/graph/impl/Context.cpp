@@ -461,6 +461,14 @@ namespace nd4j {
                 v->setContext(_context);
 #endif
         }
+
+        void Context::allowHelpers(bool reallyAllow) {
+            _helpersAllowed = reallyAllow;
+        }
+
+        bool Context::helpersAllowed() {
+            return _helpersAllowed;
+        }
     }
 }
 

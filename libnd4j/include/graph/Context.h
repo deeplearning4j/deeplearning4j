@@ -58,9 +58,12 @@ namespace nd4j {
 
             std::vector<nd4j::DataType> _dataTypes;
 
+            // fields for fast execution (out-of-graph ops use)
             std::vector<NDArray*> _fastpath_in;
             std::vector<NDArray*> _fastpath_out;
             std::vector<NDArray*> _handles;
+
+            bool _helpersAllowed = true;
         public:
             Context(ContextPrototype* prototype, VariableSpace* variableSpace);
 
@@ -188,6 +191,10 @@ namespace nd4j {
             void setBArguments(bool *arguments, int numberOfArguments);
 
             void setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer);
+
+
+            void allowHelpers(bool reallyAllow);
+            bool helpersAllowed();
         };
     }
 }
