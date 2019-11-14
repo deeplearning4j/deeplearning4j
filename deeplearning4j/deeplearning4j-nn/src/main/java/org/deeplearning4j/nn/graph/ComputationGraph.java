@@ -795,6 +795,9 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
     }
 
     protected int[] getOutputLayerIndices(){
+        for (String s: verticesMap.keySet()){
+            System.out.println(s);
+        }
         if(outputLayerIdxs == null) {
             outputLayerIdxs = new int[numOutputArrays];
             int i = 0;
