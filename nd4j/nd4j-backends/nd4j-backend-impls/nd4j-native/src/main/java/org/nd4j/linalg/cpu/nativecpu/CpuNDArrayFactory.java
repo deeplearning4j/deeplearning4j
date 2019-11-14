@@ -84,13 +84,6 @@ public class CpuNDArrayFactory extends BaseNativeNDArrayFactory {
 
     @Override
     public void createBlas() {
-        String lib = System.getProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS,
-                     System.getProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS_NOLAPACK, "")).toLowerCase();
-        if (lib.trim().length() == 0) {
-            // try to load by default the LAPACK-less version of MKL bundled with MKL-DNN
-            System.setProperty(ND4JSystemProperties.ND4J_CPU_LOAD_OPENBLAS_NOLAPACK, "mklml");
-        }
-
         // we'll check hardware support first
         if (!nativeOps.isMinimalRequirementsMet()) {
             // this means cpu binary was built for some arch support, we don't have on this box
