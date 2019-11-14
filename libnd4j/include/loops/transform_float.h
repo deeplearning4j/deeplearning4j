@@ -27,7 +27,7 @@
 #include <vector>
 #include <templatemath.h>
 #include <ops/ops.h>
-#include <ops/special_ops.h>
+
 #ifdef _OPENMP
 #include <omp.h>
 #endif
@@ -42,11 +42,6 @@
 #ifdef __CUDACC__
 #include <cuda.h>
 #include <cuda_runtime.h>
-#endif
-
-#ifndef _OPENMP
-#define omp_get_thread_num() 0
-#define omp_get_max_threads() 1
 #endif
 
 #include "legacy_ops.h"
@@ -102,11 +97,12 @@ namespace functions {
 
 	static _CUDA_H void executeTransformShaped(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShape, int xRank, void *extraParams, void *z, Nd4jLong *zShape, int zRank, int *allocationPointer, void *reductionPointer,  Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
 
-#endif
-			static void exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+#else
+			static void exec(int opNum, void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, uint64_t threadId, uint64_t numThreads);
 
 			template<typename OpType>
-			static ND4J_EXPORT void exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets);
+			static ND4J_EXPORT void exec(void *dx, Nd4jLong *xShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, uint64_t threadId, uint64_t numThreads);
+#endif
         };
     }
 }

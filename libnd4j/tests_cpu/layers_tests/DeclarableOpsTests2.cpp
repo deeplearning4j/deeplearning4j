@@ -3589,8 +3589,6 @@ TEST_F(DeclarableOpsTests2, softmax_cross_entropy_loss_test1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *result = results->at(0);
-    result->printIndexedBuffer("SCEL Output");
-    expected.printIndexedBuffer("SCEL Expect");
     ASSERT_TRUE(expected.isSameShape(result));
     ASSERT_TRUE(expected.equalsTo(result));
 

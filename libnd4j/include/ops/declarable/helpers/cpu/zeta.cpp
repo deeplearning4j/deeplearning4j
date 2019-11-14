@@ -19,6 +19,7 @@
 //
 
 #include<ops/declarable/helpers/zeta.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -62,9 +63,12 @@ static void zeta_(nd4j::LaunchContext * context, const NDArray& x, const NDArray
 	//auto result = NDArray(&x, false, context);
 	int xLen = x.lengthOf();
 
-	PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
-	for(int i = 0; i < xLen; ++i)
-		  z.p(i, zetaScalar<T>(x.e<T>(i), q.e<T>(i)));
+	auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment)
+            z.p(i, zetaScalar<T>(x.e<T>(i), q.e<T>(i)));
+    };
+
+	samediff::Threads::parallel_for(func, 0, xLen);
 }
 
 void zeta(nd4j::LaunchContext * context, const NDArray& x, const NDArray& q, NDArray& z) {

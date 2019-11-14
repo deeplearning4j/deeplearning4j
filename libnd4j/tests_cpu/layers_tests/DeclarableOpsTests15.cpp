@@ -250,7 +250,6 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_2) {
     auto result = op.execute({&x}, {}, {nd4j::DataType::HALF}, {});
     ASSERT_EQ(Status::OK(), result->status());
     auto out = result->at(0);
-    out->printIndexedBuffer("Casted result");
     ASSERT_TRUE(e.equalsTo(out));
     delete result;
 }

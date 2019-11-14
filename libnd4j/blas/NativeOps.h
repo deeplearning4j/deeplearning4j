@@ -55,7 +55,6 @@
 #define ND4J_EXPORT
 #endif
 #include <dll.h>
-#include <helpers/BlasHelper.h>
 
 /*
 int tad_threshold = 1;
@@ -1430,7 +1429,11 @@ static const char* getNpyArrayNameFromMap(void *map, int index){
     for(; it != end; ++it, ++cnt){
         if (cnt == index){
             // FIXME: @fariz, this is a leak!
+#ifdef _MSC_VER
+            return const_cast<const char *>(_strdup(it->first.c_str()));
+#else
             return const_cast<const char *>(strdup(it->first.c_str()));
+#endif
         }
     }
     throw std::runtime_error("No array at index.");

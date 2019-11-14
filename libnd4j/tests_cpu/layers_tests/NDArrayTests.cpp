@@ -174,8 +174,6 @@ TEST_F(NDArrayTest, EqualityTest1) {
             arrayC->p(i, k, (float) i+1);
         }
     }
-    arrayB->printBuffer("B =");
-    arrayC->printBuffer("C =");
 
     //nd4j_printf("A B\n","");
     ASSERT_TRUE(arrayA->equalsTo(arrayB, 1e-5));
@@ -1699,7 +1697,6 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension2) {
     NDArray exp(expBuff, expShapeInfo);
 
     auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {1});
-    result->printIndexedBuffer("VARIANCE2");
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
@@ -1714,7 +1711,6 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension3) {
     x.linspace(1); // 1, 2, 3, ..., 100
     exp.assign(825.f);
     auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {0});
-    result->printIndexedBuffer("VARIANCE3");
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 
@@ -1729,7 +1725,6 @@ TEST_F(NDArrayTest, TestVarianceAlongDimension4) {
     x.linspace(1); // 1, 2, 3, ..., 100
     exp.assign(1716.);
     auto result = x.varianceAlongDimension(variance::SummaryStatsVariance, false, {0});
-    result->printIndexedBuffer("VARIANCE4");
     ASSERT_TRUE(exp.isSameShapeStrict(result));
     ASSERT_TRUE(exp.equalsTo(result));
 

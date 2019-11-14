@@ -164,9 +164,7 @@ TEST_F(DeclarableOpsTests1, ApplyGradientDescent_1) {
     auto result = op.execute({&x, &y}, {1.}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto z = result->at(0);
-//    result->at(0)->printIndexedBuffer("OUTPUT");
-//    result->at(0)->printShapeInfo("OUTPUT Shape");
-//    exp.printIndexedBuffer("EXPECT");
+
     ASSERT_TRUE(z->equalsTo(exp));
     delete result;
 }
@@ -180,9 +178,7 @@ TEST_F(DeclarableOpsTests1, AssignBroadcastTest_1) {
     auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto z = result->at(0);
-//    result->at(0)->printIndexedBuffer("OUTPUT");
-//    result->at(0)->printShapeInfo("OUTPUT Shape");
-//    exp.printIndexedBuffer("EXPECT");
+
     ASSERT_TRUE(z->equalsTo(exp));
     delete result;
 }
@@ -199,11 +195,6 @@ TEST_F(DeclarableOpsTests1, AssignBroadcastTest_2) {
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto z1 = result->at(0);
     auto z2 = result->at(1);
-//    z1->printIndexedBuffer("OUTPUT");
-//    z2->printIndexedBuffer("OUTPUT");
-//
-//    exp1.printIndexedBuffer("EXPECT");
-//    exp2.printIndexedBuffer("EXPECT");
 
     ASSERT_TRUE(z1->equalsTo(exp1));
     ASSERT_TRUE(z2->equalsTo(exp2));
@@ -220,9 +211,7 @@ TEST_F(DeclarableOpsTests1, AXpY_Test_1) {
     auto result = op.execute({&x, &y}, {2.}, {}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto z = result->at(0);
-//    result->at(0)->printIndexedBuffer("OUTPUT");
-//    result->at(0)->printShapeInfo("OUTPUT Shape");
-//    exp.printIndexedBuffer("EXPECT");
+
     ASSERT_TRUE(z->equalsTo(exp));
     delete result;
 }
@@ -265,14 +254,6 @@ TEST_F(DeclarableOpsTests1, TestTensorMmul1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *out = results->at(0);
-    // exp.printShapeInfo();
-    // out->printShapeInfo();
-    // exp.printBuffer();
-    // out->printBuffer();
-
-    // PointersManager manager(x.getContext(), "scatter");
-    // manager.printDevContentOnHost<float>(out->getSpecialBuffer(), out->lengthOf());
-    // manager.printDevContentOnHost<float>(exp.getSpecialBuffer(), exp.lengthOf());
 
     ASSERT_TRUE(exp.isSameShape(out));
     ASSERT_TRUE(exp.equalsTo(out));
@@ -293,8 +274,6 @@ TEST_F(DeclarableOpsTests1, TestTensorDot2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *out = results->at(0);
-    // out->printBuffer();
-    // out->printShapeInfo();
 
     ASSERT_TRUE(exp.isSameShape(out));
     ASSERT_TRUE(exp.equalsTo(out));
@@ -315,8 +294,6 @@ TEST_F(DeclarableOpsTests1, TestTensorDot3) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *out = results->at(0);
-    // out->printBuffer();
-    // out->printShapeInfo();
 
     ASSERT_TRUE(exp.isSameShape(out));
     ASSERT_TRUE(exp.equalsTo(out));
@@ -337,8 +314,6 @@ TEST_F(DeclarableOpsTests1, TestTensorDot4) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto *out = results->at(0);
-    // out->printBuffer();
-    // out->printShapeInfo();
 
     ASSERT_TRUE(exp.isSameShape(out));
     ASSERT_TRUE(exp.equalsTo(out));
@@ -631,8 +606,6 @@ TEST_F(DeclarableOpsTests1, ClipByValue1) {
 
     clip.execute(block);
 
-    // x->printIndexedBuffer("Result");
-    // exp.printIndexedBuffer("Expect");
     ASSERT_TRUE(x->equalsTo(&exp));
 
 
@@ -775,7 +748,7 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractMatrices1) {
     nd4j::ops::reversesubtract subOp;
 
     subOp.execute(block);
-    // x->printIndexedBuffer("Output Subtract");
+
     ASSERT_TRUE(x->equalsTo(&exp));
 
     delete variableSpace;
@@ -814,7 +787,7 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_2) {
     y.assign(1.f);
     exp.assign(-2.f);
     x.applyTrueBroadcast(BROADCAST(ReverseSubtract), &y, &z, true);
-//    x.printIndexedBuffer("ReverseSubtract Legacy");
+
     ASSERT_TRUE(exp.equalsTo(&z));
 
     nd4j::ops::reversesubtract subOp;
@@ -822,7 +795,6 @@ TEST_F(DeclarableOpsTests1, ReverseSubtractTest_2) {
     auto res = subOp.execute({&x, &y}, {}, {});
 
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-    //res->at(0)->printIndexedBuffer("OUtput REVERSED SUB");
     ASSERT_TRUE(res->at(0)->equalsTo(&exp));
 
     delete res;
@@ -862,8 +834,8 @@ TEST_F(DeclarableOpsTests1, ReverseModTest_1) {
     y.assign(9.f);
     exp.assign(1.f);
     y.applyTrueBroadcast(BROADCAST(Mod), &x, &z, true);
-    // z.printIndexedBuffer("MOD1");
     ASSERT_TRUE(exp.equalsTo(&z));
+
     x.applyTrueBroadcast(BROADCAST(ReverseMod), &y, &exp, true);
     ASSERT_TRUE(exp.equalsTo(&z));
 
@@ -899,7 +871,6 @@ TEST_F(DeclarableOpsTests1, ReverseModTest_2) {
     auto res = subOp.execute({&x, &y}, {}, {});
 
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
-//    res->at(0)->printIndexedBuffer("OUtput REVERSED MOD2");
     ASSERT_TRUE(res->at(0)->equalsTo(&exp));
 
     delete res;
@@ -1355,7 +1326,6 @@ TEST_F(DeclarableOpsTests1, DivideScalarScalar1) {
 
     div.execute(block);
 
-    //x->printBuffer("x");
     ASSERT_TRUE(x->equalsTo(&exp));
 
     delete variableSpace;
@@ -1503,10 +1473,6 @@ TEST_F(DeclarableOpsTests1, Test_Cast_1) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    // z->printIndexedBuffer("OUtput");
-    // yExp.printIndexedBuffer("Expect");
-    // z->printShapeInfo("OUt shape");
-    // yExp.printShapeInfo("Exp shape");
     ASSERT_TRUE(yExp.equalsTo(z));
 
     delete result;
@@ -1515,8 +1481,6 @@ TEST_F(DeclarableOpsTests1, Test_Cast_1) {
 //////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests1, TestRegistrator1) {
     auto res = nd4j::ops::OpRegistrator::getInstance()->getAllCustomOperations();
-
-    // nd4j_printf("Ops: %s\n", res)
 }
 
 // //////////////////////////////////////////////////////////////////////
@@ -1555,7 +1519,6 @@ TEST_F(DeclarableOpsTests1, TestRegistrator1) {
 //     //auto status = execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, false);
 //     auto status = execCustomOp(nullptr, hash, inputBuffers, inputShapes, 2, outputBuffers, outputShapes, 1, nullptr, 0, nullptr, 0, nullptr, 0, false);
 //     ASSERT_EQ(ND4J_STATUS_OK, status);
-//     // z->printIndexedBuffer("Output add");
 //     ASSERT_NEAR(2.0f, y->meanNumber().e<float>(0), 1e-5);
 //     ASSERT_NEAR(1.0f, x->meanNumber().e<float>(0), 1e-5);
 //     ASSERT_NEAR(3.0f, z->meanNumber().e<float>(0), 1e-5);
@@ -1635,8 +1598,6 @@ TEST_F(DeclarableOpsTests1, TestGemv1) {
     auto exp = new NDArray(expBuffer, z->getShapeInfo());
 
      nd4j::blas::GEMV<float, float, float>::op('f',  x->rows(), x->columns(), 1.0f, x->getBuffer(), y->rows(), y->getBuffer(), 1, 0.0, z->getBuffer(), 1);
-
-    //z->printBuffer();
 
     ASSERT_TRUE(z->equalsTo(exp));
 
@@ -2020,8 +1981,6 @@ TEST_F(DeclarableOpsTests1, TestCustomShape1) {
     auto inshapes = new ShapeList(input->getShapeInfo());
     auto shapes = test.calculateOutputShape(inshapes, *block);
 
-    //input.printShapeInfo("input");
-    //shape::printShapeInfoLinear(shape);
 
     ASSERT_EQ(input->getShapeInfo()[0]    , shapes->at(0)[0]);
     ASSERT_EQ(input->getShapeInfo()[1] * 2, shapes->at(0)[1]);

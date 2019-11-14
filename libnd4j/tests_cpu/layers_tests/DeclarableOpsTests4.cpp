@@ -479,7 +479,6 @@ TEST_F(DeclarableOpsTests4, Test_FlattenTests_4) {
     ASSERT_EQ(ND4J_STATUS_OK, result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer();
 
     ASSERT_TRUE(exp.equalsTo(z));
 
@@ -1045,7 +1044,6 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_3) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printShapeInfo("Emply shape expected");
     ASSERT_TRUE(z->isEmpty());
 
     delete result;
@@ -1065,9 +1063,6 @@ TEST_F(DeclarableOpsTests4, Test_StridedSlice_Alex_4) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printBuffer("Strided Slice");
-    z->printShapeInfo("Vector size 1 shape expected");
-    exp.printShapeInfo("Expected shape");
     ASSERT_TRUE(z->lengthOf() == 1);
     ASSERT_TRUE(exp.equalsTo(z));
     delete result;
@@ -1481,9 +1476,6 @@ TEST_F(DeclarableOpsTests4, WeightedCrossEntropyWithLogits_2) {
     nd4j::ops::weighted_cross_entropy_with_logits op;
     auto results = op.execute({&targets, &input, &weights}, {}, {}, {}, false, nd4j::DataType::DOUBLE);
     auto  output = results->at(0);
-
-    output->printIndexedBuffer("Result is ");
-    expected.printIndexedBuffer("Expected is ");
 
     ASSERT_EQ(Status::OK(), results->status());
     ASSERT_TRUE(expected.isSameShape(output));

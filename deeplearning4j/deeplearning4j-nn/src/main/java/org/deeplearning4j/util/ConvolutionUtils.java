@@ -35,6 +35,7 @@ import org.nd4j.linalg.api.ops.Op;
 import org.nd4j.linalg.api.ops.impl.broadcast.BroadcastCopyOp;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.MaxPooling2D;
 import org.nd4j.linalg.api.ops.impl.layers.convolution.config.Pooling2DConfig;
+import org.nd4j.linalg.api.ops.impl.transforms.custom.Assign;
 import org.nd4j.linalg.api.shape.Shape;
 import org.nd4j.linalg.exception.ND4JArraySizeException;
 import org.nd4j.linalg.factory.NDArrayFactory;
@@ -482,23 +483,12 @@ public class ConvolutionUtils {
             return reshape5dTo2d(format, mask, workspaceMgr, type);
         } else {
             //Need to broadcast first
-            IntArrayList broadcastDims = new IntArrayList();
-            for(int i=0; i<mask.rank(); i++ ){
-                if(mask.size(i) == label.size(i)){
-                    if((format == Convolution3D.DataFormat.NCDHW && i == 1) || (format == Convolution3D.DataFormat.NDHWC && i == 4)){
-                        //Skip channels dimension
-                        continue;
-                    }
-                    broadcastDims.add(i);
-                }
-            }
             long[] lShape = label.shape().clone();
             int channelIdx = format == Convolution3D.DataFormat.NCDHW ? 1 : 4;
             lShape[channelIdx] = mask.size(channelIdx);     //Keep existing channel size
 
             INDArray bMask = workspaceMgr.createUninitialized(type, mask.dataType(), lShape, 'c');
-            int[] bcDims = broadcastDims.toIntArray();
-            Nd4j.getExecutioner().exec(new BroadcastCopyOp(bMask, mask, bMask, bcDims));
+            Nd4j.exec(new Assign(new INDArray[]{bMask, mask}, new INDArray[]{bMask}));
             return reshape5dTo2d(format, bMask, workspaceMgr, type);
         }
     }

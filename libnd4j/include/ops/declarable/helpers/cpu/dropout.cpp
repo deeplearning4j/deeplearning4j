@@ -22,6 +22,7 @@
 #include <NativeOps.h>
 #include <vector>
 #include <memory>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -33,13 +34,16 @@ namespace helpers {
         nd4j::graph::RandomGenerator nodeRng(3019L, seed);
         int inLen = input->lengthOf();
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(inLen > Environment::getInstance()->elementwiseThreshold())
-        for (Nd4jLong e = 0; e < inLen; ++e) {
-            float val = nodeRng.relativeT(e, T(0.f), T(1.f));
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment) {
+                float val = nodeRng.relativeT<T>(e, T(0.f), T(1.f));
 
-            if (val < probValue)
-                output->p<T>(e, input->e<T>(e) / probValue);
-        }
+                if (val < probValue)
+                    output->p<T>(e, input->e<T>(e) / probValue);
+            }
+        };
+
+        samediff::Threads::parallel_for(func, 0, inLen);
     }
     BUILD_SINGLE_TEMPLATE(template void dropoutSimple, (NDArray const* input, NDArray* output, double probValue, int seed), FLOAT_TYPES);
 
@@ -59,7 +63,6 @@ namespace helpers {
             std::vector<Nd4jLong> dims(reduceShape->lengthOf());
 
             bool fit = true;
-            PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(fit))
             for( int i = 0; i < dims.size(); i++ ) {
                 if (fit) {
                     dims[i] = reduceShape->e<Nd4jLong>(i);
@@ -126,14 +129,17 @@ namespace helpers {
         //input->template applyRandom<randomOps::AlphaDropOut<T>>(rng, nullptr, output, probValueArr);
         nd4j::graph::RandomGenerator nodeRng(3019L, seed);
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(input->lengthOf() > Environment::getInstance()->elementwiseThreshold())
-        for (Nd4jLong e = 0; e < input->lengthOf(); ++e) {
-            float randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
-            float xVal = input->e<float>(e);
-            output->p<float>(e, randVal >= probValue ? alpha * beta + alpha1 : alpha * xVal + alpha1);
-        }
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment) {
+                float randVal = nodeRng.relativeT(e, T(0.f), T(1.f));
+                float xVal = input->e<float>(e);
+                output->p<float>(e, randVal >= probValue ? alpha * beta + alpha1 : alpha * xVal + alpha1);
+            }
+        };
 
-        return ND4J_STATUS_OK;
+        samediff::Threads::parallel_for(func, 0, input->lengthOf());
+
+        return Status::OK();
     }
 
     template <typename T>

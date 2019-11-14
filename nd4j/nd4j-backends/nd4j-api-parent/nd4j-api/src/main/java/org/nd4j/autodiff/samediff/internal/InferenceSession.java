@@ -24,7 +24,7 @@ import org.nd4j.autodiff.listeners.Listener;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.autodiff.samediff.VariableType;
-import org.nd4j.autodiff.samediff.internal.memory.ArrayCloseMemoryMgr;
+import org.nd4j.autodiff.samediff.internal.memory.ArrayCacheMemoryMgr;
 import org.nd4j.base.Preconditions;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.memory.MemoryWorkspace;
@@ -84,8 +84,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
 
     public InferenceSession(@NonNull SameDiff sameDiff) {
         super(sameDiff);
-
-        mmgr = new ArrayCloseMemoryMgr();   //TODO replace this with new (planned) array reuse memory manager
+        mmgr = new ArrayCacheMemoryMgr();
     }
 
     @Override
@@ -215,7 +214,6 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
         }
 
         INDArray[] out = doExec(op.getOp(), outputFrameIter, opInputs, allIterInputs, constAndPhInputs);
-        op.getOp().clearArrays();
 
         if (log.isTraceEnabled()) {
             StringBuilder sb = new StringBuilder();
@@ -254,6 +252,7 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
                 }
             }
         }
+        op.getOp().clearArrays();
 
 
         //Record array uses for memory management/deallocation
@@ -842,11 +841,10 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
                     reqShape = reqShape.asDataType(dt);
                 }
 
-                if (currOutput == null || currOutput.wasClosed() || !currOutput.shapeDescriptor().equals(reqShape) || currOutput.isEmpty() != reqShape.isEmpty() || isLoop) {
-                    boolean isOutput = allReqVariables.contains(outNames[i]);
-                    INDArray out = mmgr.allocate(isOutput, reqShape);
-                    customOp.setOutputArgument(i, out);
-                }
+                //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
+                boolean isOutput = allReqVariables.contains(outNames[i]);
+                INDArray out = mmgr.allocate(isOutput, reqShape);
+                customOp.setOutputArgument(i, out);
             }
 
         } else if (df instanceof Op) {
@@ -893,29 +891,17 @@ public class InferenceSession extends AbstractSession<INDArray, SameDiffOp> {
 
             //Check output shape; allocate a new Z if required
             //For example, if minibatch size has changed since last op execution
+            boolean isOutput = allReqVariables.contains(((BaseOp) op).outputVariablesNames()[0]);
             if (emptyReduce) {
-                INDArray z = op.z();
-                if (z == null || !op.x().equalShapes(z) || isLoop) {
-                    //Note: edge case: [x,y].sum(empty) = [x,y] for TF import compatibility.
-                    z = mmgr.allocate(false, op.x().dataType(), op.x().shape());
-                    op.setZ(z);
-                }
+                //Always allocate new output array, rely on memory manager for efficient memory management and array reuse etc
+                INDArray z = mmgr.allocate(false, op.x().dataType(), op.x().shape());
+                op.setZ(z);
             } else {
                 List<LongShapeDescriptor> outputShape = ((BaseOp) op).calculateOutputShape();
                 Preconditions.checkState(outputShape != null && outputShape.size() == 1, "Could not calculate output shape for op: %s", op.getClass());
-                INDArray z = op.z();
-                if (z == null || z.wasClosed() || !outputShape.get(0).equals(z.shapeDescriptor()) || isLoop) {
-                    if (log.isTraceEnabled()) {
-                        log.trace("Existing op result (z) array shape for op {} was {}, allocating new array of shape {}",
-                                op.getClass().getSimpleName(), (z == null ? null : Arrays.toString(z.shape())), outputShape.get(0).toString());
-                    }
-
-                    LongShapeDescriptor lsd = outputShape.get(0);
-
-                    boolean isOutput = allReqVariables.contains(((BaseOp) op).outputVariablesNames()[0]);
-                    z = mmgr.allocate(isOutput, lsd);
-                    op.setZ(z);
-                }
+                LongShapeDescriptor lsd = outputShape.get(0);
+                INDArray z = mmgr.allocate(isOutput, lsd);
+                op.setZ(z);
             }
         }
 

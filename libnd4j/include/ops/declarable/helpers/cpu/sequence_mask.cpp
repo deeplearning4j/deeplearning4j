@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/sequence_mask.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -26,11 +27,14 @@ namespace helpers {
 
     template <typename I, typename B>
     static void sequenceMask_(NDArray* input, NDArray* output, int maxIndex) {
-        PRAGMA_OMP_PARALLEL_FOR_SIMD_COLLAPSE(2)
-        for (Nd4jLong i = 0; i < maxIndex; i++)
-            for(Nd4jLong k = 0; k < input->lengthOf(); k++)
-                if (i < input->t<I>(k))
-                    output->t<B>(k * maxIndex + i) = B(true); //,  T(1.0f));
+        auto func = PRAGMA_THREADS_FOR_2D {
+            for (auto i = start_x; i < stop_x; i += inc_x)
+                for (auto k = start_y; k < stop_y; k += inc_y)
+                    if (i < input->t<I>(k))
+                        output->t<B>(k * maxIndex + i) = B(true); //,  T(1.0f));
+        };
+
+        samediff::Threads::parallel_for(func, 0, maxIndex, 1, 0, input->lengthOf(), 1);
     }
 
     void sequenceMask(nd4j::LaunchContext * context, NDArray* input, NDArray* output, int maxIndex) {

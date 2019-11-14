@@ -34,6 +34,7 @@
 #include <array/NDArrayList.h>
 #include <iterator>
 #include <MmulHelper.h>
+#include <execution/Threads.h>
 
 namespace nd4j 	  {
 namespace ops 	  {
@@ -122,11 +123,14 @@ static void fusedTanh(NDArray *z, NDArray *i, NDArray *c, const NDArray *cLast, 
     auto cLast_ = cLast->bufferAsT<T>();
     auto h_ = h->bufferAsT<T>();
 
-    PRAGMA_OMP_PARALLEL_FOR_SIMD
-    for (uint e = 0; e < uLen; e++) {
-        c_[e] = z_[e] * i_[e] + (f_[e] * cLast_[e]);
-        h_[e] = nd4j::math::nd4j_tanh<T,T>(c_[e]);
-    }
+    auto func = PRAGMA_THREADS_FOR {
+        for (uint e = start; e < stop; e += increment) {
+            c_[e] = z_[e] * i_[e] + (f_[e] * cLast_[e]);
+            h_[e] = nd4j::math::nd4j_tanh<T, T>(c_[e]);
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, uLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

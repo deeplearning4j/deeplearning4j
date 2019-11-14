@@ -21,6 +21,7 @@
 #include<ops/declarable/helpers/polyGamma.h>
 #include<ops/declarable/helpers/zeta.h>
 #include <NDArrayFactory.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -39,7 +40,6 @@ static FORCEINLINE T getFactorial(const int n) {
 
 	T result = (T)1.f;
 
-    PRAGMA_OMP_PARALLEL_FOR_SIMD_REDUCTION(prodT : result)
 	for(int i = 2; i <= n; ++i)
 		result *= i;
 	
@@ -74,9 +74,12 @@ static void polyGamma_(nd4j::LaunchContext * context, const NDArray& n, const ND
 	NDArray& result = output;
 
 	int xLen = x.lengthOf();
-    PRAGMA_OMP_PARALLEL_FOR_IF(xLen > Environment::getInstance()->elementwiseThreshold())
-	for(int i = 0; i < x.lengthOf(); ++i)
-		result.p(i, polyGammaScalar<T>(context, n.e<int>(i), x.e<T>(i)));
+
+	auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment)
+            result.p(i, polyGammaScalar<T>(context, n.e<int>(i), x.e<T>(i)));
+    };
+	samediff::Threads::parallel_for(func, 0, x.lengthOf());
 
 //	return result;
 }

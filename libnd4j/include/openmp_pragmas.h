@@ -23,7 +23,7 @@
 
 #if defined(_MSC_VER)
 
-#define OMP_STRINGIFY(args)
+#define OMP_STRINGIFY(args) #args
 #define OMP_IF(args)
 #define OMP_SCHEDULE(args)
 #define OMP_MAXT
@@ -32,7 +32,7 @@
 #define PRAGMA_OMP_ATOMIC
 #define PRAGMA_OMP_ATOMIC_ARGS(args)
 #define PRAGMA_OMP_CRITICAL
-#define PRAGMA_OMP_SIMD
+#define PRAGMA_OMP_SIMD __pragma(omp simd)
 #define PRAGMA_OMP_SIMD_ARGS(args)
 #define PRAGMA_OMP_SIMD_SUM(args)
 #define PRAGMA_OMP_SIMD_MAX(args)
@@ -60,6 +60,7 @@
 #define PRAGMA_OMP_TASK
 
 #else
+
 
 #define OMP_STRINGIFY(args) #args
 #define OMP_IF(args) if(args)
@@ -98,5 +99,40 @@
 #define PRAGMA_OMP_TASK _Pragma(OMP_STRINGIFY(omp task))
 
 #endif
+
+// reductions
+#define FUNC_RL std::function<int64_t(uint64_t, int64_t, int64_t, int64_t)>
+#define FUNC_AL std::function<int64_t(int64_t, int64_t)>
+
+// aggregation functions
+#define FUNC_RD std::function<double(uint64_t, int64_t, int64_t, int64_t)>
+#define FUNC_AD std::function<double(double, double)>
+
+// parallel block
+#define FUNC_DO std::function<void(uint64_t, uint64_t)>
+
+// parallel_for block
+#define FUNC_1D std::function<void(uint64_t, int64_t, int64_t, int64_t)>
+#define FUNC_2D std::function<void(uint64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t)>
+#define FUNC_3D std::function<void(uint64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t, int64_t)>
+
+// aggregation lambda
+#define LAMBDA_AL [&](int64_t _old, int64_t _new) -> int64_t
+#define LAMBDA_AD [&](double _old, double _new) -> double
+
+#define LAMBDA_SUML LAMBDA_AL {return _old + _new; }
+#define LAMBDA_SUMD LAMBDA_AD {return _old + _new; }
+
+// reduction lambda
+#define PRAGMA_REDUCE_LONG  [&] (uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) mutable -> int64_t
+#define PRAGMA_REDUCE_DOUBLE  [&] (uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) mutable -> double
+
+// paralllel block lambda
+#define PRAGMA_THREADS_DO  [&](uint64_t thread_id, uint64_t numThreads) -> void
+
+// paralllel_for lambdas
+#define PRAGMA_THREADS_FOR  [&](uint64_t thread_id, int64_t start, int64_t stop, int64_t increment) -> void
+#define PRAGMA_THREADS_FOR_2D [&](uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y) -> void
+#define PRAGMA_THREADS_FOR_3D [&](uint64_t thread_id, int64_t start_x, int64_t stop_x, int64_t inc_x, int64_t start_y, int64_t stop_y, int64_t inc_y, int64_t start_z, int64_t stop_z, int64_t inc_z) -> void
 
 #endif //DEV_TESTS_OPENMP_PRAGMAS_H

@@ -28,13 +28,13 @@ namespace nd4j {
 namespace ops  {
 
     CUSTOM_OP_IMPL(multi_head_dot_product_attention, 7, -1, false, 0, 2) {
-        auto queries = INPUT_VARIABLE(0);
-        auto keys    = INPUT_VARIABLE(1);
-        auto values  = INPUT_VARIABLE(2);
-        auto Wq      = INPUT_VARIABLE(3);
-        auto Wk      = INPUT_VARIABLE(4);
-        auto Wv      = INPUT_VARIABLE(5);
-        auto Wo      = INPUT_VARIABLE(6);
+        auto queries = INPUT_VARIABLE(0);       //[batch, nIn, timeSteps]
+        auto keys    = INPUT_VARIABLE(1);       //[batch, nIn, timeSteps]
+        auto values  = INPUT_VARIABLE(2);       //[batch, nIn, timeSteps]
+        auto Wq      = INPUT_VARIABLE(3);       //[nHeads, headSize, nIn]
+        auto Wk      = INPUT_VARIABLE(4);       //[nHeads, headSize, nIn]
+        auto Wv      = INPUT_VARIABLE(5);       //[nHeads, headSize, nIn]
+        auto Wo      = INPUT_VARIABLE(6);       //[nHeads * headSize, nOut]
         auto mask    = block.width() > 7 ? INPUT_VARIABLE(7) : nullptr;
 
 
@@ -93,11 +93,12 @@ namespace ops  {
 
 
         // Project queries, keys, values
-        auto projectedQueries = AttentionHelper::multiHeadProject(queries, Wq, block.launchContext());
-        auto projectedKeys = AttentionHelper::multiHeadProject(keys, Wk, block.launchContext());
-        auto projectedValues = AttentionHelper::multiHeadProject(values, Wv, block.launchContext());
+        auto projectedQueries = AttentionHelper::multiHeadProject(queries, Wq, block.launchContext());      //[minibatch, numHeads, projectedSize, seqLength]
+        auto projectedKeys = AttentionHelper::multiHeadProject(keys, Wk, block.launchContext());            //[minibatch, numHeads, projectedSize, seqLength]
+        auto projectedValues = AttentionHelper::multiHeadProject(values, Wv, block.launchContext());        //[minibatch, numHeads, projectedSize, seqLength]
 
         // Apply Attention
+        // attnResults = [minibatch, numHeads, projectedSize, seqLenth
         NDArray attnResults('c', {projectedQueries.sizeAt(0), projectedValues.sizeAt(1), projectedValues.sizeAt(2), projectedQueries.sizeAt(3)}, projectedValues.dataType(), block.launchContext());
         nd4j::ops::dot_product_attention attention;
         attention.execute({&projectedQueries, &projectedKeys, &projectedValues, mask}, {&attnResults, weights ? OUTPUT_VARIABLE(1) : nullptr}, {}, {normalization, weights}, {});

@@ -22,7 +22,6 @@
 #define LIBND4J_HELPERS_MATMUL_H
 
 #include <NDArray.h>
-#include <helpers/BlasHelper.h>
 
 namespace nd4j {
     namespace ops {

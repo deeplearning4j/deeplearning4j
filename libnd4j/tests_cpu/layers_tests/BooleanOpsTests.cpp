@@ -141,7 +141,7 @@ TEST_F(BooleanOpsTests, test_where_1) {
 
     auto z = result->at(0);
 
-    z->printIndexedBuffer("z");
+    //z->printIndexedBuffer("z");
 
     ASSERT_EQ(e, *z);
 

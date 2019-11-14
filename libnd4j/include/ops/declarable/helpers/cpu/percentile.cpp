@@ -66,7 +66,7 @@ static void _percentile(const NDArray& input, NDArray& output, std::vector<int>&
     position = len - position - 1;
 
     // FIXME: our sort impl should be used instead, so this operation might be implemented as generic
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(flattenedArr))
+    // FIXME: parallelism !
     for(int i=0; i<listOfSubArrs->size(); ++i) {
         
         T* buff = reinterpret_cast<T *>(flattenedArr.getBuffer());

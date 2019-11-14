@@ -63,22 +63,24 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, ND
 
                 T* outBuff = output.bufferAsT<T>();
 
-                PRAGMA_OMP_PARALLEL_FOR_SIMD
-                for (uint r = 0; r < numOfArrs; r++) {
+                auto func = PRAGMA_THREADS_FOR {
+                    for (auto r = start; r < stop; r += increment) {
+                        const Nd4jLong arrLen = inArrs[r]->lengthOf();
+                        const uint xEws = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
 
-                    const Nd4jLong arrLen = inArrs[r]->lengthOf();
-                    const uint xEws    = (arrLen == 1) ? 1 : inArrs[r]->stridesOf()[nonUnityDim[r]];
+                        T *z = outBuff + zOffset[r];
+                        T *x = inArrs[r]->bufferAsT<T>();
 
-                    T *z = outBuff + zOffset[r];
-                    T *x = inArrs[r]->bufferAsT<T>();
+                        if (outEws == 1 && xEws == 1)
+                            for (Nd4jLong e = 0; e < arrLen; e++)
+                                z[e] = x[e];
+                        else
+                            for (Nd4jLong e = 0; e < arrLen; e++)
+                                z[e * outEws] = x[e * xEws];
+                    }
+                };
 
-                    if(outEws == 1 && xEws == 1)
-                        for (Nd4jLong e = 0; e < arrLen; e++)
-                            z[e] = x[e];
-                    else
-                        for (Nd4jLong e = 0; e < arrLen; e++)
-                            z[e * outEws] = x[e * xEws];
-                }
+                samediff::Threads::parallel_tad(func, 0, numOfArrs);
                 return;
             }
         }
@@ -96,11 +98,14 @@ void SpecialMethods<T>::concatCpuGeneric(const std::vector<NDArray*>& inArrs, ND
             indices[i][2 * axis + 1] = indices[i-1][2 * axis + 1] + inArrs[i]->sizeAt(axis);      // index end with (excluding)
         }
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(int i = 0; i < numOfArrs; ++i) {
-            auto temp = output(indices[i], true);
-            nd4j::TransformLoops<T,T,T>::template loopTransform<simdOps::Assign<T,T>, false>(inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr);
-        }
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                auto temp = output(indices[i], true);
+                nd4j::TransformLoops<T, T, T>::template loopTransform<simdOps::Assign<T, T>>( inArrs[i]->bufferAsT<T>(), inArrs[i]->getShapeInfo(), temp.bufferAsT<T>(), temp.getShapeInfo(), nullptr, 0, 1);
+            }
+        };
+
+        samediff::Threads::parallel_tad(func, 0, numOfArrs);
 }
 
 /**
@@ -137,21 +142,15 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
         auto z = reinterpret_cast<T *>(vz);
         auto x = reinterpret_cast<T **>(vx);
 
-        // aggregation step
-#ifdef _OPENMP
-        int _threads = omp_get_max_threads();
-#else
-        // we can use whatever we want here, this value won't be used if there's no omp
-    int _threads = 4;
-#endif
-
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (Nd4jLong i = 0; i < length; i++) {
-
-            for (Nd4jLong ar = 0; ar < n; ar++) {
-                z[i] += x[ar][i];
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                for (auto ar = 0L; ar < n; ar++) {
+                    z[i] += x[ar][i];
+                }
             }
-        }
+        };
+
+        samediff::Threads::parallel_for(func, 0, length);
     }
 
 
@@ -175,24 +174,18 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             z = x[0];
 
             PRAGMA_OMP_SIMD
-            for (Nd4jLong i = 0; i < length; i++) {
+            for (uint64_t i = 0; i < length; i++) {
                 z[i] /= n;
             }
 
-#ifdef _OPENNMP
-            int _threads = omp_get_max_threads(); //nd4j::math::nd4j_min<int>(omp_get_max_threads() / 2, 4);
-#else
-            // we can use whatever we want here, this value won't be used if there's no omp
-            int _threads = 4;
-#endif
-
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (Nd4jLong i = 0; i < length; i++) {
-
-                for (Nd4jLong ar = 1; ar < n; ar++) {
-                    z[i] += x[ar][i] / n;
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    for (Nd4jLong ar = 1; ar < n; ar++) {
+                        z[i] += x[ar][i] / n;
+                    }
                 }
-            }
+            };
+            samediff::Threads::parallel_for(func, 0, length);
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
             for (Nd4jLong ar = 1; ar < n; ar++) {
@@ -205,20 +198,14 @@ void SpecialMethods<T>::concatCpuGeneric(int dimension, int numArrays, Nd4jPoint
             memset(z, 0, length * sizeof(T));
 
             // aggregation step
-#ifdef _OPENNMP
-            int _threads = omp_get_max_threads(); //nd4j::math::nd4j_min<int>(omp_get_max_threads() / 2, 4);
-#else
-            // we can use whatever we want here, this value won't be used if there's no omp
-            int _threads = 4;
-#endif
-
-            PRAGMA_OMP_PARALLEL_FOR_SIMD
-            for (Nd4jLong i = 0; i < length; i++) {
-
-                for (Nd4jLong ar = 0; ar < n; ar++) {
-                    z[i] += x[ar][i] / n;
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto i = start; i < stop; i += increment) {
+                    for (Nd4jLong ar = 0; ar < n; ar++) {
+                        z[i] += x[ar][i] / n;
+                    }
                 }
-            }
+            };
+            samediff::Threads::parallel_for(func, 0, length);
 
             // instead of doing element-wise propagation, we just issue memcpy to propagate data
             for (Nd4jLong ar = 0; ar < n; ar++) {
@@ -348,12 +335,14 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         Nd4jLong xTadLength = shape::tadLength(xShapeInfo, dimension, dimensionLength);
         int numTads = xLength / xTadLength;
 
-        PRAGMA_OMP_PARALLEL_FOR
-        for (int r = 0; r < numTads; r++) {
-            T *dx = x + tadOffsets[r];
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto r = start; r < stop; r += increment) {
+                T *dx = x + tadOffsets[r];
 
-            quickSort_parallel(dx, tadShapeInfo, xTadLength, 1, descending);
-        }
+                quickSort_parallel(dx, tadShapeInfo, xTadLength, 1, descending);
+            }
+        };
+        samediff::Threads::parallel_tad(func, 0, numTads);
     }
 
 
@@ -368,23 +357,25 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         float threshold = fb.f_;
 
 
-        PRAGMA_OMP_PARALLEL_FOR
-        for (Nd4jLong e = 4; e < lim; e++) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment) {
+                for (int bitId = 0; bitId < 16; bitId++) {
+                    bool hasBit = (x[e] & 1 << (bitId)) != 0;
+                    bool hasSign = (x[e] & 1 << (bitId + 16)) != 0;
 
-            for (int bitId = 0; bitId < 16; bitId++) {
-                bool hasBit = (x[e] & 1 << (bitId) ) != 0;
-                bool hasSign = (x[e] & 1 << (bitId + 16) ) != 0;
-
-                if (hasBit) {
-                    if (hasSign)
-                        dz[(e - 4) * 16 + bitId] -= threshold;
-                    else
-                        dz[(e - 4) * 16 + bitId] += threshold;
-                } else if (hasSign) {
-                    dz[(e - 4) * 16 + bitId] -= threshold / 2;
+                    if (hasBit) {
+                        if (hasSign)
+                            dz[(e - 4) * 16 + bitId] -= threshold;
+                        else
+                            dz[(e - 4) * 16 + bitId] += threshold;
+                    } else if (hasSign) {
+                        dz[(e - 4) * 16 + bitId] -= threshold / 2;
+                    }
                 }
             }
-        }
+        };
+
+        samediff::Threads::parallel_for(func, 4, lim);
     }
 
     template<typename S, typename T>
@@ -392,17 +383,14 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         auto x = reinterpret_cast<S *>(dx);
         auto z = reinterpret_cast<T *>(dz);
 
-        if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
-            for (int i = 0; i < N; i++) {
-                z[i] = static_cast<T>(x[i]);
-            }
-        } else {
 
-            PRAGMA_OMP_PARALLEL_FOR
-            for (int i = 0; i < N; i++) {
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
                 z[i] = static_cast<T>(x[i]);
             }
-        }
+        };
+
+        samediff::Threads::parallel_for(func, 0, N);
     };
     BUILD_DOUBLE_TEMPLATE(template void SpecialTypeConverter::convertGeneric, (Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz), LIBND4J_TYPES, LIBND4J_TYPES);
 
@@ -410,49 +398,49 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
     Nd4jLong SpecialMethods<T>::encodeBitmapGeneric(void *vx, Nd4jLong *xShapeInfo, Nd4jLong N, int *dz, float threshold) {
         auto dx = reinterpret_cast<T *>(vx);
 
-        Nd4jLong retVal = 0L;
+//PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVal))
+        auto func = PRAGMA_REDUCE_LONG {
+            Nd4jLong retVal = 0L;
 
-PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) proc_bind(close) reduction(+:retVal))
-        for (Nd4jLong x = 0; x < N; x += 16) {
+            for (auto x = start; x < stop; x += increment) {
+                int byte = 0;
+                int byteId = x / 16 + 4;
 
-            int byte = 0;
-            int byteId = x / 16 + 4;
+                for (int f = 0; f < 16; f++) {
+                    Nd4jLong e = x + f;
 
-            for (int f = 0; f < 16; f++) {
-                Nd4jLong e = x + f;
+                    if (e >= N)
+                        continue;
 
-                if (e >= N)
-                    continue;
+                    T val = dx[e];
+                    T abs = nd4j::math::nd4j_abs<T>(val);
 
-                T val = dx[e];
-                T abs = nd4j::math::nd4j_abs<T>(val);
+                    int bitId = e % 16;
 
-                int bitId = e % 16;
+                    if (abs >= (T) threshold) {
+                        byte |= 1 << (bitId);
+                        retVal++;
 
-                if (abs >= (T) threshold) {
-                    byte |= 1 << (bitId);
-
-                    retVal++;
-
-
-                    if (val < (T) 0.0f) {
+                        if (val < (T) 0.0f) {
+                            byte |= 1 << (bitId + 16);
+                            dx[e] += threshold;
+                        } else {
+                            dx[e] -= threshold;
+                        }
+                    } else if (abs >= (T) threshold / (T) 2.0f && val < (T) 0.0f) {
                         byte |= 1 << (bitId + 16);
-                        dx[e] += threshold;
-                    } else {
-                        dx[e] -= threshold;
-                    }
-                } else if (abs >= (T) threshold / (T) 2.0f && val < (T) 0.0f) {
-                    byte |= 1 << (bitId + 16);
-                    dx[e] += threshold / 2;
+                        dx[e] += threshold / 2;
 
-                    retVal++;
+                        retVal++;
+                    }
                 }
+
+                dz[byteId] = byte;
             }
 
-            dz[byteId] = byte;
-        }
-
-        return retVal;
+            return retVal;
+        };
+        return samediff::Threads::parallel_long(func, LAMBDA_SUML, 0, N, 16);
     }
 
     template <typename X, typename Y>
@@ -637,13 +625,16 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         auto xTadLength = shape::length(packX.primaryShapeInfo());
         auto numTads = packX.numberOfTads();
 
-        PRAGMA_OMP_PARALLEL_FOR
-        for (Nd4jLong r = 0; r < numTads; r++) {
-            auto dx = x + packX.primaryOffsets()[r];
-            auto dy = y + packY.primaryOffsets()[r];
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto r = start; r < stop; r += increment) {
+                auto dx = x + packX.primaryOffsets()[r];
+                auto dy = y + packY.primaryOffsets()[r];
 
-            quickSort_parallel_key<X,Y>(dx, packX.primaryShapeInfo(), dy, packY.primaryShapeInfo(), xTadLength, 1, descending);
-        }
+                quickSort_parallel_key<X, Y>(dx, packX.primaryShapeInfo(), dy, packY.primaryShapeInfo(), xTadLength, 1, descending);
+            }
+        };
+
+        samediff::Threads::parallel_tad(func, 0, numTads);
     }
 
     template <typename X, typename Y>
@@ -658,13 +649,16 @@ PRAGMA_OMP_SINGLE_ARGS(nowait)
         auto xTadLength = shape::length(packX.primaryShapeInfo());
         auto numTads = packX.numberOfTads();
 
-        PRAGMA_OMP_PARALLEL_FOR
-        for (Nd4jLong r = 0; r < numTads; r++) {
-            auto dx = x + packX.primaryOffsets()[r];
-            auto dy = y + packY.primaryOffsets()[r];
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto r = start; r < stop; r += increment) {
+                auto dx = x + packX.primaryOffsets()[r];
+                auto dy = y + packY.primaryOffsets()[r];
 
-            quickSort_parallel_value<X,Y>(dx, packX.primaryShapeInfo(), dy, packY.primaryShapeInfo(), xTadLength, 1, descending);
-        }
+                quickSort_parallel_value<X, Y>(dx, packX.primaryShapeInfo(), dy, packY.primaryShapeInfo(), xTadLength, 1, descending);
+            }
+        };
+
+        samediff::Threads::parallel_tad(func, 0, numTads);
     }
 
     BUILD_SINGLE_TEMPLATE(template class SpecialMethods, , LIBND4J_TYPES);

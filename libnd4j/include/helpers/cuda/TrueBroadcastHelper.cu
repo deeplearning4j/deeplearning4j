@@ -24,6 +24,7 @@
 #include <execution/LaunchContext.h>
 #include <specials.h>
 #include <logger.h>
+#include <ops/ops.h>
 // #include <cuda_runtime.h>
 // #include <cuda.h>
 

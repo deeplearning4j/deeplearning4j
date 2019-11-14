@@ -19,7 +19,6 @@
 //
 
 #include "../OpBenchmark.h"
-#include <helpers/BlasHelper.h>
 #include <MmulHelper.h>
 
 #ifndef DEV_TESTS_MATRIXBENCHMARK_H

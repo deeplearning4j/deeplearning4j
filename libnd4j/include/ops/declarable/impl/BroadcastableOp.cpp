@@ -29,10 +29,6 @@ namespace nd4j {
             //
         }
 
-        BroadcastableOp::~BroadcastableOp() {
-            // no-op
-        }
-
         ShapeList *BroadcastableOp::calculateOutputShape(ShapeList *inputShape, nd4j::graph::Context &block) {
             auto shapeList = SHAPELIST();
             auto x = inputShape->at(0);

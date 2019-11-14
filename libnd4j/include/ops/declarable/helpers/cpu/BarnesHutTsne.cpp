@@ -19,6 +19,7 @@
 //
 
 #include <ops/declarable/helpers/BarnesHutTsne.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -150,26 +151,30 @@ namespace helpers {
 
 //        auto shift = 0;
         auto rowSize = sizeof(T) * colCount;
-        PRAGMA_OMP_PARALLEL_FOR
-        for (int n = 0; n < N; n++) {
-            int start = rowP->e<int>(n);
-            int end = rowP->e<int>(n+1);
-            int shift = n * colCount;
-            for (int i = start; i < end; i++) {
-                T const* thisSlice = dataP + colP->e<int>(i) * colCount;
-                T res = 1;
 
-                for (int k = 0; k < colCount; k++) {
-                    auto tempVal = dataP[shift + k] - thisSlice[k];//thisSlice[k];
-                    res += tempVal * tempVal;
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto n = start; n < stop; n += increment) {
+                int s = rowP->e<int>(n);
+                int end = rowP->e<int>(n + 1);
+                int shift = n * colCount;
+                for (int i = s; i < end; i++) {
+                    T const *thisSlice = dataP + colP->e<int>(i) * colCount;
+                    T res = 1;
+
+                    for (int k = 0; k < colCount; k++) {
+                        auto tempVal = dataP[shift + k] - thisSlice[k];//thisSlice[k];
+                        res += tempVal * tempVal;
+                    }
+
+                    res = vals[i] / res;
+                    for (int k = 0; k < colCount; k++)
+                        outputP[shift + k] += ((dataP[shift + k] - thisSlice[k]) * res);
                 }
-
-                res = vals[i] / res;
-                for (int k = 0; k < colCount; k++)
-                    outputP[shift + k] += ((dataP[shift + k] - thisSlice[k]) * res);
+                //shift += colCount;
             }
-            //shift += colCount;
-        }
+        };
+
+        samediff::Threads::parallel_tad(func, 0, N);
     }
 
     void barnes_edge_forces(const NDArray* rowP, NDArray const* colP, NDArray const* valP, int N, NDArray* output, NDArray const& data) {

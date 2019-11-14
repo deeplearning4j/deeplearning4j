@@ -30,9 +30,10 @@ namespace nd4j {
             auto y = INPUT_VARIABLE(1);
             auto z = OUTPUT_VARIABLE(0);
 
-            REQUIRE_TRUE(x->isSameShape(y),0, "Axpy: both arguments should have the same shape")
+            REQUIRE_TRUE(x->isSameShape(y),0, "Axpy: both arguments should have the same shape");
+            REQUIRE_TRUE(x->dataType() == y->dataType() && x->dataType() == z->dataType(), 0, "Axpy: all arguments must have the same data type");
 
-            double a = (double) 1.0f;
+            double a = 1.0;
 
             if (block.width() > 2) {
                 auto alpha = INPUT_VARIABLE(2);
@@ -41,15 +42,6 @@ namespace nd4j {
                 a = T_ARG(0);
             }
 
-            /*
-            auto lambda = LAMBDA_TT(_y, _x, a) {
-                return a * _x + _y;
-            };
-
-            y->applyPairwiseLambda(x, lambda, z);
-            */
-
-            // FIXME: set proper extras here
             ExtraArguments arguments({a});
 
             y->applyPairwiseTransform(pairwise::Axpy, x, z, &arguments);
@@ -59,9 +51,9 @@ namespace nd4j {
 
         DECLARE_TYPES(axpy) {
             getOpDescriptor()
-                    ->setAllowedInputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedInputTypes(1, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF})
-                    ->setAllowedOutputTypes(0, {DataType::FLOAT32, DataType ::DOUBLE, DataType::HALF});
+                    ->setAllowedInputTypes(0, {ALL_FLOATS})
+                    ->setAllowedInputTypes(1, {ALL_FLOATS})
+                    ->setAllowedOutputTypes(0, {ALL_FLOATS});
         }
     }
 }

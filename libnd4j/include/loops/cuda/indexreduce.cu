@@ -359,32 +359,6 @@ namespace functions {
             }
         }
 
-
-
-
-        template <typename X, typename Z>
-        Nd4jLong IndexReduce<X,Z>::execScalar(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams) {
-            return 0;
-        }
-
-        template <typename X, typename Z>
-        void IndexReduce<X,Z>::exec(const int opNum, void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
-
-        }
-
-        template <typename X, typename Z>
-        template<typename OpType>
-        Nd4jLong IndexReduce<X,Z>:: execScalar(void *x, Nd4jLong *xShapeInfo, void *extraParams) {
-            return 0;
-        }
-
-        template <typename X, typename Z>
-        template<typename OpType>
-        _CUDA_H void IndexReduce<X,Z>::exec(void *x, Nd4jLong *xShapeInfo, void *extraParams, void *result, Nd4jLong *resultShapeInfoBuffer, int *dimension, int dimensionLength, Nd4jLong *tadShapeInfo, Nd4jLong *tadOffset) {
-
-        }
-
-
         BUILD_DOUBLE_TEMPLATE(template class ND4J_EXPORT IndexReduce, , LIBND4J_TYPES, INDEXING_TYPES);
     }
 }

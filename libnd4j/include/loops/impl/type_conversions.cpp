@@ -22,6 +22,7 @@
 #include <op_boilerplate.h>
 #include <loops/type_conversions.h>
 #include <OmpLaunchHelper.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 
@@ -79,10 +80,13 @@ namespace nd4j {
         auto amin = nd4j::math::nd4j_abs<float>(min);
 
         // now we actually apply quantization
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for (Nd4jLong e = 0; e < N; e++) {
-            rz[e] = static_cast<char>(nd4j::math::nd4j_round<float,char>(1.0f * x[e] / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
-        }
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment) {
+                rz[e] = static_cast<char>(nd4j::math::nd4j_round<float, char>(1.0f * x[e] / nd4j::math::nd4j_max<float>(amax, amin) * max_byte));
+            }
+        };
+
+        samediff::Threads::parallel_for(func,  0, N);
     }
 
     template <typename T>
@@ -172,12 +176,15 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
         // we use 3 as offset, since first 12 bytes are occupied with header
         int flimit = limit + 4;
 
-        PRAGMA_OMP_PARALLEL_FOR_IF(flimit > Environment::getInstance()->elementwiseThreshold())
-        for (int e = 4; e < flimit; e++) {
-            int el = x[e];
-            int ael = nd4j::math::nd4j_abs<int>(el) - 1;
-            z[ael] += el > 0 ? threshold : -threshold;
-        }
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto e = start; e < stop; e += increment) {
+                int el = x[e];
+                int ael = nd4j::math::nd4j_abs<int>(el) - 1;
+                z[ael] += el > 0 ? threshold : -threshold;
+            }
+        };
+
+        samediff::Threads::parallel_for(func,  4, flimit);
     }
 
     /**
@@ -194,19 +201,12 @@ PRAGMA_OMP_ATOMIC_ARGS(write)
         auto x = reinterpret_cast<S *>(dx);
         auto z = reinterpret_cast<T *>(dz);
 
-        if (N < nd4j::Environment::getInstance()->elementwiseThreshold()) {
-            for (int i = 0; i < N; i++) {
-                // FIXME: get rid of through-float though
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
                 z[i] = static_cast<T>(static_cast<float>(x[i]));
             }
-        } else {
-
-            PRAGMA_OMP_PARALLEL_FOR
-            for (int i = 0; i < N; i++) {
-                // FIXME: get rid of through-float though
-                z[i] = static_cast<T>(static_cast<float>(x[i]));
-            }
-        }
+        };
+        samediff::Threads::parallel_for(func,  0, N);
     };
 
     template void TypeCast::convertFromThreshold<float>(Nd4jPointer * extras, void *dx, Nd4jLong N, void *dz);

@@ -16,8 +16,29 @@
 # SPDX-License-Identifier: Apache-2.0
 ################################################################################
 
-
 set -exo pipefail
+
+while [[ $# > 0 ]]
+do
+    key="$1"
+    value="${2:-}"
+
+    case $key in
+        -c|--chip)
+        CHIP="${value}"
+        shift # past argument
+        ;;
+        *)
+        # unknown option
+        ;;
+    esac
+    
+    if [[ $# > 0 ]]; then
+        shift # past argument or value
+    fi
+done
+
+CHIP="${CHIP:-cpu}"
 
 # On Mac, make sure it can find libraries for GCC
 export DYLD_LIBRARY_PATH=/usr/local/lib/gcc/8/:/usr/local/lib/gcc/7/:/usr/local/lib/gcc/6/:/usr/local/lib/gcc/5/
@@ -30,4 +51,4 @@ if [ -n "$BUILD_PATH" ]; then
     export PATH="$PATH:$BUILD_PATH"
 fi
 
-../blasbuild/cpu/tests_cpu/layers_tests/runtests --gtest_output="xml:../target/surefire-reports/TEST-results.xml"
+../blasbuild/${CHIP}/tests_cpu/layers_tests/runtests --gtest_output="xml:../target/surefire-reports/TEST-${CHIP}-results.xml"

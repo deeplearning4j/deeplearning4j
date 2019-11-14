@@ -24,6 +24,7 @@
 #include <helpers/shape.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <execution/Threads.h>
 
 using namespace simdOps;
 
@@ -90,8 +91,7 @@ namespace functions {
             uint xShapeInfoCast[MAX_RANK];
             const bool canCast = nd4j::DataTypeUtils::castShapeInfo<uint>(xShapeInfo, xShapeInfoCast);
 
-            for (Nd4jLong i = 0; i < length; i++) {
-
+            for (uint64_t i = 0; i < length; i++) {
                 auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCast);
 
                 SummaryStatsData<X> curr;
@@ -123,7 +123,7 @@ namespace functions {
                     return;
                 SummaryStatsData<X> comp;
                 comp.initWithValue(x[0]);
-                PRAGMA_OMP_PARALLEL_FOR_IF(resultLength > nd4j::Environment::getInstance()->elementwiseThreshold())
+
                 for (uint i = 0; i < resultLength; i++)
                     z[i] = OpType::getValue(biasCorrected, comp);
                 return;
@@ -157,35 +157,37 @@ namespace functions {
             uint tadShapeShapeInfoCast[MAX_RANK];
             const bool canCast = tadEWS == 1 && tadOrder == 'c' ? false : nd4j::DataTypeUtils::castShapeInfo<uint>(tadShapeShapeInfo, tadShapeShapeInfoCast);
 
-            PRAGMA_OMP_PARALLEL_FOR
-            for (int r = 0; r < resultLength; r++) {
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto r = start; r < stop; r += increment) {
 
-                auto tadOffsetForBlock = tadPack.primaryOffsets()[r];
-                auto tx = x + tadOffsetForBlock;
-                SummaryStatsData<X> comp;
-                comp.initWithValue(tx[0]);
+                    auto tadOffsetForBlock = tadPack.primaryOffsets()[r];
+                    auto tx = x + tadOffsetForBlock;
+                    SummaryStatsData <X> comp;
+                    comp.initWithValue(tx[0]);
 
-                if (tadEWS == 1 && tadOrder == 'c') {
-                    for (int i = 1; i < tadLength; i ++) {
-                        SummaryStatsData <X> indexVal2;
-                        indexVal2.initWithValue(tx[i]);
+                    if (tadEWS == 1 && tadOrder == 'c') {
+                        for (int i = 1; i < tadLength; i++) {
+                            SummaryStatsData <X> indexVal2;
+                            indexVal2.initWithValue(tx[i]);
 
-                        comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                            comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                        }
+                    } else {
+                        for (int i = 1; i < tadLength; i++) {
+                            auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, canCast);
+
+                            SummaryStatsData <X> indexVal2;
+                            indexVal2.initWithValue(tx[xOffset]);
+
+                            comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
+                        }
                     }
+
+                    z[r] = OpType::getValue(biasCorrected, comp);
                 }
-                else {
-                    for (int i = 1; i < tadLength; i ++) {
-                        auto xOffset = shape::indexOffset(i, tadShapeShapeInfo, tadShapeShapeInfoCast, canCast);
+            };
 
-                        SummaryStatsData <X> indexVal2;
-                        indexVal2.initWithValue(tx[xOffset]);
-
-                        comp = update(comp, OpType::op(indexVal2, extraParams), extraParams);
-                    }
-                }
-
-                z[r] = OpType::getValue(biasCorrected, comp);
-            }
+            samediff::Threads::parallel_tad(func,  0, resultLength, 1);
         }
 
 

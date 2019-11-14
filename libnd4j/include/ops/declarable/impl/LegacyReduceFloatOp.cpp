@@ -23,6 +23,7 @@
 #include <helpers/ShapeUtils.h>
 #include <Status.h>
 #include <helpers/ConstantTadHelper.h>
+#include <array/DataTypeUtils.h>
 
 namespace nd4j {
     namespace ops {
@@ -60,7 +61,7 @@ namespace nd4j {
                     allAxes = true;
 
                 // _axis.(block.getIArguments()->size() == 0) ||
-                //                    (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)
+                //                    (block.getIArguments()->size() == 1 && INT_ARG(0) == nd4j::DataTypeUtils::max<int>())
                 if (block.getAxis()->empty() || allAxes) {
                     // scalar
                     NativeOpExecutioner::execReduceFloatScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
@@ -101,7 +102,7 @@ namespace nd4j {
                     dims[e] = f >= 0 ? f : f += x->rankOf();
                 }
 
-                if ((block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT) || allAxes) {
+                if ((block.getIArguments()->size() == 1 && INT_ARG(0) == nd4j::DataTypeUtils::max<int>()) || allAxes) {
                     // scalar
                     NativeOpExecutioner::execReduceFloatScalar(block.launchContext(), opNum, x->buffer(), x->shapeInfo(), x->specialBuffer(), x->specialShapeInfo(), extras.argumentsAsT(x->dataType()), z->buffer(), z->shapeInfo(), z->specialBuffer(), z->specialShapeInfo());
                 } else {

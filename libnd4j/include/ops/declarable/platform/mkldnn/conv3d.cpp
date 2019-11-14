@@ -213,6 +213,9 @@ PLATFORM_IMPL(conv3dnew_bp) {
     ConvolutionUtils::getSizesAndIndexesConv3d(isNDHWC, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW,
                                                indIOioC, indIOioD, indWiC, indWoC, indWkD);
 
+    if(isSameMode)                       // SAME
+        ConvolutionUtils::calcPadding3D(pD, pH, pW, oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, dD, dH, dW);
+
     int trueoD, trueoH, trueoW;          // true output depth/height/width
     ConvolutionUtils::calcOutSizePool3D(trueoD, trueoH, trueoW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH,
                                         dW, iD, iH, iW, isSameMode);

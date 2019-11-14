@@ -26,10 +26,6 @@
 
 namespace nd4j {
     namespace ops {
-        DeclarableListOp::~DeclarableListOp() {
-            //
-        }
-
         DeclarableListOp::DeclarableListOp(int numInputs, int numOutputs, const char* opName, int tArgs, int iArgs) : DeclarableOp::DeclarableOp(numInputs, numOutputs, opName, false, tArgs, iArgs) {
             // This kind of operations work with sets: NDArrayList
             this->getOpDescriptor()->setInputType(InputType_NUMERIC_SET);

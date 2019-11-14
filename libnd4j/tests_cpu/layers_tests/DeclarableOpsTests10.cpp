@@ -130,7 +130,7 @@ TEST_F(DeclarableOpsTests10, Test_Not_1) {
     auto result = op.execute({&x, &y}, {}, {}, {}, false, nd4j::DataType::BOOL);
     ASSERT_EQ(Status::OK(), result->status());
     auto res = result->at(0);
-    res->printBuffer("OUtput NOT");
+
     ASSERT_TRUE(e.equalsTo(res));
 
     delete result;
@@ -163,7 +163,7 @@ TEST_F(DeclarableOpsTests10, MirrorPad_SGO_Test_1) {
 
     auto res = op.execute({&in, &pad}, {10.0}, {0}, {}, false, nd4j::DataType::DOUBLE);
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
-    res->at(0)->printIndexedBuffer("Mirror pad:");
+
     ASSERT_TRUE(exp.equalsTo(res->at(0)));
     delete res;
 }
@@ -179,9 +179,6 @@ TEST_F(DeclarableOpsTests10, Unique_SGO_Test_1) {
     ASSERT_EQ(res->status(), ND4J_STATUS_OK);
     auto res1 = res->at(0);
     auto res2 = res->at(1);
-
-    res1->printIndexedBuffer("Unique values");
-    res2->printIndexedBuffer("Unique idxs");
 
     ASSERT_TRUE(exp.equalsTo(res1));
     ASSERT_TRUE(expIdx.equalsTo(res2));
@@ -215,8 +212,7 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_02) {
     auto res = op.execute({&input}, {}, {});
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
     auto  resA = res->at(0);
-    resA->printIndexedBuffer("Where02");
-    resA->printBuffer("Where02lINEAR");
+
     ASSERT_TRUE(exp.equalsTo(resA));
     ASSERT_TRUE(exp.isSameShape(resA));
 //    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
@@ -329,8 +325,7 @@ TEST_F(DeclarableOpsTests10, Where_SGO_Test_5) {
     ASSERT_TRUE(res->status() == ND4J_STATUS_OK);
     auto resA = res->at(0);
     //ASSERT_TRUE(resA->isEmpty());
-    resA->printIndexedBuffer("Result A");
-    //resA->printShapeInfo("ShapeA");
+
     ASSERT_TRUE(exp.equalsTo(resA));
     ASSERT_TRUE(exp.isSameShape(resA));
 //    ASSERT_TRUE(expIdx.equalsTo(res->at(1)));
@@ -658,8 +653,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
 
     auto z = result->at(0);
     auto zI = result->at(1);
-    z->printIndexedBuffer("TopK(5)");
-    zI->printIndexedBuffer("TopKI(5)");
+
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
@@ -669,8 +663,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test1) {
 
     z = result2->at(0);
     zI = result2->at(1);
-    z->printIndexedBuffer("sorted TopK(5)");
-    zI->printIndexedBuffer("sorted TopKI(5)");
+
     ASSERT_TRUE(expSorted.isSameShape(z));
     ASSERT_TRUE(expSorted.equalsTo(z));
 
@@ -693,8 +686,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
 
     auto z = result->at(0);
     auto zI = result->at(1);
-    z->printIndexedBuffer("TopK(5)");
-    zI->printIndexedBuffer("TopKI(5)");
+
     ASSERT_TRUE(expUnsorted.isSameShape(z));
     ASSERT_TRUE(expUnsorted.equalsTo(z));
 
@@ -704,8 +696,7 @@ TEST_F(DeclarableOpsTests10, top_k_permuted_test2) {
 
     z = result2->at(0);
     zI = result2->at(1);
-    z->printIndexedBuffer("sorted TopK(5)");
-    zI->printIndexedBuffer("sorted TopKI(5)");
+
     ASSERT_TRUE(expSorted.isSameShape(z));
     ASSERT_TRUE(expSorted.equalsTo(z));
 
@@ -1022,8 +1013,6 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* output = results->at(0);
-    output->printIndexedBuffer("Output 2");
-    exp.printIndexedBuffer("Expect 2");
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
@@ -1046,8 +1035,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_3) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* output = results->at(0);
-    output->printIndexedBuffer("Output 3");
-    exp.printIndexedBuffer("Expect 3");
+
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -1179,7 +1167,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_7) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* output = results->at(0);
-    output->printIndexedBuffer("NTH rank3_n2");
+
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -1206,7 +1194,7 @@ TEST_F(DeclarableOpsTests10, NTH_Element_Test_8) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     NDArray* output = results->at(0);
-    output->printIndexedBuffer("NTH rank3_n2_reverse");
+
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 
@@ -1812,7 +1800,7 @@ TEST_F(DeclarableOpsTests10, LinSpace_Test1) {
     auto result = op.execute({&start, &finish, &num}, {}, {});
     ASSERT_EQ(result->status(), ND4J_STATUS_OK);
     auto res = result->at(0);
-    res->printIndexedBuffer("from 1 to 24");
+
     ASSERT_TRUE(expect.equalsTo(res));
     delete result;
 }
@@ -2084,7 +2072,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printIndexedBuffer("Cropped and Resized");
+
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -2108,7 +2096,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_3) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printIndexedBuffer("Cropped and Resized");
+
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     ASSERT_TRUE(expected.equalsTo(result));
 
@@ -2156,7 +2144,7 @@ TEST_F(DeclarableOpsTests10, Image_CropAndResize_5) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
-    result->printShapeInfo("Cropped and Resized");
+
     ASSERT_TRUE(expected.isSameShapeStrict(result));
     //ASSERT_TRUE(expected.equalsTo(result));
 

@@ -20,6 +20,7 @@
 
 #include "ResultSet.h"
 #include <ops/declarable/helpers/matrixSetDiag.h>
+#include <execution/Threads.h>
 
 namespace nd4j {
 namespace ops {
@@ -47,22 +48,22 @@ void matrixSetDiag_(const NDArray& input, const NDArray& diagonal, NDArray& outp
     const int xRank = input.rankOf();
     const auto xLen = input.lengthOf();
 
-    std::vector<Nd4jLong> coords(xRank);  // we use the same coordinates storage both for input and output since their ranks are the same
+    auto func = PRAGMA_THREADS_FOR {
+        Nd4jLong coords[MAX_RANK];
+        for (Nd4jLong i = 0; i < xLen; ++i) {
+            shape::index2coords(i, xShapeInfo, coords);
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(firstprivate(coords))
-    for (Nd4jLong i = 0; i < xLen; ++i) {
+            const auto xOffset = shape::getOffset(xShapeInfo, coords);
+            const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(zShapeInfo, coords);
 
-        shape::index2coords(i, xShapeInfo, coords.data());
-
-        const auto xOffset = shape::getOffset(xShapeInfo, coords.data());
-        const auto zOffset = areSameOffsets ? xOffset : shape::getOffset(zShapeInfo, coords.data());
-
-        // condition to be on diagonal of innermost matrix
-        if(coords[xRank - 2] == coords[xRank - 1])
-            z[zOffset] = y[shape::getOffset(yShapeInfo, coords.data())];
-        else
-            z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
-    }
+            // condition to be on diagonal of innermost matrix
+            if (coords[xRank - 2] == coords[xRank - 1])
+                z[zOffset] = y[shape::getOffset(yShapeInfo, coords)];
+            else
+                z[zOffset] = zeroPad ? static_cast<T>(0) : x[xOffset];
+        }
+    };
+    samediff::Threads::parallel_for(func, 0, xLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

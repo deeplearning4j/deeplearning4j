@@ -209,7 +209,7 @@ class MathTest extends FlatSpec with Matchers {
     val x = sd.bind(arr)
     val y = new SDVariableWrapper(x)
 
-    x.get(SDIndex.point(0)).getArr shouldBe y(0).getArr
+    x.get(SDIndex.point(0)).eval shouldBe y(0).eval
   }
 
   "SDVariable " should "be indexable in 2d" in {
@@ -221,7 +221,7 @@ class MathTest extends FlatSpec with Matchers {
 
     x(0, ---).eval shouldBe x(SDIndex.point(0), SDIndex.all()).eval
 
-    val slice1 = x.get(SDIndex.interval(0, 2), SDIndex.all()).eval
+    val slice1 = x.get(SDIndex.interval(0L, 2L), SDIndex.all()).eval
     val slice2 = x(0 :: 2, ---).eval
     slice1 shouldBe slice2
   }
@@ -237,10 +237,10 @@ class MathTest extends FlatSpec with Matchers {
     x.get(SDIndex.point(0), SDIndex.point(0), SDIndex.all()).eval shouldBe x(0, 0, ---).eval
     x.get(SDIndex.point(0), SDIndex.point(0), SDIndex.point(0)).eval shouldBe x(0, 0, 0).eval
 
-    x.get(SDIndex.interval(0, 2), SDIndex.point(0), SDIndex.point(0)).eval shouldBe x(0 :: 2, 0, 0).eval
-    x.get(SDIndex.interval(0, 2), SDIndex.interval(0, 1), SDIndex.interval(0, 2)).eval shouldBe x(0 :: 2,
-                                                                                                  0 :: 1,
-                                                                                                  0 :: 2).eval
-    x.get(SDIndex.interval(0, 2), SDIndex.interval(0, 1), SDIndex.all()).eval shouldBe x(0 :: 2, 0 :: 1, ---).eval
+    x.get(SDIndex.interval(0L, 2L), SDIndex.point(0), SDIndex.point(0)).eval shouldBe x(0 :: 2, 0, 0).eval
+    x.get(SDIndex.interval(0L, 2L), SDIndex.interval(0L, 1L), SDIndex.interval(0L, 2L)).eval shouldBe x(0 :: 2,
+                                                                                                        0 :: 1,
+                                                                                                        0 :: 2).eval
+    x.get(SDIndex.interval(0L, 2L), SDIndex.interval(0L, 1L), SDIndex.all()).eval shouldBe x(0 :: 2, 0 :: 1, ---).eval
   }
 }

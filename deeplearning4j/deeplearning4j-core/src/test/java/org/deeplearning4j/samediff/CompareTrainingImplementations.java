@@ -98,6 +98,7 @@ public class CompareTrainingImplementations extends BaseDL4JTest {
 
                 SDVariable diff = sd.f().squaredDifference(a1, label);
                 SDVariable lossMse = diff.mean();
+                lossMse.markAsLoss();
 
                 IUpdater updater;
                 double lr;

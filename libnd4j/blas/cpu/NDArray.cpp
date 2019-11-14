@@ -98,24 +98,27 @@ void NDArray::fillAsTriangular(const float val, int lower, int upper, const char
 
     const bool areSameOffsets = shape::haveSameShapeAndStrides(getShapeInfo(), target->getShapeInfo());
 
-    std::vector<Nd4jLong> coords(zRank);
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(coords))
-    for (Nd4jLong i = 0; i < zLen; ++i) {
+    auto func = PRAGMA_THREADS_FOR {
+        Nd4jLong coords[MAX_RANK];
+        for (auto i = start; i < stop; i += increment) {
+            shape::index2coords(i, target->getShapeInfo(), coords);
+            const auto zOffset = shape::getOffset(target->getShapeInfo(), coords);
 
-        shape::index2coords(i, target->getShapeInfo(), coords.data());
-        const auto zOffset = shape::getOffset(target->getShapeInfo(), coords.data());
+            // if( (row + upper < col) || (row + lower > col) )
+            if ((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
+                z[zOffset] = value;
+            else if (this != target) {      // when this and target are different arrays
+                if (xRank != zRank)
+                    coords[0] = coords[1];
 
-        // if( (row + upper < col) || (row + lower > col) )
-        if((coords[zRank - 2] + upper < coords[zRank - 1]) || (coords[zRank - 2] + lower > coords[zRank - 1]))
-            z[zOffset] = value;
-        else if(this != target) {      // when this and target are different arrays
-            if(xRank != zRank)
-                coords[0] = coords[1];
-            const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(getShapeInfo(), coords.data());
-            z[zOffset] = x[xOffset];
+                const auto xOffset = areSameOffsets ? zOffset : shape::getOffset(getShapeInfo(), coords);
+                z[zOffset] = x[xOffset];
+            }
         }
-    }
+    };
+
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
 BUILD_SINGLE_TEMPLATE(template void NDArray::fillAsTriangular, (const float val, int lower, int upper, const char direction, NDArray* target), LIBND4J_TYPES);
 
@@ -140,7 +143,7 @@ void NDArray::setIdentity() {
             minDim = shape[i];
 
     float v = 1.0f;
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(minDim > Environment::getInstance()->elementwiseThreshold()) schedule(guided))
+
     for(int i = 0; i < minDim; ++i)
         templatedSet<float>(buffer(), i*offset, this->dataType(), &v);
 }
@@ -151,12 +154,15 @@ static void templatedSwap(void *xBuffer, void *yBuffer, Nd4jLong length) {
     auto x = reinterpret_cast<T *>(xBuffer);
     auto y = reinterpret_cast<T *>(yBuffer);
 
-    PRAGMA_OMP_PARALLEL_FOR_SIMD_ARGS(schedule(static))
-    for (Nd4jLong i = 0; i < length; ++i) {
-        auto temp = x[i];
-        x[i] = y[i];
-        y[i] = temp;
-    }
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; i += increment) {
+            auto temp = x[i];
+            x[i] = y[i];
+            y[i] = temp;
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, length);
 }
 BUILD_SINGLE_TEMPLATE(template void templatedSwap, (void *xBuffer, void *yBuffer, Nd4jLong length), LIBND4J_TYPES);
 
@@ -262,21 +268,26 @@ NDArray NDArray::tile(const std::vector<Nd4jLong>& reps) const {
     auto xType = this->dataType();
     if(result.ordering() == 'c') {           //  ews == 1 always here
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(Nd4jLong i = 0;  i < resultLen; ++i) {
-            auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
-            BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (result.getBuffer(), i, this->getBuffer(), yOffset), LIBND4J_TYPES);
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
+                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,(result.getBuffer(), i, this->getBuffer(), yOffset), LIBND4J_TYPES);
+            }
+        };
 
-        }
+        samediff::Threads::parallel_for(func, 0, resultLen);
     }
     else {
 
-        PRAGMA_OMP_PARALLEL_FOR_SIMD
-        for(Nd4jLong i=0;  i<resultLen; ++i) {
-            auto xOffset = result.getOffset(i);
-            auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
-            BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign, (result.getBuffer(), xOffset, this->getBuffer(), yOffset), LIBND4J_TYPES);
-        }
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i < stop; i += increment) {
+                auto xOffset = result.getOffset(i);
+                auto yOffset = shape::subArrayOffset(i, newShapeInfo, getShapeInfo());
+                BUILD_SINGLE_SELECTOR(xType, this->template templatedAssign,(result.getBuffer(), xOffset, this->getBuffer(), yOffset), LIBND4J_TYPES);
+            }
+        };
+
+        samediff::Threads::parallel_for(func, 0, resultLen);
     }
     result.tickWriteHost();
     return result;
@@ -337,14 +348,7 @@ void NDArray::tile(NDArray& target) const {
     // looping through _buffer goes automatically by means of getSubArrayIndex applying
     const auto ews = target.ews();
     const auto targetLen = target.lengthOf();
-    if(target.ordering() == 'c' && ews == 1) {           //  ews == 1 always here
-
-        for (Nd4jLong i = 0; i < targetLen; ++i) {
-            auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
-            BUILD_DOUBLE_SELECTOR(target.dataType(), dataType(), templatedDoubleAssign, (target.getBuffer(), i, getBuffer(), yOffset), LIBND4J_TYPES, LIBND4J_TYPES);
-        }
-    }
-    else if(target.ordering() == 'c' && ews > 1) {
+    if(target.ordering() == 'c' && ews >= 1) {
 
         for(Nd4jLong i=0;  i<targetLen; ++i) {
             auto yOffset = shape::subArrayOffset(i, target.getShapeInfo(), getShapeInfo());
@@ -373,30 +377,30 @@ static void repeat_(const NDArray& input, NDArray& output, const std::vector<int
     const int zLen    = output.lengthOf(); // xLen <= zLen
     const int repSize = repeats.size();
 
-    std::vector<Nd4jLong> coords(rank);
-
     // loop through input array
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(schedule(guided) firstprivate(coords))
-    for (Nd4jLong i = 0; i < zLen; ++i) {
+    auto func = PRAGMA_THREADS_FOR {
+        Nd4jLong coords[MAX_RANK];
+        for (auto i = start; i < stop; i += increment) {
+            shape::index2coords(i, output.getShapeInfo(), coords);
 
-        shape::index2coords(i, output.getShapeInfo(), coords.data());
+            const auto zOffset = shape::getOffset(output.getShapeInfo(), coords);
 
-        const auto zOffset = shape::getOffset(output.getShapeInfo(), coords.data());
-
-        if(repSize > 1) {
-            for (uint j = 0; j < repSize; ++j) {
-                coords[axis] -= repeats[j];
-                if (coords[axis] < 0) {
-                    coords[axis] = j;
-                    break;
+            if (repSize > 1) {
+                for (uint j = 0; j < repSize; ++j) {
+                    coords[axis] -= repeats[j];
+                    if (coords[axis] < 0) {
+                        coords[axis] = j;
+                        break;
+                    }
                 }
-            }
-        }
-        else
-            coords[axis] /= repeats[0];
+            } else
+                coords[axis] /= repeats[0];
 
-        z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords.data())];
-    }
+            z[zOffset] = x[shape::getOffset(input.getShapeInfo(), coords)];
+        }
+    };
+
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
 
 //////////////////////////////////////////////////////////////////////////

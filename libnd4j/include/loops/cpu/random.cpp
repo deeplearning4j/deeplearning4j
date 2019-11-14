@@ -52,28 +52,22 @@ namespace functions {
 
             auto length = shape::length(zShapeInfo);
 
-//            nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-            nd4j::OmpLaunchHelper info(length);
-
 
             if(shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
                 uint xShapeInfoCast[MAX_RANK];
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
+                auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (Nd4jLong i = 0; i < ulen; i++)  {
-                        auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
+                    for (auto i = start; i < stop; i += increment)  {
+                        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         z[offset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else if (shape::haveSameShapeAndStrides(xShapeInfo, yShapeInfo)) {
 
@@ -82,19 +76,16 @@ namespace functions {
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                 const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
+                auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (Nd4jLong i = 0; i < ulen; i++)  {
-                        auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, canCastZ);
+                    for (uint64_t i = start; i < stop; i += increment)  {
+                        auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpClass::op(x[offset], y[offset], i, length, rng, extraArguments);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else if (shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
@@ -103,19 +94,16 @@ namespace functions {
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                 const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
+                auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (Nd4jLong i = 0; i < ulen; i++)  {
-                        auto offset  = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, canCastY);
+                    for (uint64_t i = start; i < stop; i += increment)  {
+                        auto offset  = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                         z[offset] = OpClass::op(x[offset], y[yOffset], i, length, rng, extraArguments);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else if (shape::haveSameShapeAndStrides(yShapeInfo, zShapeInfo)) {
 
@@ -124,19 +112,16 @@ namespace functions {
                 const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
                 const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
+                auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (Nd4jLong i = 0; i < info.getItersPerThread(threadNum); i++)  {
-                        auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto offset  = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, canCastY);
+                    for (uint64_t i = start; i < stop; i += increment)  {
+                        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                        auto offset  = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
                         z[offset] = OpClass::op(x[xOffset], y[offset], i, length, rng, extraArguments);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else {
 
@@ -147,20 +132,17 @@ namespace functions {
                 const bool canCastY = nd4j::DataTypeUtils::castShapeInfo(yShapeInfo, yShapeInfoCast);
                 const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
+                auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (Nd4jLong i = 0; i < ulen; i++)  {
-                        auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto yOffset = shape::indexOffset(i + threadOffset, yShapeInfo, yShapeInfoCast, canCastY);
-                        auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, canCastZ);
+                    for (uint64_t i = start; i < stop; i += increment)  {
+                        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                        auto yOffset = shape::indexOffset(i, yShapeInfo, yShapeInfoCast, canCastY);
+                        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpClass::op(x[xOffset], y[yOffset], i, length, rng, extraArguments);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
         };
 
@@ -184,41 +166,34 @@ namespace functions {
             const bool canCastX = nd4j::DataTypeUtils::castShapeInfo(xShapeInfo, xShapeInfoCast);
 
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
-            nd4j::OmpLaunchHelper info(length);
 
             if(shape::haveSameShapeAndStrides(xShapeInfo, zShapeInfo)) {
 
-                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
+                auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (Nd4jLong i = 0; i < ulen; i++)  {
-                        auto offset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
+                    for (uint64_t i = start; i < stop; i += increment)  {
+                        auto offset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
                         z[offset] = OpClass::op(x[offset], i, length, rng, extraArguments);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
             else {
 
                 uint zShapeInfoCast[MAX_RANK];
                 const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-                PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-                {
-                    auto threadNum = omp_get_thread_num();
-                    auto threadOffset = info.getThreadOffset(threadNum);
-                    auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
+                auto func = PRAGMA_THREADS_FOR {
                     PRAGMA_OMP_SIMD
-                    for (Nd4jLong i = 0; i < ulen; i++)  {
-                        auto xOffset = shape::indexOffset(i + threadOffset, xShapeInfo, xShapeInfoCast, canCastX);
-                        auto zOffset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, canCastZ);
+                    for (uint64_t i = start; i < stop; i += increment)  {
+                        auto xOffset = shape::indexOffset(i, xShapeInfo, xShapeInfoCast, canCastX);
+                        auto zOffset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
                         z[zOffset] = OpClass::op(x[xOffset], i, length, rng, extraArguments);
                     }
-                }
+                };
+
+                samediff::Threads::parallel_for(func,  0, length, 1);
             }
         }
 
@@ -232,25 +207,21 @@ namespace functions {
 
             auto length = shape::length(zShapeInfo);
 
-            //nd4j::random::RandomBuffer *buffer = reinterpret_cast<nd4j::random::RandomBuffer *> (state);
             nd4j::graph::RandomGenerator* rng = reinterpret_cast<nd4j::graph::RandomGenerator*>(state);
             nd4j::OmpLaunchHelper info(length);
 
             uint zShapeInfoCast[MAX_RANK];
             const bool canCastZ = nd4j::DataTypeUtils::castShapeInfo(zShapeInfo, zShapeInfoCast);
 
-            PRAGMA_OMP_PARALLEL_THREADS(info._numThreads)
-            {
-                auto threadNum = omp_get_thread_num();
-                auto threadOffset = info.getThreadOffset(threadNum);
-                auto ulen = static_cast<unsigned int>(info.getItersPerThread(threadNum));
-
+            auto func = PRAGMA_THREADS_FOR {
                 PRAGMA_OMP_SIMD
-                for (Nd4jLong i = 0; i < ulen; i++)  {
-                    auto offset = shape::indexOffset(i + threadOffset, zShapeInfo, zShapeInfoCast, canCastZ);
-                    z[offset] = OpClass::op(i+threadOffset, length, rng, extraArguments);
+                for (uint64_t i = start; i < stop; i += increment)  {
+                    auto offset = shape::indexOffset(i, zShapeInfo, zShapeInfoCast, canCastZ);
+                    z[offset] = OpClass::op(i, length, rng, extraArguments);
                 }
-            }
+            };
+
+            samediff::Threads::parallel_for(func,  0, length, 1);
         }
 
         template<typename X>

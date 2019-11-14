@@ -58,12 +58,7 @@ TEST_F(DeclarableOpsTests14, Test_Reshape_CF_1) {
     auto x = NDArrayFactory::create<double>('f', {2, 3}, {1.0, 4.0, 2.0, 5.0, 3.0, 6.0});
     auto e = NDArrayFactory::create<double>('f', {3, 2}, {1.0, 3.0, 5.0, 2.0, 4.0, 6.0});
 
-    x.printShapeInfo("x shape");
-    x.printBuffer("x buffr");
-    x.printIndexedBuffer("x indxd");
-
-    auto r = x.reshape('c', {3, 2});
-    r.printIndexedBuffer("r pre-s");
+    auto r = x.reshape('c', {3, 2});;
     r.streamline('f');
 
     nd4j::ops::reshape op;
@@ -92,7 +87,7 @@ TEST_F(DeclarableOpsTests14, Test_Inf_Comparison_2) {
 TEST_F(DeclarableOpsTests14, Multiply_test) {
 
     for(int k=2;k<10;k++){
-        nd4j_printf("k=%d\n", k);
+        //nd4j_printf("k=%d\n", k);
         NDArray x = NDArrayFactory::create<double>('c', {k, 1});
         NDArray y = NDArrayFactory::create<double>('c', {k});
         NDArray e = NDArrayFactory::create<double>('c', {k, k});
@@ -122,7 +117,6 @@ TEST_F(DeclarableOpsTests14, Test_EvalReductionShape_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-    z->printIndexedBuffer("Reduced shape");
     ASSERT_EQ(e, *z);
 
     delete result;
@@ -415,8 +409,6 @@ TEST_F(DeclarableOpsTests14, test_empty_argmax_1) {
     ASSERT_EQ(Status::OK(), result->status());
 
     auto z = result->at(0);
-
-    z->printShapeInfo("Z");
 
     ASSERT_EQ(e, *z);
 

@@ -34,16 +34,16 @@ namespace nd4j {
         auto numHeads = projectionMatrix->sizeAt(0);
         auto projectedSize = projectionMatrix->sizeAt(1);
 
-        auto inputPerm = input->permute({1, 0, 2});
-        auto inputPrep = inputPerm.reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});
-        auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});
+        auto inputPerm = input->permute({1, 0, 2});     //[batch, nIn, timeSteps] -> [nIn, batch, timeSteps]
+        auto inputPrep = inputPerm.reshape('c', {input->sizeAt(1), (miniBatchSize * seqLength)});   //[nIn, batch*timeSteps]
+        auto projectionPrep = projectionMatrix->reshape('c', {numHeads * projectionMatrix->sizeAt(1), projectionMatrix->sizeAt(2)});    //[nHeads, hS, nIn] -> [nHeads*hS, nIn]
 
-        NDArray projected('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType(), context);
+        NDArray projected('c', {numHeads * projectionMatrix->sizeAt(1), (miniBatchSize * seqLength)}, input->dataType(), context);  //[nHeads*hS, batch*timeSteps]
         nd4j::ops::matmul mmul;
         mmul.execute({&projectionPrep, &inputPrep}, {&projected},  {}, {}, {});
 
         projected.reshapei({numHeads, projectedSize, miniBatchSize, seqLength});
-        projected.permutei({2, 0, 1, 3});
+        projected.permutei({2, 0, 1, 3});   //[minibatch, numHeads, projectedSize, seqLength]
 
         return projected;
     }

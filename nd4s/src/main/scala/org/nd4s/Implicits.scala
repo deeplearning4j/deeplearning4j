@@ -80,7 +80,7 @@ object Implicits {
   class IntArray2INDArray(val underlying: Array[Int]) extends AnyVal {
     def mkNDArray(shape: Array[Int], ord: NDOrdering = NDOrdering(Nd4j.order()), offset: Int = 0): INDArray = {
       val strides = Nd4j.getStrides(shape, ord.value)
-      Nd4j.create(underlying, shape.map(_.toLong), strides.map(_.toLong), ord.value, DataType.INT)
+      Nd4j.create(underlying.map(_.toInt), shape.map(_.toLong), strides.map(_.toLong), ord.value, DataType.INT)
     }
 
     def toNDArray: INDArray = Nd4j.createFromArray(underlying: _*)

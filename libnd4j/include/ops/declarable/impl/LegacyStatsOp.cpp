@@ -22,6 +22,7 @@
 #include <helpers/ShapeUtils.h>
 #include <helpers/TAD.h>
 #include <helpers/ConstantTadHelper.h>
+#include <array/DataTypeUtils.h>
 
 
 namespace nd4j {
@@ -43,7 +44,7 @@ namespace nd4j {
             ExtraArguments extras(*block.getTArguments());
             PointersManager manager(block.launchContext(),"LegacyStatsOp");
 
-            if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && INT_ARG(1) == MAX_INT)) {
+            if (block.getIArguments()->size() == 1 || (block.getIArguments()->size() == 2 && INT_ARG(1) == nd4j::DataTypeUtils::max<int>())) {
                 // scalar
                 NativeOpExecutioner::execSummaryStatsScalar(block.launchContext(), opNum, x->getBuffer(), x->getShapeInfo(), x->specialBuffer(), x->specialShapeInfo(),
                         extras.argumentsAsT(z->dataType()), z->getBuffer(), z->getShapeInfo(), z->specialBuffer(), z->specialShapeInfo(), biasCorrected);
@@ -92,7 +93,7 @@ namespace nd4j {
             auto inShape = inputShape->at(0);
 
             Nd4jLong *newShape;
-            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == MAX_INT)) {
+            if (block.getIArguments()->size() == 0 || (block.getIArguments()->size() == 1 && INT_ARG(0) == nd4j::DataTypeUtils::max<int>())) {
                 // in this case we just return scalar
                 ALLOCATE(newShape, block.getWorkspace(), shape::shapeInfoLength(2), Nd4jLong);
                 newShape[0] = 2;
