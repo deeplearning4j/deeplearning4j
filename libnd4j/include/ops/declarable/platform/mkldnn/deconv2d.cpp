@@ -46,10 +46,13 @@ static void deconv2dMKLDNN(const NDArray* input, const NDArray* weights, const N
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv2d(true, *input, *output, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
+    int dHmkl(dH), dWmkl(dW), pHmkl(pH), pWmkl(pW);
+    ConvolutionUtils::calcPaddingAndDilationForConv2DMKL(oH, oW, iH, iW, kH, kW, sH, sW, isSameMode, pHmkl, pWmkl, dHmkl, dWmkl);
+
     mkldnn::memory::dims strides   = { sH, sW };
-    mkldnn::memory::dims dilation  = { dH - 1, dW - 1};
     mkldnn::memory::dims padding   = { pH, pW };
-    mkldnn::memory::dims padding_r = { (iH - 1) * sH - oH + kH - pH, (iW - 1) * sW - oW + kW - pW };
+    mkldnn::memory::dims padding_r = { pHmkl, pWmkl };
+    mkldnn::memory::dims dilation  = { dHmkl, dWmkl };
 
     // input type
     mkldnn::memory::data_type xType;
@@ -190,11 +193,13 @@ static void deconv2dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     int indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH;       // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv2d(true, *input, *gradO, bS, iC, iH, iW, oC, oH, oW, indIOioC, indIiH, indWoC, indWiC, indWkH, indOoH);
 
-    mkldnn::memory::dims strides   = { sH, sW };
-    mkldnn::memory::dims dilation  = { dH - 1, dW - 1 };
-    mkldnn::memory::dims padding   = { pH, pW };
-    mkldnn::memory::dims padding_r = { (iH - 1) * sH - oH + kH - pH, (iW - 1) * sW - oW + kW - pW };
+    int dHmkl(dH), dWmkl(dW), pHmkl(pH), pWmkl(pW);
+    ConvolutionUtils::calcPaddingAndDilationForConv2DMKL(oH, oW, iH, iW, kH, kW, sH, sW, isSameMode, pHmkl, pWmkl, dHmkl, dWmkl);
 
+    mkldnn::memory::dims strides   = { sH, sW };
+    mkldnn::memory::dims padding   = { pH, pW };
+    mkldnn::memory::dims padding_r = { pHmkl, pWmkl };
+    mkldnn::memory::dims dilation  = { dHmkl, dWmkl };
     // input type
     mkldnn::memory::data_type xType = input->dataType() == DataType::FLOAT32 ? mkldnn::memory::data_type::f32 : mkldnn::memory::data_type::bf16;
     // weights type
@@ -425,7 +430,6 @@ PLATFORM_CHECK(deconv2d) {
 
     return block.isUseMKLDNN() && (
             (xType==DataType::FLOAT32 && wType==DataType::FLOAT32 && bType==DataType::FLOAT32 && zType==DataType::FLOAT32) ||
-            (xType==DataType::HALF    && wType==DataType::HALF    && bType==DataType::HALF    && zType==DataType::HALF   ) ||
             ((xType==DataType::UINT8 || xType==DataType::INT8) && wType==DataType::INT8 && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32) && bType == zType)
           );
 }

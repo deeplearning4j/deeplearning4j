@@ -194,6 +194,54 @@ namespace nd4j {
 
             }
 
+            static inline void calcPaddingAndDilationForConv2DMKL(const int iH, const int iW, const int oH, const int oW, const int kH, const int kW, const int sH, const int sW, const int isSameMode, int& pH, int& pW, int& dH, int& dW) {
+
+                if(kH != 1) {
+                    if(isSameMode) {
+                        pH = (oH - 1) * sH - iH + kH - pH;
+                        dH = dH - 1;
+                    }
+                    else
+                        dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
+                }
+                if(kW != 1) {
+                    if(isSameMode) {
+                        pW = (oW - 1) * sW - iW + kW - pW;
+                        dW = dW - 1;
+                    }
+                    else
+                        dW = (iW + 2*pW - (oW - 1) * sW - kW) / (kW - 1);
+                }
+            }
+
+            static inline void calcPaddingAndDilationForConv3DMKL(const int iD, const int iH, const int iW, const int oD, const int oH, const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int isSameMode, int& pD, int& pH, int& pW, int& dD, int& dH, int& dW) {
+
+                if(kD != 1) {
+                    if(isSameMode) {
+                        pD = (oD - 1) * sD - iD + kD - pD;
+                        dD = dD - 1;
+                    }
+                    else
+                        dD = (iD + 2*pD - (oD - 1) * sD - kD) / (kD - 1);
+                }
+                if(kH != 1) {
+                    if(isSameMode) {
+                        pH = (oH - 1) * sH - iH + kH - pH;
+                        dH = dH - 1;
+                    }
+                    else
+                        dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
+                }
+                if(kW != 1) {
+                    if(isSameMode) {
+                        pW = (oW - 1) * sW - iW + kW - pW;
+                        dW = dW - 1;
+                    }
+                    else
+                        dW = (iW + 2*pW - (oW - 1) * sW - kW) / (kW - 1);
+                }
+            }
+
             static void conv2d(nd4j::graph::Context  &context, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW);
 
             // static void conv2d(nd4j::graph::Context & block, const std::vector<NDArray*>& inArrs, NDArray* output, const std::vector<int>& intArgs);

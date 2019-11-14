@@ -2137,9 +2137,9 @@ TEST_F(ConvolutionTests1, deconv2d_test1) {
     int paddingMode = 0;             // 1-SAME, 0-VALID;
     int dataFormat  = 1;             // 1-NHWC, 0-NCHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, iH, iW, iC});
-    auto weights  = NDArrayFactory::create<double>('c', {kH, kW, oC, iC});
-    auto exp = NDArrayFactory::create<double>('c', {bS, oH, oW, oC}, {  2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
+    auto input    = NDArrayFactory::create<float>('c', {bS, iH, iW, iC});
+    auto weights  = NDArrayFactory::create<float>('c', {kH, kW, oC, iC});
+    auto exp = NDArrayFactory::create<float>('c', {bS, oH, oW, oC}, {  2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 27.75,  32.75,  37.75,  42.75,  47.75,
                                                   55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
                                                   55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,105.5 , 115.5 , 125.5 , 135.5 , 145.5 ,
                                                   52.75,  57.75,  62.75,  67.75,  72.75,130.5 , 140.5 , 150.5 , 160.5 , 170.5 ,130.5 , 140.5 , 150.5 , 160.5 , 170.5 , 77.75,  82.75,  87.75,  92.75,  97.75,
@@ -2170,9 +2170,9 @@ TEST_F(ConvolutionTests1, deconv2d_test2) {
     int paddingMode = 1;             // 1-SAME, 0-VALID;
     int dataFormat  = 1;             // 1-NHWC, 0-NCHW
 
-    auto input    = NDArrayFactory::create<double>('c', {bS, oH, oW, oC});
-    auto weights  = NDArrayFactory::create<double>('c', {kH, kW, iC, oC});
-    auto exp = NDArrayFactory::create<double>('c', {bS, iH, iW, iC}, {2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
+    auto input    = NDArrayFactory::create<float>('c', {bS, oH, oW, oC});
+    auto weights  = NDArrayFactory::create<float>('c', {kH, kW, iC, oC});
+    auto exp = NDArrayFactory::create<float>('c', {bS, iH, iW, iC}, {2.75,   7.75,  12.75,  17.75,  22.75, 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 , 30.5 ,  40.5 ,  50.5 ,  60.5 ,  70.5 ,
                                                 55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
                                                 55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
                                                 55.5 ,  65.5 ,  75.5 ,  85.5 ,  95.5 ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,161.  , 181.  , 201.  , 221.  , 241.  ,
@@ -2188,6 +2188,39 @@ TEST_F(ConvolutionTests1, deconv2d_test2) {
     auto output = results->at(0);
 
     ASSERT_EQ(Status::OK(), results->status());
+    ASSERT_TRUE(exp.isSameShape(output));
+    ASSERT_TRUE(exp.equalsTo(output));
+
+    delete results;
+}
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(ConvolutionTests1, deconv2d_test3) {
+
+    int bS=1, oH=5,oW=5,  oC=3,iC=2,  kH=2,kW=2,  sH=1,sW=1,  pH=0,pW=0,  dH=2,dW=2;
+    int       iH=3,iW=3;
+    int paddingMode = 0;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
+
+    auto input    = NDArrayFactory::create<float>('c', {bS, iH, iW, iC});
+    auto weights  = NDArrayFactory::create<float>('c', {kH, kW, oC, iC});
+    auto bias     = NDArrayFactory::create<float>('c', {oC});
+
+    auto exp = NDArrayFactory::create<float>('c', {bS, oH, oW, oC}, {-2.9, -6.8, -10.7, -2.6, -6.1, -9.6, -16.9, -23.9, -30.9, -13.1, -16.6, -20.1, -11.6, -14.7, -17.8, -2.0, -4.7, -7.4, -1.7, -4.0, -6.3, -11.5, -16.1,
+                                -20.7, -8.6, -10.9, -13.2, -7.1, -9.0, -10.9, -27.4, -32.8, -38.2, -24.4, -29.0, -33.6, -65.0, -74.2, -83.4, -38.2, -42.8, -47.4,
+                                -32.8, -36.6, -40.4, -18.2, -20.9, -23.6, -15.5, -17.8, -20.1, -39.1, -43.7, -48.3, -22.4, -24.7, -27.0, -18.5, -20.4, -22.3, -10.1, -11.6, -13.1,
+                                -7.4, -8.5, -9.6, -19.3, -21.5, -23.7, -10.7, -11.8, -12.9, -6.8, -7.5, -8.2});
+
+    input.linspace(-10, 0.5);
+    weights.linspace(0.1, 0.1);
+    bias = 0.2;
+
+    nd4j::ops::deconv2d op;
+    auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+    ASSERT_EQ(Status::OK(), results->status());
+
+    auto output = results->at(0);
+
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));
 

@@ -20,6 +20,7 @@
 
 #include <mkldnn_types.h>
 #include "mkldnnUtils.h"
+#include <ops/declarable/helpers/convolutions.h>
 
 using namespace mkldnn;
 
@@ -154,6 +155,14 @@ namespace nd4j {
             mkldnn::memory::dims conv_bias_tz = { oC };
             mkldnn::memory::dims conv_dst_tz = { bS, oC, oH, oW };
 
+            int dHmkl(dH), dWmkl(dW), pHmkl(pH), pWmkl(pW);
+            nd4j::ops::ConvolutionUtils::calcPaddingAndDilationForConv2DMKL(iH, iW, oH, oW, kH, kW, sH, sW, isSameMode, pHmkl, pWmkl, dHmkl, dWmkl);
+
+            conv_strides   = { sH, sW };
+            conv_padding   = { pH, pW };
+            conv_padding_r = { pHmkl, pWmkl };
+            conv_dilation  = { dHmkl, dWmkl };
+
             conv_strides   = { sH, sW };
             conv_padding   = { pH, pW };
             conv_dilation  = { dH-1, dW-1};
@@ -234,12 +243,13 @@ namespace nd4j {
             mkldnn::memory::dims conv_bias_tz = { oC };
             mkldnn::memory::dims conv_dst_tz = { bS, oC, oD, oH, oW };
 
+            int dDmkl(dD), dHmkl(dH), dWmkl(dW), pDmkl(pD), pHmkl(pH), pWmkl(pW);
+            nd4j::ops::ConvolutionUtils::calcPaddingAndDilationForConv3DMKL(iD, iH, iW, oD, oH, oW, kD, kH, kW, sD, sH, sW, isSameMode, pDmkl, pHmkl, pWmkl, dDmkl, dHmkl, dWmkl);
+
             conv_strides   = { sD, sH, sW };
-            conv_dilation  = { dD-1, dH-1, dW-1};
             conv_padding   = { pD, pH, pW };
-            conv_padding_r = { (oD - 1) * sD - iD + kD - pD,
-                               (oH - 1) * sH - iH + kH - pH,
-                               (oW - 1) * sW - iW + kW - pW };
+            conv_padding_r = { pDmkl, pHmkl, pWmkl };
+            conv_dilation  = { dDmkl, dHmkl, dWmkl };
 
             auto type = mkldnn::memory::data_type::f32;
             auto format = isNCDHW ? mkldnn::memory::format_tag::ncdhw : mkldnn::memory::format_tag::ndhwc;
