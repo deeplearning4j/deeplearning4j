@@ -27,12 +27,14 @@
 namespace nd4j {
 namespace ops {
 
-CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, 1, 0) {
+CONFIGURABLE_OP_IMPL(adjust_contrast, 1, 1, true, -2, 0) {
 
     auto input  = INPUT_VARIABLE(0);
     auto output = OUTPUT_VARIABLE(0);
 
-    const double factor = T_ARG(0);
+    REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST: Scale factor required");
+
+    const double factor = block.width() > 1 ? INPUT_VARIABLE(1)->e<double>(0) : T_ARG(0);
 
     REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
     REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
@@ -59,15 +61,17 @@ DECLARE_TYPES(adjust_contrast) {
 }
 
 
-    CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, 1, 0) {
+    CONFIGURABLE_OP_IMPL(adjust_contrast_v2, 1, 1, true, -2, 0) {
 
         auto input  = INPUT_VARIABLE(0);
         auto output = OUTPUT_VARIABLE(0);
 
-        const double factor = T_ARG(0);
+        REQUIRE_TRUE(block.numT() > 0 || block.width() > 1, 0, "ADJUST_CONTRAST_V2: Scale factor required");
 
-        REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
-        REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
+        const double factor = block.width() > 1 ? INPUT_VARIABLE(1)->e<double>(0) : T_ARG(0);
+
+        REQUIRE_TRUE(input->rankOf() > 2, 0, "ADJUST_CONTRAST_V2: op expects rank of input array to be >= 3, but got %i instead", input->rankOf());
+        REQUIRE_TRUE(input->sizeAt(-1) == 3, 0, "ADJUST_CONTRAST_V2: operation expects image with 3 channels (R, G, B), but got %i instead", input->sizeAt(-1));
 
         // compute mean before
         std::vector<int> axes(input->rankOf() - 1);
@@ -78,10 +82,10 @@ DECLARE_TYPES(adjust_contrast) {
         auto mean = input->reduceAlongDims(reduce::Mean, axes);
 
         // result as (x - mean) * factor + mean
-        std::unique_ptr<NDArray> temp(input->dup());
-        input->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &mean, temp.get());
-        temp->applyScalar(scalar::Multiply, factor);
-        temp->applyTrueBroadcast(BroadcastOpsTuple::Add(), &mean, output);
+        auto temp = input->ulike();
+        input->applyTrueBroadcast(BroadcastOpsTuple::Subtract(), &mean, &temp);
+        temp.applyScalar(scalar::Multiply, factor);
+        temp.applyTrueBroadcast(BroadcastOpsTuple::Add(), &mean, output);
 
         return Status::OK();
     }

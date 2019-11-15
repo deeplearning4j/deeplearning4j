@@ -190,6 +190,10 @@ namespace nd4j {
             void setIArguments(Nd4jLong *arguments, int numberOfArguments);
             void setBArguments(bool *arguments, int numberOfArguments);
 
+            void setTArguments(const std::vector<double> &tArgs);
+            void setIArguments(const std::vector<Nd4jLong> &tArgs);
+            void setBArguments(const std::vector<bool> &tArgs);
+
             void setCudaContext(Nd4jPointer cudaStream, Nd4jPointer reductionPointer, Nd4jPointer allocationPointer);
 
 

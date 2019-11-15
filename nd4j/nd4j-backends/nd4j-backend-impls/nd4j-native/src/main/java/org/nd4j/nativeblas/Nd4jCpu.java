@@ -6754,6 +6754,15 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native void setBArguments(@Cast("bool*") BooleanPointer arguments, int numberOfArguments);
             public native void setBArguments(@Cast("bool*") boolean[] arguments, int numberOfArguments);
 
+            public native void setTArguments(@StdVector DoublePointer tArgs);
+            public native void setTArguments(@StdVector DoubleBuffer tArgs);
+            public native void setTArguments(@StdVector double[] tArgs);
+            public native void setIArguments(@Cast("Nd4jLong*") @StdVector LongPointer tArgs);
+            public native void setIArguments(@Cast("Nd4jLong*") @StdVector LongBuffer tArgs);
+            public native void setIArguments(@Cast("Nd4jLong*") @StdVector long[] tArgs);
+            public native void setBArguments(@Cast("bool*") @StdVector BooleanPointer tArgs);
+            public native void setBArguments(@Cast("bool*") @StdVector boolean[] tArgs);
+
             public native void setCudaContext(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer, @Cast("Nd4jPointer") Pointer allocationPointer);
 
 
