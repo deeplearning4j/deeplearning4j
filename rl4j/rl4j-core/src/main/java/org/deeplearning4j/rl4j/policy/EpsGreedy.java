@@ -18,17 +18,13 @@ package org.deeplearning4j.rl4j.policy;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.deeplearning4j.rl4j.learning.Learning;
 import org.deeplearning4j.rl4j.learning.StepCountable;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.NeuralNet;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.ActionSpace;
-import org.deeplearning4j.rl4j.space.Encodable;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.rng.Random;
-import org.nd4j.linalg.util.ArrayUtil;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/24/16.
@@ -68,7 +64,7 @@ public class EpsGreedy<O, A, AS extends ActionSpace<A>> extends Policy<O, A> {
     }
 
     public A nextAction(Observation observation) {
-        return this.nextAction(observation.toHStack());
+        return this.nextAction(observation.getData());
     }
 
     public float getEpsilon() {

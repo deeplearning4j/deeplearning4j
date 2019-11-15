@@ -72,7 +72,7 @@ public class DQN<NN extends DQN> implements IDQN<NN> {
     }
 
     public INDArray output(Observation observation) {
-        return this.output(observation.toHStack());
+        return this.output(observation.getData());
     }
 
     public INDArray[] outputAll(INDArray batch) {

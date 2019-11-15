@@ -51,7 +51,7 @@ public class MockDQN implements IDQN {
 
     @Override
     public INDArray output(Observation observation) {
-        return this.output(observation.toHStack());
+        return this.output(observation.getData());
     }
 
     @Override

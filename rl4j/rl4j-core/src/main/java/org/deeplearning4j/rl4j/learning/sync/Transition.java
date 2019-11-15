@@ -16,11 +16,14 @@
 
 package org.deeplearning4j.rl4j.learning.sync;
 
-import lombok.AllArgsConstructor;
 import lombok.Value;
 import org.deeplearning4j.rl4j.observation.Observation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
+import org.nd4j.linalg.indexing.INDArrayIndex;
+import org.nd4j.linalg.indexing.NDArrayIndex;
+
+import java.util.List;
 
 /**
  * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
@@ -31,21 +34,26 @@ import org.nd4j.linalg.factory.Nd4j;
 @Value
 public class Transition<A> {
 
-    INDArray[] observation;
+    Observation observation;
     A action;
     double reward;
     boolean isTerminal;
     INDArray nextObservation;
 
     public Transition(Observation observation, A action, double reward, boolean isTerminal, Observation nextObservation) {
-        this.observation = observation.toINDArray();
+        this.observation = observation;
         this.action = action;
         this.reward = reward;
         this.isTerminal = isTerminal;
-        this.nextObservation = nextObservation.toINDArray()[0];
+
+        // For the next observation, only keep the latest frame to save memory. The full nextObservation will be re-build
+        // from observation when needed.
+        long[] nextObservationShape = nextObservation.getData().shape().clone();
+        nextObservationShape[0] = 1;
+        this.nextObservation = nextObservation.getData().get(new INDArrayIndex[] {NDArrayIndex.point(0)}).reshape(nextObservationShape);
     }
 
-    public Transition(INDArray[] observation, A action, double reward, boolean isTerminal, INDArray nextObservation) {
+    private Transition(Observation observation, A action, double reward, boolean isTerminal, INDArray nextObservation) {
         this.observation = observation;
         this.action = action;
         this.reward = reward;
@@ -69,36 +77,64 @@ public class Transition<A> {
      * @return this transition duplicated
      */
     public Transition<A> dup() {
-        INDArray[] dupObservation = dup(observation);
+        Observation dupObservation = observation.dup();
         INDArray nextObs = nextObservation.dup();
 
-        return new Transition<>(dupObservation, action, reward, isTerminal, nextObs);
+        return new Transition<A>(dupObservation, action, reward, isTerminal, nextObs);
     }
 
-    /**
-     * Duplicate an history
-     * @param history the history to duplicate
-     * @return a duplicate of the history
-     */
-    public static INDArray[] dup(INDArray[] history) {
-        INDArray[] dupHistory = new INDArray[history.length];
-        for (int i = 0; i < history.length; i++) {
-            dupHistory[i] = history[i].dup();
+    public static <A> INDArray buildStackedObservations(List<Transition<A>> transitions) {
+        int size = transitions.size();
+        long[] shape = getShape(transitions);
+
+        INDArray[] array = new INDArray[size];
+        for (int i = 0; i < size; i++) {
+            array[i] = transitions.get(i).getObservation().getData();
         }
-        return dupHistory;
+
+        return  Nd4j.concat(0, array).reshape(shape);
     }
 
-    /**
-     * append a pixel frame to an history (throwing the last frame)
-     * @param history the history on which to append
-     * @param append the pixel frame to append
-     * @return the appended history
-     */
-    public static INDArray[] append(INDArray[] history, INDArray append) {
-        INDArray[] appended = new INDArray[history.length];
-        appended[0] = append;
-        System.arraycopy(history, 0, appended, 1, history.length - 1);
-        return appended;
+    public static <A> INDArray buildStackedNextObservations(List<Transition<A>> transitions) {
+        int size = transitions.size();
+        long[] shape = getShape(transitions);
+
+        INDArray[] array = new INDArray[size];
+
+        for (int i = 0; i < size; i++) {
+            Transition<A> trans = transitions.get(i);
+            INDArray obs = trans.getObservation().getData();
+            long historyLength = obs.shape()[0];
+
+            if(historyLength != 1) {
+                INDArray historyPart = obs.get(new INDArrayIndex[]{NDArrayIndex.interval(0, historyLength - 1)});
+                array[i] = Nd4j.concat(0, trans.getNextObservation(), historyPart);
+            }
+            else {
+                array[i] = trans.getNextObservation();
+            }
+        }
+
+        return  Nd4j.concat(0, array).reshape(shape);
+    }
+
+    private static <A> long[] getShape(List<Transition<A>> transitions) {
+        INDArray observations = transitions.get(0).getObservation().getData();
+        long[] observationShape = observations.shape();
+        long[] stackedShape;
+        if(observationShape[0] == 1) {
+            // FIXME: Currently RL4J doesn't support 1D observations. So if we have a shape with 1 in the first dimension, we can use that dimension and don't need to add another one.
+            stackedShape = new long[observationShape.length];
+            System.arraycopy(observationShape, 0, stackedShape, 0, observationShape.length);
+        }
+        else {
+            stackedShape = new long[observationShape.length + 1];
+            System.arraycopy(observationShape, 1, stackedShape, 2, observationShape.length - 1);
+            stackedShape[1] = observationShape[1];
+        }
+        stackedShape[0] = transitions.size();
+
+        return stackedShape;
     }
 
 }

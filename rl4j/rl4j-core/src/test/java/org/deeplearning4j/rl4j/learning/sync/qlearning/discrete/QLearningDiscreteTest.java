@@ -6,7 +6,6 @@ import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.deeplearning4j.rl4j.learning.sync.qlearning.QLearning;
 import org.deeplearning4j.rl4j.mdp.MDP;
 import org.deeplearning4j.rl4j.network.dqn.IDQN;
-import org.deeplearning4j.rl4j.observation.Observation;
 import org.deeplearning4j.rl4j.space.DiscreteSpace;
 import org.deeplearning4j.rl4j.support.*;
 import org.deeplearning4j.rl4j.util.DataManagerTrainingListener;
@@ -125,7 +124,7 @@ public class QLearningDiscreteTest {
             assertEquals(expectedTrActions[i], tr.getAction());
             assertEquals(expectedTrNextObservation[i], 255.0 * tr.getNextObservation().getDouble(0), 0.0001);
             for(int j = 0; j < expectedTrObservations[i].length; ++j) {
-                assertEquals("row: "+ i + " col: " + j, expectedTrObservations[i][j], 255.0 * tr.getObservation()[j].getDouble(0), 0.0001);
+                assertEquals("row: "+ i + " col: " + j, expectedTrObservations[i][j], 255.0 * tr.getObservation().getData().getDouble(j, 0), 0.0001);
             }
         }
 

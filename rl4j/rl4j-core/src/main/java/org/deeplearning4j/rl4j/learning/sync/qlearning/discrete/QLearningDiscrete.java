@@ -170,11 +170,6 @@ public abstract class QLearningDiscrete<O extends Encodable> extends QLearning<O
         if (transitions.size() == 0)
             throw new IllegalArgumentException("too few transitions");
 
-        // TODO: Remove once we use DataSets in observations
-        int[] shape = getHistoryProcessor() == null ? getMdp().getObservationSpace().getShape()
-                : getHistoryProcessor().getConf().getShape();
-        ((BaseTDTargetAlgorithm) tdTargetAlgorithm).setNShape(makeShape(transitions.size(), shape));
-
         return tdTargetAlgorithm.computeTDTargets(transitions);
     }
 }

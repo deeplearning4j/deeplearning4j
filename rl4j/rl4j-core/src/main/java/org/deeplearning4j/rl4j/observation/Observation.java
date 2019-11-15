@@ -1,37 +1,32 @@
 package org.deeplearning4j.rl4j.observation;
 
-import org.deeplearning4j.rl4j.learning.Learning;
-import org.deeplearning4j.rl4j.learning.sync.Transition;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.util.ArrayUtil;
+import org.nd4j.linalg.dataset.api.DataSet;
+import org.nd4j.linalg.factory.Nd4j;
 
 public class Observation {
     // TODO: Presently only a dummy container. Will contain observation channels when done.
 
-    private final INDArray[] obsArray;
+    private final DataSet data;
 
-    private INDArray hstack = null;
-
-    public Observation(INDArray[] obsArray) {
-        this.obsArray = obsArray;
+    public Observation(INDArray[] data) {
+        this(new org.nd4j.linalg.dataset.DataSet(Nd4j.concat(0, data), null));
     }
 
-    public INDArray[] toINDArray() {
-        return obsArray;
+    // FIXME: Remove -- only used in unit tests
+    public Observation(INDArray data) {
+        this.data = new org.nd4j.linalg.dataset.DataSet(data, null);
     }
 
-    public INDArray toHStack() {
-        if(hstack != null) {
-            return hstack;
-        }
+    private Observation(DataSet data) {
+        this.data = data;
+    }
 
-        //concat the history into a single INDArray input
-        hstack = Transition.concat(Transition.dup(obsArray));
+    public Observation dup() {
+        return new Observation(new org.nd4j.linalg.dataset.DataSet(data.getFeatures().dup(), null));
+    }
 
-        //if input is not 2d, you have to append that the batch is 1 length high
-        if (hstack.shape().length > 2)
-            hstack = hstack.reshape(Learning.makeShape(1, ArrayUtil.toInts(hstack.shape())));
-
-        return hstack;
+    public INDArray getData() {
+        return data.getFeatures();
     }
 }
