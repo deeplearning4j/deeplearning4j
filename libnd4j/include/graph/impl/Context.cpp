@@ -482,7 +482,7 @@ namespace nd4j {
 
         void Context::setBArguments(const std::vector<bool> &bArgs) {
             for (auto b:bArgs)
-                _bArgs.emplace_back(b);
+                _bArgs.push_back(b);
         }
     }
 }
