@@ -70,8 +70,19 @@ public class MinimalSameDiffDense extends SameDiffLayer {
 
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
-        params.get(DefaultParamInitializer.BIAS_KEY).assign(0);
-        initWeights(nIn, nOut, weightInit, params.get(DefaultParamInitializer.WEIGHT_KEY));
+        String b = DefaultParamInitializer.BIAS_KEY;
+        if(paramWeightInit != null && paramWeightInit.containsKey(b)){
+            paramWeightInit.get(b).init(nIn, nOut, params.get(b).shape(), 'c', params.get(b));
+        } else {
+            params.get(DefaultParamInitializer.BIAS_KEY).assign(0);
+        }
+
+        String w = DefaultParamInitializer.WEIGHT_KEY;
+        if(paramWeightInit != null && paramWeightInit.containsKey(w)){
+            paramWeightInit.get(w).init(nIn, nOut, params.get(w).shape(), 'c', params.get(w));
+        } else {
+            initWeights(nIn, nOut, weightInit, params.get(DefaultParamInitializer.WEIGHT_KEY));
+        }
     }
 
     //OPTIONAL methods:

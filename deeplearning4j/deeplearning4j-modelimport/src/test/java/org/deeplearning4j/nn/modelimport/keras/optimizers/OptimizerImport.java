@@ -16,23 +16,18 @@
 
 package org.deeplearning4j.nn.modelimport.keras.optimizers;
 
-import org.deeplearning4j.config.DL4JSystemProperties;
 import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasSequentialModel;
-import org.deeplearning4j.nn.modelimport.keras.e2e.KerasModelEndToEndTest;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasModelBuilder;
 import org.deeplearning4j.util.DL4JFileUtils;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.resources.Resources;
 
 import java.io.File;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-
-import static java.io.File.createTempFile;
 
 public class OptimizerImport extends BaseDL4JTest {
 

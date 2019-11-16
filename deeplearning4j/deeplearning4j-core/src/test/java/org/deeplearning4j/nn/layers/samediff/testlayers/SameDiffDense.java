@@ -88,11 +88,15 @@ public class SameDiffDense extends SameDiffLayer {
     @Override
     public void initializeParameters(Map<String,INDArray> params){
         for(Map.Entry<String,INDArray> e : params.entrySet()){
-            if(DefaultParamInitializer.BIAS_KEY.equals(e.getKey())){
-                e.getValue().assign(0.0);
+            if(paramWeightInit != null && paramWeightInit.containsKey(e.getKey())){
+                paramWeightInit.get(e.getKey()).init(nIn, nOut, e.getValue().shape(), 'c', e.getValue());
             } else {
-                //Normally use 'c' order, but use 'f' for direct comparison to DL4J DenseLayer
-                WeightInitUtil.initWeights(nIn, nOut, new long[]{nIn, nOut}, weightInit, null, 'f', e.getValue());
+                if(DefaultParamInitializer.BIAS_KEY.equals(e.getKey())){
+                    e.getValue().assign(0.0);
+                } else {
+                    //Normally use 'c' order, but use 'f' for direct comparison to DL4J DenseLayer
+                    WeightInitUtil.initWeights(nIn, nOut, new long[]{nIn, nOut}, weightInit, null, 'f', e.getValue());
+                }
             }
         }
     }

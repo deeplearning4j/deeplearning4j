@@ -50,6 +50,7 @@ import static org.junit.Assume.assumeTrue;
 
 public class ValidateMKLDNN extends BaseDL4JTest {
 
+
     @Test
     public void validateConvSubsampling() throws Exception {
         //Only run test if using nd4j-native backend
@@ -268,6 +269,7 @@ public class ValidateMKLDNN extends BaseDL4JTest {
 
     @Test
     public void compareBatchNormBackward() throws Exception {
+        assumeTrue(Nd4j.getBackend().getClass().getName().toLowerCase().contains("native"));
 
         Nd4j.getRandom().setSeed(12345);
         INDArray in = Nd4j.rand(DataType.FLOAT, 1, 3, 15, 15);

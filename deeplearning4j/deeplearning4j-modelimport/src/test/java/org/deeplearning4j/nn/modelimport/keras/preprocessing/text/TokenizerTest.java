@@ -20,7 +20,6 @@ import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 

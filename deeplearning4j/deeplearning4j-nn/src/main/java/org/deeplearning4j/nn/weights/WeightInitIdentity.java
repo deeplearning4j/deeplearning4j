@@ -16,11 +16,14 @@
 
 package org.deeplearning4j.nn.weights;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
 
@@ -32,8 +35,16 @@ import java.util.Arrays;
  *
  * @author Adam Gibson
  */
-@EqualsAndHashCode
+@Data
+@NoArgsConstructor
 public class WeightInitIdentity implements IWeightInit {
+
+    private Double scale;
+
+    public WeightInitIdentity(@JsonProperty("scale") Double scale){
+        this.scale = scale;
+    }
+
 
     @Override
     public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
@@ -59,6 +70,11 @@ public class WeightInitIdentity implements IWeightInit {
         } else {
             ret = Nd4j.createUninitialized(shape, order).assign(Nd4j.eye(shape[0]));
         }
+
+        if(scale != null){
+            ret.muli(scale);
+        }
+
         INDArray flat = Nd4j.toFlattened(order, ret);
         paramView.assign(flat);
         return paramView.reshape(order, shape);
@@ -82,12 +98,15 @@ public class WeightInitIdentity implements IWeightInit {
             indArrayIndices[i] = NDArrayIndex.point(shape[i] / 2);
         }
 
-        paramView.assign(Nd4j.zeros(paramView.shape()));
+        paramView.assign(0);
         final INDArray params =paramView.reshape(order, shape);
         for (int i = 0; i < shape[0]; i++) {
             indArrayIndices[0] = NDArrayIndex.point(i);
             indArrayIndices[1] = NDArrayIndex.point(i);
             params.put(indArrayIndices, Nd4j.ones(1));
+        }
+        if(scale != null){
+            params.muli(scale);
         }
         return params;
     }

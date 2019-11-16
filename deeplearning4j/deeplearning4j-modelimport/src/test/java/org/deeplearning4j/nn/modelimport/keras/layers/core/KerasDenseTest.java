@@ -26,16 +26,11 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInitXavier;
 import org.junit.Test;
-import org.nd4j.linalg.learning.regularization.L1Regularization;
-import org.nd4j.linalg.learning.regularization.L2Regularization;
-import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 /**
  * @author Max Pumperla

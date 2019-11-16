@@ -24,101 +24,11 @@ import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
 import java.util.List;
 
 /**
- * A wrapper for a dataset to sample from.
- * This will randomly sample from the given dataset.
- * @author Adam GIbson
+ * @deprecated Use {@link org.nd4j.linalg.dataset.api.iterator.SamplingDataSetIterator}
  */
-public class SamplingDataSetIterator implements DataSetIterator {
-
-    /**
-     * 
-     */
-    private static final long serialVersionUID = -2700563801361726914L;
-    private DataSet sampleFrom;
-    private int batchSize;
-    private int totalNumberSamples;
-    private int numTimesSampled;
-    @Getter
-    private DataSetPreProcessor preProcessor;
-
-    /**
-     *
-     * @param sampleFrom the dataset to sample from
-     * @param batchSize the batch size to sample
-     * @param totalNumberSamples the sample size
-     */
+@Deprecated
+public class SamplingDataSetIterator extends org.nd4j.linalg.dataset.api.iterator.SamplingDataSetIterator {
     public SamplingDataSetIterator(DataSet sampleFrom, int batchSize, int totalNumberSamples) {
-        super();
-        this.sampleFrom = sampleFrom;
-        this.batchSize = batchSize;
-        this.totalNumberSamples = totalNumberSamples;
+        super(sampleFrom, batchSize, totalNumberSamples);
     }
-
-    @Override
-    public boolean hasNext() {
-        return numTimesSampled < totalNumberSamples;
-    }
-
-    @Override
-    public DataSet next() {
-        DataSet ret = sampleFrom.sample(batchSize);
-        numTimesSampled += batchSize;
-        return ret;
-    }
-
-    @Override
-    public void remove() {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int inputColumns() {
-        return sampleFrom.numInputs();
-    }
-
-    @Override
-    public int totalOutcomes() {
-        return sampleFrom.numOutcomes();
-    }
-
-    @Override
-    public boolean resetSupported() {
-        return true;
-    }
-
-    @Override
-    public boolean asyncSupported() {
-        return true;
-    }
-
-    @Override
-    public void reset() {
-        numTimesSampled = 0;
-    }
-
-    @Override
-    public int batch() {
-        return batchSize;
-    }
-
-    @Override
-    public void setPreProcessor(DataSetPreProcessor preProcessor) {
-        this.preProcessor = preProcessor;
-    }
-
-    @Override
-    public List<String> getLabels() {
-        return null;
-    }
-
-
-    @Override
-    public DataSet next(int num) {
-        DataSet ret = sampleFrom.sample(num);
-        numTimesSampled++;
-        return ret;
-    }
-
-
-
 }
