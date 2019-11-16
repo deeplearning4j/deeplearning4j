@@ -20,7 +20,6 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.SeparableConvolution2D;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
@@ -28,9 +27,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasRegularizerUtils;
 import org.deeplearning4j.nn.params.SeparableConvolutionParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -93,17 +91,13 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
 
         int depthMultiplier = getDepthMultiplier(layerConfig, conf);
 
-        Pair<WeightInit, Distribution> depthWiseInit = getWeightInitFromConfig(layerConfig,
+        IWeightInit depthWiseInit = getWeightInitFromConfig(layerConfig,
                 conf.getLAYER_FIELD_DEPTH_WISE_INIT(), enforceTrainingConfig, conf, kerasMajorVersion);
-        WeightInit depthWeightInit = depthWiseInit.getFirst();
-        Distribution depthDistribution = depthWiseInit.getSecond();
 
-        Pair<WeightInit, Distribution> pointWiseInit = getWeightInitFromConfig(layerConfig,
+        IWeightInit pointWiseInit = getWeightInitFromConfig(layerConfig,
                 conf.getLAYER_FIELD_POINT_WISE_INIT(), enforceTrainingConfig, conf, kerasMajorVersion);
-        WeightInit pointWeightInit = pointWiseInit.getFirst();
-        Distribution pointDistribution = pointWiseInit.getSecond();
 
-        if (depthWeightInit != pointWeightInit || depthDistribution != pointDistribution)
+        if ( !depthWiseInit.getClass().equals(pointWiseInit.getClass()) )
             if (enforceTrainingConfig)
                 throw new UnsupportedKerasConfigurationException(
                         "Specifying different initialization for depth- and point-wise weights not supported.");
@@ -126,7 +120,7 @@ public class KerasSeparableConvolution2D extends KerasConvolution {
         SeparableConvolution2D.Builder builder = new SeparableConvolution2D.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf)).dropOut(this.dropout)
                 .activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(depthWeightInit.getWeightInitFunction(depthDistribution))
+                .weightInit(depthWiseInit)
                 .depthMultiplier(depthMultiplier)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .convolutionMode(getConvolutionModeFromConfig(layerConfig, conf))

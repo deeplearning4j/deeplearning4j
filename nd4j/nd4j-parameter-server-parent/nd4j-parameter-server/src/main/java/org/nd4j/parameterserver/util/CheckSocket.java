@@ -20,7 +20,7 @@ import java.io.IOException;
 import java.net.*;
 
 /**
- * Credit: http://stackoverflow.com/questions/5226905/test-if-remote-port-is-in-use
+ * Credit: https://stackoverflow.com/questions/5226905/test-if-remote-port-is-in-use
  *
  *
  */

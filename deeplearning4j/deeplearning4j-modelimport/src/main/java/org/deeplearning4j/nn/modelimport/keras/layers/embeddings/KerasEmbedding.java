@@ -21,7 +21,6 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.EmbeddingSequenceLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -30,11 +29,10 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -104,12 +102,10 @@ public class KerasEmbedding extends KerasLayer {
                     "on Embedding layers. Zero Masking for the Embedding layer only works with unidirectional LSTM for now."
                     + " If you want to have this behaviour for your imported model " +
                     "in DL4J, apply masking as a pre-processing step to your input." +
-                    "See https://deeplearning4j.org/usingrnns#masking for more on this.");
+                    "See http://deeplearning4j.org/docs/latest/deeplearning4j-nn-recurrent#masking for more on this.");
 
-        Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(),
+        IWeightInit init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_EMBEDDING_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
-        WeightInit weightInit = init.getFirst();
-        Distribution distribution = init.getSecond();
 
         LayerConstraint embeddingConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_EMBEDDINGS_CONSTRAINT(), conf, kerasMajorVersion);
@@ -121,7 +117,7 @@ public class KerasEmbedding extends KerasLayer {
                 .inferInputLength(inferInputLength)
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(Activation.IDENTITY)
-                .weightInit(weightInit.getWeightInitFunction(distribution))
+                .weightInit(init)
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization)
                 .l2(this.weightL2Regularization)

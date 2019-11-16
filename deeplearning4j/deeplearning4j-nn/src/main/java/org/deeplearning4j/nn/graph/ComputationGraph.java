@@ -2734,7 +2734,12 @@ public class ComputationGraph implements Serializable, Model, NeuralNetwork {
                         if (setVertexEpsilon[gv.getVertexIndex()]) {
                             //This vertex: must output to multiple vertices... we want to add the epsilons here
                             INDArray currentEps = gv.getEpsilon();
-                            gv.setEpsilon(currentEps.addi(epsilons[j++]));  //TODO is this always safe?
+                            if(currentEps == null){
+                                //Edge case: this can be null for dual embedding layer case - in -> e1, in -> e2
+                                gv.setEpsilon(currentEps);
+                            } else {
+                                gv.setEpsilon(currentEps.addi(epsilons[j++]));  //TODO is this always safe?
+                            }
                         } else {
                             gv.setEpsilon(epsilons[j++]);
                         }

@@ -34,7 +34,7 @@ import org.tensorflow.framework.NodeDef;
  * Out(x) = x if x >= 0<br>
  * Leaky ReLU may avoid zero gradient "dying ReLU" problem by having non-zero
  * gradient below 0.<br>
- * See for example http://arxiv.org/abs/1505.00853 for a comparison of
+ * See for example https://arxiv.org/abs/1505.00853 for a comparison of
  * ReLU variants.
  *
  * @author Alex Black

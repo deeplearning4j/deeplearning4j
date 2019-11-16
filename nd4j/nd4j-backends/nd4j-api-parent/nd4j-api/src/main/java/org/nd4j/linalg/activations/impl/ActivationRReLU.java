@@ -34,7 +34,7 @@ import org.nd4j.shade.jackson.annotation.JsonIgnoreProperties;
  *  alpha is drawn from uniform(l,u) during training and is set to l+u/2 during test
  *  l and u default to 1/8 and 1/3 respectively
  *
- *  <a href="http://arxiv.org/abs/1505.00853">
+ *  <a href="https://arxiv.org/abs/1505.00853">
  *  Empirical Evaluation of Rectified Activations in Convolutional Network</a>
  */
 @EqualsAndHashCode(callSuper = false)

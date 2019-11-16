@@ -30,7 +30,7 @@ import java.util.Map;
 
 /**
  * The Adam updater.
- * http://arxiv.org/abs/1412.6980
+ * https://arxiv.org/abs/1412.6980
  *
  * @author Adam Gibson
  */

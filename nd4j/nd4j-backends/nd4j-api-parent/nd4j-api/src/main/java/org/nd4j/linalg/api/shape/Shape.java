@@ -3607,6 +3607,13 @@ public class Shape {
             return ArrayUtil.prodLong(shape);
     }
 
+    public static long lengthOf(int[] shape) {
+        if (shape.length == 0)
+            return 1L;
+        else
+            return ArrayUtil.prodLong(shape);
+    }
+
     /**
      * Calculate the length of the buffer required to store the given shape with the given strides
      *

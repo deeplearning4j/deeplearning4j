@@ -53,12 +53,6 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
-            <groupId>org.nutz</groupId>
-            <artifactId>nutz</artifactId>
-            <version>1.r.58</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
             <groupId>org.nlpcn</groupId>
             <artifactId>nlp-lang</artifactId>
             <version>1.7.2</version>

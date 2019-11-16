@@ -22,8 +22,6 @@ import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
-import org.nd4j.linalg.io.ClassPathResource;
-import org.nd4j.linalg.util.Nd4jValidator;
 import org.nd4j.resources.Resources;
 import org.nd4j.validation.ValidationResult;
 

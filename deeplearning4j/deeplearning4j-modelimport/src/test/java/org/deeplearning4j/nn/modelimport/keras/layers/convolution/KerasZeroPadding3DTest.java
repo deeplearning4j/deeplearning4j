@@ -17,12 +17,10 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.layers.ZeroPadding3DLayer;
-import org.deeplearning4j.nn.conf.layers.ZeroPaddingLayer;
 import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasZeroPadding2D;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasZeroPadding3D;
 import org.junit.Test;
 

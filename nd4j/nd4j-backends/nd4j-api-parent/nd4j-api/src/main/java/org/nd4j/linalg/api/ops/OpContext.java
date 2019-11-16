@@ -128,4 +128,12 @@ public interface OpContext extends AutoCloseable {
      * @param reallyInplace
      */
     void markInplace(boolean reallyInplace);
+
+    /**
+     * This method allows to enable/disable use of platform helpers within ops. I.e. mkldnn or cuDNN.
+     * PLEASE NOTE: default value is True
+     *
+     * @param reallyAllow
+     */
+    void allowHelpers(boolean reallyAllow);
 }

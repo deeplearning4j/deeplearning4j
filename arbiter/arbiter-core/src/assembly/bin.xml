@@ -61,7 +61,7 @@
 			<outputDirectory>examples</outputDirectory>
 			<!--
 				<lineEnding>unix</lineEnding>
-				http://stackoverflow.com/questions/2958282/stranges-files-in-my-assembly-since-switching-to-lineendingunix-lineending
+				https://stackoverflow.com/questions/2958282/stranges-files-in-my-assembly-since-switching-to-lineendingunix-lineending
 			-->
 		</fileSet>
 

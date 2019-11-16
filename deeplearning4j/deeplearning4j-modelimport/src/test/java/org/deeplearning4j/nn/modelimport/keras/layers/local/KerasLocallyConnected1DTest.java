@@ -20,7 +20,6 @@ import org.deeplearning4j.nn.conf.ConvolutionMode;
 import org.deeplearning4j.nn.conf.dropout.Dropout;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.LocallyConnected1D;
-import org.deeplearning4j.nn.conf.layers.LocallyConnected2D;
 import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasTestUtils;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
@@ -31,10 +30,8 @@ import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 /**

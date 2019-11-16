@@ -16,7 +16,6 @@
 
 package org.deeplearning4j.nn.modelimport.keras;
 
-import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.layers.BaseLayer;
 import org.deeplearning4j.nn.conf.layers.samediff.AbstractSameDiffLayer;
 import org.nd4j.linalg.learning.regularization.L1Regularization;
@@ -25,7 +24,6 @@ import org.nd4j.linalg.learning.regularization.Regularization;
 
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class KerasTestUtils {

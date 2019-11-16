@@ -16,21 +16,33 @@
 
 package org.deeplearning4j.nn.weights;
 
+import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Uniform U[-a,a] with a=3.0/(fanOut)
+ * Uniform U[-a,a] with a=3.0/(fanOut)<br>
+ * If a scale is provided, a = 3.0 * scale / fanOut
  *
  * @author Adam Gibson
  */
-@EqualsAndHashCode
+@Data
+@NoArgsConstructor
 public class WeightInitVarScalingUniformFanOut implements IWeightInit {
+
+    private Double scale;
+
+    public WeightInitVarScalingUniformFanOut(Double scale){
+        this.scale = scale;
+    }
 
     @Override
     public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
         double scalingFanOut = 3.0 / Math.sqrt(fanOut);
+        if(scale != null)
+            scalingFanOut *= scale;
         Nd4j.rand(paramView, Nd4j.getDistributions().createUniform(-scalingFanOut, scalingFanOut));
         return paramView.reshape(order, shape);
     }

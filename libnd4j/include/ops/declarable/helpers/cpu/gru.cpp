@@ -19,7 +19,7 @@
 //
 
 // implementation of gated Recurrent Unit cell
-// (cf. http://arxiv.org/abs/1406.1078).
+// (cf. https://arxiv.org/abs/1406.1078).
 // Kyunghyun Cho, Bart van Merrienboer, Caglar Gulcehre, Dzmitry Bahdanau, Fethi Bougares, Holger Schwenk, Yoshua Bengio
 // "Learning Phrase Representations using RNN Encoder-Decoder for Statistical Machine Translation"
 

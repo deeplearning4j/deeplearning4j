@@ -107,7 +107,7 @@ public class MathUtils {
     }
 
     /**
-     * See: <a href="http://stackoverflow.com/questions/466204/rounding-off-to-nearest-power-of-2">http://stackoverflow.com/questions/466204/rounding-off-to-nearest-power-of-2</a>
+     * See: <a href="https://stackoverflow.com/questions/466204/rounding-off-to-nearest-power-of-2">https://stackoverflow.com/questions/466204/rounding-off-to-nearest-power-of-2</a>
      *
      * @param v the number to getFromOrigin the next power of 2 for
      * @return the next power of 2 for the passed in value

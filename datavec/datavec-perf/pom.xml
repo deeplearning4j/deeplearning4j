@@ -42,11 +42,6 @@
             <version>${slf4j.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.github.oshi</groupId>
-            <artifactId>oshi-core</artifactId>
-            <version>${oshi.version}</version>
-        </dependency>
-        <dependency>
             <groupId>org.datavec</groupId>
             <artifactId>datavec-data-image</artifactId>
             <version>${project.version}</version>

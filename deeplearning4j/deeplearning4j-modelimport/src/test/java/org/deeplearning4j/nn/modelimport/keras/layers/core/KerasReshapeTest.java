@@ -24,11 +24,11 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
+import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 import org.junit.Assert;
 import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
-import org.deeplearning4j.nn.workspace.LayerWorkspaceMgr;
 
 import java.util.*;
 

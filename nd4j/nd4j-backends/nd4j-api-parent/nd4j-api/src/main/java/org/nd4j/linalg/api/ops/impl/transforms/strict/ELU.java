@@ -32,7 +32,7 @@ import java.util.List;
  * Introduced in paper:<br>
  * Fast and Accurate Deep Network Learning by Exponential Linear Units (ELUs)<br>
  * Djork-Arné Clevert, Thomas Unterthiner, Sepp Hochreiter (2015)<br>
- * <a href="http://arxiv.org/abs/1511.07289">http://arxiv.org/abs/1511.07289</a>
+ * <a href="https://arxiv.org/abs/1511.07289">https://arxiv.org/abs/1511.07289</a>
  *
  * @author Alex Black
  */

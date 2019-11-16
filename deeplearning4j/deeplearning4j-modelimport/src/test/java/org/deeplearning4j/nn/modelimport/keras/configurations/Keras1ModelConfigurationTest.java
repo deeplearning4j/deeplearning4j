@@ -24,7 +24,6 @@ import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.resources.Resources;
 
 import java.io.InputStream;

@@ -179,7 +179,7 @@ Congratulations! You just trained your first neural network with Deeplearning4j.
 **Q:** **SPARK ISSUES** I am running the examples and having issues with the Spark based examples such as distributed training or datavec transform options.
 
 
-**A:** You may be missing some dependencies that Spark requires. See this [Stack Overflow discussion](http://stackoverflow.com/a/38735202/3892515) for a discussion of potential dependency issues. Windows users may need the winutils.exe from Hadoop.
+**A:** You may be missing some dependencies that Spark requires. See this [Stack Overflow discussion](https://stackoverflow.com/a/38735202/3892515) for a discussion of potential dependency issues. Windows users may need the winutils.exe from Hadoop.
 
 Download winutils.exe from https://github.com/steveloughran/winutils and put it into the null/bin/winutils.exe (or create a hadoop folder and add that to HADOOP_HOME)
 

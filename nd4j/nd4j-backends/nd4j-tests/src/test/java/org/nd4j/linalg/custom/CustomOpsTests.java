@@ -931,4 +931,36 @@ public class CustomOpsTests extends BaseNd4jTest {
         Nd4j.exec(new KnnMinDistance(point, lowest, highest, distance));
         System.out.println(distance);
     }
+
+
+    @Test
+    public void testRange(){
+        DynamicCustomOp op = DynamicCustomOp.builder("range")
+                .addFloatingPointArguments(-1.0, 1.0, 0.01)
+                .build();
+
+        List<LongShapeDescriptor> lsd = op.calculateOutputShape();
+        //System.out.println("Calculated output shape: " + Arrays.toString(lsd.get(0).getShape()));
+        op.setOutputArgument(0, Nd4j.create(lsd.get(0)));
+
+        Nd4j.exec(op);
+    }
+
+    @Test
+    public void testBitCastShape_1(){
+        val out = Nd4j.createUninitialized(1,10);
+        BitCast op = new BitCast(Nd4j.zeros(DataType.FLOAT,1,10), DataType.INT.toInt(), out);
+        List<LongShapeDescriptor> lsd = op.calculateOutputShape();
+        assertEquals(1, lsd.size());
+        assertArrayEquals(new long[]{1,10}, lsd.get(0).getShape());
+    }
+
+    @Test
+    public void testBitCastShape_2(){
+        val out = Nd4j.createUninitialized(1,10);
+        BitCast op = new BitCast(Nd4j.zeros(DataType.DOUBLE,1,10), DataType.INT.toInt(), out);
+        List<LongShapeDescriptor> lsd = op.calculateOutputShape();
+        assertEquals(1, lsd.size());
+        assertArrayEquals(new long[]{1,10, 2}, lsd.get(0).getShape());
+    }
 }

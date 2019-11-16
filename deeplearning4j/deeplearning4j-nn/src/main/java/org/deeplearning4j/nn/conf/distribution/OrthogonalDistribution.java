@@ -23,7 +23,7 @@ import org.nd4j.shade.jackson.annotation.JsonProperty;
 
 /**
  * Orthogonal distribution, with gain parameter.<br>
- * See <a href="http://arxiv.org/abs/1312.6120">http://arxiv.org/abs/1312.6120</a> for details
+ * See <a href="https://arxiv.org/abs/1312.6120">https://arxiv.org/abs/1312.6120</a> for details
  *
  */
 @EqualsAndHashCode(callSuper = false)

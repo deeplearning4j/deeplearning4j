@@ -506,12 +506,15 @@ namespace nd4j {
             Nd4jStatus status;
             bool hasHelper = false;
 
-            // if we have platform-specific helper for this op - invoke it
-            if (OpRegistrator::getInstance()->hasHelper(this->getOpHash())) {
-                auto helper =  OpRegistrator::getInstance()->getPlatformHelper(this->getOpHash());
-                if (helper->isUsable(*block)) {
-                    status = helper->invokeHelper(*block);
-                    hasHelper = true;
+            // platform helpers use might be forbidden for various reasons, so we'll check it out first
+            if (block->helpersAllowed() && nd4j::Environment::getInstance()->helpersAllowed()) {
+                // if we have platform-specific helper for this op - invoke it
+                if (OpRegistrator::getInstance()->hasHelper(this->getOpHash())) {
+                    auto helper = OpRegistrator::getInstance()->getPlatformHelper(this->getOpHash());
+                    if (helper->isUsable(*block)) {
+                        status = helper->invokeHelper(*block);
+                        hasHelper = true;
+                    }
                 }
             }
 

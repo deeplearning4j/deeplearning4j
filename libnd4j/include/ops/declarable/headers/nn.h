@@ -137,7 +137,7 @@ namespace nd4j {
         #endif
 
         /**
-         * This operation performs batch normalization of layer, it is based on following article http://arxiv.org/abs/1502.03167.
+         * This operation performs batch normalization of layer, it is based on following article https://arxiv.org/abs/1502.03167.
          * Expected arguments:
          * x: input 4D array of shape [bS,iH,iW,iD] (data format = NHWC) or [bS,iD,iH,iW] (data format = NCHW), where
          *    bS - batch size

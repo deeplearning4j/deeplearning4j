@@ -17,22 +17,16 @@
 package org.deeplearning4j.nn.modelimport.keras.configurations;
 
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
 import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.junit.Test;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.resources.Resources;
 
-import java.io.File;
 import java.io.IOException;
 
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**

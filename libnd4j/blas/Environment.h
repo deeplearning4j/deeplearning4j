@@ -37,10 +37,18 @@ namespace nd4j{
         std::atomic<bool> _debug;
         std::atomic<bool> _leaks;
         std::atomic<bool> _profile;
-        std::atomic<int> _maxThreads;
         std::atomic<nd4j::DataType> _dataType;
         std::atomic<bool> _precBoost;
         std::atomic<bool> _useMKLDNN{true};
+        std::atomic<bool> _allowHelpers{true};
+
+        std::atomic<int> _maxThreads;
+        std::atomic<int> _maxMasterThreads;
+
+        // these fields hold defaults
+        std::atomic<int64_t> _maxTotalPrimaryMemory{-1};
+        std::atomic<int64_t> _maxTotalSpecialMemory{-1};
+        std::atomic<int64_t> _maxDeviceMemory{-1};
 
 #ifdef __ND4J_EXPERIMENTAL__
         const bool _experimental = true;
@@ -74,6 +82,8 @@ namespace nd4j{
         void setDebug(bool reallyDebug);
         void setProfiling(bool reallyProfile);
         void setLeaksDetector(bool reallyDetect);
+        bool helpersAllowed();
+        void allowHelpers(bool reallyAllow);
         
         int tadThreshold();
         void setTadThreshold(int threshold);
@@ -83,6 +93,13 @@ namespace nd4j{
 
         int maxThreads();
         void setMaxThreads(int max);
+
+        int maxMasterThreads();
+        void setMaxMasterThreads(int max);
+
+        void setMaxPrimaryMemory(uint64_t maxBytes);
+        void setMaxSpecialyMemory(uint64_t maxBytes);
+        void setMaxDeviceMemory(uint64_t maxBytes);
 
         bool isUseMKLDNN() { return _useMKLDNN.load(); }
         void setUseMKLDNN(bool useMKLDNN) { _useMKLDNN.store(useMKLDNN); }

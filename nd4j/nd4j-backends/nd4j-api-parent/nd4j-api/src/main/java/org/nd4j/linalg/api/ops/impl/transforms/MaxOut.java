@@ -33,7 +33,7 @@ import java.util.List;
 
 /**
  * Max out activation:
- * http://arxiv.org/pdf/1302.4389.pdf
+ * https://arxiv.org/pdf/1302.4389.pdf
  *
  * @author Adam Gibson
  */

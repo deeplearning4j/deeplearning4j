@@ -21,7 +21,6 @@ import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -29,9 +28,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -95,15 +93,13 @@ public class KerasDense extends KerasLayer {
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, conf.getLAYER_FIELD_W_CONSTRAINT(), conf, kerasMajorVersion);
 
-        Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
+        IWeightInit init = getWeightInitFromConfig(layerConfig, conf.getLAYER_FIELD_INIT(),
                 enforceTrainingConfig, conf, kerasMajorVersion);
-        WeightInit weightInit = init.getFirst();
-        Distribution distribution = init.getSecond();
 
         DenseLayer.Builder builder = new DenseLayer.Builder().name(this.layerName)
                 .nOut(getNOutFromConfig(layerConfig, conf))
                 .dropOut(this.dropout).activation(getIActivationFromConfig(layerConfig, conf))
-                .weightInit(weightInit.getWeightInitFunction(distribution))
+                .weightInit(init)
                 .biasInit(0.0)
                 .l1(this.weightL1Regularization).l2(this.weightL2Regularization)
                 .hasBias(hasBias);

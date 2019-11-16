@@ -35,13 +35,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-core</artifactId>
-            <version>5.0.2.RELEASE</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.bytedeco</groupId>
             <artifactId>javacpp</artifactId>
             <version>${javacpp.version}</version>
@@ -87,73 +80,10 @@
             <artifactId>nd4j-api</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-jackson</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>${logback.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.nd4j</groupId>
-            <artifactId>nd4j-tensorflow</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <!-- Reflections: required in one of the tests -->
-        <dependency>
-            <groupId>org.reflections</groupId>
-            <artifactId>reflections</artifactId>
-            <version>${reflections.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <configuration>
-                    <environmentVariables>
-                        <LD_LIBRARY_PATH>${env.LD_LIBRARY_PATH}:${user.dir}:${libnd4jhome}/blasbuild/cpu/blas/</LD_LIBRARY_PATH>
-                    </environmentVariables>
-                    <includes>
-                        <include>*.java</include>
-                        <include>**/*.java</include>
-                        <include>**/Test*.java</include>
-                        <include>**/*Test.java</include>
-                        <include>**/*TestCase.java</include>
-                    </includes>
-                    <junitArtifactName>junit:junit</junitArtifactName>
-                    <systemPropertyVariables>
-                        <org.nd4j.linalg.defaultbackend>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.defaultbackend>
-                        <org.nd4j.linalg.tests.backendstorun>org.nd4j.linalg.cpu.nativecpu.CpuBackend</org.nd4j.linalg.tests.backendstorun>
-                    </systemPropertyVariables>
-                    <!--
-                        Maximum heap size was set to 8g, as a minimum required value for tests run.
-                        Depending on a build machine, default value is not always enough.
-                    -->
-                    <argLine>-Ddtype=float -Xmx8g</argLine>
-                </configuration>
-            </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>

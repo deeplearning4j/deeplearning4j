@@ -21,7 +21,6 @@ import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
-import org.deeplearning4j.nn.modelimport.keras.KerasModel;
 import org.deeplearning4j.nn.modelimport.keras.KerasModelImport;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasSpaceToDepth;
 import org.deeplearning4j.nn.transferlearning.TransferLearning;
@@ -31,11 +30,8 @@ import org.junit.Test;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.preprocessor.ImagePreProcessingScaler;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.io.ClassPathResource;
 
 import java.io.File;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 
 /**
  * Import previously stored YOLO9000 Keras net from https://github.com/allanzelener/YAD2K.

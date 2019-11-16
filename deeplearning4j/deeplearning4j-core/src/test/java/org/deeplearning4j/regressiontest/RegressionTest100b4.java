@@ -339,7 +339,13 @@ public class RegressionTest100b4 extends BaseDL4JTest {
 
         INDArray outAct = net.output(in);
 
-        assertEquals(outExp, outAct);
+        //19 layers - CPU vs. GPU difference accumulates notably, but appears to be correct
+        if(Nd4j.getBackend().getClass().getName().toLowerCase().contains("native")){
+            assertEquals(outExp, outAct);
+        } else {
+            boolean eq = outExp.equalsWithEps(outAct, 0.1);
+            assertTrue(eq);
+        }
     }
 
     @Test

@@ -29,7 +29,7 @@ import static java.lang.Math.max;
  * QuadTree: <a href="http://en.wikipedia.org/wiki/Quadtree">http://en.wikipedia.org/wiki/Quadtree</a>
  *
  * Reference impl based on the paper by:
- * <a href="http://arxiv.org/pdf/1301.3342v2.pdf">http://arxiv.org/pdf/1301.3342v2.pdf</a>
+ * <a href="https://arxiv.org/pdf/1301.3342v2.pdf">https://arxiv.org/pdf/1301.3342v2.pdf</a>
  *
  * Primarily focused on 2 dimensions, may expand later if there's a reason.
  *
