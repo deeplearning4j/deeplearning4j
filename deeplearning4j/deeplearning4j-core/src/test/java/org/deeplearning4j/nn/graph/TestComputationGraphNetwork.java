@@ -2143,4 +2143,23 @@ public class TestComputationGraphNetwork extends BaseDL4JTest {
         INDArray in = Nd4j.create(DataType.FLOAT, 1, 3, 16, 16, 16);
         INDArray out = cg.outputSingle(in);
     }
+
+    @Test
+    public void testDualEmbedding(){
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder()
+                .graphBuilder()
+                .addInputs("in")
+                .addLayer("e1", new EmbeddingLayer.Builder().nIn(10).nOut(5).build(), "in")
+                .addLayer("e2", new EmbeddingLayer.Builder().nIn(10).nOut(5).build(), "in")
+                .addLayer("out", new OutputLayer.Builder().nIn(10).nOut(2).activation(Activation.SOFTMAX).lossFunction(LossFunctions.LossFunction.MCXENT).build(), "e1", "e2")
+                .setOutputs("out")
+                .build();
+
+        ComputationGraph cg = new ComputationGraph(conf);
+        cg.init();
+
+        INDArray in = Nd4j.createFromArray(3).reshape(1, 1);
+        INDArray label = Nd4j.createFromArray(1, 0).reshape(1, 2);
+        cg.fit(new DataSet(in, label));
+    }
 }
