@@ -285,50 +285,6 @@
             </properties>
         </profile>
         <profile>
-            <id>macosx-gcc8</id>
-            <activation>
-                <file>
-                    <exists>/usr/local/bin/g++-8</exists>
-                </file>
-            </activation>
-            <properties>
-                <javacpp.platform.compiler>/usr/local/bin/g++-8</javacpp.platform.compiler>
-            </properties>
-        </profile>
-        <profile>
-            <id>macosx-gcc7</id>
-            <activation>
-                <file>
-                    <exists>/usr/local/bin/g++-7</exists>
-                </file>
-            </activation>
-            <properties>
-                <javacpp.platform.compiler>/usr/local/bin/g++-7</javacpp.platform.compiler>
-            </properties>
-        </profile>
-        <profile>
-            <id>macosx-gcc6</id>
-            <activation>
-                <file>
-                    <exists>/usr/local/bin/g++-6</exists>
-                </file>
-            </activation>
-            <properties>
-                <javacpp.platform.compiler>/usr/local/bin/g++-6</javacpp.platform.compiler>
-            </properties>
-        </profile>
-        <profile>
-            <id>macosx-gcc5</id>
-            <activation>
-                <file>
-                    <exists>/usr/local/bin/g++-5</exists>
-                </file>
-            </activation>
-            <properties>
-                <javacpp.platform.compiler>/usr/local/bin/g++-5</javacpp.platform.compiler>
-            </properties>
-        </profile>
-        <profile>
             <id>mingw</id>
             <activation>
                 <os><family>windows</family></os>
