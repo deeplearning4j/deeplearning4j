@@ -52,7 +52,7 @@ package org.deeplearning4j.nn.conf;
  * </ul>
  * Thus, the l2 norm of the scaled gradients will not exceed the specified threshold, though may be smaller than it<br>
  * See: Pascanu, Mikolov, Bengio (2012), <i>On the difficulty of training Recurrent Neural Networks</i>,
- * <a href="http://arxiv.org/abs/1211.5063">http://arxiv.org/abs/1211.5063</a><br>
+ * <a href="https://arxiv.org/abs/1211.5063">https://arxiv.org/abs/1211.5063</a><br>
  * Threshold for clipping can be set in Layer configuration, using gradientNormalizationThreshold(double threshold)
  * </p>
  *

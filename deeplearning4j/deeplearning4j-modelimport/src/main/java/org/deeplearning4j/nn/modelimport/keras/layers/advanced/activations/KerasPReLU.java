@@ -18,7 +18,6 @@ package org.deeplearning4j.nn.modelimport.keras.layers.advanced.activations;
 
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.nn.api.layers.LayerConstraint;
-import org.deeplearning4j.nn.conf.distribution.Distribution;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.layers.PReLULayer;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -27,9 +26,8 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfig
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasConstraintUtils;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
 import org.deeplearning4j.nn.params.PReLUParamInitializer;
-import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.HashMap;
@@ -79,14 +77,12 @@ public class KerasPReLU extends KerasLayer {
         LayerConstraint weightConstraint = KerasConstraintUtils.getConstraintsFromConfig(
                 layerConfig, ALPHA_CONSTRAINT, conf, kerasMajorVersion);
 
-        Pair<WeightInit, Distribution> init = getWeightInitFromConfig(layerConfig, ALPHA_INIT,
+        IWeightInit init = getWeightInitFromConfig(layerConfig, ALPHA_INIT,
                 enforceTrainingConfig, conf, kerasMajorVersion);
-        WeightInit weightInit = init.getFirst();
-        Distribution distribution = init.getSecond();
         long[] axes = getSharedAxes(layerConfig);
 
         PReLULayer.Builder builder = new PReLULayer.Builder().sharedAxes(axes)
-        .weightInit(weightInit.getWeightInitFunction(distribution)).name(layerName);
+        .weightInit(init).name(layerName);
         if (weightConstraint != null){
             builder.constrainWeights(weightConstraint);
         }

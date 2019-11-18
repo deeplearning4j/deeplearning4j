@@ -41,12 +41,12 @@ To install ND4J, there are a couple of approaches, and more information can be f
 
 #### Install from Maven Central
 
-1. Search for nd4j in the [Maven Central Repository](http://mvnrepository.com/search?q=nd4j) to find the available nd4j jars.
+1. Search for nd4j in the [Maven Central Repository](https://search.maven.org/search?q=nd4j) to find the available nd4j jars.
 2. Include the appropriate dependency in your pom.xml.
 
 #### Clone from the GitHub Repo
 
-https://deeplearning4j.org/buildinglocally 
+https://deeplearning4j.org/docs/latest/deeplearning4j-build-from-source 
 ## Contribute
 
 1. Check for open issues, or open a new issue to start a discussion around a feature idea or a bug.

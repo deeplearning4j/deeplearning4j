@@ -109,13 +109,17 @@ public class SameDiffConv extends SameDiffLayer {
     @Override
     public void initializeParameters(Map<String, INDArray> params) {
         try(MemoryWorkspace ws = Nd4j.getWorkspaceManager().scopeOutOfWorkspaces()) {
+            double fanIn = nIn * kernel[0] * kernel[1];
+            double fanOut = nOut * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
             for (Map.Entry<String, INDArray> e : params.entrySet()) {
-                if (ConvolutionParamInitializer.BIAS_KEY.equals(e.getKey())) {
-                    e.getValue().assign(0);
+                if(paramWeightInit != null && paramWeightInit.containsKey(e.getKey())){
+                    paramWeightInit.get(e.getKey()).init(fanIn, fanOut, e.getValue().shape(), 'c', e.getValue());
                 } else {
-                    double fanIn = nIn * kernel[0] * kernel[1];
-                    double fanOut = nOut * kernel[0] * kernel[1] / ((double) stride[0] * stride[1]);
-                    WeightInitUtil.initWeights(fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                    if (ConvolutionParamInitializer.BIAS_KEY.equals(e.getKey())) {
+                        e.getValue().assign(0);
+                    } else {
+                        WeightInitUtil.initWeights(fanIn, fanOut, e.getValue().shape(), weightInit, null, 'c', e.getValue());
+                    }
                 }
             }
         }

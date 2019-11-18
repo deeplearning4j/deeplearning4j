@@ -40,6 +40,6 @@ public class InvalidKerasConfigurationException extends Exception {
     }
 
     private static String appendDocumentationURL(String message) {
-        return message + ". For more information, see http://deeplearning4j.org/model-import-keras.";
+        return message + ". For more information, see http://deeplearning4j.org/docs/latest/keras-import-overview";
     }
 }

@@ -575,6 +575,8 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
         public native void setDebug(@Cast("bool") boolean reallyDebug);
         public native void setProfiling(@Cast("bool") boolean reallyProfile);
         public native void setLeaksDetector(@Cast("bool") boolean reallyDetect);
+        public native @Cast("bool") boolean helpersAllowed();
+        public native void allowHelpers(@Cast("bool") boolean reallyAllow);
         
         public native int tadThreshold();
         public native void setTadThreshold(int threshold);
@@ -584,6 +586,13 @@ public class Nd4jCpu extends org.nd4j.nativeblas.Nd4jCpuHelper {
 
         public native int maxThreads();
         public native void setMaxThreads(int max);
+
+        public native int maxMasterThreads();
+        public native void setMaxMasterThreads(int max);
+
+        public native void setMaxPrimaryMemory(@Cast("uint64_t") long maxBytes);
+        public native void setMaxSpecialyMemory(@Cast("uint64_t") long maxBytes);
+        public native void setMaxDeviceMemory(@Cast("uint64_t") long maxBytes);
 
         public native @Cast("bool") boolean isUseMKLDNN();
         public native void setUseMKLDNN(@Cast("bool") boolean useMKLDNN);
@@ -3087,6 +3096,7 @@ public native void deleteShapeBuffer(OpaqueConstantDataBuffer ptr);
 
 public native OpaqueContext createGraphContext(int nodeId);
 public native OpaqueRandomGenerator getGraphContextRandomGenerator(OpaqueContext ptr);
+public native void ctxAllowHelpers(OpaqueContext ptr, @Cast("bool") boolean reallyAllow);
 public native void markGraphContextInplace(OpaqueContext ptr, @Cast("bool") boolean reallyInplace);
 public native void setGraphContextCudaContext(OpaqueContext ptr, Pointer stream, Pointer reductionPointer, Pointer allocationPointer);
 public native void setGraphContextInputArray(OpaqueContext ptr, int index, Pointer buffer, Pointer shapeInfo, Pointer specialBuffer, Pointer specialShapeInfo);
@@ -6744,7 +6754,20 @@ NDArray& NDArray::operator()(const Nd4jLong* idx) {
             public native void setBArguments(@Cast("bool*") BooleanPointer arguments, int numberOfArguments);
             public native void setBArguments(@Cast("bool*") boolean[] arguments, int numberOfArguments);
 
+            public native void setTArguments(@StdVector DoublePointer tArgs);
+            public native void setTArguments(@StdVector DoubleBuffer tArgs);
+            public native void setTArguments(@StdVector double[] tArgs);
+            public native void setIArguments(@Cast("Nd4jLong*") @StdVector LongPointer tArgs);
+            public native void setIArguments(@Cast("Nd4jLong*") @StdVector LongBuffer tArgs);
+            public native void setIArguments(@Cast("Nd4jLong*") @StdVector long[] tArgs);
+            public native void setBArguments(@Cast("bool*") @StdVector BooleanPointer tArgs);
+            public native void setBArguments(@Cast("bool*") @StdVector boolean[] tArgs);
+
             public native void setCudaContext(@Cast("Nd4jPointer") Pointer cudaStream, @Cast("Nd4jPointer") Pointer reductionPointer, @Cast("Nd4jPointer") Pointer allocationPointer);
+
+
+            public native void allowHelpers(@Cast("bool") boolean reallyAllow);
+            public native @Cast("bool") boolean helpersAllowed();
         }
     
 
@@ -11383,6 +11406,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #elif _MSC_VER
 // #define FORCEINLINE __forceinline
 // #elif __GNUC__
+// #define INLINE_LOOPS
 // #define FORCEINLINE __attribute__((always_inline)) inline 
 // #elif __CUDACC__ 
 // #else
@@ -21680,7 +21704,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 //         #endif
 
         /**
-         * This operation performs batch normalization of layer, it is based on following article http://arxiv.org/abs/1502.03167.
+         * This operation performs batch normalization of layer, it is based on following article https://arxiv.org/abs/1502.03167.
          * Expected arguments:
          * x: input 4D array of shape [bS,iH,iW,iD] (data format = NHWC) or [bS,iD,iH,iW] (data format = NCHW), where
          *    bS - batch size

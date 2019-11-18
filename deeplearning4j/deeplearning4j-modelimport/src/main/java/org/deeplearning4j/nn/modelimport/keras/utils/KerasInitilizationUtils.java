@@ -21,8 +21,7 @@ import org.deeplearning4j.nn.conf.distribution.*;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
-import org.deeplearning4j.nn.weights.WeightInit;
-import org.nd4j.linalg.primitives.Pair;
+import org.deeplearning4j.nn.weights.*;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,76 +41,71 @@ public class KerasInitilizationUtils {
      * @return DL4J weight initialization enum
      * @see WeightInit
      */
-    public static Pair<WeightInit, Distribution> mapWeightInitialization(String kerasInit,
-                                                                         KerasLayerConfiguration conf,
-                                                                         Map<String, Object> initConfig,
-                                                                         int kerasMajorVersion)
+    public static IWeightInit mapWeightInitialization(String kerasInit,
+                                                      KerasLayerConfiguration conf,
+                                                      Map<String, Object> initConfig,
+                                                      int kerasMajorVersion)
             throws UnsupportedKerasConfigurationException, InvalidKerasConfigurationException {
 
 
         // TODO: Identity and VarianceScaling need "scale" factor
-        WeightInit init = null;
-        Distribution dist = null;
         if (kerasInit != null) {
             if (kerasInit.equals(conf.getINIT_GLOROT_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_GLOROT_NORMAL_ALIAS())) {
-                init = WeightInit.XAVIER;
+                return WeightInit.XAVIER.getWeightInitFunction();
             } else if (kerasInit.equals(conf.getINIT_GLOROT_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_GLOROT_UNIFORM_ALIAS())) {
-                init = WeightInit.XAVIER_UNIFORM;
+                return WeightInit.XAVIER_UNIFORM.getWeightInitFunction();
             } else if (kerasInit.equals(conf.getINIT_LECUN_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_LECUN_NORMAL_ALIAS())) {
-                init = WeightInit.LECUN_NORMAL;
+                return WeightInit.LECUN_NORMAL.getWeightInitFunction();
             } else if (kerasInit.equals(conf.getINIT_LECUN_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_LECUN_UNIFORM_ALIAS())) {
-                init = WeightInit.LECUN_UNIFORM;
+                return WeightInit.LECUN_UNIFORM.getWeightInitFunction();
             } else if (kerasInit.equals(conf.getINIT_HE_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_HE_NORMAL_ALIAS())) {
-                init = WeightInit.RELU;
+                return WeightInit.RELU.getWeightInitFunction();
             } else if (kerasInit.equals(conf.getINIT_HE_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_HE_UNIFORM_ALIAS())) {
-                init = WeightInit.RELU_UNIFORM;
+                return WeightInit.RELU_UNIFORM.getWeightInitFunction();
             } else if (kerasInit.equals(conf.getINIT_ONE()) ||
                     kerasInit.equals(conf.getINIT_ONES()) ||
                     kerasInit.equals(conf.getINIT_ONES_ALIAS())) {
-                init = WeightInit.ONES;
+                return WeightInit.ONES.getWeightInitFunction();
             } else if (kerasInit.equals(conf.getINIT_ZERO()) ||
                     kerasInit.equals(conf.getINIT_ZEROS()) ||
                     kerasInit.equals(conf.getINIT_ZEROS_ALIAS())) {
-                init = WeightInit.ZERO;
+                return WeightInit.ZERO.getWeightInitFunction();
             } else if (kerasInit.equals(conf.getINIT_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_UNIFORM()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_UNIFORM_ALIAS())) {
                 if (kerasMajorVersion == 2) {
                     double minVal = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MINVAL());
                     double maxVal = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MAXVAL());
-                    dist = new UniformDistribution(minVal, maxVal);
+                    return new WeightInitDistribution(new UniformDistribution(minVal, maxVal));
                 } else {
                     double scale = 0.05;
                     if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
                         scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
-                    dist = new UniformDistribution(-scale, scale);
+                    return new WeightInitDistribution(new UniformDistribution(-scale, scale));
                 }
-                init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_RANDOM_NORMAL_ALIAS())) {
                 if (kerasMajorVersion == 2) {
                     double mean = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MEAN());
                     double stdDev = (double) initConfig.get(conf.getLAYER_FIELD_INIT_STDDEV());
-                    dist = new NormalDistribution(mean, stdDev);
+                    return new WeightInitDistribution(new NormalDistribution(mean, stdDev));
                 } else {
                     double scale = 0.05;
                     if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
                         scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
-                    dist = new NormalDistribution(0, scale);
+                    return new WeightInitDistribution(new NormalDistribution(0, scale));
                 }
-                init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_CONSTANT()) ||
                     kerasInit.equals(conf.getINIT_CONSTANT_ALIAS())) {
                 double value = (double) initConfig.get(conf.getLAYER_FIELD_INIT_VALUE());
-                dist = new ConstantDistribution(value);
-                init = WeightInit.DISTRIBUTION;
+                return new WeightInitDistribution(new ConstantDistribution(value));
             } else if (kerasInit.equals(conf.getINIT_ORTHOGONAL()) ||
                     kerasInit.equals(conf.getINIT_ORTHOGONAL_ALIAS())) {
                 if (kerasMajorVersion == 2) {
@@ -121,34 +115,38 @@ public class KerasInitilizationUtils {
                     } catch (Exception e) {
                         gain = (int) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
                     }
-                    dist = new OrthogonalDistribution(gain);
+                    return new WeightInitDistribution(new OrthogonalDistribution(gain));
                 } else {
                     double scale = 1.1;
                     if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
                         scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
-                    dist = new OrthogonalDistribution(scale);
+                    return new WeightInitDistribution(new OrthogonalDistribution(scale));
                 }
-                init = WeightInit.DISTRIBUTION;
             } else if (kerasInit.equals(conf.getINIT_TRUNCATED_NORMAL()) ||
                     kerasInit.equals(conf.getINIT_TRUNCATED_NORMAL_ALIAS())) {
                 double mean = (double) initConfig.get(conf.getLAYER_FIELD_INIT_MEAN());
                 double stdDev = (double) initConfig.get(conf.getLAYER_FIELD_INIT_STDDEV());
-                dist = new TruncatedNormalDistribution(mean, stdDev);
-                init = WeightInit.DISTRIBUTION;
+                return new WeightInitDistribution(new TruncatedNormalDistribution(mean, stdDev));
             } else if (kerasInit.equals(conf.getINIT_IDENTITY()) ||
                     kerasInit.equals(conf.getINIT_IDENTITY_ALIAS())) {
                 if (kerasMajorVersion == 2) {
                     double gain = (double) initConfig.get(conf.getLAYER_FIELD_INIT_GAIN());
-                    if (gain != 1.)
-                        log.warn("Scaled identity weight init not supported, setting gain=1");
+                    if (gain != 1.0)
+                    if (gain != 1.0) {
+                        return new WeightInitIdentity(gain);
+                    } else {
+                        return new WeightInitIdentity();
+                    }
                 } else {
                     double scale = 1.;
                     if (initConfig.containsKey(conf.getLAYER_FIELD_INIT_SCALE()))
                         scale = (double) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
-                    if (scale != 1.)
-                        log.warn("Scaled identity weight init not supported, setting scale=1");
+                    if (scale != 1.0) {
+                        return new WeightInitIdentity(scale);
+                    } else {
+                        return new WeightInitIdentity();
+                    }
                 }
-                init = WeightInit.IDENTITY;
             } else if (kerasInit.equals(conf.getINIT_VARIANCE_SCALING())) {
                 double scale;
                 try {
@@ -156,32 +154,27 @@ public class KerasInitilizationUtils {
                 } catch (Exception e) {
                     scale = (int) initConfig.get(conf.getLAYER_FIELD_INIT_SCALE());
                 }
-                if (scale != 1.)
-                    log.warn("Scaled identity weight init not supported, setting scale=1");
                 String mode = (String) initConfig.get(conf.getLAYER_FIELD_INIT_MODE());
                 String distribution = (String) initConfig.get(conf.getLAYER_FIELD_INIT_DISTRIBUTION());
                 switch (mode) {
                     case "fan_in":
                         if (distribution.equals("normal")) {
-                            init = WeightInit.VAR_SCALING_NORMAL_FAN_IN;
+                            return new WeightInitVarScalingNormalFanIn(scale);
                         } else {
-                            init = WeightInit.VAR_SCALING_UNIFORM_FAN_IN;
+                            return new WeightInitVarScalingUniformFanIn(scale);
                         }
-                        break;
                     case "fan_out":
                         if (distribution.equals("normal")) {
-                            init = WeightInit.VAR_SCALING_NORMAL_FAN_OUT;
+                            return new WeightInitVarScalingNormalFanOut(scale);
                         } else {
-                            init = WeightInit.VAR_SCALING_UNIFORM_FAN_OUT;
+                            return new WeightInitVarScalingUniformFanOut(scale);
                         }
-                        break;
                     case "fan_avg":
                         if (distribution.equals("normal")) {
-                            init = WeightInit.VAR_SCALING_NORMAL_FAN_AVG;
+                            return new WeightInitVarScalingNormalFanAvg(scale);
                         } else {
-                            init = WeightInit.VAR_SCALING_UNIFORM_FAN_AVG;
+                            return new WeightInitVarScalingUniformFanAvg(scale);
                         }
-                        break;
                     default:
                         throw new InvalidKerasConfigurationException("Initialization argument 'mode' has to be either " +
                                 "fan_in, fan_out or fan_avg");
@@ -190,7 +183,7 @@ public class KerasInitilizationUtils {
                 throw new UnsupportedKerasConfigurationException("Unknown keras weight initializer " + kerasInit);
             }
         }
-        return new Pair<>(init, dist);
+        throw new IllegalStateException("Error getting Keras weight initialization");
     }
 
     /**
@@ -202,7 +195,7 @@ public class KerasInitilizationUtils {
      * @throws InvalidKerasConfigurationException     Invalid Keras config
      * @throws UnsupportedKerasConfigurationException Unsupported Keras config
      */
-    public static Pair<WeightInit, Distribution> getWeightInitFromConfig(Map<String, Object> layerConfig, String initField,
+    public static IWeightInit getWeightInitFromConfig(Map<String, Object> layerConfig, String initField,
                                                                          boolean enforceTrainingConfig,
                                                                          KerasLayerConfiguration conf,
                                                                          int kerasMajorVersion)
@@ -225,14 +218,14 @@ public class KerasInitilizationUtils {
                 throw new UnsupportedKerasConfigurationException("Incomplete initialization class");
             }
         }
-        Pair<WeightInit, Distribution> init;
+        IWeightInit init;
         try {
             init = mapWeightInitialization(kerasInit, conf, initMap, kerasMajorVersion);
         } catch (UnsupportedKerasConfigurationException e) {
             if (enforceTrainingConfig)
                 throw e;
             else {
-                init = new Pair<>(WeightInit.XAVIER, null);
+                init = new WeightInitXavier();
                 log.warn("Unknown weight initializer " + kerasInit + " (Using XAVIER instead).");
             }
         }

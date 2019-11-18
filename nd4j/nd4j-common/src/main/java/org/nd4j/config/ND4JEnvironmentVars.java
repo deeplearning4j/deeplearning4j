@@ -137,6 +137,39 @@ public class ND4JEnvironmentVars {
      */
     public static final String ND4J_IGNORE_AVX = "ND4J_IGNORE_AVX";
 
+    /**
+     * This variable defines how many threads will be used in ThreadPool for parallel execution of linear algebra.
+     * Default value: number of threads supported by this system.
+     */
+    public static final String SD_MAX_THREADS = "SD_MAX_THREADS";
+
+    /**
+     * This variable defines how many threads will be used for any 1 linear algebra operation.
+     * Default value: number of threads supported by this system.
+     */
+    public static final String SD_MASTER_THREADS = "SD_MASTER_THREADS";
+
+    /**
+     * If set, this variable disables use of optimized platform helpers (i.e. mkldnn or cuDNN)
+     */
+    public static final String SD_FORBID_HELPERS = "SD_FORBID_HELPERS";
+
+    /**
+     * If set, this variables defines how much memory application is allowed to use off-heap.
+     * PLEASE NOTE: this option is separate from JVM XMS/XMX options
+     */
+    public static final String SD_MAX_PRIMARY_BYTES = "SD_MAX_PRIMARY_BYTES";
+
+    /**
+     * If set, this variable defines how much memory application is allowed to use ON ALL computational devices COMBINED.
+     */
+    public static final String SD_MAX_SPECIAL_BYTES = "SD_MAX_SPECIAL_BYTES";
+
+    /**
+     * If set, this variable defines how much memory application is allowed to use on any one computational device
+     */
+    public static final String SD_MAX_DEVICE_BYTES = "SD_MAX_DEVICE_BYTES";
+
     private ND4JEnvironmentVars() {
     }
 }

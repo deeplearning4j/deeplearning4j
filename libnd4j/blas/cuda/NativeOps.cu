@@ -3559,3 +3559,7 @@ bool isMinimalRequirementsMet() {
 bool isOptimalRequirementsMet() {
     return true;
 }
+
+void ctxAllowHelpers(OpaqueContext* ptr, bool reallyAllow) {
+    ptr->allowHelpers(reallyAllow);
+}

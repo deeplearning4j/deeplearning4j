@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.weights;
 
 import org.apache.commons.math3.util.FastMath;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
 import org.nd4j.linalg.api.rng.distribution.Distribution;
 import org.nd4j.linalg.api.rng.distribution.impl.OrthogonalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
@@ -146,14 +147,13 @@ public class WeightInitUtil {
                 paramView.assign(flat);
                 break;
             case VAR_SCALING_NORMAL_FAN_IN:
-                // TODO: needs to be truncated normal to match keras.
-                Nd4j.randn(paramView).divi(FastMath.sqrt(fanIn));
+                Nd4j.exec(new TruncatedNormalDistribution(paramView, 0.0, Math.sqrt(1.0 / fanIn)));
                 break;
             case VAR_SCALING_NORMAL_FAN_OUT:
-                Nd4j.randn(paramView).divi(FastMath.sqrt(fanOut));
+                Nd4j.exec(new TruncatedNormalDistribution(paramView, 0.0, Math.sqrt(1.0 / fanOut)));
                 break;
             case VAR_SCALING_NORMAL_FAN_AVG:
-                Nd4j.randn(paramView).divi(FastMath.sqrt((fanIn + fanOut) / 2));
+                Nd4j.exec(new TruncatedNormalDistribution(paramView, 0.0, Math.sqrt(2.0 / (fanIn + fanOut))));
                 break;
             case VAR_SCALING_UNIFORM_FAN_IN:
                 double scalingFanIn = 3.0 / Math.sqrt(fanIn);

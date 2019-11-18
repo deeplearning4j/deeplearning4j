@@ -84,7 +84,7 @@ Not all DL4J layer types are supported in cuDNN. DL4J layers with cuDNN support 
 To check if cuDNN is being used, the simplest approach is to look at the log output when running inference or training:
 If cuDNN is NOT available when you are using a layer that supports it, you will see a message such as:
 ```
-o.d.n.l.c.ConvolutionLayer - cuDNN not found: use cuDNN for better GPU performance by including the deeplearning4j-cuda module. For more information, please refer to: https://deeplearning4j.org/cudnn
+o.d.n.l.c.ConvolutionLayer - cuDNN not found: use cuDNN for better GPU performance by including the deeplearning4j-cuda module. For more information, please refer to: https://deeplearning4j.org/docs/latest/deeplearning4j-config-cudnn
 java.lang.ClassNotFoundException: org.deeplearning4j.nn.layers.convolution.CudnnConvolutionHelper
 	at java.net.URLClassLoader.findClass(URLClassLoader.java:381)
 	at java.lang.ClassLoader.loadClass(ClassLoader.java:424)

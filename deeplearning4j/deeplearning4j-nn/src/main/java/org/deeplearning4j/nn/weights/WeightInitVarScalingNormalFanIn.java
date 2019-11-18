@@ -16,23 +16,38 @@
 
 package org.deeplearning4j.nn.weights;
 
-import lombok.EqualsAndHashCode;
-import org.apache.commons.math3.util.FastMath;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.api.ops.random.impl.TruncatedNormalDistribution;
 import org.nd4j.linalg.factory.Nd4j;
 
 /**
- * Gaussian distribution with mean 0, variance 1.0/(fanIn)
+ * Gaussian distribution with mean 0, variance {@code 1.0/(fanIn)}<br>
+ * If a scale is provided, use variance {@code scale/(fanIn)} instead
  *
  * @author Adam Gibson
  */
-@EqualsAndHashCode
+@Data
+@NoArgsConstructor
 public class WeightInitVarScalingNormalFanIn implements IWeightInit {
+
+    private Double scale;
+
+    public WeightInitVarScalingNormalFanIn(Double scale){
+        this.scale = scale;
+    }
 
     @Override
     public INDArray init(double fanIn, double fanOut, long[] shape, char order, INDArray paramView) {
-        // TODO: needs to be truncated normal to match keras.
-        Nd4j.randn(paramView).divi(FastMath.sqrt(fanIn));
+        double std;
+        if(scale == null){
+            std = Math.sqrt(1.0 / fanIn);
+        } else {
+            std = Math.sqrt(scale / fanIn);
+        }
+
+        Nd4j.exec(new TruncatedNormalDistribution(paramView, 0.0, std));
         return paramView.reshape(order, shape);
     }
 }

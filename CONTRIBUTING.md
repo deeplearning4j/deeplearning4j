@@ -9,7 +9,7 @@ Deeplearning4j's [open issues are here](https://github.com/eclipse/deeplearning4
 
 Note that you will need to [build dl4j from source](https://deeplearning4j.org/docs/latest/deeplearning4j-build-from-source)
 
-For some tips on contributing to open source, this [post is helpful](http://blog.smartbear.com/programming/14-ways-to-contribute-to-open-source-without-being-a-programming-genius-or-a-rock-star/).
+For some tips on contributing to open source, this [post is helpful](https://smartbear.com/blog/test-and-monitor/14-ways-to-contribute-to-open-source-without-being/).
 
 ## Contributions
 

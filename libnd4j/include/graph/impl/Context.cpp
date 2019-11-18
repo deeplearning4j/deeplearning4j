@@ -461,6 +461,29 @@ namespace nd4j {
                 v->setContext(_context);
 #endif
         }
+
+        void Context::allowHelpers(bool reallyAllow) {
+            _helpersAllowed = reallyAllow;
+        }
+
+        bool Context::helpersAllowed() {
+            return _helpersAllowed;
+        }
+
+        void Context::setTArguments(const std::vector<double> &tArgs) {
+            for (auto t:tArgs)
+                _tArgs.emplace_back(t);
+        }
+
+        void Context::setIArguments(const std::vector<Nd4jLong> &iArgs) {
+            for (auto i:iArgs)
+                _iArgs.emplace_back(i);
+        }
+
+        void Context::setBArguments(const std::vector<bool> &bArgs) {
+            for (auto b:bArgs)
+                _bArgs.push_back(b);
+        }
     }
 }
 

@@ -162,3 +162,28 @@ TEST_F(DeclarableOpsTests16, test_empty_cast_1) {
 
     delete result;
 }
+
+TEST_F(DeclarableOpsTests16, test_range_1) {
+    nd4j::ops::range op;
+    auto z = NDArrayFactory::create<float>('c', {200});
+
+    Context ctx(1);
+    ctx.setTArguments({-1.0, 1.0, 0.01});
+    ctx.setOutputArray(0, &z);
+
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+}
+
+TEST_F(DeclarableOpsTests16, test_range_2) {
+    nd4j::ops::range op;
+    auto z = NDArrayFactory::create<float>('c', {200});
+
+    double tArgs[] = {-1.0, 1.0, 0.01};
+
+    auto shapes = ::calculateOutputShapes2(nullptr, op.getOpHash(), nullptr, nullptr, 0, tArgs, 3, nullptr, 0, nullptr, 0);
+    shape::printShapeInfoLinear("Result", shapes->at(0));
+    ASSERT_TRUE(shape::shapeEquals(z.shapeInfo(), shapes->at(0)));
+
+    delete shapes;
+}

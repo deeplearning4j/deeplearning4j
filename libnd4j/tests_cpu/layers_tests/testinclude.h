@@ -24,7 +24,7 @@
 #include <string>
 #include <op_boilerplate.h>
 
-//http://stackoverflow.com/questions/228005/alternative-to-itoa-for-converting-integer-to-string-c
+//https://stackoverflow.com/questions/228005/alternative-to-itoa-for-converting-integer-to-string-c
 FORCEINLINE std::string int_array_to_string(Nd4jLong int_array[], Nd4jLong size_of_array) {
     std::string returnstring = "[";
     for (int temp = 0; temp < size_of_array; temp++) {

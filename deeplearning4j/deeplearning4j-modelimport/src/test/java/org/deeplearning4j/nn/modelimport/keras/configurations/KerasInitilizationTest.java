@@ -25,6 +25,8 @@ import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.core.KerasDense;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
+import org.deeplearning4j.nn.weights.WeightInitIdentity;
+import org.deeplearning4j.nn.weights.WeightInitVarScalingNormalFanIn;
 import org.junit.Test;
 
 import java.util.HashMap;
@@ -94,11 +96,11 @@ public class KerasInitilizationTest extends BaseDL4JTest {
                 WeightInit.RELU_UNIFORM.getWeightInitFunction(),
                 WeightInit.ONES.getWeightInitFunction(),
                 WeightInit.ZERO.getWeightInitFunction(),
-                WeightInit.IDENTITY.getWeightInitFunction(),
+                new WeightInitIdentity(0.2),
                 WeightInit.DISTRIBUTION.getWeightInitFunction(new NormalDistribution(mean, stdDev)),
                 WeightInit.DISTRIBUTION.getWeightInitFunction(new OrthogonalDistribution(gain)),
                 WeightInit.DISTRIBUTION.getWeightInitFunction(new ConstantDistribution(value)),
-                WeightInit.VAR_SCALING_NORMAL_FAN_IN.getWeightInitFunction()};
+                new WeightInitVarScalingNormalFanIn(0.2)};
     }
 
     private Distribution[] dl4jDistributions() {

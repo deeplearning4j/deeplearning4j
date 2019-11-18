@@ -49,8 +49,8 @@ import java.util.*;
 /**
  * Batch normalization layer.<br>
  * Rerences:<br>
- *  <a href="http://arxiv.org/pdf/1502.03167v3.pdf">http://arxiv.org/pdf/1502.03167v3.pdf</a><br>
- *  <a href="http://arxiv.org/pdf/1410.7455v8.pdf">http://arxiv.org/pdf/1410.7455v8.pdf</a><br>
+ *  <a href="https://arxiv.org/pdf/1502.03167v3.pdf">https://arxiv.org/pdf/1502.03167v3.pdf</a><br>
+ *  <a href="https://arxiv.org/pdf/1410.7455v8.pdf">https://arxiv.org/pdf/1410.7455v8.pdf</a><br>
  *  <a href="https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html">
  *      https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html</a>
  *
@@ -327,7 +327,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
             batchMean = input.mean(0, 2, 3);
             batchVar = input.var(false, 0, 2, 3);
         } else {
-            // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
+            // TODO setup BatchNorm for RNN https://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException( "The layer prior to BatchNorm in the configuration is not currently supported. " + layerId());
         }
 
@@ -476,7 +476,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
 
         // xHat = (x-xmean) / sqrt(var + epsilon)
         //Note that for CNNs, mean and variance are calculated per feature map (i.e., per activation) rather than per activation
-        //Pg5 of http://arxiv.org/pdf/1502.03167v3.pdf
+        //Pg5 of https://arxiv.org/pdf/1502.03167v3.pdf
         // "For convolutional layers, we additionally want the normalization to obey the convolutional property – so that
         //  different elements of the same feature map, at different locations, are normalized in the same way. To achieve
         //  this, we jointly normalize all the activations in a minibatch, over all locations."
@@ -560,7 +560,7 @@ public class BatchNormalization extends BaseLayer<org.deeplearning4j.nn.conf.lay
                 activations = Nd4j.getExecutioner().exec(new BroadcastAddOp(activations, beta, activations, 1));
             }
         } else {
-            // TODO setup BatchNorm for RNN http://arxiv.org/pdf/1510.01378v1.pdf
+            // TODO setup BatchNorm for RNN https://arxiv.org/pdf/1510.01378v1.pdf
             throw new IllegalStateException(
                             "The layer prior to BatchNorm in the configuration is not currently supported. "
                                             + layerId());

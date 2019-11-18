@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 /**Implementation of the DeepWalk graph vectorization model, based on the paper
  * <i>DeepWalk: Online Learning of Social Representations</i> by Perozzi, Al-Rfou & Skiena (2014),
- * <a href="http://arxiv.org/abs/1403.6652">http://arxiv.org/abs/1403.6652</a><br>
+ * <a href="https://arxiv.org/abs/1403.6652">https://arxiv.org/abs/1403.6652</a><br>
  * Similar to word2vec in nature, DeepWalk is an unsupervised learning algorithm that learns a vector representation
  * of each vertex in a graph. Vector representations are learned using walks (usually random walks) on the vertices in
  * the graph.<br>

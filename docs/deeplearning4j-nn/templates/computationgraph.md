@@ -51,10 +51,10 @@ Examples of some architectures that can be built using ComputationGraph include:
 
 - Multi-task learning architectures
 - Recurrent neural networks with skip connections
-- [GoogLeNet](http://arxiv.org/abs/1409.4842), a complex type of convolutional netural network for image classification
-- [Image caption generation](http://arxiv.org/abs/1411.4555)
+- [GoogLeNet](https://arxiv.org/abs/1409.4842), a complex type of convolutional netural network for image classification
+- [Image caption generation](https://arxiv.org/abs/1411.4555)
 - [Convolutional networks for sentence classification](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/sentenceclassification/CnnSentenceClassificationExample.java)
-- [Residual learning convolutional neural networks](http://arxiv.org/abs/1512.03385)
+- [Residual learning convolutional neural networks](https://arxiv.org/abs/1512.03385)
 
 
 ## <a name="config">Configuring a Computation Graph</a>

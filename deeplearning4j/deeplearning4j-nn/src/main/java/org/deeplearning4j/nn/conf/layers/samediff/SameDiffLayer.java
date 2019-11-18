@@ -16,13 +16,11 @@
 
 package org.deeplearning4j.nn.conf.layers.samediff;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.MaskState;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.autodiff.samediff.SDVariable;
@@ -32,6 +30,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -58,10 +57,12 @@ import java.util.Map;
 public abstract class SameDiffLayer extends AbstractSameDiffLayer {
 
     protected WeightInit weightInit;
+    protected Map<String,IWeightInit> paramWeightInit;
 
     protected SameDiffLayer(Builder builder) {
         super(builder);
         this.weightInit = builder.weightInit;
+        this.paramWeightInit = builder.paramWeightInit;
     }
 
     protected SameDiffLayer() {
@@ -115,12 +116,20 @@ public abstract class SameDiffLayer extends AbstractSameDiffLayer {
     public static abstract class Builder<T extends Builder<T>> extends AbstractSameDiffLayer.Builder<T> {
 
         protected WeightInit weightInit = WeightInit.XAVIER;
+        protected Map<String,IWeightInit> paramWeightInit;
 
         /**
          * @param weightInit Weight initialization to use for the layer
          */
         public T weightInit(WeightInit weightInit) {
             this.setWeightInit(weightInit);
+            return (T) this;
+        }
+
+        public T weightInit(@NonNull String param, @NonNull IWeightInit weightInit){
+            if(paramWeightInit == null)
+                paramWeightInit = new HashMap<>();
+            paramWeightInit.put(param, weightInit);
             return (T) this;
         }
     }

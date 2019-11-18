@@ -18,31 +18,31 @@ Most of the examples make use of DataVec, a toolkit for preprocessing and clearn
 
 This example takes the canonical Iris dataset of the flower species of the same name, whose relevant measurements are sepal length, sepal width, petal length and petal width. It builds a Spark RDD from the relatively small dataset and runs an analysis against it. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/analysis/IrisAnalysis.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/analysis/IrisAnalysis.java)
 
 ### BasicDataVecExample.java
 
 This example loads data into a Spark RDD. All DataVec transform operations use Spark RDDs. Here, we use DataVec to filter data, apply time transformations and remove columns.
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/basic/BasicDataVecExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/basic/BasicDataVecExample.java)
 
 ### PrintSchemasAtEachStep.java
 
 This example shows the print Schema tools that are useful to visualize and to ensure that the code for the transform is behaving as expected. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/debugging/PrintSchemasAtEachStep.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/debugging/PrintSchemasAtEachStep.java)
 
 ### JoinExample.java
 
 You may need to join datasets before passing to a neural network. You can do that in DataVec, and this example shows you how. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/join/JoinExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/join/JoinExample.java)
 
 ### LogDataExample.java
 
 This is an example of parsing log data using DataVec. The obvious use cases are cybersecurity and customer relationship management. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/logdata/LogDataExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/datavec-examples/src/main/java/org/datavec/transform/logdata/LogDataExample.java)
 
 ### MnistImagePipelineExample.java
 
@@ -50,7 +50,7 @@ This example is from the video below, which demonstrates the ParentPathLabelGene
 
 <iframe width="560" height="315" src="http://www.youtube.com/embed/GLC8CIoHDnI" frameborder="0" allowfullscreen></iframe>
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/MnistImagePipelineExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/dataExamples/MnistImagePipelineExample.java)
 
 ### PreprocessNormalizerExample.java
 
@@ -78,13 +78,13 @@ MNIST is the "Hello World" of deep learning. Simple, straightforward, and focuss
 
 This is a Single Layer Perceptron for recognizing digits. Note that this pulls the images from a binary package containing the dataset, a rather special case for data ingestion.
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistSingleLayerExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistSingleLayerExample.java)
 
 ### MLPMnistTwoLayerExample.java
 
 A two-layer perceptron for MNIST, showing there is more than one useful network for a given dataset. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistTwoLayerExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward/mnist/MLPMnistTwoLayerExample.java)
 
 ### Feedforward Examples
 
@@ -92,7 +92,7 @@ Data flows through feed-forward neural networks in a single pass from input via 
 
 These networks can be used for a wide range of tasks depending on they are configured. Along with image classification over MNIST data, this directory has examples demonstrating regression, classification, and anomoly detection.
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/tree/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/feedforward)
 
 ### Convolutional Neural Networks
 
@@ -102,7 +102,7 @@ Convolutional Neural Networks are mainly used for image recognition, although th
 
 This example can be run using either LeNet or AlexNet. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/convolution/AnimalsClassification.java)
 
 ---
 
@@ -115,7 +115,7 @@ load the model for later training or inference.
 
 This demonstrates saving and loading a network build using the class ComputationGraph.
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/modelsaving/SaveLoadComputationGraph.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/modelsaving/SaveLoadComputationGraph.java)
 
 ### SaveLoadMultiLayerNetwork.java
 
@@ -135,11 +135,11 @@ Do you need to add a Loss Function that is not available or prebuilt yet? Check 
 
 ### CustomLossExample.java
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/lossfunctions/CustomLossExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/lossfunctions/CustomLossExample.java)
 
 ### CustomLossL1L2.java
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/lossfunctions/CustomLossL1L2.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/lossfunctions/CustomLossL1L2.java)
 
 ### Custom Layer
 
@@ -147,7 +147,7 @@ Do you need to add a layer with features that aren't available in DeepLearning4J
 
 ### CustomLayerExample.java
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/customlayers/CustomLayerExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/misc/customlayers/CustomLayerExample.java)
 
 ---
 
@@ -159,25 +159,25 @@ Neural Networks for NLP? We have those, too.
 
 Global Vectors for Word Representation are useful for detecting relationships between words. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/glove/GloVeExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/glove/GloVeExample.java)
 
 ### Paragraph Vectors
 
 A vectorized representation of words. Described [here](https://cs.stanford.edu/~quocle/paragraph_vector.pdf)
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/paragraphvectors/ParagraphVectorsClassifierExample.java)
 
 ### Sequence Vectors
 
 One way to represent sentences is as a sequence of words. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/sequencevectors/SequenceVectorsTextExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/sequencevectors/SequenceVectorsTextExample.java)
 
 ### Word2Vec
 
 Described [here](https://deeplearning4j.org/word2vec.html)
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/word2vec/Word2VecRawTextExample.java)
 
 ---
 
@@ -185,7 +185,7 @@ Described [here](https://deeplearning4j.org/word2vec.html)
 
 t-Distributed Stochastic Neighbor Embedding (t-SNE) is useful for data visualization. We include an example in the NLP section since word similarity visualization is a common use. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/tsne/TSNEStandardExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/nlp/tsne/TSNEStandardExample.java)
 
 ---
 
@@ -199,19 +199,19 @@ The examples folder for Recurrent Neural Networks has the following:
 
 An RNN learns a string of characters.
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/basic/BasicRNNExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/basic/BasicRNNExample.java)
 
 ### GravesLSTMCharModellingExample.java
 
 Takes the complete works of Shakespeare as a sequence of characters and Trains a Neural Net to generate "Shakespeare" one character at a time.
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/character/GravesLSTMCharModellingExample.java)
 
 ### SingleTimestepRegressionExample.java
 
 Regression with an LSTM (Long Short Term Memory) Recurrent Neural Network. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/regression/SingleTimestepRegressionExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-examples/src/main/java/org/deeplearning4j/examples/recurrent/regression/SingleTimestepRegressionExample.java)
 
 ### AdditionRNN.java
 
@@ -254,13 +254,13 @@ DeepLearning4j supports using a Spark Cluster for network training. Here are the
 ### MnistMLPExample.java
 
 This is an example of a Multi-Layer Perceptron training on the Mnist data set of handwritten digits. 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/mlp/MnistMLPExample.java)
 
 ### SparkLSTMCharacterExample.java
 
 An LSTM recurrent Network in Spark. 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/rnn/SparkLSTMCharacterExample.java)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/blob/master/dl4j-spark-examples/dl4j-spark/src/main/java/org/deeplearning4j/rnn/SparkLSTMCharacterExample.java)
 
 ---
 
@@ -274,7 +274,7 @@ The learning algorithms and loss functions are executed as ND4J operations.
 
 This is a directory with examples for creating and manipulating NDArrays.
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/tree/master/nd4j-examples/src/main/java/org/nd4j/examples)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/tree/master/nd4j-examples/src/main/java/org/nd4j/examples)
 
 ---
 
@@ -282,4 +282,4 @@ This is a directory with examples for creating and manipulating NDArrays.
 
 Deep learning algorithms have learned to play Space Invaders and Doom using reinforcement learning. DeepLearning4J/RL4J examples of Reinforcement Learning are available here: 
 
-[Show me the code](http://github.com/eclipse/deeplearning4j-examples/tree/master/rl4j-examples)
+[Show me the code](https://github.com/eclipse/deeplearning4j-examples/tree/master/rl4j-examples)

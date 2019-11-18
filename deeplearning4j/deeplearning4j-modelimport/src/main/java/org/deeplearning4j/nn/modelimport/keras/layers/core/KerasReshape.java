@@ -18,7 +18,6 @@ package org.deeplearning4j.nn.modelimport.keras.layers.core;
 
 
 import lombok.val;
-import org.apache.commons.lang3.ArrayUtils;
 import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.modelimport.keras.KerasLayer;
@@ -26,7 +25,6 @@ import org.deeplearning4j.nn.modelimport.keras.exceptions.InvalidKerasConfigurat
 import org.deeplearning4j.nn.modelimport.keras.exceptions.UnsupportedKerasConfigurationException;
 import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.modelimport.keras.utils.KerasLayerUtils;
-import org.nd4j.linalg.util.ArrayUtil;
 
 import java.util.List;
 import java.util.Map;

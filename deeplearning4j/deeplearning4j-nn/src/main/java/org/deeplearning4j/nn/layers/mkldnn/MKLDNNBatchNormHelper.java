@@ -67,17 +67,17 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
                                                      INDArray beta, INDArray dGammaView, INDArray dBetaView, double eps, LayerWorkspaceMgr workspaceMgr) {
         if(input.dataType() != DataType.FLOAT)
             return null;    //MKL-DNN only supports float
-        /*
+
         //TODO FIXME - AB 2019/11/01 - https://github.com/eclipse/deeplearning4j/issues/8335
         List<INDArray> args = new ArrayList<>();
         args.add(input);
         args.add(meanCache);
         args.add(varCache);
-        args.add(epsilon);
         if(gamma != null)
             args.add(gamma.reshape(gamma.length()));
         if(beta != null)
             args.add(beta.reshape(beta.length()));
+        args.add(epsilon);
 
 
         DynamicCustomOp op = DynamicCustomOp.builder("batchnorm_bp")
@@ -110,8 +110,6 @@ public class MKLDNNBatchNormHelper implements BatchNormalizationHelper {
         g.setGradientFor(BatchNormalizationParamInitializer.BETA, dBetaView);
 
         return new Pair<>(g, epsAtInput);
-         */
-        return null;
     }
 
     @Override

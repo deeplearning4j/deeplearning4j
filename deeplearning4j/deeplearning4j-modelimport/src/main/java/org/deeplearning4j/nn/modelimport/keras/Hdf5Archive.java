@@ -17,6 +17,7 @@
 package org.deeplearning4j.nn.modelimport.keras;
 
 import lombok.extern.slf4j.Slf4j;
+import org.bytedeco.hdf5.*;
 import org.bytedeco.javacpp.BytePointer;
 import org.bytedeco.javacpp.FloatPointer;
 import org.bytedeco.javacpp.Loader;
@@ -32,7 +33,6 @@ import java.lang.Exception;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.bytedeco.hdf5.*;
 import static org.bytedeco.hdf5.global.hdf5.*;
 
 /**

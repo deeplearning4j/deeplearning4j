@@ -17,13 +17,11 @@
 package org.deeplearning4j.nn.modelimport.keras.layers.convolution;
 
 import org.deeplearning4j.nn.conf.layers.Upsampling2D;
-import org.deeplearning4j.nn.conf.layers.ZeroPadding1DLayer;
 import org.deeplearning4j.nn.modelimport.keras.BaseDL4JTest;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras1LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.Keras2LayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.config.KerasLayerConfiguration;
 import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasUpsampling2D;
-import org.deeplearning4j.nn.modelimport.keras.layers.convolutional.KerasZeroPadding1D;
 import org.junit.Test;
 
 import java.util.ArrayList;

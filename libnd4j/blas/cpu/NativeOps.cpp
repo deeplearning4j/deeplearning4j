@@ -2874,6 +2874,9 @@ void deleteGraphContext(nd4j::graph::Context* ptr) {
     delete ptr;
 }
 
+void ctxAllowHelpers(OpaqueContext* ptr, bool reallyAllow) {
+    ptr->allowHelpers(reallyAllow);
+}
 
 nd4j::graph::RandomGenerator* createRandomGenerator(Nd4jLong rootSeed, Nd4jLong nodeSeed) {
     return new nd4j::graph::RandomGenerator(rootSeed, nodeSeed);

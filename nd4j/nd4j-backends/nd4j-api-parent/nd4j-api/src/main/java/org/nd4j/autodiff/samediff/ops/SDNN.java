@@ -69,7 +69,7 @@ public class SDNN extends SDOps {
 
     /**
      * Neural network batch normalization operation.<br>
-     * For details, see <a href="http://arxiv.org/abs/1502.03167">http://arxiv.org/abs/1502.03167</a>
+     * For details, see <a href="https://arxiv.org/abs/1502.03167">https://arxiv.org/abs/1502.03167</a>
      *
      * @param name     Name of the output variable
      * @param input    Input variable.
@@ -139,7 +139,7 @@ public class SDNN extends SDOps {
      * out = a * (exp(x) - 1) if x <= 0<br>
      * with constant a = 1.0
      * <p>
-     * See: <a href="http://arxiv.org/abs/1511.07289">http://arxiv.org/abs/1511.07289</a>
+     * See: <a href="https://arxiv.org/abs/1511.07289">https://arxiv.org/abs/1511.07289</a>
      *
      * @param x Input variable
      * @return Output variable
@@ -154,7 +154,7 @@ public class SDNN extends SDOps {
      * out = a * (exp(x) - 1) if x <= 0<br>
      * with constant a = 1.0
      * <p>
-     * See: <a href="http://arxiv.org/abs/1511.07289">http://arxiv.org/abs/1511.07289</a>
+     * See: <a href="https://arxiv.org/abs/1511.07289">https://arxiv.org/abs/1511.07289</a>
      *
      * @param name Output variable name
      * @param x    Input variable

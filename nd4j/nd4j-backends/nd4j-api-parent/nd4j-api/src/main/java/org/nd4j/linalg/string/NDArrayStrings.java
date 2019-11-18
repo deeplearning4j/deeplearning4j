@@ -46,6 +46,9 @@ public class NDArrayStrings {
 
     public static final String EMPTY_ARRAY_STR = "[]";
 
+    private static final String[] OPEN_BRACKETS =  new String[]{"", "[", "[[", "[[[", "[[[[", "[[[[[", "[[[[[[", "[[[[[[[", "[[[[[[[["};
+    private static final String[] CLOSE_BRACKETS = new String[]{"", "]", "]]", "]]]", "]]]]", "]]]]]", "]]]]]]", "]]]]]]]", "]]]]]]]]"};
+
     /**
      * The default number of elements for printing INDArrays (via NDArrayStrings or INDArray.toString)
      */
@@ -190,29 +193,29 @@ public class NDArrayStrings {
 
     private String format(INDArray arr, int offset, boolean summarize) {
         int rank = arr.rank();
-        if (arr.isScalar()) {
+        if (arr.isScalar() || arr.length() == 1) {
+            int fRank = Math.min(rank, OPEN_BRACKETS.length-1);
             if (arr.isR()) {
-                //true scalar i.e shape = [] not legacy which is [1,1]
                 double arrElement = arr.getDouble(0);
                 if (!dontOverrideFormat && ((Math.abs(arrElement) < this.minToPrintWithoutSwitching && arrElement != 0) || (Math.abs(arrElement) >= this.maxToPrintWithoutSwitching))) {
                     //switch to scientific notation
                     String asString = localeIndifferentDecimalFormat(scientificFormat).format(arrElement);
                     //from E to small e
                     asString = asString.replace('E', 'e');
-                    return asString;
+                    return OPEN_BRACKETS[fRank] + asString + CLOSE_BRACKETS[fRank];
                 } else {
-                    if (arr.getDouble(0) == 0) return "0";
-                    return decimalFormat.format(arr.getDouble(0));
+                    if (arr.getDouble(0) == 0) return OPEN_BRACKETS[fRank] + "0" + CLOSE_BRACKETS[fRank];
+                    return OPEN_BRACKETS[fRank] + decimalFormat.format(arr.getDouble(0)) + CLOSE_BRACKETS[fRank];
                 }
             } else if (arr.isZ()) {
                 long arrElement = arr.getLong(0);
-                return String.valueOf(arrElement);
+                return OPEN_BRACKETS[fRank] + arrElement + CLOSE_BRACKETS[fRank];
             } else if (arr.isB()) {
                 long arrElement = arr.getLong(0);
-                return arrElement == 0 ? "false" : "true";
+                return OPEN_BRACKETS[fRank] + (arrElement == 0 ? "false" : "true") + CLOSE_BRACKETS[fRank];
             } else if (arr.dataType() == DataType.UTF8){
                 String s = arr.getString(0);
-                return "\"" + s.replaceAll("\n","\\n") + "\"";
+                return OPEN_BRACKETS[fRank] + "\"" + s.replaceAll("\n","\\n") + "\"" + CLOSE_BRACKETS[fRank];
             } else
                 throw new ND4JIllegalStateException();
         } else if (rank == 1) {
@@ -246,9 +249,10 @@ public class NDArrayStrings {
                     //hack fix for slice issue with 'f' order
                     if (arr.ordering() == 'f' && arr.rank() > 2 && arr.size(arr.rank() - 1) == 1) {
                         sb.append(format(arr.dup('c').slice(i), offset, summarize));
-                    } else if(arr.rank() <= 1 || arr.length() == 1) {
-                        sb.append(format(Nd4j.scalar(arr.getDouble(0)),offset,summarize));
                     }
+//                    else if(arr.rank() <= 1 || arr.length() == 1) {
+//                        sb.append(format(Nd4j.scalar(arr.getDouble(0)),offset,summarize));
+//                    }
                     else {
                         sb.append(format(arr.slice(i), offset, summarize));
                     }

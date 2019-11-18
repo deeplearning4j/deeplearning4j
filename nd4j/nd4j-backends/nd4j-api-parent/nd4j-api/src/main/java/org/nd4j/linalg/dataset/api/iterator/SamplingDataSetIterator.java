@@ -28,11 +28,6 @@ import java.util.List;
  * @author Adam Gibson
  */
 public class SamplingDataSetIterator implements DataSetIterator {
-
-    /**
-     *
-     */
-    private static final long serialVersionUID = -2700563801361726914L;
     private DataSet sampleFrom;
     private int batchSize;
     private int totalNumberSamples;
@@ -145,6 +140,4 @@ public class SamplingDataSetIterator implements DataSetIterator {
         numTimesSampled++;
         return ret;
     }
-
-
 }

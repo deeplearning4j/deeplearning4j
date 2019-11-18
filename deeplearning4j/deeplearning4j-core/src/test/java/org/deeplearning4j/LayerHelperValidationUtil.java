@@ -35,6 +35,7 @@ import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.linalg.ops.transforms.Transforms;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.*;
 
 import static org.junit.Assert.*;
@@ -61,6 +62,30 @@ public class LayerHelperValidationUtil {
         INDArray features;
         INDArray labels;
         private DataSetIterator data;
+    }
+
+    public static void disableCppHelpers(){
+        try {
+            Class<?> c = Class.forName("org.nd4j.nativeblas.Nd4jCpu$Environment");
+            Method m = c.getMethod("getInstance");
+            Object instance = m.invoke(null);
+            Method m2 = c.getMethod("allowHelpers", boolean.class);
+            m2.invoke(instance, false);
+        } catch (Throwable t){
+            throw new RuntimeException(t);
+        }
+    }
+
+    public static void enableCppHelpers(){
+        try{
+            Class<?> c = Class.forName("org.nd4j.nativeblas.Nd4jCpu$Environment");
+            Method m = c.getMethod("getInstance");
+            Object instance = m.invoke(null);
+            Method m2 = c.getMethod("allowHelpers", boolean.class);
+            m2.invoke(instance, true);
+        } catch (Throwable t){
+            throw new RuntimeException(t);
+        }
     }
 
     public static void validateMLN(MultiLayerNetwork netOrig, TestCase t){
@@ -95,7 +120,13 @@ public class LayerHelperValidationUtil {
             for (boolean train : new boolean[]{false, true}) {
                 assertEquals(net1NoHelper.params(), net2With.params());
                 String s = "Feed forward test - " + t.getTestName() + " - " + (train ? "Train: " : "Test: ");
-                List<INDArray> ff1 = net1NoHelper.feedForward(t.getFeatures(), train);
+                List<INDArray> ff1;
+                try {
+                    disableCppHelpers();
+                    ff1 = net1NoHelper.feedForward(t.getFeatures(), train);
+                } finally {
+                    enableCppHelpers();
+                }
                 List<INDArray> ff2 = net2With.feedForward(t.getFeatures(), train);
                 List<String> paramKeys = new ArrayList<>(net1NoHelper.paramTable().keySet());
                 Collections.sort(paramKeys);
@@ -131,7 +162,13 @@ public class LayerHelperValidationUtil {
                     log.info("Forward pass, max relative error: " + layerName + " - " + maxRE);
                 }
 
-                INDArray out1 = net1NoHelper.output(t.getFeatures(), train);
+                INDArray out1;
+                try {
+                    disableCppHelpers();
+                    out1 = net1NoHelper.output(t.getFeatures(), train);
+                } finally {
+                    enableCppHelpers();
+                }
                 INDArray out2 = net2With.output(t.getFeatures(), train);
                 INDArray relError = relError(out1, out2, t.getMinAbsError());
                 double maxRE = relError.maxNumber().doubleValue();
@@ -148,7 +185,13 @@ public class LayerHelperValidationUtil {
             Preconditions.checkNotNull(t.getLabels(), "Labels are not set (null)");
 
             log.info("Validation - checking scores");
-            double s1 = net1NoHelper.score(new DataSet(t.getFeatures(), t.getLabels()));
+            double s1;
+            try {
+                disableCppHelpers();
+                s1 = net1NoHelper.score(new DataSet(t.getFeatures(), t.getLabels()));
+            } finally {
+                enableCppHelpers();
+            }
             double s2 = net2With.score(new DataSet(t.getFeatures(), t.getLabels()));
 
             double re = relError(s1, s2);
@@ -168,7 +211,12 @@ public class LayerHelperValidationUtil {
             net2With.setInput(t.getFeatures());
             net2With.setLabels(t.getLabels());
 
-            net1NoHelper.computeGradientAndScore();
+            try {
+                disableCppHelpers();
+                net1NoHelper.computeGradientAndScore();
+            } finally {
+                enableCppHelpers();
+            }
             net2With.computeGradientAndScore();
 
             List<String> paramKeys = new ArrayList<>(net1NoHelper.paramTable().keySet());

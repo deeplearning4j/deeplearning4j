@@ -68,7 +68,7 @@ import static org.nd4j.linalg.indexing.NDArrayIndex.*;
  * <p>
  * When 'hasPeepholeConnections' is true, this is the "vanilla" variant in said paper<br>
  * When 'hasPeepholeConnections' is false, this is the "no peephole" variant<br>
- * <a href="http://arxiv.org/pdf/1503.04069.pdf">http://arxiv.org/pdf/1503.04069.pdf</a>
+ * <a href="https://arxiv.org/pdf/1503.04069.pdf">https://arxiv.org/pdf/1503.04069.pdf</a>
  *
  *
  * @author Alex Black (LSTM implementations)

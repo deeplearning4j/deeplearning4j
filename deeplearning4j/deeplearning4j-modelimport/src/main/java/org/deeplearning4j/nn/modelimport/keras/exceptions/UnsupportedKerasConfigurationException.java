@@ -22,7 +22,7 @@ package org.deeplearning4j.nn.modelimport.keras.exceptions;
  * is not currently supported.
  *
  * See <a href="https://deeplearning4j.org/docs/latest/keras-import-overview">https://deeplearning4j.org/docs/latest/keras-import-overview</a>
- * for more information and file an issue at <a href="http://github.com/deeplearning4j/deeplearning4j/issues">http://github.com/deeplearning4j/deeplearning4j/issues</a>.
+ * for more information and file an issue at <a href="https://github.com/eclipse/deeplearning4j/issues">https://github.com/eclipse/deeplearning4j/issues</a>.
  *
  * @author dave@skymind.io
  */
@@ -41,6 +41,6 @@ public class UnsupportedKerasConfigurationException extends Exception {
     }
 
     private static String appendDocumentationURL(String message) {
-        return message + ". Please file an issue at http://github.com/deeplearning4j/deeplearning4j/issues.";
+        return message + ". Please file an issue at https://github.com/eclipse/deeplearning4j/issues.";
     }
 }

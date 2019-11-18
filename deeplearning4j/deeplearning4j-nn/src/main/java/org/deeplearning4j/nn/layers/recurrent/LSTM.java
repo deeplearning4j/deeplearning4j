@@ -38,7 +38,7 @@ import org.nd4j.util.OneTimeLogger;
  *
  * See also for full/vectorized equations (and a comparison to other LSTM variants):
  * Greff et al. 2015, "LSTM: A Search Space Odyssey", pg11. This is the "no peephole" variant in said paper
- * <a href="http://arxiv.org/pdf/1503.04069.pdf">http://arxiv.org/pdf/1503.04069.pdf</a>
+ * <a href="https://arxiv.org/pdf/1503.04069.pdf">https://arxiv.org/pdf/1503.04069.pdf</a>
  *
  * @author Alex Black
  * @see GravesLSTM GravesLSTM class, for the version with peephole connections

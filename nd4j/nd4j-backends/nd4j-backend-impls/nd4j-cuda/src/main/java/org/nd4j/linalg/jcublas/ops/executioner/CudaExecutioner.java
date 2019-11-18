@@ -2226,7 +2226,7 @@ public class CudaExecutioner extends DefaultOpExecutioner {
 
         cnt = 0;
         for (val t: op.tArgs())
-            tArgs.put(cnt++, (float) t);
+            tArgs.put(cnt++, t);
 
         OpaqueShapeList ptrptr = nativeOps.calculateOutputShapes2(null, hash, inputBuffers, inputShapes, op.inputArguments().length, tArgs, op.tArgs().length, iArgs, op.iArgs().length, bArgs, op.numBArguments());
 

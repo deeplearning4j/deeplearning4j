@@ -27,8 +27,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.spark.api.java.function.Function;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.nd4j.linalg.function.Function;
 
 import java.io.File;
 import java.util.*;
@@ -157,7 +157,7 @@ public class SparkEMRClient {
     private void submitJob(AmazonElasticMapReduce emr, String mainClass, List<String> args, Map<String, String> sparkConfs, File uberJar) throws Exception {
         AmazonS3URI s3Jar = new AmazonS3URI(sparkS3JarFolder + "/" + uberJar.getName());
         log.info(String.format("Placing uberJar %s to %s", uberJar.getPath(), s3Jar.toString()));
-        PutObjectRequest putRequest = sparkS3PutObjectDecorator.call(
+        PutObjectRequest putRequest = sparkS3PutObjectDecorator.apply(
                 new PutObjectRequest(s3Jar.getBucket(), s3Jar.getKey(), uberJar)
         );
         sparkS3ClientBuilder.build().putObject(putRequest);
@@ -289,7 +289,7 @@ public class SparkEMRClient {
         // This should allow the user to decorate the put call to add metadata to the jar put command, such as security groups,
         protected Function<PutObjectRequest, PutObjectRequest> sparkS3PutObjectDecorator = new Function<PutObjectRequest, PutObjectRequest>() {
             @Override
-            public PutObjectRequest call(PutObjectRequest putObjectRequest) throws Exception {
+            public PutObjectRequest apply(PutObjectRequest putObjectRequest) {
                 return putObjectRequest;
             }
         };
