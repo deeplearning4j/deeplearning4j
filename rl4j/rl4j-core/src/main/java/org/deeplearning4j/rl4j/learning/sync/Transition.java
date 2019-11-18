@@ -26,10 +26,13 @@ import org.nd4j.linalg.indexing.NDArrayIndex;
 import java.util.List;
 
 /**
- * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
  *
  * A transition is a SARS tuple
  * State, Action, Reward, (isTerminal), State
+ *
+ * @author rubenfiszel (ruben.fiszel@epfl.ch) 7/12/16.
+ * @author Alexandre Boulanger
+ *
  */
 @Value
 public class Transition<A> {
@@ -46,11 +49,13 @@ public class Transition<A> {
         this.reward = reward;
         this.isTerminal = isTerminal;
 
-        // For the next observation, only keep the latest frame to save memory. The full nextObservation will be re-build
-        // from observation when needed.
+        // To conserve memory, only the most recent frame of the next observation is kept (if history is used).
+        // The full nextObservation will be re-build from observation when needed.
         long[] nextObservationShape = nextObservation.getData().shape().clone();
         nextObservationShape[0] = 1;
-        this.nextObservation = nextObservation.getData().get(new INDArrayIndex[] {NDArrayIndex.point(0)}).reshape(nextObservationShape);
+        this.nextObservation = nextObservation.getData()
+                .get(new INDArrayIndex[] {NDArrayIndex.point(0)})
+                .reshape(nextObservationShape);
     }
 
     private Transition(Observation observation, A action, double reward, boolean isTerminal, INDArray nextObservation) {
@@ -83,6 +88,13 @@ public class Transition<A> {
         return new Transition<A>(dupObservation, action, reward, isTerminal, nextObs);
     }
 
+    /**
+     * Stack along the 0-dimension all the observations of the batch in a INDArray.
+     *
+     * @param transitions A list of the transitions of the batch
+     * @param <A> The type of the Action
+     * @return A INDArray of all of the batch's observations stacked along the 0-dimension.
+     */
     public static <A> INDArray buildStackedObservations(List<Transition<A>> transitions) {
         int size = transitions.size();
         long[] shape = getShape(transitions);
@@ -95,6 +107,13 @@ public class Transition<A> {
         return  Nd4j.concat(0, array).reshape(shape);
     }
 
+    /**
+     * Stack along the 0-dimension all the next observations of the batch in a INDArray.
+     *
+     * @param transitions A list of the transitions of the batch
+     * @param <A> The type of the Action
+     * @return A INDArray of all of the batch's next observations stacked along the 0-dimension.
+     */
     public static <A> INDArray buildStackedNextObservations(List<Transition<A>> transitions) {
         int size = transitions.size();
         long[] shape = getShape(transitions);
@@ -107,6 +126,8 @@ public class Transition<A> {
             long historyLength = obs.shape()[0];
 
             if(historyLength != 1) {
+                // To conserve memory, only the most recent frame of the next observation is kept (if history is used).
+                // We need to rebuild the frame-stack in addition to builing the batch-stack.
                 INDArray historyPart = obs.get(new INDArrayIndex[]{NDArrayIndex.interval(0, historyLength - 1)});
                 array[i] = Nd4j.concat(0, trans.getNextObservation(), historyPart);
             }

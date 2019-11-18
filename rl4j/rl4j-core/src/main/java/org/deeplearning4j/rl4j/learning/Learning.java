@@ -138,15 +138,6 @@ public abstract class Learning<O, A, AS extends ActionSpace<A>, NN extends Neura
         this.historyProcessor = historyProcessor;
     }
 
-    public INDArray getInput(O obs) {
-        return getInput(getMdp(), obs);
-    }
-
-    public InitMdp<O> initMdp() {
-        getNeuralNet().reset();
-        return initMdp(getMdp(), getHistoryProcessor());
-    }
-
     @AllArgsConstructor
     @Value
     public static class InitMdp<O> {
