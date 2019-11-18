@@ -28,7 +28,7 @@ import org.nd4j.linalg.activations.impl.*;
 public enum Activation {
     CUBE, ELU, HARDSIGMOID, HARDTANH, IDENTITY, LEAKYRELU, RATIONALTANH, RELU, RELU6,
     RRELU, SIGMOID, SOFTMAX, SOFTPLUS, SOFTSIGN, TANH, RECTIFIEDTANH, SELU, SWISH,
-    THRESHOLDEDRELU, GELU;
+    THRESHOLDEDRELU, GELU, MISH;
 
     /**
      * Creates an instance of the activation function
@@ -77,6 +77,8 @@ public enum Activation {
                 return new ActivationThresholdedReLU();
             case GELU:
                 return new ActivationGELU();
+            case MISH:
+                return new ActivationMish();
             default:
                 throw new UnsupportedOperationException("Unknown or not supported activation function: " + this);
         }

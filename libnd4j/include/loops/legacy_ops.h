@@ -169,7 +169,9 @@
         (53, GELU) ,\
         (54, GELUDerivative), \
         (55, PreciseGELU) ,\
-        (56, PreciseGELUDerivative)
+        (56, PreciseGELUDerivative), \
+        (57, Mish),\
+        (58, MishDerivative)
 
 // these ops return one of FLOAT data types
 #define TRANSFORM_FLOAT_OPS \

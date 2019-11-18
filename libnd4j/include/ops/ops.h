@@ -1719,6 +1719,32 @@ namespace simdOps {
     };
 
     template <typename X>
+    class Mish {
+    public:
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
+
+        op_def static X op(X d1, X *params) {
+            return d1 * nd4j::math::nd4j_tanh<X,X>(nd4j::math::nd4j_softplus<X,X>(d1));
+        }
+    };
+
+    template <typename X>
+    class MishDerivative {
+    public:
+        no_op_exec_special_same
+        no_op_exec_special_same_cuda
+
+        op_def static X op(X d1, X *params) {
+            auto ex = nd4j::math::nd4j_exp<X,X>(d1);
+            auto e2x = ex * ex;
+            auto e3x = ex * ex * ex;
+
+            return (ex * (4 * (d1 + 1) + 4 * e2x + e3x + ex *(4 * d1 + 6))) / nd4j::math::nd4j_pow<X, X, X>((2 * ex + e2x + 2), (X) 2.f);
+        }
+    };
+
+    template <typename X>
     class GELU {
     public:
         no_op_exec_special_same
@@ -1954,7 +1980,7 @@ namespace simdOps {
 		no_op_exec_special_same_cuda
 
 		op_def static X op(X d1, X *params) {
-			return nd4j::math::softplus<X, X>(d1);
+			return nd4j::math::nd4j_softplus<X, X>(d1);
 		}
 	};
 
