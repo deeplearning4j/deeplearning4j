@@ -53,16 +53,6 @@ public class ScalarMin extends BaseScalarOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "RealMin";
-    }
-
-    @Override
     public String opName() {
         return "scalar_min";
     }

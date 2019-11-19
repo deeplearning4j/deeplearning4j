@@ -46,6 +46,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.BarnesEdgeForces.class,
             org.nd4j.linalg.api.ops.custom.BarnesHutGains.class,
             org.nd4j.linalg.api.ops.custom.BarnesHutSymmetrize.class,
+            org.nd4j.linalg.api.ops.custom.DrawBoundingBoxes.class,
             org.nd4j.linalg.api.ops.custom.KnnMinDistance.class,
             org.nd4j.linalg.api.ops.custom.SpTreeCell.class,
             org.nd4j.linalg.api.ops.custom.Flatten.class,
@@ -584,7 +585,6 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.custom.BitCast.class,
             org.nd4j.linalg.api.ops.custom.CompareAndBitpack.class,
             org.nd4j.linalg.api.ops.custom.DivideNoNan.class,
-            org.nd4j.linalg.api.ops.custom.DrawBoundingBoxes.class,
             org.nd4j.linalg.api.ops.custom.FakeQuantWithMinMaxVarsPerChannel.class
     );
 

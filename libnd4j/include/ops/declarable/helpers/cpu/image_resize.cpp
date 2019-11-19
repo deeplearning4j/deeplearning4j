@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -334,6 +335,25 @@ namespace helpers {
         }
     }
 
+    int resizeBicubicFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+                             bool preserveAspectRatio, bool antialias, NDArray* output) {
+        return ND4J_STATUS_OK;
+    }
+
+    int resizeFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+                      ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output) {
+        switch (method) {
+            case kResizeBilinear: return resizeBilinearFunctor(context, image, width, height, false, output); break;
+            case kResizeNearest: return resizeNeighborFunctor(context, image, width, height, false, output); break;
+            case kResizeBicubic: return resizeBicubicFunctor(context, image, width, height, preserveAspectRatio, antialias, output); break;
+            case kResizeLanczos5:
+            case kResizeGaussian:
+            case kResizeArea:
+            case kResizeMitchelcubic:
+                throw std::runtime_error("helper::resizeFunctor: Non implemented yet.");
+        }
+        return ND4J_STATUS_OK;
+    }
 
     void
     cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize,

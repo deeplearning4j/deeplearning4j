@@ -293,7 +293,27 @@ namespace helpers {
     BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_, (nd4j::LaunchContext* context, NDArray const* images,
             int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
-////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    int resizeBicubicFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+                      bool preserveAspectRatio, bool antialias, NDArray* output) {
+        return ND4J_STATUS_OK;
+    }
+
+    int resizeFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+                      ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output) {
+        switch (method) {
+            case kResizeBilinear: return resizeBilinearFunctor(context, image, width, height, false, output); break;
+            case kResizeNearest:  return resizeNeighborFunctor(context, image, width, height, true, output); break;
+            case kResizeBicubic:  return resizeBicubicFunctor(context, image, width, height, preserveAspectRatio, antialias, output); break;
+            case kResizeLanczos5:
+            case kResizeGaussian:
+            case kResizeArea:
+            case kResizeMitchelcubic:
+                 throw std::runtime_error("helper::resizeFunctor: Non implemented yet.");
+        }
+        return ND4J_STATUS_OK;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // --------------------------------------------------------------------------------------------------------------- //
     // Crop and Resize helper implementation
     // --------------------------------------------------------------------------------------------------------------- //

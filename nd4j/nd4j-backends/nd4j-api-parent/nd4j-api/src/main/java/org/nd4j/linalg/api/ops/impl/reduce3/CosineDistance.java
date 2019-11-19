@@ -92,9 +92,4 @@ public class CosineDistance extends BaseReduce3Op {
         List<SDVariable> diff = CosineSimilarity.doDiff(sameDiff, f(), larg(), rarg(), i_v1.get(0), keepDims, dimensions);
         return Arrays.asList(f().neg(diff.get(0)), f().neg(diff.get(1)));
     }
-
-    @Override
-    public String tensorflowName() {
-        return "cosine_distance";
-    }
 }

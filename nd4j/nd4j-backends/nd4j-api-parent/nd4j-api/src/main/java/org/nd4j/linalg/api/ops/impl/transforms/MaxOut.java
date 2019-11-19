@@ -80,7 +80,8 @@ public class MaxOut extends BaseTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "Maxout";
+        throw new NoOpNameFoundException("Tensorflow name not found for " + opName());
+        //return "Maxout";
     }
 
     @Override

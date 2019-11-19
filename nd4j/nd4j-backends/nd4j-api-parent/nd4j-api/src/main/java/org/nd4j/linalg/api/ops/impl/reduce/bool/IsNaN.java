@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce.bool;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceBoolOp;
 
@@ -63,12 +64,6 @@ public class IsNaN extends BaseReduceBoolOp {
     public String onnxName() {
         return "hasNaNs";
     }
-
-    @Override
-    public String tensorflowName() {
-        return "hasNans";
-    }
-
 
 
     @Override

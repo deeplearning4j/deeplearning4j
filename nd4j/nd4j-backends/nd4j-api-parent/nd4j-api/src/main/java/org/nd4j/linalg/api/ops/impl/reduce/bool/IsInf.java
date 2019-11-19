@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce.bool;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceBoolOp;
 
@@ -63,12 +64,6 @@ public class IsInf extends BaseReduceBoolOp {
     public String onnxName() {
         return "HasInf";
     }
-
-    @Override
-    public String tensorflowName() {
-        return "HasInf";
-    }
-
 
 
     @Override

@@ -19,6 +19,7 @@ package org.nd4j.linalg.api.ops.impl.shape;
 import lombok.extern.slf4j.Slf4j;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 import org.tensorflow.framework.AttrValue;
 import org.tensorflow.framework.GraphDef;
@@ -51,12 +52,6 @@ public class ApplyGradientDescent extends DynamicCustomOp {
     public String onnxName() {
         return "ApplyGradientDescent";
     }
-
-    @Override
-    public String tensorflowName() {
-        return "ApplyGradientDescent";
-    }
-
 
     @Override
     public void initFromTensorFlow(NodeDef nodeDef, SameDiff initWith, Map<String, AttrValue> attributesForNode, GraphDef graph) {

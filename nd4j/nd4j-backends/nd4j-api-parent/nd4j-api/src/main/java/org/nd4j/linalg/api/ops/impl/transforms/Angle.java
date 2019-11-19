@@ -18,9 +18,6 @@ package org.nd4j.linalg.api.ops.impl.transforms;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
-import org.nd4j.imports.NoOpNameFoundException;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.nd4j.linalg.api.ops.BaseTransformOp;
 import org.nd4j.linalg.api.ops.DynamicCustomOp;
 
 import java.util.Collections;
@@ -44,16 +41,6 @@ public class Angle extends DynamicCustomOp {
     public String opName() {
         return "zeros_like";
     }
-
-    @Override
-    public String onnxName() { throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "Angle";
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {

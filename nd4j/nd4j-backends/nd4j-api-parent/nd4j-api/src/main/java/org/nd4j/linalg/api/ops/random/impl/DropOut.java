@@ -73,7 +73,8 @@ public class DropOut extends BaseRandomOp {
 
     @Override
     public String tensorflowName() {
-        return opName();
+        throw new NoOpNameFoundException("No tensorflow op name found for: " + getClass().getName());
+        //return opName();
     }
 
     @Override

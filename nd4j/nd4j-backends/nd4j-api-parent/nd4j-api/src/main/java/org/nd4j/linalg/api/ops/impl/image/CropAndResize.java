@@ -51,7 +51,8 @@ public class CropAndResize extends DynamicCustomOp {
     }
 
     public CropAndResize(@NonNull INDArray image, @NonNull INDArray cropBoxes, @NonNull INDArray boxIndices,
-                         @NonNull INDArray cropOutSize, @NonNull Method method, double extrapolationValue){
+                         @NonNull INDArray cropOutSize, @NonNull Method method, double extrapolationValue,
+                         INDArray output){
         super(new INDArray[]{image, cropBoxes, boxIndices, cropOutSize}, null);
         Preconditions.checkArgument(image.rank() == 4, "Input image must be rank 4 with shape [batch, height, width, channels], got %ndShape", image);
         Preconditions.checkArgument(cropBoxes.rank() == 2 && cropBoxes.size(1) == 4, "Crop boxes must be rank 4 with shape [num_boxes, 5], got %ndShape", cropBoxes);
@@ -60,6 +61,7 @@ public class CropAndResize extends DynamicCustomOp {
         this.method = method;
         this.extrapolationValue = extrapolationValue;
         addArgs();
+        outputArguments.add(output);
     }
 
     @Override
@@ -89,8 +91,6 @@ public class CropAndResize extends DynamicCustomOp {
     }
 
     protected void addArgs() {
-        iArguments.clear();
-        tArguments.clear();
         addIArgument(method == Method.BILINEAR ? 0 : 1);
         addTArgument(extrapolationValue);
     }

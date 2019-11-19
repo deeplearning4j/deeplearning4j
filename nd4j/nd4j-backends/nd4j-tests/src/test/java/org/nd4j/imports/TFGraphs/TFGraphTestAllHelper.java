@@ -635,7 +635,7 @@ public class TFGraphTestAllHelper {
         for (int i = 0; i < resources.size(); i++) {
             URI u = resources.get(i).getFirst().getURI();
             String varName = u.toString();
-            int idx = varName.lastIndexOf(modelName);
+            int idx = varName.indexOf(modelName);
             varName = varName.substring(idx + modelName.length()+1);    //+1 for "/"
             varName = varName.replaceAll("____","/");
             varName = varName.replaceAll(".placeholder.shape","");
@@ -752,7 +752,8 @@ public class TFGraphTestAllHelper {
             return (t, s) -> Nd4j.sort(t, true).equals(Nd4j.sort(s, true));
         }
 
-        if(modelName.startsWith("alpha_dropout") || modelName.startsWith("layers_dropout"))
+        if(modelName.startsWith("alpha_dropout") || modelName.startsWith("layers_dropout") || modelName.equals("dropout"))
+            //We can't compare dropout using simple equality due to randomness
             return (t, s) -> {
                 double[] tfNums = t.ravel().toDoubleVector();
                 double[] sdNums = s.ravel().toDoubleVector();

@@ -63,11 +63,6 @@ public class SigmoidDerivative extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "SigmoidGrad";
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v) {
         throw new UnsupportedOperationException();
     }

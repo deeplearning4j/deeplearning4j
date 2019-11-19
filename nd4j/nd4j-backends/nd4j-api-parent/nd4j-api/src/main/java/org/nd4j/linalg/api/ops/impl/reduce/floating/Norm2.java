@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.reduce.floating;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseReduceFloatOp;
 import org.nd4j.linalg.ops.transforms.Transforms;
@@ -80,8 +81,4 @@ public class Norm2 extends BaseReduceFloatOp {
         return "Norm";
     }
 
-    @Override
-    public String tensorflowName() {
-        return "norm";
-    }
 }
