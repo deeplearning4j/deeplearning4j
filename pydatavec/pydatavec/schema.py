@@ -71,8 +71,7 @@ class Schema(object):
         return schema
 
     def to_java(self):
-        from .java_classes import SchemaBuilder
-        from .java_classes import JFloat, JDouble
+        from .java_classes import SchemaBuilder, JString, JFloat, JDouble
         builder = SchemaBuilder()
         for c in self.columns:
             meta = self.columns[c]
@@ -80,19 +79,20 @@ class Schema(object):
             col_name = c
             col_args = meta[1:]
             if col_type == "string":
-                builder.addColumnString(col_name)
+                builder.addColumnString(JString(col_name))
             elif col_type == "categorical":
-                builder.addColumnCategorical(col_name, *col_args)
+                col_args = [JString(arg) for arg in col_args]
+                builder.addColumnCategorical(JString(col_name), *col_args)
             else:
-                # numerics
+                # numerical data
                 num_type = col_type[0].upper() + col_type[1:]
                 f = getattr(builder, 'addColumn' + num_type)
                 col_args = list(col_args)
                 if num_type in ('Float', 'Double'):
-                    jtype = eval('J' + num_type)
+                    java_type = eval('J' + num_type)
                     for i, a in enumerate(col_args):
                         if type(a) in [int, float]:
-                            col_args[i] = jtype(a)
+                            col_args[i] = java_type(a)
                 f(col_name, *col_args)
         return builder.build()
 

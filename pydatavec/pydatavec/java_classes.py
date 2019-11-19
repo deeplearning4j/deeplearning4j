@@ -26,7 +26,7 @@ pydl4j.validate_datavec_jars()
 # -------------JVM starts here-------------
 from jnius import autoclass
 
-
+JString = autoclass("java.lang.String")
 JSchema = autoclass('org.datavec.api.transform.schema.Schema')
 SchemaBuilder = autoclass('org/datavec/api/transform/schema/Schema$Builder')
 
@@ -43,7 +43,6 @@ CategoricalColumnCondition = autoclass(
     'org.datavec.api.transform.condition.column.CategoricalColumnCondition')
 DoubleColumnCondition = autoclass(
     'org.datavec.api.transform.condition.column.DoubleColumnCondition')
-#FloatColumnCondition = autoclass('org.datavec.api.transform.condition.column.FloatColumnCondition')
 StringColumnCondition = autoclass(
     'org.datavec.api.transform.condition.column.StringColumnCondition')
 
