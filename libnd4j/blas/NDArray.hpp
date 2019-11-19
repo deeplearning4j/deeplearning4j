@@ -1439,9 +1439,21 @@ Nd4jLong NDArray::sizeAt(const int dim) const {
         throw std::runtime_error("Bad size index requested");
 
     if (dim >= 0)
-        return this->_shapeInfo[1+dim];
+        return shape::shapeOf(_shapeInfo)[dim];
     else
-        return this->_shapeInfo[1+(this->rankOf() + dim)];
+        return shape::shapeOf(_shapeInfo)[this->rankOf() + dim];
+}
+
+//////////////////////////////////////////////////////////////////////////
+Nd4jLong NDArray::strideAt(const int dim) const {
+
+    if (dim >= this->rankOf() || dim < -this->rankOf())
+        throw std::runtime_error("NDArray::strideAt: Bad size index requested");
+
+    if (dim >= 0)
+        return shape::stride(_shapeInfo)[dim];
+    else
+        return shape::stride(_shapeInfo)[this->rankOf() + dim];
 }
 
 //////////////////////////////////////////////////////////////////////////

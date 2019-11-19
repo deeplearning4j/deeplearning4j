@@ -1287,6 +1287,11 @@ namespace nd4j {
         Nd4jLong sizeAt(const int dim) const;
 
         /**
+        *  returns stride of "dim" dimension
+        */
+        Nd4jLong strideAt(const int dim) const;
+
+        /**
         *  returns order of array
         */
         FORCEINLINE char ordering() const;

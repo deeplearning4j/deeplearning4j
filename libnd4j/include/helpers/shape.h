@@ -901,6 +901,10 @@ namespace shape {
     */
     ND4J_EXPORT _CUDA_HD void index2coords(Nd4jLong index, const Nd4jLong *shapeInfo,  Nd4jLong *coords);
     ND4J_EXPORT _CUDA_HD void index2coords(Nd4jLong index, const int rank, const Nd4jLong *shape, Nd4jLong *coords);
+    /**
+    * take into account only dimensions stored in tadDims, tadDims must be sorted in increasing order!
+    */
+    ND4J_EXPORT _CUDA_HD void index2coords(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong *coords, const int dimsSize, const int* tadDims);
 
 
 
@@ -910,6 +914,10 @@ namespace shape {
     */
     ND4J_EXPORT _CUDA_HD Nd4jLong coords2index(const Nd4jLong *shapeInfo, const Nd4jLong *coords);
     ND4J_EXPORT _CUDA_HD Nd4jLong coords2index(const int rank, const Nd4jLong *shape, const Nd4jLong *coords);
+    /**
+    * take into account only dimensions stored in tadDims, tadDims must be sorted in increasing order!
+    */
+    ND4J_EXPORT _CUDA_HD Nd4jLong coords2index(const Nd4jLong *shapeInfo, const Nd4jLong *coords, const int dimsSize, const int* tadDims);
 
    /**
    * increment n-dimensional array by one iteration by changing coord appropriately
@@ -1757,6 +1765,19 @@ INLINEDEF _CUDA_HD Nd4jLong coords2index(const int rank, const Nd4jLong *shape, 
     for(uint i = rank - 1; i >= 1; --i) {
         shift *= shape[i];
         index += shift * indices[i - 1];
+    }
+
+    return index;
+}
+
+INLINEDEF _CUDA_HD Nd4jLong coords2index(const Nd4jLong *shapeInfo, const Nd4jLong *coords, const int dimsSize, const int* tadDims) {
+
+    Nd4jLong index, shift = 1;;
+
+    index = coords[tadDims[dimsSize - 1]];
+    for(uint i = dimsSize - 1;  i >= 1; --i) {
+        shift *= shapeInfo[tadDims[i]];
+        index += shift * coords[i - 1];
     }
 
     return index;
@@ -3957,9 +3978,13 @@ INLINEDEF _CUDA_H bool reshapeC(const int oldRank, const Nd4jLong* oldShapeInfo,
             oldStart = oldStop++;
         }
 
-        newShapeInfo[2 * newRank + 3] = shape::order(oldShapeInfo);    // order
-        newShapeInfo[2 * newRank + 2] = shape::elementWiseStride(oldShapeInfo);    // ews
-        newShapeInfo[2 * newRank + 1] = shape::type(oldShapeInfo);    // type
+        // rest of strides should be unities (if there is remainder in strides space, that is newStart < newRank)
+        for (int i = newStart; i < newRank; ++i)
+            newStrides[i] = 1;
+
+        newShapeInfo[2 * newRank + 3] = shape::order(oldShapeInfo);                 // order
+        newShapeInfo[2 * newRank + 2] = shape::elementWiseStride(oldShapeInfo);     // ews
+        newShapeInfo[2 * newRank + 1] = shape::type(oldShapeInfo);                  // type
 
         return true;
     }
@@ -4703,6 +4728,16 @@ INLINEDEF void _CUDA_HD index2coords(Nd4jLong index, const int rank, const Nd4jL
         index /= shape[i];
     }
     coords[0] = index;      // last iteration
+}
+
+//////////////////////////////////////////////////////////////////////
+INLINEDEF void _CUDA_HD index2coords(Nd4jLong index, const Nd4jLong *shapeInfo, Nd4jLong *coords, const int dimsSize, const int* tadDims) {
+
+    for(uint i = dimsSize - 1; i > 0; --i) {
+        coords[tadDims[i]] = index % shapeInfo[1 + tadDims[i]];
+        index /= shapeInfo[1 + tadDims[i]];
+    }
+    coords[tadDims[0]] = index;      // last iteration
 }
 
 //////////////////////////////////////////////////////////////////////

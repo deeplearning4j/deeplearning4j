@@ -106,7 +106,7 @@ public class NativeOpsHolder {
             boolean logInit = Boolean.parseBoolean(logInitProperty);
 
             if(logInit) {
-                log.info("Number of threads used for OpenMP: {}", deviceNativeOps.ompGetMaxThreads());
+                log.info("Number of threads used for linear algebra: {}", deviceNativeOps.ompGetMaxThreads());
             }
         } catch (Exception | Error e) {
             throw new RuntimeException(

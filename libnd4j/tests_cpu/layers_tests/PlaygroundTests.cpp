@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -274,4 +275,28 @@ TEST_F(PlaygroundTests, test_relubp_1) {
 
     nd4j_printf("Time: %lld; BW: %f GB/s\n", time, bw);
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, my) {
+
+    int bS=1, iH=56,iW=56,  iC=144,mC=1,  kH=3,kW=3,  sH=1,sW=1,  pH=0,pW=0,  dH=1,dW=1;
+    int       oC=iC*mC;
+    int       oH=56,oW=56;
+    int paddingMode = 1;             // 1-SAME, 0-VALID;
+    int dataFormat  = 1;             // 1-NHWC, 0-NCHW
+
+    auto input    = NDArrayFactory::create<float>('c', {bS, iH, iW, iC});
+    auto weights  = NDArrayFactory::create<float>('c', {kH, kW, iC, mC});
+
+    input = 2.;
+    weights.linspace(0.1, 0.1);
+
+    nd4j::ops::depthwise_conv2d op;
+    auto results = op.execute({&input, &weights}, {}, {kH,kW,  sH,sW,  pH,pW,  dH,dW, paddingMode, dataFormat});
+
+    delete results;
+}
+
 */
+
+
