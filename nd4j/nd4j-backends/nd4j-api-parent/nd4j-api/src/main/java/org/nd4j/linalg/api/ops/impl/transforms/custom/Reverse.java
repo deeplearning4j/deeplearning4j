@@ -47,6 +47,29 @@ public class Reverse extends DynamicCustomOp {
         this.inPlace = true;
     }
 
+
+    /**
+     * This constructor allows to specify axis for Reverse operation
+     * @param x
+     * @param axis
+     */
+    public Reverse(INDArray x, int... axis){
+        super(new INDArray[]{x}, new INDArray[0]);
+        this.inPlace = false;
+        addIArgument(axis);
+    }
+
+    /**
+     * This constructor allows to specify axis for Reverse operation
+     * @param x
+     * @param axis
+     */
+    public Reverse(INDArray x, INDArray z, int... axis){
+        super(new INDArray[]{x}, new INDArray[] {z});
+        this.inPlace = false;
+        addIArgument(axis);
+    }
+
     /**
      * Reverses whole array for compatibility with OldReverse.
      *
