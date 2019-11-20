@@ -51,7 +51,7 @@ endif()
 
 if(NOT CUDA_BLAS)
     # we need this definition to avoid global memory use within mkldnn
-    add_definitions(-DMKLDNN_ENABLE_CONCURRENT_EXEC=true)
+    add_definitions(-DDNNL_ENABLE_CONCURRENT_EXEC=true)
 
     # there's a chance, we have no BLAS provided externally
     if ("${OPENBLAS_PATH}" STREQUAL "")
@@ -122,7 +122,7 @@ if(NOT CUDA_BLAS)
     if (${HELPERS_mkldnn})
         message("Going to pull & build mkldnn")
         set(HAVE_MKLDNN 1)
-        set(MKLDNN_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
+        set(DNNL_LIBRARY_TYPE "STATIC" CACHE STRING "Hack to enforce static mode" FORCE)
 
         configure_file(./CMakeLists.txt.mkldnn.in mkldnn-download/CMakeLists.txt)
         execute_process(COMMAND ${CMAKE_COMMAND} -G "${CMAKE_GENERATOR}" .
@@ -146,7 +146,7 @@ if(NOT CUDA_BLAS)
         set(mkldnn_EXT_DIR ${CMAKE_CURRENT_BINARY_DIR}/mkldnn-src)
         set(MKLDNN_PATH "${mkldnn_SOURCE_DIR}")
         include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_EXT_DIR}/include ${mkldnn_SOURCE_DIR})
-        set(MKLDNN mkldnn)
+        set(MKLDNN dnnl)
     endif()
 endif()
 

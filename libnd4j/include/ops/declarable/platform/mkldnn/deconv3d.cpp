@@ -50,54 +50,54 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     int dDmkl(dD), dHmkl(dH), dWmkl(dW), pDmkl(pD), pHmkl(pH), pWmkl(pW);
     ConvolutionUtils::calcPaddingAndDilationForConv3DMKL(oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, isSameMode, pDmkl, pHmkl, pWmkl, dDmkl, dHmkl, dWmkl);
 
-    mkldnn::memory::dims strides   = { sD, sH, sW };
-    mkldnn::memory::dims padding   = { pD, pH, pW };
-    mkldnn::memory::dims padding_r = { pDmkl, pHmkl, pWmkl };
-    mkldnn::memory::dims dilation  = { dDmkl, dHmkl, dWmkl };
+    dnnl::memory::dims strides   = { sD, sH, sW };
+    dnnl::memory::dims padding   = { pD, pH, pW };
+    dnnl::memory::dims padding_r = { pDmkl, pHmkl, pWmkl };
+    dnnl::memory::dims dilation  = { dDmkl, dHmkl, dWmkl };
 
     // input type
-    mkldnn::memory::data_type xType;
+    dnnl::memory::data_type xType;
     if(input->dataType() == DataType::FLOAT32)
-        xType = mkldnn::memory::data_type::f32;
+        xType = dnnl::memory::data_type::f32;
     else if(input->dataType() == DataType::HALF)
-        xType = mkldnn::memory::data_type::f16;
+        xType = dnnl::memory::data_type::f16;
     else if(input->dataType() == DataType::UINT8)
-        xType = mkldnn::memory::data_type::u8;
+        xType = dnnl::memory::data_type::u8;
     else
-        xType = mkldnn::memory::data_type::s8;
+        xType = dnnl::memory::data_type::s8;
 
     // weights type
-    mkldnn::memory::data_type wType = xType;
-    if(xType == mkldnn::memory::data_type::u8)
-        wType = mkldnn::memory::data_type::s8;
+    dnnl::memory::data_type wType = xType;
+    if(xType == dnnl::memory::data_type::u8)
+        wType = dnnl::memory::data_type::s8;
 
     // output and bias type (have the same types)
-    mkldnn::memory::data_type zType;
+    dnnl::memory::data_type zType;
     if(output->dataType() == DataType::FLOAT32)
-        zType = mkldnn::memory::data_type::f32;
+        zType = dnnl::memory::data_type::f32;
     else if(output->dataType() == DataType::HALF)
-        zType = mkldnn::memory::data_type::f16;
+        zType = dnnl::memory::data_type::f16;
     else if(output->dataType() == DataType::UINT8)
-        zType = mkldnn::memory::data_type::u8;
+        zType = dnnl::memory::data_type::u8;
     else if(output->dataType() == DataType::INT8)
-        zType = mkldnn::memory::data_type::s8;
+        zType = dnnl::memory::data_type::s8;
     else
-        zType = mkldnn::memory::data_type::s32;
+        zType = dnnl::memory::data_type::s32;
 
 
-    mkldnn::memory::format_tag xFormat = mkldnn::memory::format_tag::ncdhw;
-    mkldnn::memory::format_tag wFormat = mkldnn::memory::format_tag::oidhw;
+    dnnl::memory::format_tag xFormat = dnnl::memory::format_tag::ncdhw;
+    dnnl::memory::format_tag wFormat = dnnl::memory::format_tag::oidhw;
 
-    mkldnn::memory::dims xDims = {bS, iC, iD, iH, iW};
-    mkldnn::memory::dims wDims = {oC, iC, kD, kH, kW};
-    mkldnn::memory::dims zDims = {bS, oC, oD, oH, oW};
+    dnnl::memory::dims xDims = {bS, iC, iD, iH, iW};
+    dnnl::memory::dims wDims = {oC, iC, kD, kH, kW};
+    dnnl::memory::dims zDims = {bS, oC, oD, oH, oW};
 
     // memory descriptors for arrays
 
     // input
-    mkldnn::memory::desc x_mkl_md  = mkldnn::memory::desc(xDims, xType, mkldnn::memory::format_tag::any);
-    mkldnn::memory::desc x_user_md = mkldnn::memory::desc(xDims, xType, xFormat);
-    x_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
+    dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xFormat);
+    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
     x_user_md.data.format_desc.blocking.strides[0] = input->stridesOf()[0];
     x_user_md.data.format_desc.blocking.strides[1] = input->stridesOf()[1];
     x_user_md.data.format_desc.blocking.strides[2] = input->stridesOf()[2];
@@ -105,9 +105,9 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     x_user_md.data.format_desc.blocking.strides[4] = input->stridesOf()[4];
 
     // weights
-    mkldnn::memory::desc w_mkl_md  = mkldnn::memory::desc(wDims, wType, mkldnn::memory::format_tag::any);
-    mkldnn::memory::desc w_user_md = mkldnn::memory::desc(wDims, wType, wFormat);
-    w_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
+    dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormat);
+    w_user_md.data.format_kind = dnnl_blocked;    // overrides format
     w_user_md.data.format_desc.blocking.strides[0] = weights->stridesOf()[0];
     w_user_md.data.format_desc.blocking.strides[1] = weights->stridesOf()[1];
     w_user_md.data.format_desc.blocking.strides[2] = weights->stridesOf()[2];
@@ -115,14 +115,14 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     w_user_md.data.format_desc.blocking.strides[4] = weights->stridesOf()[4];
 
     // bias
-    mkldnn::memory::desc b_mkl_md;
+    dnnl::memory::desc b_mkl_md;
     if(bias != nullptr)
-        b_mkl_md = mkldnn::memory::desc({oC}, zType, mkldnn::memory::format_tag::x);
+        b_mkl_md = dnnl::memory::desc({oC}, zType, dnnl::memory::format_tag::x);
 
     // output
-    mkldnn::memory::desc z_mkl_md  = mkldnn::memory::desc(zDims, zType, mkldnn::memory::format_tag::any);
-    mkldnn::memory::desc z_user_md = mkldnn::memory::desc(zDims, zType, xFormat);
-    z_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(zDims, zType, dnnl::memory::format_tag::any);
+    dnnl::memory::desc z_user_md = dnnl::memory::desc(zDims, zType, xFormat);
+    z_user_md.data.format_kind = dnnl_blocked;    // overrides format
     z_user_md.data.format_desc.blocking.strides[0] = output->stridesOf()[0];
     z_user_md.data.format_desc.blocking.strides[1] = output->stridesOf()[1];
     z_user_md.data.format_desc.blocking.strides[2] = output->stridesOf()[2];
@@ -132,51 +132,51 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // operation primitive description
-    mkldnn::deconvolution_forward::desc op_desc(mkldnn::prop_kind::forward_inference, mkldnn::algorithm::deconvolution_direct,
+    dnnl::deconvolution_forward::desc op_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::deconvolution_direct,
                                                 x_mkl_md, w_mkl_md, b_mkl_md, z_mkl_md, strides, dilation, padding, padding_r);
-    mkldnn::deconvolution_forward::primitive_desc op_prim_desc(op_desc, engine);
+    dnnl::deconvolution_forward::primitive_desc op_prim_desc(op_desc, engine);
 
     // arguments (memory buffers) necessary for calculations
-    std::unordered_map<int, mkldnn::memory> args;
+    std::unordered_map<int, dnnl::memory> args;
 
-    mkldnn::stream stream(engine);
+    dnnl::stream stream(engine);
 
     // provide memory buffers and check whether reorder is required
 
     // input
-    auto x_user_mem = mkldnn::memory(x_user_md, engine, input->getBuffer());
+    auto x_user_mem = dnnl::memory(x_user_md, engine, input->getBuffer());
     const bool xReorder = op_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? mkldnn::memory(op_prim_desc.src_desc(), engine) : x_user_mem;
+    auto x_mkl_mem = xReorder ? dnnl::memory(op_prim_desc.src_desc(), engine) : x_user_mem;
     if (xReorder)
-        mkldnn::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[MKLDNN_ARG_SRC] = x_mkl_mem;
+        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
+    args[DNNL_ARG_SRC] = x_mkl_mem;
 
     // weights
-    auto w_user_mem = mkldnn::memory(w_user_md, engine, weights->getBuffer());
+    auto w_user_mem = dnnl::memory(w_user_md, engine, weights->getBuffer());
     const bool wReorder = op_prim_desc.weights_desc() != w_user_mem.get_desc();
-    auto w_mkl_mem = wReorder ? mkldnn::memory(op_prim_desc.weights_desc(), engine) : w_user_mem;
+    auto w_mkl_mem = wReorder ? dnnl::memory(op_prim_desc.weights_desc(), engine) : w_user_mem;
     if (wReorder)
-        mkldnn::reorder(w_user_mem, w_mkl_mem).execute(stream, w_user_mem, w_mkl_mem);
-    args[MKLDNN_ARG_WEIGHTS] = w_mkl_mem;
+        dnnl::reorder(w_user_mem, w_mkl_mem).execute(stream, w_user_mem, w_mkl_mem);
+    args[DNNL_ARG_WEIGHTS] = w_mkl_mem;
 
     // bias
     if(bias != nullptr) {
-        auto b_mkl_mem = mkldnn::memory(b_mkl_md, engine, bias->getBuffer());
-        args[MKLDNN_ARG_BIAS] = b_mkl_mem;
+        auto b_mkl_mem = dnnl::memory(b_mkl_md, engine, bias->getBuffer());
+        args[DNNL_ARG_BIAS] = b_mkl_mem;
     }
 
     // output
-    auto z_user_mem = mkldnn::memory(z_user_md, engine, output->getBuffer());
+    auto z_user_mem = dnnl::memory(z_user_md, engine, output->getBuffer());
     const bool zReorder = op_prim_desc.dst_desc() != z_user_mem.get_desc();
-    auto z_mkl_mem = zReorder ? mkldnn::memory(op_prim_desc.dst_desc(), engine) : z_user_mem;
-    args[MKLDNN_ARG_DST] = z_mkl_mem;
+    auto z_mkl_mem = zReorder ? dnnl::memory(op_prim_desc.dst_desc(), engine) : z_user_mem;
+    args[DNNL_ARG_DST] = z_mkl_mem;
 
     // run calculations
-    mkldnn::deconvolution_forward(op_prim_desc).execute(stream, args);
+    dnnl::deconvolution_forward(op_prim_desc).execute(stream, args);
 
     // reorder outputs if necessary
     if (zReorder)
-        mkldnn::reorder(z_mkl_mem, z_user_mem).execute(stream, z_mkl_mem, z_user_mem);
+        dnnl::reorder(z_mkl_mem, z_user_mem).execute(stream, z_mkl_mem, z_user_mem);
 
     stream.wait();
 
@@ -200,37 +200,37 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     int dDmkl(dD), dHmkl(dH), dWmkl(dW), pDmkl(pD), pHmkl(pH), pWmkl(pW);
     ConvolutionUtils::calcPaddingAndDilationForConv3DMKL(oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, isSameMode, pDmkl, pHmkl, pWmkl, dDmkl, dHmkl, dWmkl);
 
-    mkldnn::memory::dims strides   = { sD, sH, sW };
-    mkldnn::memory::dims padding   = { pD, pH, pW };
-    mkldnn::memory::dims padding_r = { pDmkl, pHmkl, pWmkl };
-    mkldnn::memory::dims dilation  = { dDmkl, dHmkl, dWmkl };
+    dnnl::memory::dims strides   = { sD, sH, sW };
+    dnnl::memory::dims padding   = { pD, pH, pW };
+    dnnl::memory::dims padding_r = { pDmkl, pHmkl, pWmkl };
+    dnnl::memory::dims dilation  = { dDmkl, dHmkl, dWmkl };
 
     // input type
-    mkldnn::memory::data_type xType = input->dataType() == DataType::FLOAT32 ? mkldnn::memory::data_type::f32 : mkldnn::memory::data_type::bf16;
+    dnnl::memory::data_type xType = input->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16;
     // weights type
-    mkldnn::memory::data_type wType = weights->dataType() == DataType::FLOAT32 ? mkldnn::memory::data_type::f32 : mkldnn::memory::data_type::bf16;
+    dnnl::memory::data_type wType = weights->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16;
     // gradO type
-    mkldnn::memory::data_type gradOType = gradO->dataType() == DataType::FLOAT32 ? mkldnn::memory::data_type::f32 : mkldnn::memory::data_type::bf16;
+    dnnl::memory::data_type gradOType = gradO->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16;
     // gradI type
-    mkldnn::memory::data_type gradIType = gradI->dataType() == DataType::FLOAT32 ? mkldnn::memory::data_type::f32 : mkldnn::memory::data_type::bf16;
+    dnnl::memory::data_type gradIType = gradI->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16;
     // gradW type
-    mkldnn::memory::data_type gradWType = gradW->dataType() == DataType::FLOAT32 ? mkldnn::memory::data_type::f32 : mkldnn::memory::data_type::bf16;
+    dnnl::memory::data_type gradWType = gradW->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16;
     // gradB type
-    mkldnn::memory::data_type gradBType = gradB != nullptr ? (gradB->dataType() == DataType::FLOAT32 ? mkldnn::memory::data_type::f32 : mkldnn::memory::data_type::bf16) : mkldnn::memory::data_type::f32;
+    dnnl::memory::data_type gradBType = gradB != nullptr ? (gradB->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16) : dnnl::memory::data_type::f32;
 
-    mkldnn::memory::format_tag xFormat = mkldnn::memory::format_tag::ncdhw; // isNCDHW ? mkldnn::memory::format_tag::ncdhw : mkldnn::memory::format_tag::ndhwc;
-    mkldnn::memory::format_tag wFormat = mkldnn::memory::format_tag::oidhw;
+    dnnl::memory::format_tag xFormat = dnnl::memory::format_tag::ncdhw; // isNCDHW ? dnnl::memory::format_tag::ncdhw : dnnl::memory::format_tag::ndhwc;
+    dnnl::memory::format_tag wFormat = dnnl::memory::format_tag::oidhw;
 
-    mkldnn::memory::dims xDims = {bS, iC, iD, iH, iW};
-    mkldnn::memory::dims wDims = {oC, iC, kD, kH, kW};
-    mkldnn::memory::dims zDims = {bS, oC, oD, oH, oW};
+    dnnl::memory::dims xDims = {bS, iC, iD, iH, iW};
+    dnnl::memory::dims wDims = {oC, iC, kD, kH, kW};
+    dnnl::memory::dims zDims = {bS, oC, oD, oH, oW};
 
     // memory descriptors for arrays
 
     // input
-    mkldnn::memory::desc x_mkl_md  = mkldnn::memory::desc(xDims, xType, mkldnn::memory::format_tag::any);
-    mkldnn::memory::desc x_user_md = mkldnn::memory::desc(xDims, xType, xFormat);
-    x_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(xDims, xType, dnnl::memory::format_tag::any);
+    dnnl::memory::desc x_user_md = dnnl::memory::desc(xDims, xType, xFormat);
+    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
     x_user_md.data.format_desc.blocking.strides[0] = input->stridesOf()[0];
     x_user_md.data.format_desc.blocking.strides[1] = input->stridesOf()[1];
     x_user_md.data.format_desc.blocking.strides[2] = input->stridesOf()[2];
@@ -238,9 +238,9 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     x_user_md.data.format_desc.blocking.strides[4] = input->stridesOf()[4];
 
     // weights
-    mkldnn::memory::desc w_mkl_md  = mkldnn::memory::desc(wDims, wType, mkldnn::memory::format_tag::any);
-    mkldnn::memory::desc w_user_md = mkldnn::memory::desc(wDims, wType, wFormat);
-    w_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc w_mkl_md  = dnnl::memory::desc(wDims, wType, dnnl::memory::format_tag::any);
+    dnnl::memory::desc w_user_md = dnnl::memory::desc(wDims, wType, wFormat);
+    w_user_md.data.format_kind = dnnl_blocked;    // overrides format
     w_user_md.data.format_desc.blocking.strides[0] = weights->stridesOf()[0];
     w_user_md.data.format_desc.blocking.strides[1] = weights->stridesOf()[1];
     w_user_md.data.format_desc.blocking.strides[2] = weights->stridesOf()[2];
@@ -248,9 +248,9 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     w_user_md.data.format_desc.blocking.strides[4] = weights->stridesOf()[4];
 
     // gradO
-    mkldnn::memory::desc gradO_mkl_md  = mkldnn::memory::desc(zDims, gradOType, mkldnn::memory::format_tag::any);
-    mkldnn::memory::desc gradO_user_md = mkldnn::memory::desc(zDims, gradOType, xFormat);
-    gradO_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc gradO_mkl_md  = dnnl::memory::desc(zDims, gradOType, dnnl::memory::format_tag::any);
+    dnnl::memory::desc gradO_user_md = dnnl::memory::desc(zDims, gradOType, xFormat);
+    gradO_user_md.data.format_kind = dnnl_blocked;    // overrides format
     gradO_user_md.data.format_desc.blocking.strides[0] = gradO->stridesOf()[0];
     gradO_user_md.data.format_desc.blocking.strides[1] = gradO->stridesOf()[1];
     gradO_user_md.data.format_desc.blocking.strides[2] = gradO->stridesOf()[2];
@@ -258,9 +258,9 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     gradO_user_md.data.format_desc.blocking.strides[4] = gradO->stridesOf()[4];
 
     // gradI
-    mkldnn::memory::desc gradI_mkl_md  = mkldnn::memory::desc(xDims, gradIType, mkldnn::memory::format_tag::any);
-    mkldnn::memory::desc gradI_user_md = mkldnn::memory::desc(xDims, gradIType, xFormat);
-    gradI_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc gradI_mkl_md  = dnnl::memory::desc(xDims, gradIType, dnnl::memory::format_tag::any);
+    dnnl::memory::desc gradI_user_md = dnnl::memory::desc(xDims, gradIType, xFormat);
+    gradI_user_md.data.format_kind = dnnl_blocked;    // overrides format
     gradI_user_md.data.format_desc.blocking.strides[0] = gradI->stridesOf()[0];
     gradI_user_md.data.format_desc.blocking.strides[1] = gradI->stridesOf()[1];
     gradI_user_md.data.format_desc.blocking.strides[2] = gradI->stridesOf()[2];
@@ -268,9 +268,9 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     gradI_user_md.data.format_desc.blocking.strides[4] = gradI->stridesOf()[4];
 
     // gradW
-    mkldnn::memory::desc gradW_mkl_md  = mkldnn::memory::desc(wDims, gradWType, wFormat);
-    mkldnn::memory::desc gradW_user_md = mkldnn::memory::desc(wDims, gradWType, wFormat);
-    gradW_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc gradW_mkl_md  = dnnl::memory::desc(wDims, gradWType, wFormat);
+    dnnl::memory::desc gradW_user_md = dnnl::memory::desc(wDims, gradWType, wFormat);
+    gradW_user_md.data.format_kind = dnnl_blocked;    // overrides format
     gradW_user_md.data.format_desc.blocking.strides[0] = gradW->stridesOf()[0];
     gradW_user_md.data.format_desc.blocking.strides[1] = gradW->stridesOf()[1];
     gradW_user_md.data.format_desc.blocking.strides[2] = gradW->stridesOf()[2];
@@ -278,85 +278,85 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     gradW_user_md.data.format_desc.blocking.strides[4] = gradW->stridesOf()[4];
 
     // gradB
-    mkldnn::memory::desc gradB_mkl_md;
+    dnnl::memory::desc gradB_mkl_md;
     if(gradB != nullptr)
-        gradB_mkl_md = mkldnn::memory::desc({oC}, gradBType, mkldnn::memory::format_tag::x);
+        gradB_mkl_md = dnnl::memory::desc({oC}, gradBType, dnnl::memory::format_tag::x);
 
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // forward primitive description
-    mkldnn::deconvolution_forward::desc op_ff_desc(mkldnn::prop_kind::forward_inference, mkldnn::algorithm::deconvolution_direct, x_mkl_md, w_mkl_md, gradB_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
-    mkldnn::deconvolution_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+    dnnl::deconvolution_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, dnnl::algorithm::deconvolution_direct, x_mkl_md, w_mkl_md, gradB_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
+    dnnl::deconvolution_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
 
     // backward data primitive description
-    mkldnn::deconvolution_backward_data::desc op_data_bp_desc(mkldnn::algorithm::deconvolution_direct, gradI_mkl_md, w_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
-    mkldnn::deconvolution_backward_data::primitive_desc op_data_bp_prim_desc(op_data_bp_desc, engine, op_ff_prim_desc);
+    dnnl::deconvolution_backward_data::desc op_data_bp_desc(dnnl::algorithm::deconvolution_direct, gradI_mkl_md, w_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
+    dnnl::deconvolution_backward_data::primitive_desc op_data_bp_prim_desc(op_data_bp_desc, engine, op_ff_prim_desc);
 
     // backward weights primitive description
-    mkldnn::deconvolution_backward_weights::desc op_weights_bp_desc(mkldnn::algorithm::deconvolution_direct, x_mkl_md, gradW_mkl_md, gradB_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
-    mkldnn::deconvolution_backward_weights::primitive_desc op_weights_bp_prim_desc(op_weights_bp_desc, engine, op_ff_prim_desc);
+    dnnl::deconvolution_backward_weights::desc op_weights_bp_desc(dnnl::algorithm::deconvolution_direct, x_mkl_md, gradW_mkl_md, gradB_mkl_md, gradO_mkl_md, strides, dilation, padding, padding_r);
+    dnnl::deconvolution_backward_weights::primitive_desc op_weights_bp_prim_desc(op_weights_bp_desc, engine, op_ff_prim_desc);
 
     // arguments (memory buffers) necessary for calculations
-    std::unordered_map<int, mkldnn::memory> args;
+    std::unordered_map<int, dnnl::memory> args;
 
-    mkldnn::stream stream(engine);
+    dnnl::stream stream(engine);
 
     // provide memory buffers and check whether reorder is required
 
     // input
-    auto x_user_mem = mkldnn::memory(x_user_md, engine, input->getBuffer());
+    auto x_user_mem = dnnl::memory(x_user_md, engine, input->getBuffer());
     const bool xReorder = op_weights_bp_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? mkldnn::memory(op_weights_bp_prim_desc.src_desc(), engine) : x_user_mem;
+    auto x_mkl_mem = xReorder ? dnnl::memory(op_weights_bp_prim_desc.src_desc(), engine) : x_user_mem;
     if (xReorder)
-        mkldnn::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[MKLDNN_ARG_SRC] = x_mkl_mem;
+        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
+    args[DNNL_ARG_SRC] = x_mkl_mem;
 
     // weights
-    auto w_user_mem = mkldnn::memory(w_user_md, engine, weights->getBuffer());
+    auto w_user_mem = dnnl::memory(w_user_md, engine, weights->getBuffer());
     const bool wReorder = op_data_bp_prim_desc.weights_desc() != w_user_mem.get_desc();
-    auto w_mkl_mem = wReorder ? mkldnn::memory(op_data_bp_prim_desc.weights_desc(), engine) : w_user_mem;
+    auto w_mkl_mem = wReorder ? dnnl::memory(op_data_bp_prim_desc.weights_desc(), engine) : w_user_mem;
     if (wReorder)
-        mkldnn::reorder(w_user_mem, w_mkl_mem).execute(stream, w_user_mem, w_mkl_mem);
-    args[MKLDNN_ARG_WEIGHTS] = w_mkl_mem;
+        dnnl::reorder(w_user_mem, w_mkl_mem).execute(stream, w_user_mem, w_mkl_mem);
+    args[DNNL_ARG_WEIGHTS] = w_mkl_mem;
 
     // gradO
-    auto gradO_user_mem = mkldnn::memory(gradO_user_md, engine, gradO->getBuffer());
+    auto gradO_user_mem = dnnl::memory(gradO_user_md, engine, gradO->getBuffer());
     const bool gradOReorder = op_data_bp_prim_desc.diff_dst_desc() != gradO_user_mem.get_desc();
-    auto gradO_mkl_mem = gradOReorder ? mkldnn::memory(op_data_bp_prim_desc.diff_dst_desc(), engine) : gradO_user_mem;
+    auto gradO_mkl_mem = gradOReorder ? dnnl::memory(op_data_bp_prim_desc.diff_dst_desc(), engine) : gradO_user_mem;
     if (gradOReorder)
-        mkldnn::reorder(gradO_user_mem, gradO_mkl_mem).execute(stream, gradO_user_mem, gradO_mkl_mem);
-    args[MKLDNN_ARG_DIFF_DST] = gradO_mkl_mem;
+        dnnl::reorder(gradO_user_mem, gradO_mkl_mem).execute(stream, gradO_user_mem, gradO_mkl_mem);
+    args[DNNL_ARG_DIFF_DST] = gradO_mkl_mem;
 
     // gradI
-    auto gradI_user_mem = mkldnn::memory(gradI_user_md, engine, gradI->getBuffer());
+    auto gradI_user_mem = dnnl::memory(gradI_user_md, engine, gradI->getBuffer());
     const bool gradIReorder = op_data_bp_prim_desc.diff_src_desc() != gradI_user_mem.get_desc();
-    auto gradI_mkl_mem = gradIReorder ? mkldnn::memory(op_data_bp_prim_desc.diff_src_desc(), engine) : gradI_user_mem;
-    args[MKLDNN_ARG_DIFF_SRC] = gradI_mkl_mem;
+    auto gradI_mkl_mem = gradIReorder ? dnnl::memory(op_data_bp_prim_desc.diff_src_desc(), engine) : gradI_user_mem;
+    args[DNNL_ARG_DIFF_SRC] = gradI_mkl_mem;
 
     // gradW
-    auto gradW_user_mem = mkldnn::memory(gradW_user_md, engine, gradW->getBuffer());
+    auto gradW_user_mem = dnnl::memory(gradW_user_md, engine, gradW->getBuffer());
     const bool gradWReorder = op_weights_bp_prim_desc.diff_weights_desc() != gradW_user_mem.get_desc();
-    auto gradW_mkl_mem = gradWReorder ? mkldnn::memory(op_weights_bp_prim_desc.diff_weights_desc(), engine) : gradW_user_mem;
-    args[MKLDNN_ARG_DIFF_WEIGHTS] = gradW_mkl_mem;
+    auto gradW_mkl_mem = gradWReorder ? dnnl::memory(op_weights_bp_prim_desc.diff_weights_desc(), engine) : gradW_user_mem;
+    args[DNNL_ARG_DIFF_WEIGHTS] = gradW_mkl_mem;
 
     // gradB
     if(gradB != nullptr) {
-        auto gradB_mkl_mem = mkldnn::memory(gradB_mkl_md, engine, gradB->getBuffer());
-        args[MKLDNN_ARG_DIFF_BIAS] = gradB_mkl_mem;
+        auto gradB_mkl_mem = dnnl::memory(gradB_mkl_md, engine, gradB->getBuffer());
+        args[DNNL_ARG_DIFF_BIAS] = gradB_mkl_mem;
     }
 
     // run backward data calculations
-    mkldnn::deconvolution_backward_data(op_data_bp_prim_desc).execute(stream, args);
+    dnnl::deconvolution_backward_data(op_data_bp_prim_desc).execute(stream, args);
 
     // run backward weights calculations
-    mkldnn::deconvolution_backward_weights(op_weights_bp_prim_desc).execute(stream, args);
+    dnnl::deconvolution_backward_weights(op_weights_bp_prim_desc).execute(stream, args);
 
     // reorder gradI if necessary
     if (gradIReorder)
-        mkldnn::reorder(gradI_mkl_mem, gradI_user_mem).execute(stream, gradI_mkl_mem, gradI_user_mem);
+        dnnl::reorder(gradI_mkl_mem, gradI_user_mem).execute(stream, gradI_mkl_mem, gradI_user_mem);
     if (gradWReorder)
-        mkldnn::reorder(gradW_mkl_mem, gradW_user_mem).execute(stream, gradW_mkl_mem, gradW_user_mem);
+        dnnl::reorder(gradW_mkl_mem, gradW_user_mem).execute(stream, gradW_mkl_mem, gradW_user_mem);
 
     stream.wait();
 
