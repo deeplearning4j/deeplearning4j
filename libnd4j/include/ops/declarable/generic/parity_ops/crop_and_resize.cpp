@@ -39,6 +39,7 @@ namespace nd4j {
             double extrapolationVal = 0.;
 
             auto newImageSize = INPUT_VARIABLE(3);
+            REQUIRE_TRUE(output->dataType() == image->dataType(), 0, "crop_and_resize: Source images and output should have the same data type.");
             REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "crop_and_resize: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
             //REQUIRE_TRUE(block.numI() <= 1, 0, "crop_and_resize: Resize params already given by the second param. Int params are expensive.");
             //width = int(newImageSize->getScalar(0));
@@ -74,17 +75,17 @@ namespace nd4j {
             outputShape[2] = height;
             outputShape[3] = in[4];
 
-            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(DataType::FLOAT32, shape::order(in), outputShape, 4)));
+            return SHAPELIST(ConstantShapeHelper::getInstance()->createShapeInfo(ShapeDescriptor(ArrayOptions::dataType(in), shape::order(in), outputShape, 4)));
         }
 
         DECLARE_TYPES(crop_and_resize) {
             getOpDescriptor()
                     ->setAllowedInputTypes(0, {ALL_INTS, ALL_FLOATS})
 //                    ->setAllowedInputTypes(1, {ALL_FLOATS})
-                    ->setAllowedInputTypes(1, {FLOAT32}) // as TF
+                    ->setAllowedInputTypes(1, {ALL_INTS, ALL_FLOATS})
                     ->setAllowedInputTypes(2, {ALL_INTS})
                     ->setAllowedInputTypes(3, {ALL_INTS})
-                    ->setAllowedOutputTypes({FLOAT32}); // as TF
+                    ->setAllowedOutputTypes({ALL_INTS, ALL_FLOATS}); // as TF
 //                    ->setAllowedOutputTypes({ALL_FLOATS});
         }
     }

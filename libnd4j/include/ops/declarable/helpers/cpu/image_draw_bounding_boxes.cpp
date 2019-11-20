@@ -89,16 +89,10 @@ namespace helpers {
         }
         if (colorTable.empty())
             colorTable = DefaultColorTable(channels);
-//        PRAGMA_OMP_PARALLEL_FOR
         auto func = PRAGMA_THREADS_FOR {
-            for (auto batch = 0; batch < batchSize; ++batch) { // loop by batch
-//            auto image = imageList->at(batch);
+            for (auto batch = start; batch < stop; ++batch) { // loop by batch
                 const Nd4jLong numBoxes = boxes->sizeAt(1);
                 for (auto boxIndex = 0; boxIndex < numBoxes; ++boxIndex) {
-                    // box with shape
-                    //auto internalBox = (*boxes)(batch, {0})(boxIndex, {0});//internalBoxes->at(c);
-                    //auto color = colorSet->at(c);
-                    //internalBox.printIndexedBuffer("Current Box");
                     auto colorIndex = boxIndex % colorTable.size();
                     auto rowStart = Nd4jLong((height - 1) * boxes->t<float>(batch, boxIndex, 0));
                     auto rowStartBound = nd4j::math::nd4j_max(Nd4jLong(0), rowStart);
@@ -152,20 +146,7 @@ namespace helpers {
                                 output->p(batch, i, colEnd, c, colorTable[colorIndex][c]);
                             }
                     }
-//                for (auto y = rowStart; y <= rowEnd; y++) {
-//                    for (auto e = 0; e < channels; ++e) {
-//                        output->p(batch, y, colStart, e, colorTable[colorIndex][e]);
-//                        output->p(batch, y, colEnd, e, colorTable[colorIndex][e]);
-//                    }
-//                }
-//                for (auto x = colStart + 1; x < colEnd; x++) {
-//                    for (auto e = 0; e < channels; ++e) {
-//                        output->p(batch, rowStart, x, e, colorTable[colorIndex][e]);
-//                        output->p(batch, rowEnd, x, e, colorTable[colorIndex][e]);
-//                    }
-//                }
                 }
-//            delete internalBoxes;
             }
         };
         samediff::Threads::parallel_tad(func, 0, batchSize);

@@ -47,6 +47,91 @@ namespace helpers {
         // https://en.wikipedia.org/wiki/Bilinear_interpolation)
         double interpolarValue;
     };
+    // calculateResizeScale determines the float scaling factor.
+    inline float calculateResizeScale(Nd4jLong inSize, Nd4jLong outSize,
+                                      bool alignCorners) {
+        return (alignCorners && outSize > 1)
+               ? (inSize - 1) / static_cast<float>(outSize - 1)
+               : inSize / static_cast<float>(outSize);
+    }
+
+    struct ImageResizerState {
+        explicit ImageResizerState(bool alignCorners, bool halfPixelCenters)
+                : _alignCorners(alignCorners),
+                  _halfPixelCenters(halfPixelCenters) {}
+
+        // ValidateAndCalculateOutputSize checks the bounds on the input tensors
+        // and requested size, sets up some of the resizing state such as the
+        // heightScale and widthScale, and calculates the output size.
+        // If any of these operations fails, it sets an error status in
+        // the context, which the caller must check.
+        int validateAndCalculateOutputSize(NDArray const* input, int const width, int const height) {
+            //
+            batchSize = input->sizeAt(0);//.dim_size(0);
+            outHeight = height;
+            outWidth = width; //internal::SubtleMustCopy(Svec(1));
+            inHeight = static_cast<int32_t>(input->sizeAt(1));
+            inWidth = static_cast<int32_t>(input->sizeAt(2));
+            channels = input->sizeAt(3); //.dim_size(3);
+            heightScale = calculateResizeScale(inHeight, outHeight, _alignCorners);
+            widthScale = calculateResizeScale(inWidth, outWidth, _alignCorners);
+
+            // Guard against overflows
+            if (ceilf((outHeight - 1) * heightScale) > static_cast<float>(DataTypeUtils::max<int>())) {
+                nd4j_printf("resize_bicubic: Upper overflow occurs for resize height (%f)\n", ceilf((outHeight - 1) * heightScale));
+                return Status::CODE(ND4J_STATUS_BAD_INPUT, "resize_bicubic: Upper overflow occurs for resize height");
+            }
+            if (ceilf((outWidth - 1) * heightScale) > static_cast<float>(DataTypeUtils::max<int>())) {
+                nd4j_printf("resize_bicubic: Upper overflow occurs for resize height (%f)\n", ceilf((outHeight - 1) * heightScale));
+                return Status::CODE(ND4J_STATUS_BAD_INPUT, "resize_bicubic: Upper overflow occurs for resize width");
+            }
+
+            return Status::OK();
+        }
+
+        // Calculates all the required variables, and allocates the output.
+        int validateAndCreateOutput(NDArray const* input, int const width, int const height) {
+            return validateAndCalculateOutputSize(input, width, height);
+        }
+
+        Nd4jLong batchSize;
+        Nd4jLong outHeight;
+        Nd4jLong outWidth;
+        Nd4jLong inHeight;
+        Nd4jLong inWidth;
+        Nd4jLong channels;
+        float heightScale;
+        float widthScale;
+        NDArray* output = nullptr;
+
+    private:
+        bool _alignCorners;
+        bool _halfPixelCenters;
+    };
+
+    // Half pixel scaler scales assuming that the pixel centers are at 0.5, i.e. the
+// floating point coordinates of the top,left pixel is 0.5,0.5.
+    struct HalfPixelScaler {
+        HalfPixelScaler(){};
+        inline float operator()(const int x, const float scale) const {
+            // Note that we subtract 0.5 from the return value, as the existing bilinear
+            // sampling code etc assumes pixels are in the old coordinate system.
+            return (static_cast<float>(x) + 0.5f) * scale - 0.5f;
+        }
+    };
+
+    struct WeightsAndIndices {
+        float _weight0;
+        float _weight1;
+        float _weight2;
+        float _weight3;
+        Nd4jLong _index0;
+        Nd4jLong _index1;
+        Nd4jLong _index2;
+        Nd4jLong _index3;
+
+        int _advance;  // advance value.
+    };
 
     inline void computeInterpolationWeights(Nd4jLong outSize,
                                             Nd4jLong inSize,
@@ -55,13 +140,16 @@ namespace helpers {
         interpolationData[outSize].bottomIndex = 0;
         interpolationData[outSize].topIndex = 0;
 
-        PRAGMA_OMP_PARALLEL_FOR
-        for (Nd4jLong i = outSize - 1; i >= 0; --i) {
-            double in = i * scale;
-            interpolationData[i].bottomIndex = static_cast<Nd4jLong>(in);
-            interpolationData[i].topIndex = nd4j::math::nd4j_min(interpolationData[i].bottomIndex + 1, inSize - 1);
-            interpolationData[i].interpolarValue = in - interpolationData[i].bottomIndex;
-        }
+        auto func = PRAGMA_THREADS_FOR {
+       	    for (auto k = start; k < stop; k++) {
+                auto i = (outSize - k - 1);
+                double in =  i * scale;
+                interpolationData[i].bottomIndex = static_cast<Nd4jLong>(in);
+                interpolationData[i].topIndex = nd4j::math::nd4j_min(interpolationData[i].bottomIndex + 1, inSize - 1);
+                interpolationData[i].interpolarValue = in - interpolationData[i].bottomIndex;
+     	    }
+	    };
+	    samediff::Threads::parallel_for(func, 0, outSize);
     }
 
 /**
@@ -87,10 +175,10 @@ namespace helpers {
         Nd4jLong inBatchNumValues = inHeight * inRowSize;
         Nd4jLong outRowSize = outWidth * channels;
 
-        T const *input_b_ptr = reinterpret_cast<T const *>(images->getBuffer()); // this works only with 'c' direction
+        T const *pInput = images->getDataBuffer()->primaryAsT<T>(); // this works only with 'c' direction
         BilinearInterpolationData const *xs_ = xs.data();
 
-        T *output_y_ptr = reinterpret_cast<T *>(output->buffer());
+        T* pOutput = output->dataBuffer()->primaryAsT<T>();
         auto computeBilinear = [](double topLeft, double topRight,
                                       double bottomLeft, double bottomRight,
                                       double xVal, double yVal) {
@@ -99,32 +187,32 @@ namespace helpers {
             return top + (bottom - top) * yVal;
         };
 
-        auto func = PRAGMA_THREADS_FOR {
-            for (Nd4jLong b = 0; b < batchSize; ++b) {
-                for (Nd4jLong y = 0; y < outHeight; ++y) {
-                    const T *ys_input_lower_ptr = input_b_ptr + ys[y].bottomIndex * inRowSize;
-                    const T *ys_input_upper_ptr = input_b_ptr + ys[y].topIndex * inRowSize;
-                    double yVal = ys[y].interpolarValue;
-                    for (Nd4jLong x = 0; x < outWidth; ++x) {
-                        auto xsBottom = xs_[x].bottomIndex;
-                        auto xsTop = xs_[x].topIndex;
-                        auto xVal = xs_[x].interpolarValue;
-                        for (int c = 0; c < channels; ++c) {
-                            double topLeft(ys_input_lower_ptr[xsBottom + c]);
-                            double topRight(ys_input_lower_ptr[xsTop + c]);
-                            double bottomLeft(ys_input_upper_ptr[xsBottom + c]);
-                            double bottomRight(ys_input_upper_ptr[xsTop + c]);
-                            output_y_ptr[x * channels + c] =
-                                    computeBilinear(topLeft, topRight, bottomLeft, bottomRight,
-                                                    xVal, yVal);
-                        }
+      auto func = PRAGMA_THREADS_FOR {
+        for (auto b = start; b < stop; ++b) {
+            for (auto y = 0; y < outHeight; ++y) {
+                const T *ys_input_lower_ptr = pInput + ys[y].bottomIndex * inRowSize;
+                const T *ys_input_upper_ptr = pInput + ys[y].topIndex * inRowSize;
+                double yVal = ys[y].interpolarValue;
+                for (auto x = 0; x < outWidth; ++x) {
+                    auto xsBottom = xs_[x].bottomIndex;
+                    auto xsTop = xs_[x].topIndex;
+                    auto xVal = xs_[x].interpolarValue;
+                    for (auto c = 0; c < channels; ++c) {
+                        double topLeft(ys_input_lower_ptr[xsBottom + c]);
+                        double topRight(ys_input_lower_ptr[xsTop + c]);
+                        double bottomLeft(ys_input_upper_ptr[xsBottom + c]);
+                        double bottomRight(ys_input_upper_ptr[xsTop + c]);
+                        pOutput[x * channels + c] =
+                                computeBilinear(topLeft, topRight, bottomLeft, bottomRight,
+                                                xVal, yVal);
                     }
-                    output_y_ptr += outRowSize;
                 }
-                input_b_ptr += inBatchNumValues;
+                pOutput += outRowSize;
             }
-        };
-        samediff::Threads::parallel_tad(func, 0, batchSize);
+            pInput += inBatchNumValues;
+        }
+    };
+    samediff::Threads::parallel_tad(func, 0, batchSize);
     }
 
     template<typename T>
@@ -192,7 +280,7 @@ namespace helpers {
         // Handle no-op resizes efficiently.
         if (outHeight == inHeight && outWidth == inWidth) {
             output->assign(images);
-            return ND4J_STATUS_OK;
+            return Status::OK();
         }
 
         if ((center && inHeight < 2) || (inHeight < 1) || (outHeight < 1) || (center && outHeight < 2) ||
@@ -209,9 +297,9 @@ namespace helpers {
                 for (auto y = start_y; y < stop_y; y += inc_y) {
                     Nd4jLong inY = nd4j::math::nd4j_min((center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(y * heightScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(y * heightScale)), inHeight - 1);
 
-                    for (int x = 0; x < outWidth; ++x) {
+                    for (auto x = 0; x < outWidth; ++x) {
                         Nd4jLong inX = nd4j::math::nd4j_min((center) ? static_cast<Nd4jLong>(nd4j::math::p_round<float>(x * widthScale)) : static_cast<Nd4jLong>(nd4j::math::p_floor<float>(x * widthScale)),inWidth - 1);
-                        for (Nd4jLong e = 0; e < channels; e++)
+                        for (auto e = 0; e < channels; e++)
                             output->p(b, y, x, e, images->e<T>(b, inY, inX, e));
                     }
                 }
@@ -232,28 +320,16 @@ namespace helpers {
                               LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template void resizeImage_,
-                          (NDArray const* images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
-                                  Nd4jLong outWidth, Nd4jLong channels,
-                                  std::vector<BilinearInterpolationData> const& xs,
-                                  std::vector<BilinearInterpolationData> const& ys,
-                                  NDArray* output), LIBND4J_TYPES);
-
     int resizeBilinearFunctor(nd4j::LaunchContext * context, NDArray const *images, int width, int height, bool center, NDArray *output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeBilinearFunctor_,
                               (images, width, height, center, output), LIBND4J_TYPES);
     }
-
-    BUILD_SINGLE_TEMPLATE(template int resizeBilinearFunctor_,
-                          (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
     int resizeNeighborFunctor(nd4j::LaunchContext * context, NDArray const *images, int width, int height, bool center, NDArray *output) {
         BUILD_SINGLE_SELECTOR(images->dataType(), return resizeNeighborFunctor_,
                               (images, width, height, center, output), LIBND4J_TYPES);
     }
 
-    BUILD_SINGLE_TEMPLATE(template int resizeNeighborFunctor_,
-                          (NDArray const* images, int width, int height, bool center, NDArray* output), LIBND4J_TYPES);
 
     template<typename T, typename F, typename I>
     static void cropAndResizeFunctor_(NDArray const *images, NDArray const *boxes, NDArray const *indices,
@@ -267,7 +343,7 @@ namespace helpers {
         const int cropWidth = crops->sizeAt(2);
         const int depth = crops->sizeAt(3);
 
-        for (int b = 0; b < numBoxes; ++b) {
+        for (auto b = 0; b < numBoxes; ++b) {
             T y1 = boxes->t<F>(b, 0);
             T x1 = boxes->t<F>(b, 1);
             T y2 = boxes->t<F>(b, 2);
@@ -282,14 +358,14 @@ namespace helpers {
             T widthScale = (cropWidth > 1) ? (x2 - x1) * (imageWidth - 1) / (cropWidth - 1) : T(0);
 
             auto func = PRAGMA_THREADS_FOR {
-                for (int y = start; y < stop; y += increment) {
+                for (auto y = start; y < stop; y += increment) {
                     const float inY = (cropHeight > 1)
                                       ? y1 * (imageHeight - 1) + y * heightScale
                                       : 0.5 * (y1 + y2) * (imageHeight - 1);
 
                     if (inY < 0 || inY > imageHeight - 1) {
-                        for (int x = 0; x < cropWidth; ++x) {
-                            for (int d = 0; d < depth; ++d) {
+                        for (auto x = 0; x < cropWidth; ++x) {
+                            for (auto d = 0; d < depth; ++d) {
                                 crops->p(b, y, x, d, extrapolationVal);
                             }
                         }
@@ -300,13 +376,13 @@ namespace helpers {
                         const int bottomYIndex = nd4j::math::p_ceil(inY);
                         const float y_lerp = inY - topYIndex;
 
-                        for (int x = 0; x < cropWidth; ++x) {
+                        for (auto x = 0; x < cropWidth; ++x) {
                             const float in_x = (cropWidth > 1)
                                                ? x1 * (imageWidth - 1) + x * widthScale
                                                : 0.5 * (x1 + x2) * (imageWidth - 1);
 
                             if (in_x < 0 || in_x > imageWidth - 1) {
-                                for (int d = 0; d < depth; ++d) {
+                                for (auto d = 0; d < depth; ++d) {
                                     crops->p(b, y, x, d, extrapolationVal);
                                 }
                                 continue;
@@ -315,7 +391,7 @@ namespace helpers {
                             int right_x_index = math::p_ceil(in_x);
                             T x_lerp = in_x - left_x_index;
 
-                            for (int d = 0; d < depth; ++d) {
+                            for (auto d = 0; d < depth; ++d) {
                                 const float topLeft(images->e<float>(bIn, topYIndex, left_x_index, d));
                                 const float topRight(images->e<float>(bIn, topYIndex, right_x_index, d));
                                 const float bottomLeft(images->e<float>(bIn, bottomYIndex, left_x_index, d));
@@ -326,21 +402,21 @@ namespace helpers {
                             }
                         }
                     } else {  // method is "nearest neighbor"
-                        for (int x = 0; x < cropWidth; ++x) {
+                        for (auto x = 0; x < cropWidth; ++x) {
                             const float inX = (cropWidth > 1)
                                               ? x1 * (imageWidth - 1) + x * widthScale
                                               : 0.5 * (x1 + x2) * (imageWidth - 1);
 
                             if (inX < 0 || inX > imageWidth - 1) {
-                                for (int d = 0; d < depth; ++d) {
+                                for (auto d = 0; d < depth; ++d) {
                                     crops->p(b, y, x, d, extrapolationVal);
                                 }
                                 continue;
                             }
                             const int closestXIndex = roundf(inX);
                             const int closestYIndex = roundf(inY);
-                            for (int d = 0; d < depth; ++d) {
-                                crops->p(b, y, x, d, (F) images->e<T>(bIn, closestYIndex, closestXIndex, d));
+                            for (auto d = 0; d < depth; ++d) {
+                                crops->p(b, y, x, d, images->e<T>(bIn, closestYIndex, closestXIndex, d));
                             }
                         }
                     }
@@ -350,12 +426,443 @@ namespace helpers {
             samediff::Threads::parallel_for(func, 0, cropHeight);
         }
     }
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// ------------------------------------------------------------------------------------------------------------------ //
+// Bicubic interpolation
+// ------------------------------------------------------------------------------------------------------------------ //
+    class CachedInterpolationCalculator {
+    public:
+        CachedInterpolationCalculator() : _indexes{-1, -1, -1, -1} {}
 
-    int resizeBicubicFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+        // Advances iteration. Returns the number of values that should be copied from
+        // the current point to the next point. The copying should always be done by
+        // copying the last <retval> values from the old point to the first <retval>
+        // values of the new point.
+        inline int Advance(const Nd4jLong x0, const Nd4jLong x1, const Nd4jLong x2,
+                           const Nd4jLong x3) {
+            // We use 2 hands and walk through, copying from one to another where
+            // we already have values.
+            // Invariant, new_indicies_hand <= cached_values_hand
+            const Nd4jLong new_x_indices[] = {x0, x1, x2, x3};
+            int cachedValuesHand = 0;
+            int newIndiciesHand = 0;
+            while (cachedValuesHand < 4) {
+                if (_indexes[cachedValuesHand] == new_x_indices[newIndiciesHand]) {
+                    if (newIndiciesHand < cachedValuesHand) {
+                        _indexes[newIndiciesHand] = _indexes[cachedValuesHand];
+                    }
+                    newIndiciesHand++;
+                }
+                cachedValuesHand++;
+            }
+            switch (newIndiciesHand) {
+                case 0:
+                    _indexes[0] = x0;
+                case 1:
+                    _indexes[1] = x1;
+                case 2:
+                    _indexes[2] = x2;
+                case 3:
+                    _indexes[3] = x3;
+                    break;
+            }
+            return newIndiciesHand;
+        }
+
+    private:
+        Nd4jLong _indexes[4];
+    };
+    static const Nd4jLong kTableSize = 1024LL; //(1 << 10);
+
+    const float* initCoeffsTable(const double a) {
+        // Allocate and initialize coefficients table using Bicubic
+        // convolution algorithm.
+        // https://en.wikipedia.org/wiki/Bicubic_interpolation
+        float* coeffs_table = new float[(kTableSize + 1) * 2];
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto i = start; i <= stop; ++i) {
+                float x = i * 1.0 / kTableSize;
+                coeffs_table[i * 2] = ((a + 2) * x - (a + 3)) * x * x + 1;
+                x += 1.0;
+                coeffs_table[i * 2 + 1] = ((a * x - 5 * a) * x + 8 * a) * x - 4 * a;
+            }
+        };
+        samediff::Threads::parallel_for(func, 0, kTableSize);
+        return coeffs_table;
+    }
+
+    const float* getCoeffsTable(const bool use_keys_cubic) {
+        // Static so that we initialize it on first use
+        if (use_keys_cubic) {
+            // http://ieeexplore.ieee.org/document/1163711/
+            // R. G. Keys. Cubic convolution interpolation for digital image
+            // processing. IEEE Transactions on Acoustics, Speech, and Signal
+            // Processing, 29(6):1153–1160, 1981.
+            static const float* coeffs_table = initCoeffsTable(-0.5f);
+            return coeffs_table;
+        } else {
+            static const float* coeffs_table = initCoeffsTable(-0.75f);
+            return coeffs_table;
+        }
+    }
+
+    inline Nd4jLong bound(Nd4jLong val, Nd4jLong limit) {
+        return math::nd4j_min(limit - 1ll, math::nd4j_max(Nd4jLong{0}, val));
+    }
+
+    template <typename T>
+    int resizeBicubicFunctor_(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
                              bool preserveAspectRatio, bool antialias, NDArray* output) {
         return ND4J_STATUS_OK;
     }
 
+    int resizeBicubicFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+                             bool preserveAspectRatio, bool antialias, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctor_, (context, image,
+                width, height, preserveAspectRatio, antialias, output), NUMERIC_TYPES);
+    }
+// ------------------------------------------------------------------------------------------------------------------ //
+
+        template <typename T>
+        inline float interpolate1D(const float weight0, const float weight1, const float weight2, const float weight3,
+                                   const T value0, const T value1, const T value2, const T value3) {
+            return static_cast<float>(value0) * weight0 +
+                   static_cast<float>(value1) * weight1 +
+                   static_cast<float>(value2) * weight2 +
+                   static_cast<float>(value3) * weight3;
+        }
+
+// Compute the 1D interpolation for a given X index using the y_weights
+        static float compute(float values[4], const float xW0, const float xW1, const float xW2, const float xW3) {
+            return interpolate1D(xW0, xW1, xW2, xW3, values[0], values[1],values[2], values[3]);
+        }
+
+        template <typename Scaler, bool use_keys_cubic>
+        inline void getWeightsAndIndices(const float scale, const Nd4jLong out_loc, const Nd4jLong limit, WeightsAndIndices* out) {
+            const Scaler scaler;
+            const float in_loc_f = scaler(out_loc, scale);
+            const Nd4jLong in_loc = std::floor(in_loc_f);
+            const float delta = in_loc_f - in_loc;
+            const Nd4jLong offset = lrintf(delta * kTableSize);
+            const float* coeffs_table = getCoeffsTable(use_keys_cubic);
+            if (use_keys_cubic) {
+                // The legacy code placed more weight on the edge pixels, since bounding
+                // the set of inputs to sample could cause an edge pixel to be repeated.
+                // Here we change the behavior at borders to match that used by the
+                // scale_and_translate_op, where sampling locations outside the image have
+                // their weight set to 0, and the weights are renormalized so that their sum
+                // is 1.0.
+                out->_index0 = bound(in_loc - 1, limit);
+                out->_weight0 =
+                        (out->_index0 == in_loc - 1 ? coeffs_table[offset * 2 + 1] : 0.0f);
+                out->_index1 = bound(in_loc, limit);
+                out->_weight1 = (out->_index1 == in_loc ? coeffs_table[offset * 2] : 0.0f);
+                out->_index2 = bound(in_loc + 1, limit);
+                out->_weight2 =
+                        (out->_index2 == in_loc + 1 ? coeffs_table[(kTableSize - offset) * 2]
+                                                    : 0.0f);
+                out->_index3 = bound(in_loc + 2, limit);
+                out->_weight3 = (out->_index3 == in_loc + 2
+                                 ? coeffs_table[(kTableSize - offset) * 2 + 1]
+                                 : 0.0f);
+
+                const float weight_sum =
+                        out->_weight0 + out->_weight1 + out->_weight2 + out->_weight3;
+                if (std::abs(weight_sum) >= 1000.0f * std::numeric_limits<float>::min()) {
+                    const float one_over_weight_sum = 1.0f / weight_sum;
+                    out->_weight0 *= one_over_weight_sum;
+                    out->_weight1 *= one_over_weight_sum;
+                    out->_weight2 *= one_over_weight_sum;
+                    out->_weight3 *= one_over_weight_sum;
+                }
+            } else {
+                out->_weight0 = coeffs_table[offset * 2 + 1];
+                out->_weight1 = coeffs_table[offset * 2];
+                out->_weight2 = coeffs_table[(kTableSize - offset) * 2];
+                out->_weight3 = coeffs_table[(kTableSize - offset) * 2 + 1];
+                out->_index0 = bound(in_loc - 1, limit);
+                out->_index1 = bound(in_loc, limit);
+                out->_index2 = bound(in_loc + 1, limit);
+                out->_index3 = bound(in_loc + 2, limit);
+            }
+        }
+
+// Older incorrect scaling method that causes all resizes to have a slight
+// translation leading to inconsistent results. For example, a flip then a
+// resize gives different results then a resize then a flip.
+        struct LegacyScaler {
+            LegacyScaler(){};
+            inline float operator()(const int x, const float scale) const {
+                return static_cast<float>(x) * scale;
+            }
+        };
+
+        static void computeXWeightsAndIndices(const ImageResizerState& resizer_state,
+                                              const bool half_pixel_centers,
+                                              std::vector<WeightsAndIndices>* x_wais) {
+            CachedInterpolationCalculator calc;
+            if (half_pixel_centers) {
+                auto func = PRAGMA_THREADS_FOR {
+                    for (auto x = start; x < stop; ++x) {
+                        getWeightsAndIndices<HalfPixelScaler, true>(
+                                resizer_state.widthScale, x, resizer_state.inWidth, &(*x_wais)[x]);
+                        auto &x_wai = (*x_wais)[x];
+                        x_wai._advance = calc.Advance(x_wai._index0, x_wai._index1, x_wai._index2,
+                                                      x_wai._index3);
+                    }
+                };
+                samediff::Threads::parallel_for(func, 0, resizer_state.outWidth);
+            } else {
+                auto func = PRAGMA_THREADS_FOR {
+                    for (auto x = start; x < stop; ++x) {
+                        getWeightsAndIndices<LegacyScaler, false>(
+                                resizer_state.widthScale, x, resizer_state.inWidth, &(*x_wais)[x]);
+                        auto& x_wai = (*x_wais)[x];
+                        x_wai._advance = calc.Advance(x_wai._index0, x_wai._index1, x_wai._index2,
+                                                      x_wai._index3);
+                    }
+                };
+                samediff::Threads::parallel_for(func, 0, resizer_state.outWidth);
+            }
+            // Scale the values so they can be used as offsets into buffers.
+            auto func = PRAGMA_THREADS_FOR {
+                for (auto x = start; x < stop; ++x) {
+                    (*x_wais)[x]._index0 *= resizer_state.channels;
+                    (*x_wais)[x]._index1 *= resizer_state.channels;
+                    (*x_wais)[x]._index2 *= resizer_state.channels;
+                    (*x_wais)[x]._index3 *= resizer_state.channels;
+                }
+            };
+            samediff::Threads::parallel_for(func, 0, resizer_state.outWidth);
+        }
+
+        template <typename T>
+        static FORCEINLINE float computeYInterpolation(
+                int which, int channelNum, const WeightsAndIndices& yWai,
+                const T* pY0, const T* pY1, const T* pY2, const T* pY3,
+                const WeightsAndIndices& xWai) {
+            int xIndex;
+            switch (which) {
+                case 0:
+                    xIndex = xWai._index0;
+                    break;
+                case 1:
+                    xIndex = xWai._index1;
+                    break;
+                case 2:
+                    xIndex = xWai._index2;
+                    break;
+                default:
+                    xIndex = xWai._index3;
+                    break;
+            }
+            const Nd4jLong pt_index = xIndex + channelNum;
+            return interpolate1D<T>(yWai._weight0, yWai._weight1, yWai._weight2,
+                                    yWai._weight3, pY0[pt_index], pY1[pt_index],
+                                    pY2[pt_index], pY3[pt_index]);
+        }
+
+        template <typename T>
+        static void
+    bicubicInterpolateWithCaching(NDArray const* image, ImageResizerState const& resizerState, bool const halfPixelCenters, NDArray* output) {
+        std::vector<WeightsAndIndices> xWais(resizerState.outWidth);
+
+        computeXWeightsAndIndices(resizerState, halfPixelCenters, &xWais);
+
+        const auto numChannels = resizerState.channels;
+        const Nd4jLong inRowWidth = resizerState.inWidth * numChannels;
+        const Nd4jLong inBatchWidth = resizerState.inHeight * inRowWidth;
+
+        const T* inputPtr = image->getDataBuffer()->primaryAsT<T>();
+        T* pOutputY = output->dataBuffer()->primaryAsT<T>(); //_data.data();
+        std::vector<float> cachedValue(numChannels == 3 ? 0 : 4 * numChannels, 0);
+
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto b = start; b < stop; ++b) {
+                auto pInput = inputPtr + b * inBatchWidth;
+
+                for (auto y = 0; y < resizerState.outHeight; ++y) {
+                    auto pOutput = &pOutputY[(b * resizerState.outHeight + y) * resizerState.outWidth * numChannels];
+
+                    WeightsAndIndices yWai;
+                    if (halfPixelCenters) {
+                        getWeightsAndIndices<HalfPixelScaler, true>(
+                                resizerState.heightScale, y, resizerState.inHeight, &yWai);
+                    } else {
+                        getWeightsAndIndices<LegacyScaler, false>(
+                                resizerState.heightScale, y, resizerState.inHeight, &yWai);
+                    }
+                    // Make pointers represent offsets of data in inputBPtr.
+                    const T *y_ptr_0 = pInput + yWai._index0 * inRowWidth;
+                    const T *y_ptr_1 = pInput + yWai._index1 * inRowWidth;
+                    const T *y_ptr_2 = pInput + yWai._index2 * inRowWidth;
+                    const T *y_ptr_3 = pInput + yWai._index3 * inRowWidth;
+
+                    if (numChannels == 3) {
+                        // Manually unroll case of 3 channels.
+                        float cached_value_0[4] = {0};
+                        float cached_value_1[4] = {0};
+                        float cached_value_2[4] = {0};
+                        for (auto x = 0; x < resizerState.outWidth; ++x) {
+                            const WeightsAndIndices &xWai = xWais[x];
+                            // Shift values in cached_value_* to fill first '_advance' values.
+                            switch (xWai._advance) {
+                                case 3:
+                                    cached_value_0[0] = cached_value_0[1];
+                                    cached_value_0[1] = cached_value_0[2];
+                                    cached_value_0[2] = cached_value_0[3];
+                                    cached_value_1[0] = cached_value_1[1];
+                                    cached_value_1[1] = cached_value_1[2];
+                                    cached_value_1[2] = cached_value_1[3];
+                                    cached_value_2[0] = cached_value_2[1];
+                                    cached_value_2[1] = cached_value_2[2];
+                                    cached_value_2[2] = cached_value_2[3];
+                                    break;
+                                case 2:
+                                    cached_value_0[0] = cached_value_0[2];
+                                    cached_value_0[1] = cached_value_0[3];
+                                    cached_value_1[0] = cached_value_1[2];
+                                    cached_value_1[1] = cached_value_1[3];
+                                    cached_value_2[0] = cached_value_2[2];
+                                    cached_value_2[1] = cached_value_2[3];
+                                    break;
+                                case 1: {
+                                    cached_value_0[0] = cached_value_0[3];
+                                    cached_value_1[0] = cached_value_1[3];
+                                    cached_value_2[0] = cached_value_2[3];
+                                    break;
+                                }
+                            }
+
+                            // Set the remaining '4-_advance' values by computing.
+                            switch (xWai._advance) {
+                                case 0:
+                                    cached_value_0[0] = computeYInterpolation(
+                                            0, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cached_value_1[0] = computeYInterpolation(
+                                            0, 1, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cached_value_2[0] = computeYInterpolation(
+                                            0, 2, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+
+                                case 1:
+                                    cached_value_0[1] = computeYInterpolation(
+                                            1, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cached_value_1[1] = computeYInterpolation(
+                                            1, 1, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cached_value_2[1] = computeYInterpolation(
+                                            1, 2, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+
+                                case 2:
+                                    cached_value_0[2] = computeYInterpolation(
+                                            2, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cached_value_1[2] = computeYInterpolation(
+                                            2, 1, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cached_value_2[2] = computeYInterpolation(
+                                            2, 2, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+
+                                case 3:
+                                    cached_value_0[3] = computeYInterpolation(
+                                            3, 0, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cached_value_1[3] = computeYInterpolation(
+                                            3, 1, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    cached_value_2[3] = computeYInterpolation(
+                                            3, 2, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    break;
+                            }
+                            pOutput[x * numChannels + 0] =
+                                    compute(cached_value_0, xWai._weight0, xWai._weight1,
+                                            xWai._weight2, xWai._weight3);
+                            pOutput[x * numChannels + 1] =
+                                    compute(cached_value_1, xWai._weight0, xWai._weight1,
+                                            xWai._weight2, xWai._weight3);
+                            pOutput[x * numChannels + 2] =
+                                    compute(cached_value_2, xWai._weight0, xWai._weight1,
+                                            xWai._weight2, xWai._weight3);
+                        }
+                    } else {
+                        for (auto x = 0; x < resizerState.outWidth; ++x) {
+                            const WeightsAndIndices &xWai = xWais[x];
+                            // Shift values in cachedValue to fill first '_advance' values.
+                            switch (xWai._advance) {
+                                case 3:
+                                    for (auto c = 0; c < numChannels; ++c) {
+                                        cachedValue[4 * c + 0] = cachedValue[4 * c + 1];
+                                        cachedValue[4 * c + 1] = cachedValue[4 * c + 2];
+                                        cachedValue[4 * c + 2] = cachedValue[4 * c + 3];
+                                    }
+                                    break;
+                                case 2:
+                                    for (auto c = 0; c < numChannels; ++c) {
+                                        cachedValue[4 * c + 0] = cachedValue[4 * c + 2];
+                                        cachedValue[4 * c + 1] = cachedValue[4 * c + 3];
+                                    }
+                                    break;
+                                case 1: {
+                                    for (auto c = 0; c < numChannels; ++c) {
+                                        cachedValue[4 * c + 0] = cachedValue[4 * c + 3];
+                                    }
+                                    break;
+                                }
+                            }
+
+                            // Set the remaining '4-_advance' values by computing.
+                            switch (xWai._advance) {
+                                case 0:
+                                    for (auto c = 0; c < numChannels; ++c) {
+                                        cachedValue[4 * c + 0] = computeYInterpolation(
+                                                0, c, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    }
+
+                                case 1:
+                                    for (auto c = 0; c < numChannels; ++c) {
+                                        cachedValue[4 * c + 1] = computeYInterpolation(
+                                                1, c, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    }
+
+                                case 2:
+                                    for (auto c = 0; c < numChannels; ++c) {
+                                        cachedValue[4 * c + 2] = computeYInterpolation(
+                                                2, c, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    }
+
+                                case 3:
+                                    for (auto c = 0; c < numChannels; ++c) {
+                                        cachedValue[4 * c + 3] = computeYInterpolation(
+                                                3, c, yWai, y_ptr_0, y_ptr_1, y_ptr_2, y_ptr_3, xWai);
+                                    }
+                                    break;
+                            }
+                            for (auto c = 0; c < numChannels; ++c) {
+                                pOutput[x * numChannels + c] =
+                                        compute(&cachedValue[4 * c], xWai._weight0, xWai._weight1,
+                                                xWai._weight2, xWai._weight3);
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        samediff::Threads::parallel_tad(func, 0, resizerState.batchSize);
+    }
+
+// simplified bicubic resize without antialiasing
+//
+    template <typename T>
+    int resizeBicubicFunctorA_(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+                              bool const alignCorners, bool const halfPixelAlign, NDArray* output) {
+        ImageResizerState st(alignCorners, halfPixelAlign); // align_corners, half_pixel_align
+        int res = st.validateAndCreateOutput(image, width, height);
+        if (res == Status::OK())
+            bicubicInterpolateWithCaching<T>(image, st, halfPixelAlign, output);
+
+        return res;
+    }
+    int resizeBicubicFunctorA(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
+                              bool const alignCorners, bool const halfPixelAlign, NDArray* output) {
+        BUILD_SINGLE_SELECTOR(image->dataType(), return resizeBicubicFunctorA_, (context,
+                image, width, height, alignCorners, halfPixelAlign, output), NUMERIC_TYPES);
+    }
+// ------------------------------------------------------------------------------------------------------------------ //
     int resizeFunctor(nd4j::LaunchContext * context, NDArray const* image, int width, int height,
                       ImageResizeMethods method, bool preserveAspectRatio, bool antialias, NDArray* output) {
         switch (method) {
@@ -371,8 +878,21 @@ namespace helpers {
         return ND4J_STATUS_OK;
     }
 
+// ------------------------------------------------------------------------------------------------------------------ //
+// ------------------------------------------------------------------------------------------------------------------ //
+// crop and resize helper functor:
+// \@param context - launch context for operation
+// \@param images - batch of images (4D tensor) with shape {batch, width, height, channels} with given type
+// \@param boxes - float boxes for crop
+// \@param indices - integer boxes indices for crop
+// \@param cropSize - integer size (newWidth, newHeight)
+// \@param method - one of bilinear (0) or nearest neighbour (1) interpolation algorithm
+// \@param extrapolationVal - radix to increase/decrease image
+// \@param crops - output image batch (4D with given type)
+//
     void
-    cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const *images, NDArray const *boxes, NDArray const *indices, NDArray const *cropSize,
+    cropAndResizeFunctor(nd4j::LaunchContext * context, NDArray const *images, NDArray const *boxes,
+            NDArray const *indices, NDArray const *cropSize,
                          int method, double extrapolationVal, NDArray *crops) {
         BUILD_TRIPLE_SELECTOR(images->dataType(), boxes->dataType(), indices->dataType(), cropAndResizeFunctor_,
                               (images, boxes, indices, cropSize, method, extrapolationVal, crops), NUMERIC_TYPES, FLOAT_TYPES, INTEGER_TYPES);

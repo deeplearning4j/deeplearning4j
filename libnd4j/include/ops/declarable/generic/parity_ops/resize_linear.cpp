@@ -60,8 +60,7 @@ namespace nd4j {
                     center = 0 != INT_ARG(2);
             }
 
-            auto res = helpers::resizeBilinearFunctor(block.launchContext(), &source, width, height, center, &target);
-            return res;
+            return helpers::resizeBilinearFunctor(block.launchContext(), inRank==4?image:&source, width, height, center, inRank == 4?output:&target);
         }
 
         DECLARE_SHAPE_FN(resize_bilinear) {
