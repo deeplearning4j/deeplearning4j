@@ -93,6 +93,7 @@ import org.nd4j.versioncheck.VersionCheck;
 import java.io.*;
 import java.lang.reflect.Constructor;
 import java.math.BigDecimal;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.channels.Channels;
 import java.nio.channels.WritableByteChannel;
@@ -5681,7 +5682,7 @@ public class Nd4j {
     public static INDArray createNpyFromByteArray(@NonNull byte[] input) {
         ByteBuffer byteBuffer = ByteBuffer.allocateDirect(input.length);
         byteBuffer.put(input);
-        byteBuffer.rewind();
+        ((Buffer) byteBuffer).rewind();
         Pointer pointer = new Pointer(byteBuffer);
         return createFromNpyPointer(pointer);
     }

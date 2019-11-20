@@ -32,6 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.Closeable;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
 /**
@@ -129,7 +130,7 @@ public class AeronNDArrayPublisher implements AutoCloseable {
             NDArrayMessageChunk[] chunks = NDArrayMessage.chunks(message, publication.maxMessageLength() / 128);
             for (int i = 0; i < chunks.length; i++) {
                 ByteBuffer sendBuff = NDArrayMessageChunk.toBuffer(chunks[i]);
-                sendBuff.rewind();
+                ((Buffer) sendBuff).rewind();
                 DirectBuffer buffer = new UnsafeBuffer(sendBuff);
                 sendBuffer(buffer);
             }
