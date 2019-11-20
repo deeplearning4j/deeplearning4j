@@ -57,6 +57,7 @@ namespace nd4j {
 
         DECLARE_SHAPE_FN(crop_and_resize) {
             auto in = inputShape->at(0);
+            auto boxShape = inputShape->at(1);
 
             Nd4jLong outputShape[4];
 
@@ -68,7 +69,7 @@ namespace nd4j {
             width = newImageSize->e<int>(0);
             height = newImageSize->e<int>(1);
 
-            outputShape[0] = in[1];
+            outputShape[0] = boxShape[1];
             outputShape[1] = width;
             outputShape[2] = height;
             outputShape[3] = in[4];

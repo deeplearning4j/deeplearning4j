@@ -14,6 +14,20 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  ******************************************************************************/
+/* Copyright 2016 The TensorFlow Authors. All Rights Reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+==============================================================================*/
 
 //
 //  @author sgazeos@gmail.com
@@ -85,30 +99,32 @@ namespace helpers {
             return top + (bottom - top) * yVal;
         };
 
-        // FIXME: fix parallelism here
-        for (Nd4jLong b = 0; b < batchSize; ++b) {
-            for (Nd4jLong y = 0; y < outHeight; ++y) {
-                const T *ys_input_lower_ptr = input_b_ptr + ys[y].bottomIndex * inRowSize;
-                const T *ys_input_upper_ptr = input_b_ptr + ys[y].topIndex * inRowSize;
-                double yVal = ys[y].interpolarValue;
-                for (Nd4jLong x = 0; x < outWidth; ++x) {
-                    auto xsBottom = xs_[x].bottomIndex;
-                    auto xsTop = xs_[x].topIndex;
-                    auto xVal = xs_[x].interpolarValue;
-                    for (int c = 0; c < channels; ++c) {
-                        double topLeft(ys_input_lower_ptr[xsBottom + c]);
-                        double topRight(ys_input_lower_ptr[xsTop + c]);
-                        double bottomLeft(ys_input_upper_ptr[xsBottom + c]);
-                        double bottomRight(ys_input_upper_ptr[xsTop + c]);
-                        output_y_ptr[x * channels + c] =
-                                computeBilinear(topLeft, topRight, bottomLeft, bottomRight,
-                                                xVal, yVal);
+        auto func = PRAGMA_THREADS_FOR {
+            for (Nd4jLong b = 0; b < batchSize; ++b) {
+                for (Nd4jLong y = 0; y < outHeight; ++y) {
+                    const T *ys_input_lower_ptr = input_b_ptr + ys[y].bottomIndex * inRowSize;
+                    const T *ys_input_upper_ptr = input_b_ptr + ys[y].topIndex * inRowSize;
+                    double yVal = ys[y].interpolarValue;
+                    for (Nd4jLong x = 0; x < outWidth; ++x) {
+                        auto xsBottom = xs_[x].bottomIndex;
+                        auto xsTop = xs_[x].topIndex;
+                        auto xVal = xs_[x].interpolarValue;
+                        for (int c = 0; c < channels; ++c) {
+                            double topLeft(ys_input_lower_ptr[xsBottom + c]);
+                            double topRight(ys_input_lower_ptr[xsTop + c]);
+                            double bottomLeft(ys_input_upper_ptr[xsBottom + c]);
+                            double bottomRight(ys_input_upper_ptr[xsTop + c]);
+                            output_y_ptr[x * channels + c] =
+                                    computeBilinear(topLeft, topRight, bottomLeft, bottomRight,
+                                                    xVal, yVal);
+                        }
                     }
+                    output_y_ptr += outRowSize;
                 }
-                output_y_ptr += outRowSize;
+                input_b_ptr += inBatchNumValues;
             }
-            input_b_ptr += inBatchNumValues;
-        }
+        };
+        samediff::Threads::parallel_tad(func, 0, batchSize);
     }
 
     template<typename T>

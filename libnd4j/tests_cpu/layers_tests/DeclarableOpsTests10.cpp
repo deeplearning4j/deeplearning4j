@@ -1470,6 +1470,64 @@ TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test1) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test01) {
+
+    NDArray input    = NDArrayFactory::create<double>('c', {2,3,4});
+    //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
+    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+    NDArray expected = NDArrayFactory::create<double>('c', {10, 10, 4}, {1.,  2.,   3.,   4.,  2.2,  3.2,  4.2,  5.2, 3.4,  4.4,  5.4,  6.4,
+                                                                            4.6, 5.6,  6.6,  7.6, 5.8,  6.8,  7.8,  8.8, 7.,   8.,   9.,  10.,
+                                                                            8.2, 9.2, 10.2, 11.2, 9.,  10.,  11.,  12.,  9.,  10.,  11.,  12.,
+                                                                            9., 10.,  11.,  12.,  3.4,  4.4,  5.4,  6.4, 4.6,  5.6, 6.6,   7.6,
+                                                                            5.8, 6.8,  7.8,  8.8, 7.0,   8.,  9.,  10.,  8.2,  9.2, 10.2, 11.2,
+                                                                            9.4,10.4, 11.4, 12.4,10.6,  11.6,12.6, 13.6,11.4, 12.4, 13.4, 14.4,
+                                                                            11.4,12.4, 13.4, 14.4,11.4,  12.4,13.4, 14.4, 5.8,  6.8,  7.8,  8.8,
+                                                                            7.,  8.,   9.,  10.,  8.2,   9.2,10.2, 11.2, 9.4, 10.4, 11.4, 12.4,
+                                                                            10.6,11.6, 12.6, 13.6,11.8,  12.8,13.8, 14.8,13.0, 14.0, 15.0, 16.,
+                                                                            13.8,14.8, 15.8, 16.8,13.8,  14.8,15.8, 16.8,13.8, 14.8, 15.8, 16.8,
+                                                                            8.2, 9.2, 10.2, 11.2, 9.4,  10.4,11.4, 12.4,10.6, 11.6, 12.6, 13.6,
+                                                                            11.8,12.8, 13.8, 14.8,13.,   14., 15.,  16., 14.2, 15.2, 16.2, 17.2,
+                                                                            15.4,16.4, 17.4, 18.4,16.2,  17.2,18.2, 19.2,16.2, 17.2, 18.2, 19.2,
+                                                                            16.2,17.2, 18.2, 19.2,10.6,  11.6,12.6, 13.6,11.8, 12.8, 13.8, 14.8,
+                                                                            13., 14.,  15.,  16., 14.2,  15.2,16.2, 17.2,15.4, 16.4, 17.4, 18.4,
+                                                                            16.6,17.6, 18.6, 19.6,17.8,  18.8,19.8, 20.8,18.6, 19.6, 20.6, 21.6,
+                                                                            18.6,19.6, 20.6, 21.6,18.6,  19.6,20.6, 21.6,13.,  14.,  15.,  16.,
+                                                                            14.2,15.2, 16.2, 17.2,15.4,  16.4,17.4, 18.4,16.6, 17.6, 18.6, 19.6,
+                                                                            17.8,18.8, 19.8, 20.8,19.,   20., 21.,  22., 20.2, 21.2, 22.2, 23.2,
+                                                                            21., 22.,  23.,  24., 21.,   22., 23.,  24., 21.,  22.,  23.,  24.,
+                                                                            13., 14.,  15.,  16., 14.2,  15.2,16.2, 17.2,15.4, 16.4, 17.4, 18.4,
+                                                                            16.6,17.6, 18.6, 19.6,17.8, 18.8, 19.8, 20.8,19.,  20.,  21.,  22.,
+                                                                            20.2,21.2, 22.2, 23.2,21.,  22.,  23.,  24., 21.,  22.,  23.,  24.,
+                                                                            21., 22.,  23.,  24., 13.,  14.,  15.,  16., 14.2, 15.2, 16.2, 17.2,
+                                                                            15.4,16.4, 17.4, 18.4,16.6, 17.6, 18.6, 19.6,17.8, 18.8, 19.8, 20.8,
+                                                                            19., 20.,  21.,  22., 20.2, 21.2, 22.2, 23.2,21.,  22.,  23.,  24.,
+                                                                            21., 22.,  23.,  24., 21.,  22.,  23.,  24., 13.,  14.,  15.,  16.,
+                                                                            14.2,15.2, 16.2, 17.2,15.4, 16.4, 17.4, 18.4,16.6, 17.6, 18.6, 19.6,
+                                                                            17.8,18.8, 19.8, 20.8,19.,  20.,  21.,  22., 20.2, 21.2, 22.2, 23.2,
+                                                                            21., 22.,  23.,  24., 21.,  22.,  23.,  24., 21.,  22.,  23.,  24.,
+                                                                            13., 14.,  15.,  16., 14.2, 15.2, 16.2, 17.2,15.4, 16.4, 17.4, 18.4,
+                                                                            16.6,17.6, 18.6, 19.6,17.8, 18.8, 19.8, 20.8,19.,  20.,  21.,  22.,
+                                                                            20.2,21.2, 22.2, 23.2,
+                                                                            21.,  22.,  23.,  24., 21.,  22.,  23.,  24., 21., 22., 23., 24.});
+    //input = 1.f;
+    input.linspace(1);
+
+    nd4j::ops::resize_bilinear op;
+    auto results = op.execute({&input}, {}, {10, 10});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+    //result->printIndexedBuffer("Resized to 10x10");
+    //expected.printIndexedBuffer("Expect for 10x10");
+//    result->printShapeInfo("Output shape");
+//    expected.printShapeInfo("Expect shape");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+    delete results;
+}
+
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ImageResizeBilinear_Test2) {
 
@@ -1852,6 +1910,53 @@ TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test1) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests10, ImageResizeNeighbor_Test01) {
+
+    NDArray input    = NDArrayFactory::create<double>('c', {2, 3, 4});
+    //NDArray<float> paddings('c', {3,2}, {0,0, 0,1, 0,0});
+    //NDArray<float> expected('c', {2,4,4}, {1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,1.,0.,0.,0.,0.});
+    NDArray expected = NDArrayFactory::create<double>('c', {4, 5, 4},    { 1,  2,  3,  4,
+                                                                           1,  2,  3,  4,
+                                                                           5,  6,  7,  8,
+                                                                           5,  6,  7,  8,
+                                                                           9, 10, 11, 12,
+
+                                                                           1,  2,  3,  4,
+                                                                           1,  2,  3,  4,
+                                                                           5,  6,  7,  8,
+                                                                           5,  6,  7,  8,
+                                                                           9, 10, 11, 12,
+
+                                                                           13, 14, 15, 16,
+                                                                           13, 14, 15, 16,
+                                                                           17, 18, 19, 20,
+                                                                           17, 18, 19, 20,
+                                                                           21, 22, 23, 24,
+
+                                                                           13, 14, 15, 16,
+                                                                           13, 14, 15, 16,
+                                                                           17, 18, 19, 20,
+                                                                           17, 18, 19, 20,
+                                                                           21, 22, 23, 24
+    });
+    //input = 1.f;
+    input.linspace(1);
+
+    nd4j::ops::resize_nearest_neighbor op;
+    auto results = op.execute({&input}, {}, {4, 5});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    NDArray* result = results->at(0);
+
+    //result->printIndexedBuffer("Resized to 4x5");
+    //expected.printIndexedBuffer("Expect for 4x5");
+    ASSERT_TRUE(expected.isSameShape(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, ReduceLogSumExpTest_1) {
 
@@ -2180,6 +2285,7 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_1) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
+    result->syncToHost();
 //    result->printBuffer("Bounded boxes");
 //    expected.printBuffer("Bounded expec");
     ASSERT_TRUE(expected.isSameShapeStrict(result));
@@ -2212,6 +2318,58 @@ TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_2) {
     ASSERT_EQ(ND4J_STATUS_OK, results->status());
 
     auto result = results->at(0);
+//    result->syncToHost();
+//    result->printBuffer("Bounded boxes 2");
+//    expected.printBuffer("Bounded expec 2");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
+////////////////////////////////////////////////////////////////////
+TEST_F(DeclarableOpsTests10, Image_DrawBoundingBoxes_3) {
+    NDArray images = NDArrayFactory::create<float>('c', {2,5,5,1}, {0.7788,  0.8012, 0.7244, 0.2309, 0.7271, 0.1804,
+                                                                    0.5056, 0.8925, 0.5461, 0.9234, 0.0856,0.7938,
+                                                                    0.6591, 0.5555, 0.1596, 0.3087, 0.1548, 0.4695,
+                                                                    0.9939, 0.6113,0.6765, 0.1800, 0.6750, 0.2246,
+                                                                    0.0509, 0.4601, 0.8284, 0.2354, 0.9752, 0.8361,
+                                                                    0.2585, 0.4189, 0.7028, 0.7679, 0.5373, 0.7234,
+                                                                    0.2690, 0.0062, 0.0327, 0.0644, 0.8428, 0.7494,
+                                                                    0.0755, 0.6245, 0.3491, 0.5793, 0.5730, 0.1822,
+                                                                    0.6420, 0.9143});
+
+            NDArray boxes = NDArrayFactory::create<float>('c', {2, 2, 4}, {0.7717,     0.9281,     0.9846,     0.4838, 0.6433,     0.6041,     0.6501,     0.7612, 0.7605,     0.3948,     0.9493,     0.8600, 0.7876,     0.8945,     0.4638,     0.7157});
+    NDArray colors = NDArrayFactory::create<float>('c', {1, 2}, {0.9441, 0.5957});
+
+    //NDArray<float> ('c', {6}, {0.9f, .75f, .6f, .95f, .5f, .3f});
+//    NDArray expected = NDArrayFactory::create<float>('c', {2,5,5,1}, {
+//            0.7788f, 0.8012f, 0.7244f, 0.2309f, 0.7271f,
+//            0.1804f, 0.5056f, 0.8925f, 0.5461f, 0.9234f, 0.0856f, 0.7938f, 0.9441f,
+//            0.9441f, 0.1596f, 0.3087f, 0.1548f, 0.4695f, 0.9939f, 0.6113f, 0.6765f,
+//            0.1800f, 0.6750f, 0.2246f, 0.0509f, 0.4601f, 0.8284f, 0.2354f, 0.9752f, 0.8361f,
+//            0.2585f, 0.4189f,0.7028f,0.7679f,0.5373f,0.7234f,0.2690f,0.0062f,0.0327f,0.0644f,
+//            0.8428f, 0.9441f,0.9441f,0.9441f,0.3491f,0.5793f,0.5730f,0.1822f,0.6420f,0.9143f  });
+    NDArray expected = NDArrayFactory::create<float>('c', {2,5,5,1}, {
+                                                                       0.7788, 0.8012,  0.7244,   0.2309,  0.7271,
+                                                                       0.1804, 0.5056,  0.8925,   0.5461,  0.9234,
+                                                                       0.0856, 0.7938,  0.9441,   0.9441,  0.1596,
+                                                                       0.3087, 0.1548,  0.4695,   0.9939,  0.6113,
+                                                                       0.6765, 0.18  ,  0.675 ,   0.2246,  0.0509,
+
+                                                                       0.4601, 0.8284,  0.2354,   0.9752,  0.8361,
+                                                                       0.2585, 0.4189,  0.7028,   0.7679,  0.5373,
+                                                                       0.7234, 0.269 ,  0.0062,   0.0327,  0.0644,
+                                                                       0.8428, 0.9441,  0.9441,   0.9441,  0.3491,
+                                                                       0.5793, 0.573 ,  0.1822,   0.642 ,  0.9143});
+    nd4j::ops::draw_bounding_boxes op;
+    auto results = op.execute({&images, &boxes, &colors}, {}, {});
+     ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+//    result->printBuffer("Boxes3 output");
+//    expected.printBuffer("Boxes3 expect");
+
 //    result->syncToHost();
 //    result->printBuffer("Bounded boxes 2");
 //    expected.printBuffer("Bounded expec 2");
@@ -2359,6 +2517,55 @@ TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_5) {
     NDArray min = NDArrayFactory::create<float>({-20., -19., -18., -17});
     NDArray max = NDArrayFactory::create<float>({20., 21., 22., 23});
     x.linspace(-60.);
+    nd4j::ops::fake_quant_with_min_max_vars_per_channel op;
+    auto results = op.execute({&x, &min, &max}, {}, {});
+
+    ASSERT_EQ(ND4J_STATUS_OK, results->status());
+
+    auto result = results->at(0);
+//    result->printBuffer("Quantized per channels 5");
+//    exp.printBuffer("Quantized per channest E");
+//    auto diff = *result - exp;
+//    diff.printIndexedBuffer("Difference");
+
+    ASSERT_TRUE(exp.isSameShapeStrict(result));
+    ASSERT_TRUE(exp.equalsTo(result));
+
+    delete results;
+}
+
+/*    public void testFakeQuantAgainstTF_1() {
+        INDArray x = Nd4j.createFromArray(new float[]{ 0.7788f,0.8012f, 0.7244f, 0.2309f,0.7271f,
+                0.1804f,    0.5056f,    0.8925f,    0.5461f,    0.9234f,
+                0.0856f,    0.7938f,    0.6591f,    0.5555f,    0.1596f}).reshape(3,5);
+        INDArray min = Nd4j.createFromArray(new float[]{-0.2283f,   -0.0719f,   -0.0154f,   -0.5162f,   -0.3567f}).reshape(1,5);
+        INDArray max = Nd4j.createFromArray(new float[]{0.9441f,    0.5957f,    0.8669f,    0.3502f,    0.5100f}).reshape(1,5);
+
+        INDArray out = Nd4j.createUninitialized(x.shape());
+        val op = new FakeQuantWithMinMaxVarsPerChannel(x,min,max,out);
+
+        INDArray expected = Nd4j.createFromArray(new float[]{0.7801f,    0.5966f,    0.7260f,   0.2320f,    0.5084f,
+                0.1800f,    0.5046f,    0.8684f,    0.3513f,    0.5084f,
+                0.0877f,    0.5966f,    0.6600f,    0.3513f,    0.1604f}).reshape(3,5);
+
+        assertEquals(expected, out);
+    }*/
+TEST_F(DeclarableOpsTests10, FakeQuantWithMinMaxVars_Test_6) {
+    NDArray x = NDArrayFactory::create<float>('c', {3, 5}, {0.7788f,0.8012f, 0.7244f, 0.2309f,0.7271f,
+                                                            0.1804f,    0.5056f,    0.8925f,    0.5461f,    0.9234f,
+                                                            0.0856f,    0.7938f,    0.6591f,    0.5555f,    0.1596f});
+//    NDArray exp = NDArrayFactory::create<float>('c', {3, 5},{
+//            0.7801f,    0.5966f,    0.7260f,   0.2320f,    0.5084f,
+//            0.1800f,    0.5046f,    0.8684f,    0.3513f,    0.5084f,
+//            0.0877f,    0.5966f,    0.6600f,    0.3513f,    0.1604f
+//    });
+
+    NDArray exp = NDArrayFactory::create<float>('c', {3,5}, {0.77700233, 0.596913,   0.72314,    0.23104,    0.50982356,
+    0.17930824, 0.50528157, 0.86846,    0.34995764, 0.50982356,
+    0.08735529, 0.596913,   0.6574,     0.34995764, 0.15974471});
+    NDArray min = NDArrayFactory::create<float>('c', {5}, {-0.2283f,   -0.0719f,   -0.0154f,   -0.5162f,   -0.3567f});
+    NDArray max = NDArrayFactory::create<float>('c', {5}, {0.9441f,    0.5957f,    0.8669f,    0.3502f,    0.5100f});
+   // x.linspace(-60.);
     nd4j::ops::fake_quant_with_min_max_vars_per_channel op;
     auto results = op.execute({&x, &min, &max}, {}, {});
 

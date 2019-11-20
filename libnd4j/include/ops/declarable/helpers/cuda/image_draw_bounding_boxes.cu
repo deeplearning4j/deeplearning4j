@@ -24,39 +24,112 @@ namespace nd4j {
 namespace ops {
 namespace helpers {
 
-    template <typename T>
-    static __global__ void drawBoundingBoxesKernel(T const* images, Nd4jLong* imagesShape, T const* boxes,
-            Nd4jLong* boxesShape, T const* colors, Nd4jLong* colorsShape, T* output, Nd4jLong* outputShape,
-            Nd4jLong batchSize, Nd4jLong width, Nd4jLong height, Nd4jLong channels, Nd4jLong colorSetSize) {
+    typedef NDArray ColorTable_t;
+    static NDArray DefaultColorTable(int depth) {
+        //std::vector<std::vector<float>> colorTable;
+        const Nd4jLong kDefaultTableLength = 10;
+        const Nd4jLong kDefaultChannelLength = 4;
+        NDArray colorTable('c', {kDefaultTableLength, kDefaultChannelLength}, {
+                1,1,0,1,         // yellow
+                0, 0, 1, 1,      // 1: blue
+                1, 0, 0, 1,      // 2: red
+                0, 1, 0, 1,      // 3: lime
+                0.5, 0, 0.5, 1,  // 4: purple
+                0.5, 0.5, 0, 1,  // 5: olive
+                0.5, 0, 0, 1,    // 6: maroon
+                0, 0, 0.5, 1,    // 7: navy blue
+                0, 1, 1, 1,      // 8: aqua
+                1, 0, 1, 1       // 9: fuchsia
+        }, DataType::FLOAT32);
 
-        for (auto b = blockIdx.x; b < (int)batchSize; b += gridDim.x) { // loop by batch
-            for (auto c = 0; c < colorSetSize; c++) {
+        if (depth == 1) {
+            colorTable.assign(1.f); // all to white when black and white colors
+        }
+        return colorTable;
+    }
+
+    template <typename T>
+    static __global__ void drawBoundingBoxesKernel(T const* images, Nd4jLong* imagesShape, float const* boxes,
+            Nd4jLong* boxesShape, float const* colorTable, Nd4jLong* colorTableShape, T* output, Nd4jLong* outputShape,
+            Nd4jLong batchSize, Nd4jLong width, Nd4jLong height, Nd4jLong channels, Nd4jLong boxSize, Nd4jLong colorTableLen) {
+
+        for (auto batch = blockIdx.x; batch < (int)batchSize; batch += gridDim.x) { // loop by batch
+            for (auto boxIndex = 0; boxIndex < boxSize; ++boxIndex) {
                 // box with shape
-                auto internalBox = &boxes[b * colorSetSize * 4 + c * 4];//(*boxes)(b, {0})(c, {0});//internalBoxes->at(c);
-                auto color = &colors[channels * c];//colorSet->at(c);
-                auto rowStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((height - 1) * internalBox[0]));
-                auto rowEnd = nd4j::math::nd4j_min(Nd4jLong (height - 1), Nd4jLong ((height - 1) * internalBox[2]));
-                auto colStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((width - 1) * internalBox[1]));
-                auto colEnd = nd4j::math::nd4j_min(Nd4jLong(width - 1), Nd4jLong ((width - 1) * internalBox[3]));
-                for (auto y = rowStart + threadIdx.x; y <= rowEnd; y += blockDim.x) {
-                    for (auto e = 0; e < channels; ++e) {
-                        Nd4jLong yMinPos[] = {b, y, colStart, e};
-                        Nd4jLong yMaxPos[] = {b, y, colEnd, e};
-                        auto zIndexYmin = shape::getOffset(outputShape, yMinPos);
-                        auto zIndexYmax = shape::getOffset(outputShape, yMaxPos);
-                        output[zIndexYmin] = color[e];
-                        output[zIndexYmax] = color[e];
-                    }
+                //auto internalBox = &boxes[b * colorSetSize * 4 + c * 4];//(*boxes)(b, {0})(c, {0});//internalBoxes->at(c);
+                auto colorIndex = boxIndex % colorTableLen;//colorSet->at(c);
+//                auto rowStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((height - 1) * internalBox[0]));
+//                auto rowEnd = nd4j::math::nd4j_min(Nd4jLong (height - 1), Nd4jLong ((height - 1) * internalBox[2]));
+//                auto colStart = nd4j::math::nd4j_max(Nd4jLong (0), Nd4jLong ((width - 1) * internalBox[1]));
+//                auto colEnd = nd4j::math::nd4j_min(Nd4jLong(width - 1), Nd4jLong ((width - 1) * internalBox[3]));
+                Nd4jLong indices0[] = {batch, boxIndex, 0};
+                Nd4jLong indices1[] = {batch, boxIndex, 1};
+                Nd4jLong indices2[] = {batch, boxIndex, 2};
+                Nd4jLong indices3[] = {batch, boxIndex, 3};
+                auto rowStart = Nd4jLong ((height - 1) * boxes[shape::getOffset(boxesShape, indices0, 0)]);
+                auto rowStartBound = nd4j::math::nd4j_max(Nd4jLong (0), rowStart);
+                auto rowEnd = Nd4jLong ((height - 1) * boxes[shape::getOffset(boxesShape, indices2, 0)]);
+                auto rowEndBound = nd4j::math::nd4j_min(Nd4jLong (height - 1), rowEnd);
+                auto colStart = Nd4jLong ((width - 1) * boxes[shape::getOffset(boxesShape, indices1, 0)]);
+                auto colStartBound = nd4j::math::nd4j_max(Nd4jLong (0), colStart);
+                auto colEnd = Nd4jLong ((width - 1) * boxes[shape::getOffset(boxesShape, indices3, 0)]);
+                auto colEndBound = nd4j::math::nd4j_min(Nd4jLong(width - 1), colEnd);
+                if (rowStart > rowEnd || colStart > colEnd) {
+//                    printf("helpers::drawBoundingBoxesFunctor: Bounding box (%lld, %lld, %lld, %lld) is inverted "
+//                                "and will not be drawn\n", rowStart, colStart, rowEnd, colEnd);
+                    continue;
                 }
-                for (auto x = colStart + 1 + threadIdx.x; x < colEnd; x += blockDim.x) {
-                    for (auto e = 0; e < channels; ++e) {
-                        Nd4jLong xMinPos[] = {b, rowStart, x, e};
-                        Nd4jLong xMaxPos[] = {b, rowEnd, x, e};
-                        auto zIndexXmin = shape::getOffset(outputShape, xMinPos);
-                        auto zIndexXmax = shape::getOffset(outputShape, xMaxPos);
-                        output[zIndexXmin] = color[e];
-                        output[zIndexXmax] = color[e];
-                    }
+                if (rowStart >= height || rowEnd < 0 || colStart >= width ||
+                    colEnd < 0) {
+//                    printf("helpers::drawBoundingBoxesFunctor: Bounding box (%lld, %lld, %lld, %lld) is completely "
+//                                "outside the image and not be drawn\n", rowStart, colStart, rowEnd, colEnd);
+                    continue;
+                }
+
+                // Draw upper line
+                if (rowStart >= 0) {
+                    for (auto j = colStartBound + threadIdx.x; j <= colEndBound; j += blockDim.x)
+                        for (auto c = 0; c < channels; c++) {
+                            Nd4jLong zPos[] = {batch, rowStart, j, c};
+                            Nd4jLong cPos[] = {colorIndex, c};
+                            auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
+                            auto zIndex = shape::getOffset(outputShape, zPos, 0);
+                            output[zIndex] = (T)colorTable[cIndex];
+                        }
+                }
+                // Draw bottom line.
+                if (rowEnd < height) {
+                    for (auto j = colStartBound + threadIdx.x; j <= colEndBound; j += blockDim.x)
+                        for (auto c = 0; c < channels; c++) {
+                            Nd4jLong zPos[] = {batch, rowEnd, j, c};
+                            Nd4jLong cPos[] = {colorIndex, c};
+                            auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
+                            auto zIndex = shape::getOffset(outputShape, zPos, 0);
+                            output[zIndex] = (T)colorTable[cIndex];
+                        }
+                }
+
+                // Draw left line.
+                if (colStart >= 0) {
+                    for (auto i = rowStartBound + threadIdx.x; i <= rowEndBound; i += blockDim.x)
+                        for (auto c = 0; c < channels; c++) {
+                            Nd4jLong zPos[] = {batch, i, colStart, c};
+                            Nd4jLong cPos[] = {colorIndex, c};
+                            auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
+                            auto zIndex = shape::getOffset(outputShape, zPos, 0);
+                            output[zIndex] = (T)colorTable[cIndex];
+                        }
+                }
+                // Draw right line.
+                if (colEnd < width) {
+                    for (auto i = rowStartBound + threadIdx.x; i <= rowEndBound; i += blockDim.x)
+                        for (auto c = 0; c < channels; c++) {
+                            Nd4jLong zPos[] = {batch, i, colEnd, c};
+                            Nd4jLong cPos[] = {colorIndex, c};
+                            auto cIndex = shape::getOffset(colorTableShape, cPos, 0);
+                            auto zIndex = shape::getOffset(outputShape, zPos, 0);
+                            output[zIndex] = (T)colorTable[cIndex];
+                        }
                 }
             }
         }
@@ -70,15 +143,19 @@ namespace helpers {
         auto width = images->sizeAt(2);
         auto channels = images->sizeAt(3);
         auto stream = context->getCudaStream();
-        auto colorSetSize = colors->sizeAt(0);
+        auto boxSize = boxes->sizeAt(1);
+        NDArray colorsTable = DefaultColorTable(channels);
+        if ((colors != nullptr && colors->lengthOf() > 0)) {
+            colorsTable = *colors;
+        }
 
         auto imagesBuf = images->getDataBuffer()->specialAsT<T>();
-        auto boxesBuf = boxes->getDataBuffer()->specialAsT<T>();
-        auto colorsBuf = colors->getDataBuffer()->specialAsT<T>();
+        auto boxesBuf = boxes->getDataBuffer()->specialAsT<float>(); // boxes should be float32
+        auto colorsTableBuf = colorsTable.getDataBuffer()->specialAsT<float>(); // color table is float32
         auto outputBuf = output->dataBuffer()->specialAsT<T>();
-        drawBoundingBoxesKernel<<<batchSize > 128? 128: batchSize, 256, 1024, *stream>>>(imagesBuf, images->getSpecialShapeInfo(),
-                boxesBuf, boxes->getSpecialShapeInfo(), colorsBuf, colors->getSpecialShapeInfo(),
-                outputBuf, output->specialShapeInfo(), batchSize, width, height, channels, colorSetSize);
+        drawBoundingBoxesKernel<<<128, 128, 1024, *stream>>>(imagesBuf, images->getSpecialShapeInfo(),
+                boxesBuf, boxes->getSpecialShapeInfo(), colorsTableBuf, colorsTable.getSpecialShapeInfo(),
+                outputBuf, output->specialShapeInfo(), batchSize, width, height, channels, boxSize, colorsTable.lengthOf());
     }
 
     void drawBoundingBoxesFunctor(nd4j::LaunchContext * context, NDArray* images, NDArray* boxes, NDArray* colors, NDArray* output) {
