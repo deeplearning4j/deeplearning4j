@@ -22,7 +22,7 @@ from setuptools import find_packages
 
 
 setup(name='pydatavec',
-      version='0.1.1',
+      version='0.1.2',
       description='Python interface for DataVec',
       long_description='Python interface for DataVec',
 
@@ -39,7 +39,12 @@ setup(name='pydatavec',
       url='https://github.com/deeplearning4j/deeplearning4j.git',
       license='Apache',
       setup_requires=['Cython', 'pytest-runner'],
-      install_requires=['Cython', 'requests', 'pydl4j', 'numpy'],
+      install_requires=[
+          'Cython',
+          'requests',
+          'pydl4j',
+          'numpy<=1.16.4',  # For compatibility with python 2
+      ],
       extras_require={
           'spark': ['pyspark'],
           'tests': ['pytest',

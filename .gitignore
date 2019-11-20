@@ -62,3 +62,7 @@ doc_sources/
 doc_sources_*
 
 *.pyc
+
+# Python virtual environments
+venv/
+venv2/
