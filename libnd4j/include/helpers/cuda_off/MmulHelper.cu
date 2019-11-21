@@ -263,9 +263,13 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
         const int sharedMem = threadsPerBlock * sizeof(Nd4jLong) * 6 + 128;                             // 6 = aRank + bRank + cRank
 
         NDArray::prepareSpecialUse({C}, {A, B});
-        // BUILD_TRIPLE_SELECTOR(aType, bType, cType, usualGemm, (blocksPerGrid, threadsPerBlock, sharedMem, A->getContext()->getCudaStream(), A->getSpecialBuffer(), A->getSpecialShapeInfo(), B->getSpecialBuffer(), B->getSpecialShapeInfo(), C->getSpecialBuffer(), C->getSpecialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta), NUMERIC_TYPES, NUMERIC_TYPES, FLOAT_TYPES);
-        BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (blocksPerGrid, threadsPerBlock, sharedMem, A->getContext()->getCudaStream(), A->getSpecialBuffer(), A->getSpecialShapeInfo(), B->getSpecialBuffer(), B->getSpecialShapeInfo(), C->getSpecialBuffer(), C->getSpecialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta), NUMERIC_TYPES)
+        // BUILD_TRIPLE_SELECTOR(aType, bType, cType, usualGemm, (blocksPerGrid, threadsPerBlock, sharedMem, stream, A->getSpecialBuffer(), A->getSpecialShapeInfo(), B->getSpecialBuffer(), B->getSpecialShapeInfo(), C->getSpecialBuffer(), C->getSpecialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta), NUMERIC_TYPES, NUMERIC_TYPES, FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR_THRICE(aType, usualGemm, (blocksPerGrid, threadsPerBlock, sharedMem, stream, A->getSpecialBuffer(), A->getSpecialShapeInfo(), B->getSpecialBuffer(), B->getSpecialShapeInfo(), C->getSpecialBuffer(), C->getSpecialShapeInfo(), 0, 1, 0, 1, 0, 1, alpha, beta), NUMERIC_TYPES)
         NDArray::registerSpecialUse({C}, {A, B});
+
+        auto cudaResult = cudaStreamSynchronize(*stream);
+        if (cudaResult != 0)
+            throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
     }
     else {
 
@@ -334,16 +338,16 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, dou
 
         NDArray::registerSpecialUse({pC}, {pA, pB});
 
+        auto cudaResult = cudaStreamSynchronize(*stream);
+        if (cudaResult != 0)
+            throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
+
         if(C != pC)
             C->assign(pC);
 
         for(int i = toDelete.size() - 1; i >= 0; --i)
             delete toDelete[i];
     }
-
-    auto cudaResult = cudaStreamSynchronize(*stream);
-    if (cudaResult != 0)
-        throw cuda_exception::build("MmulHelper::mmulMxM cuda failed !", cudaResult);
 
     return C;
 }
@@ -397,9 +401,13 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
         const int blocksPerGrid = (M + threadsPerBlock - 1) / threadsPerBlock;
 
         NDArray::prepareSpecialUse({Y}, {A, X});
-        // BUILD_TRIPLE_SELECTOR(aType, xType, yType, usualGemv, (blocksPerGrid, threadsPerBlock, A->getContext()->getCudaStream(), A->getSpecialBuffer(), A->getSpecialShapeInfo(), X->getSpecialBuffer(), X->getSpecialShapeInfo(), Y->getSpecialBuffer(), Y->getSpecialShapeInfo(), incx, incy, 0, alpha, beta), NUMERIC_TYPES, NUMERIC_TYPES, FLOAT_TYPES);
-        BUILD_SINGLE_SELECTOR_THRICE(xType, usualGemv, (blocksPerGrid, threadsPerBlock, A->getContext()->getCudaStream(), A->getSpecialBuffer(), A->getSpecialShapeInfo(), X->getSpecialBuffer(), X->getSpecialShapeInfo(), Y->getSpecialBuffer(), Y->getSpecialShapeInfo(), incx, incy, 0, alpha, beta), NUMERIC_TYPES)
+        // BUILD_TRIPLE_SELECTOR(aType, xType, yType, usualGemv, (blocksPerGrid, threadsPerBlock, stream, A->getSpecialBuffer(), A->getSpecialShapeInfo(), X->getSpecialBuffer(), X->getSpecialShapeInfo(), Y->getSpecialBuffer(), Y->getSpecialShapeInfo(), incx, incy, 0, alpha, beta), NUMERIC_TYPES, NUMERIC_TYPES, FLOAT_TYPES);
+        BUILD_SINGLE_SELECTOR_THRICE(xType, usualGemv, (blocksPerGrid, threadsPerBlock, stream, A->getSpecialBuffer(), A->getSpecialShapeInfo(), X->getSpecialBuffer(), X->getSpecialShapeInfo(), Y->getSpecialBuffer(), Y->getSpecialShapeInfo(), incx, incy, 0, alpha, beta), NUMERIC_TYPES)
         NDArray::registerSpecialUse({Y}, {A, X});
+
+        auto cudaResult = cudaStreamSynchronize(*stream);
+        if (cudaResult != 0)
+            throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
 
     }
     else {
@@ -434,15 +442,15 @@ NDArray* MmulHelper::mmulMxV(const NDArray* A, const NDArray* X, nd4j::NDArray* 
         if (status != CUBLAS_STATUS_SUCCESS)
             throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", status);
 
+        auto cudaResult = cudaStreamSynchronize(*stream);
+        if (cudaResult != 0)
+            throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
+
         NDArray::registerSpecialUse({Y}, {pA, X});
 
         if(pA != A)
             delete pA;
     }
-
-    auto cudaResult = cudaStreamSynchronize(*stream);
-    if (cudaResult != 0)
-        throw cuda_exception::build("MmulHelper::mmulMxV cuda failed !", cudaResult);
 
     return Y;
 }
@@ -624,7 +632,7 @@ NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, con
             throw std::runtime_error("MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication !");
     }
     else
-        C = new NDArray(outOrder, cExpectedShape, B->dataType());
+        C = new NDArray(outOrder, cExpectedShape, DataTypeUtils::pickPairwiseResultType(A->dataType(), B->dataType()), A->getContext());
 
     const int cRank = C->rankOf();
 

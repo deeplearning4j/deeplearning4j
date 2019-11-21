@@ -186,9 +186,9 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
     if(B->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxM: rank of B array is not equal 2 !");
 
-    const auto M     = A->sizeAt(0);
-    const auto K     = A->sizeAt(1);
-    const auto N     = B->sizeAt(1);
+    const auto M = A->sizeAt(0);
+    const auto K = A->sizeAt(1);
+    const auto N = B->sizeAt(1);
 
     if(C != nullptr && C->rankOf() != 2)
         throw std::runtime_error("MmulHelper::mmulMxM: rank of C array is not equal 2 !");
@@ -235,7 +235,7 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
             aMcont = true;
         }
         if(!bKcont && !bNcont) {
-                pB = B->dup('f');
+            pB = B->dup('f');
             toDelete.push_back(pB);
             bKcont = true;
         }
@@ -258,10 +258,10 @@ NDArray* MmulHelper::mmulMxM(const NDArray* A, const NDArray* B, NDArray* C, con
         const int ldc = (cMcont && cNcont) ? M : !cMcont ? pC->strideAt(0) : pC->strideAt(1);
 
         if(typeFloat) {
-            BlasHelper::getInstance()->sgemm()(blasOrder, transAblas, transBblas, M, N, K, (float) alpha, reinterpret_cast<float *>(pA->getBuffer()), lda, reinterpret_cast<float *>(pB->getBuffer()), ldb, (float) beta, reinterpret_cast<float *>(pC->getBuffer()), ldc);
+            BlasHelper::getInstance()->sgemm()(blasOrder, transAblas, transBblas, M, N, K, (float) alpha, pA->bufferAsT<float>(), lda, pB->bufferAsT<float>(), ldb, (float) beta, pC->bufferAsT<float>(), ldc);
         }
         else if(typeDouble) {
-            BlasHelper::getInstance()->dgemm()(blasOrder, transAblas, transBblas, M, N, K, (double) alpha, reinterpret_cast<double *>(pA->getBuffer()), lda, reinterpret_cast<double *>(pB->getBuffer()), ldb, (double) beta, reinterpret_cast<double *>(pC->getBuffer()), ldc);
+            BlasHelper::getInstance()->dgemm()(blasOrder, transAblas, transBblas, M, N, K, (double) alpha, pA->bufferAsT<double>(), lda, pB->bufferAsT<double>(), ldb, (double) beta, pC->bufferAsT<double>(), ldc);
         }
 
         if(pC != C) {

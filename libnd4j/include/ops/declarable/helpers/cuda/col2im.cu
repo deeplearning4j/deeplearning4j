@@ -34,64 +34,59 @@ static __global__ void col2imCuda(const void* columns, const Nd4jLong* colShapeI
     const T* col = reinterpret_cast<const T*>(columns);
           T* im = reinterpret_cast<T*>(image);
 
-    __shared__ int colRank, imRank, kHeff, kWeff, oH, oW;
-    __shared__ Nd4jLong *sharedMem, imLen;
+    __shared__ uint kH, kW, oH, oW, *sharedMem;
+    __shared__ Nd4jLong imLen;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<uint*>(shmem);
+
+        kH = dH * (colShapeInfo[3] - 1) + 1;
+        kW = dW * (colShapeInfo[4] - 1) + 1;
 
         oH = colShapeInfo[5];
         oW = colShapeInfo[6];
 
-        kHeff = colShapeInfo[3] + (colShapeInfo[3] - 1) * (dH - 1);
-        kWeff = colShapeInfo[4] + (colShapeInfo[4] - 1) * (dW - 1);
-
-        imRank = 4;
-        colRank = 6;
-
-        imLen = shape::length(imShapeInfo);
+        imLen  = shape::length(imShapeInfo);
     }
     __syncthreads();
 
-    const auto imInd = threadIdx.x + blockIdx.x * blockDim.x;
+    auto coords = sharedMem + threadIdx.x * 6;
 
-    if(imInd >= imLen)
-        return;
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    auto coords = sharedMem + threadIdx.x * colRank;
+    for (Nd4jLong i = tid; i < imLen; i += gridDim.x * blockDim.x) {
 
-    shape::index2coords(imInd, imShapeInfo, coords);
+        shape::index2coords(i, imShapeInfo, coords);
 
-    const auto imOffset = shape::getOffset(imShapeInfo, coords);
+        const auto imOffset = shape::getOffset(imShapeInfo, coords);
 
-    const int imH = coords[2] + pH;
-    const int imW = coords[3] + pW;
+        const auto bSiCoffset = coords[0] * colShapeInfo[7] + coords[1] * colShapeInfo[8];
 
-    const int colHstart = (imH < kHeff) ? 0 : (imH - kHeff) / sH + 1;
-    const int colWstart = (imW < kWeff) ? 0 : (imW - kWeff) / sW + 1;
+        const uint imH = coords[2] + pH;
+        const uint imW = coords[3] + pW;
 
-    const int colHend = nd4j::math::nd4j_min<int>(imH / sH + 1, oH);
-    const int colWend = nd4j::math::nd4j_min<int>(imW / sW + 1, oW);
+        const uint colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
+        const uint colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
 
-    T val = 0;
+        const uint colHend = nd4j::math::nd4j_min<uint>(imH / sH + 1, oH);
+        const uint colWend = nd4j::math::nd4j_min<uint>(imW / sW + 1, oW);
 
-    for(coords[4] = colHstart; coords[4] < colHend; ++coords[4]) {
-        coords[2] = imH - coords[4] * sH;
+        T val = 0;
 
-      for(coords[5] = colWstart; coords[5] < colWend; ++coords[5]) {
-          coords[3] = imW - coords[5] * sW;
+        for(coords[4] = colHstart; coords[4] < colHend; ++coords[4]) {
+            coords[2] = imH - coords[4] * sH;
+            if(coords[2] % dH != 0) continue;
 
-            if(coords[2] % dH == 0 && coords[3] % dW == 0) {
-                coords[2] /= dH;
-                coords[3] /= dW;
+            for(coords[5] = colWstart; coords[5] < colWend; ++coords[5]) {
+                coords[3] = imW - coords[5] * sW;
+                if(coords[3] % dW != 0) continue;
 
-                val += col[shape::getOffset(colShapeInfo, coords)];
+                val += col[bSiCoffset + (coords[2]/dH)*colShapeInfo[9] + (coords[3]/dW)*colShapeInfo[10] + coords[4]*colShapeInfo[11] + coords[5]*colShapeInfo[12]];
             }
         }
+        im[imOffset] = val;
     }
-
-    im[imOffset] = val;
 }
 
 ////////////////////////////////////////////////////////////////////////
@@ -184,8 +179,8 @@ static void col2imCudaLauncher(const int blocksPerGrid, const int threadsPerBloc
                                      void* image, const Nd4jLong* imShapeInfo,
                                const int sH, const int sW, const int pH, const int pW, const int dH, const int dW) {
 
-    col2imCuda2<T><<<512, 512, 1024, *stream>>>(columns, image, colShapeInfo, imShapeInfo, sH, sW, pH, pW, dH, dW);
-    //col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH, sW, pH, pW, dH, dW);
+    // col2imCuda2<T><<<512, 512, 1024, *stream>>>(columns, image, colShapeInfo, imShapeInfo, sH, sW, pH, pW, dH, dW);
+    col2imCuda<T><<<blocksPerGrid, threadsPerBlock, sharedMem, *stream>>>(columns, colShapeInfo, image, imShapeInfo, sH, sW, pH, pW, dH, dW);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -195,7 +190,7 @@ void col2im(nd4j::LaunchContext& context, const NDArray& col, NDArray& im, const
 
     const int threadsPerBlock = MAX_NUM_THREADS / 2;
     const int blocksPerGrid = (im.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = col.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+    const int sharedMem = col.rankOf() * sizeof(uint) * threadsPerBlock  + 256;
 
     NDArray::prepareSpecialUse({&im}, {&col});
     BUILD_SINGLE_SELECTOR(im.dataType(), col2imCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, context.getCudaStream(), col.getSpecialBuffer(), col.getSpecialShapeInfo(), im.specialBuffer(), im.specialShapeInfo(), sH, sW, pH, pW, dH, dW), FLOAT_TYPES);

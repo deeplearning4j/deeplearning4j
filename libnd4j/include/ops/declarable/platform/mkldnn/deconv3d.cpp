@@ -47,13 +47,10 @@ static void deconv3dMKLDNN(const NDArray* input, const NDArray* weights, const N
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv3d(true, *input, *output, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
-    int dDmkl(dD), dHmkl(dH), dWmkl(dW), pDmkl(pD), pHmkl(pH), pWmkl(pW);
-    ConvolutionUtils::calcPaddingAndDilationForConv3DMKL(oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, isSameMode, pDmkl, pHmkl, pWmkl, dDmkl, dHmkl, dWmkl);
-
     dnnl::memory::dims strides   = { sD, sH, sW };
     dnnl::memory::dims padding   = { pD, pH, pW };
-    dnnl::memory::dims padding_r = { pDmkl, pHmkl, pWmkl };
-    dnnl::memory::dims dilation  = { dDmkl, dHmkl, dWmkl };
+    dnnl::memory::dims padding_r = { (iD - 1) * sD - oD + kD - pD, (iH - 1) * sH - oH + kH - pH, (iW - 1) * sW - oW + kW - pW };
+    dnnl::memory::dims dilation  = { dD-1, dH-1, dW-1 };
 
     // input type
     dnnl::memory::data_type xType;
@@ -197,13 +194,10 @@ static void deconv3dBackPropMKLDNN(const NDArray* input, const NDArray* weights,
     int indIOioC, indIOioD, indWoC, indWiC, indWkD;             // corresponding indexes
     ConvolutionUtils::getSizesAndIndexesConv3d(true, *input, *gradO, bS, iC, iD, iH, iW, oC, oD, oH, oW, indIOioC, indIOioD, indWoC, indWiC, indWkD);
 
-    int dDmkl(dD), dHmkl(dH), dWmkl(dW), pDmkl(pD), pHmkl(pH), pWmkl(pW);
-    ConvolutionUtils::calcPaddingAndDilationForConv3DMKL(oD, oH, oW, iD, iH, iW, kD, kH, kW, sD, sH, sW, isSameMode, pDmkl, pHmkl, pWmkl, dDmkl, dHmkl, dWmkl);
-
     dnnl::memory::dims strides   = { sD, sH, sW };
     dnnl::memory::dims padding   = { pD, pH, pW };
-    dnnl::memory::dims padding_r = { pDmkl, pHmkl, pWmkl };
-    dnnl::memory::dims dilation  = { dDmkl, dHmkl, dWmkl };
+    dnnl::memory::dims padding_r = { (iD - 1) * sD - oD + kD - pD, (iH - 1) * sH - oH + kH - pH, (iW - 1) * sW - oW + kW - pW };
+    dnnl::memory::dims dilation  = { dD-1, dH-1, dW-1 };
 
     // input type
     dnnl::memory::data_type xType = input->dataType() == DataType::FLOAT32 ? dnnl::memory::data_type::f32 : dnnl::memory::data_type::bf16;
@@ -437,12 +431,18 @@ PLATFORM_CHECK(deconv3d) {
 
     auto output  = INPUT_VARIABLE(0);
 
+    int dD = INT_ARG(9);                                                        // dilations depth
+    int dH = INT_ARG(10);                                                       // dilations height
+    int dW = INT_ARG(11);                                                       // dilations width
+    int isSameMode = INT_ARG(12);                                               // 0-SAME,  1-VALID
+
     const DataType xType = input->dataType();
     const DataType wType = weights->dataType();
     const DataType zType = output->dataType();
     const DataType bType = bias != nullptr ? bias->dataType() : zType;
 
-    return block.isUseMKLDNN() && (
+    return block.isUseMKLDNN() && (dD <= 1 && dH <= 1 && dW <= 1 && !isSameMode) &&
+          (
             (xType==DataType::FLOAT32 && wType==DataType::FLOAT32 && bType==DataType::FLOAT32 && zType==DataType::FLOAT32) ||
             ((xType==DataType::UINT8 || xType==DataType::INT8) && wType==DataType::INT8 && (zType==DataType::UINT8 || zType==DataType::INT8 || zType==DataType::INT32 || zType==DataType::FLOAT32) && bType == zType)
           );
@@ -538,6 +538,11 @@ PLATFORM_CHECK(deconv3d_bp) {
     auto gradW = OUTPUT_VARIABLE(1);                                                 // [kD, kH, kW, oC, iC] always
     auto gradB = block.width() > 3 ? OUTPUT_VARIABLE(2) : nullptr;                   // [oC]
 
+    int dD = INT_ARG(9);                                                        // dilations depth
+    int dH = INT_ARG(10);                                                       // dilations height
+    int dW = INT_ARG(11);                                                       // dilations width
+    int isSameMode = INT_ARG(12);                                               // 0-SAME,  1-VALID
+
     const DataType xType = input->dataType();
     const DataType wType = weights->dataType();
     const DataType gradOType = gradO->dataType();
@@ -546,7 +551,7 @@ PLATFORM_CHECK(deconv3d_bp) {
     const DataType gradWType = gradW->dataType();
     const DataType gradBType = gradB != nullptr ? gradB->dataType() : DataType::FLOAT32;
 
-    return block.isUseMKLDNN() && ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
+    return block.isUseMKLDNN() && (dD <= 1 && dH <= 1 && dW <= 1 && !isSameMode) && ((xType==DataType::FLOAT32 || xType==DataType::BFLOAT16) && (wType==DataType::FLOAT32 || wType==DataType::BFLOAT16) && (gradOType==DataType::FLOAT32 || gradOType==DataType::BFLOAT16) && (gradIType==DataType::FLOAT32 || gradIType==DataType::BFLOAT16) && (gradWType==DataType::FLOAT32 || gradWType==DataType::BFLOAT16) && (gradBType==DataType::FLOAT32 || gradBType==DataType::BFLOAT16) );
 }
 
 }

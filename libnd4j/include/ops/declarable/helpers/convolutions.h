@@ -69,8 +69,8 @@ namespace nd4j {
                     eKH = kH;
                     eKW = kW;
                 } else {
-                    eKH = kH + (kH - 1) * (dH - 1);
-                    eKW = kW + (kW - 1) * (dW - 1);
+                    eKH = (kH - 1) * dH + 1;
+                    eKW = (kW - 1) * dW + 1;
                 }
 
                 pH = ((oH - 1) * sH + eKH - iH) / 2; //Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
@@ -84,9 +84,9 @@ namespace nd4j {
                     eKH = kH;
                     eKW = kW;
                 } else {
-                    eKD = kD + (kD - 1) * (dD - 1);
-                    eKH = kH + (kH - 1) * (dH - 1);
-                    eKW = kW + (kW - 1) * (dW - 1);
+                    eKD = (kD - 1) * dD + 1;
+                    eKH = (kH - 1) * dH + 1;
+                    eKW = (kW - 1) * dW + 1;
                 }
 
                 pD = ((oD - 1) * sD + eKD - iD) / 2;       // Note that padBottom is 1 bigger than this if bracketed term is not divisible by 2
@@ -107,8 +107,8 @@ namespace nd4j {
                         ekH = kH;
                         ekW = kW;
                     } else {
-                        ekH = kH + (kH - 1) * (dH - 1);
-                        ekW = kW + (kW - 1) * (dW - 1);
+                        ekH = (kH - 1) * dH + 1;
+                        ekW = (kW - 1) * dW + 1;
                     }
 
                     oH = sH * (iH - 1) + ekH - 2 * pH;
@@ -131,9 +131,9 @@ namespace nd4j {
                         ekW = kW;
                     }
                     else {
-                        ekD = kD + (kD - 1) * (dD - 1);
-                        ekH = kH + (kH - 1) * (dH - 1);
-                        ekW = kW + (kW - 1) * (dW - 1);
+                        ekD = (kD - 1) * dD + 1;
+                        ekH = (kH - 1) * dH + 1;
+                        ekW = (kW - 1) * dW + 1;
                     }
                     oD = sD * (iD - 1) + ekD - 2 * pD;
                     oH = sH * (iH - 1) + ekH - 2 * pH;
@@ -194,53 +194,53 @@ namespace nd4j {
 
             }
 
-            static inline void calcPaddingAndDilationForConv2DMKL(const int iH, const int iW, const int oH, const int oW, const int kH, const int kW, const int sH, const int sW, const int isSameMode, int& pH, int& pW, int& dH, int& dW) {
+            // static inline void calcPaddingAndDilationForConv2DMKL(const int iH, const int iW, const int oH, const int oW, const int kH, const int kW, const int sH, const int sW, const int isSameMode, int& pH, int& pW, int& dH, int& dW) {
 
-                if(kH != 1) {
-                    if(isSameMode) {
-                        pH = (oH - 1) * sH - iH + kH - pH;
-                        dH = dH - 1;
-                    }
-                    else
-                        dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
-                }
-                if(kW != 1) {
-                    if(isSameMode) {
-                        pW = (oW - 1) * sW - iW + kW - pW;
-                        dW = dW - 1;
-                    }
-                    else
-                        dW = (iW + 2*pW - (oW - 1) * sW - kW) / (kW - 1);
-                }
-            }
+            //     if(kH != 1) {
+            //         if(isSameMode) {
+            //             pH = (oH - 1) * sH - iH + kH - pH;
+            //             dH = dH - 1;
+            //         }
+            //         else
+            //             dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
+            //     }
+            //     if(kW != 1) {
+            //         if(isSameMode) {
+            //             pW = (oW - 1) * sW - iW + kW - pW;
+            //             dW = dW - 1;
+            //         }
+            //         else
+            //             dW = (iW + 2*pW - (oW - 1) * sW - kW) / (kW - 1);
+            //     }
+            // }
 
-            static inline void calcPaddingAndDilationForConv3DMKL(const int iD, const int iH, const int iW, const int oD, const int oH, const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int isSameMode, int& pD, int& pH, int& pW, int& dD, int& dH, int& dW) {
+            // static inline void calcPaddingAndDilationForConv3DMKL(const int iD, const int iH, const int iW, const int oD, const int oH, const int oW, const int kD, const int kH, const int kW, const int sD, const int sH, const int sW, const int isSameMode, int& pD, int& pH, int& pW, int& dD, int& dH, int& dW) {
 
-                if(kD != 1) {
-                    if(isSameMode) {
-                        pD = (oD - 1) * sD - iD + kD - pD;
-                        dD = dD - 1;
-                    }
-                    else
-                        dD = (iD + 2*pD - (oD - 1) * sD - kD) / (kD - 1);
-                }
-                if(kH != 1) {
-                    if(isSameMode) {
-                        pH = (oH - 1) * sH - iH + kH - pH;
-                        dH = dH - 1;
-                    }
-                    else
-                        dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
-                }
-                if(kW != 1) {
-                    if(isSameMode) {
-                        pW = (oW - 1) * sW - iW + kW - pW;
-                        dW = dW - 1;
-                    }
-                    else
-                        dW = (iW + 2*pW - (oW - 1) * sW - kW) / (kW - 1);
-                }
-            }
+            //     if(kD != 1) {
+            //         if(isSameMode) {
+            //             pD = (oD - 1) * sD - iD + kD - pD;
+            //             dD = dD - 1;
+            //         }
+            //         else
+            //             dD = (iD + 2*pD - (oD - 1) * sD - kD) / (kD - 1);
+            //     }
+            //     if(kH != 1) {
+            //         if(isSameMode) {
+            //             pH = (oH - 1) * sH - iH + kH - pH;
+            //             dH = dH - 1;
+            //         }
+            //         else
+            //             dH = (iH + 2*pH - (oH - 1) * sH - kH) / (kH - 1);
+            //     }
+            //     if(kW != 1) {
+            //         if(isSameMode) {
+            //             pW = (oW - 1) * sW - iW + kW - pW;
+            //             dW = dW - 1;
+            //         }
+            //         else
+            //             dW = (iW + 2*pW - (oW - 1) * sW - kW) / (kW - 1);
+            //     }
+            // }
 
             static void conv2d(nd4j::graph::Context  &context, const NDArray* input, const NDArray* weights, const NDArray* bias, NDArray* output, const int kH, const int kW, const int sH, const int sW, int pH, int pW, const int dH, const int dW, const int isSameMode, const int isNCHW);
 

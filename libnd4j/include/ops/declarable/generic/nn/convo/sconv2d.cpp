@@ -35,7 +35,7 @@ CUSTOM_OP_IMPL(sconv2d, 2, 1, false, 0, 9) {
     NDArray *input        = INPUT_VARIABLE(0);                    // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
     NDArray *weightsDepth = INPUT_VARIABLE(1);                    // [kH, kW, iC, mC]  always
     NDArray *weightsPoint = nullptr;                              // [1, 1, iC*mC, oC] always
-    NDArray *bias         = nullptr;                              // [oC], oC = iC*mC if weightsPoint=nullptr
+    NDArray *bias         = nullptr;                              // [oC], if weightsPoint=nullptr then oC = iC*mC
 
     NDArray *output    = OUTPUT_VARIABLE(0);                      // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW]  (NCHW)
 
@@ -300,7 +300,7 @@ CUSTOM_OP_IMPL(sconv2d_bp, 3, 2, false, 0, 9) {
 DECLARE_SHAPE_FN(sconv2d_bp) {
 
     auto inputShapeInfo    = inputShape->at(0);                 // [bS, iH, iW, iC]  (NHWC) or [bS, iC, iH, iW]  (NCHW)
-    auto gradOShapeInfo    = inputShape->at(1);                 // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next    
+    auto gradOShapeInfo    = inputShape->at(1);                 // [bS, oH, oW, oC]  (NHWC) or [bS, oC, oH, oW] (NCHW), epsilon_next
     auto weightsDShapeInfo = inputShape->at(2);                 // [kH, kW, iC, mC]  always
     Nd4jLong* weightsPShapeInfo = nullptr;                      // [1, 1, iC*mC, oC] always
     Nd4jLong* biasShapeInfo     = nullptr;                      // [oC], oC = iC*mC if weightsPoint=nullptr
