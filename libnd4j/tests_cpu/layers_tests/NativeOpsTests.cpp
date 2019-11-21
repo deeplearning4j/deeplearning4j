@@ -202,6 +202,7 @@ printf("Unsupported for cuda now.\n");
         nullptr, nullptr,
         exp.buffer(), exp.shapeInfo(),
         nullptr, nullptr,
+        nullptr,
         dimension.buffer(), dimension.shapeInfo(),
         nullptr, nullptr);
         ASSERT_TRUE(exp.e<bool>(1) && !exp.e<bool>(0));

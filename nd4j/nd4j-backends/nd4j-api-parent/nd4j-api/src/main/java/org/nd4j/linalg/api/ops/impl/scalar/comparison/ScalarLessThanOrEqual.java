@@ -55,7 +55,7 @@ public class ScalarLessThanOrEqual extends BaseScalarBoolOp {
 
     @Override
     public int opNum() {
-        return 5;
+        return 11;
     }
 
     @Override

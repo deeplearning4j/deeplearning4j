@@ -2302,54 +2302,66 @@ namespace simdOps {
             return old + opOutput;
         }
 
-        // this op return 1.0 if condition met, 0.0 otherwise
-        op_def static Z op(X d1, X *extraParams) {
-            X compare = extraParams[0];
-            X eps = extraParams[1];
-
-            auto mode = static_cast<int>(extraParams[2]);
-            //printf("value: %f; comp: %f; eps: %f; mode: %i;\n", (float) d1, (float) compare, (float) eps, mode);
-
-			switch (mode) {
-				case 0: // equals
-					return nd4j::math::nd4j_abs<X>(d1 - compare) <= eps ? 1 : 0;
-				case 1: // not equals
-					return nd4j::math::nd4j_abs<X>(d1 - compare) > eps ? 1 : 0;
-				case 2: // less_than
-					return d1 < compare ? 1 : 0;
-				case 3: // greater_than
-					return d1 > compare ? 1 : 0;
-				case 4: // less_or_equals_than
-					return d1 <= compare ? 1 : 0;
-				case 5: // greater_or_equals_than
-					return d1 >= compare ? 1 : 0;
-				case 6: // abs_less_than
-					return nd4j::math::nd4j_abs<X>(d1) < compare ? 1 : 0;
-				case 7: // abs_greater_than
-					return nd4j::math::nd4j_abs<X>(d1) > compare ? 1 : 0;
-				case 8: // is inf
-					return nd4j::math::nd4j_isinf(d1) ? 1 : 0;
-				case 9: // is nan
-					return nd4j::math::nd4j_isnan(d1) ? 1 : 0;
-				case 10:
-					return (d1 == compare) ? 1 : 0;
-				case 11:
-					return (d1 != compare) ? 1 : 0;
-				case 12: // abs_greater_or_equals_than
-					return nd4j::math::nd4j_abs<X>(d1) >= compare ? 1 : 0;
-				case 13: // abs_less_or_equals_than
-					return nd4j::math::nd4j_abs<X>(d1) <= compare ? 1 : 0;
+        op_def static Z op(X d1, X compare, X eps, int mode) {
+            switch (mode) {
+                case 0: // equals
+                    return nd4j::math::nd4j_abs<X>(d1 - compare) <= eps ? 1 : 0;
+                case 1: // not equals
+                    return nd4j::math::nd4j_abs<X>(d1 - compare) > eps ? 1 : 0;
+                case 2: // less_than
+                    return d1 < compare ? 1 : 0;
+                case 3: // greater_than
+                    return d1 > compare ? 1 : 0;
+                case 4: // less_or_equals_than
+                    return d1 <= compare ? 1 : 0;
+                case 5: // greater_or_equals_than
+                    return d1 >= compare ? 1 : 0;
+                case 6: // abs_less_than
+                    return nd4j::math::nd4j_abs<X>(d1) < compare ? 1 : 0;
+                case 7: // abs_greater_than
+                    return nd4j::math::nd4j_abs<X>(d1) > compare ? 1 : 0;
+                case 8: // is inf
+                    return nd4j::math::nd4j_isinf(d1) ? 1 : 0;
+                case 9: // is nan
+                    return nd4j::math::nd4j_isnan(d1) ? 1 : 0;
+                case 10:
+                    return (d1 == compare) ? 1 : 0;
+                case 11:
+                    return (d1 != compare) ? 1 : 0;
+                case 12: // abs_greater_or_equals_than
+                    return nd4j::math::nd4j_abs<X>(d1) >= compare ? 1 : 0;
+                case 13: // abs_less_or_equals_than
+                    return nd4j::math::nd4j_abs<X>(d1) <= compare ? 1 : 0;
                 case 14:
                     // isFinite
                     return !(nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1)) ? 1 : 0;
                 case 15:
                     // isInfinite
                     return nd4j::math::nd4j_isinf(d1) || nd4j::math::nd4j_isnan(d1) ? 1 : 0;
-				default:
-					printf("Undefined match condition: [%i]\n", mode);
-			}
+                default:
+                    printf("Undefined match condition: [%i]\n", mode);
+            }
 
             return d1;
+		}
+
+        // this op return 1.0 if condition met, 0.0 otherwise
+        op_def static Z op(X d1, X compare, X *extraParams) {
+            X eps = extraParams[1];
+
+            auto mode = static_cast<int>(extraParams[0]);
+
+            return op(d1, compare, eps, mode);
+        }
+
+        // this op return 1.0 if condition met, 0.0 otherwise
+        op_def static Z op(X d1, X *extraParams) {
+            X compare = extraParams[0];
+            X eps = extraParams[1];
+
+            auto mode = static_cast<int>(extraParams[2]);
+
+            return op(d1, compare, eps, mode);
         }
 
         op_def static Z postProcess(Z reduction, Nd4jLong n, X *extraParams) {

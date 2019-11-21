@@ -231,8 +231,9 @@ void execBroadcastBool(Nd4jPointer *extraPointers,
                               void *dY, Nd4jLong *dYShapeInfo,
                               void *hZ, Nd4jLong *hZShapeInfo,
                               void *dZ, Nd4jLong *dZShapeInfo,
-                                  void *hDimension, Nd4jLong *hDimensionShape,
-                                  void *dDimension, Nd4jLong *dDimensionShape) {
+                              void *extraParams,
+                              void *hDimension, Nd4jLong *hDimensionShape,
+                              void *dDimension, Nd4jLong *dDimensionShape) {
     try {
         auto dimension = reinterpret_cast<int *>(hDimension);
         int dimensionLength = static_cast<int>(shape::length(hDimensionShape));
@@ -259,6 +260,7 @@ void execBroadcastBool(Nd4jPointer *extraPointers,
                                                dYShapeInfo,
                                                hZ, hZShapeInfo,
                                                dZ, dZShapeInfo,
+                                               extraParams,
                                                dimension,
                                                dimensionLength, hTADShapeInfo, hTADOffsets, hTADShapeInfoZ,
                                                hTADOffsetsZ);

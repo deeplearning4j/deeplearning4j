@@ -46,6 +46,7 @@ import org.nd4j.linalg.exception.ND4JIllegalStateException;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.indexing.NDArrayIndex;
+import org.nd4j.linalg.indexing.conditions.Conditions;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
 import java.util.ArrayList;
@@ -1085,6 +1086,24 @@ public class CustomOpsTests extends BaseNd4jTest {
         List<LongShapeDescriptor> lsd = op.calculateOutputShape();
         assertEquals(1, lsd.size());
         assertArrayEquals(new long[]{1,10, 2}, lsd.get(0).getShape());
+    }
+
+    @Test
+    public void testMatch_1() {
+        INDArray x = Nd4j.ones(DataType.FLOAT, 3,3);
+        INDArray y = Nd4j.linspace(DataType.FLOAT, -5, 9, 1).reshape(3, 3);
+        val c =  Conditions.equals(0.0);
+
+        System.out.println("Y:\n" + y);
+
+        INDArray z = x.match(y, c);
+        INDArray exp = Nd4j.createFromArray(new boolean[][]{
+                {false, false, false},
+                {false, false, false},
+                {true,  false, false}
+        });
+
+        assertEquals(exp, z);
     }
 
 

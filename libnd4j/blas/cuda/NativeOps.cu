@@ -294,6 +294,7 @@ void execBroadcastBool(Nd4jPointer *extraPointers,
         						void *dY, Nd4jLong *dYShapeInfo,
         						void *hZ, Nd4jLong *hZShapeInfo,
         						void *dZ, Nd4jLong *dZShapeInfo,
+        						void *extraParams,
         						void *hDimension, Nd4jLong *hDimensionShape,
 		void *dDimension, Nd4jLong *dDimensionShape) {
     try {
@@ -313,7 +314,7 @@ void execBroadcastBool(Nd4jPointer *extraPointers,
 
         LaunchContext lc(extraPointers[1], extraPointers[4], extraPointers[5], extraPointers[3]);
         NativeOpExecutioner::execBroadcastBool(&lc, opNum, hX, hXShapeInfo, dX, dXShapeInfo, hY, hYShapeInfo, dY,
-                                               dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, dimension,
+                                               dYShapeInfo, hZ, hZShapeInfo, dZ, dZShapeInfo, extraParams, dimension,
                                                dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ,
                                                tadOffsetsZ);
     } catch (std::exception &e) {

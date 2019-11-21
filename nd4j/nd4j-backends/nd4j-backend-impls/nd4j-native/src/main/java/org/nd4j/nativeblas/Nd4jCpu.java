@@ -916,6 +916,7 @@ public native void execBroadcastBool(
         Pointer dY, @Cast("Nd4jLong*") LongPointer dYShapeInfo,
         Pointer hZ, @Cast("Nd4jLong*") LongPointer hZShapeInfo,
         Pointer dZ, @Cast("Nd4jLong*") LongPointer dZShapeInfo,
+        Pointer extraParams,
         Pointer hDimension, @Cast("Nd4jLong*") LongPointer hDimensionShape,
         Pointer dDimension, @Cast("Nd4jLong*") LongPointer dDimensionShape);
 public native void execBroadcastBool(
@@ -927,6 +928,7 @@ public native void execBroadcastBool(
         Pointer dY, @Cast("Nd4jLong*") LongBuffer dYShapeInfo,
         Pointer hZ, @Cast("Nd4jLong*") LongBuffer hZShapeInfo,
         Pointer dZ, @Cast("Nd4jLong*") LongBuffer dZShapeInfo,
+        Pointer extraParams,
         Pointer hDimension, @Cast("Nd4jLong*") LongBuffer hDimensionShape,
         Pointer dDimension, @Cast("Nd4jLong*") LongBuffer dDimensionShape);
 public native void execBroadcastBool(
@@ -938,6 +940,7 @@ public native void execBroadcastBool(
         Pointer dY, @Cast("Nd4jLong*") long[] dYShapeInfo,
         Pointer hZ, @Cast("Nd4jLong*") long[] hZShapeInfo,
         Pointer dZ, @Cast("Nd4jLong*") long[] dZShapeInfo,
+        Pointer extraParams,
         Pointer hDimension, @Cast("Nd4jLong*") long[] hDimensionShape,
         Pointer dDimension, @Cast("Nd4jLong*") long[] dDimensionShape);
 

@@ -129,6 +129,7 @@ public interface NativeOps {
                                            @Cast("Nd4jLong *") LongPointer resultShapeInfo,
                                            Pointer dresult,
                                            @Cast("Nd4jLong *") LongPointer dresultShapeInfo,
+                                           Pointer extraParams,
                                            Pointer hDimension, @Cast("Nd4jLong *") LongPointer hDimensionShape,
                                            Pointer dDimension, @Cast("Nd4jLong *") LongPointer dDimensionShape);
 

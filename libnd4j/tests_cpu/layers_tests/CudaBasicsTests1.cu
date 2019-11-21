@@ -1342,6 +1342,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_1) {
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
 										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+                                        nullptr,
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 										nullptr, nullptr);	
@@ -1400,6 +1401,7 @@ TEST_F(CudaBasicsTests1, execBroadcastBool_2) {
 										nullptr, x.getShapeInfo(), x.specialBuffer(), x.specialShapeInfo(), 
 										nullptr, y.getShapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
 										nullptr, z.getShapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+										nullptr,
 										(int*)devicePtrs[0], dimensions.size(), 
 										(Nd4jLong*)devicePtrs[1], (Nd4jLong*)devicePtrs[2], 
 										nullptr, nullptr);	

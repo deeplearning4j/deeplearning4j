@@ -45,13 +45,13 @@
         (2, LessThan),\
         (3, Epsilon),\
         (4, GreaterThanOrEqual),\
-        (5, LessThanOrEqual),\
+        (5, MatchCondition) ,\
         (6, NotEqualTo),\
         (7, And),\
         (8, Or),\
         (9, Xor) ,\
-        (10, Not)
-
+        (10, Not) ,\
+        (11, LessThanOrEqual)
 
 #define BROADCAST_OPS \
        (0, Add), \
@@ -198,12 +198,13 @@
         (2, LessThan),\
         (3, Epsilon),\
         (4, GreaterThanOrEqual),\
-        (5, LessThanOrEqual),\
+        (5, MatchCondition) ,\
         (6, NotEqualTo),\
         (7, And),\
         (8, Or),\
         (9, Xor) ,\
-        (10, Not)
+        (10, Not) ,\
+        (11, LessThanOrEqual)
 
 #define SCALAR_OPS \
         (0, Add),\
@@ -341,12 +342,13 @@
         (2, LessThan),\
         (3, Epsilon),\
         (4, GreaterThanOrEqual),\
-        (5, LessThanOrEqual),\
+        (5, MatchCondition) ,\
         (6, NotEqualTo),\
         (7, And),\
         (8, Or),\
         (9, Xor) ,\
-        (10, Not)
+        (10, Not) ,\
+        (11, LessThanOrEqual)
 
 #define PAIRWISE_TRANSFORM_OPS \
         (0, Add),\

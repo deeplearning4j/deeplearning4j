@@ -65,13 +65,14 @@ namespace functions {
 			Nd4jLong *yShapeInfo,
 			void *result,
 			Nd4jLong *resultShapeInfo,
+			void *extraParams,
 			int *dimension,
 			int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             template <typename OpClass>
-            static __host__ void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static __host__ void intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static __host__ void execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static __host__ void execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             template<typename OpType>
 			static __device__ void transformInverseCuda(
@@ -81,13 +82,14 @@ namespace functions {
 			Nd4jLong *yShapeInfo,
 			void *result,
 			Nd4jLong *resultShapeInfo,
+			void *extraParams,
 			int *dimension,
 			int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
             template <typename OpClass>
-            static __host__ void intermediateInverseBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static __host__ void intermediateInverseBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
-            static __host__ void execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
+            static __host__ void execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *result, Nd4jLong *resultShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ);
 
 #else
 
@@ -98,6 +100,7 @@ namespace functions {
                              Nd4jLong *yShapeInfo,
                              void *result,
                              Nd4jLong *resultShapeInfo,
+                             void *extraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
@@ -114,6 +117,7 @@ namespace functions {
                              Nd4jLong *yShapeInfo,
                              void *result,
                              Nd4jLong *resultShapeInfo,
+                             void *extraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
@@ -141,6 +145,7 @@ namespace functions {
                              Nd4jLong *yShapeInfo,
                              void *result,
                              Nd4jLong *resultShapeInfo,
+                             void *extraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,
@@ -157,6 +162,7 @@ namespace functions {
                              Nd4jLong *yShapeInfo,
                              void *result,
                              Nd4jLong *resultShapeInfo,
+                             void *extraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *tadShapeInfo,

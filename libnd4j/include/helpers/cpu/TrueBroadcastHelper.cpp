@@ -20,6 +20,7 @@
 
 #include <TrueBroadcastHelper.h>
 #include <ops/ops.h>
+#include <execution/Threads.h>
 
 using namespace simdOps;
 
@@ -47,36 +48,39 @@ void TrueBroadcastHelper<X, Y, Z>::exec(const NDArray& xArr, const NDArray& yArr
 
     std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(xCoords, yCoords, zCoords))
-    for (Nd4jLong i = 0; i < zLen; ++i) {
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; ++i) {
 
-        shape::index2coords(i, zShapeInfo, zCoords.data());
+            shape::index2coords(i, zShapeInfo, zCoords.data());
 
-        for(int ix = xRank - 1, iy = yRank - 1, iz = zRank - 1; iz >= 0; --iz) {
+            for (int ix = xRank - 1, iy = yRank - 1, iz = zRank - 1; iz >= 0; --iz) {
 
-            if(ix >= 0) {
-                if (xShapeInfo[ix + 1] == zShapeInfo[iz + 1]) {
-                    xCoords[ix--] = zCoords[iz];
-                } else {
-                    xCoords[ix--] = 0;
+                if (ix >= 0) {
+                    if (xShapeInfo[ix + 1] == zShapeInfo[iz + 1]) {
+                        xCoords[ix--] = zCoords[iz];
+                    } else {
+                        xCoords[ix--] = 0;
+                    }
+                }
+
+                if (iy >= 0) {
+                    if (yShapeInfo[iy + 1] == zShapeInfo[iz + 1]) {
+                        yCoords[iy--] = zCoords[iz];
+                    } else {
+                        yCoords[iy--] = 0;
+                    }
                 }
             }
 
-            if(iy >= 0) {
-                if (yShapeInfo[iy + 1] == zShapeInfo[iz + 1]) {
-                    yCoords[iy--] = zCoords[iz];
-                } else {
-                    yCoords[iy--] = 0;
-                }
-            }
+            const auto xOffset = shape::getOffset(xShapeInfo, xCoords.data());
+            const auto yOffset = shape::getOffset(yShapeInfo, yCoords.data());
+            const auto zOffset = shape::getOffset(zShapeInfo, zCoords.data());
+
+            z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
         }
+    };
 
-        const auto xOffset = shape::getOffset(xShapeInfo, xCoords.data());
-        const auto yOffset = shape::getOffset(yShapeInfo, yCoords.data());
-        const auto zOffset = shape::getOffset(zShapeInfo, zCoords.data());
-
-        z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
-    }
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
 
 template <typename X, typename  Y, typename Z>
@@ -103,38 +107,40 @@ void TrueBroadcastBoolHelper<X, Z>::exec(const NDArray& xArr, const NDArray& yAr
 
     const Nd4jLong zLen  = zArr.lengthOf();
 
-    std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
+    auto func = PRAGMA_THREADS_FOR {
+        std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
+        for (auto i = start; i < stop; ++i) {
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(xCoords, yCoords, zCoords))
-    for (Nd4jLong i = 0; i < zLen; ++i) {
+            shape::index2coords(i, zShapeInfo, zCoords.data());
 
-        shape::index2coords(i, zShapeInfo, zCoords.data());
+            for (int ix = xRank - 1, iy = yRank - 1, iz = zRank - 1; iz >= 0; --iz) {
 
-        for(int ix = xRank - 1, iy = yRank - 1, iz = zRank - 1; iz >= 0; --iz) {
+                if (ix >= 0) {
+                    if (xShapeInfo[ix + 1] == zShapeInfo[iz + 1]) {
+                        xCoords[ix--] = zCoords[iz];
+                    } else {
+                        xCoords[ix--] = 0;
+                    }
+                }
 
-            if(ix >= 0) {
-                if (xShapeInfo[ix + 1] == zShapeInfo[iz + 1]) {
-                    xCoords[ix--] = zCoords[iz];
-                } else {
-                    xCoords[ix--] = 0;
+                if (iy >= 0) {
+                    if (yShapeInfo[iy + 1] == zShapeInfo[iz + 1]) {
+                        yCoords[iy--] = zCoords[iz];
+                    } else {
+                        yCoords[iy--] = 0;
+                    }
                 }
             }
 
-            if(iy >= 0) {
-                if (yShapeInfo[iy + 1] == zShapeInfo[iz + 1]) {
-                    yCoords[iy--] = zCoords[iz];
-                } else {
-                    yCoords[iy--] = 0;
-                }
-            }
+            const auto xOffset = shape::getOffset(xShapeInfo, xCoords.data());
+            const auto yOffset = shape::getOffset(yShapeInfo, yCoords.data());
+            const auto zOffset = shape::getOffset(zShapeInfo, zCoords.data());
+
+            z[zOffset] = OpType::op(x[xOffset], y[yOffset], nullptr);
         }
+    };
 
-        const auto xOffset = shape::getOffset(xShapeInfo, xCoords.data());
-        const auto yOffset = shape::getOffset(yShapeInfo, yCoords.data());
-        const auto zOffset = shape::getOffset(zShapeInfo, zCoords.data());
-
-        z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
-    }
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
 
 template <typename X, typename  Y>
@@ -163,36 +169,39 @@ void TrueBroadcastIntHelper<X>::exec(const NDArray& xArr, const NDArray& yArr, N
 
     std::vector<Nd4jLong> xCoords(xArr.rankOf()), yCoords(yArr.rankOf()), zCoords(zArr.rankOf());
 
-    PRAGMA_OMP_PARALLEL_FOR_ARGS(OMP_IF(zLen > Environment::getInstance()->elementwiseThreshold()) firstprivate(xCoords, yCoords, zCoords))
-    for (Nd4jLong i = 0; i < zLen; ++i) {
+    auto func = PRAGMA_THREADS_FOR {
+        for (auto i = start; i < stop; ++i) {
 
-        shape::index2coords(i, zShapeInfo, zCoords.data());
+            shape::index2coords(i, zShapeInfo, zCoords.data());
 
-        for(int ix = xRank - 1, iy = yRank - 1, iz = zRank - 1; iz >= 0; --iz) {
+            for (int ix = xRank - 1, iy = yRank - 1, iz = zRank - 1; iz >= 0; --iz) {
 
-            if(ix >= 0) {
-                if (xShapeInfo[ix + 1] == zShapeInfo[iz + 1]) {
-                    xCoords[ix--] = zCoords[iz];
-                } else {
-                    xCoords[ix--] = 0;
+                if (ix >= 0) {
+                    if (xShapeInfo[ix + 1] == zShapeInfo[iz + 1]) {
+                        xCoords[ix--] = zCoords[iz];
+                    } else {
+                        xCoords[ix--] = 0;
+                    }
+                }
+
+                if (iy >= 0) {
+                    if (yShapeInfo[iy + 1] == zShapeInfo[iz + 1]) {
+                        yCoords[iy--] = zCoords[iz];
+                    } else {
+                        yCoords[iy--] = 0;
+                    }
                 }
             }
 
-            if(iy >= 0) {
-                if (yShapeInfo[iy + 1] == zShapeInfo[iz + 1]) {
-                    yCoords[iy--] = zCoords[iz];
-                } else {
-                    yCoords[iy--] = 0;
-                }
-            }
+            const auto xOffset = shape::getOffset(xShapeInfo, xCoords.data());
+            const auto yOffset = shape::getOffset(yShapeInfo, yCoords.data());
+            const auto zOffset = shape::getOffset(zShapeInfo, zCoords.data());
+
+            z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
         }
+    };
 
-        const auto xOffset = shape::getOffset(xShapeInfo, xCoords.data());
-        const auto yOffset = shape::getOffset(yShapeInfo, yCoords.data());
-        const auto zOffset = shape::getOffset(zShapeInfo, zCoords.data());
-
-        z[zOffset] = OpType::op(x[xOffset], y[yOffset]);
-    }
+    samediff::Threads::parallel_for(func, 0, zLen);
 }
 
 template <typename X>

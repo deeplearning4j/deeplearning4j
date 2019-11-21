@@ -674,6 +674,7 @@ TEST_F(LegacyOpsTests, test_inverse_broadcast_2) {
         x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo(),
         y.buffer(), y.shapeInfo(), y.specialBuffer(), y.specialShapeInfo(),
         z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo(),
+        nullptr,
         nullptr, 0,
         tadPackY.platformShapeInfo(), tadPackY.platformOffsets(),
         tadPackY.platformShapeInfo(), tadPackY.platformOffsets());
