@@ -149,36 +149,7 @@ import org.nd4j.linalg.api.ops.impl.scatter.ScatterMin;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterMul;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterSub;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
-import org.nd4j.linalg.api.ops.impl.shape.Concat;
-import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
-import org.nd4j.linalg.api.ops.impl.shape.Cross;
-import org.nd4j.linalg.api.ops.impl.shape.Diag;
-import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
-import org.nd4j.linalg.api.ops.impl.shape.ExpandDims;
-import org.nd4j.linalg.api.ops.impl.shape.Gather;
-import org.nd4j.linalg.api.ops.impl.shape.GatherNd;
-import org.nd4j.linalg.api.ops.impl.shape.MergeAvg;
-import org.nd4j.linalg.api.ops.impl.shape.MergeMax;
-import org.nd4j.linalg.api.ops.impl.shape.MeshGrid;
-import org.nd4j.linalg.api.ops.impl.shape.OneHot;
-import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
-import org.nd4j.linalg.api.ops.impl.shape.ParallelStack;
-import org.nd4j.linalg.api.ops.impl.shape.Permute;
-import org.nd4j.linalg.api.ops.impl.shape.Rank;
-import org.nd4j.linalg.api.ops.impl.shape.ReductionShape;
-import org.nd4j.linalg.api.ops.impl.shape.Repeat;
-import org.nd4j.linalg.api.ops.impl.shape.Reshape;
-import org.nd4j.linalg.api.ops.impl.shape.SequenceMask;
-import org.nd4j.linalg.api.ops.impl.shape.Size;
-import org.nd4j.linalg.api.ops.impl.shape.SizeAt;
-import org.nd4j.linalg.api.ops.impl.shape.Slice;
-import org.nd4j.linalg.api.ops.impl.shape.Squeeze;
-import org.nd4j.linalg.api.ops.impl.shape.Stack;
-import org.nd4j.linalg.api.ops.impl.shape.StridedSlice;
-import org.nd4j.linalg.api.ops.impl.shape.Tile;
-import org.nd4j.linalg.api.ops.impl.shape.Transpose;
-import org.nd4j.linalg.api.ops.impl.shape.Unstack;
-import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
+import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
@@ -337,6 +308,15 @@ public class DifferentialFunctionFactory {
     public SDVariable zerosLike(String name, SDVariable input) {
         validateDifferentialFunctionsameDiff(input);
         return new ZerosLike(name, sameDiff(), input).outputVariable();
+    }
+
+    public SDVariable create(String name, SDVariable shape, boolean initialize, DataType dataType) {
+        return create(name, shape, 'c', initialize, dataType);
+    }
+
+    public SDVariable create(String name, SDVariable shape, char order, boolean initialize, DataType dataType) {
+        validateDifferentialFunctionsameDiff(shape);
+        return new Create(name, sameDiff(), shape, order, initialize, dataType).outputVariable();
     }
 
     public SDVariable onesLike(String name, SDVariable input, DataType dataType) {

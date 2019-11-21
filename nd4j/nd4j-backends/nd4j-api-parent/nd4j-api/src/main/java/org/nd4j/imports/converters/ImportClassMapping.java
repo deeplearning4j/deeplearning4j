@@ -65,6 +65,7 @@ public class ImportClassMapping {
             org.nd4j.linalg.api.ops.impl.broadcast.BroadcastRSubOp.class,
             org.nd4j.linalg.api.ops.impl.broadcast.BroadcastSubOp.class,
             org.nd4j.linalg.api.ops.impl.broadcast.BroadcastTo.class,
+            org.nd4j.linalg.api.ops.impl.shape.Create.class,
             org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastEqualTo.class,
             org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThan.class,
             org.nd4j.linalg.api.ops.impl.broadcast.bool.BroadcastGreaterThanOrEqual.class,

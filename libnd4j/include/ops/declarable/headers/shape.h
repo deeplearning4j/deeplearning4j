@@ -99,6 +99,22 @@ namespace nd4j {
         #if NOT_EXCLUDED(OP_evaluate_reduction_shape)
         DECLARE_CUSTOM_OP(evaluate_reduction_shape, 2, 1, false, 0, 0);
         #endif
+
+        /**
+         * This operation creates new array
+         * Input:
+         *    array with shape values
+         *
+         * IArgs:
+         *    order value
+         *    data type value
+         *
+         * BArgs:
+         *    initialization option
+         */
+        #if NOT_EXCLUDED(OP_create)
+        DECLARE_CUSTOM_OP(create, 1, 1, false, 0, 1);
+        #endif
     }
 }
 

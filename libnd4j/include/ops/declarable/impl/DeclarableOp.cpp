@@ -933,6 +933,10 @@ namespace nd4j {
             return ND4J_STATUS_OK;
         }
 
+        samediff::EmptyHandling DeclarableOp::emptyHandling() {
+            return samediff::EmptyHandling::EMPTY_SKIP;
+        }
+
         void DeclarableOp::registerTypes() {
             this->getOpDescriptor()->setSameMode(true);
         }

@@ -11834,6 +11834,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 // #include <array/ResultSet.h>
 // #include <helpers/OpArgsHolder.h>
 // #include <dll.h>
+// #include <ops/declarable/EmptyHandling.h>
 //#include <ops/declarable/declarable_ops.h>
 
 // #include <chrono>
@@ -17126,6 +17127,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
 
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -20576,7 +20578,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-        /**
+       /**
         * This op make bilinear or nearest neighbor interpolated resize for given tensor
         *
         * input array:
@@ -20612,7 +20614,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-        /**
+       /**
         * This op make bilinear interpolated resize for given tensor
         *
         * input array:
@@ -20647,7 +20649,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-        /**
+       /**
         * This op make nearest neighbor interpolated resize for given tensor
         *
         * input array:
@@ -20659,7 +20661,7 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
         *   1 - new height
         *
         * output array:
-        *   the 4D-Tensor with calculated backproped dots
+        *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
         *
         * CAUTION: either size tensor or a pair of int params should be provided.
         */
@@ -20682,21 +20684,85 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                                                 }
 //         #endif
 
-        /**
-        * This op calculates backprop dot for two tensors along given dimensions
+       /**
+        * This op make bicubic interpolated resize for given tensor
         *
         * input array:
-        *    x: tensor to calculate dot for
-        *    y: tensor to calculate dot for
-        *    z: tensor with gradient output of the FF dot for x and y
-        *
-        * int arguments:
-        *   list of integers - dimensions to calculate dot along,
-        *   default corresponds to empty list in which case calculation
-        *   is performed for all dimensions and scalar is returned.
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight)
         *
         * output array:
-        *   the tensor with calculated backproped dots
+        *   the 4D-Tensor with resized image (shape is {batch, newWidth, newHeight, channels})
+        *
+        */
+//         #if NOT_EXCLUDED(OP_resize_bicubic)
+        @Namespace("nd4j::ops") public static class resize_bicubic extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public resize_bicubic(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public resize_bicubic(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public resize_bicubic position(long position) {
+                return (resize_bicubic)super.position(position);
+            }
+        
+                                                                                    public resize_bicubic() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+       /**
+        * This op make interpolated resize for given tensor with given algorithm.
+        * Supported algorithms are bilinear, bicubic, nearest_neighbor.
+        * Need to implement to full compatibility with TF: lanczos5, gaussian, area and mitchellcubic
+        *
+        * input array:
+        *    0 - 4D-Tensor with shape (batch, sizeX, sizeY, channels)
+        *    1 - 1D-Tensor with 2 values (newWidth, newHeight)
+        *
+        * optional int args:
+        *    0 - algorithm - bilinear by default
+        * optional bool args:
+        *    0 - preserve_aspect_ratio - default False
+        *    1 - antialias - default False
+        *
+        * output array:
+        *   the 4D-Tensor with resized by given algorithm image (shape is {batch, newWidth, newHeight, channels})
+        *
+        */
+
+//         #if NOT_EXCLUDED(OP_image_resize)
+        @Namespace("nd4j::ops") public static class image_resize extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public image_resize(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public image_resize(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public image_resize position(long position) {
+                return (image_resize)super.position(position);
+            }
+        
+                                                                                    public image_resize() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+       /**
+        * Copy a tensor setting everything outside a central band in each innermost matrix
+        *
+        * input array:
+        *    x: given tensor with shape {..., M, N} - as vector (matrix) of matricies MxN
+        *
+        * int arguments:
+        *   lower band
+        *   upper band
+        *
+        * output array:
+        *   matrix with given bands between lower and upper diagonals
         *
         */
 
@@ -20736,7 +20802,8 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                 }
 //         #endif
-        /*
+
+        /**
          * image.non_max_suppression op.
          * input:
          *     0 - boxes - 2D-tensor with shape (num_boxes, 4) by float type
@@ -21266,6 +21333,36 @@ public static final int TAD_THRESHOLD = TAD_THRESHOLD();
             }
         
                                                                                     public evaluate_reduction_shape() { super((Pointer)null); allocate(); }
+                                                                                    private native void allocate();
+                                                                                    public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
+                                                                                }
+//         #endif
+
+        /**
+         * This operation creates new array
+         * Input:
+         *    array with shape values
+         *
+         * IArgs:
+         *    order value
+         *    data type value
+         *
+         * BArgs:
+         *    initialization option
+         */
+//         #if NOT_EXCLUDED(OP_create)
+        @Namespace("nd4j::ops") public static class create extends DeclarableCustomOp {
+            static { Loader.load(); }
+            /** Pointer cast constructor. Invokes {@link Pointer#Pointer(Pointer)}. */
+            public create(Pointer p) { super(p); }
+            /** Native array allocator. Access with {@link Pointer#position(long)}. */
+            public create(long size) { super((Pointer)null); allocateArray(size); }
+            private native void allocateArray(long size);
+            @Override public create position(long position) {
+                return (create)super.position(position);
+            }
+        
+                                                                                    public create() { super((Pointer)null); allocate(); }
                                                                                     private native void allocate();
                                                                                     public native ShapeList calculateOutputShape(ShapeList inputShape, @ByRef Context block);
                                                                                 }
