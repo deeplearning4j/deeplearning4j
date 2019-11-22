@@ -27,7 +27,6 @@ import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
 import org.deeplearning4j.nn.conf.memory.NetworkMemoryReport;
 import org.deeplearning4j.nn.conf.serde.JsonMappers;
-import org.deeplearning4j.nn.layers.recurrent.LastTimeStepLayer;
 import org.deeplearning4j.nn.weights.IWeightInit;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.deeplearning4j.util.OutputLayerUtil;
@@ -248,11 +247,8 @@ public class MultiLayerConfiguration implements Serializable, Cloneable {
                                         break;
 
                                     //Remaining: TODO
-                                    case EXPLL:
-                                    case RMSE_XENT:
                                     case SQUARED_LOSS:
                                     case RECONSTRUCTION_CROSSENTROPY:
-                                    case CUSTOM:
                                     default:
                                         log.warn("OutputLayer with null LossFunction or pre-0.6.0 loss function configuration detected: could not set loss function for {}",
                                                 lossFunction);
