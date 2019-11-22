@@ -83,6 +83,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                         new LossMultiLabel(), new LossWasserstein(),
+                        new LossSparseMCXENT()
         };
 
         Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
@@ -116,7 +117,8 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         Activation.IDENTITY, // MixtureDensity
                         Activation.TANH, // MixtureDensity + tanh
                         Activation.TANH, // MultiLabel, doesn't require any special activation, but tanh was used in paper
-                        Activation.IDENTITY // Wasserstein
+                        Activation.IDENTITY, // Wasserstein
+                        Activation.SOFTMAX, //sparse MCXENT
         };
 
         int[] nOut = new int[] {1, //xent
@@ -151,6 +153,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         10, // Mixture Density + tanh
                         10, // MultiLabel
                         2, // Wasserstein
+                        4,  //sparse MCXENT
         };
 
         int[] minibatchSizes = new int[] {1, 3};
@@ -233,7 +236,8 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         new LossSquaredHinge(), new LossFMeasure(), new LossFMeasure(2.0), new LossFMeasure(),
                         new LossFMeasure(2.0), LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
                         LossMixtureDensity.builder().gaussians(2).labelWidth(3).build(),
-                        new LossMultiLabel(), new LossWasserstein()
+                        new LossMultiLabel(), new LossWasserstein(),
+                        new LossSparseMCXENT()
         };
 
         Activation[] outputActivationFn = new Activation[] {Activation.SIGMOID, //xent
@@ -266,7 +270,8 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         Activation.IDENTITY, // MixtureDensity
                         Activation.TANH, // MixtureDensity + tanh
                         Activation.TANH, // MultiLabel
-                        Activation.IDENTITY // Wasserstein
+                        Activation.IDENTITY, // Wasserstein
+                        Activation.SOFTMAX
         };
 
         int[] nOut = new int[] {1, //xent
@@ -300,6 +305,7 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                         10, // Mixture Density + tanh
                         10, // MultiLabel
                         2, // Wasserstein
+                        4
         };
 
         int[] minibatchSizes = new int[] {1, 3};
@@ -476,6 +482,23 @@ public class LossFunctionGradientCheck extends BaseDL4JTest {
                     throw new UnsupportedOperationException();
                 }
 
+                break;
+            case "LossSparseMCXENT":
+                if (labelsShape.length == 2) {
+                    ret[1] = Nd4j.create(DataType.INT, labelsShape[0], 1);
+                    for (int i = 0; i < labelsShape[0]; i++) {
+                        ret[1].putScalar(i, 0, r.nextInt((int) labelsShape[1]));
+                    }
+                } else if (labelsShape.length == 3) {
+                    ret[1] = Nd4j.create(DataType.INT, labelsShape[0], 1, labelsShape[2]);
+                    for (int i = 0; i < labelsShape[0]; i++) {
+                        for (int j = 0; j < labelsShape[2]; j++) {
+                            ret[1].putScalar(i, 0, j, r.nextInt((int) labelsShape[1]));
+                        }
+                    }
+                } else {
+                    throw new UnsupportedOperationException();
+                }
                 break;
             case "LossHinge":
             case "LossSquaredHinge":

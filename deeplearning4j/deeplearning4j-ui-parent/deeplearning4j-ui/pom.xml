@@ -1,5 +1,6 @@
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~ Copyright (c) 2019 Konduit K.K.
   ~
   ~ This program and the accompanying materials are made available under the
   ~ terms of the Apache License, Version 2.0 which is available at
@@ -22,14 +23,14 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-ui_2.11</artifactId>
+    <artifactId>deeplearning4j-ui</artifactId>
 
     <name>deeplearning4j-ui</name>
 
     <dependencies>
         <dependency>
             <groupId>org.deeplearning4j</groupId>
-            <artifactId>deeplearning4j-play_2.11</artifactId>
+            <artifactId>deeplearning4j-vertx</artifactId>
             <version>${project.version}</version>
         </dependency>
 
@@ -74,5 +75,20 @@
             <id>test-nd4j-cuda-10.1</id>
         </profile>
     </profiles>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>1.8</source>
+                        <target>1.8</target>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
 </project>

@@ -44,7 +44,7 @@ __global__ static void addBiasCuda( const void* vx, const Nd4jLong* xShapeInfo,
     const Y* y = reinterpret_cast<const Y*>(vy);
           X* z = reinterpret_cast<X*>(vz);
 
-    __shared__ int rank, channelPosition;
+    __shared__ int rank, channelPosition, posOfNonUnityDim;
     __shared__ Nd4jLong *sharedMem, len;
     __shared__ bool xzSameOffsets, xzAreSame;
 
@@ -58,6 +58,8 @@ __global__ static void addBiasCuda( const void* vx, const Nd4jLong* xShapeInfo,
         len = shape::length(xShapeInfo);
         channelPosition = isNCHW ? 1 : rank - 1;        // second or last
         xzAreSame = x == z;
+
+        shape::isCommonVector(yShapeInfo, posOfNonUnityDim);
     }
     __syncthreads();
 
@@ -69,7 +71,7 @@ __global__ static void addBiasCuda( const void* vx, const Nd4jLong* xShapeInfo,
 
         const auto xOffsets = shape::getOffset(xShapeInfo, coords);
         const auto zOffsets = xzSameOffsets ? xOffsets : shape::getOffset(zShapeInfo, coords);
-        const auto yOffsets = shape::getOffset(yShapeInfo, coords + channelPosition);
+        const auto yOffsets = coords[channelPosition] * shape::stride(yShapeInfo)[posOfNonUnityDim];
 
         if(xzAreSame)
             z[zOffsets] += static_cast<X>(y[yOffsets]);
@@ -94,7 +96,7 @@ void addBias(nd4j::graph::Context& block, const NDArray& input, const NDArray& b
 
     PointersManager manager(block.launchContext(), "addBias");
 
-    const int threadsPerBlock = MAX_NUM_THREADS;
+    const int threadsPerBlock = MAX_NUM_THREADS/2;
     const int blocksPerGrid = (input.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
     const int sharedMem = input.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
 

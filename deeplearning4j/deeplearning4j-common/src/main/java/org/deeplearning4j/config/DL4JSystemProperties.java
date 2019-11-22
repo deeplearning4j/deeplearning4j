@@ -71,7 +71,7 @@ public class DL4JSystemProperties {
     public static final String CRASH_DUMP_OUTPUT_DIRECTORY_PROPERTY = "org.deeplearning4j.crash.reporting.directory";
 
     /**
-     * Applicability: deeplearning4j-ui_2.xx<br>
+     * Applicability: deeplearning4j-ui<br>
      * Description: The DL4J training UI (StatsListener + UIServer.getInstance().attach(ss)) will subsample the number
      * of chart points when a lot of data is present - i.e., only a maximum number of points will be shown on each chart.
      * This is to reduce the UI bandwidth requirements and client-side rendering cost.
@@ -81,7 +81,7 @@ public class DL4JSystemProperties {
 
 
     /**
-     * Applicability: deeplearning4j-play (deeplearning4j-ui_2.xx)<br>
+     * Applicability: deeplearning4j-vertx (deeplearning4j-ui)<br>
      * Description: This property sets the port that the UI will be available on. Default port: 9000.
      * Set to 0 for a random port.
      */

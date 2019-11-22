@@ -20,6 +20,7 @@ import lombok.NonNull;
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
 import org.nd4j.base.Preconditions;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseTransformBoolOp;
@@ -59,12 +60,12 @@ public class BooleanNot extends BaseTransformBoolOp {
 
     @Override
     public String onnxName() {
-        return "not_applicable";
+        throw new NoOpNameFoundException("Onnx name not found for " + opName());
     }
 
     @Override
     public String tensorflowName() {
-        return "not_applicable";
+        throw new NoOpNameFoundException("Tensorflow name not found for " + opName());
     }
 
     @Override

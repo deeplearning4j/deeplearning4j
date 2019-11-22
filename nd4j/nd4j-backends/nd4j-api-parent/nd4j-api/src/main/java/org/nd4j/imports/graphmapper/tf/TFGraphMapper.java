@@ -267,7 +267,7 @@ public class TFGraphMapper {
                         https://github.com/eclipse/deeplearning4j/issues/8285
                          */
                         DifferentialFunction dfInstance = DifferentialFunctionClassHolder.getInstance().getOpWithTensorflowName(opName);
-                        Preconditions.checkState(dfInstance != null, "Could not find class for TF Ops: {}", opName);
+                        Preconditions.checkState(dfInstance != null, "Could not find class for TF Ops: %s", opName);
 
                         DifferentialFunction df;
                         try {

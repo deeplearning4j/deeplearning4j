@@ -34,6 +34,7 @@ import org.nd4j.linalg.learning.config.NoOp;
 import org.nd4j.linalg.lossfunctions.ILossFunction;
 import org.nd4j.linalg.lossfunctions.impl.LossMCXENT;
 import org.nd4j.linalg.lossfunctions.impl.LossMSE;
+import org.nd4j.linalg.lossfunctions.impl.LossSparseMCXENT;
 
 import java.util.Random;
 
@@ -61,19 +62,12 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
         int nOut = 2;
         int miniBatchSize = 3;
 
-        ILossFunction[] lfs = new ILossFunction[]{new LossMSE(), new LossMCXENT()};
+        ILossFunction[] lfs = new ILossFunction[]{new LossMSE(), new LossMCXENT(), new LossSparseMCXENT()};
 
         for (int maskType = 0; maskType < 3; maskType++) {
 
             Random r = new Random(12345L);
             INDArray input = Nd4j.rand(new int[]{miniBatchSize, nIn, timeSeriesLength});
-            INDArray labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
-            for (int i = 0; i < miniBatchSize; i++) {
-                for (int j = 0; j < timeSeriesLength; j++) {
-                    int idx = r.nextInt(nOut);
-                    labels.putScalar(new int[]{i, idx, j}, 1.0);
-                }
-            }
 
             INDArray labelMask;
             String mt;
@@ -85,13 +79,13 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
                     break;
                 case 1:
                     //Per time step masking
-                    labelMask = Nd4j.createUninitialized(miniBatchSize, timeSeriesLength);
+                    labelMask = Nd4j.createUninitialized(DataType.DOUBLE, miniBatchSize, timeSeriesLength);
                     Nd4j.getExecutioner().exec(new BernoulliDistribution(labelMask, 0.5));
                     mt = "PerTimeStep";
                     break;
                 case 2:
                     //Per output masking:
-                    labelMask = Nd4j.createUninitialized(new int[]{miniBatchSize, nOut, timeSeriesLength});
+                    labelMask = Nd4j.createUninitialized(DataType.DOUBLE, miniBatchSize, nOut, timeSeriesLength);
                     Nd4j.getExecutioner().exec(new BernoulliDistribution(labelMask, 0.5));
                     mt = "PerOutput";
                     break;
@@ -100,6 +94,26 @@ public class OutputLayerGradientChecks extends BaseDL4JTest {
             }
 
             for (ILossFunction lf : lfs) {
+
+                INDArray labels;
+                if(lf instanceof LossSparseMCXENT){
+                    labels = Nd4j.zeros(miniBatchSize, 1, timeSeriesLength);
+                    for (int i = 0; i < miniBatchSize; i++) {
+                        for (int j = 0; j < timeSeriesLength; j++) {
+                            int idx = r.nextInt(nOut);
+                            labels.putScalar(new int[]{i, 0, j}, idx);
+                        }
+                    }
+                } else {
+                    labels = Nd4j.zeros(miniBatchSize, nOut, timeSeriesLength);
+                    for (int i = 0; i < miniBatchSize; i++) {
+                        for (int j = 0; j < timeSeriesLength; j++) {
+                            int idx = r.nextInt(nOut);
+                            labels.putScalar(new int[]{i, idx, j}, 1.0);
+                        }
+                    }
+                }
+
 
                 Activation oa = maskType == 2 ? Activation.SIGMOID : Activation.SOFTMAX;
 

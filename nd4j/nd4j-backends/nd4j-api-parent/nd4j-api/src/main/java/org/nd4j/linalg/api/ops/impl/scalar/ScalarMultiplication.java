@@ -66,15 +66,7 @@ public class ScalarMultiplication extends BaseScalarOp {
     public String opName() {
         return "mul_scalar";
     }
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
-    }
 
-    @Override
-    public String tensorflowName() {
-        return "RealMul";
-    }
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {

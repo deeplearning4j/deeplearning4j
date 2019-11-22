@@ -70,18 +70,6 @@ public class ScalarGreaterThanOrEqual extends BaseScalarBoolOp {
         return "greaterthanorequal_scalar";
     }
 
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "greater_equal";
-    }
-
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not continuously differentiable, but 0 gradient in most places

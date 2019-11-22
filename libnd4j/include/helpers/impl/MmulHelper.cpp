@@ -185,69 +185,6 @@ NDArray* nd4j::MmulHelper::tensorDot(const nd4j::NDArray* a, const nd4j::NDArray
 
 
 //////////////////////////////////////////////////////////////////////////
-NDArray* MmulHelper::mmulNxN(const NDArray* A, const NDArray* B, NDArray* C, const double alpha, const double beta, const char outOrder) {
-
-    const int aRank = A->rankOf();
-    const int bRank = B->rankOf();
-
-    // input ranks validation
-    if(aRank > bRank && bRank != 2)
-        throw std::runtime_error("MmulHelper::mmulNxN: rank of B array should be equal 2 !");
-    else if(bRank > aRank && aRank != 2)
-        throw std::runtime_error("MmulHelper::mmulNxN: rank of A array should be equal 2 !");
-    else if (aRank == bRank ) {
-        for(int i = 0; i < aRank - 2; ++i)
-            if(A->sizeAt(i) != B->sizeAt(i))
-                throw std::runtime_error("MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
-    }
-
-    if(A->sizeAt(-1) != B->sizeAt(-2))
-        throw std::runtime_error("MmulHelper::mmulNxN: shapes of A and B arrays are not suitable for matrix multiplication !");
-
-    // validation of C array
-    std::vector<Nd4jLong> cExpectedShape = aRank > bRank ? A->getShapeAsVector() : B->getShapeAsVector();
-    cExpectedShape[cExpectedShape.size() - 2] = A->sizeAt(-2);
-    cExpectedShape[cExpectedShape.size() - 1] = B->sizeAt(-1);
-
-    if(C != nullptr ) {
-        if(!C->isSameShape(cExpectedShape))
-            throw std::runtime_error("MmulHelper::mmulNxN: shape of C array is not suitable for AxB matrix multiplication !");
-    }
-    else {
-        C = new NDArray(outOrder, cExpectedShape, B->dataType());
-    }
-
-
-    // multiplication
-    const std::vector<int> dimsToExclude = ShapeUtils::evalDimsToExclude(C->rankOf(), {-2, -1});
-    const Nd4jLong numOfSubArrs = ShapeUtils::getNumOfSubArrs(C->getShapeInfo(), dimsToExclude);
-    std::vector<Nd4jLong> idxRanges(2 * C->rankOf());
-
-// #pragma omp parallel for schedule(guided) firstprivate(idxRanges)
-        for(Nd4jLong i = 0; i < numOfSubArrs; ++i) {
-
-            ShapeUtils::evalIdxRangesForSubArr(i, C->getShapeInfo(), dimsToExclude, idxRanges.data());
-            NDArray cSubArr = (*C)(idxRanges);
-
-            if(aRank > bRank) {
-                NDArray aSubArr = (*A)(idxRanges);
-                mmulMxM(&aSubArr, B, &cSubArr, 1., 0., outOrder);
-            }
-            else if(bRank > aRank) {
-                NDArray bSubArr = (*B)(idxRanges);
-                mmulMxM(A, &bSubArr, &cSubArr, 1., 0, outOrder);
-            }
-            else {
-                NDArray aSubArr = (*A)(idxRanges);
-                NDArray bSubArr = (*B)(idxRanges);
-                mmulMxM(&aSubArr, &bSubArr, &cSubArr, 1., 0., outOrder);
-            }
-        }
-
-    return C;
-}
-
-//////////////////////////////////////////////////////////////////////////
 nd4j::NDArray* MmulHelper::mmul(const nd4j::NDArray* A, const nd4j::NDArray* B, nd4j::NDArray* C , const double alpha, const double beta, const char outOrder) {
 
     int lenDim;

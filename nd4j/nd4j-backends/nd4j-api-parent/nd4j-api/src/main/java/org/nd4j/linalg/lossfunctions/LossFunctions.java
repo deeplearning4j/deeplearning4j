@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -26,16 +27,27 @@ import org.nd4j.linalg.lossfunctions.impl.*;
 public class LossFunctions {
 
     /**
-     * MSE: Mean Squared Error: Linear Regression<br>
-     * EXPLL: Exponential log likelihood: Poisson Regression<br>
-     * XENT: Cross Entropy: Binary Classification<br>
-     * MCXENT: Multiclass Cross Entropy<br>
-     * RMSE_XENT: RMSE Cross Entropy<br>
-     * SQUARED_LOSS: Squared Loss<br>
-     * NEGATIVELOGLIKELIHOOD: Negative Log Likelihood<br>
+     * MSE: Mean Squared Error: Linear Regression - {@link LossMSE}<br>
+     * l1: L1 loss (absolute value) - {@link LossL1}<br>
+     * XENT: Cross Entropy: Binary Classification - {@link LossBinaryXENT}<br>
+     * MCXENT: Multiclass Cross Entropy - {@link LossMCXENT}<br>
+     * SPARSE_MCXENT: Sparse multi-class cross entropy - {@link LossSparseMCXENT}<br>
+     * SQUARED_LOSS: Alias for mean squared error - {@link LossMSE}<br>
+     * NEGATIVELOGLIKELIHOOD: Negative Log Likelihood - {@link LossNegativeLogLikelihood}<br>
+     * COSINE_PROXIMITY: Cosine proximity loss - {@link LossCosineProximity}<br>
+     * HINGE: Hinge loss - {@link LossHinge}<br>
+     * SQUARED_HINGE: Squared hinge loss - {@link LossSquaredHinge}<br>
+     * KL_DIVERGENCE: Kullback-Leibler divergence loss - {@link LossKLD}<br>
+     * MEAN_ABSOLUTE_ERROR: mean absolute error loss - {@link LossMAE}<br>
+     * L2: L2 loss (sum of squared errors) - {@link LossL2}<br>
+     * MEAN_ABSOLUTE_PERCENTAGE_ERROR: MAPE loss - {@link LossMAPE}<br>
+     * MEAN_SQUARED_LOGARITHMIC_ERROR: MSLE loss - {@link LossMSLE}<br>
+     * POISSON: Poisson loss - {@link LossPoisson}<br>
+     * WASSERSTEIN: Wasserstein loss - {@link LossWasserstein}
      */
     public enum LossFunction {
-        MSE, L1, @Deprecated EXPLL, XENT, MCXENT, @Deprecated RMSE_XENT, SQUARED_LOSS, RECONSTRUCTION_CROSSENTROPY, NEGATIVELOGLIKELIHOOD, @Deprecated CUSTOM, COSINE_PROXIMITY, HINGE, SQUARED_HINGE, KL_DIVERGENCE, MEAN_ABSOLUTE_ERROR, L2, MEAN_ABSOLUTE_PERCENTAGE_ERROR, MEAN_SQUARED_LOGARITHMIC_ERROR, POISSON, WASSERSTEIN;
+        MSE, L1, XENT, MCXENT, SPARSE_MCXENT, SQUARED_LOSS, RECONSTRUCTION_CROSSENTROPY, NEGATIVELOGLIKELIHOOD, COSINE_PROXIMITY, HINGE,
+        SQUARED_HINGE, KL_DIVERGENCE, MEAN_ABSOLUTE_ERROR, L2, MEAN_ABSOLUTE_PERCENTAGE_ERROR, MEAN_SQUARED_LOGARITHMIC_ERROR, POISSON, WASSERSTEIN;
 
         public ILossFunction getILossFunction() {
             switch (this) {
@@ -48,6 +60,8 @@ public class LossFunctions {
                     return new LossBinaryXENT();
                 case MCXENT:
                     return new LossMCXENT();
+                case SPARSE_MCXENT:
+                    return new LossSparseMCXENT();
                 case KL_DIVERGENCE:
                 case RECONSTRUCTION_CROSSENTROPY:
                     return new LossKLD();
@@ -68,7 +82,6 @@ public class LossFunctions {
                 case MEAN_SQUARED_LOGARITHMIC_ERROR:
                     return new LossMSLE();
                 case POISSON:
-                case EXPLL:
                     return new LossPoisson();
                 case WASSERSTEIN:
                     return new LossWasserstein();

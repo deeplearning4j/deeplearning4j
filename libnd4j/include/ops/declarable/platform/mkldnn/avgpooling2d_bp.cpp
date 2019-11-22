@@ -27,7 +27,7 @@
 #include "mkldnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
 
-using namespace mkldnn;
+using namespace dnnl;
 
 namespace nd4j {
     namespace ops {
@@ -89,11 +89,11 @@ namespace nd4j {
 
                 auto poolingMode = PoolingType::AVG_POOL;
 
-                mkldnn_memory_desc_t empty;
-                mkldnn::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
-                mkldnn::memory::desc user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
-                mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
-                mkldnn::algorithm algorithm;
+                dnnl_memory_desc_t empty;
+                dnnl::memory::desc pool_src_md(empty), pool_diff_src_md(empty), pool_dst_md(empty);
+                dnnl::memory::desc user_src_md(empty), user_diff_src_md(empty), user_dst_md(empty);
+                dnnl::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
+                dnnl::algorithm algorithm;
                 mkldnnUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0,
                                                        true,
                                                        bS, iC, iH, iW, oC, oH, oW, input, gradI, gradO, algorithm,
@@ -109,20 +109,20 @@ namespace nd4j {
                 auto poolB_desc = pooling_backward::desc(algorithm, pool_diff_src_md, pool_dst_md, pool_strides,
                                                          pool_kernel, pool_padding, pool_padding_r);
                 auto poolB_prim_desc = pooling_backward::primitive_desc(poolB_desc, engine, pool_prim_desc);
-                auto userB_src_memory = mkldnn::memory(user_src_md, engine, gradI->buffer());
-                auto userB_dst_memory = mkldnn::memory(user_dst_md, engine, gradO->buffer());
+                auto userB_src_memory = dnnl::memory(user_src_md, engine, gradI->buffer());
+                auto userB_dst_memory = dnnl::memory(user_dst_md, engine, gradO->buffer());
                 auto poolB_src_memory = userB_src_memory;
-                mkldnn::stream stream(engine);
+                dnnl::stream stream(engine);
                 if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
-                    poolB_src_memory = mkldnn::memory(poolB_prim_desc.diff_src_desc(), engine);
+                    poolB_src_memory = dnnl::memory(poolB_prim_desc.diff_src_desc(), engine);
                 }
                 auto poolB_dst_memory = userB_dst_memory;
                 if (poolB_prim_desc.diff_dst_desc() != userB_dst_memory.get_desc()) {
-                    poolB_dst_memory = mkldnn::memory(poolB_prim_desc.diff_dst_desc(), engine);
+                    poolB_dst_memory = dnnl::memory(poolB_prim_desc.diff_dst_desc(), engine);
                     reorder(userB_dst_memory, poolB_dst_memory).execute(stream, userB_dst_memory, poolB_dst_memory);
                 }
-                pooling_backward(poolB_prim_desc).execute(stream, {{MKLDNN_ARG_DIFF_DST, poolB_dst_memory},
-                                                                   {MKLDNN_ARG_DIFF_SRC, poolB_src_memory}});
+                pooling_backward(poolB_prim_desc).execute(stream, {{DNNL_ARG_DIFF_DST, poolB_dst_memory},
+                                                                   {DNNL_ARG_DIFF_SRC, poolB_src_memory}});
                 if (poolB_prim_desc.diff_src_desc() != userB_src_memory.get_desc()) {
                     reorder(poolB_src_memory, userB_src_memory).execute(stream, poolB_src_memory, userB_src_memory);
                 }

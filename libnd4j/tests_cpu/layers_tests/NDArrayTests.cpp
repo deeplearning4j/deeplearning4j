@@ -1891,7 +1891,7 @@ TEST_F(NDArrayTest, TestMMulMultiDim) {
     ASSERT_TRUE(result->isSameShape(&expected));
 
     //result->printShapeInfo("result shape");
-    //result->printBuffer("result buffer");
+    // result->printBuffer("result buffer");
     ASSERT_TRUE(result->equalsTo(&expected));
     delete result;
 }

@@ -21,7 +21,7 @@
 #include <ops/declarable/OpRegistrator.h>
 #include "mkldnnUtils.h"
 
-using namespace mkldnn;
+using namespace dnnl;
 
 namespace nd4j      {
 namespace ops       {
@@ -132,52 +132,52 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
-    mkldnn::memory::desc x_user_md, wx_user_md, wr_user_md, b_user_md, hI_user_md, cI_user_md, h_user_md, hL_user_md, cL_user_md,
+    dnnl::memory::desc x_user_md, wx_user_md, wr_user_md, b_user_md, hI_user_md, cI_user_md, h_user_md, hL_user_md, cL_user_md,
                          x_lstm_md, wx_lstm_md, wr_lstm_md, b_lstm_md, hI_lstm_md, cI_lstm_md, h_lstm_md, hL_lstm_md, cL_lstm_md;
 
     // input type
-    mkldnn::memory::data_type xType;
+    dnnl::memory::data_type xType;
     if(x->dataType() == DataType::FLOAT32)
-        xType = mkldnn::memory::data_type::f32;
+        xType = dnnl::memory::data_type::f32;
     else if(x->dataType() == DataType::HALF)
-        xType = mkldnn::memory::data_type::f16;
+        xType = dnnl::memory::data_type::f16;
     else
-        xType = mkldnn::memory::data_type::u8;
+        xType = dnnl::memory::data_type::u8;
 
     // weights type
-    mkldnn::memory::data_type wType = xType;
-    if(xType == mkldnn::memory::data_type::u8)
-        wType = mkldnn::memory::data_type::s8;
+    dnnl::memory::data_type wType = xType;
+    if(xType == dnnl::memory::data_type::u8)
+        wType = dnnl::memory::data_type::s8;
 
     // bias type
-    mkldnn::memory::data_type bType = xType;
-    if(xType == mkldnn::memory::data_type::u8)
-        bType = mkldnn::memory::data_type::f32;
+    dnnl::memory::data_type bType = xType;
+    if(xType == dnnl::memory::data_type::u8)
+        bType = dnnl::memory::data_type::f32;
 
     // output type
-    mkldnn::memory::data_type hType;
+    dnnl::memory::data_type hType;
     if(h->dataType() == DataType::FLOAT32)
-        hType = mkldnn::memory::data_type::f32;
+        hType = dnnl::memory::data_type::f32;
     else if(h->dataType() == DataType::HALF)
-        hType = mkldnn::memory::data_type::f16;
+        hType = dnnl::memory::data_type::f16;
     else
-        hType = mkldnn::memory::data_type::u8;
+        hType = dnnl::memory::data_type::u8;
 
 
     // memory descriptors for arrays
     // x
-    x_lstm_md = mkldnn::memory::desc({sL, bS, nIn}, xType, mkldnn::memory::format_tag::any);
-    // x_user_md = dataFormat == 0 ? mkldnn::memory::desc({sL, bS, nIn}, type, mkldnn::memory::format_tag::tnc) : mkldnn::memory::desc({bS, sL, nIn}, type, mkldnn::memory::format_tag::ntc);
-    x_user_md = mkldnn::memory::desc({sL, bS, nIn}, xType, mkldnn::memory::format_tag::tnc);
-    x_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    x_lstm_md = dnnl::memory::desc({sL, bS, nIn}, xType, dnnl::memory::format_tag::any);
+    // x_user_md = dataFormat == 0 ? dnnl::memory::desc({sL, bS, nIn}, type, dnnl::memory::format_tag::tnc) : dnnl::memory::desc({bS, sL, nIn}, type, dnnl::memory::format_tag::ntc);
+    x_user_md = dnnl::memory::desc({sL, bS, nIn}, xType, dnnl::memory::format_tag::tnc);
+    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
     x_user_md.data.format_desc.blocking.strides[0] = x->stridesOf()[0];
     x_user_md.data.format_desc.blocking.strides[1] = x->stridesOf()[1];
     x_user_md.data.format_desc.blocking.strides[2] = x->stridesOf()[2];
 
     // wx
-    wx_lstm_md = mkldnn::memory::desc({1,dirDim,nIn,4,nOut}, wType, mkldnn::memory::format_tag::any);
-    wx_user_md = mkldnn::memory::desc({1,dirDim,nIn,4,nOut}, wType, mkldnn::memory::format_tag::ldigo);
-    wx_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    wx_lstm_md = dnnl::memory::desc({1,dirDim,nIn,4,nOut}, wType, dnnl::memory::format_tag::any);
+    wx_user_md = dnnl::memory::desc({1,dirDim,nIn,4,nOut}, wType, dnnl::memory::format_tag::ldigo);
+    wx_user_md.data.format_kind = dnnl_blocked;    // overrides format
     wx_user_md.data.format_desc.blocking.strides[0] = Wx->stridesOf()[0];
     wx_user_md.data.format_desc.blocking.strides[1] = Wx->stridesOf()[1];
     wx_user_md.data.format_desc.blocking.strides[2] = Wx->stridesOf()[2];
@@ -185,9 +185,9 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
     wx_user_md.data.format_desc.blocking.strides[4] = Wx->stridesOf()[4];
 
     // wr
-    wr_lstm_md = mkldnn::memory::desc({1,dirDim,nOut,4,nOut}, wType, mkldnn::memory::format_tag::any);
-    wr_user_md = mkldnn::memory::desc({1,dirDim,nOut,4,nOut}, wType, mkldnn::memory::format_tag::ldigo);
-    wr_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    wr_lstm_md = dnnl::memory::desc({1,dirDim,nOut,4,nOut}, wType, dnnl::memory::format_tag::any);
+    wr_user_md = dnnl::memory::desc({1,dirDim,nOut,4,nOut}, wType, dnnl::memory::format_tag::ldigo);
+    wr_user_md.data.format_kind = dnnl_blocked;    // overrides format
     wr_user_md.data.format_desc.blocking.strides[0] = Wr->stridesOf()[0];
     wr_user_md.data.format_desc.blocking.strides[1] = Wr->stridesOf()[1];
     wr_user_md.data.format_desc.blocking.strides[2] = Wr->stridesOf()[2];
@@ -195,19 +195,19 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
     wr_user_md.data.format_desc.blocking.strides[4] = Wr->stridesOf()[4];
 
     // h
-    h_lstm_md = mkldnn::memory::desc({sL, bS, hDirDim*nOut}, hType, mkldnn::memory::format_tag::any);
-    // h_user_md = dataFormat == 0 ? mkldnn::memory::desc({sL, bS, hDirDim*nOut}, type, mkldnn::memory::format_tag::tnc) : mkldnn::memory::desc({bS, sL, hDirDim*nOut}, type, mkldnn::memory::format_tag::ntc);
-    h_user_md = mkldnn::memory::desc({sL, bS, hDirDim*nOut}, hType, mkldnn::memory::format_tag::tnc);
-    h_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    h_lstm_md = dnnl::memory::desc({sL, bS, hDirDim*nOut}, hType, dnnl::memory::format_tag::any);
+    // h_user_md = dataFormat == 0 ? dnnl::memory::desc({sL, bS, hDirDim*nOut}, type, dnnl::memory::format_tag::tnc) : dnnl::memory::desc({bS, sL, hDirDim*nOut}, type, dnnl::memory::format_tag::ntc);
+    h_user_md = dnnl::memory::desc({sL, bS, hDirDim*nOut}, hType, dnnl::memory::format_tag::tnc);
+    h_user_md.data.format_kind = dnnl_blocked;    // overrides format
     h_user_md.data.format_desc.blocking.strides[0] = h->stridesOf()[0];
     h_user_md.data.format_desc.blocking.strides[1] = h->stridesOf()[1];
     h_user_md.data.format_desc.blocking.strides[2] = h->stridesOf()[2];
 
     // b
     if(b) {
-        b_lstm_md = mkldnn::memory::desc({1,dirDim,4,nOut}, bType, mkldnn::memory::format_tag::any);
-        b_user_md = mkldnn::memory::desc({1,dirDim,4,nOut}, bType, mkldnn::memory::format_tag::ldgo);
-        b_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+        b_lstm_md = dnnl::memory::desc({1,dirDim,4,nOut}, bType, dnnl::memory::format_tag::any);
+        b_user_md = dnnl::memory::desc({1,dirDim,4,nOut}, bType, dnnl::memory::format_tag::ldgo);
+        b_user_md.data.format_kind = dnnl_blocked;    // overrides format
         b_user_md.data.format_desc.blocking.strides[0] = b->stridesOf()[0];
         b_user_md.data.format_desc.blocking.strides[1] = b->stridesOf()[1];
         b_user_md.data.format_desc.blocking.strides[2] = b->stridesOf()[2];
@@ -216,9 +216,9 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 
     // hI
     if(hI) {
-        hI_lstm_md = mkldnn::memory::desc({1,dirDim,bS,nOut}, xType, mkldnn::memory::format_tag::any);
-        hI_user_md = mkldnn::memory::desc({1,dirDim,bS,nOut}, xType, mkldnn::memory::format_tag::ldnc);
-        hI_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+        hI_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::any);
+        hI_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::ldnc);
+        hI_user_md.data.format_kind = dnnl_blocked;    // overrides format
         hI_user_md.data.format_desc.blocking.strides[0] = hI->stridesOf()[0];
         hI_user_md.data.format_desc.blocking.strides[1] = hI->stridesOf()[1];
         hI_user_md.data.format_desc.blocking.strides[2] = hI->stridesOf()[2];
@@ -227,9 +227,9 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 
     // cI
     if(cI) {
-        cI_lstm_md = mkldnn::memory::desc({1,dirDim,bS,nOut}, xType, mkldnn::memory::format_tag::any);
-        cI_user_md = mkldnn::memory::desc({1,dirDim,bS,nOut}, xType, mkldnn::memory::format_tag::ldnc);
-        cI_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+        cI_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::any);
+        cI_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, xType, dnnl::memory::format_tag::ldnc);
+        cI_user_md.data.format_kind = dnnl_blocked;    // overrides format
         cI_user_md.data.format_desc.blocking.strides[0] = cI->stridesOf()[0];
         cI_user_md.data.format_desc.blocking.strides[1] = cI->stridesOf()[1];
         cI_user_md.data.format_desc.blocking.strides[2] = cI->stridesOf()[2];
@@ -238,9 +238,9 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
 
     // hL
     if(hL) {
-        hL_lstm_md = mkldnn::memory::desc({1,dirDim,bS,nOut}, hType, mkldnn::memory::format_tag::any);
-        hL_user_md = mkldnn::memory::desc({1,dirDim,bS,nOut}, hType, mkldnn::memory::format_tag::ldnc);
-        hL_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+        hL_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::any);
+        hL_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
+        hL_user_md.data.format_kind = dnnl_blocked;    // overrides format
         hL_user_md.data.format_desc.blocking.strides[0] = hL->stridesOf()[0];
         hL_user_md.data.format_desc.blocking.strides[1] = hL->stridesOf()[1];
         hL_user_md.data.format_desc.blocking.strides[2] = hL->stridesOf()[2];
@@ -248,9 +248,9 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
     }
 
     if(cL) {
-        cL_lstm_md = mkldnn::memory::desc({1,dirDim,bS,nOut}, hType, mkldnn::memory::format_tag::ldnc);
-        cL_user_md = mkldnn::memory::desc({1,dirDim,bS,nOut}, hType, mkldnn::memory::format_tag::ldnc);
-        cL_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+        cL_lstm_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
+        cL_user_md = dnnl::memory::desc({1,dirDim,bS,nOut}, hType, dnnl::memory::format_tag::ldnc);
+        cL_user_md.data.format_kind = dnnl_blocked;    // overrides format
         cL_user_md.data.format_desc.blocking.strides[0] = cL->stridesOf()[0];
         cL_user_md.data.format_desc.blocking.strides[1] = cL->stridesOf()[1];
         cL_user_md.data.format_desc.blocking.strides[2] = cL->stridesOf()[2];
@@ -262,92 +262,92 @@ static void lstmLayerMKLDNN(const NDArray* x, const NDArray* Wx, const NDArray* 
                                  x_lstm_md, hI_lstm_md, cI_lstm_md, wx_lstm_md, wr_lstm_md, b_lstm_md,
                                  h_lstm_md, hL_lstm_md, cL_lstm_md);
 
-    mkldnn::stream stream(engine);
+    dnnl::stream stream(engine);
 
     // lstm primitive description
     lstm_forward::primitive_desc lstm_prim_desc(lstm_desc, engine);
 
     // arguments (memory buffers) necessary for calculations
-    std::unordered_map<int, mkldnn::memory> args;
+    std::unordered_map<int, dnnl::memory> args;
 
     // provide memory and check whether reorder is required
     // x
-    auto x_user_mem = mkldnn::memory(x_user_md, engine, x->getBuffer());
+    auto x_user_mem = dnnl::memory(x_user_md, engine, x->getBuffer());
     const bool xReorder = lstm_prim_desc.src_layer_desc() != x_user_mem.get_desc();
-    auto x_lstm_mem = xReorder ? mkldnn::memory(lstm_prim_desc.src_layer_desc(), engine) : x_user_mem;
+    auto x_lstm_mem = xReorder ? dnnl::memory(lstm_prim_desc.src_layer_desc(), engine) : x_user_mem;
     if (xReorder)
         reorder(x_user_mem, x_lstm_mem).execute(stream, x_user_mem, x_lstm_mem);
-    args[MKLDNN_ARG_SRC_LAYER] = x_lstm_mem;
+    args[DNNL_ARG_SRC_LAYER] = x_lstm_mem;
 
     // wx
-    auto wx_user_mem = mkldnn::memory(wx_user_md, engine, Wx->getBuffer());
+    auto wx_user_mem = dnnl::memory(wx_user_md, engine, Wx->getBuffer());
     const bool wxReorder = lstm_prim_desc.weights_layer_desc()!= wx_user_mem.get_desc();
-    auto wx_lstm_mem = wxReorder ? mkldnn::memory(lstm_prim_desc.weights_layer_desc(), engine) : wx_user_mem;
+    auto wx_lstm_mem = wxReorder ? dnnl::memory(lstm_prim_desc.weights_layer_desc(), engine) : wx_user_mem;
     if (wxReorder)
         reorder(wx_user_mem, wx_lstm_mem).execute(stream, wx_user_mem, wx_lstm_mem);
-    args[MKLDNN_ARG_WEIGHTS_LAYER] = wx_lstm_mem;
+    args[DNNL_ARG_WEIGHTS_LAYER] = wx_lstm_mem;
 
     // wr
-    auto wr_user_mem = mkldnn::memory(wr_user_md, engine, Wr->getBuffer());
+    auto wr_user_mem = dnnl::memory(wr_user_md, engine, Wr->getBuffer());
     const bool wrReorder = lstm_prim_desc.weights_iter_desc() != wr_user_mem.get_desc();
-    auto wr_lstm_mem = wxReorder ? mkldnn::memory(lstm_prim_desc.weights_iter_desc(), engine) : wr_user_mem;
+    auto wr_lstm_mem = wxReorder ? dnnl::memory(lstm_prim_desc.weights_iter_desc(), engine) : wr_user_mem;
     if (wrReorder)
         reorder(wr_user_mem, wr_lstm_mem).execute(stream, wr_user_mem, wr_lstm_mem);
-    args[MKLDNN_ARG_WEIGHTS_ITER] = wr_lstm_mem;
+    args[DNNL_ARG_WEIGHTS_ITER] = wr_lstm_mem;
 
     // h
-    auto h_user_mem = mkldnn::memory(h_user_md, engine, h->getBuffer());
+    auto h_user_mem = dnnl::memory(h_user_md, engine, h->getBuffer());
     const bool hReorder = lstm_prim_desc.dst_layer_desc() != h_user_mem.get_desc();
-    auto h_lstm_mem = hReorder ? mkldnn::memory(lstm_prim_desc.dst_layer_desc(), engine) : h_user_mem;
-    args[MKLDNN_ARG_DST_LAYER] = h_lstm_mem;
+    auto h_lstm_mem = hReorder ? dnnl::memory(lstm_prim_desc.dst_layer_desc(), engine) : h_user_mem;
+    args[DNNL_ARG_DST_LAYER] = h_lstm_mem;
 
     // b
     if(b) {
-        auto b_user_mem  = mkldnn::memory(b_user_md, engine, b->getBuffer());
+        auto b_user_mem  = dnnl::memory(b_user_md, engine, b->getBuffer());
         const bool bReorder = lstm_prim_desc.bias_desc() != b_user_mem.get_desc();
-        auto b_lstm_mem = bReorder ? mkldnn::memory(lstm_prim_desc.bias_desc(), engine) : b_user_mem;
+        auto b_lstm_mem = bReorder ? dnnl::memory(lstm_prim_desc.bias_desc(), engine) : b_user_mem;
         if (bReorder)
             reorder(b_user_mem, b_lstm_mem).execute(stream, b_user_mem, b_lstm_mem);
-        args[MKLDNN_ARG_BIAS] = b_lstm_mem;
+        args[DNNL_ARG_BIAS] = b_lstm_mem;
     }
 
     // hI
     if(hI) {
-        auto hI_user_mem = mkldnn::memory(hI_user_md, engine, hI->getBuffer());
+        auto hI_user_mem = dnnl::memory(hI_user_md, engine, hI->getBuffer());
         const bool hIReorder = lstm_prim_desc.src_iter_desc() != hI_user_mem.get_desc();
-        auto hI_lstm_mem = hIReorder ? mkldnn::memory(lstm_prim_desc.src_iter_desc(), engine) : hI_user_mem;
+        auto hI_lstm_mem = hIReorder ? dnnl::memory(lstm_prim_desc.src_iter_desc(), engine) : hI_user_mem;
         if (hIReorder)
             reorder(hI_user_mem, hI_lstm_mem).execute(stream, hI_user_mem, hI_lstm_mem);
-        args[MKLDNN_ARG_SRC_ITER] = hI_lstm_mem;
+        args[DNNL_ARG_SRC_ITER] = hI_lstm_mem;
     }
 
     // cI
     if(cI) {
-        auto cI_user_mem = mkldnn::memory(cI_user_md, engine, cI->getBuffer());
+        auto cI_user_mem = dnnl::memory(cI_user_md, engine, cI->getBuffer());
         const bool cIReorder = lstm_prim_desc.src_iter_c_desc() != cI_user_mem.get_desc();
-        auto cI_lstm_mem = cIReorder ? mkldnn::memory(lstm_prim_desc.src_iter_c_desc(), engine) : cI_user_mem;
+        auto cI_lstm_mem = cIReorder ? dnnl::memory(lstm_prim_desc.src_iter_c_desc(), engine) : cI_user_mem;
         if (cIReorder)
             reorder(cI_user_mem, cI_lstm_mem).execute(stream, cI_user_mem, cI_lstm_mem);
-        args[MKLDNN_ARG_SRC_ITER_C] = cI_lstm_mem;
+        args[DNNL_ARG_SRC_ITER_C] = cI_lstm_mem;
     }
 
     bool hLReorder(false), cLReorder(false);
-    mkldnn::memory hL_user_mem, cL_user_mem, hL_lstm_mem, cL_lstm_mem;
+    dnnl::memory hL_user_mem, cL_user_mem, hL_lstm_mem, cL_lstm_mem;
 
     // hL
     if(hL) {
-        hL_user_mem = mkldnn::memory(hL_user_md, engine, hL->getBuffer());
+        hL_user_mem = dnnl::memory(hL_user_md, engine, hL->getBuffer());
         hLReorder = lstm_prim_desc.dst_iter_desc() != hL_user_mem.get_desc();
-        hL_lstm_mem = hLReorder ? mkldnn::memory(lstm_prim_desc.dst_iter_desc(), engine) : hL_user_mem;
-        args[MKLDNN_ARG_DST_ITER] = hL_lstm_mem;
+        hL_lstm_mem = hLReorder ? dnnl::memory(lstm_prim_desc.dst_iter_desc(), engine) : hL_user_mem;
+        args[DNNL_ARG_DST_ITER] = hL_lstm_mem;
     }
 
     // cL
     if(cL) {
-        cL_user_mem = mkldnn::memory(cL_user_md, engine, cL->getBuffer());
+        cL_user_mem = dnnl::memory(cL_user_md, engine, cL->getBuffer());
         cLReorder = lstm_prim_desc.dst_iter_c_desc() != cL_user_mem.get_desc();
-        cL_lstm_mem = cLReorder ? mkldnn::memory(lstm_prim_desc.dst_iter_c_desc(), engine) : cL_user_mem;
-        args[MKLDNN_ARG_DST_ITER_C] = cL_lstm_mem;
+        cL_lstm_mem = cLReorder ? dnnl::memory(lstm_prim_desc.dst_iter_c_desc(), engine) : cL_user_mem;
+        args[DNNL_ARG_DST_ITER_C] = cL_lstm_mem;
     }
 
     // run calculations

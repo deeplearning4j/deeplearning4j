@@ -61,14 +61,4 @@ public class BroadcastAddOp extends BaseBroadcastOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "BroadcastAdd";
-    }
 }

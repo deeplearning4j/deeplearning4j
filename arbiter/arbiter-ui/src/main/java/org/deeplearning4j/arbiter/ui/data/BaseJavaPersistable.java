@@ -20,8 +20,6 @@ import lombok.AllArgsConstructor;
 import org.apache.commons.compress.utils.IOUtils;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.arbiter.ui.module.ArbiterModule;
-import org.deeplearning4j.ui.stats.impl.java.JavaStatsInitializationReport;
-import scala.annotation.meta.field;
 
 import java.io.*;
 import java.lang.reflect.Field;

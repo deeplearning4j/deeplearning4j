@@ -34,16 +34,6 @@
         <scala.binary.version>2.11</scala.binary.version>
     </properties>
     <build>
-        <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>1.8</source>
-                    <target>1.8</target>
-                </configuration>
-            </plugin>
-        </plugins>
-
         <pluginManagement>
             <plugins>
                 <plugin>
@@ -56,9 +46,14 @@
                             <include>*.java</include>
                             <include>**/*.java</include>
                         </includes>
-                        <systemPropertyVariables>
-                            <config.file>../../deeplearning4j-ui-parent/deeplearning4j-play/src/main/resources/application.conf</config.file>
-                        </systemPropertyVariables>
+                    </configuration>
+                </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-compiler-plugin</artifactId>
+                    <configuration>
+                        <source>1.8</source>
+                        <target>1.8</target>
                     </configuration>
                 </plugin>
             </plugins>

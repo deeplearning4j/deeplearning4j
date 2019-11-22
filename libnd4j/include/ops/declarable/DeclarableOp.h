@@ -32,6 +32,7 @@
 #include <array/ResultSet.h>
 #include <helpers/OpArgsHolder.h>
 #include <dll.h>
+#include <ops/declarable/EmptyHandling.h>
 //#include <ops/declarable/declarable_ops.h>
 
 #include <chrono>
@@ -111,7 +112,7 @@ namespace nd4j {
             */
             int prepareOutputs(Context& block);
 
-            //std::vector<int>* calculateOutputShape(std::vector<int>* inputShape, nd4j::graph::Block<T>& block);
+            virtual samediff::EmptyHandling emptyHandling();
         public:
             // for special cases, like BooleanOps
             DeclarableOp();

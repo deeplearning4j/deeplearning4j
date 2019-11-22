@@ -179,6 +179,7 @@ ND4J_EXPORT void   execBroadcastBool(
         void *dY, Nd4jLong *dYShapeInfo,
         void *hZ, Nd4jLong *hZShapeInfo,
         void *dZ, Nd4jLong *dZShapeInfo,
+        void *extraParams,
         void *hDimension, Nd4jLong *hDimensionShape,
         void *dDimension, Nd4jLong *dDimensionShape);
 

@@ -77,16 +77,4 @@ public class ScalarGreaterThan extends BaseScalarBoolOp {
 
         return Arrays.asList(sameDiff.zerosLike(arg()));
     }
-
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "greater";
-    }
-
 }

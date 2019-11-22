@@ -65,8 +65,10 @@ public class GELU extends BaseTransformStrictOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "GELU";
+    public String tensorflowName()
+    {
+        throw new NoOpNameFoundException("No tensorflow op opName found for " + opName());
+        //return "GELU";
     }
 
 

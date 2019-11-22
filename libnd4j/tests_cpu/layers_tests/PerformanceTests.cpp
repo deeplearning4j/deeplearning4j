@@ -61,8 +61,10 @@ public:
 
 TEST_F(PerformanceTests, test_maxpooling2d_1) {
     std::vector<Nd4jLong> valuesX;
-    auto x = NDArrayFactory::create<float>('c', {32, 3, 224, 224});
-    auto z = NDArrayFactory::create<float>('c', {32, 3, 224, 224});
+    // auto x = NDArrayFactory::create<float>('c', {32, 3, 224, 224});
+    // auto z = NDArrayFactory::create<float>('c', {32, 3, 224, 224});
+    auto x = NDArrayFactory::create<float>('c', {8, 3, 64, 64});
+    auto z = NDArrayFactory::create<float>('c', {8, 3, 64, 64});
     x.linspace(1.0f);
     Nd4jLong k = 5;
 

@@ -40,12 +40,6 @@ public class LogicalXor extends DynamicCustomOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "LogicalXor";
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Arrays.asList( sameDiff.zerosLike(larg()), sameDiff.zerosLike(rarg()));
     }

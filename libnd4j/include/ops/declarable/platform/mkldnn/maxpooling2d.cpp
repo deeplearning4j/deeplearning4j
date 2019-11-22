@@ -27,7 +27,7 @@
 #include "mkldnnUtils.h"
 #include <ops/declarable/helpers/convolutions.h>
 
-using namespace mkldnn;
+using namespace dnnl;
 
 namespace nd4j {
     namespace ops {
@@ -82,11 +82,11 @@ namespace nd4j {
                 auto poolingMode = PoolingType::MAX_POOL;
                 int extraParam0 = 1;
 
-                mkldnn_memory_desc_t empty;
-                mkldnn::memory::desc pool_src_md(empty), pool_dst_md(empty);
-                mkldnn::memory::desc user_src_md(empty), user_dst_md(empty);
-                mkldnn::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
-                mkldnn::algorithm algorithm;
+                dnnl_memory_desc_t empty;
+                dnnl::memory::desc pool_src_md(empty), pool_dst_md(empty);
+                dnnl::memory::desc user_src_md(empty), user_dst_md(empty);
+                dnnl::memory::dims pool_strides, pool_kernel, pool_padding, pool_padding_r;
+                dnnl::algorithm algorithm;
 
                 mkldnnUtils::getMKLDNNMemoryDescPool2d(kH, kW, sH, sW, pH, pW, dH, dW, poolingMode, extraParam0,
                                                            true,
@@ -102,23 +102,23 @@ namespace nd4j {
 
                 auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
                 auto pool_prim_desc = pooling_forward::primitive_desc(pool_desc, engine);
-                auto user_src_memory = mkldnn::memory(user_src_md, engine, input->buffer());
-                auto user_dst_memory = mkldnn::memory(user_dst_md, engine, output->buffer());
+                auto user_src_memory = dnnl::memory(user_src_md, engine, input->buffer());
+                auto user_dst_memory = dnnl::memory(user_dst_md, engine, output->buffer());
 
                 auto pool_src_memory = user_src_memory;
-                mkldnn::stream stream(engine);
+                dnnl::stream stream(engine);
                 if (pool_prim_desc.src_desc() != user_src_memory.get_desc()) {
-                    pool_src_memory = mkldnn::memory(pool_prim_desc.src_desc(), engine);
+                    pool_src_memory = dnnl::memory(pool_prim_desc.src_desc(), engine);
                     reorder(user_src_memory, pool_src_memory).execute(stream, user_src_memory, pool_src_memory);
                 }
 
                 auto pool_dst_memory = user_dst_memory;
                 if (pool_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
-                    pool_dst_memory = mkldnn::memory(pool_prim_desc.dst_desc(), engine);
+                    pool_dst_memory = dnnl::memory(pool_prim_desc.dst_desc(), engine);
                 }
 
-                pooling_forward(pool_prim_desc).execute(stream, {{MKLDNN_ARG_SRC, pool_src_memory},
-                                                                     {MKLDNN_ARG_DST, pool_dst_memory}});
+                pooling_forward(pool_prim_desc).execute(stream, {{DNNL_ARG_SRC, pool_src_memory},
+                                                                     {DNNL_ARG_DST, pool_dst_memory}});
 
                 if (pool_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
                     reorder(pool_dst_memory, user_dst_memory).execute(stream, pool_dst_memory, user_dst_memory);

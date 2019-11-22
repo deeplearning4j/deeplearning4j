@@ -19,6 +19,7 @@ package org.nd4j.nativeblas;
 import org.bytedeco.javacpp.annotation.Platform;
 import org.bytedeco.javacpp.annotation.Properties;
 import org.bytedeco.javacpp.tools.*;
+import org.bytedeco.openblas.global.openblas;
 
 import java.io.File;
 import java.io.IOException;
@@ -31,7 +32,7 @@ import java.util.Scanner;
  *
  * @author saudet
  */
-@Properties(target = "org.nd4j.nativeblas.Nd4jCpu", helper = "org.nd4j.nativeblas.Nd4jCpuHelper",
+@Properties(inherit = openblas.class, target = "org.nd4j.nativeblas.Nd4jCpu", helper = "org.nd4j.nativeblas.Nd4jCpuHelper",
                 value = {@Platform(define = "LIBND4J_ALL_OPS", include = {
                                               "memory/MemoryType.h",
                                               "array/DataType.h",
@@ -127,15 +128,13 @@ import java.util.Scanner;
                                               "ops/declarable/headers/third_party.h",
                                               "cnpy/cnpy.h"
                                    },
-                                compiler = {"cpp11", "nowarnings"}, library = "jnind4jcpu", link = "nd4jcpu",
-                                preloadresource = {"org/bytedeco/openblas/"},
-                                preload = {"openblas", "openblas_nolapack", "libnd4jcpu"}),
-                @Platform(value = "linux", preload = {"gomp@.1"}, preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
-                @Platform(value = {"linux-arm", "linux-ppc"}, preload = {"gomp@.1", "gcc_s@.1", "quadmath@.0", "gfortran@.5", "gfortran@.4", "gfortran@.3", "openblas@.0", "libnd4jcpu"}),
+                                compiler = {"cpp11", "nowarnings"},
+                                library = "jnind4jcpu", link = "nd4jcpu", preload = "libnd4jcpu"),
+                @Platform(value = "linux", preload = "gomp@.1", preloadpath = {"/lib64/", "/lib/", "/usr/lib64/", "/usr/lib/"}),
                 @Platform(value = "linux-armhf", preloadpath = {"/usr/arm-linux-gnueabihf/lib/", "/usr/lib/arm-linux-gnueabihf/"}),
                 @Platform(value = "linux-arm64", preloadpath = {"/usr/aarch64-linux-gnu/lib/", "/usr/lib/aarch64-linux-gnu/"}),
                 @Platform(value = "linux-ppc64", preloadpath = {"/usr/powerpc64-linux-gnu/lib/", "/usr/powerpc64le-linux-gnu/lib/", "/usr/lib/powerpc64-linux-gnu/", "/usr/lib/powerpc64le-linux-gnu/"}),
-                @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "msvcr120", "libnd4jcpu"}),
+                @Platform(value = "windows", preload = {"libwinpthread-1", "libgcc_s_seh-1", "libgomp-1", "libstdc++-6", "libnd4jcpu"}),
                 @Platform(extension = {"-avx512", "-avx2"}) })
 public class Nd4jCpuPresets implements InfoMapper, BuildEnabled {
 

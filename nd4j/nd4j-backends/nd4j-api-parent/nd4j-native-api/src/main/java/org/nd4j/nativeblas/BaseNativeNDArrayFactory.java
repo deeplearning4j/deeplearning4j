@@ -36,6 +36,7 @@ import org.nd4j.linalg.util.ArrayUtil;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
@@ -492,8 +493,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8"));
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
         directBuffer.put(pathBytes);
-        directBuffer.rewind();
-        directBuffer.position(0);
+        ((Buffer) directBuffer).rewind();
+        ((Buffer) directBuffer).position(0);
         Pointer pointer = nativeOps.numpyFromFile(new BytePointer(directBuffer));
 
         INDArray result = createFromNpyPointer(pointer);
@@ -672,8 +673,8 @@ public abstract class BaseNativeNDArrayFactory extends BaseNDArrayFactory {
         byte[] pathBytes = file.getAbsolutePath().getBytes(Charset.forName("UTF-8"));
         ByteBuffer directBuffer = ByteBuffer.allocateDirect(pathBytes.length).order(ByteOrder.nativeOrder());
         directBuffer.put(pathBytes);
-        directBuffer.rewind();
-        directBuffer.position(0);
+        ((Buffer) directBuffer).rewind();
+        ((Buffer) directBuffer).position(0);
         Pointer pointer = nativeOps.mapFromNpzFile(new BytePointer(directBuffer));
         int n = nativeOps.getNumNpyArraysInMap(pointer);
         HashMap<String, INDArray> map = new HashMap<>();

@@ -1439,9 +1439,21 @@ Nd4jLong NDArray::sizeAt(const int dim) const {
         throw std::runtime_error("Bad size index requested");
 
     if (dim >= 0)
-        return this->_shapeInfo[1+dim];
+        return shape::shapeOf(_shapeInfo)[dim];
     else
-        return this->_shapeInfo[1+(this->rankOf() + dim)];
+        return shape::shapeOf(_shapeInfo)[this->rankOf() + dim];
+}
+
+//////////////////////////////////////////////////////////////////////////
+Nd4jLong NDArray::strideAt(const int dim) const {
+
+    if (dim >= this->rankOf() || dim < -this->rankOf())
+        throw std::runtime_error("NDArray::strideAt: Bad size index requested");
+
+    if (dim >= 0)
+        return shape::stride(_shapeInfo)[dim];
+    else
+        return shape::stride(_shapeInfo)[this->rankOf() + dim];
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -2760,9 +2772,9 @@ void NDArray::applyBroadcast(nd4j::broadcast::BoolOps op, const std::vector<int>
     // TODO: eventually we want separate tads here
     NDArray::prepareSpecialUse({result}, {this, other});
     if(max == this)
-        NativeOpExecutioner::execBroadcastBool(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+        NativeOpExecutioner::execBroadcastBool(       getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr, copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
     else
-        NativeOpExecutioner::execInverseBroadcastBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
+        NativeOpExecutioner::execInverseBroadcastBool(getContext(), op, buffer(), shapeInfo(), specialBuffer(), specialShapeInfo(), other->getBuffer(), other->getShapeInfo(), other->getSpecialBuffer(), other->getSpecialShapeInfo(), result->buffer(), result->shapeInfo(), result->specialBuffer(), result->specialShapeInfo(), nullptr, copy.data(), (int)copy.size(), packX.platformShapeInfo(), packX.platformOffsets(), packZ.platformShapeInfo(), packZ.platformOffsets());
     registerSpecialUse({result}, {this, other});
 }
 

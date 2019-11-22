@@ -967,6 +967,7 @@ public class NativeOpExecutioner extends DefaultOpExecutioner {
                         null, null,
                         op.z().data().addressPointer(), (LongPointer) op.z().shapeInfoDataBuffer().addressPointer(),
                         null, null,
+                        null,
                         op.dimensions().data().addressPointer(),
                         (LongPointer) op.dimensions().shapeInfoDataBuffer().addressPointer(),
                         null,

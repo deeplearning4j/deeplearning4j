@@ -605,7 +605,6 @@ TEST_F(ConvolutionTests2, deconv3d_test5) {
     ASSERT_EQ(Status::OK(), results->status());
 
     auto output = results->at(0);
-    // output->printBuffer();
 
     ASSERT_TRUE(exp.isSameShape(output));
     ASSERT_TRUE(exp.equalsTo(output));

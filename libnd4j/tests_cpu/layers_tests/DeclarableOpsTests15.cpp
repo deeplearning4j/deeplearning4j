@@ -552,3 +552,33 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_3) {
         auto temp2 = temp1 * cLast;
     }
 }
+
+TEST_F(DeclarableOpsTests15, test_empty_increasing_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 3});
+    auto z = NDArrayFactory::create<bool>(false);
+
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setOutputArray(0, &z);
+
+    nd4j::ops::is_strictly_increasing op;
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(true, z.e<bool>(0));
+}
+
+TEST_F(DeclarableOpsTests15, test_empty_decreasing_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 3});
+    auto z = NDArrayFactory::create<bool>(false);
+
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setOutputArray(0, &z);
+
+    nd4j::ops::is_non_decreasing op;
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(true, z.e<bool>(0));
+}

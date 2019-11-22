@@ -27,8 +27,11 @@
 namespace nd4j {
     namespace ops {
         BOOLEAN_OP_IMPL(is_strictly_increasing, 1, true) {
-
             auto input = INPUT_VARIABLE(0);
+
+            // in case of empty input there's nothing to do
+            if (input->isEmpty())
+                return ND4J_STATUS_TRUE;
 
             bool isStrictlyIncreasing = true;
 

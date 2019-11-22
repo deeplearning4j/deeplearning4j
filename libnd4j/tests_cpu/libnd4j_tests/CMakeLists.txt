@@ -42,7 +42,7 @@ if ("${BUILD_MKLDNN}")
     set(HAVE_MKLDNN 1)
     add_definitions("-DHAVE_MKLDNN")
     include_directories(${mkldnn_SOURCE_DIR}/include ${mkldnn_SOURCE_DIR}/external/mklml_lnx_2019.0.3.20190220/include ${mkldnn_SOURCE_DIR})
-    set(MKLDNN mkldnn)
+    set(MKLDNN dnnl)
 endif()
 
 # Download and unpack flatbuffers at configure time

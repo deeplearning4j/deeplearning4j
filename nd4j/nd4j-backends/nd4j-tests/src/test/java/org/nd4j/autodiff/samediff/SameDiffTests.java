@@ -1641,6 +1641,19 @@ public class SameDiffTests extends BaseNd4jTest {
         }
     }
 
+    @Ignore(/*AS - 20191114 https://github.com/eclipse/deeplearning4j/issues/8393*/)
+    @Test
+    public void testIsStrictlyIncShape() {
+        int nOut = 0;
+        int minibatch = 0;
+
+        INDArray ia = Nd4j.randn(minibatch, nOut);
+        INDArray expOut = Nd4j.create(DataType.BOOL, ia.shape());
+
+        Nd4j.exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+        System.out.println(expOut);
+    }
+
     @Test
     public void testExpandDims2d() {
         val origShape = new long[]{3, 4};

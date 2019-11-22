@@ -74,16 +74,6 @@ public class Moments extends DynamicCustomOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "moments";
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
         SDVariable dLdMean = grad.get(0);
         SDVariable dLdVar = grad.get(1);        //Note: non-bias-corrected variance

@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -20,11 +21,9 @@ import org.junit.*;
 import org.junit.rules.TemporaryFolder;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.nd4j.linalg.BaseNd4jTest;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.executioner.OpExecutioner;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.factory.Nd4jBackend;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
 
@@ -51,9 +50,12 @@ public class TFGraphTestList {
     @Rule
     public TemporaryFolder testDir = new TemporaryFolder();
 
+    //Only enable this for debugging, and leave it disabled for normal testing and CI - it prints all arrays for every execution step
+    //Implemented internally using ExecPrintListener
+    public static final boolean printArraysDebugging = false;
+
     public static String[] modelNames = new String[]{
-//            "cnn2d_nn/nhwc_b1_k12_s12_d12_SAME"
-            "accumulate_n/rank0"
+            "resize_nearest_neighbor/int32"
     };
 
     @After
@@ -102,7 +104,7 @@ public class TFGraphTestList {
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, MODEL_DIR, MODEL_FILENAME, executeWith,
-                TFGraphTestAllHelper.LOADER, maxRE, minAbs);
+                TFGraphTestAllHelper.LOADER, maxRE, minAbs, printArraysDebugging);
     }
 
     @Test @Ignore
@@ -110,7 +112,6 @@ public class TFGraphTestList {
         //Nd4jCpu.Environment.getInstance().setUseMKLDNN(false);
         File dir = testDir.newFolder();
         Map<String, INDArray> inputs = TFGraphTestAllHelper.inputVars(modelName, MODEL_DIR, dir);
-        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, dir);
-
+        TFGraphTestAllHelper.checkIntermediate(inputs, modelName, MODEL_DIR, MODEL_FILENAME, executeWith, dir, printArraysDebugging);
     }
 }

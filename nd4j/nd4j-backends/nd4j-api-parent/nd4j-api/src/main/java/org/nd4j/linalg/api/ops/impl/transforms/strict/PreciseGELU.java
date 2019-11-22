@@ -65,7 +65,8 @@ public class PreciseGELU extends BaseTransformStrictOp {
 
     @Override
     public String tensorflowName() {
-        return "PreciseGELU";
+        throw new NoOpNameFoundException("Tensorflow name not found for " + opName());
+        //return "PreciseGELU";
     }
 
 

@@ -255,6 +255,17 @@ public class Keras2ModelConfigurationTest extends BaseDL4JTest {
         }
     }
 
+    @Test
+    public void ReshapeEmbeddingConcatTest() throws Exception{
+        try(InputStream is = Resources.asStream("/modelimport/keras/configs/keras2/reshape_embedding_concat.json")) {
+            ComputationGraphConfiguration config =
+                    new KerasModel().modelBuilder().modelJsonInputStream(is)
+                            .enforceTrainingConfig(false).buildModel().getComputationGraphConfiguration();
+            ComputationGraph model = new ComputationGraph(config);
+            model.init();
+            model.outputSingle(Nd4j.zeros(1, 1), Nd4j.zeros(1, 1), Nd4j.zeros(1, 1));
+        }
+    }
 
     private void runSequentialConfigTest(String path) throws Exception {
         try(InputStream is = Resources.asStream(path)) {

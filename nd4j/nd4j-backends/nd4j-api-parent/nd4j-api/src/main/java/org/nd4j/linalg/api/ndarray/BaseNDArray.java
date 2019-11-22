@@ -1864,7 +1864,10 @@ public abstract class BaseNDArray implements INDArray, Iterable {
 
     @Override
     public INDArray match(INDArray comp, Condition condition) {
-        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this,comp,condition));
+        // TODO: obviously, we can make this broadcastable, eventually. But this will require new CustomOp based on MatchCondition
+        Preconditions.checkArgument(Arrays.equals(this.shape(), comp.shape()), "Shapes must be equal");
+        Preconditions.checkArgument(this.dataType() == comp.dataType(), "Data types bmust be equal");
+        return Nd4j.getExecutioner().exec(new MatchConditionTransform(this, comp, Nd4j.createUninitialized(DataType.BOOL, this.shape()), condition));
     }
 
     @Override

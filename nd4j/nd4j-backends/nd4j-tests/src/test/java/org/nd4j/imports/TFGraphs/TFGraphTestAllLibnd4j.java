@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -182,7 +183,7 @@ public class TFGraphTestAllLibnd4j {   //Note: Can't extend BaseNd4jTest here as
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
         TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH,
-                TFGraphTestAllHelper.LOADER, maxRE, minAbs);
+                TFGraphTestAllHelper.LOADER, maxRE, minAbs, false);
         //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, EXECUTE_WITH);
     }
 

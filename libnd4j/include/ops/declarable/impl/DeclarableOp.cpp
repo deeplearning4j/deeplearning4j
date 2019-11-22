@@ -25,6 +25,8 @@
 #include <exceptions/graph_exception.h>
 #include <exceptions/unresolved_input_exception.h>
 #include <ops/declarable/OpRegistrator.h>
+#include <exceptions/datatype_exception.h>
+#include <helpers/StringUtils.h>
 
 namespace nd4j {
     namespace ops {
@@ -227,6 +229,15 @@ namespace nd4j {
                                 nd4j_printf("Expected vs provided shapes mismatch %s vs %s at index %i\n", eShape.c_str(), aShape.c_str(), pair.second);
                                 throw std::runtime_error("Expected vs provided shapes mismatch");
                             }
+
+                            /*
+                             * FIXME: we want to uncomment this eventually, and check data types equality
+                            //checking out data type equality
+                            if (ArrayOptions::dataType(out) != ArrayOptions::dataType(shape)) {
+                                std::string msg = "Provided array [" + StringUtils::valueToString<int>(pair.second) + "] has unexpected data type";
+                                throw nd4j::datatype_exception::build(msg, ArrayOptions::dataType(out), ArrayOptions::dataType(shape));
+                            }
+                             */
                         }
                     } else {
                         auto fout = ctx.fastpath_out();
@@ -237,6 +248,7 @@ namespace nd4j {
                             ctx.setOutputArray(idx, outArr, true);
                         } else {
                             auto array = fout[idx];
+                            // checking out shape equality
                             if (!shape::equalsSoft(out, array->shapeInfo()) || shape::isEmpty(out) != array->isEmpty()) {
                                 auto eShape = ShapeUtils::shapeAsString(out);
                                 auto aShape = ShapeUtils::shapeAsString(array->shapeInfo());
@@ -247,6 +259,15 @@ namespace nd4j {
                                 nd4j_printf("Expected vs provided shape mismatch %s vs %s at index %i\n", eShape.c_str(), aShape.c_str(), idx);
                                 throw std::runtime_error("Expected vs provided shape mismatch");
                             }
+
+                            /*
+                             * FIXME: we want to uncomment this eventually, and check data types equality
+                            //checking out data type equality
+                            if (ArrayOptions::dataType(out) != array->dataType()) {
+                                std::string msg = "Provided array [" + StringUtils::valueToString<int>(idx) + "] has unexpected data type";
+                                throw nd4j::datatype_exception::build(msg, ArrayOptions::dataType(out), array->dataType());
+                            }
+                             */
                         }
                     }
                 }
@@ -910,6 +931,10 @@ namespace nd4j {
             }
 
             return ND4J_STATUS_OK;
+        }
+
+        samediff::EmptyHandling DeclarableOp::emptyHandling() {
+            return samediff::EmptyHandling::EMPTY_SKIP;
         }
 
         void DeclarableOp::registerTypes() {

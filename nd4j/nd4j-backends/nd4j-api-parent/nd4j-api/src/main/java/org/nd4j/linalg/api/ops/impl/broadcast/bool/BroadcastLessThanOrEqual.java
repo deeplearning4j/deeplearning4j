@@ -64,7 +64,7 @@ public class BroadcastLessThanOrEqual extends BaseBroadcastBoolOp {
 
     @Override
     public int opNum() {
-        return 5;
+        return 11;
     }
 
     @Override

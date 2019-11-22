@@ -54,17 +54,6 @@ public class CountNonZero extends BaseReduceLongOp {
         return "countNonZero";
     }
 
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx name found for shape " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "count_nonzero";
-    }
-
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return Collections.singletonList(f().zerosLike(arg()));

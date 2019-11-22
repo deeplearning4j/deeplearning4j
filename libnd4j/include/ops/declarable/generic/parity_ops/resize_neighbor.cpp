@@ -51,15 +51,24 @@ namespace nd4j {
                 if (block.numI() == 3)
                     center = 0 != INT_ARG(2);
             }
+            auto inRank = image->rankOf();
+            REQUIRE_TRUE(inRank == 4 || inRank == 3, 0, "resize_nearest_neighbor: Input should be 4D tensor, but rank %i occured");
+            REQUIRE_TRUE(inRank == output->rankOf(), 0, "resize_nearest_neighbor: Input and output ranks should be equals, but %i and %i occured.", inRank, output->rankOf());
+            auto source = inRank == 4?*image:image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
+            auto target = inRank == 4?*output:output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)});
 
-            return helpers::resizeNeighborFunctor(block.launchContext(), image, width, height, center, output);
+            return helpers::resizeNeighborFunctor(block.launchContext(), inRank==4?image:&source, width, height, center, inRank == 4?output:&target);
         }
 
         DECLARE_SHAPE_FN(resize_nearest_neighbor) {
             auto shapeList = SHAPELIST(); 
             auto in = inputShape->at(0);
-
+            auto inRank = shape::rank(in);
             Nd4jLong* outputShape;
+
+            REQUIRE_TRUE(inRank == 4 || inRank == 3, 0, "resize_bilinear: input image should be 4D "
+                                                        "tensor, but input has rank %i",
+                         inRank);
 
             int width;
             int height;
@@ -75,13 +84,20 @@ namespace nd4j {
                 width = INT_ARG(0);
                 height = INT_ARG(1);
             }
-            
-            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
-            outputShape[0] = 4;
-            outputShape[1] = in[1];
-            outputShape[2] = width;
-            outputShape[3] = height;
-            outputShape[4] = in[4];
+
+            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
+            outputShape[0] = inRank;
+            if (inRank == 4) {
+                outputShape[1] = in[1];
+                outputShape[2] = width;
+                outputShape[3] = height;
+                outputShape[4] = in[4];
+            }
+            else { // input shape is 3D, so result also should be 3D
+                outputShape[1] = width;
+                outputShape[2] = height;
+                outputShape[3] = in[3];
+            }
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
             shapeList->push_back(CONSTANT(outputShape));

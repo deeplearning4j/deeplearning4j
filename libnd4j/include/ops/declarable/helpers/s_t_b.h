@@ -50,7 +50,7 @@ namespace helpers {
         Nd4jLong space_shape[NUM_BLOCK_DIMS];
         Nd4jLong batch_shape[NUM_BLOCK_DIMS];
 
-        const int batch_size = batch->sizeAt(0);
+        const int batchSize = batch->sizeAt(0);
         const int space_size = space->sizeAt(0);
 
 #pragma unroll
@@ -65,7 +65,7 @@ namespace helpers {
         auto batch_strides = batch->stridesOf();
 
         // TODO: this loop should be moved to _execute phase
-        for (int batch_b = 0; batch_b < batch_size; ++batch_b) {
+        for (int batch_b = 0; batch_b < batchSize; ++batch_b) {
             const Nd4jLong space_b = batch_b % space_size;
             Nd4jLong block_index = batch_b / space_size;
             Nd4jLong block_offsets[NUM_BLOCK_DIMS];

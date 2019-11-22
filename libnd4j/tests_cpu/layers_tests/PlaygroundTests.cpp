@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -33,6 +34,7 @@
 #include <ops/declarable/helpers/im2col.h>
 #include <Loops.h>
 #include <RandomLauncher.h>
+#include <ops/declarable/helpers/convolutions.h>
 
 #include <helpers/BenchmarkHelper.h>
 #include <ops/declarable/helpers/scatter.h>
@@ -274,4 +276,69 @@ TEST_F(PlaygroundTests, test_relubp_1) {
 
     nd4j_printf("Time: %lld; BW: %f GB/s\n", time, bw);
 }
+
+//////////////////////////////////////////////////////////////////////
+TEST_F(PlaygroundTests, my) {
+
+    int bS=8, iD=32,iH=32,iW=32,  iC=128,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=2,dH=2,dW=2;
+    int       oD,oH,oW;
+
+    nd4j::ops::ConvolutionUtils::calcOutSizeDeconv3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, 0);
+
+    printf("!!%i, %i, %i\n", oD,oH,oW);
+
+    NDArray col('c', {bS, iC, kD, kH, kW, iD, iH, iW}, nd4j::DataType::DOUBLE);
+    NDArray vol('c', {bS, iC, oD, oH, oW}, nd4j::DataType::DOUBLE);
+
+    col = 3.77;
+    vol = -10.33;
+
+    auto variableSpace = new VariableSpace();
+    auto block = new Context(1, variableSpace, false);  // not-in-place
+
+    auto timeStart = std::chrono::system_clock::now();
+    nd4j::ops::ConvolutionUtils::col2vol(*block, col, vol, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+    auto timeEnd = std::chrono::system_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+    printf("time: %i \n", time);
+
+    delete block;
+    delete variableSpace;
+}
+
+TEST_F(PlaygroundTests, my) {
+
+    int bS=32, iD=32,iH=64,iW=64,  iC=128,  kD=2,kH=2,kW=2,  sD=1,sH=1,sW=1,  pD=0,pH=0,pW=0,  dD=2,dH=2,dW=2;
+    int       oD,oH,oW;
+
+    // nd4j::ops::ConvolutionUtils::calcOutSizeDeconv3D(oD, oH, oW, kD, kH, kW, sD, sH, sW, pD, pH, pW, dD, dH, dW, iD, iH, iW, 0);
+    nd4j::ops::ConvolutionUtils::calcOutSizeDeconv2D(oH, oW, kH, kW, sH, sW, pH, pW,dH, dW, iH, iW, 0);
+
+    printf("!!%i, %i, %i\n", oD,oH,oW);
+
+    // NDArray col('c', {bS, iC, kD, kH, kW, iD, iH, iW}, nd4j::DataType::DOUBLE);
+    // NDArray vol('c', {bS, iC, oD, oH, oW}, nd4j::DataType::DOUBLE);
+    NDArray col('c', {bS, iC, kH, kW, iH, iW}, nd4j::DataType::DOUBLE);
+    NDArray im('c', {bS, iC, oH, oW}, nd4j::DataType::DOUBLE);
+
+    col = 3.77;
+    // vol = -10.33;
+    im = -10.33;
+
+    auto variableSpace = new VariableSpace();
+    auto block = new Context(1, variableSpace, false);  // not-in-place
+
+    auto timeStart = std::chrono::system_clock::now();
+    // nd4j::ops::ConvolutionUtils::col2vol(*block, col, vol, sD, sH, sW, pD, pH, pW, dD, dH, dW);
+    nd4j::ops::helpers::col2im(*col.getContext(), col, im, sH, sW, pH, pW, iH, iW, dH, dW);
+    auto timeEnd = std::chrono::system_clock::now();
+    auto time = std::chrono::duration_cast<std::chrono::microseconds> (timeEnd - timeStart).count();
+
+    printf("time: %i \n", time);
+
+    delete block;
+    delete variableSpace;
+}
+
 */

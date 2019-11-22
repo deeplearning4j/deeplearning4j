@@ -39,7 +39,7 @@ namespace platforms {
 //////////////////////////////////////////////////////////////////////////
 static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray* variance, const NDArray* weights, const float epsilon, NDArray* z) {
 
-    // unfortunately mkl dnn doesn't support any format (mkldnn::memory::format_tag::any)
+    // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any)
     // also it gives wrong results for formats nhwc and ndhwc
 
     // x -> 2D:nc, 4D:nchw, 5D:ncdhw
@@ -53,35 +53,35 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // input type
-    mkldnn::memory::data_type type = mkldnn::memory::data_type::f32;
+    dnnl::memory::data_type type = dnnl::memory::data_type::f32;
 
     // indicate whether gamma or/and beta are given
-    auto flags = mkldnn::normalization_flags::use_global_stats;         // don't calculate the mean and variance for each mini-batch
+    auto flags = dnnl::normalization_flags::use_global_stats;         // don't calculate the mean and variance for each mini-batch
     if (weights != nullptr)
-        flags |= mkldnn::normalization_flags::use_scale_shift;
+        flags |= dnnl::normalization_flags::use_scale_shift;
 
-    mkldnn::memory::dims dims;
-    mkldnn::memory::format_tag format;
+    dnnl::memory::dims dims;
+    dnnl::memory::format_tag format;
 
     if(xRank == 2) {
         dims = {x->sizeAt(0), x->sizeAt(1)};
-        format = mkldnn::memory::format_tag::nc;
+        format = dnnl::memory::format_tag::nc;
     }
     else if(xRank == 4) {
         dims = {x->sizeAt(0), x->sizeAt(1), x->sizeAt(2), x->sizeAt(3)};
-        format = mkldnn::memory::format_tag::nchw;
+        format = dnnl::memory::format_tag::nchw;
     }
     else {  // xRank = 5
         dims = {x->sizeAt(0), x->sizeAt(1), x->sizeAt(2), x->sizeAt(3), x->sizeAt(4)};
-        format = mkldnn::memory::format_tag::ncdhw;
+        format = dnnl::memory::format_tag::ncdhw;
     }
 
     // memory descriptors for arrays
 
     // x
-    mkldnn::memory::desc x_mkl_md  = mkldnn::memory::desc(dims, type, format);
-    mkldnn::memory::desc x_user_md = mkldnn::memory::desc(dims, type, format);
-    x_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(dims, type, format);
+    dnnl::memory::desc x_user_md = dnnl::memory::desc(dims, type, format);
+    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
     x_user_md.data.format_desc.blocking.strides[0] = x->stridesOf()[0];
     x_user_md.data.format_desc.blocking.strides[1] = x->stridesOf()[1];
     if(xRank > 2) {
@@ -92,9 +92,9 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
         x_user_md.data.format_desc.blocking.strides[4] = x->stridesOf()[4];
 
     // z, output
-    mkldnn::memory::desc z_mkl_md  = mkldnn::memory::desc(dims, type, format);
-    mkldnn::memory::desc z_user_md = mkldnn::memory::desc(dims, type, format);
-    z_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc z_mkl_md  = dnnl::memory::desc(dims, type, format);
+    dnnl::memory::desc z_user_md = dnnl::memory::desc(dims, type, format);
+    z_user_md.data.format_kind = dnnl_blocked;    // overrides format
     z_user_md.data.format_desc.blocking.strides[0] = z->stridesOf()[0];
     z_user_md.data.format_desc.blocking.strides[1] = z->stridesOf()[1];
     if(xRank > 2) {
@@ -106,53 +106,53 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
 
 
     // batchnorm forward description
-    mkldnn::batch_normalization_forward::desc op_ff_desc(mkldnn::prop_kind::forward_inference, x_mkl_md, epsilon, flags);
-    mkldnn::batch_normalization_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+    dnnl::batch_normalization_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, epsilon, flags);
+    dnnl::batch_normalization_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
 
     // arguments (memory buffers) necessary for calculations
-    std::unordered_map<int, mkldnn::memory> args;
+    std::unordered_map<int, dnnl::memory> args;
 
-    mkldnn::stream stream(engine);
+    dnnl::stream stream(engine);
 
     // provide memory and check whether reorder is required
 
     // x
-    auto x_user_mem = mkldnn::memory(x_user_md, engine, x->getBuffer());
+    auto x_user_mem = dnnl::memory(x_user_md, engine, x->getBuffer());
     const bool xReorder = op_ff_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? mkldnn::memory(op_ff_prim_desc.src_desc(), engine) : x_user_mem;
+    auto x_mkl_mem = xReorder ? dnnl::memory(op_ff_prim_desc.src_desc(), engine) : x_user_mem;
     if (xReorder)
-        mkldnn::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[MKLDNN_ARG_SRC] = x_mkl_mem;
+        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
+    args[DNNL_ARG_SRC] = x_mkl_mem;
 
     // z
-    auto z_user_mem = mkldnn::memory(z_user_md, engine, z->getBuffer());
+    auto z_user_mem = dnnl::memory(z_user_md, engine, z->getBuffer());
     const bool zReorder = op_ff_prim_desc.dst_desc() != z_user_mem.get_desc();
-    auto z_mkl_mem = zReorder ? mkldnn::memory(op_ff_prim_desc.dst_desc(), engine) : z_user_mem;
+    auto z_mkl_mem = zReorder ? dnnl::memory(op_ff_prim_desc.dst_desc(), engine) : z_user_mem;
     if (zReorder)
-        mkldnn::reorder(z_user_mem, z_mkl_mem).execute(stream, z_user_mem, z_mkl_mem);
-    args[MKLDNN_ARG_DST] = z_mkl_mem;
+        dnnl::reorder(z_user_mem, z_mkl_mem).execute(stream, z_user_mem, z_mkl_mem);
+    args[DNNL_ARG_DST] = z_mkl_mem;
 
     // mean
-    auto mean_mkl_mem = mkldnn::memory(op_ff_prim_desc.mean_desc(), engine, mean->getBuffer());
-    args[MKLDNN_ARG_MEAN] = mean_mkl_mem;
+    auto mean_mkl_mem = dnnl::memory(op_ff_prim_desc.mean_desc(), engine, mean->getBuffer());
+    args[DNNL_ARG_MEAN] = mean_mkl_mem;
 
     // variance
-    auto var_mkl_mem = mkldnn::memory(op_ff_prim_desc.variance_desc(), engine, variance->getBuffer());
-    args[MKLDNN_ARG_VARIANCE] = var_mkl_mem;
+    auto var_mkl_mem = dnnl::memory(op_ff_prim_desc.variance_desc(), engine, variance->getBuffer());
+    args[DNNL_ARG_VARIANCE] = var_mkl_mem;
 
     // gamma and beta (and their gradients) if they are present
     if(weights != nullptr) {
 
-        auto w_mkl_mem = mkldnn::memory(op_ff_prim_desc.weights_desc(), engine, weights->getBuffer());
-        args[MKLDNN_ARG_WEIGHTS] = w_mkl_mem;
+        auto w_mkl_mem = dnnl::memory(op_ff_prim_desc.weights_desc(), engine, weights->getBuffer());
+        args[DNNL_ARG_WEIGHTS] = w_mkl_mem;
     }
 
     // run calculations
-    mkldnn::batch_normalization_forward(op_ff_prim_desc).execute(stream, args);
+    dnnl::batch_normalization_forward(op_ff_prim_desc).execute(stream, args);
 
     // reorder outputs if necessary
     if (zReorder)
-        mkldnn::reorder(z_mkl_mem, z_user_mem).execute(stream, z_mkl_mem, z_user_mem);
+        dnnl::reorder(z_mkl_mem, z_user_mem).execute(stream, z_mkl_mem, z_user_mem);
 
     stream.wait();
 
@@ -164,7 +164,7 @@ static void batchnormMKLDNN(const NDArray* x, const NDArray* mean, const NDArray
 static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const NDArray* variance, const NDArray* dLdO, const NDArray* weights,
                                     const float epsilon, NDArray* dLdI, NDArray* dLdW) {
 
-    // unfortunately mkl dnn doesn't support any format (mkldnn::memory::format_tag::any)
+    // unfortunately mkl dnn doesn't support any format (dnnl::memory::format_tag::any)
     // also it gives wrong results for formats nhwc and ndhwc
 
     // x -> 2D:nc, 4D:nchw, 5D:ncdhw
@@ -180,35 +180,35 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
 
     // input type
-    mkldnn::memory::data_type type = mkldnn::memory::data_type::f32;
+    dnnl::memory::data_type type = dnnl::memory::data_type::f32;
 
     // indicate whether gamma or/and beta are given
-    auto flags = mkldnn::normalization_flags::use_global_stats;     // don't calculate the mean and variance for each mini-batch
+    auto flags = dnnl::normalization_flags::use_global_stats;     // don't calculate the mean and variance for each mini-batch
     if (weights != nullptr)
-        flags |= mkldnn::normalization_flags::use_scale_shift;
+        flags |= dnnl::normalization_flags::use_scale_shift;
 
-    mkldnn::memory::dims dims;
-    mkldnn::memory::format_tag format;
+    dnnl::memory::dims dims;
+    dnnl::memory::format_tag format;
 
     if(xRank == 2) {
         dims = {x->sizeAt(0), x->sizeAt(1)};
-        format = mkldnn::memory::format_tag::nc;
+        format = dnnl::memory::format_tag::nc;
     }
     else if(xRank == 4) {
         dims = {x->sizeAt(0), x->sizeAt(1), x->sizeAt(2), x->sizeAt(3)};
-        format = mkldnn::memory::format_tag::nchw;
+        format = dnnl::memory::format_tag::nchw;
     }
     else {  // xRank = 5
         dims = {x->sizeAt(0), x->sizeAt(1), x->sizeAt(2), x->sizeAt(3), x->sizeAt(4)};
-        format = mkldnn::memory::format_tag::ncdhw;
+        format = dnnl::memory::format_tag::ncdhw;
     }
 
     // memory descriptors for arrays
 
     // x
-    mkldnn::memory::desc x_mkl_md  = mkldnn::memory::desc(dims, type, format);
-    mkldnn::memory::desc x_user_md = mkldnn::memory::desc(dims, type, format);
-    x_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc x_mkl_md  = dnnl::memory::desc(dims, type, format);
+    dnnl::memory::desc x_user_md = dnnl::memory::desc(dims, type, format);
+    x_user_md.data.format_kind = dnnl_blocked;    // overrides format
     x_user_md.data.format_desc.blocking.strides[0] = x->stridesOf()[0];
     x_user_md.data.format_desc.blocking.strides[1] = x->stridesOf()[1];
     if(xRank > 2) {
@@ -219,9 +219,9 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
         x_user_md.data.format_desc.blocking.strides[4] = x->stridesOf()[4];
 
     // dLdO
-    mkldnn::memory::desc dLdO_mkl_md  = mkldnn::memory::desc(dims, type, format);
-    mkldnn::memory::desc dLdO_user_md = mkldnn::memory::desc(dims, type, format);
-    dLdO_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc dLdO_mkl_md  = dnnl::memory::desc(dims, type, format);
+    dnnl::memory::desc dLdO_user_md = dnnl::memory::desc(dims, type, format);
+    dLdO_user_md.data.format_kind = dnnl_blocked;    // overrides format
     dLdO_user_md.data.format_desc.blocking.strides[0] = dLdO->stridesOf()[0];
     dLdO_user_md.data.format_desc.blocking.strides[1] = dLdO->stridesOf()[1];
     if(xRank > 2) {
@@ -232,9 +232,9 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
         dLdO_user_md.data.format_desc.blocking.strides[4] = dLdO->stridesOf()[4];
 
     // dLdI
-    mkldnn::memory::desc dLdI_mkl_md  = mkldnn::memory::desc(dims, type, format);
-    mkldnn::memory::desc dLdI_user_md = mkldnn::memory::desc(dims, type, format);
-    dLdI_user_md.data.format_kind = mkldnn_blocked;    // overrides format
+    dnnl::memory::desc dLdI_mkl_md  = dnnl::memory::desc(dims, type, format);
+    dnnl::memory::desc dLdI_user_md = dnnl::memory::desc(dims, type, format);
+    dLdI_user_md.data.format_kind = dnnl_blocked;    // overrides format
     dLdI_user_md.data.format_desc.blocking.strides[0] = dLdI->stridesOf()[0];
     dLdI_user_md.data.format_desc.blocking.strides[1] = dLdI->stridesOf()[1];
     if(xRank > 2) {
@@ -245,66 +245,66 @@ static void batchnormBackPropMKLDNN(const NDArray* x, const NDArray* mean, const
         dLdI_user_md.data.format_desc.blocking.strides[4] = dLdI->stridesOf()[4];
 
     // batchnorm forward description
-    mkldnn::batch_normalization_forward::desc op_ff_desc(mkldnn::prop_kind::forward_inference, x_mkl_md, epsilon, flags);
-    mkldnn::batch_normalization_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
+    dnnl::batch_normalization_forward::desc op_ff_desc(dnnl::prop_kind::forward_inference, x_mkl_md, epsilon, flags);
+    dnnl::batch_normalization_forward::primitive_desc op_ff_prim_desc(op_ff_desc, engine);
 
     // batchnorm backprop description
-    mkldnn::batch_normalization_backward::desc op_bp_desc(mkldnn::prop_kind::backward, dLdO_mkl_md, x_mkl_md, epsilon, flags);
-    mkldnn::batch_normalization_backward::primitive_desc op_bp_prim_desc(op_bp_desc, engine, op_ff_prim_desc);
+    dnnl::batch_normalization_backward::desc op_bp_desc(dnnl::prop_kind::backward, dLdO_mkl_md, x_mkl_md, epsilon, flags);
+    dnnl::batch_normalization_backward::primitive_desc op_bp_prim_desc(op_bp_desc, engine, op_ff_prim_desc);
 
     // arguments (memory buffers) necessary for calculations
-    std::unordered_map<int, mkldnn::memory> args;
+    std::unordered_map<int, dnnl::memory> args;
 
-    mkldnn::stream stream(engine);
+    dnnl::stream stream(engine);
 
     // provide memory and check whether reorder is required
 
     // x
-    auto x_user_mem = mkldnn::memory(x_user_md, engine, x->getBuffer());
+    auto x_user_mem = dnnl::memory(x_user_md, engine, x->getBuffer());
     const bool xReorder = op_bp_prim_desc.src_desc() != x_user_mem.get_desc();
-    auto x_mkl_mem = xReorder ? mkldnn::memory(op_bp_prim_desc.src_desc(), engine) : x_user_mem;
+    auto x_mkl_mem = xReorder ? dnnl::memory(op_bp_prim_desc.src_desc(), engine) : x_user_mem;
     if (xReorder)
-        mkldnn::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
-    args[MKLDNN_ARG_SRC] = x_mkl_mem;
+        dnnl::reorder(x_user_mem, x_mkl_mem).execute(stream, x_user_mem, x_mkl_mem);
+    args[DNNL_ARG_SRC] = x_mkl_mem;
 
     // dLdO
-    auto dLdO_user_mem = mkldnn::memory(dLdO_user_md, engine, dLdO->getBuffer());
+    auto dLdO_user_mem = dnnl::memory(dLdO_user_md, engine, dLdO->getBuffer());
     const bool dLdOReorder = op_bp_prim_desc.diff_dst_desc() != dLdO_user_mem.get_desc();
-    auto dLdO_mkl_mem = dLdOReorder ? mkldnn::memory(op_bp_prim_desc.diff_dst_desc(), engine) : dLdO_user_mem;
+    auto dLdO_mkl_mem = dLdOReorder ? dnnl::memory(op_bp_prim_desc.diff_dst_desc(), engine) : dLdO_user_mem;
     if (dLdOReorder)
-        mkldnn::reorder(dLdO_user_mem, dLdO_mkl_mem).execute(stream, dLdO_user_mem, dLdO_mkl_mem);
-    args[MKLDNN_ARG_DIFF_DST] = dLdO_mkl_mem;
+        dnnl::reorder(dLdO_user_mem, dLdO_mkl_mem).execute(stream, dLdO_user_mem, dLdO_mkl_mem);
+    args[DNNL_ARG_DIFF_DST] = dLdO_mkl_mem;
 
     // mean
-    auto mean_mkl_mem = mkldnn::memory(op_bp_prim_desc.mean_desc(), engine, mean->getBuffer());
-    args[MKLDNN_ARG_MEAN] = mean_mkl_mem;
+    auto mean_mkl_mem = dnnl::memory(op_bp_prim_desc.mean_desc(), engine, mean->getBuffer());
+    args[DNNL_ARG_MEAN] = mean_mkl_mem;
 
     // variance
-    auto var_mkl_mem = mkldnn::memory(op_bp_prim_desc.variance_desc(), engine, variance->getBuffer());
-    args[MKLDNN_ARG_VARIANCE] = var_mkl_mem;
+    auto var_mkl_mem = dnnl::memory(op_bp_prim_desc.variance_desc(), engine, variance->getBuffer());
+    args[DNNL_ARG_VARIANCE] = var_mkl_mem;
 
     // dLdI
-    auto dLdI_user_mem = mkldnn::memory(dLdI_user_md, engine, dLdI->getBuffer());
+    auto dLdI_user_mem = dnnl::memory(dLdI_user_md, engine, dLdI->getBuffer());
     const bool dLdIReorder = op_bp_prim_desc.diff_src_desc() != dLdI_user_mem.get_desc();
-    auto dLdI_mkl_mem = dLdIReorder ? mkldnn::memory(op_bp_prim_desc.diff_src_desc(), engine) : dLdI_user_mem;
-    args[MKLDNN_ARG_DIFF_SRC] = dLdI_mkl_mem;
+    auto dLdI_mkl_mem = dLdIReorder ? dnnl::memory(op_bp_prim_desc.diff_src_desc(), engine) : dLdI_user_mem;
+    args[DNNL_ARG_DIFF_SRC] = dLdI_mkl_mem;
 
     // gamma and beta (and their gradients) if they are present
     if(weights != nullptr) {
 
-        auto w_mkl_mem = mkldnn::memory(op_bp_prim_desc.weights_desc(), engine, weights->getBuffer());
-        args[MKLDNN_ARG_WEIGHTS] = w_mkl_mem;
+        auto w_mkl_mem = dnnl::memory(op_bp_prim_desc.weights_desc(), engine, weights->getBuffer());
+        args[DNNL_ARG_WEIGHTS] = w_mkl_mem;
 
-        auto dLdW_mkl_mem = mkldnn::memory(op_bp_prim_desc.weights_desc(), engine, dLdW->getBuffer());
-        args[MKLDNN_ARG_DIFF_WEIGHTS] = dLdW_mkl_mem;
+        auto dLdW_mkl_mem = dnnl::memory(op_bp_prim_desc.weights_desc(), engine, dLdW->getBuffer());
+        args[DNNL_ARG_DIFF_WEIGHTS] = dLdW_mkl_mem;
     }
 
     // run calculations
-    mkldnn::batch_normalization_backward(op_bp_prim_desc).execute(stream, args);
+    dnnl::batch_normalization_backward(op_bp_prim_desc).execute(stream, args);
 
     // reorder outputs if necessary
     if (dLdIReorder)
-        mkldnn::reorder(dLdI_mkl_mem, dLdI_user_mem).execute(stream, dLdI_mkl_mem, dLdI_user_mem);
+        dnnl::reorder(dLdI_mkl_mem, dLdI_user_mem).execute(stream, dLdI_mkl_mem, dLdI_user_mem);
 
     stream.wait();
 
@@ -532,37 +532,37 @@ PLATFORM_CHECK(batchnorm) {
 //     weights({1, 2, 0, 0}).assign(0.0f);
 
 //     mkldnn_memory_desc_t empty;
-//     mkldnn::memory::desc batchnorm_src_md(empty), batchnorm_dst_md(empty), user_src_md(empty), user_dst_md(empty);
+//     dnnl::memory::desc batchnorm_src_md(empty), batchnorm_dst_md(empty), user_src_md(empty), user_dst_md(empty);
 
-//     auto flag = mkldnn::normalization_flags::use_global_stats;
+//     auto flag = dnnl::normalization_flags::use_global_stats;
 //     if (applyScale || applyOffset)
-//         flag |= mkldnn::normalization_flags::use_scale_shift;
+//         flag |= dnnl::normalization_flags::use_scale_shift;
 
 //     mkldnnUtils::getMKLDNNMemoryDescBatchNorm(input, nullptr, output,
 //                                               &batchnorm_src_md, nullptr, &batchnorm_dst_md,
 //                                               &user_src_md, nullptr, &user_dst_md, axes[0]);
 
-//     auto batchnorm_desc = mkldnn::batch_normalization_forward::desc(mkldnn::prop_kind::forward_inference, batchnorm_src_md, epsilon, flag);
+//     auto batchnorm_desc = dnnl::batch_normalization_forward::desc(dnnl::prop_kind::forward_inference, batchnorm_src_md, epsilon, flag);
 
 //     auto engine = mkldnnUtils::getEngine(LaunchContext::defaultContext()->engine());
-//     mkldnn::stream stream(engine);
-//     auto batchnorm_prim_desc = mkldnn::batch_normalization_forward::primitive_desc(batchnorm_desc, engine);
-//     auto user_src_memory = mkldnn::memory(user_src_md, engine, input->buffer());
-//     auto user_dst_memory = mkldnn::memory(user_dst_md, engine, output->buffer());
-//     auto batchnorm_mean_memory = mkldnn::memory(batchnorm_prim_desc.mean_desc(), engine,
+//     dnnl::stream stream(engine);
+//     auto batchnorm_prim_desc = dnnl::batch_normalization_forward::primitive_desc(batchnorm_desc, engine);
+//     auto user_src_memory = dnnl::memory(user_src_md, engine, input->buffer());
+//     auto user_dst_memory = dnnl::memory(user_dst_md, engine, output->buffer());
+//     auto batchnorm_mean_memory = dnnl::memory(batchnorm_prim_desc.mean_desc(), engine,
 //                                                 mean->buffer());
-//     auto batchnorm_variance_memory = mkldnn::memory(batchnorm_prim_desc.variance_desc(), engine,
+//     auto batchnorm_variance_memory = dnnl::memory(batchnorm_prim_desc.variance_desc(), engine,
 //                                                     variance->buffer());
 //     auto batchnorm_src_memory = user_src_memory;
-//     mkldnn::memory m(batchnorm_src_md, engine);
+//     dnnl::memory m(batchnorm_src_md, engine);
 //     if (m.get_desc() != user_src_memory.get_desc()) {
-//         batchnorm_src_memory = mkldnn::memory(batchnorm_src_md, engine);
-//         mkldnn::reorder(user_src_memory, batchnorm_src_memory).execute(stream, user_src_memory,
+//         batchnorm_src_memory = dnnl::memory(batchnorm_src_md, engine);
+//         dnnl::reorder(user_src_memory, batchnorm_src_memory).execute(stream, user_src_memory,
 //                                                                batchnorm_src_memory);
 //     }
 //     auto batchnorm_dst_memory = user_dst_memory;
 //     if (batchnorm_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
-//         batchnorm_dst_memory = mkldnn::memory(batchnorm_prim_desc.dst_desc(), engine);
+//         batchnorm_dst_memory = dnnl::memory(batchnorm_prim_desc.dst_desc(), engine);
 //     }
 //     if (applyScale || applyOffset) {
 //         if (gamma != nullptr) {
@@ -572,22 +572,22 @@ PLATFORM_CHECK(batchnorm) {
 //             weights({1, 2, 0, 0}).assign(beta);
 //         }
 
-//         auto batchnorm_weights_memory = mkldnn::memory(batchnorm_prim_desc.weights_desc(), engine, weights.buffer());
-//         mkldnn::batch_normalization_forward(batchnorm_prim_desc).execute(stream,
+//         auto batchnorm_weights_memory = dnnl::memory(batchnorm_prim_desc.weights_desc(), engine, weights.buffer());
+//         dnnl::batch_normalization_forward(batchnorm_prim_desc).execute(stream,
 //                                                                  {{MKLDNN_ARG_SRC,      batchnorm_src_memory},
 //                                                                   {MKLDNN_ARG_MEAN,     batchnorm_mean_memory},
 //                                                                   {MKLDNN_ARG_VARIANCE, batchnorm_variance_memory},
 //                                                                   {MKLDNN_ARG_WEIGHTS,  batchnorm_weights_memory},
 //                                                                   {MKLDNN_ARG_DST,      batchnorm_dst_memory}});
 //     } else {
-//         mkldnn::batch_normalization_forward(batchnorm_prim_desc).execute(stream,
+//         dnnl::batch_normalization_forward(batchnorm_prim_desc).execute(stream,
 //                                                                  {{MKLDNN_ARG_SRC,      batchnorm_src_memory},
 //                                                                   {MKLDNN_ARG_MEAN,     batchnorm_mean_memory},
 //                                                                   {MKLDNN_ARG_VARIANCE, batchnorm_variance_memory},
 //                                                                   {MKLDNN_ARG_DST,      batchnorm_dst_memory}});
 //     }
 //     if (batchnorm_prim_desc.dst_desc() != user_dst_memory.get_desc()) {
-//         mkldnn::reorder(batchnorm_dst_memory, user_dst_memory).execute(stream, batchnorm_dst_memory,
+//         dnnl::reorder(batchnorm_dst_memory, user_dst_memory).execute(stream, batchnorm_dst_memory,
 //                                                                user_dst_memory);
 //     }
 //     stream.wait();

@@ -65,11 +65,6 @@ public class SigmoidCrossEntropyLoss extends BaseLoss {
     }
 
     @Override
-    public String tensorflowName() {
-        return "sigmoid_cross_entropy";
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> grad){
         //No external gradient
         //Args are: predictions, weights, label

@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -121,74 +122,71 @@ static __global__ void col2volCuda(const void* columns, const Nd4jLong* colShape
     const T* col = reinterpret_cast<const T*>(columns);
           T* vol = reinterpret_cast<T*>(volume);
 
-    __shared__ int colRank, volRank, kDeff, kHeff, kWeff, oD, oH, oW;
-    __shared__ Nd4jLong *sharedMem, volLen;
+    __shared__ uint kD, kH, kW, oD, oH, oW, *sharedMem;
+    __shared__ Nd4jLong volLen;
 
     if (threadIdx.x == 0) {
         extern __shared__ unsigned char shmem[];
-        sharedMem = reinterpret_cast<Nd4jLong*>(shmem);
+        sharedMem = reinterpret_cast<uint*>(shmem);
 
         oD = colShapeInfo[6];
         oH = colShapeInfo[7];
         oW = colShapeInfo[8];
 
-        kDeff = colShapeInfo[3] + (colShapeInfo[3] - 1) * (dD - 1);
-        kHeff = colShapeInfo[4] + (colShapeInfo[4] - 1) * (dH - 1);
-        kWeff = colShapeInfo[5] + (colShapeInfo[5] - 1) * (dW - 1);
+        kD = dD * (colShapeInfo[3] - 1) + 1;
+        kH = dH * (colShapeInfo[4] - 1) + 1;
+        kW = dW * (colShapeInfo[5] - 1) + 1;
 
-        volRank = 5;
-        colRank = 8;
-
-        volLen = shape::length(volShapeInfo);
+        volLen  = shape::length(volShapeInfo);
     }
     __syncthreads();
 
-    const auto volInd = threadIdx.x + blockIdx.x * blockDim.x;
+    auto coords = sharedMem + threadIdx.x * 8;
 
-    if(volInd >= volLen)
-        return;
+    const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-    auto coords = sharedMem + threadIdx.x * colRank;
+    for (Nd4jLong i = tid; i < volLen; i += gridDim.x * blockDim.x) {
 
-    shape::index2coords(volInd, volShapeInfo, coords);
+        shape::index2coords(i, volShapeInfo, coords);
 
-    const auto volOffset = shape::getOffset(volShapeInfo, coords);
+        const auto volOffset = shape::getOffset(volShapeInfo, coords);
 
-    const int imD = coords[2] + pD;
-    const int imH = coords[3] + pH;
-    const int imW = coords[4] + pW;
+        const auto bSiCoffset = coords[0] * colShapeInfo[9] + coords[1] * colShapeInfo[10];
 
-    const int colDstart = (imD < kDeff) ? 0 : (imD - kDeff) / sD + 1;
-    const int colHstart = (imH < kHeff) ? 0 : (imH - kHeff) / sH + 1;
-    const int colWstart = (imW < kWeff) ? 0 : (imW - kWeff) / sW + 1;
+        const uint imD = coords[2] + pD;
+        const uint imH = coords[3] + pH;
+        const uint imW = coords[4] + pW;
 
-    const int colDend = nd4j::math::nd4j_min<uint>(imD / sD + 1, oD);
-    const int colHend = nd4j::math::nd4j_min<uint>(imH / sH + 1, oH);
-    const int colWend = nd4j::math::nd4j_min<uint>(imW / sW + 1, oW);
+        const uint colDstart = (imD < kD) ? 0 : (imD - kD) / sD + 1;
+        const uint colHstart = (imH < kH) ? 0 : (imH - kH) / sH + 1;
+        const uint colWstart = (imW < kW) ? 0 : (imW - kW) / sW + 1;
 
-    T val = 0;
+        const uint colDend = nd4j::math::nd4j_min<uint>(imD / sD + 1, oD);
+        const uint colHend = nd4j::math::nd4j_min<uint>(imH / sH + 1, oH);
+        const uint colWend = nd4j::math::nd4j_min<uint>(imW / sW + 1, oW);
 
-    for(coords[5] = colDstart; coords[5] < colDend; ++coords[5]) {
-        coords[2] = imD - coords[5] * sD;
+        T val = 0;
 
-        for(coords[6] = colHstart; coords[6] < colHend; ++coords[6]) {
-            coords[3] = imH - coords[6] * sH;
+        for(uint colD = colDstart; colD < colDend; ++colD) {
+            coords[2] = imD - colD * sD;
+            if(coords[2] % dD != 0) continue;
 
-            for(coords[7] = colWstart; coords[7] < colWend; ++coords[7]) {
-                coords[4] = imW - coords[7] * sW;
+            for(uint colH = colHstart; colH < colHend; ++colH) {
+                coords[3] = imH - colH * sH;
+                if(coords[3] % dH != 0) continue;
 
-                if(coords[2] % dD == 0 && coords[3] % dH == 0 && coords[4] % dW == 0) {
-                    coords[2] /= dD;
-                    coords[3] /= dH;
-                    coords[4] /= dW;
+                for(uint colW = colWstart; colW < colWend; ++colW) {
+                    coords[4] = imW - colW * sW;
+                    if(coords[4] % dW != 0) continue;
 
-                    val += col[shape::getOffset(colShapeInfo, coords)];
+                    val += col[bSiCoffset + (coords[2]/dD)*colShapeInfo[11] + (coords[3]/dH)*colShapeInfo[12] + (coords[4]/dW)*colShapeInfo[13] + colD*colShapeInfo[14] + colH*colShapeInfo[15] + colW*colShapeInfo[16]];
+
                 }
             }
         }
-    }
 
-    vol[volOffset] = val;
+        vol[volOffset] = val;
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -208,7 +206,7 @@ void ConvolutionUtils::col2vol(nd4j::graph::Context& block, const NDArray& col, 
 
     const int threadsPerBlock = MAX_NUM_THREADS / 4;
     const int blocksPerGrid = (vol.lengthOf() + threadsPerBlock - 1) / threadsPerBlock;
-    const int sharedMem = col.rankOf() * sizeof(Nd4jLong) * threadsPerBlock  + 128;
+    const int sharedMem = col.rankOf() * sizeof(uint) * threadsPerBlock  + 256;
 
     NDArray::prepareSpecialUse({&vol}, {&col});
     BUILD_SINGLE_SELECTOR(vol.dataType(), col2volCudaLauncher, (blocksPerGrid, threadsPerBlock, sharedMem, block.launchContext()->getCudaStream(), col.getSpecialBuffer(), col.getSpecialShapeInfo(), vol.specialBuffer(), vol.specialShapeInfo(), sD, sH, sW, pD, pH, pW, dD, dH, dW), FLOAT_TYPES);
