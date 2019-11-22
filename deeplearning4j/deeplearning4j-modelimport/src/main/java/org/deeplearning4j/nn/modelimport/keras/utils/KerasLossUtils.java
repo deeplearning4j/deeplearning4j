@@ -54,7 +54,7 @@ public class KerasLossUtils {
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_HINGE())) {
             dl4jLoss = LossFunctions.LossFunction.HINGE;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_SPARSE_CATEGORICAL_CROSSENTROPY())) {
-            throw new UnsupportedKerasConfigurationException("Loss function " + kerasLoss + " not supported yet.");
+            dl4jLoss = LossFunctions.LossFunction.SPARSE_MCXENT;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_BINARY_CROSSENTROPY())) {
             dl4jLoss = LossFunctions.LossFunction.XENT;
         } else if (kerasLoss.equals(conf.getKERAS_LOSS_CATEGORICAL_CROSSENTROPY())) {

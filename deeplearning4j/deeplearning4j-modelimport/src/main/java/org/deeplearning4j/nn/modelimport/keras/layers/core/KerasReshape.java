@@ -75,7 +75,6 @@ public class KerasReshape extends KerasLayer {
             List<Integer> targetShapeList = (List<Integer>) innerConfig.get(targetShape);
             this.targetShape = listToLongArray(targetShapeList);
         }
-
     }
 
     /**

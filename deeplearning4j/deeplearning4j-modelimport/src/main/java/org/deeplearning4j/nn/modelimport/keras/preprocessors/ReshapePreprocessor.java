@@ -94,7 +94,6 @@ public class ReshapePreprocessor extends BaseInputPreProcessor {
         if (!this.hasMiniBatchDimension) {
             targetShape = prependMiniBatchSize(targetShape, miniBatchSize);
             inputShape = prependMiniBatchSize(inputShape, miniBatchSize);
-            this.hasMiniBatchDimension = true;
             this.miniBatchSize = miniBatchSize;
         }
         if (this.miniBatchSize != miniBatchSize) {
