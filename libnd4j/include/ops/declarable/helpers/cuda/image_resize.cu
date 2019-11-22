@@ -77,22 +77,19 @@ namespace helpers {
                                              Nd4jLong outWidth, Nd4jLong outHeight, Nd4jLong channels, Nd4jLong inRowSize, Nd4jLong outRowSize, Nd4jLong inBatchNumValues,
                                              BilinearInterpolationData* xs_, BilinearInterpolationData* ys_) {
 
-        if (blockIdx.x < batchSize) { // blockIdx.x as batch index
-            auto pX = input + blockIdx.x * inBatchNumValues;
-
-            auto channelStart = blockIdx.z * blockDim.z + threadIdx.z;
-            auto step = blockDim.z * gridDim.z;
+        for (auto batch = blockIdx.x; batch < batchSize; batch += gridDim.x ) { // blockIdx.x as batch index
+            auto pX = input + batch * inBatchNumValues;
             for (Nd4jLong y = threadIdx.x; y < outHeight; y += blockDim.x) {
                 const T *ys_input_lower_ptr = pX + ys_[y].bottomIndex * inRowSize;
                 const T *ys_input_upper_ptr = pX + ys_[y].topIndex * inRowSize;
                 double yVal = ys_[y].interpolarValue;
-                auto pZ = outputYptr + y * outRowSize;
+                auto pZ = outputYptr + (batch * outHeight + y) * outRowSize;
                 for (Nd4jLong x = threadIdx.y; x < outWidth; x += blockDim.y) {
                     auto xsBottom = xs_[x].bottomIndex;
                     auto xsTop = xs_[x].topIndex;
                     auto xVal = xs_[x].interpolarValue;
                     // process interpolation for all channels
-                    for (int c = channelStart; c < channels; c += step) {
+                    for (int c = threadIdx.z; c < channels; c += blockDim.z) {
                         double topLeft(ys_input_lower_ptr[xsBottom + c]);
                         double topRight(ys_input_lower_ptr[xsTop + c]);
                         double bottomLeft(ys_input_upper_ptr[xsBottom + c]);
@@ -120,9 +117,15 @@ namespace helpers {
         auto stream = context->getCudaStream();
         T const *input_b_ptr = reinterpret_cast<T const *>(images->getSpecialBuffer()); // this works only with 'c' direction
         T *output_y_ptr = reinterpret_cast<T *>(output->specialBuffer());
-
-        resizeImageKernel<T><<<batchSize, outHeight, 256, *stream>>>(input_b_ptr, images->getSpecialShapeInfo(), output_y_ptr, output->specialShapeInfo(), batchSize,
+        dim3 batchSizeBlock(batchSize, 1, 1);
+        dim3 pictureBlock(outHeight, outWidth, channels);
+        resizeImageKernel<T><<<256, pictureBlock, 256, *stream>>>(input_b_ptr, images->getSpecialShapeInfo(), output_y_ptr, output->specialShapeInfo(), batchSize,
                 outWidth, outHeight, channels, inRowSize, outRowSize, inBatchNumValues, xs_, ys_);
+
+        auto err = cudaStreamSynchronize(*stream);
+        if (err != 0) {
+            throw cuda_exception::build("helpers::resizeImage_: Cannot synchronize kernel execution", err);
+        }
     }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -176,7 +179,6 @@ namespace helpers {
         NDArray::prepareSpecialUse({output}, {images});
         resizeImage(context, images, batchSize, inHeight, inWidth, outHeight, outWidth, channels, xs_, ys_, output);
         NDArray::registerSpecialUse({output}, {images});
-
         err = cudaFree(xs_);
         if (err != 0) {
             throw cuda_exception::build("helpers::resize_image: Cannot deallocate memory for vertical parts rectangulars", err);

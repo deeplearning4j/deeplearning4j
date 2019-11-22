@@ -41,11 +41,11 @@ namespace ops {
 namespace helpers {
 
     struct BilinearInterpolationData {
-        Nd4jLong bottomIndex;  // Lower source index used in the interpolation
-        Nd4jLong topIndex;  // Upper source index used in the interpolation
-        // 1-D linear iterpolation scale (see:
+        Nd4jLong _bottomIndex;  // Lower source index used in the interpolation
+        Nd4jLong _topIndex;  // Upper source index used in the interpolation
+        // 1D linear iterpolation scale (see:
         // https://en.wikipedia.org/wiki/Bilinear_interpolation)
-        double interpolarValue;
+        double _interpolarValue;
     };
     // calculateResizeScale determines the float scaling factor.
     inline float calculateResizeScale(Nd4jLong inSize, Nd4jLong outSize,
@@ -137,16 +137,16 @@ namespace helpers {
                                             Nd4jLong inSize,
                                             double scale,
                                             BilinearInterpolationData *interpolationData) {
-        interpolationData[outSize].bottomIndex = 0;
-        interpolationData[outSize].topIndex = 0;
+        interpolationData[outSize]._bottomIndex = 0;
+        interpolationData[outSize]._topIndex = 0;
 
         auto func = PRAGMA_THREADS_FOR {
        	    for (auto k = start; k < stop; k++) {
                 auto i = (outSize - k - 1);
                 double in =  i * scale;
-                interpolationData[i].bottomIndex = static_cast<Nd4jLong>(in);
-                interpolationData[i].topIndex = nd4j::math::nd4j_min(interpolationData[i].bottomIndex + 1, inSize - 1);
-                interpolationData[i].interpolarValue = in - interpolationData[i].bottomIndex;
+                interpolationData[i]._bottomIndex = static_cast<Nd4jLong>(in);
+                interpolationData[i]._topIndex = nd4j::math::nd4j_min(interpolationData[i]._bottomIndex + 1, inSize - 1);
+                interpolationData[i]._interpolarValue = in - interpolationData[i]._bottomIndex;
      	    }
 	    };
 	    samediff::Threads::parallel_for(func, 0, outSize);
@@ -159,8 +159,8 @@ namespace helpers {
     static void
     resizeImage(NDArray const *images, Nd4jLong batchSize, Nd4jLong inHeight, Nd4jLong inWidth, Nd4jLong outHeight,
                 Nd4jLong outWidth, Nd4jLong channels,
-                std::vector<BilinearInterpolationData> const &xs,
-                std::vector<BilinearInterpolationData> const &ys,
+                std::vector<BilinearInterpolationData> const& xs,
+                std::vector<BilinearInterpolationData> const& ys,
                 NDArray *output);
 
     template<typename T>
@@ -175,10 +175,10 @@ namespace helpers {
         Nd4jLong inBatchNumValues = inHeight * inRowSize;
         Nd4jLong outRowSize = outWidth * channels;
 
-        T const *pInput = images->getDataBuffer()->primaryAsT<T>(); // this works only with 'c' direction
-        BilinearInterpolationData const *xs_ = xs.data();
+        T const *pInputBuf = images->getDataBuffer()->primaryAsT<T>(); // this works only with 'c' direction
+        BilinearInterpolationData const* xsPtr = xs.data();
 
-        T* pOutput = output->dataBuffer()->primaryAsT<T>();
+        T* pOutputBuf = output->dataBuffer()->primaryAsT<T>();
         auto computeBilinear = [](double topLeft, double topRight,
                                       double bottomLeft, double bottomRight,
                                       double xVal, double yVal) {
@@ -187,32 +187,31 @@ namespace helpers {
             return top + (bottom - top) * yVal;
         };
 
-      auto func = PRAGMA_THREADS_FOR {
-        for (auto b = start; b < stop; ++b) {
-            for (auto y = 0; y < outHeight; ++y) {
-                const T *ys_input_lower_ptr = pInput + ys[y].bottomIndex * inRowSize;
-                const T *ys_input_upper_ptr = pInput + ys[y].topIndex * inRowSize;
-                double yVal = ys[y].interpolarValue;
-                for (auto x = 0; x < outWidth; ++x) {
-                    auto xsBottom = xs_[x].bottomIndex;
-                    auto xsTop = xs_[x].topIndex;
-                    auto xVal = xs_[x].interpolarValue;
-                    for (auto c = 0; c < channels; ++c) {
-                        double topLeft(ys_input_lower_ptr[xsBottom + c]);
-                        double topRight(ys_input_lower_ptr[xsTop + c]);
-                        double bottomLeft(ys_input_upper_ptr[xsBottom + c]);
-                        double bottomRight(ys_input_upper_ptr[xsTop + c]);
-                        pOutput[x * channels + c] =
-                                computeBilinear(topLeft, topRight, bottomLeft, bottomRight,
-                                                xVal, yVal);
+        auto func = PRAGMA_THREADS_FOR {
+            for (auto batch = start; batch < stop; ++batch) {
+                auto pInput = pInputBuf + batch * inBatchNumValues;
+                for (auto y = 0; y < outHeight; ++y) {
+                    auto pOutput = pOutputBuf + (batch * outHeight + y) * outRowSize;
+                    const T* ysInputLowerPtr = pInput + ys[y]._bottomIndex * inRowSize;
+                    const T* ysInputUpperPtr = pInput + ys[y]._topIndex * inRowSize;
+                    double yVal = ys[y]._interpolarValue;
+                    for (auto x = 0; x < outWidth; ++x) {
+                        auto xsBottom = xsPtr[x]._bottomIndex;
+                        auto xsTop = xsPtr[x]._topIndex;
+                        auto xVal = xsPtr[x]._interpolarValue;
+                        for (auto c = 0; c < channels; ++c) {
+                            double topLeft(ysInputLowerPtr[xsBottom + c]);
+                            double topRight(ysInputLowerPtr[xsTop + c]);
+                            double bottomLeft(ysInputUpperPtr[xsBottom + c]);
+                            double bottomRight(ysInputUpperPtr[xsTop + c]);
+                            pOutput[x * channels + c] = computeBilinear(topLeft, topRight, bottomLeft, bottomRight,
+                                    xVal, yVal);
+                        }
                     }
                 }
-                pOutput += outRowSize;
             }
-            pInput += inBatchNumValues;
-        }
-    };
-    samediff::Threads::parallel_tad(func, 0, batchSize);
+        };
+        samediff::Threads::parallel_tad(func, 0, batchSize);
     }
 
     template<typename T>
@@ -257,8 +256,8 @@ namespace helpers {
         // Scale x interpolation weights to avoid a multiplication during iteration.
         auto func = PRAGMA_THREADS_FOR {
             for (auto i = start; i < stop; i += increment) {
-                xs[i].bottomIndex *= channels;
-                xs[i].topIndex *= channels;
+                xs[i]._bottomIndex *= channels;
+                xs[i]._topIndex *= channels;
             }
         };
         samediff::Threads::parallel_for(func, 0, xsSize);

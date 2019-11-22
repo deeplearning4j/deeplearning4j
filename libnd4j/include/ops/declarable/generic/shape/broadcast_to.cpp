@@ -25,7 +25,6 @@
 
 namespace nd4j {
 namespace ops  {
-    
 
 CUSTOM_OP_IMPL(broadcast_to, 2, 1, false, 0, 0) {
 

@@ -254,6 +254,34 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests15, Test_BitCast_3) {
+    auto x = NDArrayFactory::create<float>('c', {1, 4});
+
+    x.linspace(1.);
+    nd4j::ops::bitcast op;
+    try {
+        auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
+        ASSERT_NE(Status::OK(), result->status());
+        delete result;
+    } catch (std::exception& e) {
+        nd4j_printf("Error should be here `%s'. It's OK.\n", e.what());
+    }
+}
+
+TEST_F(DeclarableOpsTests15, Test_BitCast_4) {
+    auto x = NDArrayFactory::create<float>('c', {1, 4});
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {1234567890LL, 2468013579LL});
+    x.linspace(1.);
+    nd4j::ops::bitcast op;
+    try {
+        auto result = op.execute({&x}, {&e}, {}, {nd4j::DataType::INT64}, {});
+        ASSERT_NE(Status::OK(), result);
+    } catch(std::exception& e) {
+        nd4j_printf("Error `%s' should be here. It's OK.\n",e.what());
+    }
+
+}
+
 TEST_F(DeclarableOpsTests15, Test_depthwise_bp_1) {
     auto in = NDArrayFactory::create<float>('c', {4, 8, 64, 64});
     auto w = NDArrayFactory::create<float>('c', {2, 2, 8, 2});

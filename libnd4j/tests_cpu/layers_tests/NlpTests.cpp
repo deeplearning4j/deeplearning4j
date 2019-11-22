@@ -426,6 +426,10 @@ TEST_F(NlpTests, test_sg_ns_batch_1) {
 }
 
 TEST_F(NlpTests, test_cbow_hs_batch_1) {
+#ifdef __CUDABLAS__
+    return ;
+#endif
+
     auto target = NDArrayFactory::create<int>(0);
     auto ngStarter = NDArrayFactory::empty<int>();
     auto context = NDArrayFactory::create<int>('c', {2, 3}, {0, 1, 2,  100, 101, 102});

@@ -30,6 +30,17 @@ namespace nd4j {
             auto input = INPUT_VARIABLE(0);
             auto output = OUTPUT_VARIABLE(0);
             // when empty - nothing to do
+            DataType newType = DataTypeUtils::fromInt(INT_ARG(0));
+            DataType oldType = input->dataType();
+            // correct output shape to conform with output data type
+            auto inputSize = DataTypeUtils::sizeOf(oldType);
+            auto outputSize = DataTypeUtils::sizeOf(newType);
+            auto lastSize = outputSize / inputSize;
+            if (inputSize < outputSize) {
+                REQUIRE_TRUE(input->sizeAt(-1) == lastSize, 0,
+                             "BITCAST: %llu > %llu. So last dimension should be %i, but %i given.", inputSize,
+                             outputSize, lastSize, input->sizeAt(-1));
+            }
             if(input->isEmpty()){
                 REQUIRE_TRUE(output->isEmpty(), 0, "BITCAST: If input is empty, output array must also be empty.");
                 return Status::OK();
@@ -70,7 +81,7 @@ namespace nd4j {
                 auto outputShape = ConstantShapeHelper::getInstance()->createShapeInfo(newType, shape::order(inShape), shapeOf);
                 return SHAPELIST(outputShape);
             }
-            REQUIRE_TRUE(shape::sizeAt(inShape, -1) == outputSize / inputSize, 0, "BITCAST: %ull > %ull. So last dimension should be %ull, but %i given.", inputSize, outputSize, outputSize / inputSize, shape::sizeAt(inShape, -1));
+            REQUIRE_TRUE(shape::sizeAt(inShape, -1) == outputSize / inputSize, 0, "BITCAST: %llu > %llu. So last dimension should be %i, but %i given.", inputSize, outputSize, outputSize / inputSize, shape::sizeAt(inShape, -1));
             std::vector<Nd4jLong> shapeOf(inputRank - 1);
 
             for (auto i = 0; i < shapeOf.size(); ++i) {
