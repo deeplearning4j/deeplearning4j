@@ -19,10 +19,14 @@ package org.deeplearning4j.nn.conf.layers;
 import lombok.*;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.api.ParamInitializer;
+import org.deeplearning4j.nn.conf.InputPreProcessor;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
 import org.deeplearning4j.nn.conf.inputs.InputType;
 import org.deeplearning4j.nn.conf.memory.LayerMemoryReport;
 import org.deeplearning4j.nn.conf.memory.MemoryReport;
+import org.deeplearning4j.nn.conf.preprocessor.Cnn3DToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.CnnToFeedForwardPreProcessor;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
 import org.deeplearning4j.optimize.api.TrainingListener;
 import org.nd4j.linalg.api.buffer.DataType;
@@ -149,6 +153,34 @@ public class DenseLayer extends FeedForwardLayer {
         public DenseLayer build() {
             return new DenseLayer(this);
         }
+    }
+
+    // support for RNN (3D) input
+
+    @Override
+    public void setNIn(InputType inputType, boolean override) {
+        if (inputType != null && inputType.getType() == InputType.Type.RNN){
+            this.nIn = ((InputType.InputTypeRecurrent)inputType).getSize();
+        }
+        else{
+            super.setNIn(inputType, override);
+        }
+    }
+
+    @Override
+    public InputPreProcessor getPreProcessorForInputType(InputType inputType) {
+        if (inputType != null && inputType.getType() == InputType.Type.RNN){
+            return null;
+        }
+        return super.getPreProcessorForInputType(inputType);
+    }
+
+    @Override
+    public InputType getOutputType(int layerIndex, InputType inputType) {
+        if (inputType != null &&inputType.getType() == InputType.Type.RNN){
+            return InputType.recurrent(nOut, ((InputType.InputTypeRecurrent)inputType).getTimeSeriesLength());
+        }
+        return super.getOutputType(layerIndex, inputType);
     }
 
 }

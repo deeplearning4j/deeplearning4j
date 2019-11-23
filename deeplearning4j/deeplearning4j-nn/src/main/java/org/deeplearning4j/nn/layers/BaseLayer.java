@@ -19,6 +19,7 @@ package org.deeplearning4j.nn.layers;
 import org.deeplearning4j.exception.DL4JInvalidInputException;
 import org.deeplearning4j.nn.api.Layer;
 import org.deeplearning4j.nn.conf.NeuralNetConfiguration;
+import org.deeplearning4j.nn.conf.preprocessor.RnnToFeedForwardPreProcessor;
 import org.deeplearning4j.nn.gradient.DefaultGradient;
 import org.deeplearning4j.nn.gradient.Gradient;
 import org.deeplearning4j.nn.params.DefaultParamInitializer;
@@ -297,7 +298,12 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
         INDArray g = (hasLayerNorm() ? getParam(DefaultParamInitializer.GAIN_KEY) : null);
 
         INDArray input = this.input.castTo(dataType);
-
+        long batchSize = input.shape()[0];
+        boolean reshaped = false;
+        if (input.shape().length == 3) { //RNN input
+            input = new RnnToFeedForwardPreProcessor().preProcess(input, -1, workspaceMgr);  // batchSize * time, dim
+            reshaped = true;
+        }
         //Input validation:
         if (input.rank() != 2 || input.columns() != W.rows()) {
             if (input.rank() != 2) {
@@ -329,6 +335,9 @@ public abstract class BaseLayer<LayerConfT extends org.deeplearning4j.nn.conf.la
             applyMask(ret);
         }
 
+        if (reshaped){
+            ret = ret.reshape(batchSize, ret.shape()[ret.shape().length - 1], ret.shape()[0] / batchSize);
+        }
         return new Pair<>(ret, preNorm);
     }
 

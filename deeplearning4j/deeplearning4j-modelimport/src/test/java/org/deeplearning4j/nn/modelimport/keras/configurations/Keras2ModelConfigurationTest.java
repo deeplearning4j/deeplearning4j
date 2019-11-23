@@ -256,7 +256,7 @@ public class Keras2ModelConfigurationTest extends BaseDL4JTest {
     }
 
     @Test
-    public void ReshapeEmbeddingConcatTest() throws Exception{
+    public void reshapeEmbeddingConcatTest() throws Exception{
         try(InputStream is = Resources.asStream("/modelimport/keras/configs/keras2/reshape_embedding_concat.json")) {
             ComputationGraphConfiguration config =
                     new KerasModel().modelBuilder().modelJsonInputStream(is)
@@ -266,6 +266,16 @@ public class Keras2ModelConfigurationTest extends BaseDL4JTest {
             model.outputSingle(Nd4j.zeros(1, 1), Nd4j.zeros(1, 1), Nd4j.zeros(1, 1));
         }
     }
+
+    @Test
+    public void timeDistributedTest() throws Exception {
+        String path = "/modelimport/keras/configs/keras2/time_distributed.json";
+        ComputationGraph model = new ComputationGraph(KerasModelImport.importKerasModelConfiguration(path));
+        model.init();
+        assertTrue(Arrays.equals(model.outputSingle(Nd4j.zeros(1, 2, 3)).shape(), new long[]{1, 4, 3}));
+
+    }
+
 
     private void runSequentialConfigTest(String path) throws Exception {
         try(InputStream is = Resources.asStream(path)) {
