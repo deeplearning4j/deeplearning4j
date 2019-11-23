@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -28,6 +29,7 @@ import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.RnnOutputLayer;
 import org.deeplearning4j.nn.layers.convolution.ConvolutionLayer;
 import org.deeplearning4j.nn.layers.feedforward.dense.DenseLayer;
+import org.deeplearning4j.nn.modelimport.keras.preprocessors.ReshapePreprocessor;
 import org.deeplearning4j.nn.weights.WeightInit;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
@@ -484,5 +486,33 @@ public class TestPreProcessors extends BaseDL4JTest {
         assertEquals(10, cnnff.getNumChannels());
 
         assertEquals(15 * 15 * 10, ((FeedForwardLayer) conf.getConf(1).getLayer()).getNIn());
+    }
+
+
+    @Test
+    public void testPreprocessorVertex(){
+        for(boolean withMinibatchDim : new boolean[]{true, false}){
+            long[] inShape = withMinibatchDim ? new long[]{-1, 32} : new long[]{32};
+            long[] targetShape = withMinibatchDim ? new long[]{-1, 2, 4, 4} : new long[]{2, 4, 4};
+
+            for( long minibatch : new long[]{1, 3}) {
+                long[] inArrayShape = new long[]{minibatch, 32};
+                long[] targetArrayShape = new long[]{minibatch, 2, 4, 4};
+                long length = minibatch * 32;
+
+                INDArray in = Nd4j.linspace(1, length, length).reshape('c', inArrayShape);
+
+                ReshapePreprocessor pp = new ReshapePreprocessor(inShape, targetShape, withMinibatchDim);
+
+                for( int i=0; i<3; i++ ) {
+                    INDArray out = pp.preProcess(in, (int) minibatch, LayerWorkspaceMgr.noWorkspaces());
+                    INDArray expOut = in.reshape(targetArrayShape);
+                    assertEquals(expOut, out);
+
+                    INDArray backprop = pp.backprop(expOut, (int)minibatch, LayerWorkspaceMgr.noWorkspaces());
+                    assertEquals(in, backprop);
+                }
+            }
+        }
     }
 }

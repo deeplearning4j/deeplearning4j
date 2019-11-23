@@ -111,7 +111,7 @@ public class KerasFlatten extends KerasLayer {
             // to RNN type. Otherwise we add this trivial preprocessor (since there's nothing to flatten).
             InputType.InputTypeFeedForward it = (InputType.InputTypeFeedForward) inputType[0];
             val inputShape = new long[]{it.getSize()};
-            preprocessor = new ReshapePreprocessor(inputShape, inputShape);
+            preprocessor = new ReshapePreprocessor(inputShape, inputShape, false);
         }
         return preprocessor;
     }
