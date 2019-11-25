@@ -1,5 +1,6 @@
 <!--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   ~ Copyright (c) 2015-2018 Skymind, Inc.
+  ~ Copyright (c) 2019 Konduit K.K.
   ~
   ~ This program and the accompanying materials are made available under the
   ~ terms of the Apache License, Version 2.0 which is available at
@@ -23,16 +24,11 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>deeplearning4j-nearestneighbor-server_2.11</artifactId>
+    <artifactId>deeplearning4j-nearestneighbor-server</artifactId>
     <packaging>jar</packaging>
 
     <name>deeplearning4j-nearestneighbor-server</name>
 
-    <properties>
-        <!-- Default scala versions, may be overwritten by build profiles -->
-        <scala.version>2.11.12</scala.version>
-        <scala.binary.version>2.11</scala.binary.version>
-    </properties>
     <build>
         <pluginManagement>
             <plugins>
@@ -73,29 +69,17 @@
         </dependency>
 
         <dependency>
-            <groupId>com.typesafe.play</groupId>
-            <artifactId>play-java_2.11</artifactId>
-            <version>${playframework.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.google.code.findbugs</groupId>
-                    <artifactId>jsr305</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.tomcat</groupId>
-                    <artifactId>tomcat-servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>net.jodah</groupId>
-                    <artifactId>typetools</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-core</artifactId>
+            <version>${vertx.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>net.jodah</groupId>
-            <artifactId>typetools</artifactId>
-            <version>${jodah.typetools.version}</version>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-web</artifactId>
+            <version>${vertx.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.mashape.unirest</groupId>
             <artifactId>unirest-java</artifactId>
@@ -109,24 +93,15 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.typesafe.play</groupId>
-            <artifactId>play-json_2.11</artifactId>
-            <version>${playframework.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>com.typesafe.play</groupId>
-            <artifactId>play-server_2.11</artifactId>
-            <version>${playframework.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.beust</groupId>
             <artifactId>jcommander</artifactId>
             <version>${jcommander.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>com.typesafe.play</groupId>
-            <artifactId>play-netty-server_2.11</artifactId>
-            <version>${playframework.version}</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
