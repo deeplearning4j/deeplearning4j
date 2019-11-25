@@ -19,7 +19,7 @@
 //
 
 #include <ops/declarable/helpers/image_suppression.h>
-//#include <blas/NDArray.h>
+#include <NDArrayFactory.h>
 #include <algorithm>
 #include <numeric>
 #include <queue>
@@ -91,10 +91,56 @@ namespace helpers {
         }
     }
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Return intersection-over-union overlap between boxes i and j
+    template <typename T>
+    static inline T similirityV3_(NDArray const& boxes, Nd4jLong i, Nd4jLong j) {
+        const T ymin_i = math::nd4j_min(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
+        const T xmin_i = math::nd4j_min(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
+        const T ymax_i = math::nd4j_max(boxes.t<T>(i, 0), boxes.t<T>(i, 2));
+        const T xmax_i = math::nd4j_max(boxes.t<T>(i, 1), boxes.t<T>(i, 3));
+        const T ymin_j = math::nd4j_min(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
+        const T xmin_j = math::nd4j_min(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
+        const T ymax_j = math::nd4j_max(boxes.t<T>(j, 0), boxes.t<T>(j, 2));
+        const T xmax_j = math::nd4j_max(boxes.t<T>(j, 1), boxes.t<T>(j, 3));
+        const T area_i = (ymax_i - ymin_i) * (xmax_i - xmin_i);
+        const T area_j = (ymax_j - ymin_j) * (xmax_j - xmin_j);
+        if (area_i <= static_cast<T>(0) || area_j <= static_cast<T>(0)) {
+            return static_cast<T>(0.0);
+        }
+        const T intersection_ymin = math::nd4j_max(ymin_i, ymin_j);
+        const T intersection_xmin = math::nd4j_max(xmin_i, xmin_j);
+        const T intersection_ymax = math::nd4j_min(ymax_i, ymax_j);
+        const T intersection_xmax = math::nd4j_max(xmax_i, xmax_j);
+        const T intersection_area =
+                math::nd4j_max(intersection_ymax - intersection_ymin, static_cast<T>(0.0)) *
+                math::nd4j_max(intersection_xmax - intersection_xmin, static_cast<T>(0.0));
+        return intersection_area / (area_i + area_j - intersection_area);
+    }
+
+    template <typename T>
+    static inline T similiratyOverlaps_(NDArray const& boxes, Nd4jLong i, Nd4jLong j) {
+        return boxes.t<T>(i, j);
+    }
+
+    typedef NDArray (*SimiliratyFunc)(NDArray const& boxes, Nd4jLong i, Nd4jLong j);
+
+    static NDArray similiratyOverlaps(NDArray const& boxes, Nd4jLong i, Nd4jLong j) {
+        NDArray res = NDArrayFactory::create(0.);
+        BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similiratyOverlaps_, (boxes, i, j) , FLOAT_TYPES);
+        return res;
+    }
+
+    static NDArray similiratyV3(NDArray const& boxes, Nd4jLong i, Nd4jLong j) {
+        NDArray res = NDArrayFactory::create(0.);
+        BUILD_SINGLE_SELECTOR(boxes.dataType(), res = similirityV3_, (boxes, i, j) , FLOAT_TYPES);
+        return res;
+    }
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     template <typename T, typename I>
     static Nd4jLong
     nonMaxSuppressionGeneric_(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int outputSize,
-            double overlapThreshold, double scoreThreshold, NDArray* output) {
+            double overlapThreshold, double scoreThreshold, NDArray* output,  SimiliratyFunc f) {
 
 //        const int outputSize = maxSize->e<int>(0);
         auto numBoxes = boxes->sizeAt(0);
@@ -139,7 +185,8 @@ namespace helpers {
             // following loop.
             bool shouldHardSuppress = false;
             for (int j = static_cast<int>(selected.size()) - 1; j >= nextCandidate._suppressBeginIndex; --j) {
-                similarity = boxes->t<T>(nextCandidate._boxIndex, selected[j]);
+                auto similarityA = f(*boxes, nextCandidate._boxIndex, selected[j]); //boxes->t<T>(nextCandidate._boxIndex, selected[j]);
+                similarity = similarityA.template t<T>(0LL);
                 nextCandidate._score *= T(similarity <= overlapThreshold?1.0:0.); //suppressWeightFunc(similarity);
 
                 // First decide whether to perform hard suppression
@@ -188,12 +235,19 @@ namespace helpers {
     Nd4jLong
     nonMaxSuppressionGeneric(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
                               double overlapThreshold, double scoreThreshold, NDArray* output) {
-        BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr?DataType::INT32:output->dataType(), return nonMaxSuppressionGeneric_, (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output), FLOAT_TYPES, INTEGER_TYPES);
+        BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr?DataType::INT32:output->dataType(), return nonMaxSuppressionGeneric_, (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similiratyOverlaps), FLOAT_TYPES, INTEGER_TYPES);
+        return 0;
+    }
+
+    Nd4jLong
+    nonMaxSuppressionV3(nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
+                             double overlapThreshold, double scoreThreshold, NDArray* output) {
+        BUILD_DOUBLE_SELECTOR(boxes->dataType(), output == nullptr?DataType::INT32:output->dataType(), return nonMaxSuppressionGeneric_, (context, boxes, scores, maxSize, overlapThreshold, scoreThreshold, output, similiratyV3), FLOAT_TYPES, INTEGER_TYPES);
         return 0;
     }
 
     BUILD_DOUBLE_TEMPLATE(template Nd4jLong nonMaxSuppressionGeneric_, (nd4j::LaunchContext* context, NDArray* boxes, NDArray* scores, int maxSize,
-            double overlapThreshold, double scoreThreshold, NDArray* output), FLOAT_TYPES, INTEGER_TYPES);
+            double overlapThreshold, double scoreThreshold, NDArray* output, SimiliratyFunc similiratyFunc), FLOAT_TYPES, INTEGER_TYPES);
 
     void
     nonMaxSuppression(nd4j::LaunchContext * context, NDArray* boxes, NDArray* scales, int maxSize,

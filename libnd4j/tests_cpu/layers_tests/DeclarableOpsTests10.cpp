@@ -2330,6 +2330,29 @@ TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_5) {
     delete results;
 }
 
+TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressing_6) {
+
+    NDArray boxes    = NDArrayFactory::create<float16>('c', {3, 4}, {0.8115f,    0.4121f,    0.0771f,    0.4863f,
+                                                                     0.7412f,    0.7607f,    0.1543f,    0.5479f,
+                                                                     0.8223f,    0.2246f,    0.0049f,    0.6465f});
+    NDArray scales = NDArrayFactory::create<float16>('c', {3}, {0.0029f,    0.8135f,    0.4873f}); //3, 0, 1, 2, 4, 5
+    NDArray expected = NDArrayFactory::create<int>('c', {1}, {1});
+    NDArray maxSize = NDArrayFactory::create(2);
+    NDArray threshold = NDArrayFactory::create(0.5f);
+    NDArray scoreThreshold = NDArrayFactory::create(-DataTypeUtils::infOrMax<float>());
+    nd4j::ops::non_max_suppression_v3 op;
+    auto results = op.execute({&boxes, &scales, &maxSize, &threshold, &scoreThreshold}, {}, {});
+
+    ASSERT_EQ(Status::OK(), results->status());
+
+    NDArray* result = results->at(0);
+//    result->printBuffer("NonMaxSuppression OUtput4");
+    ASSERT_TRUE(expected.isSameShapeStrict(result));
+    ASSERT_TRUE(expected.equalsTo(result));
+
+    delete results;
+}
+
 ////////////////////////////////////////////////////////////////////
 TEST_F(DeclarableOpsTests10, Image_NonMaxSuppressingOverlap_1) {
 
