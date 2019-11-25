@@ -1089,6 +1089,16 @@ public class CustomOpsTests extends BaseNd4jTest {
     }
 
     @Test
+    public void testBitCastShape_3(){
+        val x = Nd4j.createFromArray(new int[]{1, 2, 3, 4, 5, 6, 7, 8}).reshape(1, 4, 2);
+        val e = Nd4j.createFromArray(new long[]{8589934593L, 17179869187L, 25769803781L, 34359738375L}).reshape(1, 4);
+        val z = Nd4j.exec(new BitCast(x, DataType.LONG.toInt()))[0];
+
+        assertEquals(e, z);
+    }
+
+
+    @Test
     public void testMatch_1() {
         INDArray x = Nd4j.ones(DataType.FLOAT, 3,3);
         INDArray y = Nd4j.linspace(DataType.FLOAT, -5, 9, 1).reshape(3, 3);
