@@ -33,23 +33,27 @@ namespace helpers {
             double scoreThreshold, NDArray* output) {
         std::vector<int> indices(scales->lengthOf());
         std::iota(indices.begin(), indices.end(), 0);
+        auto actualIndicesCount = indices.size();
         for (auto e = 0; e < scales->lengthOf(); e++) {
-            if (scales->e<double>(e) < scoreThreshold) indices[e] = -1;
+            if (scales->e<float>(e) < (float)scoreThreshold) {
+                indices[e] = -1;
+                actualIndicesCount--;
+            }
         }
-        std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return scales->e<T>(i) > scales->e<T>(j);});
+        std::sort(indices.begin(), indices.end(), [scales](int i, int j) {return i >= 0 && j >=0?scales->e<T>(i) > scales->e<T>(j):(i > j);});
 
 //        std::vector<int> selected(output->lengthOf());
         std::vector<int> selectedIndices(output->lengthOf(), 0);
         auto needToSuppressWithThreshold = [] (NDArray& boxes, int previousIndex, int nextIndex, T threshold) -> bool {
             if (previousIndex < 0 || nextIndex < 0) return true;
-            T minYPrev = nd4j::math::nd4j_min(boxes.e<T>(previousIndex, 0), boxes.e<T>(previousIndex, 2));
-            T minXPrev = nd4j::math::nd4j_min(boxes.e<T>(previousIndex, 1), boxes.e<T>(previousIndex, 3));
-            T maxYPrev = nd4j::math::nd4j_max(boxes.e<T>(previousIndex, 0), boxes.e<T>(previousIndex, 2));
-            T maxXPrev = nd4j::math::nd4j_max(boxes.e<T>(previousIndex, 1), boxes.e<T>(previousIndex, 3));
-            T minYNext = nd4j::math::nd4j_min(boxes.e<T>(nextIndex, 0), boxes.e<T>(nextIndex, 2));
-            T minXNext = nd4j::math::nd4j_min(boxes.e<T>(nextIndex, 1), boxes.e<T>(nextIndex, 3));
-            T maxYNext = nd4j::math::nd4j_max(boxes.e<T>(nextIndex, 0), boxes.e<T>(nextIndex, 2));
-            T maxXNext = nd4j::math::nd4j_max(boxes.e<T>(nextIndex, 1), boxes.e<T>(nextIndex, 3));
+            T minYPrev = nd4j::math::nd4j_min(boxes.t<T>(previousIndex, 0), boxes.t<T>(previousIndex, 2));
+            T minXPrev = nd4j::math::nd4j_min(boxes.t<T>(previousIndex, 1), boxes.t<T>(previousIndex, 3));
+            T maxYPrev = nd4j::math::nd4j_max(boxes.t<T>(previousIndex, 0), boxes.t<T>(previousIndex, 2));
+            T maxXPrev = nd4j::math::nd4j_max(boxes.t<T>(previousIndex, 1), boxes.t<T>(previousIndex, 3));
+            T minYNext = nd4j::math::nd4j_min(boxes.t<T>(nextIndex, 0), boxes.t<T>(nextIndex, 2));
+            T minXNext = nd4j::math::nd4j_min(boxes.t<T>(nextIndex, 1), boxes.t<T>(nextIndex, 3));
+            T maxYNext = nd4j::math::nd4j_max(boxes.t<T>(nextIndex, 0), boxes.t<T>(nextIndex, 2));
+            T maxXNext = nd4j::math::nd4j_max(boxes.t<T>(nextIndex, 1), boxes.t<T>(nextIndex, 3));
             T areaPrev = (maxYPrev - minYPrev) * (maxXPrev - minXPrev);
             T areaNext = (maxYNext - minYNext) * (maxXNext - minXNext);
 
@@ -67,7 +71,7 @@ namespace helpers {
 
         };
 //        int numSelected = 0;
-        int numBoxes = boxes->sizeAt(0);
+        int numBoxes = actualIndicesCount; //boxes->sizeAt(0);
         int numSelected = 0;
 
         for (int i = 0; i < numBoxes; ++i) {

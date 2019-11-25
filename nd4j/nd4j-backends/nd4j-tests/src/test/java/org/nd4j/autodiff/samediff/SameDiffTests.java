@@ -16,25 +16,22 @@
 
 package org.nd4j.autodiff.samediff;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.junit.Assume.assumeNotNull;
 import static org.nd4j.linalg.indexing.NDArrayIndex.all;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import lombok.extern.slf4j.Slf4j;
+import lombok.val;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -43,6 +40,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.nd4j.OpValidationSuite;
 import org.nd4j.autodiff.samediff.api.OutAndGrad;
+import org.nd4j.autodiff.samediff.impl.DefaultSameDiffConditional;
 import org.nd4j.autodiff.validation.OpValidation;
 import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.linalg.BaseNd4jTest;
@@ -72,18 +70,14 @@ import org.nd4j.linalg.dataset.MultiDataSet;
 import org.nd4j.linalg.dataset.adapter.SingletonMultiDataSetIterator;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.factory.Nd4jBackend;
-import org.nd4j.linalg.indexing.INDArrayIndex;
 import org.nd4j.linalg.indexing.NDArrayIndex;
 import org.nd4j.linalg.learning.config.Adam;
 import org.nd4j.linalg.ops.transforms.Transforms;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.nativeblas.NativeOpsHolder;
+import org.nd4j.weightinit.impl.OneInitScheme;
 import org.nd4j.weightinit.impl.UniformInitScheme;
-
-import com.google.common.collect.Maps;
-
-import lombok.val;
-import lombok.extern.slf4j.Slf4j;
+import org.nd4j.weightinit.impl.ZeroInitScheme;
 
 /**
  * Created by agibsonccc on 4/11/17.
@@ -1645,6 +1639,19 @@ public class SameDiffTests extends BaseNd4jTest {
 
             assertEquals(expOut, out);
         }
+    }
+
+    @Ignore(/*AS - 20191114 https://github.com/eclipse/deeplearning4j/issues/8393*/)
+    @Test
+    public void testIsStrictlyIncShape() {
+        int nOut = 0;
+        int minibatch = 0;
+
+        INDArray ia = Nd4j.randn(minibatch, nOut);
+        INDArray expOut = Nd4j.create(DataType.BOOL, ia.shape());
+
+        Nd4j.exec(new IsStrictlyIncreasing(new INDArray[]{ia}, new INDArray[]{expOut}));
+        System.out.println(expOut);
     }
 
     @Test
@@ -3494,48 +3501,4 @@ public class SameDiffTests extends BaseNd4jTest {
 		Map<String, INDArray> map = sd.calculateGradients(null,"input", "concat");
 		assertEquals(map.get("input"), map.get("concat"));
 	}
-	
-	@Test
-	public void testUnstackVariableFeedForwardAndGrad() {
-		SameDiff sd = SameDiff.create();
-		SDVariable label = sd.var("label", DataType.FLOAT, 3, 4);
-		SDVariable input = sd.var("input", DataType.FLOAT, 3, 4);
-		INDArray inputArr =  Nd4j.rand(DataType.FLOAT,3,4);
-		INDArray labelArr =  Nd4j.rand(DataType.FLOAT,3,4);
-		SDVariable[] inputSlices = sd.unstack(input, 1);
-		SDVariable[] inputUnstackOut=new SDVariable[inputSlices.length];
-		List<String> outList=new ArrayList<String>();
-		List<String> inputSlicesNameList=new ArrayList<String>();
-		for(int i=0;i<inputSlices.length;i++){
-			inputUnstackOut[i] = sd.math().pow(inputSlices[i], i+1);
-			outList.add(inputUnstackOut[i].name());
-			inputSlicesNameList.add(inputSlices[i].name());
-		}
-		sd.associateArrayWithVariable(labelArr, label);
-		sd.associateArrayWithVariable(inputArr, input);
-		Map<String, INDArray> map = sd.output(null,outList);
-	    INDArray[] result=new INDArray[outList.size()];
-		for(int i=0;i<outList.size();i++){
-			result[i]=map.get(outList.get(i));
-		}
-		INDArray[] expected=new INDArray[inputSlices.length];
-		for(int i=0;i<inputSlices.length;i++){
-			expected[i] = Transforms.pow(inputArr.get(new INDArrayIndex[]{ NDArrayIndex.all(),NDArrayIndex.point(i)}), i+1);
-		}
-		//Verify the slice calculation is correct
-		assertEquals(Nd4j.stack(1, expected),Nd4j.stack(1, result));
-		
-		SDVariable c = sd.stack(1, inputUnstackOut);
-		SDVariable loss = sd.math().pow(c.sub(label), 2);
-		sd.setLossVariables(loss);
-		inputSlicesNameList.add(0, "input");
-		Map<String, INDArray> gradMap = sd.calculateGradients(null,inputSlicesNameList);
-		INDArray[] expectedGradArr=new INDArray[inputSlices.length];
-		for(int i=1;i<inputSlicesNameList.size();i++){
-			expectedGradArr[i-1]= gradMap.get(inputSlicesNameList.get(i));
-		}
-		//Verify that the slice is not disconnected
-		assertEquals(gradMap.get("input"), Nd4j.stack(1, expectedGradArr));
-	}
-	
 }

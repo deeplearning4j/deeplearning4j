@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -40,6 +41,7 @@ import org.nd4j.autodiff.validation.TestCase;
 import org.nd4j.base.Preconditions;
 import org.nd4j.imports.TFGraphs.listener.OpExecOrderListener;
 import org.nd4j.imports.graphmapper.tf.TFGraphMapper;
+import org.nd4j.imports.listeners.ExecPrintListener;
 import org.nd4j.linalg.api.buffer.DataType;
 import org.nd4j.linalg.api.iter.NdIndexIterator;
 import org.nd4j.linalg.api.ndarray.INDArray;
@@ -137,7 +139,7 @@ public class TFGraphTestAllHelper {
 
     protected static void checkOnlyOutput(Map<String, INDArray> inputs, Map<String, INDArray> predictions, String modelName,
                                           String baseDir, String modelFilename, ExecuteWith execType, BiFunction<File,String,SameDiff> loader,
-                                          Double maxRelErrorOverride, Double minAbsErrorOverride) throws IOException {
+                                          Double maxRelErrorOverride, Double minAbsErrorOverride, boolean printArraysDebugging) throws IOException {
         Preconditions.checkArgument((maxRelErrorOverride == null) == (minAbsErrorOverride == null), "Both maxRelErrorOverride and minAbsErrorOverride" +
                 " must be null or both must be provided");
         Nd4j.EPS_THRESHOLD = 1e-3;
@@ -152,7 +154,7 @@ public class TFGraphTestAllHelper {
             outputsToCheck.add(s);
         }
 
-        Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, outputsToCheck);
+        Pair<SameDiff,Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFilename, modelName, inputs, execType, loader, null, outputsToCheck, printArraysDebugging);
         SameDiff graph = p.getFirst();
         Map<String,INDArray> sameDiffPredictions = p.getSecond();
 
@@ -296,18 +298,18 @@ public class TFGraphTestAllHelper {
     }
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName,
-                                         ExecuteWith execType, File localTestDir) throws IOException {
-        checkIntermediate(inputs, modelName, baseDir, modelFileName, execType, LOADER, null, null, localTestDir);
+                                         ExecuteWith execType, File localTestDir, boolean printArraysDebugging) throws IOException {
+        checkIntermediate(inputs, modelName, baseDir, modelFileName, execType, LOADER, null, null, localTestDir, printArraysDebugging);
     }
 
     public static void checkIntermediate(Map<String, INDArray> inputs, String modelName, String baseDir, String modelFileName,
                                          ExecuteWith execType, BiFunction<File,String,SameDiff> loader,
-                                         Double maxRelErrorOverride, Double minAbsErrorOverride, File localTestDir) throws IOException {
+                                         Double maxRelErrorOverride, Double minAbsErrorOverride, File localTestDir, boolean printArraysDebugging) throws IOException {
         Preconditions.checkArgument((maxRelErrorOverride == null) == (minAbsErrorOverride == null), "Both maxRelErrorOverride and minAbsErrorOverride" +
                 " must be null or both must be provided");
         Nd4j.EPS_THRESHOLD = 1e-3;
         OpExecOrderListener listener = new OpExecOrderListener();       //Used to collect exec order
-        Pair<SameDiff, Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader, Collections.singletonList(listener), null);
+        Pair<SameDiff, Map<String,INDArray>> p = getGraphAfterExec(baseDir, modelFileName, modelName, inputs, execType, loader, Collections.singletonList(listener), null, printArraysDebugging);
         SameDiff graph = p.getFirst();
         Map<String,INDArray> sdPredictions = p.getSecond();
 
@@ -388,11 +390,15 @@ public class TFGraphTestAllHelper {
 
     public static Pair<SameDiff, Map<String,INDArray>> getGraphAfterExec(String baseDir, String modelFilename, String modelName, Map<String, INDArray> inputs,
                                              ExecuteWith executeWith, BiFunction<File,String,SameDiff> graphLoaderFunction, List<Listener> listeners,
-                                                                         Set<String> requiredOutputs) throws IOException {
+                                                                         Set<String> requiredOutputs, boolean printArraysDebugging) throws IOException {
         log.info("\n\tRUNNING TEST " + modelName + "...");
         SameDiff graph = graphLoaderFunction.apply(new ClassPathResource(baseDir + "/" + modelName + "/" + modelFilename).getFile(), modelName);
         if(listeners != null){
             graph.setListeners(listeners);
+        }
+
+        if(printArraysDebugging){
+            graph.addListeners(new ExecPrintListener());
         }
 
         if(requiredOutputs == null){
@@ -635,7 +641,7 @@ public class TFGraphTestAllHelper {
         for (int i = 0; i < resources.size(); i++) {
             URI u = resources.get(i).getFirst().getURI();
             String varName = u.toString();
-            int idx = varName.lastIndexOf(modelName);
+            int idx = varName.indexOf(modelName);
             varName = varName.substring(idx + modelName.length()+1);    //+1 for "/"
             varName = varName.replaceAll("____","/");
             varName = varName.replaceAll(".placeholder.shape","");
@@ -752,7 +758,8 @@ public class TFGraphTestAllHelper {
             return (t, s) -> Nd4j.sort(t, true).equals(Nd4j.sort(s, true));
         }
 
-        if(modelName.startsWith("alpha_dropout") || modelName.startsWith("layers_dropout"))
+        if(modelName.startsWith("alpha_dropout") || modelName.startsWith("layers_dropout") || modelName.equals("dropout"))
+            //We can't compare dropout using simple equality due to randomness
             return (t, s) -> {
                 double[] tfNums = t.ravel().toDoubleVector();
                 double[] sdNums = s.ravel().toDoubleVector();

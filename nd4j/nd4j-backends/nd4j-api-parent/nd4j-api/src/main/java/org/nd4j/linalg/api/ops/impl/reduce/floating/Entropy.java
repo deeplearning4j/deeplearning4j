@@ -58,16 +58,6 @@ public class Entropy extends BaseReduceFloatOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " +  opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "entropy";
-    }
-
-    @Override
     public Type getOpType() {
         return Type.REDUCE_FLOAT;
     }

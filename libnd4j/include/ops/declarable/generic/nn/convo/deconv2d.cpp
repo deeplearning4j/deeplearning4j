@@ -66,10 +66,8 @@ CUSTOM_OP_IMPL(deconv2d, 2, 1, false, 0, 9) {
     if(!isNCHW)
         output = new NDArray(output->permute({0, 3, 1, 2}));       // [bS, oH, oW, oC] -> [bS, oC, oH, oW]
 
-    if(isSameMode){                       // SAME
-        //Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not deconv) forward pass
+    if(isSameMode)          // Note: we're intentionally swapping iH and oH, to calculated the padding for a"normal" conv (not deconv) forward pass
         ConvolutionUtils::calcPadding2D(pH, pW, iH, iW, oH, oW, kH, kW, sH, sW, dH, dW);
-    }
 
     NDArray columns(input->ordering(), {bS, oC, kH, kW, iH, iW}, input->dataType(),  block.launchContext());
 

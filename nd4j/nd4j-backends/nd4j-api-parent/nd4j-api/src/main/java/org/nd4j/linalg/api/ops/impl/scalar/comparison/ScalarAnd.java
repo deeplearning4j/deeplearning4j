@@ -18,6 +18,7 @@ package org.nd4j.linalg.api.ops.impl.scalar.comparison;
 
 import org.nd4j.autodiff.samediff.SDVariable;
 import org.nd4j.autodiff.samediff.SameDiff;
+import org.nd4j.imports.NoOpNameFoundException;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.api.ops.BaseScalarBoolOp;
 
@@ -60,12 +61,6 @@ public class ScalarAnd extends BaseScalarBoolOp {
     public String onnxName() {
         return "AndScalar";
     }
-
-    @Override
-    public String tensorflowName() {
-        return "AndScalar";
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

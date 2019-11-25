@@ -61,7 +61,7 @@ public class BitwiseAnd extends BaseDynamicTransformOp {
 
     @Override
     public String tensorflowName() {
-        return "bitwise_and";
+        return "BitwiseAnd";
     }
 
 

@@ -28,6 +28,7 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.Serializable;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.time.Instant;
@@ -229,7 +230,7 @@ public class NDArrayMessage implements Serializable {
         for (int i = 0; i < chunks.length; i++) {
             ByteBuffer curr = chunks[i].getData();
             if (curr.capacity() > chunks[0].getChunkSize()) {
-                curr.position(0).limit(chunks[0].getChunkSize());
+                ((Buffer) curr).position(0).limit(chunks[0].getChunkSize());
                 curr = curr.slice();
             }
             all.put(curr);
@@ -311,7 +312,7 @@ public class NDArrayMessage implements Serializable {
 
         //rewind the buffer before putting it in to the unsafe buffer
         //note that we set rewind to false in the do byte buffer put methods
-        byteBuffer.rewind();
+        ((Buffer) byteBuffer).rewind();
 
         return new UnsafeBuffer(byteBuffer);
     }

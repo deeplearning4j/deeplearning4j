@@ -30,14 +30,14 @@ thread_local nd4j::ContextBuffers contextBuffers = nd4j::ContextBuffers();
 #endif
 
 #ifdef HAVE_MKLDNN
-#include <mkldnn.hpp>
+#include <dnnl.hpp>
 #endif
 
 namespace nd4j {
 
     LaunchContext::~LaunchContext() {
 #ifdef HAVE_MKLDNN
-        delete reinterpret_cast<mkldnn::engine*>(_engine);
+        delete reinterpret_cast<dnnl::engine*>(_engine);
 #endif
     }
 
@@ -50,7 +50,7 @@ namespace nd4j {
         _deviceID = 0;
 
 #ifdef HAVE_MKLDNN
-        _engine = new mkldnn::engine(mkldnn::engine::kind::cpu, 0);
+        _engine = new dnnl::engine(dnnl::engine::kind::cpu, 0);
 #endif
     }
 

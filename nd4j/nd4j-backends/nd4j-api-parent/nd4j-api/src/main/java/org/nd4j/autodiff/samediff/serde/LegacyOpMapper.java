@@ -417,7 +417,7 @@ public class LegacyOpMapper {
             case 4:
                 return ScalarGreaterThanOrEqual.class;
             case 5:
-                return ScalarLessThanOrEqual.class;
+                return MatchCondition.class;
             case 6:
                 return ScalarNotEquals.class;
             case 7:
@@ -428,6 +428,8 @@ public class LegacyOpMapper {
                 return ScalarXor.class;
             case 10:
                 return ScalarNot.class;
+            case 11:
+                return ScalarLessThanOrEqual.class;
             default:
                 throw new UnsupportedOperationException("No known scalar bool op for op number: " + opNum);
         }

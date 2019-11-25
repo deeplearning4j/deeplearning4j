@@ -33,6 +33,15 @@ namespace nd4j {
             int width;
             int height;
             bool center = false; // - default value
+            auto inRank = image->rankOf();
+            REQUIRE_TRUE( inRank == 4 || inRank == 3, 0, "resize_bilinear: input image should be 4D "
+                                                                          "tensor, but input has rank %i",
+                                                                          image->rankOf());
+            REQUIRE_TRUE(inRank == output->rankOf(), 0, "resize_bilinear: Input and output ranks should be equals, but %i and %i occured.", inRank, output->rankOf());
+
+            auto source = inRank == 4?image->reshape(image->ordering(), {image->sizeAt(0), image->sizeAt(1), image->sizeAt(2), image->sizeAt(3)}):image->reshape(image->ordering(), {1, image->sizeAt(0), image->sizeAt(1), image->sizeAt(2)});
+            auto target = inRank == 4?output->reshape(output->ordering(), {output->sizeAt(0), output->sizeAt(1), output->sizeAt(2), output->sizeAt(3)}):output->reshape(output->ordering(), {1, output->sizeAt(0), output->sizeAt(1), output->sizeAt(2)});
+
             if (block.width() > 1) {
                 auto newImageSize = INPUT_VARIABLE(1);
                 REQUIRE_TRUE(newImageSize->lengthOf() == 2, 0, "resize_bilinear: Resize params is a pair of values, not %i.", newImageSize->lengthOf());
@@ -51,7 +60,7 @@ namespace nd4j {
                     center = 0 != INT_ARG(2);
             }
 
-            return helpers::resizeBilinearFunctor(block.launchContext(), image, width, height, center, output);
+            return helpers::resizeBilinearFunctor(block.launchContext(), inRank==4?image:&source, width, height, center, inRank == 4?output:&target);
         }
 
         DECLARE_SHAPE_FN(resize_bilinear) {
@@ -59,6 +68,10 @@ namespace nd4j {
             auto in = inputShape->at(0);
 
             Nd4jLong* outputShape;
+            auto inRank = shape::rank(in);
+            REQUIRE_TRUE(inRank == 4 || inRank == 3, 0, "resize_bilinear: input image should be 4D "
+                                                                          "tensor, but input has rank %i",
+                                                                          inRank);
 
             int width;
             int height;
@@ -75,12 +88,19 @@ namespace nd4j {
                 height = INT_ARG(1);
             }
             
-            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(4), Nd4jLong);
-            outputShape[0] = 4;
-            outputShape[1] = in[1];
-            outputShape[2] = width;
-            outputShape[3] = height;
-            outputShape[4] = in[4];
+            ALLOCATE(outputShape, block.getWorkspace(), shape::shapeInfoLength(inRank), Nd4jLong);
+            outputShape[0] = inRank;
+            if (inRank == 4) {
+                outputShape[1] = in[1];
+                outputShape[2] = width;
+                outputShape[3] = height;
+                outputShape[4] = in[4];
+            }
+            else { // input shape is 3D, so result also should be 3D
+                outputShape[1] = width;
+                outputShape[2] = height;
+                outputShape[3] = in[3];
+            }
             ShapeUtils::updateStridesAndType(outputShape, in, shape::order(in));
 
             shapeList->push_back(CONSTANT(outputShape));

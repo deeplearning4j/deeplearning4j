@@ -74,6 +74,9 @@ namespace nd4j {
 		template<typename T, typename Z>
 		math_def inline Z nd4j_copysign(T val1, T val2);
 
+		template <typename T, typename Z>
+        math_def inline Z nd4j_softplus(T val);
+
 //#ifndef __CUDACC__
         template<typename X, typename Y, typename Z>
         math_def inline Z nd4j_dot(X *x, Y *y, int length);
@@ -159,7 +162,7 @@ namespace nd4j {
 		math_def inline Z nd4j_sinh(T val);
 
 		template<typename T, typename Z>
-        math_def inline Z softplus(T val) {
+        math_def inline Z nd4j_softplus(T val) {
 			return nd4j_log<T, Z>((Z) 1.0f + nd4j_exp<T, Z>(val));
 		}
 

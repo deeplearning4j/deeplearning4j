@@ -20,10 +20,11 @@ from .conditions import *
 from .schema import Schema
 import warnings
 import logging
+from .java_classes import JString
 
 
 def _dq(x):
-    return "\"" + x.replace("\"", "\\\"") + "\""
+    return "JString(\"" + x.replace("\"", "\\\"") + "\")"
 
 
 def _to_camel(x, first_upper=False):
@@ -151,14 +152,14 @@ class TransformProcess(object):
             else:
                 new_d[k] = old_d[k]
         self.final_schema.columns = new_d
-        self.add_step("renameColumn", column, new_name)
+        self.add_step("renameColumn", JString(column), JString(new_name))
         if not self.inplace:
             return self
 
     def string_to_time(self, column, format="YYY-MM-DD HH:mm:ss.SSS", time_zone="UTC"):
         self.final_schema.columns[column][0] = "DateTime"
-        self.add_step("exec", "stringToTimeTransform({}, {}, {})".format(
-            _dq(column), _dq(format), "DateTimeZone." + time_zone))
+        py_string = "stringToTimeTransform({}, {}, {})".format(_dq(column), _dq(format), "DateTimeZone." + time_zone)
+        self.add_step("exec", py_string)
         if not self.inplace:
             return self
 
@@ -184,7 +185,7 @@ class TransformProcess(object):
         if self.final_schema.columns[column][0] != 'string':
             raise Exception(
                 'Can not apply append_string transform to column {} because it is not a string column'.format(column))
-        self.add_step('appendStringColumnTransform', column, string)
+        self.add_step('appendStringColumnTransform', JString(column), JString(string))
         if not self.inplace:
             return self
 
@@ -378,6 +379,7 @@ class TransformProcess(object):
         tp.steps = config['steps'][:]
         return tp
 
+    # TODO from_java is used in konduit a lot
     def to_java(self):
         from .java_classes import TransformProcessBuilder
         from .java_classes import ConditionOp
@@ -407,6 +409,7 @@ class TransformProcess(object):
         from .java_classes import Arrays
         from .java_classes import ReducerBuilder
         from .java_classes import ReduceOp
+        from .java_classes import JString
 
         jschema = self.schema.to_java()
         builder = TransformProcessBuilder(jschema)

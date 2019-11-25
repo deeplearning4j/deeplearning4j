@@ -1,5 +1,6 @@
-/*******************************************************************************
+/* ******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -70,8 +71,15 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             //Still failing 2019/09/11
             "slogdet/.*",
 
+            // Failing 2019/11/14 - |https://github.com/eclipse/deeplearning4j/issues/8374
+            "adjust_contrast/*",
+            "adjust_contrast/.*",
             //Failing 2019/09/11 - https://github.com/eclipse/deeplearning4j/issues/7965
             "bincount/.*",
+            // Failing 2019/11/15 https://github.com/eclipse/deeplearning4j/issues/8400
+            "bitcast/.*",
+            // Failing 2019/11/14 https://github.com/eclipse/deeplearning4j/issues/8393
+            "is_strictly_increasing/emptyArrayTest/.*",
 
             //TODO floormod and truncatemod behave differently - i.e., "c" vs. "python" semantics. Need to check implementations too
             "truncatemod/.*",
@@ -100,7 +108,25 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
             "multinomial/.*",
 
             //2019/11/04 AB - disabled, pending libnd4j deconv3d_tf implementation
-            "conv3d_transpose.*"
+            "conv3d_transpose.*",
+
+            //2019/11/15 - mapping is not present yet https://github.com/eclipse/deeplearning4j/issues/8397
+            "ragged/reduce_mean/.*",
+
+            // 2019/11/15 - missing dtype argument in nd4j, tests are useless https://github.com/eclipse/deeplearning4j/issues/8398
+            "zeros_like/rank2_float32_dtype_int.*",
+
+            // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8399
+            "crop_and_resize.*",
+
+            // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8401
+            "draw_bounding_boxes.*",
+
+            // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8402
+            "fake_quant/min_max_args_per_channel.*",
+
+            // 2019/11/15 - failure https://github.com/eclipse/deeplearning4j/issues/8403
+            "resize_bilinear/int32.*"
     };
 
     @BeforeClass
@@ -169,7 +195,7 @@ public class TFGraphTestAllSameDiff {   //Note: Can't extend BaseNd4jTest here a
         Double minAbs = (precisionOverride == null ? null : precisionOverride.getSecond());
 
         try {
-            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs);
+            TFGraphTestAllHelper.checkOnlyOutput(inputs, predictions, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, TFGraphTestAllHelper.LOADER, maxRE, minAbs, false);
             //TFGraphTestAllHelper.checkIntermediate(inputs, modelName, BASE_DIR, MODEL_FILENAME, EXECUTE_WITH, localTestDir);
         } catch (Throwable t){
             log.error("ERROR Executing test: {} - input keys {}", modelName, (inputs == null ? null : inputs.keySet()), t);

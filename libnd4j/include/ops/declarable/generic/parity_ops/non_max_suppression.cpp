@@ -37,18 +37,28 @@ namespace nd4j {
             else
                 REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
+            double overlayThreshold = 0.5;
+            double scoreThreshold = - DataTypeUtils::infOrMax<float>();
+
+            if (block.width() > 3) {
+                overlayThreshold = INPUT_VARIABLE(3)->e<double>(0);
+            }
+            else if (block.getTArguments()->size() > 0) {
+                overlayThreshold = T_ARG(0);
+            }
+
+            if (block.width() > 4) {
+                scoreThreshold = INPUT_VARIABLE(4)->e<double>(0);
+            }
+            else if (block.getTArguments()->size() > 1) {
+                scoreThreshold = T_ARG(1);
+            }
+            if (boxes->isEmpty() || scales->isEmpty())
+                return Status::OK();
+
             REQUIRE_TRUE(boxes->rankOf() == 2, 0, "image.non_max_suppression: The rank of boxes array should be 2, but %i is given", boxes->rankOf());
             REQUIRE_TRUE(boxes->sizeAt(1) == 4, 0, "image.non_max_suppression: The last dimension of boxes array should be 4, but %i is given", boxes->sizeAt(1));
             REQUIRE_TRUE(scales->rankOf() == 1 && scales->lengthOf() == boxes->sizeAt(0), 0, "image.non_max_suppression: The rank of scales array should be 1, but %i is given", boxes->rankOf());
-
-            if (scales->lengthOf() < maxOutputSize)
-                maxOutputSize = scales->lengthOf();
-            double overlayThreshold = 0.5;
-            double scoreThreshold = - DataTypeUtils::infOrMax<float>();
-            if (block.getTArguments()->size() > 0)
-                overlayThreshold = T_ARG(0);
-            if (block.getTArguments()->size() > 1)
-                scoreThreshold = T_ARG(1);
 
             helpers::nonMaxSuppression(block.launchContext(), boxes, scales, maxOutputSize, overlayThreshold, scoreThreshold, output);
             return Status::OK();
@@ -67,10 +77,19 @@ namespace nd4j {
             else
                 REQUIRE_TRUE(false, 0, "image.non_max_suppression: Max output size argument cannot be retrieved.");
 
-
-            Nd4jLong boxSize = shape::sizeAt(in, 0);
-            if (boxSize < maxOutputSize) 
-                maxOutputSize = boxSize;
+            auto actualIndicesCount = shape::sizeAt(in, 0);
+            if (block.getTArguments()->size() > 1 || block.width() > 4) {
+                auto scoreThreshold = block.getTArguments()->size() > 1?T_ARG(1):INPUT_VARIABLE(4)->e<double>(0);
+                auto scales = INPUT_VARIABLE(1);
+                scales->syncToHost();
+                for (auto e = 0; e < scales->lengthOf(); e++) {
+                    if (scales->e<float>(e) < (float)scoreThreshold) {
+                        actualIndicesCount--;
+                    }
+                }
+            }
+            if (actualIndicesCount < maxOutputSize)
+                maxOutputSize = actualIndicesCount;
 
             outputShape = ConstantShapeHelper::getInstance()->vectorShapeInfo(maxOutputSize, DataType::INT32);
 

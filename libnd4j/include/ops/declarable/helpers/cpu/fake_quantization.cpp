@@ -47,7 +47,7 @@ namespace helpers {
                 if (zeroPointFromMin > quantMaxF) {
                     return static_cast<uint16_t>(quantMax);
                 }
-                return nd4j::math::nd4j_round<T,uint16_t>(zeroPointFromMin);
+                return (uint16_t)nd4j::math::nd4j_round<T,int>(zeroPointFromMin);
         }();
         // compute nudged min and max with computed nudged zero point
         *nudgedMin = (quantMinF - nudged_zero_point) * (*scale);

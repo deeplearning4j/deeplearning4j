@@ -61,14 +61,4 @@ public class BroadcastGradientArgs extends BaseBroadcastOp {
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         return null;
     }
-
-    @Override
-    public String onnxName() {
-       throw new NoOpNameFoundException("No op name found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "BroadcastGradientArgs";
-    }
 }

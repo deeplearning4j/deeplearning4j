@@ -101,6 +101,9 @@ void NativeOpExecutioner::execPairwiseTransform(nd4j::LaunchContext  *lc,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
     if (xType != zType && yType != zType)
         throw std::runtime_error("NativeOpExecutioner::execPairwiseTransform requires Z operand to have either X or Y type");
     if (lc == nullptr)
@@ -139,6 +142,9 @@ void NativeOpExecutioner::execPairwiseBoolTransform( nd4j::LaunchContext  *lc,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
     if (!DataTypeUtils::isB(zType))
 		throw nd4j::datatype_exception::build("NativeOpExecutioner::execPairwiseBoolTransform wrong Z operand data type", nd4j::DataType::BOOL, zType);
 
@@ -171,6 +177,9 @@ void NativeOpExecutioner::execPairwiseIntTransform( nd4j::LaunchContext  *lc,
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
 
     if (!DataTypeUtils::isZ(zType))
         throw nd4j::datatype_exception::build("NativeOpExecutioner::execPairwiseIntTransform wrong Z operand data type", nd4j::DataType::BOOL, zType);
@@ -223,6 +232,7 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::LaunchContext  *lc,
                             void *dY, Nd4jLong *dYShapeInfo,
                             void *hZ, Nd4jLong *hZShapeInfo,
                             void *dZ, Nd4jLong *dZShapeInfo,
+                            void *extraParams,
                             int *dimension, int dimensionLength,
                             Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                             Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
@@ -232,6 +242,9 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::LaunchContext  *lc,
 	auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
 	auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
 
 	if (!DataTypeUtils::isB(zType))
         throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires Z operand to have BOOL type");
@@ -244,7 +257,7 @@ void NativeOpExecutioner::execBroadcastBool(nd4j::LaunchContext  *lc,
 
 	dim3 launchDims(256, 256, 1024);
 
-	BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
+	BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
 
     // TODO: remove after the release
     auto res = cudaStreamSynchronize(*stream);
@@ -260,6 +273,7 @@ void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
                                                    void *dY, Nd4jLong *dYShapeInfo,
                                                    void *hZ, Nd4jLong *hZShapeInfo,
                                                    void *dZ, Nd4jLong *dZShapeInfo,
+                                                   void *extraParams,
                                                    int *dimension, int dimensionLength,
                                                    Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets,
                                                    Nd4jLong *tadOnlyShapeInfoZ,Nd4jLong *tadOffsetsZ) {
@@ -269,18 +283,18 @@ void NativeOpExecutioner::execInverseBroadcastBool(nd4j::LaunchContext  *lc,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
     if (!DataTypeUtils::isB(zType))
         throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires Z operand to have BOOL type");
 
     if (yType != xType)
         throw std::runtime_error("NativeOpExecutioner::execBroadcastBool requires both X & Y operands to have same type");
 
-    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        printf("F3BI opNum:[%i]\n", opNum);
-
     dim3 launchDims(256, 256, 1024);
 
-    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
+    BUILD_DOUBLE_SELECTOR(xType, zType, functions::broadcast::BroadcastBool, ::execInverseBroadcast(launchDims, stream, opNum, dX, dXShapeInfo, dY, dYShapeInfo, dZ, dZShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), LIBND4J_TYPES, BOOL_TYPES)
 
     // TODO: remove after the release
     auto res = cudaStreamSynchronize(*stream);
@@ -308,14 +322,14 @@ void NativeOpExecutioner::execBroadcastInt(nd4j::LaunchContext  *lc,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
+
     if (!DataTypeUtils::isZ(zType))
         throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
 
     if (yType != xType || zType != xType)
         throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires both X & Y operands to have same type");
-
-    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        printf("F3B opNum:[%i]\n", opNum);
 
     dim3 launchDims(256, 256, 1024);
 
@@ -343,6 +357,9 @@ void NativeOpExecutioner::execInverseBroadcastInt(nd4j::LaunchContext  *lc,
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
 
     if (!DataTypeUtils::isZ(zType))
         throw std::runtime_error("NativeOpExecutioner::execBroadcastInt requires Z operand to have INT type");
@@ -394,8 +411,8 @@ void NativeOpExecutioner::execBroadcast(nd4j::LaunchContext  *lc,
 	auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-	if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-		printf("F3 opNum:[%i]\n", opNum);
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
 
 	dim3 launchDims(256, 256, 1024);
 
@@ -429,8 +446,8 @@ void NativeOpExecutioner::execInverseBroadcast(nd4j::LaunchContext  *lc,
     auto yType = nd4j::ArrayOptions::dataType(hYShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
-    if (nd4j::Environment::getInstance()->isDebugAndVerbose())
-        printf("F3I opNum:[%i]\n", opNum);
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hYShapeInfo))
+        return;
 
     dim3 launchDims(256, 256, 1024);
 
@@ -832,16 +849,21 @@ void NativeOpExecutioner::execTransformSame(nd4j::LaunchContext  *lc,
                                    	Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
     auto stream = lc->getCudaStream();
-    dim3 launchDims(512, 512, 16384);
 
     auto xRank = shape::rank(hXShapeInfo);
-	auto zRank = shape::rank(hZShapeInfo);
-	auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto zRank = shape::rank(hZShapeInfo);
+    auto xType = ArrayOptions::dataType(hXShapeInfo);
     auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-    if (xType != zType)
-        throw std::runtime_error("NativeOpExecutioner::execTransformSame requires X & Z to have same type");
+    if (shape::isEmpty(hXShapeInfo)) {
+        return;
+    }
 
+    if (xType != zType) {
+        throw std::runtime_error("NativeOpExecutioner::execTransformSame requires X & Z to have same type");
+    }
+
+    dim3 launchDims(512, 512, 16384);
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformSame, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES);
 
     // TODO: remove after the release
@@ -861,16 +883,21 @@ void NativeOpExecutioner::execTransformBool(nd4j::LaunchContext  *lc,
                                 Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
 	auto stream = lc->getCudaStream();
-	dim3 launchDims(512, 512, 16384);
 
-	auto xRank = shape::rank(hXShapeInfo);
-	auto zRank = shape::rank(hZShapeInfo);
-	auto xType = ArrayOptions::dataType(hXShapeInfo);
+    auto xRank = shape::rank(hXShapeInfo);
+    auto zRank = shape::rank(hZShapeInfo);
+    auto xType = ArrayOptions::dataType(hXShapeInfo);
     auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-    if (!DataTypeUtils::isB(zType))
-        throw std::runtime_error("NativeOpExecutioner::execTransformBool requires Z to have same boolean type");
+    if (shape::isEmpty(hXShapeInfo)) {
+        return;
+    }
 
+    if (!DataTypeUtils::isB(zType)) {
+        throw std::runtime_error("NativeOpExecutioner::execTransformBool requires Z to have same boolean type");
+    }
+
+    dim3 launchDims(512, 512, 16384);
     BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformBool, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, BOOL_TYPES);
 
     // TODO: remove after the release
@@ -896,6 +923,9 @@ void NativeOpExecutioner::execTransformAny(nd4j::LaunchContext  *lc,
 	auto xType = ArrayOptions::dataType(hXShapeInfo);
 	auto zType = ArrayOptions::dataType(hZShapeInfo);
 
+    if (shape::isEmpty(hXShapeInfo))
+        return;
+
 	dim3 launchDims(512, 512, 2048);
 
 	BUILD_DOUBLE_SELECTOR(xType, zType, functions::transform::TransformAny, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), LIBND4J_TYPES, LIBND4J_TYPES);
@@ -917,16 +947,21 @@ void NativeOpExecutioner::execTransformStrict(nd4j::LaunchContext  *lc,
                                     Nd4jLong *tadShapeInfo, Nd4jLong *tadOffsets) {
 
     auto stream = lc->getCudaStream();
-    dim3 launchDims(512, 512, 16384);
 
     auto xRank = shape::rank(hXShapeInfo);
     auto zRank = shape::rank(hZShapeInfo);
     auto xType = ArrayOptions::dataType(hXShapeInfo);
     auto zType = ArrayOptions::dataType(hZShapeInfo);
 
-    if (xType != zType || !DataTypeUtils::isR(xType))
-        throw datatype_exception::build("NativeOpExecutioner::execTransformStrict requires X & Z to have same floating point type", xType, zType);
+    if (shape::isEmpty(hXShapeInfo)) {
+        return;
+    }
 
+    if (xType != zType || !DataTypeUtils::isR(xType)) {
+        throw datatype_exception::build("NativeOpExecutioner::execTransformStrict requires X & Z to have same floating point type", xType, zType);
+    }
+
+    dim3 launchDims(512, 512, 16384);
     BUILD_SINGLE_SELECTOR(xType, functions::transform::TransformStrict, ::executeTransformShaped(launchDims, stream, opNum, dX, dXShapeInfo, xRank, extraParams, dZ, dZShapeInfo, zRank, nullptr, nullptr, nullptr, nullptr), FLOAT_TYPES);
 
     // TODO: remove after the release
@@ -952,6 +987,9 @@ void NativeOpExecutioner::execTransformFloat(nd4j::LaunchContext  *lc,
     auto zRank = shape::rank(hZShapeInfo);
     auto xType = ArrayOptions::dataType(hXShapeInfo);
     auto zType = ArrayOptions::dataType(hZShapeInfo);
+
+    if (shape::isEmpty(hXShapeInfo))
+        return;
 
     if (!DataTypeUtils::isR(zType))
         throw datatype_exception::build("NativeOpExecutioner::execTransformFloat requires Z to have floating point type", zType);
@@ -1175,6 +1213,9 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
 	auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo))
+        return;
+
 	if (xType != yType )
 		throw std::runtime_error("NativeOpExecutioner::execScalarBool requires X & Y to have same type");
 
@@ -1211,6 +1252,9 @@ void NativeOpExecutioner::execScalarBool(nd4j::LaunchContext  *lc,
 	auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo))
+        return;
+
 	if (xType != yType )
 		throw std::runtime_error("NativeOpExecutioner::execScalarBool requires X & Y to have same type");
 
@@ -1243,6 +1287,9 @@ void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo))
+        return;
 
     if (xType != yType || zType != xType)
         throw std::runtime_error("NativeOpExecutioner::execScalarInt requires X & Y to have same type");
@@ -1280,6 +1327,9 @@ void NativeOpExecutioner::execScalarInt(nd4j::LaunchContext  *lc,
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo))
+        return;
+
     if (xType != yType || zType != xType)
         throw std::runtime_error("NativeOpExecutioner::execScalarInt requires X & Y to have same type");
 
@@ -1313,6 +1363,9 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
 	auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
 	auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
 
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo))
+        return;
+
 
 #ifdef __ND4J_EXPERIMENTAL__
 	BUILD_PAIRWISE_SELECTOR(xType, yType, zType, functions::scalar::ScalarTransform, ::executeCudaShaped(launchDims, stream, opNum, dX, dXShapeInfo, hXShapeInfo, dZ, dZShapeInfo, hZShapeInfo, dScalar, extraParams), LIBND4J_TYPES, LIBND4J_TYPES);
@@ -1345,6 +1398,9 @@ void NativeOpExecutioner::execScalar(nd4j::LaunchContext  *lc,
     auto xType = nd4j::ArrayOptions::dataType(hXShapeInfo);
     auto yType = nd4j::ArrayOptions::dataType(hScalarShapeInfo);
     auto zType = nd4j::ArrayOptions::dataType(hZShapeInfo);
+
+    if (shape::isEmpty(hXShapeInfo) || shape::isEmpty(hScalarShapeInfo))
+        return;
 
 	dim3 launchDims(256, 256, 16384);
 

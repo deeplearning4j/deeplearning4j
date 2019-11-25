@@ -426,6 +426,26 @@ TEST_F(JavaInteropTests, Test_FastPath_Validation_2) {
     ASSERT_NE(Status::OK(), status);
 }
 
+TEST_F(JavaInteropTests, Test_FastPath_Validation_3) {
+    auto x = NDArrayFactory::create<float>('c', {3, 5}, { 0.7788f,    0.8012f,    0.7244f,    0.2309f,    0.7271f,
+                                                          0.1804f,    0.5056f,    0.8925f,    0.5461f,    0.9234f,
+                                                          0.0856f,    0.7938f,    0.6591f,    0.5555f,    0.1596f});
+
+    auto min = NDArrayFactory::create<float>({ -0.2283f,   -0.0719f,   -0.0154f,   -0.5162f,   -0.3567f});
+    auto max = NDArrayFactory::create<float>({ 0.9441f,    0.5957f,    0.8669f,    0.3502f,    0.5100f});
+
+    auto z = NDArrayFactory::create<double>('c', {3, 5});
+
+    Context ctx(1);
+    ctx.setInputArray(0, x.buffer(), x.shapeInfo(), x.specialBuffer(), x.specialShapeInfo());
+    ctx.setInputArray(1, min.buffer(), min.shapeInfo(), min.specialBuffer(), min.specialShapeInfo());
+    ctx.setInputArray(2, max.buffer(), max.shapeInfo(), max.specialBuffer(), max.specialShapeInfo());
+    ctx.setOutputArray(0, z.buffer(), z.shapeInfo(), z.specialBuffer(), z.specialShapeInfo());
+
+    nd4j::ops::fake_quant_with_min_max_vars_per_channel op;
+    ASSERT_ANY_THROW(op.execute(&ctx));
+}
+
 TEST_F(JavaInteropTests, Test_empty_cast_1) {
     auto x = NDArrayFactory::create<bool>('c', {1, 0, 2});
     auto z = NDArrayFactory::create<Nd4jLong>('c', {1, 0, 2});

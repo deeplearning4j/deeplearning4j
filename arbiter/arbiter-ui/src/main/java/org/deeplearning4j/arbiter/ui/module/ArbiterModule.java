@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -16,6 +17,8 @@
 
 package org.deeplearning4j.arbiter.ui.module;
 
+import io.netty.handler.codec.http.HttpResponseStatus;
+import io.vertx.ext.web.RoutingContext;
 import lombok.extern.slf4j.Slf4j;
 import org.deeplearning4j.api.storage.Persistable;
 import org.deeplearning4j.api.storage.StatsStorage;
@@ -31,8 +34,8 @@ import org.deeplearning4j.arbiter.ui.UpdateStatus;
 import org.deeplearning4j.arbiter.ui.data.GlobalConfigPersistable;
 import org.deeplearning4j.arbiter.ui.data.ModelInfoPersistable;
 import org.deeplearning4j.arbiter.ui.misc.UIUtils;
-import org.deeplearning4j.arbiter.ui.views.html.ArbiterUI;
 import org.deeplearning4j.arbiter.util.ObjectUtils;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.ui.api.Component;
 import org.deeplearning4j.ui.api.*;
 import org.deeplearning4j.ui.components.chart.ChartLine;
@@ -48,18 +51,15 @@ import org.deeplearning4j.ui.i18n.I18NResource;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.nd4j.linalg.primitives.Pair;
-import play.libs.Json;
-import play.mvc.Result;
-import play.mvc.Results;
+import org.nd4j.shade.jackson.core.JsonProcessingException;
 
 import java.awt.*;
 import java.text.DecimalFormat;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.deeplearning4j.arbiter.ui.misc.JsonMapper.asJson;
-import static play.mvc.Results.ok;
 
 /**
  * A Deeplearning4j {@link UIModule}, for integration with DL4J's user interface
@@ -72,8 +72,6 @@ public class ArbiterModule implements UIModule {
     private static final DecimalFormat DECIMAL_FORMAT_2DP = new DecimalFormat("#.00");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm ZZ");
     public static final String ARBITER_UI_TYPE_ID = "ArbiterUI";
-
-    private static final String JSON = "application/json";
 
     private AtomicBoolean loggedArbiterAddress = new AtomicBoolean(false);
     private Map<String, StatsStorage> knownSessionIDs = Collections.synchronizedMap(new LinkedHashMap<>());
@@ -138,17 +136,18 @@ public class ArbiterModule implements UIModule {
 
     @Override
     public List<Route> getRoutes() {
-        Route r1 = new Route("/arbiter", HttpMethod.GET, FunctionType.Supplier, () -> Results.ok(ArbiterUI.apply()));
-        Route r3 = new Route("/arbiter/lastUpdate", HttpMethod.GET, FunctionType.Supplier, this::getLastUpdateTime);
-        Route r4 = new Route("/arbiter/lastUpdate/:ids", HttpMethod.GET, FunctionType.Function, this::getModelLastUpdateTimes);
-        Route r5 = new Route("/arbiter/candidateInfo/:id", HttpMethod.GET, FunctionType.Function, this::getCandidateInfo);
-        Route r6 = new Route("/arbiter/config", HttpMethod.GET, FunctionType.Supplier, this::getOptimizationConfig);
-        Route r7 = new Route("/arbiter/results", HttpMethod.GET, FunctionType.Supplier, this::getSummaryResults);
-        Route r8 = new Route("/arbiter/summary", HttpMethod.GET, FunctionType.Supplier, this::getSummaryStatus);
+        Route r1 = new Route("/arbiter", HttpMethod.GET, (path, rc) -> rc.response()
+                .putHeader("content-type", "text/html; charset=utf-8").sendFile("templates/ArbiterUI.html"));
+        Route r3 = new Route("/arbiter/lastUpdate", HttpMethod.GET, (path, rc) -> this.getLastUpdateTime(rc));
+        Route r4 = new Route("/arbiter/lastUpdate/:ids", HttpMethod.GET, (path, rc) -> this.getModelLastUpdateTimes(path.get(0), rc));
+        Route r5 = new Route("/arbiter/candidateInfo/:id", HttpMethod.GET, (path, rc) -> this.getCandidateInfo(path.get(0), rc));
+        Route r6 = new Route("/arbiter/config", HttpMethod.GET, (path, rc) -> this.getOptimizationConfig(rc));
+        Route r7 = new Route("/arbiter/results", HttpMethod.GET, (path, rc) -> this.getSummaryResults(rc));
+        Route r8 = new Route("/arbiter/summary", HttpMethod.GET, (path, rc) -> this.getSummaryStatus(rc));
 
-        Route r9a = new Route("/arbiter/sessions/all", HttpMethod.GET, FunctionType.Supplier, this::listSessions);
-        Route r9b = new Route("/arbiter/sessions/current", HttpMethod.GET, FunctionType.Supplier, this::currentSession);
-        Route r9c = new Route("/arbiter/sessions/set/:to", HttpMethod.GET, FunctionType.Function, this::setSession);
+        Route r9a = new Route("/arbiter/sessions/all", HttpMethod.GET, (path, rc) -> this.listSessions(rc));
+        Route r9b = new Route("/arbiter/sessions/current", HttpMethod.GET, (path, rc) -> this.currentSession(rc));
+        Route r9c = new Route("/arbiter/sessions/set/:to", HttpMethod.GET, (path, rc) -> this.setSession(path.get(0), rc));
 
         return Arrays.asList(r1, r3, r4, r5, r6, r7, r8, r9a, r9b, r9c);
     }
@@ -197,23 +196,27 @@ public class ArbiterModule implements UIModule {
             getDefaultSession();
     }
 
-    private Result currentSession() {
+    private void currentSession(RoutingContext rc) {
         String sid = currentSessionID == null ? "" : currentSessionID;
-        return ok(asJson(sid)).as(JSON);
+        rc.response()
+                .putHeader("content-type", "application/json")
+                .end(asJson(sid));
     }
 
-    private Result listSessions() {
-        return Results.ok(asJson(knownSessionIDs.keySet())).as(JSON);
+    private void listSessions(RoutingContext rc) {
+        rc.response()
+                .putHeader("content-type", "application/json")
+                .end(asJson(knownSessionIDs.keySet()));
     }
 
-    private Result setSession(String newSessionID) {
+    private void setSession(String newSessionID, RoutingContext rc) {
         log.debug("Arbiter UI: Set to session {}", newSessionID);
 
         if (knownSessionIDs.containsKey(newSessionID)) {
             currentSessionID = newSessionID;
-            return ok();
+            rc.response().end();
         } else {
-            return Results.badRequest("Unknown session ID: " + newSessionID);
+            rc.response().setStatusCode(HttpResponseStatus.BAD_REQUEST.code()).end("Unknown session ID: " + newSessionID);
         }
     }
 
@@ -255,30 +258,39 @@ public class ArbiterModule implements UIModule {
     }
 
     /**
-     * @return Last update time for the page
+     * Return the last update time for the page
      */
-    private Result getLastUpdateTime(){
+    private void getLastUpdateTime(RoutingContext rc){
         //TODO - this forces updates on every request... which is fine, just inefficient
         long t = System.currentTimeMillis();
         UpdateStatus us = new UpdateStatus(t, t, t);
 
-        return ok(Json.toJson(us));
+        rc.response().putHeader("content-type", "application/json").end(asJson(us));
+    }
+
+    private String asJson(Object o){
+        try{
+            return JsonMappers.getMapper().writeValueAsString(o);
+        } catch (JsonProcessingException e){
+            throw new RuntimeException("Error converting object to JSON", e);
+        }
     }
 
     /**
      * Get the last update time for the specified model IDs
      * @param modelIDs Model IDs to get the update time for
      */
-    private Result getModelLastUpdateTimes(String modelIDs){
-
+    private void getModelLastUpdateTimes(String modelIDs, RoutingContext rc){
         if(currentSessionID == null){
-            return ok();
+            rc.response().end();
+            return;
         }
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
             log.debug("getModelLastUpdateTimes(): Session ID is unknown: {}", currentSessionID);
-            return ok("-1");
+            rc.response().end("-1");
+            return;
         }
 
         String[] split = modelIDs.split(",");
@@ -292,7 +304,7 @@ public class ArbiterModule implements UIModule {
             }
         }
 
-        return ok(Json.toJson(lastUpdateTimes));
+        rc.response().putHeader("content-type", "application/json").end(asJson(lastUpdateTimes));
     }
 
     /**
@@ -301,12 +313,13 @@ public class ArbiterModule implements UIModule {
      * @param candidateId ID for the candidate
      * @return Content/info for the candidate
      */
-    private Result getCandidateInfo(String candidateId){
+    private void getCandidateInfo(String candidateId, RoutingContext rc){
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
             log.debug("getModelLastUpdateTimes(): Session ID is unknown: {}", currentSessionID);
-            return ok();
+            rc.response().end();
+            return;
         }
 
         GlobalConfigPersistable gcp = (GlobalConfigPersistable)ss.getStaticInfo(currentSessionID, ARBITER_UI_TYPE_ID, GlobalConfigPersistable.GLOBAL_WORKER_ID);;
@@ -316,7 +329,10 @@ public class ArbiterModule implements UIModule {
         if(p == null){
             String title = "No results found for model " + candidateId + ".";
             ComponentText ct = new ComponentText.Builder(title,STYLE_TEXT_SZ12).build();
-            return ok(asJson(ct)).as(JSON);
+            rc.response()
+                    .putHeader("content-type", "application/json")
+                    .end(asJson(ct));
+            return;
         }
 
         ModelInfoPersistable mip = (ModelInfoPersistable)p;
@@ -474,25 +490,27 @@ public class ArbiterModule implements UIModule {
 
         ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
 
-        return ok(asJson(cd)).as(JSON);
+        rc.response().putHeader("content-type", "application/json").end(asJson(cd));
     }
 
     /**
      * Get the optimization configuration - second section in the page
      */
-    private Result getOptimizationConfig(){
+    private void getOptimizationConfig(RoutingContext rc){
 
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
             log.debug("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
-            return ok();
+            rc.response().end();
+            return;
         }
 
         Persistable p = ss.getStaticInfo(currentSessionID, ARBITER_UI_TYPE_ID, GlobalConfigPersistable.GLOBAL_WORKER_ID);
 
         if(p == null){
-            log.info("No static info");
-            return ok();
+            log.debug("No static info");
+            rc.response().end();
+            return;
         }
 
         List<Component> components = new ArrayList<>();
@@ -574,14 +592,15 @@ public class ArbiterModule implements UIModule {
 
         ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
 
-        return ok(asJson(cd)).as(JSON);
+        rc.response().putHeader("content-type", "application/json").end(asJson(cd));
     }
 
-    private Result getSummaryResults(){
+    private void getSummaryResults(RoutingContext rc){
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
             log.debug("getSummaryResults(): Session ID is unknown: {}", currentSessionID);
-            return ok();
+            rc.response().end();
+            return;
         }
 
         List<Persistable> allModelInfoTemp = new ArrayList<>(ss.getLatestUpdateAllWorkers(currentSessionID, ARBITER_UI_TYPE_ID));
@@ -592,24 +611,26 @@ public class ArbiterModule implements UIModule {
             table.add(new String[]{mip.getModelIdx().toString(), score, mip.getStatus().toString()});
         }
 
-        return ok(asJson(table)).as(JSON);
+        rc.response().putHeader("content-type", "application/json").end(asJson(table));
     }
 
     /**
      * Get summary status information: first section in the page
      */
-    private Result getSummaryStatus(){
+    private void getSummaryStatus(RoutingContext rc){
         StatsStorage ss = knownSessionIDs.get(currentSessionID);
         if(ss == null){
             log.debug("getOptimizationConfig(): Session ID is unknown: {}", currentSessionID);
-            return ok();
+            rc.response().end();
+            return;
         }
 
         Persistable p = ss.getStaticInfo(currentSessionID, ARBITER_UI_TYPE_ID, GlobalConfigPersistable.GLOBAL_WORKER_ID);
 
         if(p == null){
             log.info("No static info");
-            return ok();
+            rc.response().end();
+            return;
         }
 
         GlobalConfigPersistable gcp = (GlobalConfigPersistable)p;
@@ -711,7 +732,7 @@ public class ArbiterModule implements UIModule {
 
         ComponentDiv cd = new ComponentDiv(STYLE_DIV_WIDTH_100_PC, components);
 
-        return ok(asJson(cd)).as(JSON);
+        rc.response().putHeader("content-type", "application/json").end(asJson(cd));
     }
 
 

@@ -70,16 +70,6 @@ public class NormalizeMoments extends DynamicCustomOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No onnx op opName found for " + opName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "normalize_moments";
-    }
-
-    @Override
     public List<DataType> calculateOutputDataTypes(List<DataType> inputDataTypes){
         Preconditions.checkState(inputDataTypes != null && inputDataTypes.size() == 3, "Expected 3 input datatypes for %s, got %s", getClass(), inputDataTypes);
         //Count, mean_ss, variance_ss

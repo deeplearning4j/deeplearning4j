@@ -39,6 +39,7 @@ namespace functions {
                              Nd4jLong *yShapeInfo,
                              void *z,
                              Nd4jLong *zShapeInfo,
+                             void *extraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *xTadShapeInfo,
@@ -53,6 +54,7 @@ namespace functions {
                                                yShapeInfo,
                                                z,
                                                zShapeInfo,
+                                               extraParams,
                                                dimension,
                                                dimensionLength,
                                                xTadShapeInfo,
@@ -69,6 +71,7 @@ namespace functions {
                              Nd4jLong *yShapeInfo,
                              void *z,
                              Nd4jLong *zShapeInfo,
+                             void *extraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *xTadShapeInfo,
@@ -83,6 +86,7 @@ namespace functions {
                                                yShapeInfo,
                                                z,
                                                zShapeInfo,
+                                               extraParams,
                                                dimension,
                                                dimensionLength,
                                                xTadShapeInfo,
@@ -99,6 +103,7 @@ namespace functions {
                              Nd4jLong *yShapeInfo,
                              void *vz,
                              Nd4jLong *zShapeInfo,
+                             void *vextraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *xTadShapeInfo,
@@ -111,6 +116,7 @@ namespace functions {
                 auto x = reinterpret_cast<X *>(vx);
                 auto y = reinterpret_cast<X *>(vy);
                 auto z = reinterpret_cast<Z *>(vz);
+                auto extraParams = reinterpret_cast<X*>(vextraParams);
 
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
@@ -155,7 +161,7 @@ namespace functions {
 
                         PRAGMA_OMP_SIMD
                         for (unsigned int f = 0; f < tadLength; f++)
-                            oZ[f] = OpType::op(oX[f], y[f]);
+                            oZ[f] = OpType::op(oX[f], y[f], extraParams);
                     }
                 }
                 else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
@@ -165,7 +171,7 @@ namespace functions {
 
                         PRAGMA_OMP_SIMD
                         for (unsigned int f = 0; f < tadLength; f++)
-                            oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws]);
+                            oZ[f * zEws] = OpType::op(oX[f * xEws], y[f * yEws], extraParams);
                     };
                 }
                 else if(shape::haveSameShapeAndStrides(xTadShapeShapeInfo, yShapeInfo) && shape::haveSameShapeAndStrides(xTadShapeShapeInfo, zTadShapeInfo)) {
@@ -179,7 +185,7 @@ namespace functions {
                         PRAGMA_OMP_SIMD
                         for (int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
-                            oZ[offset] = OpType::op(oX[offset], y[offset]);
+                            oZ[offset] = OpType::op(oX[offset], y[offset], extraParams);
                         }
                     };
                 }
@@ -197,7 +203,7 @@ namespace functions {
                         for (int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
                             auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
-                            oZ[zOffset] = OpType::op(oX[offset], y[offset]);
+                            oZ[zOffset] = OpType::op(oX[offset], y[offset], extraParams);
                         }
                     };
                 }
@@ -215,7 +221,7 @@ namespace functions {
                         for (int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
                             auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
-                            oZ[offset] = OpType::op(oX[offset], y[yOffset]);
+                            oZ[offset] = OpType::op(oX[offset], y[yOffset], extraParams);
                         }
                     };
 
@@ -234,7 +240,7 @@ namespace functions {
                         for (int f = 0; f < tadLength; f++) {
                             auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
                             auto offset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
-                            oZ[offset] = OpType::op(oX[xOffset], y[offset]);
+                            oZ[offset] = OpType::op(oX[xOffset], y[offset], extraParams);
                         }
                     };
                 }
@@ -255,7 +261,7 @@ namespace functions {
                             auto xOffset = shape::indexOffset(f, xTadShapeShapeInfo, tadShapeShapeInfoCast, canCastX);
                             auto yOffset = shape::indexOffset(f, yShapeInfo, yShapeInfoCast, canCastY);
                             auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
-                            oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset]);
+                            oZ[zOffset] = OpType::op(oX[xOffset], y[yOffset], extraParams);
                         }
                     };
                 }
@@ -270,6 +276,7 @@ namespace functions {
                              Nd4jLong *yShapeInfo,
                              void *vz,
                              Nd4jLong *zShapeInfo,
+                             void *vextraParams,
                              int *dimension,
                              int dimensionLength,
                              Nd4jLong *yTadShapeInfo,
@@ -282,6 +289,7 @@ namespace functions {
                 auto x = reinterpret_cast<X *>(vx);
                 auto y = reinterpret_cast<X *>(vy);
                 auto z = reinterpret_cast<Z *>(vz);
+                auto extraParams = reinterpret_cast<X*>(vextraParams);
 
                 //decompose in to several sub tads after
                 //moving all dimensions (in sorted order)
@@ -326,7 +334,7 @@ namespace functions {
 
                         PRAGMA_OMP_SIMD
                         for (unsigned int f = 0; f < tadLength; f++)
-                            oZ[f] = OpType::op(x[f], oY[f]);
+                            oZ[f] = OpType::op(x[f], oY[f], extraParams);
                     }
                 }
                 else if(kindOfLoop == nd4j::LoopKind::EWSNONZERO) {
@@ -336,7 +344,7 @@ namespace functions {
 
                         PRAGMA_OMP_SIMD
                         for (uint f = 0; f < tadLength; f++)
-                            oZ[f * zEws] = OpType::op(x[f * xEws], oY[f * yEws]);
+                            oZ[f * zEws] = OpType::op(x[f * xEws], oY[f * yEws], extraParams);
                     }
                 }
                 else if(shape::haveSameShapeAndStrides(yTadShapeShapeInfo, xShapeInfo) && shape::haveSameShapeAndStrides(yTadShapeShapeInfo, zTadShapeInfo)) {
@@ -351,7 +359,7 @@ namespace functions {
                         PRAGMA_OMP_SIMD
                         for (int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
-                            oZ[offset] = OpType::op(x[offset], oY[offset]);
+                            oZ[offset] = OpType::op(x[offset], oY[offset], extraParams);
                         }
                     }
                 }
@@ -370,7 +378,7 @@ namespace functions {
                         for (int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
                             auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
-                            oZ[zOffset] = OpType::op(x[offset], oY[offset]);
+                            oZ[zOffset] = OpType::op(x[offset], oY[offset], extraParams);
                         }
                     }
                 }
@@ -389,7 +397,7 @@ namespace functions {
                         for (int f = 0; f < tadLength; f++) {
                             auto offset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
                             auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
-                            oZ[offset] = OpType::op(x[xOffset], oY[offset]);
+                            oZ[offset] = OpType::op(x[xOffset], oY[offset], extraParams);
                         }
                     }
                 }
@@ -408,7 +416,7 @@ namespace functions {
                         for (int f = 0; f < tadLength; f++) {
                             auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
                             auto offset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
-                            oZ[offset] = OpType::op(x[offset], oY[yOffset]);
+                            oZ[offset] = OpType::op(x[offset], oY[yOffset], extraParams);
                         }
                     }
                 }
@@ -430,7 +438,7 @@ namespace functions {
                             auto xOffset = shape::indexOffset(f, xShapeInfo, xShapeInfoCast, canCastX);
                             auto yOffset = shape::indexOffset(f, yTadShapeShapeInfo, tadShapeShapeInfoCast, canCastY);
                             auto zOffset = shape::indexOffset(f, zTadShapeInfo, tadShapeInfoZCast, canCastZ);
-                            oZ[zOffset] = OpType::op(x[xOffset], oY[yOffset]);
+                            oZ[zOffset] = OpType::op(x[xOffset], oY[yOffset], extraParams);
                         }
                     }
                 }

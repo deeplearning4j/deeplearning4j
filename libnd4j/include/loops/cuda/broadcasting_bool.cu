@@ -40,10 +40,11 @@ static __global__ void broadcastBoolSimple(
         Nd4jLong *yShapeInfo,
         void *z,
         Nd4jLong *zShapeInfo,
+        void *extraParams,
         int *dimension,
         int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
-    functions::broadcast::BroadcastBool<X, Z>::template transformCuda<OpClass>(x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,dimension,dimensionLength,tadOnlyShapeInfo,tadOffsets,tadOnlyShapeInfoZ,tadOffsetsZ);
+    functions::broadcast::BroadcastBool<X, Z>::template transformCuda<OpClass>(x,xShapeInfo,y,yShapeInfo,z,zShapeInfo, extraParams, dimension,dimensionLength,tadOnlyShapeInfo,tadOffsets,tadOnlyShapeInfoZ,tadOffsetsZ);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -55,10 +56,11 @@ static __global__ void broadcastBoolInverseSimple(
         Nd4jLong *yShapeInfo,
         void *z,
         Nd4jLong *zShapeInfo,
+        void *extraParams,
         int *dimension,
         int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
-    functions::broadcast::BroadcastBool<X, Z>::template transformInverseCuda<OpClass>(x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,dimension,dimensionLength,tadOnlyShapeInfo,tadOffsets,tadOnlyShapeInfoZ,tadOffsetsZ);
+    functions::broadcast::BroadcastBool<X, Z>::template transformInverseCuda<OpClass>(x,xShapeInfo,y,yShapeInfo,z,zShapeInfo,extraParams,dimension,dimensionLength,tadOnlyShapeInfo,tadOffsets,tadOnlyShapeInfoZ,tadOffsetsZ);
 }
 
 namespace functions {
@@ -66,15 +68,15 @@ namespace functions {
 //////////////////////////////////////////////////////////////////////////
         template<typename X, typename Z>
         template <typename OpClass>
-        __host__ void BroadcastBool<X,Z>::intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-            broadcastBoolSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
+        __host__ void BroadcastBool<X,Z>::intermediateBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+            broadcastBoolSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
             nd4j::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
         }
 
 //////////////////////////////////////////////////////////////////////////
         template<typename X, typename Y>
-        __host__ void BroadcastBool<X,Y>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-            DISPATCH_BY_OPNUM_TT(intermediateBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_BOOL_OPS))
+        __host__ void BroadcastBool<X,Y>::execBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+            DISPATCH_BY_OPNUM_TT(intermediateBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_BOOL_OPS))
 
 	        DEBUG_KERNEL(stream, opNum);
         }
@@ -82,15 +84,15 @@ namespace functions {
 //////////////////////////////////////////////////////////////////////////
         template<typename X, typename Z>
         template <typename OpClass>
-        __host__ void BroadcastBool<X,Z>::intermediateInverseBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-            broadcastBoolInverseSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
+        __host__ void BroadcastBool<X,Z>::intermediateInverseBroadcast(dim3 launchDims, cudaStream_t *stream, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+            broadcastBoolInverseSimple<X, Z, OpClass><<<launchDims.x, launchDims.y, launchDims.z, *stream>>>(x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ);
             nd4j::DebugHelper::checkErrorCode(stream, "intermediateBroadcastBool(...) failed");
         }
 
 //////////////////////////////////////////////////////////////////////////
         template<typename X, typename Y>
-        __host__ void BroadcastBool<X,Y>::execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
-            DISPATCH_BY_OPNUM_TT(intermediateInverseBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_BOOL_OPS))
+        __host__ void BroadcastBool<X,Y>::execInverseBroadcast(dim3 launchDims, cudaStream_t *stream, int opNum, void *x, Nd4jLong *xShapeInfo, void *y, Nd4jLong *yShapeInfo, void *z, Nd4jLong *zShapeInfo, void *extraParams, int *dimension, int dimensionLength, Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
+            DISPATCH_BY_OPNUM_TT(intermediateInverseBroadcast,  PARAMS(launchDims, stream, x, xShapeInfo, y, yShapeInfo, z, zShapeInfo, extraParams, dimension, dimensionLength, tadOnlyShapeInfo, tadOffsets, tadOnlyShapeInfoZ, tadOffsetsZ), OPS_A(BROADCAST_BOOL_OPS))
 
             DEBUG_KERNEL(stream, opNum);
         }
@@ -102,6 +104,7 @@ namespace functions {
                 void *vx, Nd4jLong *xShapeInfo,
                 void *vy, Nd4jLong *yShapeInfo,
                 void *vz, Nd4jLong *zShapeInfo,
+                void *vextraParams,
                 int *dimension, int dimensionLength,
                 Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
@@ -113,6 +116,7 @@ namespace functions {
             auto x = reinterpret_cast<X*>(vx);
             auto y = reinterpret_cast<X*>(vy);
             auto z = reinterpret_cast<Z*>(vz);
+            auto extraParams = reinterpret_cast<X*>(vextraParams);
 
             //decompose in to several sub tads after
             //moving all dimensions (in sorted order)
@@ -140,7 +144,7 @@ namespace functions {
                 if(tadEWS > 0 && zEWS > 0 && xEWS > 0 && dimensionLength == 1) {
 
                     for (int i = threadIdx.x; i < tadLength; i+= blockDim.x)
-                        rZ[i * zEWS] = OpType::op(x[i * xEWS], rY[i * tadEWS]);
+                        rZ[i * zEWS] = OpType::op(x[i * xEWS], rY[i * tadEWS], extraParams);
                 }
                 else {
                     // it is expected that x and z tads and y array all have the same length
@@ -149,7 +153,7 @@ namespace functions {
                         auto yOffset = shape::getIndexOffset(i, tadOnlyShapeInfo);
                         auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
 
-                        rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset]);
+                        rZ[zOffset] = OpType::op(x[xOffset], rY[yOffset], extraParams);
                     }
                 }
             }
@@ -162,6 +166,7 @@ namespace functions {
 		                              void *vx, Nd4jLong *xShapeInfo,
 		                              void *vy, Nd4jLong *yShapeInfo,
 		                              void *vz, Nd4jLong *zShapeInfo,
+                                      void *vextraParams,
 		                              int *dimension, int dimensionLength,
                                       Nd4jLong *tadOnlyShapeInfo, Nd4jLong *tadOffsets, Nd4jLong *tadOnlyShapeInfoZ, Nd4jLong *tadOffsetsZ) {
 
@@ -173,6 +178,7 @@ namespace functions {
             auto x = reinterpret_cast<X*>(vx);
             auto y = reinterpret_cast<X*>(vy);
             auto z = reinterpret_cast<Z*>(vz);
+            auto extraParams = reinterpret_cast<X*>(vextraParams);
 
             //decompose in to several sub tads after
             //moving all dimensions (in sorted order)
@@ -208,7 +214,7 @@ namespace functions {
             if(tadEWS > 0 && zEWS > 0 && yEWS > 0 && dimensionLength == 1) {
 
                 for (int i = threadIdx.x; i < tadLength; i+= blockDim.x)
-                    rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS]);
+                    rZ[i * zEWS] = OpType::op(rX[i * tadEWS], y[i * yEWS], extraParams);
             }
             else {
                 // it is expected that x and z tads and y array all have the same length
@@ -217,7 +223,7 @@ namespace functions {
                     auto yOffset = shape::getIndexOffset(i, yShapeInfo);
                     auto zOffset = shape::getIndexOffset(i, tadOnlyShapeInfoZ);
 
-                    rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset]);
+                    rZ[zOffset] = OpType::op(rX[xOffset], y[yOffset], extraParams);
                 }
             }
 		}

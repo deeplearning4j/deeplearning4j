@@ -215,6 +215,10 @@ namespace nd4j {
                 } else {
                     addInfVectorKernel<T><<<128, 256, 256, *stream>>>(infVector, neu1e, vectorLength);
                 }
+                err = cudaStreamSynchronize(*stream);
+                if (0 != err) {
+                    throw cuda_exception::build("helpers::skipgram_: Cannot synchronize stream after addInfVectorKernel", err);
+                }
 
                 err = cudaFree(neu1e);
                 if (0 != err) {
@@ -317,10 +321,15 @@ namespace nd4j {
                         }
                     }
                     addInfVectorKernel<T><<<128, 256, 256, *stream>>>(syn0row, neu1e, vectorLength);
+                    err = cudaStreamSynchronize(*stream);
+                    if (0 != err) {
+                        throw cuda_exception::build("helpers::skipgramBatchExec_: Cannot synchronize stream after addInfVectorKernel", err);
+                    }
 
                     // optionally release temp arrays
                     err = cudaFree(neu1e);
                     if (err != 0) {
+                        throw cuda_exception::build("helpers::skipgramBatchExec_: Cannot deallocate memory with stage", err);
                         break;
                     }
 //                    if (vectorLength > 600)
@@ -485,9 +494,22 @@ namespace nd4j {
                         infVector[i] += neu1e[i];
                     }
                 }
-
+                err = cudaStreamSynchronize(*stream);
+                if (0 != err) {
+                    throw cuda_exception::build(
+                            "helpers::cbow_: Cannot synchronize stream after kernel executing", err);
+                }
                 err = cudaFree(neu1);
+                if (0 != err) {
+                    throw cuda_exception::build(
+                            "helpers::cbow_: Cannot deallocate memory for synonims table", err);
+                }
+
                 err = cudaFree(neu1e);
+                if (0 != err) {
+                    throw cuda_exception::build(
+                            "helpers::cbow_: Cannot deallocate memory for antonims table", err);
+                }
             }
             BUILD_SINGLE_TEMPLATE(template void cbow_, (LaunchContext* lc, void *syn0, void *syn1, void *syn1Neg, void *expTable, void *vnegTable, void *vinfVector, int target, int ngStarter, int *context, int *lockedWords, int *indices, int8_t *codes, double alpha, Nd4jLong randomValue, const int contextWidth, const int hsRounds, const int nsRounds, const int vocabSize, const int vectorLength, const int expLength, const int negLength, const int numLabels, const bool trainWords), FLOAT_TYPES);
 
@@ -574,13 +596,13 @@ namespace nd4j {
                 const auto hsRounds = codes.isEmpty() ? 0 : codes.sizeAt(1);
                 const auto numTargets = context.sizeAt(0);
                 const int contextWidth = context.sizeAt(1);
-                const auto bContext = reinterpret_cast<int*>(context.buffer()); //bufferAsT<int>();
-                const auto dContext = reinterpret_cast<int*>(context.specialBuffer()); //bufferAsT<int>();
-                const auto bLocker = reinterpret_cast<int*>(lockedWords.buffer()); //lockedWords.bufferAsT<int>();
-                const auto dLocker = reinterpret_cast<int*>(lockedWords.specialBuffer()); //lockedWords.bufferAsT<int>();
-                const auto bIndices = reinterpret_cast<int*>(indices.buffer());//AsT<int>();
-                const auto bCodes = reinterpret_cast<int8_t*>(codes.buffer()); //bufferAsT<int8_t>();
-                const auto bStarters = reinterpret_cast<int*>(negStarters.buffer()); //AsT<int>();
+                //const auto bContext = reinterpret_cast<int*>(context.buffer()); //bufferAsT<int>();
+                const auto dContext = context.dataBuffer()->specialAsT<int>(); //bufferAsT<int>();
+//                const auto bLocker = reinterpret_cast<int*>(lockedWords.buffer()); //lockedWords.bufferAsT<int>();
+                const auto dLocker = lockedWords.dataBuffer()->specialAsT<int>(); //.specialBuffer()); //lockedWords.bufferAsT<int>();
+                const auto bIndices = indices.dataBuffer()->primaryAsT<int>(); //buffer());//AsT<int>();
+                const auto bCodes = codes.dataBuffer()->primaryAsT<int8_t>(); //reinterpret_cast<int8_t*>(codes.buffer()); //bufferAsT<int8_t>();
+                const auto bStarters = negStarters.dataBuffer()->primaryAsT<int>(); //reinterpret_cast<int*>(negStarters.buffer()); //AsT<int>();
                 const auto numIndices = indices.isEmpty() ? 0 : indices.sizeAt(1);
                 lr.syncToHost();
                 nLabels.syncToHost();
@@ -678,6 +700,11 @@ namespace nd4j {
 //                    }
 
                 }
+                cerr = cudaStreamSynchronize(*stream);
+                if (cerr) {
+                    throw cuda_exception::build("Cannot syncronize stream before memory deallocation", cerr);
+                }
+
                 cerr = cudaFree(neu1);
                 if (cerr) {
                     throw cuda_exception::build("Cannot deallocate temp buffer1", cerr);

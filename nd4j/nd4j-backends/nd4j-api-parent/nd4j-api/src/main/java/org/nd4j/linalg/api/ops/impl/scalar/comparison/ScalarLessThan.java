@@ -64,12 +64,6 @@ public class ScalarLessThan extends BaseScalarBoolOp {
     }
 
     @Override
-    public String tensorflowName() {
-        return "less";
-    }
-
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {
         //Not continuously differentiable, but 0 gradient in most places
 

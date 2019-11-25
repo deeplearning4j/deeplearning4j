@@ -1,5 +1,6 @@
 /*******************************************************************************
  * Copyright (c) 2015-2018 Skymind, Inc.
+ * Copyright (c) 2019 Konduit K.K.
  *
  * This program and the accompanying materials are made available under the
  * terms of the Apache License, Version 2.0 which is available at
@@ -1798,6 +1799,7 @@ TEST_F(HelpersTests1, tensordot_test_6) {
 
     // [iC, bS*oH*oW, kW*kH] x [iC, kH*kW, mC] = [iC, bS*oH*oW, mC]
     MmulHelper::tensorDot(&a, &b, &cR, {{1,0,4,5,2,3}, {iC,bS*oH*oW,kW*kH}},  {{2,0,1,3},{iC,kH*kW,mC}},  {{3,0,1,2,4},{iC, bS*oH*oW, mC}});
+    // c.printBuffer();
 
     ASSERT_TRUE(c.isSameShape(expected));
     ASSERT_TRUE(c.equalsTo(expected));

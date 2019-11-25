@@ -31,6 +31,7 @@ import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.primitives.Pair;
 
 import java.io.*;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.Channels;
@@ -215,7 +216,7 @@ public class BinarySerde {
         allocated.put(shapeBuffer);
         allocated.put(buffer);
         if (rewind)
-            allocated.rewind();
+            ((Buffer) allocated).rewind();
     }
 
     /**
@@ -247,7 +248,7 @@ public class BinarySerde {
         //finally put the data
         allocated.put(buffer);
         if (rewind)
-            allocated.rewind();
+            ((Buffer) allocated).rewind();
     }
 
 
@@ -314,7 +315,7 @@ public class BinarySerde {
 
             ByteBuffer byteBuffer = buffer.order(ByteOrder.nativeOrder());
 
-            buffer.position(0);
+            ((Buffer) buffer).position(0);
             int rank = byteBuffer.getInt();
 
             val result = new long[Shape.shapeInfoLength(rank)];
@@ -324,7 +325,7 @@ public class BinarySerde {
 
             // skipping two next values (dtype and rank again)
             // please , that this time rank has dtype of LONG, so takes 8 bytes.
-            byteBuffer.position(16);
+            ((Buffer) byteBuffer).position(16);
 
             // filling shape information
             for (int e = 1; e < Shape.shapeInfoLength(rank); e++) {

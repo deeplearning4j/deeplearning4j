@@ -149,36 +149,7 @@ import org.nd4j.linalg.api.ops.impl.scatter.ScatterMin;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterMul;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterSub;
 import org.nd4j.linalg.api.ops.impl.scatter.ScatterUpdate;
-import org.nd4j.linalg.api.ops.impl.shape.Concat;
-import org.nd4j.linalg.api.ops.impl.shape.ConfusionMatrix;
-import org.nd4j.linalg.api.ops.impl.shape.Cross;
-import org.nd4j.linalg.api.ops.impl.shape.Diag;
-import org.nd4j.linalg.api.ops.impl.shape.DiagPart;
-import org.nd4j.linalg.api.ops.impl.shape.ExpandDims;
-import org.nd4j.linalg.api.ops.impl.shape.Gather;
-import org.nd4j.linalg.api.ops.impl.shape.GatherNd;
-import org.nd4j.linalg.api.ops.impl.shape.MergeAvg;
-import org.nd4j.linalg.api.ops.impl.shape.MergeMax;
-import org.nd4j.linalg.api.ops.impl.shape.MeshGrid;
-import org.nd4j.linalg.api.ops.impl.shape.OneHot;
-import org.nd4j.linalg.api.ops.impl.shape.OnesLike;
-import org.nd4j.linalg.api.ops.impl.shape.ParallelStack;
-import org.nd4j.linalg.api.ops.impl.shape.Permute;
-import org.nd4j.linalg.api.ops.impl.shape.Rank;
-import org.nd4j.linalg.api.ops.impl.shape.ReductionShape;
-import org.nd4j.linalg.api.ops.impl.shape.Repeat;
-import org.nd4j.linalg.api.ops.impl.shape.Reshape;
-import org.nd4j.linalg.api.ops.impl.shape.SequenceMask;
-import org.nd4j.linalg.api.ops.impl.shape.Size;
-import org.nd4j.linalg.api.ops.impl.shape.SizeAt;
-import org.nd4j.linalg.api.ops.impl.shape.Slice;
-import org.nd4j.linalg.api.ops.impl.shape.Squeeze;
-import org.nd4j.linalg.api.ops.impl.shape.Stack;
-import org.nd4j.linalg.api.ops.impl.shape.StridedSlice;
-import org.nd4j.linalg.api.ops.impl.shape.Tile;
-import org.nd4j.linalg.api.ops.impl.shape.Transpose;
-import org.nd4j.linalg.api.ops.impl.shape.Unstack;
-import org.nd4j.linalg.api.ops.impl.shape.ZerosLike;
+import org.nd4j.linalg.api.ops.impl.shape.*;
 import org.nd4j.linalg.api.ops.impl.shape.bp.SliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.StridedSliceBp;
 import org.nd4j.linalg.api.ops.impl.shape.bp.TileBp;
@@ -260,40 +231,7 @@ import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentMinBp;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentProdBp;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentSqrtNBp;
 import org.nd4j.linalg.api.ops.impl.transforms.segment.bp.UnsortedSegmentSumBp;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.ACos;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.ACosh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.ASin;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.ASinh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.ATan;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.ATanh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Cos;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Cosh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.ELU;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Erf;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Erfc;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Exp;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Expm1;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.GELU;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.GELUDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.HardSigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.HardTanh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Log;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Log1p;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.LogSigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELU;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.PreciseGELUDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.RationalTanh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.RectifiedTanh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SELU;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Sigmoid;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Sin;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Sinh;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftPlus;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SoftSign;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Swish;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.SwishDerivative;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Tan;
-import org.nd4j.linalg.api.ops.impl.transforms.strict.Tanh;
+import org.nd4j.linalg.api.ops.impl.transforms.strict.*;
 import org.nd4j.linalg.api.ops.random.custom.DistributionUniform;
 import org.nd4j.linalg.api.ops.random.custom.RandomBernoulli;
 import org.nd4j.linalg.api.ops.random.custom.RandomExponential;
@@ -370,6 +308,15 @@ public class DifferentialFunctionFactory {
     public SDVariable zerosLike(String name, SDVariable input) {
         validateDifferentialFunctionsameDiff(input);
         return new ZerosLike(name, sameDiff(), input).outputVariable();
+    }
+
+    public SDVariable create(String name, SDVariable shape, boolean initialize, DataType dataType) {
+        return create(name, shape, 'c', initialize, dataType);
+    }
+
+    public SDVariable create(String name, SDVariable shape, char order, boolean initialize, DataType dataType) {
+        validateDifferentialFunctionsameDiff(shape);
+        return new Create(name, sameDiff(), shape, order, initialize, dataType).outputVariable();
     }
 
     public SDVariable onesLike(String name, SDVariable input, DataType dataType) {
@@ -1464,6 +1411,9 @@ public class DifferentialFunctionFactory {
         return new PowDerivative(sameDiff(), iX, false, pow).outputVariable();
     }
 
+    public SDVariable mishDerivative(SDVariable iX) {
+        return new MishDerivative(sameDiff(), iX, false).outputVariable();
+    }
 
     public SDVariable swish(SDVariable iX) {
         return new Swish(sameDiff(), iX, false).outputVariable();

@@ -55,24 +55,13 @@ public class ScalarLessThanOrEqual extends BaseScalarBoolOp {
 
     @Override
     public int opNum() {
-        return 5;
+        return 11;
     }
 
     @Override
     public String opName() {
         return "lessthanorequal_scalar";
     }
-
-    @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "less_equal";
-    }
-
 
     @Override
     public List<SDVariable> doDiff(List<SDVariable> f1) {

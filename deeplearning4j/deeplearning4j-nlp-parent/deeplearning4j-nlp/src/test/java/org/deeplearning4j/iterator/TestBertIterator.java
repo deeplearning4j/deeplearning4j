@@ -26,7 +26,6 @@ import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.api.MultiDataSet;
 import org.nd4j.linalg.factory.Nd4j;
 import org.nd4j.linalg.indexing.NDArrayIndex;
-import org.nd4j.linalg.io.ClassPathResource;
 import org.nd4j.linalg.primitives.Pair;
 import org.nd4j.resources.Resources;
 
@@ -34,10 +33,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 import static org.junit.Assert.*;
 
@@ -54,6 +50,9 @@ public class TestBertIterator extends BaseDL4JTest {
 
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
+        List<String> forInference = new ArrayList<>();
+        forInference.add(toTokenize1);
+        forInference.add(toTokenize2);
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
 
         BertIterator b = BertIterator.builder()
@@ -100,12 +99,15 @@ public class TestBertIterator extends BaseDL4JTest {
 
         assertEquals(expF, mds.getFeatures(0));
         assertEquals(expM, mds.getFeaturesMaskArray(0));
+        assertEquals(expF,b.featurizeSentences(forInference).getFirst()[0]);
+        assertEquals(expM,b.featurizeSentences(forInference).getSecond()[0]);
 
         assertFalse(b.hasNext());
         b.reset();
         assertTrue(b.hasNext());
         MultiDataSet mds2 = b.next();
 
+        forInference.set(0,toTokenize2);
         //Same thing, but with segment ID also
         b = BertIterator.builder()
                 .tokenizer(t)
@@ -118,9 +120,11 @@ public class TestBertIterator extends BaseDL4JTest {
                 .build();
         mds = b.next();
         assertEquals(2, mds.getFeatures().length);
+        assertEquals(2,b.featurizeSentences(forInference).getFirst().length);
         //Segment ID should be all 0s for single segment task
         INDArray segmentId = expM.like();
         assertEquals(segmentId, mds.getFeatures(1));
+        assertEquals(segmentId,b.featurizeSentences(forInference).getFirst()[1]);
     }
 
     @Test(timeout = 20000L)
@@ -157,6 +161,9 @@ public class TestBertIterator extends BaseDL4JTest {
     public void testLengthHandling() throws Exception {
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
+        List<String> forInference = new ArrayList<>();
+        forInference.add(toTokenize1);
+        forInference.add(toTokenize2);
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
         INDArray expM0 = Nd4j.create(DataType.INT, 1, 16);
@@ -205,6 +212,8 @@ public class TestBertIterator extends BaseDL4JTest {
         assertArrayEquals(expShape, mds.getFeaturesMaskArray(0).shape());
         assertEquals(expF.get(NDArrayIndex.all(), NDArrayIndex.interval(0,14)), mds.getFeatures(0));
         assertEquals(expM.get(NDArrayIndex.all(), NDArrayIndex.interval(0,14)), mds.getFeaturesMaskArray(0));
+        assertEquals(mds.getFeatures(0),b.featurizeSentences(forInference).getFirst()[0]);
+        assertEquals(mds.getFeaturesMaskArray(0), b.featurizeSentences(forInference).getSecond()[0]);
 
         //Clip only: clip to maximum, but don't pad if less
         b = BertIterator.builder()
@@ -227,6 +236,9 @@ public class TestBertIterator extends BaseDL4JTest {
         Nd4j.setDefaultDataTypes(DataType.FLOAT, DataType.FLOAT);
         String toTokenize1 = "I saw a girl with a telescope.";
         String toTokenize2 = "Donaudampfschifffahrts Kapitänsmützeninnenfuttersaum";
+        List<String> forInference = new ArrayList<>();
+        forInference.add(toTokenize1);
+        forInference.add(toTokenize2);
         BertWordPieceTokenizerFactory t = new BertWordPieceTokenizerFactory(pathToVocab, false, false, c);
         INDArray expEx0 = Nd4j.create(DataType.INT, 1, 16);
         INDArray expM0 = Nd4j.create(DataType.INT, 1, 16);
@@ -288,6 +300,9 @@ public class TestBertIterator extends BaseDL4JTest {
         assertEquals(expM, mds.getFeaturesMaskArray(0));
         assertEquals(expL, mds.getLabels(0));
         assertEquals(expLM, mds.getLabelsMaskArray(0));
+
+        assertEquals(expF, b.featurizeSentences(forInference).getFirst()[0]);
+        assertEquals(expM, b.featurizeSentences(forInference).getSecond()[0]);
     }
 
     private static class TestSentenceProvider implements LabeledSentenceProvider {

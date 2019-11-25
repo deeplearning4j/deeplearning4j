@@ -254,6 +254,34 @@ TEST_F(DeclarableOpsTests15, Test_BitCast_2) {
     delete result;
 }
 
+TEST_F(DeclarableOpsTests15, Test_BitCast_3) {
+    auto x = NDArrayFactory::create<float>('c', {1, 4});
+
+    x.linspace(1.);
+    nd4j::ops::bitcast op;
+    try {
+        auto result = op.execute({&x}, {}, {nd4j::DataType::INT64}, {});
+        ASSERT_NE(Status::OK(), result->status());
+        delete result;
+    } catch (std::exception& e) {
+        nd4j_printf("Error should be here `%s'. It's OK.\n", e.what());
+    }
+}
+
+TEST_F(DeclarableOpsTests15, Test_BitCast_4) {
+    auto x = NDArrayFactory::create<float>('c', {1, 4});
+    auto e = NDArrayFactory::create<Nd4jLong>('c', {1, 2}, {1234567890LL, 2468013579LL});
+    x.linspace(1.);
+    nd4j::ops::bitcast op;
+    try {
+        auto result = op.execute({&x}, {&e}, {}, {nd4j::DataType::INT64}, {});
+        ASSERT_NE(Status::OK(), result);
+    } catch(std::exception& e) {
+        nd4j_printf("Error `%s' should be here. It's OK.\n",e.what());
+    }
+
+}
+
 TEST_F(DeclarableOpsTests15, Test_depthwise_bp_1) {
     auto in = NDArrayFactory::create<float>('c', {4, 8, 64, 64});
     auto w = NDArrayFactory::create<float>('c', {2, 2, 8, 2});
@@ -551,4 +579,34 @@ TEST_F(DeclarableOpsTests15, test_lstmBlock_3) {
         auto temp1 = ft.reshape('f', {bS, nIn});
         auto temp2 = temp1 * cLast;
     }
+}
+
+TEST_F(DeclarableOpsTests15, test_empty_increasing_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 3});
+    auto z = NDArrayFactory::create<bool>(false);
+
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setOutputArray(0, &z);
+
+    nd4j::ops::is_strictly_increasing op;
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(true, z.e<bool>(0));
+}
+
+TEST_F(DeclarableOpsTests15, test_empty_decreasing_1) {
+    auto x = NDArrayFactory::create<float>('c', {1, 0, 3});
+    auto z = NDArrayFactory::create<bool>(false);
+
+    Context ctx(1);
+    ctx.setInputArray(0, &x);
+    ctx.setOutputArray(0, &z);
+
+    nd4j::ops::is_non_decreasing op;
+    auto status = op.execute(&ctx);
+    ASSERT_EQ(Status::OK(), status);
+
+    ASSERT_EQ(true, z.e<bool>(0));
 }

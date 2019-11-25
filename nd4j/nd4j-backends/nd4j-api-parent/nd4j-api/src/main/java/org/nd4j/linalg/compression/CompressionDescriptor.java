@@ -21,6 +21,7 @@ import org.nd4j.linalg.api.buffer.DataBuffer;
 import org.nd4j.linalg.api.buffer.DataType;
 
 import java.io.Serializable;
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 
@@ -142,7 +143,7 @@ public class CompressionDescriptor implements Cloneable, Serializable {
         directAlloc.putLong(numberOfElements);
         directAlloc.putLong(originalElementSize);
         directAlloc.putInt(originalDataType.ordinal());
-        directAlloc.rewind();
+        ((Buffer) directAlloc).rewind();
         return directAlloc;
     }
 

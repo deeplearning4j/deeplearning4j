@@ -73,16 +73,6 @@ public class ScalarAdd extends BaseScalarOp {
     }
 
     @Override
-    public String onnxName() {
-        throw new NoOpNameFoundException("No ONNX op name found for: " + getClass().getName());
-    }
-
-    @Override
-    public String tensorflowName() {
-        return "RealAdd";
-    }
-
-    @Override
     public List<SDVariable> doDiff(List<SDVariable> i_v1) {
         SDVariable g = i_v1.get(0);
         return Collections.singletonList(g);

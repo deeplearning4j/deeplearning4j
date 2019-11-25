@@ -142,7 +142,7 @@ public class GradientCheckTests extends BaseDL4JTest {
         // (a) activation function
         // (b) Whether to test at random initialization, or after some learning (i.e., 'characteristic mode of operation')
         // (c) Loss function (with specified output activations)
-        Activation[] activFns = {Activation.SIGMOID, Activation.TANH};
+        Activation[] activFns = {Activation.SIGMOID, Activation.TANH, Activation.MISH};
         boolean[] characteristic = {false, true}; //If true: run some backprop steps first
 
         LossFunction[] lossFunctions = {LossFunction.MCXENT, LossFunction.MSE};

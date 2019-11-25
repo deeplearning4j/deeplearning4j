@@ -47,9 +47,12 @@ static void addBias_(const NDArray& input, const NDArray& bias, NDArray &output,
 
     const bool inOutAreSame = x == z;
 
+    int posOfNonUnityDim;
+    bias.isCommonVector(posOfNonUnityDim);
+
     const uint bS           = output.sizeAt(0);              // batch size
-    const Nd4jLong yStrideC = bias.stridesOf()[0];
-    const Nd4jLong zStrideB = output.stridesOf()[0];
+    const Nd4jLong yStrideC = bias.strideAt(posOfNonUnityDim);
+    const Nd4jLong zStrideB = output.strideAt(0);
 
     if(output.rankOf() == 4) {
 

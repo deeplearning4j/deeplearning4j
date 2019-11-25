@@ -479,6 +479,8 @@ public class FlatBuffersMapper {
             } else if (v instanceof Number) {
                 if (v instanceof Double) {
                     d = new double[]{(Double) v};
+                } else if (v instanceof Float){
+                    d = new double[]{(Float) v};
                 } else if (v instanceof Integer) {
                     i = new int[]{(Integer) v};
                 } else if (v instanceof Long) {
