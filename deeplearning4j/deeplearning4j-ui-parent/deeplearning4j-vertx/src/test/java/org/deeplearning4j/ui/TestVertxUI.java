@@ -17,6 +17,7 @@
 
 package org.deeplearning4j.ui;
 
+import org.apache.commons.io.IOUtils;
 import org.deeplearning4j.api.storage.StatsStorage;
 import org.deeplearning4j.datasets.iterator.impl.IrisDataSetIterator;
 import org.deeplearning4j.nn.api.OptimizationAlgorithm;
@@ -27,6 +28,7 @@ import org.deeplearning4j.nn.conf.layers.DenseLayer;
 import org.deeplearning4j.nn.conf.layers.OutputLayer;
 import org.deeplearning4j.nn.conf.layers.variational.GaussianReconstructionDistribution;
 import org.deeplearning4j.nn.conf.layers.variational.VariationalAutoencoder;
+import org.deeplearning4j.nn.conf.serde.JsonMappers;
 import org.deeplearning4j.nn.graph.ComputationGraph;
 import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
 import org.deeplearning4j.nn.weights.WeightInit;
@@ -39,8 +41,14 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.function.Function;
 import org.nd4j.linalg.learning.config.Sgd;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
+
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -249,6 +257,70 @@ public class TestVertxUI {
         }
 
         Thread.sleep(1000000);
+    }
+
+    @Test
+    public void testAutoAttach() throws Exception {
+
+        ComputationGraphConfiguration conf = new NeuralNetConfiguration.Builder().graphBuilder().addInputs("in")
+                .addLayer("L0", new DenseLayer.Builder().activation(Activation.TANH).nIn(4).nOut(4).build(),
+                        "in")
+                .addLayer("L1", new OutputLayer.Builder().lossFunction(LossFunctions.LossFunction.MCXENT)
+                        .activation(Activation.SOFTMAX).nIn(4).nOut(3).build(), "L0")
+                .setOutputs("L1").build();
+
+        ComputationGraph net = new ComputationGraph(conf);
+        net.init();
+
+        StatsStorage ss1 = new InMemoryStatsStorage();
+
+        net.setListeners(new StatsListener(ss1, 1, "ss1"));
+
+        DataSetIterator iter = new IrisDataSetIterator(150, 150);
+
+        for (int i = 0; i < 5; i++) {
+            net.fit(iter);
+        }
+
+        StatsStorage ss2 = new InMemoryStatsStorage();
+        net.setListeners(new StatsListener(ss2, 1, "ss2"));
+
+        for (int i = 0; i < 4; i++) {
+            net.fit(iter);
+        }
+
+        UIServer ui = UIServer.getInstance(true, null);
+        try {
+            ((VertxUIServer) ui).autoAttachStatsStorageBySessionId(new Function<String, StatsStorage>() {
+                @Override
+                public StatsStorage apply(String s) {
+                    if ("ss1".equals(s)) {
+                        return ss1;
+                    } else if ("ss2".equals(s)) {
+                        return ss2;
+                    }
+                    return null;
+                }
+            });
+
+            String json1 = IOUtils.toString(new URL("http://localhost:9000/train/ss1/overview/data"), StandardCharsets.UTF_8);
+//            System.out.println(json1);
+
+            String json2 = IOUtils.toString(new URL("http://localhost:9000/train/ss2/overview/data"), StandardCharsets.UTF_8);
+//            System.out.println(json2);
+
+            assertNotEquals(json1, json2);
+
+            Map<String, Object> m1 = JsonMappers.getMapper().readValue(json1, Map.class);
+            Map<String, Object> m2 = JsonMappers.getMapper().readValue(json2, Map.class);
+
+            List<Object> s1 = (List<Object>) m1.get("scores");
+            List<Object> s2 = (List<Object>) m2.get("scores");
+            assertEquals(5, s1.size());
+            assertEquals(4, s2.size());
+        } finally {
+            ui.stop();
+        }
     }
 
     @Test

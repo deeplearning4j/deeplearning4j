@@ -26,6 +26,8 @@ import io.vertx.ext.web.RoutingContext;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -98,7 +100,8 @@ public class TrainModule implements UIModule {
     private Map<String, Map<Integer, String>> workerIdxToName = new ConcurrentHashMap<>(); //Key: session ID
     private Map<String, Long> lastUpdateForSession = new ConcurrentHashMap<>();
     private final boolean multiSession;
-    private final Function<String, Boolean> sessionLoader;
+    @Getter @Setter
+    private Function<String, Boolean> sessionLoader;
 
 
     private final Configuration configuration;
@@ -172,7 +175,13 @@ public class TrainModule implements UIModule {
                     sessionNotFound(path.get(0), rc.request().path(), rc);
                 }
             }));
-            r.add(new Route("/train/:sessionId/overview/data", HttpMethod.GET, (path, rc) -> getOverviewDataForSession(path.get(0), rc)));
+            r.add(new Route("/train/:sessionId/overview/data", HttpMethod.GET, (path, rc) -> {
+                if (knownSessionIDs.containsKey(path.get(0))) {
+                    getOverviewDataForSession(path.get(0), rc);
+                } else {
+                    sessionNotFound(path.get(0), rc.request().path(), rc);
+                }
+            }));
             r.add(new Route("/train/:sessionId/model", HttpMethod.GET, (path, rc) -> {
                 if (knownSessionIDs.containsKey(path.get(0))) {
                     renderFtl("TrainingModel.html.ftl", rc);
@@ -275,11 +284,10 @@ public class TrainModule implements UIModule {
     private void sessionNotFound(String sessionId, String targetPath, RoutingContext rc) {
         if (sessionLoader != null && sessionLoader.apply(sessionId)) {
             if (targetPath != null) {
-                rc.reroute("./" + targetPath);
+                rc.reroute(targetPath);
             } else {
                 rc.response().end();
             }
-
         } else {
             rc.response().setStatusCode(HttpResponseStatus.NOT_FOUND.code())
                     .end("Unknown session ID: " + sessionId);
