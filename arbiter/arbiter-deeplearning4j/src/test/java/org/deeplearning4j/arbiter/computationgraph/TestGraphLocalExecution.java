@@ -305,7 +305,7 @@ public class TestGraphLocalExecution {
     @Test
     public void testLocalExecutionEarlyStopping() throws Exception {
         EarlyStoppingConfiguration<ComputationGraph> esConf = new EarlyStoppingConfiguration.Builder<ComputationGraph>()
-                .epochTerminationConditions(new MaxEpochsTerminationCondition(6))
+                .epochTerminationConditions(new MaxEpochsTerminationCondition(4))
                 .scoreCalculator(new ScoreProvider())
                 .modelSaver(new InMemoryModelSaver()).build();
         Map<String, Object> commands = new HashMap<>();
@@ -348,7 +348,7 @@ public class TestGraphLocalExecution {
                 .dataProvider(dataProvider)
                 .scoreFunction(ScoreFunctions.testSetF1())
                 .modelSaver(new FileModelSaver(modelSavePath))
-                .terminationConditions(new MaxTimeCondition(30, TimeUnit.SECONDS),
+                .terminationConditions(new MaxTimeCondition(45, TimeUnit.SECONDS),
                         new MaxCandidatesCondition(10))
                 .build();
 

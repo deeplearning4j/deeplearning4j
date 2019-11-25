@@ -32,7 +32,7 @@ public class TestDataFactoryProviderMnist implements DataSetIteratorFactory {
     private int terminationIter;
 
     public TestDataFactoryProviderMnist(){
-        this(16, 10);
+        this(16, 4);
     }
 
     @Override
